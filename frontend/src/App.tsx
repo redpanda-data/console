@@ -20,19 +20,19 @@ import './assets/fonts/kumbh-sans.css';
 import './assets/fonts/inter.css';
 /* end global styles */
 
-import { BrowserRouter } from 'react-router-dom';
-import { observer } from 'mobx-react';
-import { Container, Grid, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
-import { uiSettings } from './state/ui';
-import { createVisibleSidebarItems } from './components/routes';
-import { ErrorBoundary } from './components/misc/ErrorBoundary';
-import { UserProfile } from './components/misc/UserButton';
+import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/ui';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
-import { APP_ROUTES } from './components/routes';
-import AppContent from './components/layout/Content';
+import { observer } from 'mobx-react';
+import { BrowserRouter } from 'react-router-dom';
 import RequireAuth from './components/RequireAuth';
+import AppContent from './components/layout/Content';
+import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
+import { UserProfile } from './components/misc/UserButton';
+import { createVisibleSidebarItems } from './components/routes';
+import { APP_ROUTES } from './components/routes';
 import { isEmbedded, setup } from './config';
+import { uiSettings } from './state/ui';
 import { getBasePath } from './utils/env';
 
 const AppSidebar = observer(() => {

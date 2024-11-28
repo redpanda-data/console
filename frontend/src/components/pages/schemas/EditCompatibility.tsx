@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { useState } from 'react';
 import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
+import { useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton, Button } from '../../../utils/tsxUtils';
+import { api } from '../../../state/backendApi';
+import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { PageComponent, type PageInitHelper } from '../Page';
 import './Schema.List.scss';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
-import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Stack, useToast, VStack, Text } from '@redpanda-data/ui';
 import { Radio, RadioGroup } from '@chakra-ui/react';
-import { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
+import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Stack, Text, VStack, useToast } from '@redpanda-data/ui';
+import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 
 function renderNotConfigured() {
@@ -73,7 +73,7 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
   }
 
   render() {
-    if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
+    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
     if (!api.schemaMode) return DefaultSkeleton; // request in progress
 
     const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
@@ -102,7 +102,7 @@ function EditSchemaCompatibility(p: {
   const toast = useToast();
   const { subjectName } = p;
   const subject = subjectName != null ? api.schemaDetails.get(subjectName) : undefined;
-  const schema = subject?.schemas.first((x) => x.version == subject.latestActiveVersion);
+  const schema = subject?.schemas.first((x) => x.version === subject.latestActiveVersion);
 
   // type should be just "SchemaRegistryCompatibilityMode"
   const [configMode, setConfigMode] = useState(subjectName ? subject?.compatibility : api.schemaCompatibility);
@@ -136,7 +136,7 @@ function EditSchemaCompatibility(p: {
           status: 'success',
           duration: 4000,
           isClosable: false,
-          title: 'Compatibility mode updated to ' + configMode,
+          title: `Compatibility mode updated to ${configMode}`,
           position: 'top-right',
         });
 

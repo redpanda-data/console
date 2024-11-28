@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { useState } from 'react';
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { Box, Icon, Text } from '@redpanda-data/ui';
-import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { useState } from 'react';
 
 export function ExpandableText(p: { children: string; maxChars: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -25,7 +25,7 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
     <Text>
       {text}
 
-      {isTruncated && <>...</>}
+      {isTruncated && '...'}
 
       {showExpander && (
         <Box

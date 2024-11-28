@@ -11,31 +11,31 @@
 
 /* eslint-disable no-useless-escape */
 import {
+  type IReactionDisposer,
   action,
+  autorun,
   comparer,
-  IReactionDisposer,
-  observable,
-  reaction,
+  flow,
   intercept,
   makeAutoObservable,
-  flow,
-  autorun,
+  observable,
+  reaction,
 } from 'mobx';
+import { removeNamespace } from '../../components/pages/connect/helper';
+import { encodeBase64, retrier } from '../../utils/utils';
 import { api } from '../backendApi';
 import {
-  ConnectorProperty,
+  type ClusterAdditionalInfo,
+  type ClusterConnectors,
+  type ConnectorGroup,
+  type ConnectorPossibleStatesLiteral,
+  type ConnectorProperty,
+  type ConnectorStep,
+  type CreateSecretResponse,
   DataType,
   PropertyImportance,
   PropertyWidth,
-  ClusterConnectors,
-  ConnectorPossibleStatesLiteral,
-  ConnectorStep,
-  ConnectorGroup,
-  ClusterAdditionalInfo,
-  CreateSecretResponse,
 } from '../restInterfaces';
-import { removeNamespace } from '../../components/pages/connect/helper';
-import { encodeBase64, retrier } from '../../utils/utils';
 
 export interface ConfigPageProps {
   clusterName: string;
@@ -123,7 +123,7 @@ function sanitizeValue(value: any, type: any) {
 
 export class ConnectClusterStore {
   private clusterName: string;
-  isInitialized: boolean = false;
+  isInitialized = false;
   private connectors: Map<string, ConnectorPropertiesStore>;
   features: ConnectorClusterFeatures = { secretStore: false };
   additionalClusterInfo: ClusterAdditionalInfo;
@@ -146,7 +146,7 @@ export class ConnectClusterStore {
     let instance = ConnectClusterStore.connectClusters.get(clusterName);
     if (!instance) {
       instance = new ConnectClusterStore(clusterName);
-      this.connectClusters.set(clusterName, instance);
+      ConnectClusterStore.connectClusters.set(clusterName, instance);
     }
     return instance;
   }
@@ -271,7 +271,7 @@ export class ConnectClusterStore {
     const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
     let connectorStore = this.connectors.get(identifier);
     if (!connectorStore) {
-      const connectorType = this.additionalClusterInfo.plugins.first((x) => x.class == pluginClassName)!.type;
+      const connectorType = this.additionalClusterInfo.plugins.first((x) => x.class === pluginClassName)?.type;
       connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
         secretStore: this.features.secretStore,
         editing: initialConfig != null,
@@ -283,13 +283,13 @@ export class ConnectClusterStore {
 
   getConnectorStore(connectorName: string) {
     const connector = this.getRemoteConnector(connectorName);
-    const connectorProperties = this.getConnector(connector!.class, connectorName, connector?.config);
+    const connectorProperties = this.getConnector(connector?.class, connectorName, connector?.config);
     return connectorProperties;
   }
 
   get cluster(): ClusterConnectors | null {
     if (this.isInitialized) {
-      const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName == this.clusterName);
+      const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === this.clusterName);
       if (!cluster) throw new Error('cluster not found');
       return cluster;
     }
@@ -306,7 +306,7 @@ export class ConnectClusterStore {
   validateConnectorState(connectorName: string, state: ConnectorPossibleStatesLiteral[]) {
     if (this.isInitialized) {
       const cluster = this.cluster;
-      const connector = cluster?.connectors.first((c) => c.name == connectorName);
+      const connector = cluster?.connectors.first((c) => c.name === connectorName);
       return state.some((s) => s === connector?.state);
     }
   }
@@ -329,7 +329,7 @@ export class ConnectClusterStore {
   getRemoteConnector(connectorName: string) {
     if (this.isInitialized) {
       const cluster = this.cluster;
-      const connector = cluster?.connectors.first((c) => c.name == connectorName);
+      const connector = cluster?.connectors.first((c) => c.name === connectorName);
       return connector;
     }
   }
@@ -366,7 +366,7 @@ export class SecretsStore {
 
   get secrets() {
     for (const [key, value] of this._data) {
-      if (value.value != '' && value.value != null) {
+      if (value.value !== '' && value.value != null) {
         this._secrets.set(key, value);
       }
     }
@@ -380,7 +380,7 @@ export class Secret {
   value: string;
   id: string | null = null;
   secretString: string | null = null;
-  isDirty: boolean = false;
+  isDirty = false;
 
   constructor(key: string) {
     this.key = key;
@@ -432,7 +432,7 @@ export class ConnectorPropertiesStore {
   showAdvancedOptions = false;
   viewMode: 'form' | 'json' = 'form';
   initPending = true;
-  fallbackGroupName: string = '';
+  fallbackGroupName = '';
   reactionDisposers: IReactionDisposer[] = [];
 
   connectorStepDefinitions: ConnectorStep[] = [];
@@ -471,7 +471,7 @@ export class ConnectorPropertiesStore {
           // advanced mode shows all settings
           return this.properties;
         // in simple mode, we only show props that are high importance
-        return this.properties.filter((p) => p.entry.definition.importance == PropertyImportance.High);
+        return this.properties.filter((p) => p.entry.definition.importance === PropertyImportance.High);
       },
     });
   }
@@ -481,7 +481,7 @@ export class ConnectorPropertiesStore {
       ...this.appliedConfig,
     } as any;
 
-    if (this.viewMode == 'json') {
+    if (this.viewMode === 'json') {
       let parsedConfig = {};
       try {
         parsedConfig = JSON.parse(this.jsonText);
@@ -543,7 +543,7 @@ export class ConnectorPropertiesStore {
       if (this.appliedConfig == null) {
         // Set default values
         for (const p of allProps)
-          if (p.entry.definition.custom_default_value != undefined) {
+          if (p.entry.definition.custom_default_value !== undefined) {
             p.value = p.entry.definition.custom_default_value;
           }
 
@@ -607,7 +607,9 @@ export class ConnectorPropertiesStore {
     } catch (err: any) {
       console.error('error in initConfig', err);
       this.error =
-        typeof err == 'object' ? (err.message ?? JSON.stringify(err, undefined, 4)) : JSON.stringify(err, undefined, 4);
+        typeof err === 'object'
+          ? (err.message ?? JSON.stringify(err, undefined, 4))
+          : JSON.stringify(err, undefined, 4);
     }
 
     this.initPending = false;
@@ -627,14 +629,14 @@ export class ConnectorPropertiesStore {
       const removedProps = [...this.propsByName.keys()].filter((key) => !srcNames.has(key));
       for (const key of removedProps) {
         // group names might not be accurate so we check all groups
-        for (const g of this.allGroups) g.properties.removeAll((x) => x.name == key);
+        for (const g of this.allGroups) g.properties.removeAll((x) => x.name === key);
 
         // remove from lookup
         this.propsByName.delete(key);
       }
 
       // Remove empty groups
-      this.allGroups.removeAll((x) => x.properties.length == 0);
+      this.allGroups.removeAll((x) => x.properties.length === 0);
 
       // Handle new properties, transfer reported errors and suggested values
       for (const source of srcProps) {
@@ -703,8 +705,8 @@ export class ConnectorPropertiesStore {
         let order = 0;
         for (const s of validationResult.steps) {
           for (const g of s.groups) {
-            if (x.group.name == g.name) return order;
-            else order++;
+            if (x.group.name === g.name) return order;
+            order++;
           }
         }
 
@@ -725,7 +727,7 @@ export class ConnectorPropertiesStore {
     for (const p of properties) {
       const def = p.definition;
 
-      if (!def.width || def.width == PropertyWidth.None) def.width = PropertyWidth.Medium;
+      if (!def.width || def.width === PropertyWidth.None) def.width = PropertyWidth.Medium;
 
       if (def.order < 0) def.order = Number.POSITIVE_INFINITY;
     }
@@ -755,8 +757,7 @@ export class ConnectorPropertiesStore {
           crud: this.crud,
         });
 
-        if (this.appliedConfig != null && this.appliedConfig[name])
-          property.value = sanitizeValue(this.appliedConfig[name], definitionType);
+        if (this.appliedConfig?.[name]) property.value = sanitizeValue(this.appliedConfig[name], definitionType);
         if (p.definition.type === DataType.Password && !!this.secrets) {
           const secret = this.secrets.getSecret(property.name);
           secret.extractSecretId(property.value);

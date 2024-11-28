@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { uiSettings } from '../../../../state/ui';
+import type { uiSettings } from '../../../../state/ui';
 import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/numberExtensions';
 import { Slider, SliderFilledTrack, SliderMark, SliderThumb, SliderTrack, Tooltip } from '@redpanda-data/ui';
@@ -50,8 +50,8 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
       if (f == null) return null;
       if (f < 3) return 'No change';
       if (f > 12) return 'Unlimited';
-      const v = Math.round(Math.pow(10, f.clamp(3, 12)));
-      return prettyNumber(v).toUpperCase() + 'B/s';
+      const v = Math.round(10 ** f.clamp(3, 12));
+      return `${prettyNumber(v).toUpperCase()}B/s`;
     };
 
     return (
@@ -68,7 +68,7 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
             // case n > 12.5:
             //     this.value = Number.POSITIVE_INFINITY; return;
             default:
-              this.value = Math.round(Math.pow(10, n.clamp(3, 12)));
+              this.value = Math.round(10 ** n.clamp(3, 12));
               return;
           }
         }}
@@ -114,7 +114,7 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
 
   get value(): number | null {
     if ('value' in this.props) return this.props.value;
-    else return this.props.settings.maxReplicationTraffic;
+    return this.props.settings.maxReplicationTraffic;
   }
 
   set value(x: number | null) {

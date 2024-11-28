@@ -10,7 +10,7 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Topic } from '../../../../state/restInterfaces';
+import type { Topic } from '../../../../state/restInterfaces';
 import DeleteRecordsModal from './DeleteRecordsModal';
 
 const testTopic: Topic = {

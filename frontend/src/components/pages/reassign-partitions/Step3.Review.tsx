@@ -9,18 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import { observer } from 'mobx-react';
-import { api } from '../../../state/backendApi';
-import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
-import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
-import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
-import { BrokerList } from '../../misc/BrokerList';
-import ReassignPartitions, { PartitionSelection } from './ReassignPartitions';
-import { uiSettings } from '../../../state/ui';
-import { BandwidthSlider } from './components/BandwidthSlider';
 import { Box, DataTable, Empty } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { Component } from 'react';
+import { api } from '../../../state/backendApi';
+import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
+import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
+import { BrokerList } from '../../misc/BrokerList';
+import type ReassignPartitions from './ReassignPartitions';
+import type { PartitionSelection } from './ReassignPartitions';
+import { BandwidthSlider } from './components/BandwidthSlider';
 
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
@@ -46,7 +47,7 @@ export class StepReview extends Component<{
   assignments: PartitionReassignmentRequest;
   reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
-  @observable unused: number = 0;
+  @observable unused = 0;
   constructor(p: any) {
     super(p);
     makeObservable(this);
@@ -54,7 +55,7 @@ export class StepReview extends Component<{
 
   render() {
     if (!api.topics) return DefaultSkeleton;
-    if (api.topicPartitions.size == 0) return <Empty />;
+    if (api.topicPartitions.size === 0) return <Empty />;
 
     return (
       <>
@@ -118,7 +119,7 @@ export class StepReview extends Component<{
                 <ReviewPartitionTable
                   topic={topic.topic}
                   topicPartitions={topic.selectedPartitions}
-                  assignments={this.props.assignments.topics.first((t) => t.topicName == topic.topicName)!}
+                  assignments={this.props.assignments.topics.first((t) => t.topicName === topic.topicName)!}
                 />
               ) : (
                 <>Error loading partitions</>
@@ -166,7 +167,7 @@ export class StepReview extends Component<{
       const partitionStats = t.selectedPartitions.map((p) => {
         const totalTraffic = p.replicaSize * p.numAddedBrokers;
 
-        if (totalTraffic == 0) {
+        if (totalTraffic === 0) {
           // Moving zero replicas or replicas with zero size won't take any time
           return {
             ...p,
@@ -207,7 +208,7 @@ export class StepReview extends Component<{
     const totalTraffic = trafficStats.sum((t) => t.partitionStats.sum((p) => p.totalTraffic));
 
     const isThrottled = settings.maxReplicationTraffic != null && settings.maxReplicationTraffic > 0;
-    const trafficThrottle = isThrottled ? prettyBytesOrNA(settings.maxReplicationTraffic ?? 0) + '/s' : 'disabled';
+    const trafficThrottle = isThrottled ? `${prettyBytesOrNA(settings.maxReplicationTraffic ?? 0)}/s` : 'disabled';
 
     const estimatedTime = !isThrottled
       ? '-'
@@ -220,7 +221,7 @@ export class StepReview extends Component<{
         title: 'Moved Replicas',
         value: this.props.topicsWithMoves.sum((t) => t.selectedPartitions.sum((p) => p.numAddedBrokers)),
       },
-      { title: 'Total Traffic', value: '~' + prettyBytesOrNA(totalTraffic) },
+      { title: 'Total Traffic', value: `~${prettyBytesOrNA(totalTraffic)}` },
       { title: 'Traffic Throttle', value: trafficThrottle },
       { title: 'Estimated Time', value: estimatedTime },
     ];
@@ -268,7 +269,7 @@ const ReviewPartitionTable = observer(
           {
             header: 'Brokers After',
             cell: ({ row: { original: partition } }) => {
-              const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId == partition.id);
+              const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
               if (partitionAssignments == null || partitionAssignments.replicas == null) return '??';
               return (
                 <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />

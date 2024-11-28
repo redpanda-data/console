@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { Base64, fromUint8Array } from 'js-base64';
 import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
-import { TopicMessage } from '../state/restInterfaces';
-import { Base64, fromUint8Array } from 'js-base64';
+import type { TopicMessage } from '../state/restInterfaces';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;
@@ -22,7 +22,7 @@ export class TimeSince {
   timestamp: number = Date.now();
 
   /** Reset timer back to 0 ms (or the given value). For example '1000' will set the timer as if it was started 1 second ago.  */
-  reset(to: number = 0) {
+  reset(to = 0) {
     this.timestamp = Date.now() - to;
   }
 
@@ -33,8 +33,8 @@ export class TimeSince {
 }
 
 export class Cooldown {
-  timestamp: number = 0; // time of last trigger
-  duration: number = 0; // how long the CD takes to charge
+  timestamp = 0; // time of last trigger
+  duration = 0; // how long the CD takes to charge
 
   /**
    * @description Create a cooldown with the given duration
@@ -66,7 +66,7 @@ export class Cooldown {
   }
 
   // 'Use' the cooldown. Check if ready, and if it is also trigger it
-  consume(force: boolean = false): boolean {
+  consume(force = false): boolean {
     if (this.timeLeft <= 0 || force) {
       this.timestamp = Date.now();
       return true;
@@ -86,8 +86,8 @@ export class Cooldown {
 }
 
 export class Timer {
-  target: number = 0;
-  duration: number = 0;
+  target = 0;
+  duration = 0;
 
   constructor(duration: number, initialState: 'started' | 'done' = 'started') {
     this.duration = duration;
@@ -127,8 +127,8 @@ export class Timer {
 export class DebugTimerStore {
   private static instance: DebugTimerStore;
   static get Instance() {
-    if (!this.instance) this.instance = new DebugTimerStore();
-    return this.instance;
+    if (!DebugTimerStore.instance) DebugTimerStore.instance = new DebugTimerStore();
+    return DebugTimerStore.instance;
   }
 
   @observable secondCounter = 0;
@@ -205,7 +205,7 @@ const collator = new Intl.Collator(undefined, {
   sensitivity: 'base',
 });
 export function equalsIgnoreCase(a: string, b: string) {
-  return collator.compare(a, b) == 0;
+  return collator.compare(a, b) === 0;
 }
 
 type FoundProperty = { propertyName: string; path: string[]; value: any };
@@ -253,7 +253,7 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
       const childResult = collectElementsRecursive(ctx, value);
       ctx.currentPath.pop();
 
-      if (childResult == 'abort') return 'abort';
+      if (childResult === 'abort') return 'abort';
     }
   }
 
@@ -279,19 +279,19 @@ export function collectElements2(
 
   for (let i = 0; i < path.length; i++) {
     const segment = path[i];
-    const isLast = i == path.length - 1;
+    const isLast = i === path.length - 1;
     const targetList = isLast ? results : nextExplore;
 
     for (const foundProp of currentExplore) {
       const currentObj = foundProp.value;
 
       switch (segment) {
-        case '**':
+        case '**': {
           // And all their nested objects are a result
           const allNested = collectElements(
             currentObj,
             (_key, _path, value) => {
-              return typeof value == 'object';
+              return typeof value === 'object';
             },
             false,
           );
@@ -310,12 +310,13 @@ export function collectElements2(
           });
 
           break;
+        }
 
         case '*':
           // Explore all properties
           for (const key in currentObj) {
             const value = currentObj[key];
-            if (value == null || typeof value == 'function') continue;
+            if (value == null || typeof value === 'function') continue;
 
             targetList.push({
               path: [...foundProp.path, key],
@@ -328,7 +329,7 @@ export function collectElements2(
           // Some user defined string
           for (const key in currentObj) {
             const value = currentObj[key];
-            if (value == null || typeof value == 'function') continue;
+            if (value == null || typeof value === 'function') continue;
 
             const match = isMatch(segment, key, value);
             if (match) {
@@ -397,7 +398,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
     const value = obj[key];
 
     ctx.currentPath.push(key);
-    const currentFullPath = isArray ? pathToHere + '[*]' : pathToHere + `.${key}`;
+    const currentFullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
     ctx.currentFullPath = currentFullPath;
 
     if (!isArray) {
@@ -420,13 +421,13 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
     if (typeof value === 'object' && value != null) {
       const childResult = getAllKeysRecursive(ctx, value);
 
-      if (childResult == 'abort') result = 'abort';
+      if (childResult === 'abort') result = 'abort';
     }
 
     ctx.currentPath.pop();
     ctx.currentFullPath = currentFullPath;
 
-    if (result == 'abort') break;
+    if (result === 'abort') break;
   }
 
   ctx.currentFullPath = pathToHere;
@@ -454,7 +455,7 @@ export function groupConsecutive(ar: number[]): number[][] {
 
     if (group) {
       const last = group[group.length - 1];
-      if (last == cur - 1) {
+      if (last === cur - 1) {
         // We can extend the group
         group.push(cur);
         continue;
@@ -467,8 +468,8 @@ export function groupConsecutive(ar: number[]): number[][] {
   return groups;
 }
 
-export const prettyBytesOrNA = function (n: number) {
-  if (!isFinite(n) || n < 0) return 'N/A';
+export const prettyBytesOrNA = (n: number) => {
+  if (!Number.isFinite(n) || n < 0) return 'N/A';
   return prettyBytes(n);
 };
 
@@ -503,12 +504,12 @@ export type PrettyValueOptions = {
 };
 export const UInt64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
 function isUInt64Maximum(str: string) {
-  if (str == UInt64Max) return true;
-  if (str == String(Number(UInt64Max))) return true;
+  if (str === UInt64Max) return true;
+  if (str === String(Number(UInt64Max))) return true;
   return false;
 }
 
-export const prettyBytes = function (n: number | string | null | undefined, options?: PrettyValueOptions) {
+export const prettyBytes = (n: number | string | null | undefined, options?: PrettyValueOptions) => {
   if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
   if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) return 'Infinite';
@@ -518,9 +519,9 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
       // string
       if (n === '') return 'N/A'; // empty -> N/A
 
-      n = parseFloat(String(n));
+      n = Number.parseFloat(String(n));
 
-      if (!isFinite(n)) return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(n)) return String(n); // "NaN" or "Infinity"
 
       // number parsed, fall through
     } else {
@@ -533,10 +534,10 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
   return prettyBytesOriginal(n, { binary: true });
 };
 
-export const prettyMilliseconds = function (
+export const prettyMilliseconds = (
   n: number | string,
   options?: prettyMillisecondsOriginal.Options & PrettyValueOptions,
-) {
+) => {
   if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
   if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) return 'Infinite';
@@ -546,9 +547,9 @@ export const prettyMilliseconds = function (
       // string
       if (n === '') return 'N/A'; // empty -> N/A
 
-      n = parseFloat(String(n));
+      n = Number.parseFloat(String(n));
 
-      if (!isFinite(n)) return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(n)) return String(n); // "NaN" or "Infinity"
 
       // number parsed, fall through
     } else {
@@ -556,7 +557,7 @@ export const prettyMilliseconds = function (
       return 'NaN';
     }
   } else {
-    if (!isFinite(n)) return 'N/A';
+    if (!Number.isFinite(n)) return 'N/A';
   }
 
   // n is a finite number
@@ -567,13 +568,13 @@ const between = (min: number, max: number) => (num: number) => num >= min && num
 const isK = between(1000, 1000000);
 const isM = between(1000000, 1000000000);
 
-const isInfinite = (num: number) => !isFinite(num);
+const isInfinite = (num: number) => !Number.isFinite(num);
 const toK = (num: number) => `${(num / 1000).toFixed(1)}k`;
 const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
 const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
 
 export function prettyNumber(num: number) {
-  if (isNaN(num) || isInfinite(num) || num < 1000) return String(num);
+  if (Number.isNaN(num) || isInfinite(num) || num < 1000) return String(num);
   if (isK(num)) return toK(num);
   if (isM(num)) return toM(num);
   return toG(num);
@@ -581,7 +582,7 @@ export function prettyNumber(num: number) {
 
 export function fromDecimalSeparated(str: string): number {
   if (!str || str === '') return 0;
-  return parseInt(str.replace(',', ''));
+  return Number.parseInt(str.replace(',', ''));
 }
 
 export function toDecimalSeparated(num: number): string {
@@ -703,7 +704,7 @@ export function base64ToHexString(base64: string): string {
     let hex = '';
     for (let i = 0; i < bytes.length; i++) {
       const b = bytes[i].toString(16);
-      hex += b.length === 1 ? '0' + b : b;
+      hex += b.length === 1 ? `0${b}` : b;
 
       if (i < bytes.length - 1) hex += ' ';
     }
@@ -719,7 +720,7 @@ export function uint8ArrayToHexString(ar: Uint8Array): string {
     let hex = '';
     for (let i = 0; i < ar.length; i++) {
       const b = ar[i].toString(16);
-      hex += b.length === 1 ? '0' + b : b;
+      hex += b.length === 1 ? `0${b}` : b;
 
       if (i < ar.length - 1) hex += ' ';
     }
@@ -741,7 +742,7 @@ export function setHeader(init: RequestInit, name: string, value: string) {
     init.headers = [[name, value]];
   } else if (Array.isArray(init.headers)) {
     init.headers.push([name, value]);
-  } else if (typeof init.headers.set == 'function') {
+  } else if (typeof init.headers.set === 'function') {
     init.headers.set(name, value);
   } else {
     // Record<string, string>
@@ -750,7 +751,10 @@ export function setHeader(init: RequestInit, name: string, value: string) {
 }
 
 // very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
-export function retrier<T>(operation: () => Promise<T>, { attempts = Infinity, delayTime = 100 }): Promise<T> {
+export function retrier<T>(
+  operation: () => Promise<T>,
+  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 },
+): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     return operation()
       .then(resolve)
@@ -786,10 +790,9 @@ export function substringWithEllipsis(input: string, maxLength: number): string 
     // Subtract 3 from maxLength to accommodate the ellipsis
     // Ensure maxLength is at least 4 to avoid negative substring lengths
     const effectiveLength = Math.max(maxLength - 3, 1);
-    return input.substring(0, effectiveLength) + '...';
-  } else {
-    return input;
+    return `${input.substring(0, effectiveLength)}...`;
   }
+  return input;
 }
 
 // If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.

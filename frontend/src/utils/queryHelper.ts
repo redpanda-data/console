@@ -26,7 +26,7 @@ export const objToQuery = (obj: { [key: string]: any }) => {
 
     query.append(k, String(v));
   }
-  return '?' + query.toString();
+  return `?${query.toString()}`;
 };
 
 // edit the current search query,
@@ -37,7 +37,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
 
   const newQuery = objToQuery(currentObj);
 
-  if (window.location.search != newQuery) {
+  if (window.location.search !== newQuery) {
     //console.log(`changing search: (${window.location.search}) -> (${search})`);
     appGlobal.history.location.search = newQuery;
     appGlobal.history.replace(appGlobal.history.location);

@@ -9,27 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, useRef, useState } from 'react';
-import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
-import { uiSettings } from '../../../state/ui';
-import { editQuery } from '../../../utils/queryHelper';
-import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
-import { renderLogDirSummary } from '../../misc/common';
-import { PageComponent, PageInitHelper } from '../Page';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
-import createAutoModal from '../../../utils/createAutoModal';
-import {
-  CreateTopicModalContent,
-  CreateTopicModalState,
-  RetentionSizeUnit,
-  RetentionTimeUnit,
-} from './CreateTopicModal/CreateTopicModal';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
 import {
   Alert,
   AlertDialog,
@@ -52,14 +32,34 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { type FC, useRef, useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { Statistic } from '../../misc/Statistic';
-import { Link } from 'react-router-dom';
-import SearchBar from '../../misc/SearchBar';
-import usePaginationParams from '../../../hooks/usePaginationParams';
-import { onPaginationChange } from '../../../utils/pagination';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
+import { Link } from 'react-router-dom';
 import colors from '../../../colors';
+import usePaginationParams from '../../../hooks/usePaginationParams';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { type Topic, type TopicAction, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import createAutoModal from '../../../utils/createAutoModal';
+import { onPaginationChange } from '../../../utils/pagination';
+import { editQuery } from '../../../utils/queryHelper';
+import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import SearchBar from '../../misc/SearchBar';
+import Section from '../../misc/Section';
+import { Statistic } from '../../misc/Statistic';
+import { renderLogDirSummary } from '../../misc/common';
+import { PageComponent, type PageInitHelper } from '../Page';
+import {
+  CreateTopicModalContent,
+  type CreateTopicModalState,
+  type RetentionSizeUnit,
+  type RetentionTimeUnit,
+} from './CreateTopicModal/CreateTopicModal';
 
 @observer
 class TopicList extends PageComponent {
@@ -91,14 +91,14 @@ class TopicList extends PageComponent {
   componentDidMount() {
     // 1. use 'q' parameter for quick search (if it exists)
     editQuery((query) => {
-      if (query['q']) uiSettings.topicList.quickSearch = String(query['q']);
+      if (query.q) uiSettings.topicList.quickSearch = String(query.q);
     });
 
     // 2. whenever the quick search box changes, update the url
     this.quickSearchReaction = autorun(() => {
       editQuery((query) => {
         const q = String(uiSettings.topicList.quickSearch);
-        if (q) query['q'] = q;
+        if (q) query.q = q;
       });
     });
   }
@@ -216,8 +216,8 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
       onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
         uiSettings.topicList.pageSize = pageSize;
         editQuery((query) => {
-          query['page'] = String(pageIndex);
-          query['pageSize'] = String(pageSize);
+          query.page = String(pageIndex);
+          query.pageSize = String(pageSize);
         });
       })}
       columns={[
@@ -260,7 +260,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
               </Flex>
             );
           },
-          size: Infinity,
+          size: Number.POSITIVE_INFINITY,
         },
         {
           header: 'Partitions',
@@ -324,12 +324,12 @@ const iconClosedEye = (
 const renderName = (topic: Topic) => {
   const actions = topic.allowedActions;
 
-  if (!actions || actions[0] == 'all') return topic.topicName; // happens in non-business version
+  if (!actions || actions[0] === 'all') return topic.topicName; // happens in non-business version
 
   let missing = 0;
   for (const a of TopicActions) if (!actions.includes(a)) missing++;
 
-  if (missing == 0) return topic.topicName; // everything is allowed
+  if (missing === 0) return topic.topicName; // everything is allowed
 
   // There's at least one action the user can't do
   // Show a table of what they can't do
@@ -439,7 +439,7 @@ function ConfirmDeletionModal({
               onClick={() => {
                 setDeletionPending(true);
                 api
-                  .deleteTopic(topicToDelete!.topicName) // modal is not shown when topic is null
+                  .deleteTopic(topicToDelete?.topicName) // modal is not shown when topic is null
                   .then(finish)
                   .catch(setError)
                   .finally(() => {
@@ -465,7 +465,7 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
     <Tooltip placement="left" label={message} hasArrow>
       {React.cloneElement(button, {
         disabled: true,
-        className: (button.props.className ?? '') + ' disabled',
+        className: `${button.props.className ?? ''} disabled`,
         onClick: undefined,
       })}
     </Tooltip>
@@ -494,34 +494,34 @@ function makeCreateTopicModal(parent: TopicList) {
   };
 
   const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
-    if (unit == 'default') return undefined;
+    if (unit === 'default') return undefined;
 
-    if (value == undefined)
+    if (value === undefined)
       throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
 
-    if (unit == 'ms') return value;
-    if (unit == 'seconds') return value * 1000;
-    if (unit == 'minutes') return value * 1000 * 60;
-    if (unit == 'hours') return value * 1000 * 60 * 60;
-    if (unit == 'days') return value * 1000 * 60 * 60 * 24;
-    if (unit == 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
-    if (unit == 'years') return value * 1000 * 60 * 60 * 24 * 365;
+    if (unit === 'ms') return value;
+    if (unit === 'seconds') return value * 1000;
+    if (unit === 'minutes') return value * 1000 * 60;
+    if (unit === 'hours') return value * 1000 * 60 * 60;
+    if (unit === 'days') return value * 1000 * 60 * 60 * 24;
+    if (unit === 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
+    if (unit === 'years') return value * 1000 * 60 * 60 * 24 * 365;
 
-    if (unit == 'infinite') return -1;
+    if (unit === 'infinite') return -1;
   };
   const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
-    if (unit == 'default') return undefined;
+    if (unit === 'default') return undefined;
 
-    if (value == undefined)
+    if (value === undefined)
       throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
 
-    if (unit == 'Bit') return value;
-    if (unit == 'KiB') return value * 1024;
-    if (unit == 'MiB') return value * 1024 * 1024;
-    if (unit == 'GiB') return value * 1024 * 1024 * 1024;
-    if (unit == 'TiB') return value * 1024 * 1024 * 1024 * 1024;
+    if (unit === 'Bit') return value;
+    if (unit === 'KiB') return value * 1024;
+    if (unit === 'MiB') return value * 1024 * 1024;
+    if (unit === 'GiB') return value * 1024 * 1024 * 1024;
+    if (unit === 'TiB') return value * 1024 * 1024 * 1024 * 1024;
 
-    if (unit == 'infinite') return -1;
+    if (unit === 'infinite') return -1;
   };
 
   return createAutoModal<void, CreateTopicModalState>({
@@ -598,11 +598,11 @@ function makeCreateTopicModal(parent: TopicList) {
 
       for (const x of state.additionalConfig) setVal(x.name, x.value);
 
-      if (state.retentionTimeUnit != 'default')
+      if (state.retentionTimeUnit !== 'default')
         setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
-      if (state.retentionSizeUnit != 'default')
+      if (state.retentionSizeUnit !== 'default')
         setVal('retention.bytes', getRetentionSizeFinalValue(state.retentionSize, state.retentionSizeUnit));
-      if (state.minInSyncReplicas != undefined) setVal('min.insync.replicas', state.minInSyncReplicas);
+      if (state.minInSyncReplicas !== undefined) setVal('min.insync.replicas', state.minInSyncReplicas);
 
       setVal('cleanup.policy', state.cleanupPolicy);
 

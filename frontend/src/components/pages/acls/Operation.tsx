@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { CSSProperties, FC, ReactElement, ReactNode } from 'react';
-import { observer } from 'mobx-react';
-import { AclOperation, AclStrPermission } from '../../../state/restInterfaces';
-import { SingleSelect } from '../../misc/Select';
 import { CheckIcon, CloseIcon, MinusIcon } from '@chakra-ui/icons';
 import { Flex } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import type { CSSProperties, FC, ReactElement, ReactNode } from 'react';
+import { AclOperation, type AclStrPermission } from '../../../state/restInterfaces';
 import { Label } from '../../../utils/tsxUtils';
+import { SingleSelect } from '../../misc/Select';
 
 const icons = {
   minus: <MinusIcon color="grey" />,
@@ -43,7 +43,7 @@ export const Operation = observer(
   }) => {
     const disabled = p.disabled ?? false;
 
-    const operationName = typeof p.operation == 'string' ? p.operation : AclOperation[p.operation];
+    const operationName = typeof p.operation === 'string' ? p.operation : AclOperation[p.operation];
 
     return (
       <Label text={operationName}>

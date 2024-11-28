@@ -9,21 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
 import { observer } from 'mobx-react';
+import React, { Component } from 'react';
 
-import { api } from '../../../state/backendApi';
-import { PageComponent, PageInitHelper } from '../Page';
-import { GroupDescription, GroupMemberDescription } from '../../../state/restInterfaces';
-import { action, computed, makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
-import { Button, DefaultSkeleton, IconButton, numberToThousandsString, OptionGroup } from '../../../utils/tsxUtils';
-import { uiSettings } from '../../../state/ui';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
-import { DeleteOffsetsModal, EditOffsetsModal, GroupOffset } from './Modals';
-import type { GroupDeletingMode } from './Modals';
-import { ShortNum } from '../../misc/ShortNum';
-import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
@@ -39,9 +28,7 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
-import PageContent from '../../misc/PageContent';
-import { Features } from '../../../state/supportedFeatures';
-import { Statistic } from '../../misc/Statistic';
+import { action, computed, makeObservable, observable } from 'mobx';
 import {
   MdCheckCircleOutline,
   MdHourglassBottom,
@@ -50,6 +37,19 @@ import {
   MdOutlineQuiz,
   MdOutlineWarningAmber,
 } from 'react-icons/md';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import type { GroupDescription, GroupMemberDescription } from '../../../state/restInterfaces';
+import { Features } from '../../../state/supportedFeatures';
+import { uiSettings } from '../../../state/ui';
+import { Button, DefaultSkeleton, IconButton, OptionGroup, numberToThousandsString } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import { ShortNum } from '../../misc/ShortNum';
+import { Statistic } from '../../misc/Statistic';
+import { PageComponent, type PageInitHelper } from '../Page';
+import AclList from '../topics/Tab.Acl/AclList';
+import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals';
+import type { GroupDeletingMode } from './Modals';
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -72,7 +72,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     p.title = this.props.groupId;
     p.addBreadcrumb('Consumer Groups', '/groups');
     if (group)
-      p.addBreadcrumb(group, '/' + group, undefined, {
+      p.addBreadcrumb(group, `/${group}`, undefined, {
         canBeCopied: true,
         canBeTruncated: true,
       });
@@ -127,7 +127,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         </div>
 
         {/* Main Content */}
-        {this.viewMode == 'member' ? (
+        {this.viewMode === 'member' ? (
           <GroupByMembers group={group} onlyShowPartitionsWithLag={this.filterMode === 'withLag'} />
         ) : (
           <GroupByTopics
@@ -146,7 +146,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
   render() {
     // Get info about the group
-    if (api.consumerGroups.size == 0) return DefaultSkeleton;
+    if (api.consumerGroups.size === 0) return DefaultSkeleton;
     const group = this.group;
     if (!group) return DefaultSkeleton;
 
@@ -258,7 +258,7 @@ class GroupByTopics extends Component<{
     const lagsFlat = topicLags.flatMap((topicLag) =>
       topicLag.partitionOffsets.map((partLag) => {
         const assignedMember = allAssignments.find(
-          (e) => e.topicName == topicLag.topic && e.partitions.includes(partLag.partitionId),
+          (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId),
         );
 
         return {
@@ -287,7 +287,7 @@ class GroupByTopics extends Component<{
 
       if (p.onlyShowPartitionsWithLag) g.partitions.removeAll((e) => e.lag === 0);
 
-      if (g.partitions.length == 0) return null;
+      if (g.partitions.length === 0) return null;
 
       return {
         heading: (
@@ -365,7 +365,7 @@ class GroupByTopics extends Component<{
                 accessorKey: 'partitionId',
               },
               {
-                size: Infinity,
+                size: Number.POSITIVE_INFINITY,
                 header: 'Assigned Member',
                 accessorKey: 'id',
                 cell: ({
@@ -446,7 +446,7 @@ class GroupByTopics extends Component<{
         : undefined; // more than one -> collapse
 
     const nullEntries = topicEntries.filter((e) => e == null).length;
-    if (topicEntries.length == 0 || topicEntries.length == nullEntries) {
+    if (topicEntries.length === 0 || topicEntries.length === nullEntries) {
       return (
         <Empty
           description={
@@ -476,26 +476,24 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
       .map((m) => {
         const assignments = m.assignments;
 
-        const assignmentsFlat = assignments
-          .map((a) =>
-            a.partitionIds.map((id) => {
-              const topicLag = topicLags.find((t) => t.topic == a.topicName);
-              const partLag = topicLag?.partitionOffsets.find((p) => p.partitionId == id)?.lag;
-              return {
-                topicName: a.topicName,
-                partitionId: id,
-                partitionLag: partLag ?? 0,
-              };
-            }),
-          )
-          .flat();
+        const assignmentsFlat = assignments.flatMap((a) =>
+          a.partitionIds.map((id) => {
+            const topicLag = topicLags.find((t) => t.topic === a.topicName);
+            const partLag = topicLag?.partitionOffsets.find((p) => p.partitionId === id)?.lag;
+            return {
+              topicName: a.topicName,
+              partitionId: id,
+              partitionLag: partLag ?? 0,
+            };
+          }),
+        );
 
         const totalLag = assignmentsFlat.sum((t) => t.partitionLag ?? 0);
         const totalPartitions = assignmentsFlat.length;
 
         if (p.onlyShowPartitionsWithLag) assignmentsFlat.removeAll((e) => e.partitionLag === 0);
 
-        if (assignmentsFlat.length == 0) return null;
+        if (assignmentsFlat.length === 0) return null;
 
         return {
           heading: (
@@ -561,12 +559,12 @@ class GroupByMembers extends Component<{ group: GroupDescription; onlyShowPartit
       });
 
     const defaultExpandIndex: number | undefined =
-      p.group.members.length == 1
+      p.group.members.length === 1
         ? 0 // if only one entry, expand it
         : undefined; // more than one -> collapse
 
     const nullEntries = memberEntries.filter((e) => e == null).length;
-    if (memberEntries.length == 0 || memberEntries.length == nullEntries) {
+    if (memberEntries.length === 0 || memberEntries.length === nullEntries) {
       return (
         <Empty
           description={
@@ -597,7 +595,7 @@ const renderMergedID = (id?: string, clientId?: string) => {
     );
   }
   // A client might be connected but it hasn't any assignments yet because it just joined the group
-  else if (clientId) {
+  if (clientId) {
     return <span className="consumerGroupCompleteID">{clientId ?? id ?? ''}</span>;
   }
 
@@ -664,7 +662,7 @@ export const GroupState = (p: { group: GroupDescription }) => {
 };
 const ProtocolType = (p: { group: GroupDescription }) => {
   const protocol = p.group.protocolType;
-  if (protocol == 'consumer') return null;
+  if (protocol === 'consumer') return null;
 
   return <Statistic title="Protocol" value={protocol} />;
 };

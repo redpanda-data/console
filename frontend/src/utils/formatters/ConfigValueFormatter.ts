@@ -25,10 +25,8 @@ export function formatConfigValue(
       suffix = '';
       break;
     case 'both':
-      suffix = ' (' + value + ')';
+      suffix = ` (${value})`;
       break;
-
-    case 'raw':
     default:
       return value;
   }
@@ -36,7 +34,7 @@ export function formatConfigValue(
   //
   // String
   //
-  if (value && (name == 'advertised.listeners' || name == 'listener.security.protocol.map' || name == 'listeners')) {
+  if (value && (name === 'advertised.listeners' || name === 'listener.security.protocol.map' || name === 'listeners')) {
     const listeners = value.split(',');
     return listeners.join('\n');
   }
@@ -45,14 +43,14 @@ export function formatConfigValue(
   // Numeric
   //
   const num = Number(value);
-  if (value == null || value == '' || value == '0' || Number.isNaN(num)) return value;
+  if (value == null || value === '' || value === '0' || Number.isNaN(num)) return value;
 
   // Special cases
-  if (name == 'flush.messages' && num > Math.pow(2, 60)) return 'Never' + suffix; // messages between each fsync
+  if (name === 'flush.messages' && num > 2 ** 60) return `Never${suffix}`; // messages between each fsync
 
   if (name.endsWith('.bytes.per.second')) {
-    if (num >= Number.MAX_SAFE_INTEGER) return 'Infinite' + suffix;
-    return prettyBytesOrNA(num) + '/s' + suffix;
+    if (num >= Number.MAX_SAFE_INTEGER) return `Infinite${suffix}`;
+    return `${prettyBytesOrNA(num)}/s${suffix}`;
   }
 
   // Time
@@ -73,7 +71,7 @@ export function formatConfigValue(
   ];
   for (const [ext, msFactor] of timeExtensions) {
     if (!name.endsWith(ext)) continue;
-    if (num > Number.MAX_SAFE_INTEGER || num == -1) return 'Infinite' + suffix;
+    if (num > Number.MAX_SAFE_INTEGER || num === -1) return `Infinite${suffix}`;
 
     const ms = num * msFactor;
     return prettyMilliseconds(ms, { verbose: true, unitCount: 2 }) + suffix;
@@ -89,14 +87,14 @@ export function formatConfigValue(
   ) {
     const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
     const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up
-    if (value == uint64Max || num >= uint64Exp || num == -1) return 'Infinite' + suffix;
+    if (value === uint64Max || num >= uint64Exp || num === -1) return `Infinite${suffix}`;
 
     return prettyBytesOrNA(num) + suffix;
   }
 
   // Ratio
   if (name.endsWith('.ratio')) {
-    return (num * 100).toLocaleString() + '%';
+    return `${(num * 100).toLocaleString()}%`;
   }
 
   return value;

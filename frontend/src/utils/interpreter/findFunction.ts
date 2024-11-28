@@ -55,27 +55,28 @@ function findGeneric(self: any, arg1: any, arg2: any, returnFirstResult: boolean
   const ignoreCase = Boolean(arg2);
   const caseSensitive = !ignoreCase;
 
-  if (typeof arg1 == 'string') {
+  if (typeof arg1 === 'string') {
     // findByName
     const propertyName = String(arg1);
     return findByName(self, propertyName, caseSensitive, returnFirstResult);
-  } else if (typeof arg1 == 'function') {
+  }
+  if (typeof arg1 === 'function') {
     // findByCallback
     const isMatch = arg1;
     return findByCallback(self, isMatch, returnFirstResult);
-  } else if (typeof arg1 == 'object') {
+  }
+  if (typeof arg1 === 'object') {
     // findByPattern
     const pattern = arg1;
     return findByPattern(self, pattern, caseSensitive, returnFirstResult);
-  } else {
-    throw new Error('first parameter of find() must be: string, or function, or pattern object');
   }
+  throw new Error('first parameter of find() must be: string, or function, or pattern object');
 }
 
 function findByName(obj: any, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): any[] {
   const isMatch = caseSensitive
-    ? (_: any, prop: string | number) => prop == propertyName
-    : (_: any, prop: string | number) => String(prop).toUpperCase() == propertyName.toUpperCase();
+    ? (_: any, prop: string | number) => prop === propertyName
+    : (_: any, prop: string | number) => String(prop).toUpperCase() === propertyName.toUpperCase();
 
   return findByCallback(obj, isMatch, returnFirstResult);
 }
@@ -115,7 +116,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
       // don't require objects to have the same functions
       // todo: later we might want to have special functions that can compare against the actual value!
       //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
-      if (typeof patternValue == 'function') continue;
+      if (typeof patternValue === 'function') continue;
 
       const objValue = (obj as any)[k];
       log(`  [${k}]`);
@@ -128,19 +129,19 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
       if (typeof objValue === 'string') {
         // Compare string
         if (caseSensitive) {
-          if (objValue != patternValue) {
+          if (objValue !== patternValue) {
             log(`  strings don't match (case sensitive): "${objValue}" != "${patternValue}"`);
             return false;
           }
         } else {
-          if (String(objValue).toUpperCase() != String(patternValue).toUpperCase()) {
+          if (String(objValue).toUpperCase() !== String(patternValue).toUpperCase()) {
             log(`  strings don't match (ignore case): "${objValue}" != "${patternValue}"`);
             return false;
           }
         }
       } else if (typeof objValue === 'boolean' || typeof objValue === 'number' || typeof objValue === 'undefined') {
         // Compare primitive
-        if (objValue != patternValue) {
+        if (objValue !== patternValue) {
           log(`  primitives not equal: ${objValue} != ${patternValue}`);
           return false;
         }

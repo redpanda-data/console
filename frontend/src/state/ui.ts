@@ -370,7 +370,7 @@ if (storedSettingsJson) {
         const newTag: PreviewTagV2 = {
           id: tag.id,
           isActive: tag.isActive,
-          pattern: '**.' + tag.text,
+          pattern: `**.${tag.text}`,
           customName: tag.customName,
           searchInMessageHeaders: false,
           searchInMessageKey: false,
@@ -400,7 +400,7 @@ autorun(
 
 // Auto save (on exit)
 window.addEventListener('visibilitychange', () => {
-  if (document.visibilityState == 'visible') return; // only save on close, minimize, tab-switch
+  if (document.visibilityState === 'visible') return; // only save on close, minimize, tab-switch
 
   const json = JSON.stringify(uiSettings);
   localStorage.setItem(settingsName, json);

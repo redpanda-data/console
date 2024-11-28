@@ -25,12 +25,12 @@ import './assets/fonts/kumbh-sans.css';
 
 import { appGlobal } from './state/appGlobal';
 
-import { SetConfigArguments, setup } from './config';
-import HistorySetter from './components/misc/HistorySetter';
-import AppContent from './components/layout/Content';
-import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
+import HistorySetter from './components/misc/HistorySetter';
+import { type SetConfigArguments, setup } from './config';
 
 export interface EmbeddedProps extends SetConfigArguments {
   /**

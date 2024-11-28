@@ -1,11 +1,11 @@
 import { observer } from 'mobx-react';
-import { Component, ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
 import { Route, Switch } from 'react-router-dom';
 import { api } from '../state/backendApi';
-import { UserData } from '../state/restInterfaces';
+import type { UserData } from '../state/restInterfaces';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
-import { AppFeatures, getBasePath, IsDev } from '../utils/env';
+import { AppFeatures, IsDev, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
@@ -27,7 +27,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
           />
           {/* Default View */}
           {this.props.children}
-          <Route path="*"></Route>
+          <Route path="*" />
         </Switch>
         <FeatureErrorCheck />
       </>
@@ -39,15 +39,15 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
 
     const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
     const path = window.location.pathname.removePrefix(getBasePath() ?? '');
-    const devPrint = function (str: string) {
-      if (IsDev) console.log(`loginHandling (${path}): ` + str);
+    const devPrint = (str: string) => {
+      if (IsDev) console.log(`loginHandling (${path}): ${str}`);
     };
 
     if (path.startsWith('/login')) return null; // already in login process, don't interrupt!
 
     if (api.userData === null && !path.startsWith('/login')) {
       devPrint('known not logged in, hard redirect');
-      window.location.pathname = getBasePath() + '/login'; // definitely not logged in, and in wrong url: hard redirect!
+      window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
       return preLogin;
     }
 
@@ -58,11 +58,11 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
         if (r.ok) {
           devPrint('user fetched');
           api.userData = (await r.json()) as UserData;
-        } else if (r.status == 401) {
+        } else if (r.status === 401) {
           // unauthorized / not logged in
           devPrint('not logged in');
           api.userData = null;
-        } else if (r.status == 404) {
+        } else if (r.status === 404) {
           // not found: server must be non-business version
           devPrint(
             'frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging',
@@ -94,10 +94,9 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
       });
 
       return preLogin;
-    } else {
-      if (!uiState.isUsingDebugUserLogin) devPrint('user is set: ' + JSON.stringify(api.userData));
-      return null;
     }
+    if (!uiState.isUsingDebugUserLogin) devPrint(`user is set: ${JSON.stringify(api.userData)}`);
+    return null;
   }
 }
 

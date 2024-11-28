@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
+import { Component } from 'react';
+import type { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-data/ui';
+import { computed, makeObservable } from 'mobx';
+import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
-import { appGlobal } from '../../../state/appGlobal';
-import { computed, makeObservable } from 'mobx';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import TopicConfigurationEditor from './TopicConfiguration';
-import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-data/ui';
 
 // todo: can we assume that config values for time and bytes will always be provided in the smallest units?
 // or is it possible we'll get something like 'segment.hours' instead of 'segment.ms'?
@@ -64,11 +64,12 @@ export class TopicConfiguration extends Component<{
           return 0;
         case 'alphabetical':
           return a.name.localeCompare(b.name);
-        case 'changedFirst':
-          if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
+        case 'changedFirst': {
+          if (uiSettings.topicList.propsOrder !== 'changedFirst') return 0;
           const v1 = a.isExplicitlySet ? 1 : 0;
           const v2 = b.isExplicitlySet ? 1 : 0;
           return v2 - v1;
+        }
         default:
           return 0;
       }
@@ -78,9 +79,9 @@ export class TopicConfiguration extends Component<{
   handleError(): JSX.Element | null {
     const config = api.topicConfig.get(this.props.topic.topicName);
     if (config === undefined) return DefaultSkeleton; // still loading
-    if (config && config.error) return this.renderKafkaError(this.props.topic.topicName, config.error);
+    if (config?.error) return this.renderKafkaError(this.props.topic.topicName, config.error);
 
-    if (config === null || config.configEntries.length == 0) {
+    if (config === null || config.configEntries.length === 0) {
       // config===null should never happen, so we catch it together with empty
       return <Empty description="No config entries" />;
     }

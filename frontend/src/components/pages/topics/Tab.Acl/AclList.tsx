@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { observer } from 'mobx-react';
+import React from 'react';
 import { toJson } from '../../../../utils/jsonUtils';
 
+import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
 import type {
   AclRule,
   AclStrOperation,
@@ -21,7 +22,6 @@ import type {
   AclStrResourceType,
   GetAclOverviewResponse,
 } from '../../../../state/restInterfaces';
-import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
 
 type Acls = GetAclOverviewResponse | null | undefined;
 
@@ -33,13 +33,12 @@ function flatResourceList(store: Acls) {
   const acls = store;
   if (acls?.aclResources == null) return [];
   const flatResources = acls.aclResources
-    .map((res) => res.acls.map((rule) => ({ ...res, ...rule })))
-    .flat()
+    .flatMap((res) => res.acls.map((rule) => ({ ...res, ...rule })))
     .map((x) => ({ ...x, eqKey: toJson(x) }));
   return flatResources;
 }
 
-export default observer(function ({ acl }: AclListProps) {
+export default observer(({ acl }: AclListProps) => {
   const resources = flatResourceList(acl);
 
   return (

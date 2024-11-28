@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { FC } from 'react';
-import { Text, ConfirmItemDeleteModal } from '@redpanda-data/ui';
+import { ConfirmItemDeleteModal, Text } from '@redpanda-data/ui';
+import type { FC } from 'react';
 
 export const DeleteRoleConfirmModal: FC<{
   roleName: string;
@@ -20,7 +20,7 @@ export const DeleteRoleConfirmModal: FC<{
 }> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => {
   return (
     <ConfirmItemDeleteModal
-      heading={'Delete role ' + roleName}
+      heading={`Delete role ${roleName}`}
       itemType="role"
       trigger={buttonEl}
       primaryActionLabel="Delete"

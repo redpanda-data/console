@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import AclList from './AclList';
 import { observable } from 'mobx';
-import {
+import React from 'react';
+import type {
   AclStrOperation,
   AclStrPermission,
   AclStrResourceType,
   GetAclOverviewResponse,
 } from '../../../../state/restInterfaces';
+import AclList from './AclList';
 
 it('renders an empty table when no data is present', () => {
   const store = observable({

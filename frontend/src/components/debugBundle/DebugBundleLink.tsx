@@ -1,12 +1,12 @@
+import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
 import React from 'react';
-import {
+import { MdDeleteOutline } from 'react-icons/md';
+import { config } from '../../config';
+import type {
   DebugBundleStatus,
   GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
 } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import { config } from '../../config';
 import { api } from '../../state/backendApi';
-import { Box, Text, IconButton, Link, Flex, Tooltip } from '@redpanda-data/ui';
-import { MdDeleteOutline } from 'react-icons/md';
 
 const DebugBundleLink = ({
   statuses,

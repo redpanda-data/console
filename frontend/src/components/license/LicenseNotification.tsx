@@ -1,5 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
+import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import {
   getPrettyTimeToExpiration,
@@ -8,8 +10,6 @@ import {
   licenseSoonToExpire,
   prettyLicenseType,
 } from './licenseUtils';
-import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
-import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 
 export const LicenseNotification = observer(() => {
   const location = useLocation();

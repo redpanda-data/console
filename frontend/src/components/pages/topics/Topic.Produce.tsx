@@ -1,3 +1,4 @@
+import { proto3 } from '@bufbuild/protobuf';
 import {
   Alert,
   Box,
@@ -7,8 +8,8 @@ import {
   FormControl,
   Grid,
   GridItem,
-  Heading,
   HStack,
+  Heading,
   IconButton,
   Input,
   Link,
@@ -16,31 +17,30 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
-import { PageComponent, PageInitHelper } from '../Page';
 import { autorun, computed } from 'mobx';
-import { api } from '../../../state/backendApi';
 import { observer } from 'mobx-react';
-import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { FC, useEffect, useState } from 'react';
-import { SingleSelect } from '../../misc/Select';
-import { Label } from '../../../utils/tsxUtils';
-import { proto3 } from '@bufbuild/protobuf';
+import { type FC, useEffect, useState } from 'react';
+import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { HiOutlineTrash } from 'react-icons/hi';
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
   KafkaRecordHeader,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { HiOutlineTrash } from 'react-icons/hi';
-import KowlEditor from '../../misc/KowlEditor';
-import { Link as ReactRouterLink } from 'react-router-dom';
 import {
   PublishMessagePayloadOptions,
   PublishMessageRequest,
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { uiSettings } from '../../../state/ui';
+import { Label } from '../../../utils/tsxUtils';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
-import { setMonacoTheme } from '../../../config';
+import KowlEditor from '../../misc/KowlEditor';
+import { SingleSelect } from '../../misc/Select';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 type EncodingOption = {
   value: PayloadEncoding | 'base64';
@@ -78,10 +78,10 @@ const protoBufInfoElement = (
 );
 
 function encodingToLanguage(encoding: PayloadEncoding) {
-  if (encoding == PayloadEncoding.AVRO) return 'json';
-  if (encoding == PayloadEncoding.JSON) return 'json';
-  if (encoding == PayloadEncoding.PROTOBUF) return 'protobuf';
-  if (encoding == PayloadEncoding.BINARY) return 'plaintext';
+  if (encoding === PayloadEncoding.AVRO) return 'json';
+  if (encoding === PayloadEncoding.JSON) return 'json';
+  if (encoding === PayloadEncoding.PROTOBUF) return 'protobuf';
+  if (encoding === PayloadEncoding.BINARY) return 'plaintext';
   return undefined;
 }
 
@@ -179,19 +179,19 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   const compressionTypes = proto3
     .getEnumType(CompressionType)
-    .values.filter((x) => x.no != CompressionType.UNSPECIFIED)
+    .values.filter((x) => x.no !== CompressionType.UNSPECIFIED)
     .map((x) => ({ label: x.localName, value: x.no as CompressionType }));
 
   const availablePartitions = computed(() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
 
-    const count = api.topics?.first((t) => t.topicName == topicName)?.partitionCount;
-    if (count == undefined) {
+    const count = api.topics?.first((t) => t.topicName === topicName)?.partitionCount;
+    if (count === undefined) {
       // topic not found
       return partitions;
     }
 
-    if (count == 1) {
+    if (count === 1) {
       // only one partition to select
       return partitions;
     }
@@ -238,8 +238,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       req.headers.push(kafkaHeader);
     }
 
-    const encodeData = function (data: string, encoding: PayloadEncoding): Uint8Array {
-      if (encoding == PayloadEncoding.BINARY) {
+    const encodeData = (data: string, encoding: PayloadEncoding): Uint8Array => {
+      if (encoding === PayloadEncoding.BINARY) {
         // This will throw an exception if data is not base64.
         // We want to catch exceptions so that we can show an error.
         window.atob(data);
@@ -250,7 +250,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     };
 
     // Key
-    if (data.key.encoding != PayloadEncoding.NULL) {
+    if (data.key.encoding !== PayloadEncoding.NULL) {
       req.key = new PublishMessagePayloadOptions();
       try {
         req.key.data = encodeData(data.key.data, data.key.encoding);
@@ -266,7 +266,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     }
 
     // Value
-    if (data.value.encoding != PayloadEncoding.NULL) {
+    if (data.value.encoding !== PayloadEncoding.NULL) {
       req.value = new PublishMessagePayloadOptions();
       try {
         req.value.data = encodeData(data.value.data, data.value.encoding);
@@ -301,7 +301,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     }
   };
 
-  const filteredEncodingOptions = encodingOptions.filter((x) => x.value != PayloadEncoding.AVRO);
+  const filteredEncodingOptions = encodingOptions.filter((x) => x.value !== PayloadEncoding.AVRO);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -588,7 +588,7 @@ export class TopicProducePage extends PageComponent<{ topicName: string }> {
     const topicName = this.props.topicName;
     p.title = 'Produce';
     p.addBreadcrumb('Topics', '/topics');
-    p.addBreadcrumb(substringWithEllipsis(topicName, 50), '/topics/' + topicName);
+    p.addBreadcrumb(substringWithEllipsis(topicName, 50), `/topics/${topicName}`);
 
     p.addBreadcrumb('Produce record', '/produce-record');
     this.refreshData(true);

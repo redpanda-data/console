@@ -38,13 +38,13 @@ export default env;
 const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.REACT_APP_DEV_HINT;
 export const IsProd = !isDev;
 export const IsDev = isDev;
-export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH != 'false';
+export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH !== 'false';
 
 const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS'] as const;
 export type AppFeature = (typeof appFeatureNames)[number];
 
-if (env.REACT_APP_ENABLED_FEATURES) (window as any)['ENABLED_FEATURES'] = env.REACT_APP_ENABLED_FEATURES;
-const featuresRaw = (window as any)['ENABLED_FEATURES'] ?? '';
+if (env.REACT_APP_ENABLED_FEATURES) (window as any).ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
+const featuresRaw = (window as any).ENABLED_FEATURES ?? '';
 const enabledFeatures = featuresRaw.split(',') as AppFeature[];
 
 const features = {} as { [key in AppFeature]: boolean };
@@ -52,11 +52,11 @@ for (const f of appFeatureNames) features[f] = enabledFeatures.includes(f);
 
 export const AppFeatures = features;
 
-const basePathRaw: string = (window as any)['BASE_URL'];
+const basePathRaw: string = (window as any).BASE_URL;
 const basePath = typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH') ? basePathRaw : '';
 const basePathTrimmed = basePath ? basePath.removePrefix('/').removeSuffix('/') : '';
 
-const basePathS = basePathTrimmed ? '/' + basePathTrimmed : '';
+const basePathS = basePathTrimmed ? `/${basePathTrimmed}` : '';
 
 export function getBasePath() {
   return basePathS;
@@ -64,7 +64,7 @@ export function getBasePath() {
 
 export function getBuildDate(): Date | undefined {
   const timestamp = +env.REACT_APP_BUILD_TIMESTAMP;
-  if (timestamp == 0) return undefined;
+  if (timestamp === 0) return undefined;
   return new Date(timestamp * 1000);
 }
 

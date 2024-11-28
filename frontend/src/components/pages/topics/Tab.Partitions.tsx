@@ -9,20 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import { FC } from 'react';
-import React from 'react';
-import { Partition, Topic } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
+import type { FC } from 'react';
+import React from 'react';
 import { api } from '../../../state/backendApi';
+import type { Partition, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
-import { numberToThousandsString, DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
-import { BrokerList } from '../../misc/BrokerList';
-import { Alert, AlertIcon, Text, DataTable, Flex, Popover, Box, Badge } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Badge, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
+import { MdOutlineWarningAmber } from 'react-icons/md';
 import usePaginationParams from '../../../hooks/usePaginationParams';
+import { uiState } from '../../../state/uiState';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
-import { uiState } from '../../../state/uiState';
-import { MdOutlineWarningAmber } from 'react-icons/md';
+import { DefaultSkeleton, InfoText, numberToThousandsString } from '../../../utils/tsxUtils';
+import { BrokerList } from '../../misc/BrokerList';
 
 type TopicPartitionsProps = {
   topic: Topic;
@@ -61,8 +61,8 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
         onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
           uiState.topicSettings.partitionPageSize = pageSize;
           editQuery((query) => {
-            query['page'] = String(pageIndex);
-            query['pageSize'] = String(pageSize);
+            query.page = String(pageIndex);
+            query.pageSize = String(pageSize);
           });
         })}
         sorting

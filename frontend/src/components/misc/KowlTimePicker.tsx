@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { Box, DateTimeInput } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
 import { Component } from 'react';
 import React from 'react';
-import { observer } from 'mobx-react';
-import { makeObservable, observable } from 'mobx';
-import { Box, DateTimeInput } from '@redpanda-data/ui';
 
 @observer
 export class KowlTimePicker extends Component<{

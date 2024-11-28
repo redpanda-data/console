@@ -9,28 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api, rolesApi } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
-import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { clone, toJson } from '../../../utils/jsonUtils';
+import { Link as ChakraLink } from '@chakra-ui/react';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
-import {
-  createEmptyClusterAcl,
-  createEmptyConsumerGroupAcl,
-  createEmptyTopicAcl,
-  createEmptyTransactionalIdAcl,
-  principalGroupsView,
-} from './Models';
-import type { AclPrincipalGroup } from './Models';
-import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
-import { Features } from '../../../state/supportedFeatures';
 import {
   Alert,
   AlertDialog,
@@ -43,7 +23,6 @@ import {
   Badge,
   Box,
   Button,
-  createStandaloneToast,
   DataTable,
   Flex,
   Icon,
@@ -51,20 +30,41 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
-  redpandaTheme,
-  redpandaToastOptions,
   Result,
   SearchField,
   Tabs,
   Text,
   Tooltip,
+  createStandaloneToast,
+  redpandaTheme,
+  redpandaToastOptions,
 } from '@redpanda-data/ui';
-import { FC, useRef, useState } from 'react';
-import { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { type FC, useRef, useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { Link as ChakraLink } from '@chakra-ui/react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault } from '../../../state/restInterfaces';
+import { Features } from '../../../state/supportedFeatures';
+import { uiSettings } from '../../../state/ui';
+import { clone, toJson } from '../../../utils/jsonUtils';
+import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
+import {
+  createEmptyClusterAcl,
+  createEmptyConsumerGroupAcl,
+  createEmptyTopicAcl,
+  createEmptyTransactionalIdAcl,
+  principalGroupsView,
+} from './Models';
+import type { AclPrincipalGroup } from './Models';
+import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
 import { UserRoleTags } from './UserPermissionAssignments';
 
@@ -147,8 +147,8 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
     ] as TabsItemProps[];
 
     // todo: maybe there is a better way to sync the tab control to the path
-    const activeTab = tabs.findIndex((x) => x.key == this.props.tab);
-    if (activeTab == -1) {
+    const activeTab = tabs.findIndex((x) => x.key === this.props.tab);
+    if (activeTab === -1) {
       // No tab selected, default to users
       appGlobal.history.replace('/security/users');
     }
@@ -182,15 +182,15 @@ const PermissionsListTab = observer(() => {
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
   for (const g of principalGroupsView.principalGroups)
-    if (g.principalType == 'User' && !g.principalName.includes('*'))
-      if (!users.any((u) => u.name == g.principalName))
+    if (g.principalType === 'User' && !g.principalName.includes('*'))
+      if (!users.any((u) => u.name === g.principalName))
         // is it a user that is being referenced?
         // is the user already listed as a service account?
         users.push({ name: g.principalName, type: 'PRINCIPAL' });
 
   for (const [_, roleMembers] of rolesApi.roleMembers)
     for (const roleMember of roleMembers)
-      if (!users.any((u) => u.name == roleMember.name))
+      if (!users.any((u) => u.name === roleMember.name))
         // make sure that user isn't already in the list
         users.push({ name: roleMember.name, type: 'PRINCIPAL' });
 
@@ -241,7 +241,7 @@ const PermissionsListTab = observer(() => {
             columns={[
               {
                 id: 'name',
-                size: Infinity,
+                size: Number.POSITIVE_INFINITY,
                 header: 'Principal',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
@@ -338,7 +338,7 @@ const UsersTab = observer(() => {
             columns={[
               {
                 id: 'name',
-                size: Infinity,
+                size: Number.POSITIVE_INFINITY,
                 header: 'User',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
@@ -387,7 +387,7 @@ const UsersTab = observer(() => {
                           // Remove user from all its roles
                           const promises = [];
                           for (const [roleName, members] of rolesApi.roleMembers) {
-                            if (members.any((m) => m.name == entry.name)) {
+                            if (members.any((m) => m.name === entry.name)) {
                               // is this user part of this role?
                               // then remove it
                               promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
@@ -463,7 +463,7 @@ const RolesTab = observer(() => {
             columns={[
               {
                 id: 'name',
-                size: Infinity,
+                size: Number.POSITIVE_INFINITY,
                 header: 'Role name',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
@@ -536,7 +536,7 @@ const AclsTab = observer(
     const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
     const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
 
-    let groups = p.principalGroups.filter((g) => g.principalType == 'User');
+    let groups = p.principalGroups.filter((g) => g.principalType === 'User');
     try {
       const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
       groups = groups.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
@@ -612,7 +612,7 @@ const AclsTab = observer(
               sorting
               columns={[
                 {
-                  size: Infinity,
+                  size: Number.POSITIVE_INFINITY,
                   header: 'Principal',
                   accessorKey: 'principal',
                   cell: ({ row: { original: record } }) => {
@@ -644,7 +644,7 @@ const AclsTab = observer(
                     row: {
                       original: { host },
                     },
-                  }) => (!host || host == '*' ? <Badge variant="subtle">Any</Badge> : host),
+                  }) => (!host || host === '*' ? <Badge variant="subtle">Any</Badge> : host),
                 },
                 {
                   size: 60,
@@ -661,7 +661,7 @@ const AclsTab = observer(
                             resourceType: 'Any',
                             resourceName: undefined,
                             resourcePatternType: 'Any',
-                            principal: record.principalType + ':' + record.principalName,
+                            principal: `${record.principalType}:${record.principalName}`,
                             host: record.host,
                             operation: 'Any',
                             permissionType: 'Any',

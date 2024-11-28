@@ -9,19 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
-import { computed, makeObservable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
 import { SkipIcon } from '@primer/octicons-react';
-import { toJson } from '../../../utils/jsonUtils';
-import { prettyBytes, prettyNumber } from '../../../utils/utils';
-import { QuotaResponseSetting, QuotaType } from '../../../state/restInterfaces';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Button, DataTable, Result } from '@redpanda-data/ui';
+import { computed, makeObservable } from 'mobx';
+import { observer } from 'mobx-react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { type QuotaResponseSetting, QuotaType } from '../../../state/restInterfaces';
+import { toJson } from '../../../utils/jsonUtils';
+import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
+import { prettyBytes, prettyNumber } from '../../../utils/utils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 @observer
 class QuotasList extends PageComponent {

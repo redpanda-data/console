@@ -1,13 +1,13 @@
 import { Box, Button, Flex, Grid, Link, List, ListItem, Text } from '@redpanda-data/ui';
 import React from 'react';
-import { api } from '../../../state/backendApi';
+import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import colors from '../../../colors';
+import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { api } from '../../../state/backendApi';
+import { Features } from '../../../state/supportedFeatures';
 import { titleCase } from '../../../utils/utils';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
-import colors from '../../../colors';
-import { MdError, MdOutlineWarning } from 'react-icons/md';
-import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import { Features } from '../../../state/supportedFeatures';
 
 const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
   [UnhealthyReason.UNSPECIFIED]: 'Unknown reason',

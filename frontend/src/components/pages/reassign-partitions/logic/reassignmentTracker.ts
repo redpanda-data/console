@@ -15,7 +15,7 @@
 
 import { observable, transaction } from 'mobx';
 import { api } from '../../../../state/backendApi';
-import { PartitionReassignments } from '../../../../state/restInterfaces';
+import type { PartitionReassignments } from '../../../../state/restInterfaces';
 import { IsDev } from '../../../../utils/env';
 import { clone, toJson } from '../../../../utils/jsonUtils';
 
@@ -110,7 +110,7 @@ export class ReassignmentTracker {
     transaction(() => {
       // Add new reassignments
       for (const r of liveReassignments) {
-        const existingState = this.trackingReassignments.first((x) => x.id == r.id);
+        const existingState = this.trackingReassignments.first((x) => x.id === r.id);
         if (existingState == null) {
           // console.log('adding new state', { id: r.id, reassignment: r });
           const state = this.createReassignmentState(r);
@@ -123,7 +123,7 @@ export class ReassignmentTracker {
       for (const r of this.trackingReassignments) {
         if (r.actualTimeCompleted != null) continue; // no need to the ones already marked as completed
 
-        const live = liveReassignments.first((x) => x.id == r.id);
+        const live = liveReassignments.first((x) => x.id === r.id);
         if (!live) {
           // this tracked reassignment does not exist in the live assignments anymore
           r.actualTimeCompleted = new Date();
@@ -182,13 +182,13 @@ export class ReassignmentTracker {
     // partition stats
     const topicPartitions = api.topicPartitions.get(state.topicName);
     for (const p of state.partitions) {
-      const logDirs = topicPartitions?.first((e) => e.id == p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
-      if (!logDirs || logDirs.length == 0) continue;
+      const logDirs = topicPartitions?.first((e) => e.id === p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
+      if (!logDirs || logDirs.length === 0) continue;
 
       // current size (on new brokers)
       const newSizeOnBrokers: { brokerId: number; replicaSize: number }[] = [];
       for (const b of p.addingReplicas) {
-        const logDir = logDirs.first((l) => l.brokerId == b);
+        const logDir = logDirs.first((l) => l.brokerId === b);
         if (logDir && !logDir.error) newSizeOnBrokers.push({ brokerId: b, replicaSize: logDir.size });
         else newSizeOnBrokers.push({ brokerId: b, replicaSize: 0 });
       }
@@ -204,7 +204,7 @@ export class ReassignmentTracker {
     const newTransferred = state.partitions.sum((p) => p.currentSize.sum((x) => x.replicaSize));
     const newRemaining = state.totalTransferSize - newTransferred;
 
-    if (state.remainingPrev == null || state.remainingPrev.value != newRemaining) {
+    if (state.remainingPrev == null || state.remainingPrev.value !== newRemaining) {
       // only set a new transferred statistic when the new value is different from the previous one
       // otherwise we'd end up with the same value for prev and cur with different timestamps
       state.remainingPrev = state.remaining;
@@ -213,7 +213,7 @@ export class ReassignmentTracker {
     }
 
     // estimate speed (only if we have cur and prev)
-    if (state.remaining && state.remainingPrev && state.remaining.value != state.remainingPrev.value) {
+    if (state.remaining && state.remainingPrev && state.remaining.value !== state.remainingPrev.value) {
       const intervalSec = (state.remaining.timestamp.getTime() - state.remainingPrev.timestamp.getTime()) / 1000;
       const deltaRemaining = state.remaining.value - state.remainingPrev.value;
       state.estimateSpeed = (deltaRemaining * -1) / intervalSec;

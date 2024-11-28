@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Alert, AlertDescription, AlertIcon, Box, Button, Empty, List, ListItem, Text } from '@redpanda-data/ui';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { licenseCanExpire, prettyExpirationDate, prettyLicenseType } from '../../license/licenseUtils';
 
 @observer

@@ -11,14 +11,14 @@
 
 /* eslint-disable react/jsx-key */
 
-import React, { Component, ReactNode } from 'react';
-import { Permission, Role, RoleBinding } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
+import React, { Component, type ReactNode } from 'react';
 import { api } from '../../../state/backendApi';
+import type { Permission, Role, RoleBinding } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
+import { Box, DataTable } from '@redpanda-data/ui';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { RoleBindingComponent } from './Admin.RoleBindings';
-import { Box, DataTable } from '@redpanda-data/ui';
 
 @observer
 export class AdminRoles extends Component<{}> {
@@ -41,7 +41,7 @@ export class AdminRoles extends Component<{}> {
           {
             accessorKey: 'name',
             header: 'Role Name',
-            size: Infinity,
+            size: Number.POSITIVE_INFINITY,
           },
         ]}
       />
@@ -95,7 +95,7 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
         <span className="resourceLabelSub">Actions</span>,
         stringsToBoxes(p.allowedActions, null, 'permissionsList'),
       ]);
-    if (p.includes.length > 0 && !(p.includes[0] == '*') && !(p.includes[0] == '^*$') && !(p.includes[0] == '^.*$'))
+    if (p.includes.length > 0 && !(p.includes[0] === '*') && !(p.includes[0] === '^*$') && !(p.includes[0] === '^.*$'))
       rows.push([
         <span className="resourceLabelSub">Includes</span>,
         stringsToBoxes(p.includes, joinerOr, 'permissionRegex'),

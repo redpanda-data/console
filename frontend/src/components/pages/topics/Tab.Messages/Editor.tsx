@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { FC, useRef, useState } from 'react';
-import { OnMount, OnChange, BeforeMount } from '@monaco-editor/react';
-import { Uri, languages, editor } from 'monaco-editor';
-import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
+import type { BeforeMount, OnChange, OnMount } from '@monaco-editor/react';
+import type { Uri, editor, languages } from 'monaco-editor';
+import { type FC, useRef, useState } from 'react';
+import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 
 interface FilterEditorProps {
   value: string;
@@ -81,7 +81,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
 
   const handleValueChange: OnChange = async () => {
     const editorValue = (await getEditorValue()) ?? '';
-    const result = await tsWorkerClient!.getEmitOutput(editorUri!.toString());
+    const result = await tsWorkerClient?.getEmitOutput(editorUri?.toString());
     setTimeout(() => onValueChange(editorValue, result.outputFiles[0].text));
   };
 

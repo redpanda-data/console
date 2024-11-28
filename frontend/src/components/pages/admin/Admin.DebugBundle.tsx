@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, FC, useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
+import { Component, type FC, useEffect, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { makeObservable, observable } from 'mobx';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Timestamp } from '@bufbuild/protobuf';
 import {
   Alert,
   AlertIcon,
@@ -28,25 +27,26 @@ import {
   Grid,
   GridItem,
   Input,
-  isMultiValue,
-  isSingleValue,
   PasswordInput,
   Select,
   Text,
+  isMultiValue,
+  isSingleValue,
 } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { MdDeleteOutline } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import DebugBundleLink from '../../debugBundle/DebugBundleLink';
-import { appGlobal } from '../../../state/appGlobal';
 import {
   CreateDebugBundleRequest,
   LabelSelector,
-  SCRAMAuth,
+  type SCRAMAuth,
   SCRAMAuth_Mechanism,
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { appGlobal } from '../../../state/appGlobal';
+import type { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { SingleSelect } from '../../misc/Select';
-import { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
-import { MdDeleteOutline } from 'react-icons/md';
-import { Timestamp } from '@bufbuild/protobuf';
 
 const Header = () => (
   <Text>
@@ -371,8 +371,8 @@ const NewDebugBundleForm: FC<{
             description={
               'The size limit of the controller logs that can be stored in the bundle (e.g. 3MB, 1GiB) (default "132MB")'
             }
-            errorText={fieldViolationsMap?.['controllerLogsSizeLimitBytes']}
-            isInvalid={!!fieldViolationsMap?.['controllerLogsSizeLimitBytes']}
+            errorText={fieldViolationsMap?.controllerLogsSizeLimitBytes}
+            isInvalid={!!fieldViolationsMap?.controllerLogsSizeLimitBytes}
           >
             <Input
               type="number"
@@ -384,8 +384,8 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="CPU profiler wait"
             description="How long in seconds to collect samples for the CPU profiler. Must be higher than 15s (default 30s)"
-            errorText={fieldViolationsMap?.['cpuProfilerWaitSeconds']}
-            isInvalid={!!fieldViolationsMap?.['cpuProfilerWaitSeconds']}
+            errorText={fieldViolationsMap?.cpuProfilerWaitSeconds}
+            isInvalid={!!fieldViolationsMap?.cpuProfilerWaitSeconds}
           >
             <Input
               data-testid="cpu-profiler-input"
@@ -397,24 +397,24 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="Logs since"
             description="Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today'). Default 'yesterday'."
-            errorText={fieldViolationsMap?.['logsSince']}
-            isInvalid={!!fieldViolationsMap?.['logsSince']}
+            errorText={fieldViolationsMap?.logsSince}
+            isInvalid={!!fieldViolationsMap?.logsSince}
           >
             <DateTimeInput value={formState.logsSince} onChange={formState.setLogsSince} />
           </FormField>
           <FormField
             label="Logs until"
             description="Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today')."
-            errorText={fieldViolationsMap?.['logsUntil']}
-            isInvalid={!!fieldViolationsMap?.['logsUntil']}
+            errorText={fieldViolationsMap?.logsUntil}
+            isInvalid={!!fieldViolationsMap?.logsUntil}
           >
             <DateTimeInput value={formState.logsUntil} onChange={formState.setLogsUntil} />
           </FormField>
           <FormField
             label="Logs size limit"
             description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB."
-            errorText={fieldViolationsMap?.['logsSizeLimitBytes']}
-            isInvalid={!!fieldViolationsMap?.['logsSizeLimitBytes']}
+            errorText={fieldViolationsMap?.logsSizeLimitBytes}
+            isInvalid={!!fieldViolationsMap?.logsSizeLimitBytes}
           >
             <Flex gap={2}>
               <Input
@@ -459,8 +459,8 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="Metrics interval duration"
             description="Interval between metrics snapshots (e.g. 30s, 1.5m) (default 10s)"
-            errorText={fieldViolationsMap?.['metricsIntervalSeconds']}
-            isInvalid={!!fieldViolationsMap?.['metricsIntervalSeconds']}
+            errorText={fieldViolationsMap?.metricsIntervalSeconds}
+            isInvalid={!!fieldViolationsMap?.metricsIntervalSeconds}
           >
             <Input
               type="number"
@@ -472,8 +472,8 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="Metrics samples"
             description="Number of metrics samples to take (at the interval of 'metrics interval duration'). Must be >= 2"
-            errorText={fieldViolationsMap?.['metricsSamples']}
-            isInvalid={!!fieldViolationsMap?.['metricsSamples']}
+            errorText={fieldViolationsMap?.metricsSamples}
+            isInvalid={!!fieldViolationsMap?.metricsSamples}
           >
             <Input
               data-testid="metrics-samples-in put"
@@ -484,8 +484,8 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="Namespace"
             description='The namespace to use to collect the resources from (k8s only). Default "redpanda".'
-            errorText={fieldViolationsMap?.['namespace']}
-            isInvalid={!!fieldViolationsMap?.['namespace']}
+            errorText={fieldViolationsMap?.namespace}
+            isInvalid={!!fieldViolationsMap?.namespace}
           >
             <Input
               data-testid="namespace-input"
@@ -496,8 +496,8 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="Partition(s)"
             description="Partition IDs."
-            errorText={fieldViolationsMap?.['partitions']}
-            isInvalid={!!fieldViolationsMap?.['partitions']}
+            errorText={fieldViolationsMap?.partitions}
+            isInvalid={!!fieldViolationsMap?.partitions}
           >
             <Select<string>
               isMulti
@@ -515,8 +515,8 @@ const NewDebugBundleForm: FC<{
           <FormField
             label="Label selectors"
             description="Label selectors to filter your resources."
-            errorText={fieldViolationsMap?.['labelSelectors']}
-            isInvalid={!!fieldViolationsMap?.['labelSelectors']}
+            errorText={fieldViolationsMap?.labelSelectors}
+            isInvalid={!!fieldViolationsMap?.labelSelectors}
           >
             {formState.labelSelectors.map((labelSelector, idx) => (
               <Grid gap={2} key={idx} templateColumns="1fr 1fr auto">

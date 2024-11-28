@@ -9,22 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
-import Section from '../../misc/Section';
+import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { Link } from 'react-router-dom';
+import { isEmbedded } from '../../../config';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import PageContent from '../../misc/PageContent';
-import { PageComponent, PageInitHelper } from '../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
-import { isEmbedded } from '../../../config';
-import { Link } from 'react-router-dom';
-import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
-import { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/restInterfaces';
-import SearchBar from '../../misc/SearchBar';
+import type { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import SearchBar from '../../misc/SearchBar';
+/* eslint-disable no-useless-escape */
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 
 @observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
@@ -71,7 +71,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
       return <NotConfigured />;
     }
 
-    const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName == clusterName);
+    const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === clusterName);
     const connectors = cluster?.connectors;
 
     const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
@@ -123,7 +123,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                       </Text>
                     </Link>
                   ),
-                  size: Infinity,
+                  size: Number.POSITIVE_INFINITY,
                 },
                 {
                   header: 'Class',

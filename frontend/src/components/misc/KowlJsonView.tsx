@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { CSSProperties } from 'react';
 import { Box } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import type { CSSProperties } from 'react';
 import KowlEditor from './KowlEditor';
 
 export const KowlJsonView = observer(
@@ -19,7 +19,7 @@ export const KowlJsonView = observer(
     srcObj: object | string | null | undefined;
     style?: CSSProperties;
   }) => {
-    const str = typeof props.srcObj == 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
+    const str = typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
 
     return (
       <Box

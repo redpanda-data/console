@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { autorun, IReactionDisposer, transaction } from 'mobx';
+import { SearchField } from '@redpanda-data/ui';
+import { type IReactionDisposer, autorun, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
+import { AnimatePresence, MotionSpan, animProps_span_searchResult } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
-import { SearchField } from '@redpanda-data/ui';
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
@@ -114,7 +114,7 @@ class SearchBar<TItem> extends Component<{
 
   computeFilterSummary(): { identity: string; node: React.ReactNode } | null {
     const source = this.props.dataSource();
-    if (!source || source.length == 0) {
+    if (!source || source.length === 0) {
       // console.log('filter summary:');
       // console.dir(source);
       // console.dir(this.filteredSource.filterText);
@@ -126,7 +126,7 @@ class SearchBar<TItem> extends Component<{
     const sourceLength = source.length;
     const resultLength = this.filteredSource.data.length;
 
-    if (sourceLength == resultLength) return { identity: 'all', node: <span>Filter matched everything</span> };
+    if (sourceLength === resultLength) return { identity: 'all', node: <span>Filter matched everything</span> };
 
     return {
       identity: 'r',

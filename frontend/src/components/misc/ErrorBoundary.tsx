@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties, FC } from 'react';
-import { observer } from 'mobx-react';
-import { makeObservable, observable } from 'mobx';
-import { toJson } from '../../utils/jsonUtils';
-import { MdClose, MdOutlineCopyAll } from 'react-icons/md';
-import { envVarDebugAr } from '../../utils/env';
-import { NoClipboardPopover } from './NoClipboardPopover';
-import { isClipboardAvailable } from '../../utils/featureDetection';
-import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsxUtils';
-import StackTrace from 'stacktrace-js';
 import { Box, Button, Flex, Icon, useToast } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { type CSSProperties, type FC } from 'react';
+import { MdClose, MdOutlineCopyAll } from 'react-icons/md';
+import StackTrace from 'stacktrace-js';
+import { envVarDebugAr } from '../../utils/env';
+import { isClipboardAvailable } from '../../utils/featureDetection';
+import { toJson } from '../../utils/jsonUtils';
+import { ObjToKv, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
+import { NoClipboardPopover } from './NoClipboardPopover';
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)
@@ -49,7 +49,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
   @observable hasError = false;
   error: Error | null = null;
   errorInfo: object | null = null;
-  @observable decodingDone: boolean = false;
+  @observable decodingDone = false;
 
   @observable infoItems: InfoItem[] = [];
 
@@ -66,7 +66,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     this.infoItems = [];
 
     // Type
-    if (this.error?.name && this.error.name.toLowerCase() != 'error')
+    if (this.error?.name && this.error.name.toLowerCase() !== 'error')
       this.infoItems.push({ name: 'Type', value: this.error.name });
 
     // Message
@@ -100,7 +100,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
         })
         .catch((err) => {
           // Decode Error
-          dataHolder.value = 'Unable to decode stacktrace\n' + String(err);
+          dataHolder.value = `Unable to decode stacktrace\n${String(err)}`;
           this.decodingDone = true;
         });
 
@@ -120,7 +120,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       this.infoItems.push({
         name: 'Components',
         value: this.errorInfo
-          ? '(componentStack not set) errorInfo as Json: \n' + toJson(this.errorInfo)
+          ? `(componentStack not set) errorInfo as Json: \n${toJson(this.errorInfo)}`
           : '(errorInfo was not set)',
       });
 
@@ -129,7 +129,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       const padLength = envVarDebugAr.max((e) => e.name.length);
       this.infoItems.push({
         name: 'Environment',
-        value: envVarDebugAr.map((e) => e.name.padEnd(padLength) + ': ' + e.value).join('\n'),
+        value: envVarDebugAr.map((e) => `${e.name.padEnd(padLength)}: ${e.value}`).join('\n'),
       });
     } catch (ex) {
       this.infoItems.push({ name: 'Environment', value: '(error retreiving env list)' });
@@ -146,7 +146,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       const padLength = locationItems.max((e) => e.key.length);
       this.infoItems.push({
         name: 'Location',
-        value: locationItems.map((e) => e.key.padEnd(padLength) + ': ' + e.value).join('\n'),
+        value: locationItems.map((e) => `${e.key.padEnd(padLength)}: ${e.value}`).join('\n'),
       });
     } catch (ex) {
       this.infoItems.push({
@@ -224,7 +224,7 @@ function getStringFromInfo(info: InfoItem) {
     const r = info.value();
     return String(r);
   } catch (err) {
-    return 'Error calling infoItem func: ' + err;
+    return `Error calling infoItem func: ${err}`;
   }
 }
 
@@ -271,7 +271,7 @@ export class InfoItemDisplay extends React.Component<{ data: InfoItem }> {
       try {
         content = value();
       } catch (err) {
-        content = 'error rendering: ' + String(err);
+        content = `error rendering: ${String(err)}`;
       }
     }
 

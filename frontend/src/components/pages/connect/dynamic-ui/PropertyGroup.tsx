@@ -12,9 +12,9 @@
 /* eslint-disable no-useless-escape */
 import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { PropertyGroup } from '../../../../state/connect/state';
-import { TopicInput } from './forms/TopicInput';
+import type { PropertyGroup } from '../../../../state/connect/state';
 import { PropertyComponent } from './PropertyComponent';
+import { TopicInput } from './forms/TopicInput';
 
 const topicsFields = ['topics', 'topics.regex'];
 
@@ -29,9 +29,9 @@ export const PropertyGroupComponent = observer(
 
     const filteredProperties = g.filteredProperties;
 
-    if (filteredProperties.length == 0) return null;
+    if (filteredProperties.length === 0) return null;
 
-    if (g.group.name == 'Transforms') {
+    if (g.group.name === 'Transforms') {
       // Transforms + its sub groups
       const subGroups = props.allGroups
         .filter((g) => g.group.name?.startsWith('Transforms: '))
@@ -70,46 +70,45 @@ export const PropertyGroupComponent = observer(
           </div>
         </div>
       );
-    } else {
-      // Normal group
-      return (
-        <>
-          <Box>
-            {g.group.name && (
-              <Heading as="h3" size="md" mt="8" mb="4">
-                {g.group.name}
-              </Heading>
-            )}
-
-            {g.group.description && (
-              <Text>
-                {g.group.description}
-                {g.group.documentation_link && (
-                  <>
-                    {' '}
-                    <Link href={g.group.documentation_link}>Documentation</Link>
-                  </>
-                )}
-              </Text>
-            )}
-
-            <div>
-              {
-                <TopicInput
-                  properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
-                  connectorType={props.connectorType}
-                />
-              }
-              {filteredProperties
-                .filter((p) => topicsFields.every((v) => v !== p.name))
-                .map((p) => (
-                  <PropertyComponent key={p.name} property={p} />
-                ))}
-            </div>
-            <Divider my={10} />
-          </Box>
-        </>
-      );
     }
+    // Normal group
+    return (
+      <>
+        <Box>
+          {g.group.name && (
+            <Heading as="h3" size="md" mt="8" mb="4">
+              {g.group.name}
+            </Heading>
+          )}
+
+          {g.group.description && (
+            <Text>
+              {g.group.description}
+              {g.group.documentation_link && (
+                <>
+                  {' '}
+                  <Link href={g.group.documentation_link}>Documentation</Link>
+                </>
+              )}
+            </Text>
+          )}
+
+          <div>
+            {
+              <TopicInput
+                properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
+                connectorType={props.connectorType}
+              />
+            }
+            {filteredProperties
+              .filter((p) => topicsFields.every((v) => v !== p.name))
+              .map((p) => (
+                <PropertyComponent key={p.name} property={p} />
+              ))}
+          </div>
+          <Divider my={10} />
+        </Box>
+      </>
+    );
   },
 );

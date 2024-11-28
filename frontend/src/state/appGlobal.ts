@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { History } from 'history';
+import type { History } from 'history';
 import { api } from './backendApi';
 import { uiState } from './uiState';
 

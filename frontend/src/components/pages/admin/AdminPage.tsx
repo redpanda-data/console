@@ -9,22 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactElement } from 'react';
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
-import { toJson } from '../../../utils/jsonUtils';
-import { appGlobal } from '../../../state/appGlobal';
-import { AdminUsers } from './Admin.Users';
-import { AdminRoles } from './Admin.Roles';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { type ReactElement } from 'react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { Features } from '../../../state/supportedFeatures';
+import { toJson } from '../../../utils/jsonUtils';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
 import { AdminDebugBundle } from './Admin.DebugBundle';
 import { AdminLicenses } from './Admin.Licenses';
-import { Features } from '../../../state/supportedFeatures';
-import { makeObservable, observable } from 'mobx';
+import { AdminRoles } from './Admin.Roles';
+import { AdminUsers } from './Admin.Users';
 
 export type AdminPageTab = 'users' | 'roles' | 'permissions-debug' | 'debug-bundle' | 'licenses';
 

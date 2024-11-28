@@ -1,5 +1,5 @@
-import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline';
+import { PencilIcon } from '@heroicons/react/solid';
 import {
   Alert,
   AlertDescription,
@@ -24,16 +24,16 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { Observer, observer, useLocalObservable } from 'mobx-react';
-import { FC } from 'react';
-import { ConfigEntryExtended } from '../../../state/restInterfaces';
+import type { FC } from 'react';
+import type { ConfigEntryExtended } from '../../../state/restInterfaces';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
-import { api } from '../../../state/backendApi';
-import { isServerless } from '../../../config';
-import { SingleSelect } from '../../misc/Select';
-import { Label } from '../../../utils/tsxUtils';
 import { MdInfoOutline } from 'react-icons/md';
+import { isServerless } from '../../../config';
+import { api } from '../../../state/backendApi';
+import { Label } from '../../../utils/tsxUtils';
+import { SingleSelect } from '../../misc/Select';
 
 type ConfigurationEditorProps = {
   targetTopic: string | null; // topic name, or null if default configs
@@ -95,12 +95,12 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
         {$state.editedEntry !== null && (
           <ModalContent minW="2xl">
             <ModalHeader>
-              <Icon as={AdjustmentsIcon} /> {'Edit ' + $state.editedEntry.name}
+              <Icon as={AdjustmentsIcon} /> {`Edit ${$state.editedEntry.name}`}
             </ModalHeader>
             <ModalBody>
               <Observer>
                 {() => {
-                  const isCustom = $state.modalValueType == 'custom';
+                  const isCustom = $state.modalValueType === 'custom';
 
                   if ($state.editedEntry === null) {
                     return null;
@@ -155,7 +155,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                             <Text fontWeight="bold">Set at topic configuration</Text>
                             <Box maxWidth={300}>
                               <ConfigEntryEditor
-                                className={'configEntryEditor ' + (isCustom ? '' : 'disabled')}
+                                className={`configEntryEditor ${isCustom ? '' : 'disabled'}`}
                                 entry={configEntry}
                               />
                             </Box>
@@ -195,8 +195,11 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                   // -> When type is "custom" and "currentValue" changed
                   // So this excludes the case where value was changed, but the type was "default" before and after
                   let needToApply = false;
-                  if ($state.modalValueType != $state.initialValueType) needToApply = true;
-                  if ($state.modalValueType == 'custom' && $state.editedEntry.value != $state.editedEntry.currentValue)
+                  if ($state.modalValueType !== $state.initialValueType) needToApply = true;
+                  if (
+                    $state.modalValueType === 'custom' &&
+                    $state.editedEntry.value !== $state.editedEntry.currentValue
+                  )
                     needToApply = true;
 
                   if (!needToApply) {
@@ -204,14 +207,14 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
                     return;
                   }
 
-                  const operation = $state.modalValueType == 'custom' ? 'SET' : 'DELETE';
+                  const operation = $state.modalValueType === 'custom' ? 'SET' : 'DELETE';
 
                   try {
                     await api.changeTopicConfig(props.targetTopic, [
                       {
                         key: $state.editedEntry.name,
                         op: operation,
-                        value: operation == 'SET' ? String($state.editedEntry.currentValue) : undefined,
+                        value: operation === 'SET' ? String($state.editedEntry.currentValue) : undefined,
                       },
                     ]);
                     toast({
@@ -305,7 +308,7 @@ const ConfigEntry = observer(
         <span className="configButtons">
           <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
             <span
-              className={'btnEdit' + (canEdit ? '' : ' disabled')}
+              className={`btnEdit${canEdit ? '' : ' disabled'}`}
               onClick={() => {
                 if (canEdit) p.onEditEntry(p.entry);
               }}
@@ -436,8 +439,6 @@ export const ConfigEntryEditor = observer(
             className={p.className}
           />
         );
-
-      case 'STRING':
       default:
         return <Input value={String(entry.currentValue)} onChange={(e) => (entry.currentValue = e.target.value)} />;
     }

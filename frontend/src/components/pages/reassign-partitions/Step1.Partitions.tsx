@@ -9,23 +9,23 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { observer } from 'mobx-react';
-import { renderLogDirSummary, WarningToolip } from '../../misc/common';
-import { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
-import { BrokerList } from '../../misc/BrokerList';
-import { SelectionInfoBar } from './components/StatisticsBar';
-import { prettyBytesOrNA } from '../../../utils/utils';
-import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsxUtils';
-import { api } from '../../../state/backendApi';
-import { computed, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
-import { PartitionSelection } from './ReassignPartitions';
-import Highlighter from 'react-highlight-words';
-import { uiSettings } from '../../../state/ui';
-import { SearchTitle } from '../../misc/KowlTable';
 import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
-import { Row } from '@tanstack/react-table';
+import type { Row } from '@tanstack/react-table';
+import { type IReactionDisposer, computed, makeObservable, observable, transaction } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { Component } from 'react';
+import Highlighter from 'react-highlight-words';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+import { api } from '../../../state/backendApi';
+import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { BrokerList } from '../../misc/BrokerList';
+import { SearchTitle } from '../../misc/KowlTable';
+import { WarningToolip, renderLogDirSummary } from '../../misc/common';
+import type { PartitionSelection } from './ReassignPartitions';
+import { SelectionInfoBar } from './components/StatisticsBar';
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];
@@ -136,7 +136,7 @@ export class StepSelectPartitions extends Component<{
                   </Box>
                 );
               },
-              size: Infinity,
+              size: Number.POSITIVE_INFINITY,
             },
             {
               header: 'Partitions',
@@ -158,7 +158,7 @@ export class StepSelectPartitions extends Component<{
             {
               header: 'Replication Factor',
               cell: ({ row: { original: r } }) => {
-                if (r.activeReassignments.length == 0) return r.replicationFactor;
+                if (r.activeReassignments.length === 0) return r.replicationFactor;
                 return (
                   <InfoText
                     tooltip="While reassignment is active, replication factor is temporarily doubled."
@@ -209,7 +209,7 @@ export class StepSelectPartitions extends Component<{
       partitions.remove(partition);
     }
 
-    if (partitions.length == 0) delete this.props.partitionSelection[topic];
+    if (partitions.length === 0) delete this.props.partitionSelection[topic];
     else this.props.partitionSelection[topic] = partitions;
   }
 
@@ -226,16 +226,16 @@ export class StepSelectPartitions extends Component<{
   }
 
   getTopicCheckState(topicName: string): { checked: boolean; indeterminate: boolean } {
-    const tp = this.topicPartitions.first((t) => t.topicName == topicName);
+    const tp = this.topicPartitions.first((t) => t.topicName === topicName);
     if (!tp) return { checked: false, indeterminate: false };
 
     const selected = this.props.partitionSelection[topicName];
     if (!selected) return { checked: false, indeterminate: false };
 
-    if (selected.length == 0) return { checked: false, indeterminate: false };
+    if (selected.length === 0) return { checked: false, indeterminate: false };
 
     const validPartitions = tp.partitions.count((x) => !x.hasErrors);
-    if (validPartitions > 0 && selected.length == validPartitions) return { checked: true, indeterminate: false };
+    if (validPartitions > 0 && selected.length === validPartitions) return { checked: true, indeterminate: false };
 
     return { checked: false, indeterminate: true };
   }
@@ -250,7 +250,7 @@ export class StepSelectPartitions extends Component<{
           activeReassignments: this.inProgress.get(topic.topicName) ?? [],
         };
       })
-      .filter((t) => t.activeReassignments.length == 0);
+      .filter((t) => t.activeReassignments.length === 0);
   }
 
   @computed get inProgress() {
@@ -294,12 +294,12 @@ export class SelectPartitionTable extends Component<{
           {
             header: 'Partition',
             accessorKey: 'id',
-            size: Infinity,
+            size: Number.POSITIVE_INFINITY,
           },
           {
             header: 'Brokers',
             cell: observer(({ row: { original: partition } }: { row: Row<Partition> }) =>
-              Boolean(partition.replicas) ? (
+              partition.replicas ? (
                 <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
               ) : (
                 renderPartitionError(partition)
@@ -309,7 +309,7 @@ export class SelectPartitionTable extends Component<{
           {
             header: 'Size',
             cell: ({ row: { original: partition } }) => prettyBytesOrNA(partition.replicaSize),
-            size: Infinity,
+            size: Number.POSITIVE_INFINITY,
           },
         ]}
       />

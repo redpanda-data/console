@@ -192,7 +192,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
             </Flex>
           )}
 
-          {(pipelinesApi.pipelines ?? []).length == 0 ? (
+          {(pipelinesApi.pipelines ?? []).length === 0 ? (
             <EmptyPlaceholder />
           ) : (
             <DataTable<Pipeline>

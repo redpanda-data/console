@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { Broker, Partition } from '../../state/restInterfaces';
-import { api, brokerMap } from '../../state/backendApi';
-import { observer } from 'mobx-react';
 import { ChevronRightIcon } from '@heroicons/react/solid';
 import { Tooltip } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import React, { Component } from 'react';
+import { api, brokerMap } from '../../state/backendApi';
+import type { Broker, Partition } from '../../state/restInterfaces';
 
 type BrokerListProps =
   | { brokerIds: number[]; addedIds?: number[]; removedIds?: number[]; leaderId?: number }
@@ -31,8 +31,8 @@ export class BrokerList extends Component<BrokerListProps> {
     let leaderId: number;
     let sortedIds: number[];
     const offlineIds: number[] = [];
-    let addedIds: number[] = [],
-      removedIds: number[] = [];
+    let addedIds: number[] = [];
+    let removedIds: number[] = [];
 
     if ('partition' in this.props) {
       const { partition } = this.props;
@@ -54,7 +54,7 @@ export class BrokerList extends Component<BrokerListProps> {
       const broker = brokers?.get(id);
 
       let classNames = 'broker-tag';
-      if (id == leaderId) classNames += ' leader';
+      if (id === leaderId) classNames += ' leader';
       if (offlineIds.includes(id)) classNames += ' offline';
       if (brokers && !broker) classNames += ' missing';
 
@@ -72,7 +72,7 @@ export class BrokerList extends Component<BrokerListProps> {
       if (!broker) return tag;
 
       const additionalContent: JSX.Element[] = [];
-      if (id == leaderId)
+      if (id === leaderId)
         additionalContent.push(
           <div key="leader" style={{ marginTop: '5px' }}>
             <ChevronRightIcon className="svgCenter" height="15px" style={{ marginLeft: '-4px', marginRight: '-2px' }} />

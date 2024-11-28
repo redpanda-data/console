@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
+import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
 import 'monaco-editor';
-import { editor } from 'monaco-editor';
-import { MonacoYamlOptions } from 'monaco-yaml';
+import type { editor } from 'monaco-editor';
+import type { MonacoYamlOptions } from 'monaco-yaml';
 import benthosSchema from '../../assets/rp-connect-schema.json';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;

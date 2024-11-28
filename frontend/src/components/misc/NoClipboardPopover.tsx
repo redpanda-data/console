@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FunctionComponent, ReactElement } from 'react';
-import { isClipboardAvailable } from '../../utils/featureDetection';
 import { Popover } from '@redpanda-data/ui';
+import React, { type FunctionComponent, type ReactElement } from 'react';
+import { isClipboardAvailable } from '../../utils/featureDetection';
 
 const popoverContent = (
   <>

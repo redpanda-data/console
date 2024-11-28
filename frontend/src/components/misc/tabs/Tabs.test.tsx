@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import Tabs, { Tab } from './Tabs';
-import { render, fireEvent, screen } from '@testing-library/react';
+import Tabs, { type Tab } from './Tabs';
 
 const testTabs: Array<Tab> = [
   {

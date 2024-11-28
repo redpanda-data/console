@@ -1,4 +1,4 @@
-import { Box, Flex, SpaceProps, Stat, StatLabel, StatNumber, Tooltip } from '@redpanda-data/ui';
+import { Box, Flex, type SpaceProps, Stat, StatLabel, StatNumber, Tooltip } from '@redpanda-data/ui';
 import { MdInfoOutline } from 'react-icons/md';
 
 export function Statistic(

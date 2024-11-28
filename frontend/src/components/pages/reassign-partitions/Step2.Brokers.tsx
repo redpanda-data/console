@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { observer } from 'mobx-react';
-import { api } from '../../../state/backendApi';
-import { Broker } from '../../../state/restInterfaces';
-import { transaction } from 'mobx';
-import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
-import { SelectionInfoBar } from './components/StatisticsBar';
-import { PartitionSelection } from './ReassignPartitions';
 import { Checkbox, DataTable } from '@redpanda-data/ui';
-import { Row } from '@tanstack/react-table';
+import type { Row } from '@tanstack/react-table';
+import { transaction } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { Component } from 'react';
+import { api } from '../../../state/backendApi';
+import type { Broker } from '../../../state/restInterfaces';
+import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
+import type { PartitionSelection } from './ReassignPartitions';
+import { SelectionInfoBar } from './components/StatisticsBar';
 
 @observer
 export class StepSelectBrokers extends Component<{
@@ -29,11 +29,11 @@ export class StepSelectBrokers extends Component<{
 
   constructor(props: any) {
     super(props);
-    this.brokers = api.clusterInfo!.brokers;
+    this.brokers = api.clusterInfo?.brokers;
   }
 
   render() {
-    if (!this.brokers || this.brokers.length == 0) {
+    if (!this.brokers || this.brokers.length === 0) {
       console.error('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo });
       return <div>Error: no brokers available</div>;
     }
@@ -96,7 +96,7 @@ export class StepSelectBrokers extends Component<{
               }),
             },
             { header: 'ID', accessorKey: 'brokerId' },
-            { header: 'Broker Address', size: Infinity, accessorKey: 'address' },
+            { header: 'Broker Address', size: Number.POSITIVE_INFINITY, accessorKey: 'address' },
             { header: 'Rack', accessorKey: 'rack' },
             {
               header: 'Used Space',

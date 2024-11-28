@@ -9,27 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api, RolePrincipal, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
+import { Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
+import { type RolePrincipal, api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Button, DataTable, Flex, Heading, SearchField, Text } from '@redpanda-data/ui';
+import { PageComponent, type PageInitHelper } from '../Page';
 import { principalGroupsView } from './Models';
 import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 
-import { Link as ReactRouterLink } from 'react-router-dom';
 import { Box, Link as ChakraLink } from '@chakra-ui/react';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 
 @observer
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {
-  @observable isDeleting: boolean = false;
-  @observable principalSearch: string = '';
-  @observable roleName: string = '';
+  @observable isDeleting = false;
+  @observable principalSearch = '';
+  @observable roleName = '';
 
   constructor(p: any) {
     super(p);
@@ -140,7 +140,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
               columns={[
                 {
                   id: 'name',
-                  size: Infinity,
+                  size: Number.POSITIVE_INFINITY,
                   header: 'User',
                   cell: (ctx) => {
                     const entry = ctx.row.original;

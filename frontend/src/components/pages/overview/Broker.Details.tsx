@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import { ConfigEntry } from '../../../state/restInterfaces';
-import { observable, makeObservable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton, OptionGroup } from '../../../utils/tsxUtils';
-import { ConfigList } from '../../misc/ConfigList';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
-import { prettyBytesOrNA } from '../../../utils/utils';
-import { Statistic } from '../../misc/Statistic';
 import { Flex } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { Component } from 'react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import type { ConfigEntry } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { DefaultSkeleton, OptionGroup } from '../../../utils/tsxUtils';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { ConfigList } from '../../misc/ConfigList';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { Statistic } from '../../misc/Statistic';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 @observer
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
@@ -55,17 +55,17 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
 
   render() {
     const brokerConfigs = api.brokerConfigs.get(this.id);
-    if (brokerConfigs === undefined || brokerConfigs.length == 0) {
+    if (brokerConfigs === undefined || brokerConfigs.length === 0) {
       return DefaultSkeleton;
     }
 
-    const broker = api.brokers?.first((x) => x.brokerId == this.id);
+    const broker = api.brokers?.first((x) => x.brokerId === this.id);
     if (!broker) {
       return DefaultSkeleton;
     }
 
     // Handle error while getting config
-    if (typeof brokerConfigs == 'string')
+    if (typeof brokerConfigs === 'string')
       return (
         <div className="error">
           <h3>Error</h3>
@@ -107,11 +107,12 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
           return 0;
         case 'alphabetical':
           return a.name.localeCompare(b.name);
-        case 'changedFirst':
-          if (uiSettings.brokerList.propsOrder != 'changedFirst') return 0;
+        case 'changedFirst': {
+          if (uiSettings.brokerList.propsOrder !== 'changedFirst') return 0;
           const v1 = a.isExplicitlySet ? 1 : 0;
           const v2 = b.isExplicitlySet ? 1 : 0;
           return v2 - v1;
+        }
         default:
           return 0;
       }

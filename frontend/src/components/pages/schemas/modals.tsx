@@ -1,5 +1,4 @@
-import { observer } from 'mobx-react';
-import { openModal } from '../../../utils/ModalContainer';
+import { WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertIcon,
@@ -15,10 +14,11 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
-  ThemeTypings,
+  type ThemeTypings,
 } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
 import { useState } from 'react';
-import { WarningIcon } from '@chakra-ui/icons';
+import { openModal } from '../../../utils/ModalContainer';
 
 const GenericModal = observer(
   (p: {
@@ -69,7 +69,7 @@ const ExplicitConfirmModal = observer(
     closeModal: () => void;
   }) => {
     const [confirmBoxText, setConfirmBoxText] = useState('');
-    const isConfirmEnabled = confirmBoxText == 'delete';
+    const isConfirmEnabled = confirmBoxText === 'delete';
 
     return (
       <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
@@ -146,7 +146,7 @@ export function openInfoModal(p: {
   openModal(InfoModal, {
     title: p.title,
     body: p.body,
-    primaryButtonContent: p.btnContent ?? <>Close</>,
+    primaryButtonContent: p.btnContent ?? 'Close',
     onClose: p.onClose,
   });
 }
@@ -159,7 +159,7 @@ export function openValidationErrorsModal(result: {
   const { isValid, errorDetails, isCompatible } = result;
 
   const compatBox =
-    isCompatible == undefined || isValid == false ? (
+    isCompatible === undefined || isValid === false ? (
       <></>
     ) : isCompatible ? (
       <Alert status="success" variant="subtle">

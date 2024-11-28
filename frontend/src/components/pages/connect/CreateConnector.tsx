@@ -9,21 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useState } from 'react';
-import { comparer } from 'mobx';
-import { PageComponent, PageInitHelper } from '../Page';
-import { Wizard, WizardStep } from '../../misc/Wizard';
-import { observer, useLocalObservable } from 'mobx-react';
-import { api } from '../../../state/backendApi';
-import { uiState } from '../../../state/uiState';
-import { appGlobal } from '../../../state/appGlobal';
-import { ClusterConnectors, ConnectorValidationResult, DataType } from '../../../state/restInterfaces';
-import { HiddenRadioList } from '../../misc/HiddenRadioList';
-import { ConnectorBoxCard, ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
-import { ConfigPage } from './dynamic-ui/components';
-import KowlEditor from '../../misc/KowlEditor';
-import PageContent from '../../misc/PageContent';
-import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
 import {
   Alert,
   AlertDescription,
@@ -46,8 +31,23 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
+import { comparer } from 'mobx';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { useEffect, useState } from 'react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
+import { type ClusterConnectors, type ConnectorValidationResult, DataType } from '../../../state/restInterfaces';
+import { uiState } from '../../../state/uiState';
+import { TimeSince, containsIgnoreCase, delay } from '../../../utils/utils';
+import { HiddenRadioList } from '../../misc/HiddenRadioList';
+import KowlEditor from '../../misc/KowlEditor';
+import PageContent from '../../misc/PageContent';
+import { Wizard, type WizardStep } from '../../misc/Wizard';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfigPage } from './dynamic-ui/components';
 import { findConnectorMetadata } from './helper';
-import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
 
 import { SingleSelect } from '../../misc/Select';
 
@@ -76,9 +76,9 @@ const ConnectorType = observer(
 
       filteredPlugins =
         allPlugins?.filter((p) => {
-          if (state.tabFilter == 'export' && p.type == 'source') return false; // not an "export" type
+          if (state.tabFilter === 'export' && p.type === 'source') return false; // not an "export" type
 
-          if (state.tabFilter == 'import' && p.type == 'sink') return false; // not an "import" type
+          if (state.tabFilter === 'import' && p.type === 'sink') return false; // not an "import" type
 
           const meta = findConnectorMetadata(p.class);
           if (!meta) return true; // no metadata, show it always
@@ -355,7 +355,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
         clearErrors();
         setLoading(true);
-        const connectorRef = connectClusterStore.getConnector(selectedPlugin!.class);
+        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class);
 
         if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef.getConfigObject())) {
           connectorRef.updateProperties(parsedUpdatedConfig);
@@ -383,7 +383,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         try {
           const validationResult = await api.validateConnectorConfig(
             activeCluster,
-            selectedPlugin!.class,
+            selectedPlugin?.class,
             propertiesObject,
           );
 
@@ -401,14 +401,14 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         try {
           openCreatingModal();
 
-          await connectClusterStore.createConnector(selectedPlugin!.class, parsedUpdatedConfig);
+          await connectClusterStore.createConnector(selectedPlugin?.class, parsedUpdatedConfig);
 
           // Wait a bit for the connector to appear, then navigate to it
           const maxScanTime = 10000;
           const intervalSec = 100;
           const timer = new TimeSince();
 
-          const connectorName = connectorRef.propsByName.get('name')!.value as string;
+          const connectorName = connectorRef.propsByName.get('name')?.value as string;
 
           while (true) {
             const elapsedTime = timer.value;
@@ -526,8 +526,8 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   return (
     <>
       <Heading as="h1" fontSize="2xl" display="flex" alignItems="center" gap=".5ch" mb="8">
-        <>Create Connector: </>
-        {p.plugin.type == 'source' ? 'import data from ' : 'export data to '}
+        Create Connector:
+        {p.plugin.type === 'source' ? 'import data from ' : 'export data to '}
         {displayName}
         {/* <Box width="28px" height="28px" mr="1">{logo}</Box> */}
       </Heading>

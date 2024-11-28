@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
-import { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restInterfaces';
 import { computed, makeObservable } from 'mobx';
-import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
+import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import type { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import Section from '../../misc/Section';
+import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
 import './Overview.scss';
 import {
   Box,
@@ -33,14 +33,14 @@ import {
   Text,
   Tooltip,
 } from '@redpanda-data/ui';
-import { Link as ReactRouterLink } from 'react-router-dom';
-import React, { FC, ReactNode } from 'react';
-import { Statistic } from '../../misc/Statistic';
-import { Row } from '@tanstack/react-table';
-import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
-import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
-import colors from '../../../colors';
+import type { Row } from '@tanstack/react-table';
+import React, { type FC, type ReactNode } from 'react';
 import { FaCrown } from 'react-icons/fa';
+import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
+import { Link as ReactRouterLink } from 'react-router-dom';
+import colors from '../../../colors';
+import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
+import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
 
 @observer
@@ -77,9 +77,9 @@ class Overview extends PageComponent {
     const brokers = api.brokers ?? [];
 
     const clusterStatus =
-      overview.kafka.status == 'HEALTHY'
+      overview.kafka.status === 'HEALTHY'
         ? { displayText: 'Running', className: 'status-green' }
-        : overview.kafka.status == 'DEGRADED'
+        : overview.kafka.status === 'DEGRADED'
           ? { displayText: 'Degraded', className: 'status-yellow' }
           : { displayText: 'Unhealthy', className: 'status-red' };
 
@@ -109,7 +109,7 @@ class Overview extends PageComponent {
               <Statistic
                 title="Cluster Status"
                 value={clusterStatus.displayText}
-                className={'status-bar ' + clusterStatus.className}
+                className={`status-bar ${clusterStatus.className}`}
               />
               <Statistic title="Cluster Storage Size" value={brokerSize} />
               <Statistic title="Cluster Version" value={version} />
@@ -162,7 +162,7 @@ class Overview extends PageComponent {
                           )}
                         </Flex>
                       ),
-                      size: Infinity,
+                      size: Number.POSITIVE_INFINITY,
                     },
                     {
                       size: 120,
@@ -183,7 +183,7 @@ class Overview extends PageComponent {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => appGlobal.history.push('/overview/' + broker.brokerId)}
+                            onClick={() => appGlobal.history.push(`/overview/${broker.brokerId}`)}
                           >
                             View
                           </Button>
@@ -282,7 +282,7 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
       <GridItem>{firstLeft}</GridItem>
       <GridItem>{firstRight}</GridItem>
 
-      {rest?.map(([left, right] = [], idx) => (
+      {rest?.map(([left, right], idx) => (
         <React.Fragment key={idx}>
           <GridItem />
           <GridItem>{left}</GridItem>
@@ -322,7 +322,7 @@ function ClusterDetails() {
   };
 
   const clusters = overview.kafkaConnect?.clusters ?? [];
-  const hasConnect = overview.kafkaConnect?.isConfigured == true && clusters.length > 0;
+  const hasConnect = overview.kafkaConnect?.isConfigured === true && clusters.length > 0;
   const clusterLines = clusters.map((c) => {
     return {
       name: c.name,
@@ -344,7 +344,7 @@ function ClusterDetails() {
               ? [
                   [
                     formatStatus(overview.schemaRegistry),
-                    overview.schemaRegistry.status == 'HEALTHY' && overview.schemaRegistry.isConfigured
+                    overview.schemaRegistry.status === 'HEALTHY' && overview.schemaRegistry.isConfigured
                       ? `${overview.schemaRegistry.registeredSubjects} schemas`
                       : undefined,
                   ],

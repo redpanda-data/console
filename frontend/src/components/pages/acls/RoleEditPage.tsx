@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
+import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
+import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { RoleForm } from './RoleForm';
+import { PageComponent, type PageInitHelper } from '../Page';
 import { principalGroupsView } from './Models';
+import { RoleForm } from './RoleForm';
 
 @observer
 class RoleEditPage extends PageComponent<{ roleName: string }> {
   @observable allDataLoaded = false;
-  @observable roleName: string = '';
+  @observable roleName = '';
 
   constructor(p: any) {
     super(p);

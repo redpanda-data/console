@@ -9,29 +9,29 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, FC, useState } from 'react';
-import { observer, useLocalObservable } from 'mobx-react';
-import { clearSettings, uiSettings } from '../../state/ui';
-import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
-import { transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
 import {
   Button,
   Checkbox,
   Flex,
   IconButton,
+  Input,
   Modal,
   ModalBody,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  useToast,
-  Text,
-  Tabs,
-  Input,
   NumberInput,
+  Tabs,
+  Text,
+  useToast,
 } from '@redpanda-data/ui';
+import { transaction } from 'mobx';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { Component, type FC, useState } from 'react';
+import { clearSettings, uiSettings } from '../../state/ui';
+import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 
 type SettingsTabKeys = 'statisticsBar' | 'jsonViewer' | 'importExport' | 'autoRefresh';
 
@@ -205,7 +205,7 @@ const ImportExportTab: FC = observer(() => {
                 if (skipped.length > 0)
                   toast({
                     status: 'warning',
-                    description: 'Some properties were skipped during import:\n' + skipped.join(', '),
+                    description: `Some properties were skipped during import:\n${skipped.join(', ')}`,
                   });
                 else
                   toast({

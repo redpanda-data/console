@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 export interface ApiError {
   statusCode: number;
@@ -626,47 +626,47 @@ export interface TopicPermissions {
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
 export enum AclResourceType {
-  Unknown,
-  Any,
-  Topic,
-  Group,
-  Cluster,
-  TransactionalID,
-  DelegationToken,
+  Unknown = 0,
+  Any = 1,
+  Topic = 2,
+  Group = 3,
+  Cluster = 4,
+  TransactionalID = 5,
+  DelegationToken = 6,
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59
 export enum AclResourcePatternType {
-  Unknown,
-  Any,
-  Match,
-  Literal,
-  Prefixed,
+  Unknown = 0,
+  Any = 1,
+  Match = 2,
+  Literal = 3,
+  Prefixed = 4,
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
 export enum AclOperation {
-  Unknown,
-  Any,
-  All,
-  Read,
-  Write,
-  Create,
-  Delete,
-  Alter,
-  Describe,
-  ClusterAction,
-  DescribeConfigs,
-  AlterConfigs,
-  IdempotentWrite,
+  Unknown = 0,
+  Any = 1,
+  All = 2,
+  Read = 3,
+  Write = 4,
+  Create = 5,
+  Delete = 6,
+  Alter = 7,
+  Describe = 8,
+  ClusterAction = 9,
+  DescribeConfigs = 10,
+  AlterConfigs = 11,
+  IdempotentWrite = 12,
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71
 export enum AclPermission {
-  Unknown,
-  Any,
-  Deny,
-  Allow,
+  Unknown = 0,
+  Any = 1,
+  Deny = 2,
+  Allow = 3,
 }
 
 // list all:
@@ -1255,9 +1255,6 @@ export function compressionTypeToNum(type: CompressionType) {
       return CompressionTypeNum.LZ4;
     case CompressionType.ZStd:
       return CompressionTypeNum.ZStd;
-
-    case CompressionType.Uncompressed:
-    case CompressionType.Unknown:
     default:
       return CompressionTypeNum.None;
   }

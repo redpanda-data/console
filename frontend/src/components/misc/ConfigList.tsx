@@ -11,15 +11,15 @@
 
 import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
 import colors from '../../colors';
-import { ConfigEntry } from '../../state/restInterfaces';
-import { ValueDisplay } from '../../state/ui';
+import type { ConfigEntry } from '../../state/restInterfaces';
+import type { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { equalsIgnoreCase } from '../../utils/utils';
 
 import styles from './ConfigList.module.scss';
 
-import { DataTable, Flex, Tooltip, Text, Box } from '@redpanda-data/ui';
-import { ColumnDef } from '@tanstack/react-table';
+import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
+import type { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({
   configEntries,
@@ -59,7 +59,7 @@ export function ConfigList({
     {
       header: 'Value',
       accessorKey: 'value',
-      size: Infinity,
+      size: Number.POSITIVE_INFINITY,
       cell: ({ row: { original: record } }) => (
         <Text wordBreak="break-all" whiteSpace="break-spaces" className={styles.value}>
           {formatConfigValue(record.name, record.value, valueDisplay)}

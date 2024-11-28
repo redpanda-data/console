@@ -9,27 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useState } from 'react';
-import { observer, useLocalObservable } from 'mobx-react';
 import { comparer, observable, transaction } from 'mobx';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { useEffect, useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
-import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../state/backendApi';
+import { type MessageSearch, type MessageSearchRequest, api, createMessageSearch } from '../../../state/backendApi';
+import { ConnectClusterStore } from '../../../state/connect/state';
 import {
-  ClusterConnectorInfo,
-  ClusterConnectorTaskInfo,
-  ConnectorError,
+  type ClusterConnectorInfo,
+  type ClusterConnectorTaskInfo,
+  type ConnectorError,
   DataType,
   PropertyImportance,
-  TopicMessage,
+  type TopicMessage,
 } from '../../../state/restInterfaces';
 import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
-import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectClusterStore } from '../../../state/connect/state';
+import { PageComponent, type PageInitHelper } from '../Page';
 import { ConfigPage } from './dynamic-ui/components';
 import './helper';
-import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
-import PageContent from '../../misc/PageContent';
-import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import {
   Alert,
   AlertIcon,
@@ -40,13 +37,13 @@ import {
   Flex,
   Grid,
   Heading,
-  Modal as RPModal,
   ModalBody,
   ModalCloseButton,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Modal as RPModal,
   SearchField,
   Skeleton,
   Tabs,
@@ -54,16 +51,19 @@ import {
   Tooltip,
   useDisclosure,
 } from '@redpanda-data/ui';
-import Section from '../../misc/Section';
-import { getConnectorFriendlyName } from './ConnectorBoxCard';
-import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
-import { ColumnDef } from '@tanstack/react-table';
-import { MessagePreview } from '../topics/Tab.Messages';
+import type { ColumnDef } from '@tanstack/react-table';
 import usePaginationParams from '../../../hooks/usePaginationParams';
+import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
 import { sanitizeString } from '../../../utils/filterHelper';
-import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { delay, encodeBase64, titleCase } from '../../../utils/utils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { MessagePreview } from '../topics/Tab.Messages';
 import { ExpandedMessage } from '../topics/Tab.Messages';
+import { getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfirmModal, NotConfigured, TaskState, statusColors } from './helper';
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
@@ -88,7 +88,7 @@ const KafkaConnectorMain = observer(
   }) => {
     const [connectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
 
-    const logsTopic = api.topics?.first((x) => x.topicName == LOGS_TOPIC_NAME);
+    const logsTopic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
 
     useEffect(() => {
       const init = async () => {
@@ -459,9 +459,9 @@ const ConfigOverviewTab = observer(
 const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const errorType = p.error.type == 'ERROR' ? 'error' : 'warning';
+  const errorType = p.error.type === 'ERROR' ? 'error' : 'warning';
 
-  const hasConnectorLogs = api.topics?.any((x) => x.topicName == LOGS_TOPIC_NAME);
+  const hasConnectorLogs = api.topics?.any((x) => x.topicName === LOGS_TOPIC_NAME);
 
   return (
     <>
@@ -556,11 +556,11 @@ const ConnectorDetails = observer(
     const items = allProps
       .filter((x) => {
         if (x.isHidden) return false;
-        if (x.entry.definition.type == DataType.Password) return false;
-        if (x.entry.definition.importance != PropertyImportance.High) return false;
+        if (x.entry.definition.type === DataType.Password) return false;
+        if (x.entry.definition.importance !== PropertyImportance.High) return false;
 
         if (!x.value) return false;
-        if (x.name == 'name') return false;
+        if (x.name === 'name') return false;
 
         return true;
       })
@@ -569,7 +569,7 @@ const ConnectorDetails = observer(
         for (const s of store.connectorStepDefinitions)
           for (const g of s.groups)
             for (const p of g.config_keys) {
-              if (p == x.name) return i;
+              if (p === x.name) return i;
               i++;
             }
 
@@ -584,7 +584,7 @@ const ConnectorDetails = observer(
 
       // Try to undo mapping
       if (e.entry.metadata.recommended_values?.length) {
-        const match = e.entry.metadata.recommended_values.find((x) => x.value == e.value);
+        const match = e.entry.metadata.recommended_values.find((x) => x.value === e.value);
         if (match) {
           r.value = String(match.display_name);
         }
@@ -595,10 +595,7 @@ const ConnectorDetails = observer(
 
     displayEntries.unshift({
       name: 'Type',
-      value:
-        (p.connector.type == 'source' ? 'Import from' : 'Export to') +
-        ' ' +
-        getConnectorFriendlyName(p.connector.class),
+      value: `${p.connector.type === 'source' ? 'Import from' : 'Export to'} ${getConnectorFriendlyName(p.connector.class)}`,
     });
 
     return (
@@ -627,7 +624,7 @@ const LogsTab = observer(
     const { connector } = p;
     const connectorName = connector.name;
     const topicName = LOGS_TOPIC_NAME;
-    const topic = api.topics?.first((x) => x.topicName == topicName);
+    const topic = api.topics?.first((x) => x.topicName === topicName);
 
     const createLogsTabState = () => {
       const search: MessageSearch = createMessageSearch();
@@ -663,10 +660,10 @@ const LogsTab = observer(
       };
       const messages = await search.startSearch(searchReq);
 
-      if (messages && messages.length == 1) {
+      if (messages && messages.length === 1) {
         // We must update the old message (that still says "payload too large")
         // So we just find its index and replace it in the array we are currently displaying
-        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID == partitionID && x.offset == offset);
+        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (indexOfOldMessage > -1) {
           state.messages[indexOfOldMessage] = messages[0];
         } else {
@@ -745,7 +742,7 @@ const LogsTab = observer(
               <ExpandedMessage
                 msg={original}
                 loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
+                  loadLargeMessage(state.search.searchRequest?.topicName, original.partitionID, original.offset)
                 }
               />
             )}
@@ -759,8 +756,8 @@ const LogsTab = observer(
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
   if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
-  if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
+  if (m.keyJson?.toLowerCase().includes(str)) return true;
+  if (m.valueJson?.toLowerCase().includes(str)) return true;
   return false;
 }
 
@@ -791,11 +788,11 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, co
     try {
       search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
-        console.error('error in connectorLogsMessageSearch: ' + msg);
+        console.error(`error in connectorLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
-      console.error('error in connectorLogsMessageSearch: ' + ((error as Error).message ?? String(error)));
+      console.error(`error in connectorLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return [];
     }
   });

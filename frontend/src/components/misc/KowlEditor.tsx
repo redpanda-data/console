@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import Editor, { type EditorProps, type Monaco, DiffEditor, type DiffEditorProps } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import React from 'react';
-import Editor, { EditorProps, Monaco, DiffEditor, DiffEditorProps } from '@monaco-editor/react';
-import { editor } from 'monaco-editor';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;

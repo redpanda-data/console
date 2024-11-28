@@ -9,10 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { action, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { CSSProperties, ReactElement } from 'react';
-import { toJson } from './jsonUtils';
 import {
   Box,
   Button,
@@ -26,6 +22,10 @@ import {
   Result,
   VStack,
 } from '@redpanda-data/ui';
+import { action, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { type CSSProperties, type ReactElement } from 'react';
+import { toJson } from './jsonUtils';
 
 export type AutoModalProps = {
   title: string;

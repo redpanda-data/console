@@ -9,16 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../../../../state/backendApi';
-import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
+import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
 import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 
-import styles from './DeleteRecordsModal.module.scss';
-import { KowlTimePicker } from '../../../misc/KowlTimePicker';
 import {
   Alert,
   AlertIcon,
@@ -42,7 +40,9 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
+import { KowlTimePicker } from '../../../misc/KowlTimePicker';
 import { SingleSelect } from '../../../misc/Select';
+import styles from './DeleteRecordsModal.module.scss';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -135,7 +135,7 @@ function SelectPartitionStep({
             ),
           },
         ]}
-      ></RadioOptionGroup>
+      />
     </>
   );
 }
@@ -326,7 +326,7 @@ function getMarks(partition: Partition) {
   if (!partition)
     return {
       min: 0,
-      max: Infinity,
+      max: Number.POSITIVE_INFINITY,
     };
 
   const diff = partition.waterMarkHigh - partition.waterMarkLow;
@@ -397,7 +397,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const isHighWatermark = offsetOption === 'highWatermark';
   const isTimestamp = offsetOption === 'timestamp';
 
-  const handleFinish = async (responseData: DeleteRecordsResponseData | null | void) => {
+  const handleFinish = async (responseData: DeleteRecordsResponseData | null | undefined) => {
     if (responseData == null) {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;

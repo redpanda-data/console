@@ -26,7 +26,7 @@ export function expectRefEq(test: { name: string; actual: any; expected: any }) 
 export function expectEq(test: { name: string; actual: any; expected: any }) {
   const jActual = toJson(test.actual);
   const jExpected = toJson(test.expected);
-  if (jActual == jExpected) {
+  if (jActual === jExpected) {
     successfulTests++;
     return;
   }
@@ -57,7 +57,7 @@ export function expect(testOrName: string | (() => boolean), test?: () => boolea
 
   // Failed!
   throw new Error(`
-Test failed ${name ? ': ' + name : ''}
+Test failed ${name ? `: ${name}` : ''}
     ${testFunc.toString()}
 
 `);

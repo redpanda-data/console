@@ -10,20 +10,20 @@
  */
 
 import React, { Component } from 'react';
-import { Topic } from '../../../state/restInterfaces';
+import type { Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
-import { api } from '../../../state/backendApi';
+import { Button, Empty, VStack } from '@redpanda-data/ui';
+import { motion } from 'framer-motion';
+import { observer } from 'mobx-react';
+import ReactMarkdown from 'react-markdown';
+import { uriTransformer as baseUriTransformer } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
-import { uriTransformer as baseUriTransformer } from 'react-markdown';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { motion } from 'framer-motion';
+import remarkGfm from 'remark-gfm';
+import { api } from '../../../state/backendApi';
 import { animProps } from '../../../utils/animationProps';
-import { observer } from 'mobx-react';
-import { Button, Empty, VStack } from '@redpanda-data/ui';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 // Test for link sanitizer
 /*
@@ -36,7 +36,7 @@ const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
 function sanitizeUrl(uri: string, _children?: any, _title?: string | null): string {
   const baseTransformed = baseUriTransformer(uri);
-  if (baseTransformed != uri) return baseTransformed;
+  if (baseTransformed !== uri) return baseTransformed;
 
   const cleanedUri = uri.trim().toLocaleLowerCase();
 

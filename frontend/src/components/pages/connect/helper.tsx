@@ -9,55 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer, useLocalObservable } from 'mobx-react';
-import React, { CSSProperties, useRef, useState } from 'react';
-import { api } from '../../../state/backendApi';
 import {
-  ApiError,
-  ClusterConnectorInfo,
-  ClusterConnectors,
-  ClusterConnectorTaskInfo,
-  ConnectorState,
-  ConnectorStatus,
-} from '../../../state/restInterfaces';
-import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
-import ElasticLogo from '../../../assets/connectors/elastic.svg';
-import MsSqlLogo from '../../../assets/connectors/mssql.png';
-import MySqlLogo from '../../../assets/connectors/mysql.svg';
-import MongoDBLogo from '../../../assets/connectors/mongodb.png';
-import IcebergLogo from '../../../assets/connectors/iceberg.png';
-import IbmMqLogo from '../../../assets/connectors/ibm-mq.svg';
-import DebeziumLogo from '../../../assets/connectors/debezium.png';
-import ConfluentLogo from '../../../assets/connectors/confluent.png';
-import ApacheLogo from '../../../assets/connectors/apache.svg';
-import HdfsLogo from '../../../assets/connectors/hdfs.png';
-import JdbcLogo from '../../../assets/connectors/jdbc.png';
-import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
-import PostgresqlLogo from '../../../assets/connectors/postgres.png';
-import SalesforceLogo from '../../../assets/connectors/salesforce.png';
-import ServicenowLogo from '../../../assets/connectors/servicenow.png';
-import RedpandaLogo from '../../../assets/connectors/redpanda.svg';
-import BigQueryLogo from '../../../assets/connectors/google-bigquery.svg';
-import GoogleCloudStorageLogo from '../../../assets/connectors/google-cloud-storage.png';
-import PubSubLogo from '../../../assets/connectors/google-pub-sub.svg';
-import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
-import CassandraLogo from '../../../assets/connectors/cassandra.png';
-import DB2Logo from '../../../assets/connectors/db2.png';
-import TwitterLogo from '../../../assets/connectors/twitter.svg';
-import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
-import { action, runInAction } from 'mobx';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
-import { isEmbedded } from '../../../config';
-import {
+  Alert,
+  AlertDescription,
   AlertDialog,
   AlertDialogBody,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
+  AlertIcon,
   Box,
   Button,
+  Empty,
   Modal,
   ModalBody,
   ModalContent,
@@ -65,15 +29,13 @@ import {
   ModalHeader,
   ModalOverlay,
   Popover,
-  useToast,
-  VStack,
   Text,
-  Empty,
-  AlertDescription,
-  AlertIcon,
-  Alert,
+  VStack,
+  useToast,
 } from '@redpanda-data/ui';
-import { Statistic } from '../../misc/Statistic';
+import { action, runInAction } from 'mobx';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { type CSSProperties, useRef, useState } from 'react';
 import {
   MdCheckCircleOutline,
   MdErrorOutline,
@@ -81,6 +43,44 @@ import {
   MdOutlinePauseCircle,
   MdOutlineWarningAmber,
 } from 'react-icons/md';
+import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
+import ApacheLogo from '../../../assets/connectors/apache.svg';
+import CassandraLogo from '../../../assets/connectors/cassandra.png';
+import ConfluentLogo from '../../../assets/connectors/confluent.png';
+import DB2Logo from '../../../assets/connectors/db2.png';
+import DebeziumLogo from '../../../assets/connectors/debezium.png';
+import ElasticLogo from '../../../assets/connectors/elastic.svg';
+import BigQueryLogo from '../../../assets/connectors/google-bigquery.svg';
+import GoogleCloudStorageLogo from '../../../assets/connectors/google-cloud-storage.png';
+import PubSubLogo from '../../../assets/connectors/google-pub-sub.svg';
+import HdfsLogo from '../../../assets/connectors/hdfs.png';
+import IbmMqLogo from '../../../assets/connectors/ibm-mq.svg';
+import IcebergLogo from '../../../assets/connectors/iceberg.png';
+import JdbcLogo from '../../../assets/connectors/jdbc.png';
+import MongoDBLogo from '../../../assets/connectors/mongodb.png';
+import MsSqlLogo from '../../../assets/connectors/mssql.png';
+import MySqlLogo from '../../../assets/connectors/mysql.svg';
+import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
+import PostgresqlLogo from '../../../assets/connectors/postgres.png';
+import RedpandaLogo from '../../../assets/connectors/redpanda.svg';
+import SalesforceLogo from '../../../assets/connectors/salesforce.png';
+import ServicenowLogo from '../../../assets/connectors/servicenow.png';
+import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
+import TwitterLogo from '../../../assets/connectors/twitter.svg';
+import { isEmbedded } from '../../../config';
+import { api } from '../../../state/backendApi';
+import {
+  type ApiError,
+  type ClusterConnectorInfo,
+  type ClusterConnectorTaskInfo,
+  type ClusterConnectors,
+  ConnectorState,
+  type ConnectorStatus,
+} from '../../../state/restInterfaces';
+import { ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { Statistic } from '../../misc/Statistic';
 
 interface ConnectorMetadata {
   readonly className?: string; // match by exact match
@@ -421,7 +421,7 @@ export function findConnectorMetadata(className: string): ConnectorMetadata | nu
   // look for exact match
   for (const e of connectorMetadata)
     if (e.className)
-      if (e.className == c) {
+      if (e.className === c) {
         meta = e;
         break;
       }
@@ -452,7 +452,7 @@ export const ConnectorClass = observer((props: { observable: { class: string } }
 
   return (
     <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
-      {meta && meta.logo && (
+      {meta?.logo && (
         <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
           <ZeroSizeWrapper width="22px" transform="translateY(-1px)">
             <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
@@ -498,7 +498,7 @@ export const OverviewStatisticsCard = observer(() => {
 export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
   if (isEmbedded()) return null;
 
-  const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName == p.clusterName);
+  const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName === p.clusterName);
 
   const runningConnectors = cluster?.runningConnectors ?? '...';
   const totalConnectors = cluster?.totalConnectors ?? '...';
@@ -520,8 +520,8 @@ export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
 });
 
 export const ConnectorStatisticsCard = observer((p: { clusterName: string; connectorName: string }) => {
-  const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName == p.clusterName);
-  const connector = cluster?.connectors.first((x) => x.name == p.connectorName);
+  const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName === p.clusterName);
+  const connector = cluster?.connectors.first((x) => x.name === p.connectorName);
 
   return (
     <Section py={4}>
@@ -578,7 +578,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
   const renderError: () => { title: string; content: string } | undefined = () => {
     if (!$state.error) return undefined;
 
-    const txt = typeof $state.error == 'string' ? $state.error : $state.error.message;
+    const txt = typeof $state.error === 'string' ? $state.error : $state.error.message;
 
     // try parsing as json
     let apiErr: ApiError | undefined;
@@ -716,7 +716,7 @@ export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | C
     total = props.observable.totalConnectors;
     error = props.observable.error;
   } else {
-    if (props.observable.length == 0) return null;
+    if (props.observable.length === 0) return null;
     error = props.observable[0].error;
     running = props.observable.sum((x) => x.runningConnectors);
     total = props.observable.sum((x) => x.totalConnectors);
@@ -744,10 +744,10 @@ export const TaskState = observer(
     const iconWrapper = (icon: JSX.Element) => <span style={{ fontSize: '18px' }}>{icon}</span>;
 
     let icon: JSX.Element = <></>;
-    if (state == ConnectorState.Running) icon = iconWrapper(okIcon);
-    if (state == ConnectorState.Failed) icon = iconWrapper(errIcon);
-    if (state == ConnectorState.Paused) icon = iconWrapper(pauseIcon);
-    if (state == ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
+    if (state === ConnectorState.Running) icon = iconWrapper(okIcon);
+    if (state === ConnectorState.Failed) icon = iconWrapper(errIcon);
+    if (state === ConnectorState.Paused) icon = iconWrapper(pauseIcon);
+    if (state === ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
 
     let stateContent = (
       <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }} className="capitalize">

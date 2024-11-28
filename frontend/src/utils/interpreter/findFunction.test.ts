@@ -27,8 +27,8 @@
 
 require('./findFunction');
 import './global';
-import { expect, successfulTests, expectEq } from './helpers';
 import { exit } from 'process';
+import { expect, expectEq, successfulTests } from './helpers';
 
 console.log('running "findFunction" tests...');
 
@@ -68,8 +68,8 @@ global.value = {
 //
 // - find by name
 //
-expect(() => find('name') == 'n1');
-expect(() => find('sCoRe', true) == 's1');
+expect(() => find('name') === 'n1');
+expect(() => find('sCoRe', true) === 's1');
 expect(() => find('asdaadf') === undefined);
 expect(() => find('stars') === 10);
 expect(() => find('points') === 123);
@@ -87,7 +87,7 @@ expect(() => typeof find('nested') === 'object');
 const nested = find('nested') as object;
 expect(() => nested != null);
 expect(() => nested.find('score') === 1);
-expect(() => nested.find((obj, prop) => prop == 'score') === 1);
+expect(() => nested.find((obj, prop) => prop === 'score') === 1);
 expect(() => nested.find((obj, prop) => false) === undefined);
 expect(() => nested.find('asdasfa') === undefined);
 

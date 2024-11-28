@@ -10,62 +10,34 @@
  */
 
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
+import {
+  type IReactionDisposer,
+  action,
+  autorun,
+  computed,
+  makeObservable,
+  observable,
+  transaction,
+  untracked,
+} from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, FC, ReactNode, useState } from 'react';
-import { api, createMessageSearch, MessageSearch, MessageSearchRequest } from '../../../../state/backendApi';
-import { Payload, Topic, TopicAction } from '../../../../state/restInterfaces';
+import React, { Component, type FC, type ReactNode, useState } from 'react';
+import { type MessageSearch, type MessageSearchRequest, api, createMessageSearch } from '../../../../state/backendApi';
+import type { Payload, Topic, TopicAction } from '../../../../state/restInterfaces';
 import type { TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
-  ColumnList,
-  DataColumnKey,
+  type ColumnList,
   DEFAULT_SEARCH_PARAMS,
+  type DataColumnKey,
   FilterEntry,
   PartitionOffsetOrigin,
-  PreviewTagV2,
-  TimestampDisplayFormat,
+  type PreviewTagV2,
+  type TimestampDisplayFormat,
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import '../../../../utils/arrayExtensions';
-import { IsDev } from '../../../../utils/env';
-import { FilterableDataSource } from '../../../../utils/filterableDataSource';
-import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
-import { toJson } from '../../../../utils/jsonUtils';
-import { editQuery } from '../../../../utils/queryHelper';
-import {
-  MdCalendarToday,
-  MdDoNotDisturb,
-  MdDownload,
-  MdJavascript,
-  MdKeyboardTab,
-  MdOutlineLayers,
-  MdOutlinePlayCircle,
-  MdOutlineQuickreply,
-  MdOutlineSettings,
-  MdOutlineSkipPrevious,
-  MdOutlineTimer,
-} from 'react-icons/md';
-import {
-  Ellipsis,
-  Label,
-  navigatorClipboardErrorHandler,
-  numberToThousandsString,
-  StatusIndicator,
-  TimestampDisplay,
-  toSafeString,
-} from '../../../../utils/tsxUtils';
-import {
-  base64FromUInt8Array,
-  cullText,
-  encodeBase64,
-  prettyBytes,
-  prettyMilliseconds,
-  titleCase,
-} from '../../../../utils/utils';
-import { range } from '../../../misc/common';
-import { KowlJsonView } from '../../../misc/KowlJsonView';
-import { getPreviewTags, PreviewSettings } from './PreviewSettings';
+import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertDescription,
@@ -97,8 +69,8 @@ import {
   ModalHeader,
   ModalOverlay,
   RadioGroup,
-  Stack,
   Tabs as RpTabs,
+  Stack,
   Tag,
   TagCloseButton,
   TagLabel,
@@ -108,17 +80,54 @@ import {
   useColorModeValue,
   useToast,
 } from '@redpanda-data/ui';
-import { SingleSelect, SingleSelectProps } from '../../../misc/Select';
-import { isServerless } from '../../../../config';
+import type { ColumnDef } from '@tanstack/react-table';
+import {
+  MdCalendarToday,
+  MdDoNotDisturb,
+  MdDownload,
+  MdJavascript,
+  MdKeyboardTab,
+  MdOutlineLayers,
+  MdOutlinePlayCircle,
+  MdOutlineQuickreply,
+  MdOutlineSettings,
+  MdOutlineSkipPrevious,
+  MdOutlineTimer,
+} from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
-import { ColumnDef } from '@tanstack/react-table';
-import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { isServerless } from '../../../../config';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
-import { onPaginationChange } from '../../../../utils/pagination';
-import RemovableFilter from '../../../misc/RemovableFilter';
-import JavascriptFilterModal from './JavascriptFilterModal';
+import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/appGlobal';
+import { IsDev } from '../../../../utils/env';
+import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
+import { FilterableDataSource } from '../../../../utils/filterableDataSource';
+import { toJson } from '../../../../utils/jsonUtils';
+import { onPaginationChange } from '../../../../utils/pagination';
+import { editQuery } from '../../../../utils/queryHelper';
+import {
+  Ellipsis,
+  Label,
+  StatusIndicator,
+  TimestampDisplay,
+  navigatorClipboardErrorHandler,
+  numberToThousandsString,
+  toSafeString,
+} from '../../../../utils/tsxUtils';
+import {
+  base64FromUInt8Array,
+  cullText,
+  encodeBase64,
+  prettyBytes,
+  prettyMilliseconds,
+  titleCase,
+} from '../../../../utils/utils';
+import { KowlJsonView } from '../../../misc/KowlJsonView';
+import RemovableFilter from '../../../misc/RemovableFilter';
+import { SingleSelect, type SingleSelectProps } from '../../../misc/Select';
+import { range } from '../../../misc/common';
+import JavascriptFilterModal from './JavascriptFilterModal';
+import { PreviewSettings, getPreviewTags } from './PreviewSettings';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -162,16 +171,16 @@ function getMessageAsString(value: string | TopicMessage): string {
   if (typeof value === 'string') return value;
 
   const obj = Object.assign({}, value) as Partial<TopicMessage>;
-  delete obj.keyBinHexPreview;
-  delete obj.valueBinHexPreview;
-  delete obj.keyJson;
-  delete obj.valueJson;
+  obj.keyBinHexPreview = undefined;
+  obj.valueBinHexPreview = undefined;
+  obj.keyJson = undefined;
+  obj.valueJson = undefined;
   if (obj.key) {
-    delete obj.key.normalizedPayload;
+    obj.key.normalizedPayload = undefined;
     if (obj.key.rawBytes) obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
   }
   if (obj.value) {
-    delete obj.value.normalizedPayload;
+    obj.value.normalizedPayload = undefined;
     if (obj.value.rawBytes) obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
   }
 
@@ -271,8 +280,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     this.quickSearchReaction = autorun(
       () => {
         editQuery((query) => {
-          if (uiState.topicSettings.quickSearch) query['q'] = uiState.topicSettings.quickSearch;
-          else query['q'] = undefined;
+          if (uiState.topicSettings.quickSearch) query.q = uiState.topicSettings.quickSearch;
+          else query.q = undefined;
         });
       },
       { name: 'update query string' },
@@ -327,7 +336,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const topic = this.props.topic;
     const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
     const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
-    const customStartOffsetValid = !isNaN(Number(customStartOffsetValue));
+    const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
 
     const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
 
@@ -345,7 +354,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         label: (
           <Flex gap={2} alignItems="center">
             <MdOutlineQuickreply />
-            {'Newest - ' + String(searchParams.maxResults)}
+            {`Newest - ${String(searchParams.maxResults)}`}
           </Flex>
         ),
       },
@@ -388,7 +397,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                   value={searchParams.offsetOrigin}
                   onChange={(e) => {
                     searchParams.offsetOrigin = e;
-                    if (searchParams.offsetOrigin == PartitionOffsetOrigin.Custom) {
+                    if (searchParams.offsetOrigin === PartitionOffsetOrigin.Custom) {
                       if (searchParams.startOffset < 0) searchParams.startOffset = 0;
                     } else {
                       searchParams.startOffset = searchParams.offsetOrigin;
@@ -397,21 +406,21 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                   options={startOffsetOptions}
                   chakraStyles={defaultSelectChakraStyles}
                 />
-                {searchParams.offsetOrigin == PartitionOffsetOrigin.Custom && (
+                {searchParams.offsetOrigin === PartitionOffsetOrigin.Custom && (
                   <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
                     <Input
                       style={{ width: '7.5em' }}
                       maxLength={20}
-                      isDisabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom}
+                      isDisabled={searchParams.offsetOrigin !== PartitionOffsetOrigin.Custom}
                       value={customStartOffsetValue}
                       onChange={(e) => {
                         setCustomStartOffsetValue(e.target.value);
-                        if (!isNaN(Number(e.target.value))) searchParams.startOffset = Number(e.target.value);
+                        if (!Number.isNaN(Number(e.target.value))) searchParams.startOffset = Number(e.target.value);
                       }}
                     />
                   </Tooltip>
                 )}
-                {searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+                {searchParams.offsetOrigin === PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
               </Flex>
             </Label>
 
@@ -431,7 +440,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                       <RemovableFilter
                         onRemove={() => {
                           uiState.topicSettings.dynamicFilters.remove('partition');
-                          searchParams.partitionID = DEFAULT_SEARCH_PARAMS['partitionID'];
+                          searchParams.partitionID = DEFAULT_SEARCH_PARAMS.partitionID;
                         }}
                       >
                         <SingleSelect<number>
@@ -633,7 +642,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     untracked(() => {
       const phase = this.messageSearch.searchPhase;
 
-      if (searchParams == this.currentSearchRun && source == 'auto') {
+      if (searchParams === this.currentSearchRun && source === 'auto') {
         console.log('ignoring serach, search params are up to date, and source is auto', {
           newParams: searchParams,
           oldParams: this.currentSearchRun,
@@ -644,7 +653,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       }
 
       // Abort current search if one is running
-      if (phase != 'Done') {
+      if (phase !== 'Done') {
         this.messageSearch.stopSearch();
       }
 
@@ -674,8 +683,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   isFilterMatch(str: string, m: TopicMessage) {
     str = uiState.topicSettings.quickSearch.toLowerCase();
     if (m.offset.toString().toLowerCase().includes(str)) return true;
-    if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
-    if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
+    if (m.keyJson?.toLowerCase().includes(str)) return true;
+    if (m.valueJson?.toLowerCase().includes(str)) return true;
     return false;
   }
 
@@ -696,11 +705,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     };
     const messages = await search.startSearch(searchReq);
 
-    if (messages && messages.length == 1) {
+    if (messages && messages.length === 1) {
       // We must update the old message (that still says "payload too large")
       // So we just find its index and replace it in the array we are currently displaying
       const indexOfOldMessage = this.messageSearch.messages.findIndex(
-        (x) => x.partitionID == partitionID && x.offset == offset,
+        (x) => x.partitionID === partitionID && x.offset === offset,
       );
       if (indexOfOldMessage > -1) {
         this.messageSearch.messages[indexOfOldMessage] = messages[0];
@@ -896,7 +905,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     if (newColumns.length > 0) {
-      newColumns[newColumns.length - 1].size = Infinity;
+      newColumns[newColumns.length - 1].size = Number.POSITIVE_INFINITY;
     }
 
     const columns: ColumnDef<TopicMessage>[] = [
@@ -974,8 +983,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
             uiState.topicSettings.searchParams.pageSize = pageSize;
             editQuery((query) => {
-              query['page'] = String(pageIndex);
-              query['pageSize'] = String(pageSize);
+              query.page = String(pageIndex);
+              query.pageSize = String(pageSize);
             });
           })}
           subComponent={({ row: { original } }) => (
@@ -996,7 +1005,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           onClick={() => {
             this.downloadMessages = this.messageSearch.messages;
           }}
-          isDisabled={!this.messageSearch.messages || this.messageSearch.messages.length == 0}
+          isDisabled={!this.messageSearch.messages || this.messageSearch.messages.length === 0}
         >
           <span style={{ paddingRight: '4px' }}>
             <DownloadIcon />
@@ -1030,10 +1039,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   });
 
   @action toggleRecordExpand(r: TopicMessage) {
-    const key = r.offset + ' ' + r.partitionID + r.timestamp;
+    const key = `${r.offset} ${r.partitionID}${r.timestamp}`;
     // try collapsing it, removeAll returns the number of matches
-    const removed = this.expandedKeys.removeAll((x) => x == key);
-    if (removed == 0)
+    const removed = this.expandedKeys.removeAll((x) => x === key);
+    if (removed === 0)
       // wasn't expanded, so expand it now
       this.expandedKeys.push(key);
   }
@@ -1044,12 +1053,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
     editQuery((query) => {
-      query['p'] = String(searchParams.partitionID); // p = partition
-      query['s'] = String(searchParams.maxResults); // s = size
-      query['o'] = String(searchParams.startOffset); // o = offset
+      query.p = String(searchParams.partitionID); // p = partition
+      query.s = String(searchParams.maxResults); // s = size
+      query.o = String(searchParams.startOffset); // o = offset
     });
 
-    let filterCode: string = '';
+    let filterCode = '';
     if (canUseFilters) {
       const functionNames: string[] = [];
       const functions: string[] = [];
@@ -1065,8 +1074,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         });
 
       if (functions.length > 0) {
-        filterCode = functions.join('\n\n') + '\n\n' + `return ${functionNames.map((f) => f + '()').join(' && ')}`;
-        if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, '\n\n' + filterCode);
+        filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
+        if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
       }
     }
 
@@ -1091,12 +1100,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         this.fetchError = null;
         return this.messageSearch.startSearch(request).catch((err) => {
           const msg = (err as Error).message ?? String(err);
-          console.error('error in searchTopicMessages: ' + msg);
+          console.error(`error in searchTopicMessages: ${msg}`);
           this.fetchError = err;
           return [];
         });
       } catch (error: any) {
-        console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
+        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
         this.fetchError = error;
         return [];
       }
@@ -1128,7 +1137,7 @@ class SaveMessagesDialog extends Component<{
 
     // Keep dialog open after closing it, so it can play its closing animation
     if (count > 0 && !this.isOpen) setTimeout(() => (this.isOpen = true));
-    if (this.isOpen && count == 0) setTimeout(() => (this.isOpen = false));
+    if (this.isOpen && count === 0) setTimeout(() => (this.isOpen = false));
 
     return (
       <Modal isOpen={count > 0} onClose={onClose}>
@@ -1136,7 +1145,7 @@ class SaveMessagesDialog extends Component<{
         <ModalContent minW="2xl">
           <ModalHeader>{title}</ModalHeader>
           <ModalBody display="flex" flexDirection="column" gap="4">
-            <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
+            <div>Select the format in which you want to save {count === 1 ? 'the message' : 'all messages'}</div>
             <Box py={2}>
               <RadioGroup
                 name="format"
@@ -1166,7 +1175,7 @@ class SaveMessagesDialog extends Component<{
             <Button
               variant="solid"
               onClick={() => this.saveMessages()}
-              isDisabled={!this.props.messages || this.props.messages.length == 0}
+              isDisabled={!this.props.messages || this.props.messages.length === 0}
             >
               Save Messages
             </Button>
@@ -1182,7 +1191,7 @@ class SaveMessagesDialog extends Component<{
 
     const cleanMessages = this.cleanMessages(messages);
 
-    console.log('saving cleaned messages; messages: ' + messages.length);
+    console.log(`saving cleaned messages; messages: ${messages.length}`);
 
     const json = toJson(cleanMessages, 4);
 
@@ -1203,7 +1212,7 @@ class SaveMessagesDialog extends Component<{
     // sense for the user, like 'size' or caching properties like 'keyJson'.
     const includeRaw = this.includeRawContent;
 
-    const cleanPayload = function (p: Payload): Payload {
+    const cleanPayload = (p: Payload): Payload => {
       if (!p) return undefined as any;
 
       const cleanedPayload = {
@@ -1212,7 +1221,7 @@ class SaveMessagesDialog extends Component<{
         encoding: p.encoding,
       } as any as Payload;
 
-      if (p.schemaId && p.schemaId != 0) cleanedPayload.schemaId = p.schemaId;
+      if (p.schemaId && p.schemaId !== 0) cleanedPayload.schemaId = p.schemaId;
 
       return cleanedPayload;
     };
@@ -1262,15 +1271,15 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
       if (key.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (key.payload == null || key.payload.length == 0) {
+      if (key.payload == null || key.payload.length === 0) {
         return <EmptyBadge mode="empty" />;
       }
 
       let text: ReactNode = <></>;
 
-      if (key.encoding == 'binary') {
+      if (key.encoding === 'binary') {
         text = cullText(msg.keyBinHexPreview, 44);
-      } else if (key.encoding == 'utf8WithControlChars') {
+      } else if (key.encoding === 'utf8WithControlChars') {
         text = highlightControlChars(key.payload);
       } else if (isPrimitive) {
         text = cullText(key.payload, 44);
@@ -1282,7 +1291,7 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
           const tags = getPreviewTags(key.payload, previewTags);
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
+              <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
                 {tags.map((t, i) => (
                   <React.Fragment key={i}>{t}</React.Fragment>
                 ))}
@@ -1376,9 +1385,10 @@ export class MessagePreview extends Component<{
 
       if (value.isPayloadNull) {
         return <EmptyBadge mode="null" />;
-      } else if (value.encoding == 'null' || value.payload == null || value.payload.length == 0)
+      }
+      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0)
         return <EmptyBadge mode="empty" />;
-      else if (msg.value.encoding == 'binary') {
+      if (msg.value.encoding === 'binary') {
         // If the original data was binary, display as hex dump
         text = msg.valueBinHexPreview;
       } else if (isPrimitive) {
@@ -1392,7 +1402,7 @@ export class MessagePreview extends Component<{
           const tags = getPreviewTags(value.payload, previewTags);
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-              <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
+              <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
                 {tags.map((t, i) => (
                   <React.Fragment key={i}>{t}</React.Fragment>
                 ))}
@@ -1400,10 +1410,9 @@ export class MessagePreview extends Component<{
             </span>
           );
           return text;
-        } else {
-          // Normal display (json, no filters). Just stringify the whole object
-          text = cullText(JSON.stringify(value.payload), 300);
         }
+        // Normal display (json, no filters). Just stringify the whole object
+        text = cullText(JSON.stringify(value.payload), 300);
       }
 
       return (
@@ -1462,7 +1471,7 @@ export const ExpandedMessage: FC<{
                 {msg.key === null || msg.key.size === 0 ? 'Key' : `Key (${prettyBytes(msg.key.size)})`}
               </Box>
             ),
-            isDisabled: msg.key == null || msg.key.size == 0,
+            isDisabled: msg.key == null || msg.key.size === 0,
             component: (
               <Box>
                 <TroubleshootReportViewer payload={msg.key} />
@@ -1562,39 +1571,38 @@ const PayloadComponent = observer(
       const val = payload.payload;
       const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
 
-      if (payload.encoding == 'binary') {
+      if (payload.encoding === 'binary') {
         const mode = 'hex' as 'ascii' | 'raw' | 'hex';
-        if (mode == 'raw') {
+        if (mode === 'raw') {
           return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
-        } else if (mode == 'hex') {
+        }
+        if (mode === 'hex') {
           const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
 
           if (rawBytes) {
             let result = '';
             rawBytes.forEach((n) => {
-              result += n.toString(16).padStart(2, '0') + ' ';
+              result += `${n.toString(16).padStart(2, '0')} `;
             });
             return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-          } else {
-            return <div>Raw bytes not available</div>;
           }
-        } else {
-          const str = String(val);
-          let result = '';
-          const isPrintable = /[\x20-\x7E]/;
-          for (let i = 0; i < str.length; i++) {
-            let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
-            ch = isPrintable.test(ch) ? ch : '. ';
-            result += ch + ' ';
-          }
-
-          return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
+          return <div>Raw bytes not available</div>;
         }
+        const str = String(val);
+        let result = '';
+        const isPrintable = /[\x20-\x7E]/;
+        for (let i = 0; i < str.length; i++) {
+          let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
+          ch = isPrintable.test(ch) ? ch : '. ';
+          result += `${ch} `;
+        }
+
+        return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
       }
 
       // Decode payload from base64 and render control characters as code highlighted text, such as
       // `NUL`, `ACK` etc.
-      if (payload.encoding == 'utf8WithControlChars') {
+      if (payload.encoding === 'utf8WithControlChars') {
         const elements = highlightControlChars(val);
 
         return (
@@ -1630,24 +1638,24 @@ function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
     const code = char.charCodeAt(0);
     if (code < 32) {
       if (sequentialChars.length > 0) {
-        elements.push(<>{sequentialChars}</>);
+        elements.push(sequentialChars);
         sequentialChars = '';
       }
       elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
-      if (code == 10)
+      if (code === 10)
         // LineFeed (\n) should be rendered properly
         elements.push(<br />);
     } else {
       sequentialChars += char;
     }
 
-    if (maxLength != undefined) {
+    if (maxLength !== undefined) {
       numChars++;
       if (numChars >= maxLength) break;
     }
   }
 
-  if (sequentialChars.length > 0) elements.push(<>{sequentialChars}</>);
+  if (sequentialChars.length > 0) elements.push(sequentialChars);
 
   return elements;
 }
@@ -1728,7 +1736,7 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
   const [show, setShow] = useState(true);
 
   if (!report) return null;
-  if (report.length == 0) return null;
+  if (report.length === 0) return null;
 
   return (
     <Box mb="4" mt="4">
@@ -1752,7 +1760,7 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
             {report.map((e) => (
               <>
                 <GridItem
-                  key={e.serdeName + '-name'}
+                  key={`${e.serdeName}-name`}
                   w="100%"
                   fontWeight="bold"
                   textTransform="capitalize"
@@ -1763,7 +1771,7 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
                   {e.serdeName}
                 </GridItem>
                 <GridItem
-                  key={e.serdeName + '-message'}
+                  key={`${e.serdeName}-message`}
                   w="100%"
                   fontFamily="monospace"
                   background="red.100"
@@ -1797,7 +1805,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
   };
 
   if (msg.value.schemaId) {
-    data['Schema'] = <MessageSchema schemaId={msg.value.schemaId} />;
+    data.Schema = <MessageSchema schemaId={msg.value.schemaId} />;
   }
 
   return (
@@ -1818,7 +1826,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
 
 const MessageSchema = observer((p: { schemaId: number }) => {
   const subjects = api.schemaUsagesById.get(p.schemaId);
-  if (!subjects || subjects.length == 0) {
+  if (!subjects || subjects.length === 0) {
     api.refreshSchemaUsagesById(p.schemaId);
     return <>ID {p.schemaId} (unknown subject)</>;
   }
@@ -1857,7 +1865,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
               ),
             },
             {
-              size: Infinity,
+              size: Number.POSITIVE_INFINITY,
               header: 'Value',
               accessorKey: 'value',
               cell: ({

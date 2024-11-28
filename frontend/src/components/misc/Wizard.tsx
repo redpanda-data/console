@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import styles from './Wizard.module.scss';
 import { Button } from '@redpanda-data/ui';
 import React from 'react';
+import styles from './Wizard.module.scss';
 
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();

@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect, useState } from 'react';
-import { observer } from 'mobx-react';
-import { api } from '../../state/backendApi';
-import { UserPreferencesDialog } from './UserPreferences';
-import { AppFeatures } from '../../utils/env';
 import { Avatar, Button, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import { useEffect, useState } from 'react';
+import { api } from '../../state/backendApi';
+import { AppFeatures } from '../../utils/env';
+import { UserPreferencesDialog } from './UserPreferences';
 
 export const UserProfile = observer(() => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);

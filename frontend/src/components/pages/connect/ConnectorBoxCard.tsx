@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { Box, Flex, Link, Tag, TagLabel, Text } from '@redpanda-data/ui';
+import BoxCard, { type BoxCardProps } from '../../misc/BoxCard';
+import type { HiddenRadioOption } from '../../misc/HiddenRadioList';
 import { findConnectorMetadata, removeNamespace } from './helper';
-import BoxCard, { BoxCardProps } from '../../misc/BoxCard';
-import { HiddenRadioOption } from '../../misc/HiddenRadioList';
-import { Box, Link, Text, Tag, TagLabel, Flex } from '@redpanda-data/ui';
 
 interface ConnectorBoxCardProps
   extends Omit<BoxCardProps, 'children'>,
@@ -50,7 +50,7 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
       </Box>
 
       <Box fontWeight="600" fontSize=".85em">
-        {type == 'source' ? 'Import from' : 'Export to'}
+        {type === 'source' ? 'Import from' : 'Export to'}
       </Box>
 
       <Box fontWeight="600" fontSize="1.1em" mb="2">

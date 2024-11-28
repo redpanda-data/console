@@ -1,5 +1,5 @@
-import React, { FC, ReactElement } from 'react';
 import { Flex, IconButton } from '@redpanda-data/ui';
+import React, { type FC, type ReactElement } from 'react';
 import { MdClose } from 'react-icons/md';
 
 const RemovableFilter: FC<{ children: ReactElement; onRemove: () => void }> = ({ children, onRemove }) => {

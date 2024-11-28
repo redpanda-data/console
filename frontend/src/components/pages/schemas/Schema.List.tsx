@@ -9,20 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { observer } from 'mobx-react';
 import React from 'react';
 import type { RefObject } from 'react';
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
-import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils';
+import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
+import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 import './Schema.List.scss';
-import SearchBar from '../../misc/SearchBar';
-import { action, makeObservable, observable } from 'mobx';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
+import { TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
   AlertIcon,
@@ -36,8 +33,11 @@ import {
   Text,
   VStack,
 } from '@redpanda-data/ui';
+import { action, makeObservable, observable } from 'mobx';
+import PageContent from '../../misc/PageContent';
+import type SearchBar from '../../misc/SearchBar';
+import Section from '../../misc/Section';
 import { SmallStat } from '../../misc/SmallStat';
-import { TrashIcon } from '@heroicons/react/outline';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 import {
@@ -52,8 +52,8 @@ import {
   Spinner,
   createStandaloneToast,
 } from '@chakra-ui/react';
-import { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { Link } from 'react-router-dom';
+import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -133,13 +133,13 @@ class SchemaList extends PageComponent<{}> {
   isFilterMatch(filterString: string, subject: SchemaRegistrySubject) {
     // Find by schema ID
     const filterAsNumber = Number(filterString.trim());
-    if (!isNaN(filterAsNumber)) {
+    if (!Number.isNaN(filterAsNumber)) {
       console.log('finding by num', { num: filterAsNumber });
       // Filter is a number, lets see if we can find a matching schema(-version)
       const schemas = api.schemaUsagesById.get(filterAsNumber);
-      const matches = schemas?.filter((s) => s.subject == subject.name);
+      const matches = schemas?.filter((s) => s.subject === subject.name);
       if (matches && matches.length > 0) {
-        for (const m of matches) console.log('found match: ' + m.subject + ' v' + m.version);
+        for (const m of matches) console.log(`found match: ${m.subject} v${m.version}`);
         return true;
       }
     }
@@ -161,7 +161,7 @@ class SchemaList extends PageComponent<{}> {
   triggerSearchBySchemaId() {
     const trimmedValue = uiSettings.schemaList.quickSearch.trim();
     const searchAsNum = Number(trimmedValue);
-    if (trimmedValue.length && !isNaN(searchAsNum)) {
+    if (trimmedValue.length && !Number.isNaN(searchAsNum)) {
       // Keep calling it to keep the list updated
       // Extra calls (even when we already have data) will be automatically caught by caching
       this.isLoadingSchemaVersionMatches = true;
@@ -170,7 +170,7 @@ class SchemaList extends PageComponent<{}> {
   }
 
   render() {
-    if (api.schemaOverviewIsConfigured == false) return renderNotConfigured();
+    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
     if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
 
     let filteredSubjects = api.schemaSubjects;
@@ -291,7 +291,7 @@ class SchemaList extends PageComponent<{}> {
               {
                 header: 'Name',
                 accessorKey: 'name',
-                size: Infinity,
+                size: Number.POSITIVE_INFINITY,
                 cell: ({
                   row: {
                     original: { name },

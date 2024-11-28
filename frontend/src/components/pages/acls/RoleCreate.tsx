@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { PageComponent, PageInitHelper } from '../Page';
-import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
-import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import { RoleForm } from './RoleForm';
 import { Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault } from '../../../state/restInterfaces';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { RoleForm } from './RoleForm';
 
 @observer
 class RoleCreatePage extends PageComponent {

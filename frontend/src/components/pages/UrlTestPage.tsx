@@ -10,17 +10,17 @@
  */
 
 import React from 'react';
-import { PageComponent, PageInitHelper } from './Page';
+import { PageComponent, type PageInitHelper } from './Page';
 
-import { motion } from 'framer-motion';
-import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
-import { observer } from 'mobx-react';
-import { makeObservable, observable } from 'mobx';
 import { Checkbox } from '@redpanda-data/ui';
+import { motion } from 'framer-motion';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { AnimatePresence, MotionDiv, animProps } from '../../utils/animationProps';
 
 @observer
 export class UrlTestPage extends PageComponent {
-  @observable test: boolean = true;
+  @observable test = true;
 
   constructor(p: any) {
     super(p);

@@ -9,44 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api, partialTopicConfigs } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import {
-  Broker,
-  Partition,
-  PartitionReassignmentRequest,
-  Topic,
-  AlterPartitionReassignmentsPartitionResponse,
-} from '../../../state/restInterfaces';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
-import { observable, computed, autorun, IReactionDisposer, transaction, makeObservable } from 'mobx';
-import { clone, toJson } from '../../../utils/jsonUtils';
-import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { StepSelectBrokers } from './Step2.Brokers';
-import { StepSelectPartitions } from './Step1.Partitions';
-import { StepReview, TopicWithMoves } from './Step3.Review';
-import { ApiData, computeReassignments, TopicPartitions } from './logic/reassignLogic';
-import {
-  computeMovedReplicas,
-  partitionSelectionToTopicPartitions,
-  topicAssignmentsToReassignmentRequest,
-} from './logic/utils';
-import { IsDev } from '../../../utils/env';
-import { scrollTo, scrollToTop } from '../../../utils/utils';
-import { ActiveReassignments } from './components/ActiveReassignments';
-import { ReassignmentTracker } from './logic/reassignmentTracker';
-import { showErrorModal } from '../../misc/ErrorModal';
+import { StepSeparator } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
 import {
+  Box,
   Button,
-  createStandaloneToast,
   Flex,
   Modal,
   ModalBody,
@@ -54,19 +21,52 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Step,
+  StepIcon,
+  StepIndicator,
+  StepNumber,
+  StepStatus,
+  Stepper,
+  createStandaloneToast,
   redpandaTheme,
   redpandaToastOptions,
-  Step,
-  Stepper,
-  Box,
-  StepIndicator,
-  StepStatus,
-  StepIcon,
-  StepNumber,
 } from '@redpanda-data/ui';
-import { Statistic } from '../../misc/Statistic';
-import { StepSeparator } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction } from 'mobx';
+import { observer } from 'mobx-react';
+import React from 'react';
 import { MdOutlineErrorOutline } from 'react-icons/md';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, partialTopicConfigs } from '../../../state/backendApi';
+import type {
+  AlterPartitionReassignmentsPartitionResponse,
+  Broker,
+  Partition,
+  PartitionReassignmentRequest,
+  Topic,
+} from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { animProps } from '../../../utils/animationProps';
+import { IsDev } from '../../../utils/env';
+import { clone, toJson } from '../../../utils/jsonUtils';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { scrollTo, scrollToTop } from '../../../utils/utils';
+import { showErrorModal } from '../../misc/ErrorModal';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { Statistic } from '../../misc/Statistic';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { StepSelectPartitions } from './Step1.Partitions';
+import { StepSelectBrokers } from './Step2.Brokers';
+import { StepReview, type TopicWithMoves } from './Step3.Review';
+import { ActiveReassignments } from './components/ActiveReassignments';
+import { type ApiData, type TopicPartitions, computeReassignments } from './logic/reassignLogic';
+import { ReassignmentTracker } from './logic/reassignmentTracker';
+import {
+  computeMovedReplicas,
+  partitionSelectionToTopicPartitions,
+  topicAssignmentsToReassignmentRequest,
+} from './logic/utils';
 
 export interface PartitionSelection {
   // Which partitions are selected?
@@ -107,7 +107,7 @@ class ReassignPartitions extends PageComponent {
   @observable _debug_brokers: Broker[] | null = null;
 
   refreshTopicConfigsTimer: NodeJS.Timer | null = null;
-  refreshTopicConfigsRequestsInProgress: number = 0;
+  refreshTopicConfigsRequestsInProgress = 0;
 
   @observable topicsWithThrottle: string[] = [];
 
@@ -147,22 +147,22 @@ class ReassignPartitions extends PageComponent {
 
     this.autoScrollReactionDisposer = autorun(() => {
       const currentStep = this.currentStep;
-      if (currentStep != 0) setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+      if (currentStep !== 0) setTimeout(() => scrollTo('wizard', 'start', -20), 20);
     });
     this.resetSelectionOnErrorsReactionDisposer = autorun(() => {
-      if (this.selectedBrokerIds.length == 0) {
+      if (this.selectedBrokerIds.length === 0) {
         const selectedTopicPartitions = Object.values(this.partitionSelection);
-        if (selectedTopicPartitions.length == 0 || selectedTopicPartitions.all((x) => x.length == 0)) return; // nothing selected so far
+        if (selectedTopicPartitions.length === 0 || selectedTopicPartitions.all((x) => x.length === 0)) return; // nothing selected so far
       }
 
       let reset = false;
 
       // has user selected a broker that is not available anymore?
-      if (this.selectedBrokerIds.any((x) => api.clusterInfo?.brokers.find((b) => b.brokerId == x) == undefined))
+      if (this.selectedBrokerIds.any((x) => api.clusterInfo?.brokers.find((b) => b.brokerId === x) === undefined))
         reset = true;
 
       // has user selected a topic partition that is not available anymore?
-      if (reset == false) if (this.selectedTopicPartitions == null) reset = true;
+      if (reset === false) if (this.selectedTopicPartitions == null) reset = true;
 
       if (reset) {
         this.resetSelectionAndPage(true, true);
@@ -258,7 +258,7 @@ class ReassignPartitions extends PageComponent {
               </div>
 
               {/* Content */}
-              <motion.div {...animProps} key={'step' + this.currentStep}>
+              <motion.div {...animProps} key={`step${this.currentStep}`}>
                 {' '}
                 {(() => {
                   switch (this.currentStep) {
@@ -403,7 +403,7 @@ class ReassignPartitions extends PageComponent {
                     const result = await api.resetThrottledReplicas(this.removeThrottleFromTopicsContent);
                     const errors = result.patchedConfigs.filter((r) => r.error);
 
-                    if (errors.length == 0) {
+                    if (errors.length === 0) {
                       toast.update(toastId, {
                         status: 'success',
                         description: `${baseText} - Done`,
@@ -459,11 +459,11 @@ class ReassignPartitions extends PageComponent {
 
   // will be wrapped in a 'transaction' since we're modifying multiple observables
   onNextPage() {
-    if (this.currentStep == 0) {
+    if (this.currentStep === 0) {
       // Select -> Assign
     }
 
-    if (this.currentStep == 1) {
+    if (this.currentStep === 1) {
       // Assign -> Review
       const topicPartitions = this.selectedTopicPartitions;
       if (topicPartitions == null) {
@@ -472,7 +472,7 @@ class ReassignPartitions extends PageComponent {
       }
 
       const targetBrokers = this.selectedBrokerIds
-        .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId == id))
+        .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId === id))
         .filterFalsy();
       if (targetBrokers.any((b) => b == null))
         throw new Error('one or more broker ids could not be mapped to broker entries');
@@ -486,7 +486,7 @@ class ReassignPartitions extends PageComponent {
 
       // error checking will happen inside computeReassignments
       const apiData = {
-        brokers: api.clusterInfo!.brokers,
+        brokers: api.clusterInfo?.brokers,
         topics: api.topics as Topic[],
         topicPartitions: apiTopicPartitions,
       };
@@ -502,7 +502,7 @@ class ReassignPartitions extends PageComponent {
       // this.optimizedReassignmentRequest = topicAssignmentsToReassignmentRequest(optimizedAssignments);
     }
 
-    if (this.currentStep == 2) {
+    if (this.currentStep === 2) {
       // Review -> Start
       const request = this.reassignmentRequest;
       if (request == null) {
@@ -561,13 +561,13 @@ class ReassignPartitions extends PageComponent {
       const errors = response.reassignPartitionsResponses
         .map((e) => {
           const partErrors = e.partitions.filter((p) => p.errorMessage != null);
-          if (partErrors.length == 0) return null;
+          if (partErrors.length === 0) return null;
           return { topicName: e.topicName, partitions: partErrors };
         })
         .filterNull();
       const startedCount = response.reassignPartitionsResponses.sum((x) => x.partitions.count((p) => !p.errorCode));
 
-      if (errors.length == 0) {
+      if (errors.length === 0) {
         // No errors
         toast.update(toastRef, {
           status: 'success',
@@ -575,7 +575,8 @@ class ReassignPartitions extends PageComponent {
           duration: 2500,
         });
         return true;
-      } else if (startedCount > 0) {
+      }
+      if (startedCount > 0) {
         // Some errors
         toast.update(toastRef, {
           status: 'success',
@@ -584,15 +585,14 @@ class ReassignPartitions extends PageComponent {
         });
         this.setReassignError(startedCount, errors);
         return true;
-      } else {
-        // All errors
-        toast.update(toastRef, {
-          status: 'error',
-          duration: 2500,
-        });
-        this.setReassignError(startedCount, errors);
-        return false;
       }
+      // All errors
+      toast.update(toastRef, {
+        status: 'error',
+        duration: 2500,
+      });
+      this.setReassignError(startedCount, errors);
+      return false;
     } catch (err) {
       toast.close(toastRef);
 
@@ -615,7 +615,7 @@ class ReassignPartitions extends PageComponent {
       const followerReplicas: { partitionId: number; brokerId: number }[] = [];
       for (const p of t.partitions) {
         const partitionId = p.partitionId;
-        const brokersOld = api.topicPartitions?.get(t.topicName)?.first((p) => p.id == partitionId)?.replicas;
+        const brokersOld = api.topicPartitions?.get(t.topicName)?.first((p) => p.id === partitionId)?.replicas;
         const brokersNew = p.replicas;
 
         if (brokersOld == null || brokersNew == null) {
@@ -652,7 +652,7 @@ class ReassignPartitions extends PageComponent {
     });
     try {
       let response = await api.setReplicationThrottleRate(
-        api.clusterInfo!.brokers.map((b) => b.brokerId),
+        api.clusterInfo?.brokers.map((b) => b.brokerId),
         maxBytesPerSecond,
       );
       let errors = response.patchedConfigs.filter((c) => c.error);
@@ -769,7 +769,7 @@ class ReassignPartitions extends PageComponent {
   @computed get maximumSelectedReplicationFactor(): number {
     let maxRf = 0;
     for (const topicName in this.partitionSelection) {
-      const topic = api.topics?.first((x) => x.topicName == topicName);
+      const topic = api.topics?.first((x) => x.topicName === topicName);
       if (topic) if (topic.replicationFactor > maxRf) maxRf = topic.replicationFactor;
     }
     return maxRf;
@@ -834,15 +834,15 @@ const steps: WizardStep[] = [
 
         // At least 2 racks available
         const selectedBrokers = rp.selectedBrokerIds
-          .map((id) => allBrokers.first((x) => x.brokerId == id)) // map ID to Broker
+          .map((id) => allBrokers.first((x) => x.brokerId === id)) // map ID to Broker
           .filter(Boolean) as Broker[]; // filter missing entries
         const selectedRacks = selectedBrokers.map((x) => x.rack ?? '').distinct();
 
-        if (selectedRacks.length == 1 && allRacks.length >= 2) {
+        if (selectedRacks.length === 1 && allRacks.length >= 2) {
           let selectedRack = selectedRacks[0];
-          if (!selectedRack || selectedRack.length == 0) selectedRack = '(empty)';
+          if (!selectedRack || selectedRack.length === 0) selectedRack = '(empty)';
           const _msgStart =
-            selectedBrokers.length == 1
+            selectedBrokers.length === 1
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }

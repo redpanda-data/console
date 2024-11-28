@@ -10,25 +10,25 @@
  */
 
 import {
+  Avatars,
+  Box,
   Button,
-  Text,
-  Link,
   Flex,
   HStack,
-  VStack,
+  Hide,
+  Image,
+  Link,
   SectionHeading,
   SectionSubheading,
-  Box,
-  Image,
-  Avatars,
-  Hide,
+  Text,
+  VStack,
 } from '@redpanda-data/ui';
 import PageContent from './PageContent';
 
-import { appGlobal } from '../../state/appGlobal';
 import { observer } from 'mobx-react';
-import fetchWithTimeout from '../../utils/fetchWithTimeout';
 import { config } from '../../config';
+import { appGlobal } from '../../state/appGlobal';
+import fetchWithTimeout from '../../utils/fetchWithTimeout';
 
 const ErrorPage = observer(() => {
   fetchWithTimeout(`${config.restBasePath}/console/endpoints`, 5 * 1000).then((r) => {

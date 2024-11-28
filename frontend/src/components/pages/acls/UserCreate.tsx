@@ -9,15 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault, CreateUserRequest } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
 import {
   Alert,
   AlertIcon,
@@ -25,17 +16,13 @@ import {
   Button,
   Checkbox,
   CopyButton,
-  createStandaloneToast,
   Flex,
   FormField,
   Grid,
   Heading,
   IconButton,
   Input,
-  isSingleValue,
   PasswordInput,
-  redpandaTheme,
-  redpandaToastOptions,
   Result,
   Select,
   Tag,
@@ -43,12 +30,25 @@ import {
   TagLabel,
   Text,
   Tooltip,
+  createStandaloneToast,
+  isSingleValue,
+  redpandaTheme,
+  redpandaToastOptions,
 } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
-import { SingleSelect } from '../../misc/Select';
-import { Features } from '../../../state/supportedFeatures';
-import { Link as ReactRouterLink } from 'react-router-dom';
 import { MdRefresh } from 'react-icons/md';
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
+import { Features } from '../../../state/supportedFeatures';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { SingleSelect } from '../../misc/Select';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const { ToastContainer, toast } = createStandaloneToast({
   theme: redpandaTheme,
@@ -70,16 +70,16 @@ export type CreateUserModalState = CreateUserRequest & {
 
 @observer
 class UserCreatePage extends PageComponent<{}> {
-  @observable username: string = '';
+  @observable username = '';
   @observable password: string = generatePassword(30, false);
   @observable mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512' = 'SCRAM-SHA-256';
 
-  @observable isValidUsername: boolean = false;
-  @observable isValidPassword: boolean = false;
+  @observable isValidUsername = false;
+  @observable isValidPassword = false;
 
-  @observable generateWithSpecialChars: boolean = false;
+  @observable generateWithSpecialChars = false;
   @observable step: 'CREATE_USER' | 'CREATE_USER_CONFIRMATION' = 'CREATE_USER';
-  @observable isCreating: boolean = false;
+  @observable isCreating = false;
 
   @observable selectedRoles: string[] = [];
 
@@ -274,15 +274,13 @@ const CreateUserModal = observer(
           </FormField>
 
           {Features.rolesApi && (
-            <>
-              <FormField
-                isDisabled={!Features.rolesApi}
-                label="Assign roles"
-                description="Assign roles to this user. This is optional and can be changed later."
-              >
-                <RoleSelector state={state.selectedRoles} />
-              </FormField>
-            </>
+            <FormField
+              isDisabled={!Features.rolesApi}
+              label="Assign roles"
+              description="Assign roles to this user. This is optional and can be changed later."
+            >
+              <RoleSelector state={state.selectedRoles} />
+            </FormField>
           )}
         </Flex>
 

@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState } from 'react';
 import { Tabs as RpTabs } from '@redpanda-data/ui';
+import React, { useState } from 'react';
 
 export interface Tab {
   key: string;
@@ -32,10 +32,10 @@ export default function Tabs(props: TabsProps) {
   const { tabs, selectedTabKey } = props;
 
   const [selectedIndex, setSelectedIndex] = useState(() => {
-    return selectedTabKey ? tabs.findIndex((t) => t.key == selectedTabKey) : undefined;
+    return selectedTabKey ? tabs.findIndex((t) => t.key === selectedTabKey) : undefined;
   });
   const defaultIndex = props.defaultSelectedTabKey
-    ? tabs.findIndex((t) => t.key == props.defaultSelectedTabKey)
+    ? tabs.findIndex((t) => t.key === props.defaultSelectedTabKey)
     : undefined;
 
   return (
@@ -50,10 +50,10 @@ export default function Tabs(props: TabsProps) {
         }}
         items={tabs.map((t) => {
           const titleComp = t.title;
-          const title: React.ReactNode = typeof titleComp == 'function' ? titleComp() : titleComp;
+          const title: React.ReactNode = typeof titleComp === 'function' ? titleComp() : titleComp;
 
           const contentComp = t.content;
-          const content = typeof contentComp == 'function' ? contentComp() : contentComp;
+          const content = typeof contentComp === 'function' ? contentComp() : contentComp;
 
           return {
             key: t.key,

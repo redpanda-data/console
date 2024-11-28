@@ -9,42 +9,42 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
-import Section from '../../misc/Section';
+import { createStandaloneToast } from '@chakra-ui/react';
+import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
+import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
+import { useState } from 'react';
+import usePaginationParams from '../../../hooks/usePaginationParams';
+import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import {
+  type PartitionTransformStatus,
+  PartitionTransformStatus_PartitionStatus,
+  type TransformMetadata,
+} from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import {
-  MessageSearch,
-  MessageSearchRequest,
+  type MessageSearch,
+  type MessageSearchRequest,
   api,
   createMessageSearch,
   transformsApi,
 } from '../../../state/backendApi';
-import PageContent from '../../misc/PageContent';
-import { PageComponent, PageInitHelper } from '../Page';
+import type { TopicMessage } from '../../../state/restInterfaces';
 // import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
-import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
-import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
-import { createStandaloneToast } from '@chakra-ui/react';
-import {
-  PartitionTransformStatus,
-  PartitionTransformStatus_PartitionStatus,
-  TransformMetadata,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
-import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
-import { openDeleteModal } from './modals';
-import Tabs from '../../misc/tabs/Tabs';
-import { TopicMessage } from '../../../state/restInterfaces';
-import { sanitizeString } from '../../../utils/filterHelper';
-import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import { uiState } from '../../../state/uiState';
-import { ColumnDef } from '@tanstack/react-table';
-import { useState } from 'react';
-import usePaginationParams from '../../../hooks/usePaginationParams';
+import { sanitizeString } from '../../../utils/filterHelper';
+import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
+import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
+import PageContent from '../../misc/PageContent';
+/* eslint-disable no-useless-escape */
+import Section from '../../misc/Section';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import { PartitionStatus } from './Transforms.List';
+import { openDeleteModal } from './modals';
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
@@ -60,7 +60,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
     const transformName = decodeURIComponentPercents(this.props.transformName);
     p.title = transformName;
     p.addBreadcrumb('Transforms', '/transforms');
-    p.addBreadcrumb(transformName, '/transforms/' + transformName, undefined, {
+    p.addBreadcrumb(transformName, `/transforms/${transformName}`, undefined, {
       canBeCopied: true,
       canBeTruncated: true,
     });
@@ -75,7 +75,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 
   render() {
     if (!transformsApi.transforms) return DefaultSkeleton;
-    if (transformsApi.transforms.length == 0) {
+    if (transformsApi.transforms.length === 0) {
       appGlobal.history.replace('/transforms-setup');
       return null;
     }
@@ -138,10 +138,10 @@ const OverviewTab = observer(
     transform: TransformMetadata;
   }) => {
     let overallStatus = <></>;
-    if (p.transform.statuses.all((x) => x.status == PartitionTransformStatus_PartitionStatus.RUNNING))
+    if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
       overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
     else {
-      const s = p.transform.statuses.first((x) => x.status != PartitionTransformStatus_PartitionStatus.RUNNING)!;
+      const s = p.transform.statuses.first((x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING)!;
       overallStatus = <PartitionStatus status={s.status} />;
     }
 
@@ -204,7 +204,7 @@ const LogsTab = observer(
     transform: TransformMetadata;
   }) => {
     const topicName = '_redpanda.transform_logs';
-    const topic = api.topics?.first((x) => x.topicName == topicName);
+    const topic = api.topics?.first((x) => x.topicName === topicName);
 
     const createLogsTabState = () => {
       const search: MessageSearch = createMessageSearch();
@@ -240,10 +240,10 @@ const LogsTab = observer(
       };
       const messages = await search.startSearch(searchReq);
 
-      if (messages && messages.length == 1) {
+      if (messages && messages.length === 1) {
         // We must update the old message (that still says "payload too large")
         // So we just find its index and replace it in the array we are currently displaying
-        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID == partitionID && x.offset == offset);
+        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (indexOfOldMessage > -1) {
           state.messages[indexOfOldMessage] = messages[0];
         } else {
@@ -324,7 +324,7 @@ const LogsTab = observer(
               <ExpandedMessage
                 msg={original}
                 loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
+                  loadLargeMessage(state.search.searchRequest?.topicName, original.partitionID, original.offset)
                 }
               />
             )}
@@ -338,8 +338,8 @@ const LogsTab = observer(
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
   if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
-  if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
+  if (m.keyJson?.toLowerCase().includes(str)) return true;
+  if (m.valueJson?.toLowerCase().includes(str)) return true;
   return false;
 }
 
@@ -370,11 +370,11 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, tr
     try {
       search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
-        console.error('error in transformLogsMessageSearch: ' + msg);
+        console.error(`error in transformLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
-      console.error('error in transformLogsMessageSearch: ' + ((error as Error).message ?? String(error)));
+      console.error(`error in transformLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return [];
     }
   });

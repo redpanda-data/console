@@ -12,14 +12,14 @@
 import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { makeObservable, observable } from 'mobx';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { Box, Button, Flex, Text } from '@redpanda-data/ui';
-import { PageComponent, PageInitHelper } from '../Page';
-import { appGlobal } from '../../../state/appGlobal';
-import DebugBundleOverview from './DebugBundleOverview';
-import DebugBundleLink from '../../debugBundle/DebugBundleLink';
+import { makeObservable, observable } from 'mobx';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { appGlobal } from '../../../state/appGlobal';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import DebugBundleLink from '../../debugBundle/DebugBundleLink';
+import { PageComponent, type PageInitHelper } from '../Page';
+import DebugBundleOverview from './DebugBundleOverview';
 
 @observer
 export default class AdminPageDebugBundleProgress extends PageComponent<{}> {

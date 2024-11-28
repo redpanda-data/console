@@ -2,7 +2,7 @@ import { PlusIcon, XIcon } from '@primer/octicons-react';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, useEffect, useState } from 'react';
-import { TopicConfigEntry } from '../../../../state/restInterfaces';
+import type { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import './CreateTopicModal.scss';
@@ -14,18 +14,18 @@ import {
   InputGroup,
   InputLeftAddon,
   InputRightAddon,
-  isSingleValue,
   NumberInput,
   Select,
   Slider,
   SliderFilledTrack,
   SliderThumb,
   SliderTrack,
+  isSingleValue,
 } from '@redpanda-data/ui';
-import { SingleSelect } from '../../../misc/Select';
-import { api } from '../../../../state/backendApi';
 import { isServerless } from '../../../../config';
-import { CleanupPolicyType } from '../types';
+import { api } from '../../../../state/backendApi';
+import { SingleSelect } from '../../../misc/Select';
+import type { CleanupPolicyType } from '../types';
 
 type CreateTopicModalState = {
   topicName: string; // required
@@ -68,9 +68,9 @@ export class CreateTopicModalContent extends Component<Props> {
     let replicationFactorError = '';
     if (api.clusterOverview)
       if (state.replicationFactor != null)
-        if (api.clusterOverview.kafka.distribution == 'REDPANDA') {
+        if (api.clusterOverview.kafka.distribution === 'REDPANDA') {
           // enforce odd numbers
-          const isOdd = state.replicationFactor % 2 == 1;
+          const isOdd = state.replicationFactor % 2 === 1;
           if (!isOdd) {
             replicationFactorError = 'Replication factor must be an odd number';
           }
@@ -198,7 +198,7 @@ export function NumInput(p: {
     if (p.disabled) return;
     if (x != null && p.min != null && x < p.min) x = p.min;
     if (x != null && p.max != null && x > p.max) x = p.max;
-    setEditValue(x == undefined ? x : String(x));
+    setEditValue(x === undefined ? x : String(x));
     p.onChange?.(x);
   };
 
@@ -216,7 +216,7 @@ export function NumInput(p: {
       {p.addonBefore && <InputLeftAddon children={p.addonBefore} />}
 
       <Input
-        className={'numericInput ' + (p.className ?? '')}
+        className={`numericInput ${p.className ?? ''}`}
         style={{ minWidth: '120px', width: '100%' }}
         spellCheck={false}
         placeholder={p.placeholder}
@@ -225,14 +225,14 @@ export function NumInput(p: {
         onChange={(e) => {
           setEditValue(e.target.value);
           const n = Number(e.target.value);
-          if (e.target.value != '' && !Number.isNaN(n)) p.onChange?.(n);
+          if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
           else p.onChange?.(undefined);
         }}
         onWheel={(e) => changeBy(-Math.sign(e.deltaY))}
         onBlur={() => {
           const s = editValue;
 
-          if (s == undefined || s == '') {
+          if (s === undefined || s === '') {
             // still a valid value, meaning "default"
             commit(undefined);
             setEditValue('');
@@ -276,10 +276,10 @@ function RetentionTimeSelect(p: {
   defaultConfigValue?: string | undefined;
 }) {
   const { value, unit } = p;
-  const numDisabled = unit == 'default' || unit == 'infinite';
+  const numDisabled = unit === 'default' || unit === 'infinite';
 
   let placeholder: string | undefined;
-  if (unit == 'default' && p.defaultConfigValue != null) {
+  if (unit === 'default' && p.defaultConfigValue != null) {
     if (Number.isFinite(Number(p.defaultConfigValue)))
       placeholder = prettyMilliseconds(p.defaultConfigValue, {
         showLargeAsInfinite: true,
@@ -289,7 +289,7 @@ function RetentionTimeSelect(p: {
       });
     else placeholder = 'default';
   }
-  if (unit == 'infinite') placeholder = 'Infinite';
+  if (unit === 'infinite') placeholder = 'Infinite';
 
   return (
     <NumInput
@@ -308,14 +308,14 @@ function RetentionTimeSelect(p: {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
 
-                if (u == 'default') {
+                if (u === 'default') {
                   // * -> default
                   // save as milliseconds
                   p.onChangeValue(value * timeFactors[unit]);
                 } else {
                   // * -> real
                   // convert to new unit
-                  const factor = unit == 'default' ? 1 : timeFactors[unit];
+                  const factor = unit === 'default' ? 1 : timeFactors[unit];
                   const ms = value * factor;
                   let newValue = ms / timeFactors[u];
                   if (Number.isNaN(newValue)) newValue = 0;
@@ -326,7 +326,7 @@ function RetentionTimeSelect(p: {
               }
             }}
             options={Object.entries(timeFactors).map(([name]) => {
-              const isSpecial = name == 'default' || name == 'infinite';
+              const isSpecial = name === 'default' || name === 'infinite';
               return {
                 value: name as RetentionTimeUnit,
                 label: isSpecial ? titleCase(name) : name,
@@ -360,17 +360,17 @@ function RetentionSizeSelect(p: {
   defaultConfigValue?: string | undefined;
 }) {
   const { value, unit } = p;
-  const numDisabled = unit == 'default' || unit == 'infinite';
+  const numDisabled = unit === 'default' || unit === 'infinite';
 
   let placeholder: string | undefined;
-  if (unit == 'default') {
-    if (p.defaultConfigValue != null && p.defaultConfigValue != '' && Number.isFinite(Number(p.defaultConfigValue))) {
+  if (unit === 'default') {
+    if (p.defaultConfigValue != null && p.defaultConfigValue !== '' && Number.isFinite(Number(p.defaultConfigValue))) {
       placeholder = prettyBytes(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default' });
     } else {
       placeholder = 'default';
     }
   }
-  if (unit == 'infinite') placeholder = 'Infinite';
+  if (unit === 'infinite') placeholder = 'Infinite';
 
   return (
     <NumInput
@@ -389,14 +389,14 @@ function RetentionSizeSelect(p: {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
 
-                if (u == 'default') {
+                if (u === 'default') {
                   // * -> default
                   // save as milliseconds
                   p.onChangeValue(value * sizeFactors[unit]);
                 } else {
                   // * -> real
                   // convert to new unit
-                  const factor = unit == 'default' ? 1 : sizeFactors[unit];
+                  const factor = unit === 'default' ? 1 : sizeFactors[unit];
                   const ms = value * factor;
                   let newValue = ms / sizeFactors[u];
                   if (Number.isNaN(newValue)) newValue = 0;
@@ -407,7 +407,7 @@ function RetentionSizeSelect(p: {
               }
             }}
             options={Object.entries(sizeFactors).map(([name]) => {
-              const isSpecial = name == 'default' || name == 'infinite';
+              const isSpecial = name === 'default' || name === 'infinite';
               return {
                 value: name as RetentionSizeUnit,
                 label: isSpecial ? titleCase(name) : name,
@@ -525,8 +525,8 @@ class UnitSelect<UnitType extends string> extends Component<{
         factor: factor as number,
       }))
       .filter((x) => {
-        if (x.unit == 'default') return false;
-        if (x.unit == 'infinite') return false;
+        if (x.unit === 'default') return false;
+        if (x.unit === 'infinite') return false;
         return true;
       })
       .map((x) => ({
@@ -550,13 +550,13 @@ class UnitSelect<UnitType extends string> extends Component<{
     const unit = this.unit;
     const unitValue = this.props.baseValue / unitFactors[unit];
 
-    const numDisabled = unit == 'infinite';
+    const numDisabled = unit === 'infinite';
 
     let placeholder: string | undefined;
-    if (unit == 'infinite') placeholder = 'Infinite';
+    if (unit === 'infinite') placeholder = 'Infinite';
 
     const selectOptions = Object.entries(unitFactors).map(([name]) => {
-      const isSpecial = name == 'infinite';
+      const isSpecial = name === 'infinite';
       return {
         value: name as UnitType,
         label: isSpecial ? titleCase(name) : name,
@@ -564,7 +564,7 @@ class UnitSelect<UnitType extends string> extends Component<{
       };
     });
 
-    if (!this.props.allowInfinite) selectOptions.removeAll((x) => x.value == 'infinite');
+    if (!this.props.allowInfinite) selectOptions.removeAll((x) => x.value === 'infinite');
 
     return (
       <NumInput
@@ -590,10 +590,10 @@ class UnitSelect<UnitType extends string> extends Component<{
             onChange={(arg) => {
               if (isSingleValue(arg) && arg) {
                 const u = arg.value as UnitType;
-                const changedFromInfinite = this.unit == 'infinite' && u != 'infinite';
+                const changedFromInfinite = this.unit === 'infinite' && u !== 'infinite';
 
                 this.unit = u;
-                if (this.unit == 'infinite') this.props.onChange(unitFactors[this.unit]);
+                if (this.unit === 'infinite') this.props.onChange(unitFactors[this.unit]);
 
                 if (changedFromInfinite) {
                   // Example: if new unit is "seconds", then we'd want 1000 ms
@@ -661,7 +661,7 @@ export function RatioInput(p: {
       <NumberInput
         min={0}
         max={100}
-        value={Math.round(p.value * 100) + '%'}
+        value={`${Math.round(p.value * 100)}%`}
         onChange={(x) => {
           if (x === null) {
             return;

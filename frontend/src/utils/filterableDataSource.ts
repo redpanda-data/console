@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, autorun, IReactionDisposer, computed, transaction, makeObservable } from 'mobx';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction } from 'mobx';
 
 /*
     Intended use:
@@ -21,9 +21,9 @@ import { observable, autorun, IReactionDisposer, computed, transaction, makeObse
 export class FilterableDataSource<T> {
   private reactionDisposer?: IReactionDisposer;
 
-  @observable filterText: string = ''; // set by the user (from an input field or so, can be read/write)
+  @observable filterText = ''; // set by the user (from an input field or so, can be read/write)
 
-  @observable private _lastFilterText: string = '';
+  @observable private _lastFilterText = '';
   @computed get lastFilterText() {
     return this._lastFilterText;
   }

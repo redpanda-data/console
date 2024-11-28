@@ -1,5 +1,5 @@
-import { Flex } from '@redpanda-data/ui';
 import { Text } from '@chakra-ui/react';
+import { Flex } from '@redpanda-data/ui';
 
 export function SmallStat(p: {
   title: JSX.Element | string;

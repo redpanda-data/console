@@ -9,13 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { PageComponent, PageInitHelper } from '../Page';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import { observable } from 'mobx';
+import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Alert,
   AlertIcon,
@@ -29,13 +23,19 @@ import {
   RadioGroup,
   useToast,
 } from '@redpanda-data/ui';
-import { SingleSelect } from '../../misc/Select';
-import KowlEditor from '../../misc/KowlEditor';
-import { ElementOf } from '../../../utils/utils';
-import { DeleteIcon } from '@chakra-ui/icons';
-import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
-import { SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
+import { observable } from 'mobx';
+import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { type SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import type { ElementOf } from '../../../utils/utils';
+import KowlEditor from '../../misc/KowlEditor';
+import PageContent from '../../misc/PageContent';
+import { SingleSelect } from '../../misc/Select';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 
 @observer
 export class SchemaCreatePage extends PageComponent<{}> {
@@ -107,7 +107,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
     if (!subject) return DefaultSkeleton;
 
     if (this.editorState == null) {
-      const schema = subject.schemas.first((x) => x.version == subject.latestActiveVersion);
+      const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
       if (!schema) {
         console.error('Cannot find last active schema version of subject', {
           name: subject.name,
@@ -122,7 +122,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       this.editorState.format = schema.type as 'AVRO' | 'PROTOBUF';
       this.editorState.keyOrValue = undefined;
 
-      if (schema.type == SchemaType.AVRO || schema.type == SchemaType.JSON)
+      if (schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON)
         schema.schema = JSON.stringify(JSON.parse(schema.schema), undefined, 4);
 
       this.editorState.schemaText = schema.schema;
@@ -299,10 +299,10 @@ const SchemaEditor = observer(
     }, []);
 
     const { state, mode } = p;
-    const isAddVersion = mode == 'ADD_VERSION';
+    const isAddVersion = mode === 'ADD_VERSION';
 
-    const showTopicNameInput = state.strategy == 'TOPIC' || state.strategy == 'TOPIC_RECORD_NAME';
-    const isCustom = state.strategy == 'CUSTOM';
+    const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
+    const isCustom = state.strategy === 'CUSTOM';
 
     const formatOptions = [
       { value: 'AVRO', label: 'Avro' },
@@ -399,7 +399,7 @@ const SchemaEditor = observer(
               name="format"
               value={state.format}
               onChange={(e) => {
-                if (state.format == e) {
+                if (state.format === e) {
                   return;
                 }
 
@@ -459,7 +459,7 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
             // Need to make sure that, after refreshing, the subject is still the same
             // otherwise, when the user switches between subjects very quickly, we might refresh 3 subjectDetails,
             // and when the first one completes, we're setting its latest version, which now isn't valid for the outdated subject
-            if (ref.subject == e) {
+            if (ref.subject === e) {
               ref.version = details.latestActiveVersion;
             }
           }}
@@ -527,26 +527,26 @@ function createSchemaState() {
 
     get computedSubjectName() {
       let subjectName = '';
-      if (this.strategy == 'TOPIC')
+      if (this.strategy === 'TOPIC')
         // was switch-case earlier, but if-cascade is actually more readable
         subjectName = this.userInput;
-      else if (this.strategy == 'RECORD_NAME') subjectName = this.computeRecordName();
-      else if (this.strategy == 'TOPIC_RECORD_NAME') subjectName = this.userInput + '-' + this.computeRecordName();
+      else if (this.strategy === 'RECORD_NAME') subjectName = this.computeRecordName();
+      else if (this.strategy === 'TOPIC_RECORD_NAME') subjectName = `${this.userInput}-${this.computeRecordName()}`;
       else subjectName = this.userInput;
 
-      if (this.strategy != 'CUSTOM')
-        if (this.keyOrValue != undefined) subjectName += '-' + this.keyOrValue.toLowerCase();
+      if (this.strategy !== 'CUSTOM')
+        if (this.keyOrValue !== undefined) subjectName += `-${this.keyOrValue.toLowerCase()}`;
 
       return subjectName;
     },
 
     computeRecordName() {
-      if (this.format == 'AVRO' || this.format == 'JSON') {
+      if (this.format === 'AVRO' || this.format === 'JSON') {
         // Avro
         // It's just a JSON object, so lets try to read the root name prop
         try {
           const obj = JSON.parse(this.schemaText);
-          const name = obj['name'];
+          const name = obj.name;
           return name;
         } catch {}
 
@@ -557,14 +557,13 @@ function createSchemaState() {
         if (!ar) return ''; // no match
         if (ar.length < 2) return ''; // capture group missing?
         return ar[1]; // return only first capture group
-      } else {
-        // Protobuf
-        const messageNameRegex = /message\s+(\S+)\s*\{/;
-        const ar = messageNameRegex.exec(this.schemaText);
-        if (!ar) return ''; // no match
-        if (ar.length < 2) return ''; // capture group missing?
-        return ar[1]; // return only first capture group
       }
+      // Protobuf
+      const messageNameRegex = /message\s+(\S+)\s*\{/;
+      const ar = messageNameRegex.exec(this.schemaText);
+      if (!ar) return ''; // no match
+      if (ar.length < 2) return ''; // capture group missing?
+      return ar[1]; // return only first capture group
     },
   });
 }

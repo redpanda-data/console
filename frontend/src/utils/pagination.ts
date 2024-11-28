@@ -1,4 +1,4 @@
-import { PaginationState, Updater } from '@redpanda-data/ui';
+import type { PaginationState, Updater } from '@redpanda-data/ui';
 
 export const onPaginationChange =
   (state: PaginationState, callBack?: (args: { pageSize: number; pageIndex: number }) => void) =>

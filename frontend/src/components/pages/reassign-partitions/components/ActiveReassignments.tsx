@@ -9,23 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, FC, useRef } from 'react';
-import { ConfigEntry } from '../../../../state/restInterfaces';
-import { api } from '../../../../state/backendApi';
-import { computed, makeObservable, observable } from 'mobx';
-import { QuickTable } from '../../../../utils/tsxUtils';
-import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
-import { ReassignmentState } from '../logic/reassignmentTracker';
-import { observer, useLocalObservable } from 'mobx-react';
-import { reassignmentTracker } from '../ReassignPartitions';
-import { BandwidthSlider } from './BandwidthSlider';
-import { BrokerList } from '../../../misc/BrokerList';
 import {
   Box,
   Button,
   ButtonGroup,
   Checkbox,
-  createStandaloneToast,
   DataTable,
   Flex,
   ListItem,
@@ -44,15 +32,27 @@ import {
   PopoverHeader,
   PopoverTrigger,
   Progress,
-  redpandaTheme,
-  redpandaToastOptions,
   Skeleton,
   Text,
-  ToastId,
+  type ToastId,
   UnorderedList,
+  createStandaloneToast,
+  redpandaTheme,
+  redpandaToastOptions,
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
+import { computed, makeObservable, observable } from 'mobx';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { Component, type FC, useRef } from 'react';
+import { api } from '../../../../state/backendApi';
+import type { ConfigEntry } from '../../../../state/restInterfaces';
+import { QuickTable } from '../../../../utils/tsxUtils';
+import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
+import { BrokerList } from '../../../misc/BrokerList';
+import { reassignmentTracker } from '../ReassignPartitions';
+import type { ReassignmentState } from '../logic/reassignmentTracker';
+import { BandwidthSlider } from './BandwidthSlider';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -122,7 +122,7 @@ export class ActiveReassignments extends Component<{
             },
             {
               header: 'Progress',
-              size: Infinity,
+              size: Number.POSITIVE_INFINITY,
               cell: ({ row: { original } }) => <ProgressCol state={original} />,
             },
             {
@@ -164,15 +164,15 @@ export class ActiveReassignments extends Component<{
 
   @computed get throttleSettings(): { followerThrottle: number | undefined; leaderThrottle: number | undefined } {
     const leaderThrottle = [...api.brokerConfigs.values()]
-      .filter((c) => typeof c != 'string')
+      .filter((c) => typeof c !== 'string')
       .flatMap((c) => c as ConfigEntry[])
       .filter((c) => c !== undefined)
-      .first((e) => e.name == 'leader.replication.throttled.rate');
+      .first((e) => e.name === 'leader.replication.throttled.rate');
     const followerThrottle = [...api.brokerConfigs.values()]
-      .filter((c) => typeof c != 'string')
+      .filter((c) => typeof c !== 'string')
       .flatMap((c) => c as ConfigEntry[])
       .filter((c) => c !== undefined)
-      .first((e) => e.name == 'follower.replication.throttled.rate');
+      .first((e) => e.name === 'follower.replication.throttled.rate');
 
     const result = {
       leaderThrottle: leaderThrottle ? Number(leaderThrottle.value) : undefined,
@@ -237,7 +237,7 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
           description: 'Setting throttle rate... done',
         });
       } catch (err) {
-        console.error('error in applyBandwidthThrottle: ' + err);
+        console.error(`error in applyBandwidthThrottle: ${err}`);
         toast.update(toastRef.current, {
           status: 'error',
           description: 'Setting throttle rate... error',
@@ -343,10 +343,10 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     if (this.props.state == null) return null;
 
     const state = this.props.state;
-    if (this.lastState != state) this.lastState = state;
+    if (this.lastState !== state) this.lastState = state;
 
     const visible = this.props.state != null;
-    if (this.wasVisible != visible) {
+    if (this.wasVisible !== visible) {
       // became visible or invisible
       // force update of topic config, so isThrottle has up to date information
       setTimeout(async () => {
@@ -367,7 +367,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     const addingReplicas = state.partitions.flatMap((p) => p.addingReplicas).distinct();
     const removingReplicas = state.partitions.flatMap((p) => p.removingReplicas).distinct();
 
-    const modalContent = Boolean(topicConfig) ? (
+    const modalContent = topicConfig ? (
       <Flex flexDirection="column" gap={12}>
         {/* Info */}
         <Flex flexDirection="column" gap={4}>
@@ -437,12 +437,12 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     }
 
     // partitionId:brokerId, ...
-    const leaderThrottleValue = config.configEntries.first((e) => e.name == 'leader.replication.throttled.replicas');
+    const leaderThrottleValue = config.configEntries.first((e) => e.name === 'leader.replication.throttled.replicas');
     const leaderThrottleEntries = leaderThrottleValue?.value
       ?.split(',')
       .map((e) => {
         const ar = e.split(':');
-        if (ar.length != 2) return null;
+        if (ar.length !== 2) return null;
         return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
       })
       .filterNull();
@@ -454,7 +454,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // ...and check if this broker-partition combo is being throttled
         const hasThrottle = leaderThrottleEntries.any(
-          (e) => e.partitionId == p.partitionId && sourceBrokers.includes(e.brokerId),
+          (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId),
         );
 
         if (hasThrottle) return true;
@@ -463,13 +463,13 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
     // partitionId:brokerId, ...
     const followerThrottleValue = config.configEntries.first(
-      (e) => e.name == 'follower.replication.throttled.replicas',
+      (e) => e.name === 'follower.replication.throttled.replicas',
     );
     const followerThrottleEntries = followerThrottleValue?.value
       ?.split(',')
       .map((e) => {
         const ar = e.split(':');
-        if (ar.length != 2) return null;
+        if (ar.length !== 2) return null;
         return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
       })
       .filterNull();
@@ -481,7 +481,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // ...and check if this broker-partition combo is being throttled
         const hasThrottle = followerThrottleEntries.any(
-          (e) => e.partitionId == p.partitionId && targetBrokers.includes(e.brokerId),
+          (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId),
         );
 
         if (hasThrottle) return true;
@@ -573,7 +573,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       });
       this.props.onClose();
     } catch (err) {
-      console.error('cancel reassignment: ' + String(err));
+      console.error(`cancel reassignment: ${String(err)}`);
       toast.update(toastRef, {
         status: 'error',
         description: `Cancelling reassignment of '${state.topicName}': Error`,
@@ -613,7 +613,7 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
         <ProgressBar
           percent={state.progressPercent}
           state="active"
-          left={<span>{state.progressPercent.toFixed(1) + '%'}</span>}
+          left={<span>{`${state.progressPercent.toFixed(1)}%`}</span>}
           right={
             <>
               {state.estimateSpeed != null && (
@@ -664,12 +664,12 @@ export class BrokersCol extends Component<{ state: ReassignmentState }> {
   }
 }
 
-const ProgressBar = function (p: {
+const ProgressBar = (p: {
   percent: number;
   state: 'active' | 'success';
   left?: React.ReactNode;
   right?: React.ReactNode;
-}) {
+}) => {
   const { percent, state, left, right } = p;
   return (
     <>

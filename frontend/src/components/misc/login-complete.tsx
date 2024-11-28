@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
-import { api } from '../../state/backendApi';
-import { ApiError, UserData } from '../../state/restInterfaces';
+import type { match } from 'react-router-dom';
 import { appGlobal } from '../../state/appGlobal';
-import fetchWithTimeout from '../../utils/fetchWithTimeout';
+import { api } from '../../state/backendApi';
+import type { ApiError, UserData } from '../../state/restInterfaces';
 import { uiState } from '../../state/uiState';
 import { getBasePath } from '../../utils/env';
-import { match } from 'react-router-dom';
+import fetchWithTimeout from '../../utils/fetchWithTimeout';
 import { queryToObj } from '../../utils/queryHelper';
-import { Spinner } from '@redpanda-data/ui';
 
 class LoginCompletePage extends Component<{ provider: string; match: match<any> }> {
   componentDidMount() {
@@ -34,11 +34,11 @@ class LoginCompletePage extends Component<{ provider: string; match: match<any> 
       if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
       if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
       uiState.loginError = errorString.trim();
-      appGlobal.history.replace(getBasePath() + '/login');
+      appGlobal.history.replace(`${getBasePath()}/login`);
       return;
     }
 
-    const url = './auth/callbacks/' + provider + query;
+    const url = `./auth/callbacks/${provider}${query}`;
 
     try {
       const response = await fetchWithTimeout(url, 10 * 1000, { method: 'GET', cache: 'no-cache', mode: 'no-cors' });
@@ -54,7 +54,7 @@ class LoginCompletePage extends Component<{ provider: string; match: match<any> 
       }
     } catch (err) {
       uiState.loginError = String(err);
-      appGlobal.history.push(getBasePath() + '/login');
+      appGlobal.history.push(`${getBasePath()}/login`);
       return;
     }
 

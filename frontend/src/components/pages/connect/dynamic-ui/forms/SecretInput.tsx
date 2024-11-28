@@ -1,14 +1,14 @@
 import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline';
 import {
-  Icon,
   Button,
+  type ButtonProps,
   Flex,
+  Icon,
   Input,
-  ButtonProps,
-  Tooltip,
-  useBoolean,
   InputGroup,
   InputRightElement,
+  Tooltip,
+  useBoolean,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 

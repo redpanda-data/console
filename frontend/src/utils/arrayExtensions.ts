@@ -144,7 +144,7 @@ Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
 };
 
 Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number) {
-  if (this.length == 0) return undefined;
+  if (this.length === 0) return undefined;
 
   let bestIndex = 0;
   let bestVal = selector(this[0]);
@@ -161,7 +161,7 @@ Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number)
 };
 
 Array.prototype.maxBy = function maxBy<T>(this: T[], selector: (x: T) => number) {
-  if (this.length == 0) return undefined;
+  if (this.length === 0) return undefined;
 
   let bestIndex = 0;
   let bestVal = selector(this[0]);
@@ -220,10 +220,10 @@ Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefine
 
 Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number; added: number } {
   // Early out, compare both arrays
-  if (this.length == newData.length) {
+  if (this.length === newData.length) {
     let same = true;
     for (let i = 0; i < this.length; i++)
-      if (this[i] != newData[i]) {
+      if (this[i] !== newData[i]) {
         same = false;
         break;
       }
@@ -240,9 +240,9 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
 };
 
 Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boolean {
-  if (this.length == 0 && other.length == 0) return true;
+  if (this.length === 0 && other.length === 0) return true;
 
-  if (this.length != other.length) return false;
+  if (this.length !== other.length) return false;
 
   for (let i = 0; i < this.length; i++) if (this[i] !== other[i]) return false;
 
@@ -334,7 +334,7 @@ Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], 
   for (const str of this) {
     if (str === null || str === undefined || str === '') continue;
 
-    if (r.length == 0) r = str;
+    if (r.length === 0) r = str;
     else r += separator + str;
   }
 
@@ -349,10 +349,10 @@ Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item:
 
   result.sort((a, b) => {
     const orderA = elementOrder.get(a);
-    if (typeof orderA == 'undefined') return 0;
+    if (typeof orderA === 'undefined') return 0;
 
     const orderB = elementOrder.get(b);
-    if (typeof orderB == 'undefined') return 0;
+    if (typeof orderB === 'undefined') return 0;
 
     return orderA - orderB;
   });

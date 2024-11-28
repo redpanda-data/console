@@ -1,5 +1,3 @@
-import { observer } from 'mobx-react';
-import { openModal } from '../../../utils/ModalContainer';
 import {
   Box,
   Button,
@@ -12,7 +10,9 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
 import { useState } from 'react';
+import { openModal } from '../../../utils/ModalContainer';
 
 const ExplicitConfirmModal = observer(
   (p: {
@@ -31,7 +31,7 @@ const ExplicitConfirmModal = observer(
     const [confirmBoxText, setConfirmBoxText] = useState('');
 
     const requiredText = p.requiredText ?? 'delete';
-    const isConfirmEnabled = confirmBoxText == requiredText;
+    const isConfirmEnabled = confirmBoxText === requiredText;
 
     return (
       <Modal isOpen onClose={p.closeModal} isCentered size="2xl">

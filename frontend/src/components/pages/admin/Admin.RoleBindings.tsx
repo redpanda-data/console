@@ -12,10 +12,10 @@
 /* eslint-disable react/jsx-key */
 
 import React, { Component } from 'react';
-import { RoleBinding, Subject } from '../../../state/restInterfaces';
+import type { RoleBinding, Subject } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
-import { QuickTable, ObjToKv } from '../../../utils/tsxUtils';
 import { Accordion } from '@redpanda-data/ui';
+import { ObjToKv, QuickTable } from '../../../utils/tsxUtils';
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
   render() {

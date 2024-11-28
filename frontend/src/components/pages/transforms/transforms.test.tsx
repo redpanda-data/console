@@ -1,11 +1,11 @@
+import { render, screen } from '@testing-library/react';
 import {
   PartitionTransformStatus_PartitionStatus,
   TransformMetadata,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { transformsApi } from '../../../state/backendApi';
-import { render, screen } from '@testing-library/react';
-import TransformsList from './Transforms.List';
 import TransformDetails from './Transform.Details';
+import TransformsList from './Transforms.List';
 
 function setTransformData(...transforms: TransformMetadata[]) {
   transformsApi.transforms = [...transforms];

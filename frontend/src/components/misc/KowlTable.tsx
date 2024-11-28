@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { observer } from 'mobx-react';
 import { Box, Input } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import React, { Component } from 'react';
 
 // sorter:  SorterResult<T>|SorterResult<T>[]
 //
@@ -103,6 +103,6 @@ export class SearchTitle extends Component<{
   }
 
   onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key == 'Enter' || e.key == 'Escape') this.hideSearchBar();
+    if (e.key === 'Enter' || e.key === 'Escape') this.hideSearchBar();
   }
 }

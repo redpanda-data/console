@@ -9,8 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, CSSProperties } from 'react';
-import { Transition, motion, AnimatePresence as AnimatePresenceRaw, AnimatePresenceProps } from 'framer-motion';
+import {
+  type AnimatePresenceProps,
+  AnimatePresence as AnimatePresenceRaw,
+  type Transition,
+  motion,
+} from 'framer-motion';
+import React, { type FC, type CSSProperties } from 'react';
 import { alwaysChanging } from './utils';
 
 export const AnimatePresence = AnimatePresenceRaw as React.FunctionComponent<
@@ -33,8 +38,8 @@ export type PositionProp =
 
 const time = 0.25; // 0.15
 const dist = 2;
-const dx100em = [dist * -1 + 'em', 0, dist + 'em'];
-const dx50em = [dist * 0.5 * -1 + 'em', 0, dist * 0.5 + 'em'];
+const dx100em = [`${dist * -1}em`, 0, `${dist}em`];
+const dx50em = [`${dist * 0.5 * -1}em`, 0, `${dist * 0.5}em`];
 // ease:
 // "linear" | "easeIn" | "easeOut" | "easeInOut" | "circIn" | "circOut" | "circInOut" | "backIn" | "backOut" | "backInOut" | "anticipate"
 

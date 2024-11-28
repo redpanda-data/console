@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { PropsWithChildren, useState } from 'react';
-import { observer } from 'mobx-react';
-import { uiState } from '../../state/uiState';
-import { prettyBytesOrNA } from '../../utils/utils';
-import env, { IsDev } from '../../utils/env';
-import { ZeroSizeWrapper } from '../../utils/tsxUtils';
-import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import React, { type PropsWithChildren, useState } from 'react';
+import type { TopicLogDirSummary } from '../../state/restInterfaces';
+import { uiState } from '../../state/uiState';
+import env, { IsDev } from '../../utils/env';
+import { ZeroSizeWrapper } from '../../utils/tsxUtils';
+import { prettyBytesOrNA } from '../../utils/utils';
 
 export const Section = (p: PropsWithChildren<{ title: string }>) => (
   <section style={{ padding: '1em 2em' }}>
@@ -75,7 +75,7 @@ export const UpdatePopup = observer(() => {
   if (!serverTimestamp || !Number.isFinite(serverTimestamp)) return null;
 
   if (serverTimestamp < curTimestamp) return null; // don't downgrade
-  if (serverTimestamp == curTimestamp) return null; // version already matches
+  if (serverTimestamp === curTimestamp) return null; // version already matches
 
   return (
     <Modal isOpen={isUpdateDialogOpen} onClose={() => setUpdateDialogOpen(false)}>
@@ -142,7 +142,7 @@ export function WarningToolip(p: { content: React.ReactNode; position: 'top' | '
         }}
       >
         <AlertIcon />
-        <span className="tooltiptext" style={p.position == 'left' ? styleLeft : undefined}>
+        <span className="tooltiptext" style={p.position === 'left' ? styleLeft : undefined}>
           {p.content}
         </span>
       </div>

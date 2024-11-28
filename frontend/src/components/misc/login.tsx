@@ -9,13 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, useState } from 'react';
-import { observer } from 'mobx-react';
-import { makeObservable, observable } from 'mobx';
-import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
-import { uiState } from '../../state/uiState';
-import { FaGithub, FaGoogle } from 'react-icons/fa';
-import OktaLogo from '../../utils/svg/OktaLogo';
 import {
   Box,
   Button,
@@ -32,9 +25,16 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { Component, useState } from 'react';
+import { FaGithub, FaGoogle } from 'react-icons/fa';
+import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { appGlobal } from '../../state/appGlobal';
+import { uiState } from '../../state/uiState';
 import { toJson } from '../../utils/jsonUtils';
 import AzureADLogo from '../../utils/svg/AzureADLogo';
+import OktaLogo from '../../utils/svg/OktaLogo';
 
 const iconMap = new Map([
   [
@@ -122,8 +122,8 @@ class Login extends Component {
       .slice()
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-    const providerButtons = allProviders?.filter((x) => x.authenticationMethod != 'PLAIN_CREDENTIALS');
-    const plainLoginProvider = allProviders?.first((x) => x.authenticationMethod == 'PLAIN_CREDENTIALS');
+    const providerButtons = allProviders?.filter((x) => x.authenticationMethod !== 'PLAIN_CREDENTIALS');
+    const plainLoginProvider = allProviders?.first((x) => x.authenticationMethod === 'PLAIN_CREDENTIALS');
 
     return (
       <div className="login">
@@ -259,7 +259,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
 
   // Add missing '.' in front of url if needed
   let loginUrl = provider.url;
-  if (!loginUrl.startsWith('.') && loginUrl.startsWith('/')) loginUrl = '.' + loginUrl;
+  if (!loginUrl.startsWith('.') && loginUrl.startsWith('/')) loginUrl = `.${loginUrl}`;
 
   const state = plainLoginState;
 

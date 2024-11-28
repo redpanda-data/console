@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode } from 'react';
-import { ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
+import { type ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
+import React, { type ReactNode } from 'react';
 
 // Note: this component is intended to be temporary until all components are migrated @redpanda-data/ui
 function Section(props: { children: ReactNode; id?: string } & ChakraProps) {

@@ -64,7 +64,7 @@ export function isSupported(f: FeatureEntry): boolean {
   const c = api.endpointCompatibility;
   if (!c) return true; // not yet checked, allow it by default...
 
-  for (const e of c.endpoints) if (e.method == f.method) if (e.endpoint == f.endpoint) return e.isSupported;
+  for (const e of c.endpoints) if (e.method === f.method) if (e.endpoint === f.endpoint) return e.isSupported;
 
   // Special handling, this will be completely absent in the community version
   if (f.endpoint.includes('.SecurityService')) return false;

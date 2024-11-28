@@ -9,34 +9,34 @@
  * by the Apache License, Version 2.0
  */
 
+import { Box, Button, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
+import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import { Box, Button, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
+import { PageComponent, type PageInitHelper } from '../Page';
 
-import { Link as ReactRouterLink } from 'react-router-dom';
 import { Link as ChakraLink } from '@chakra-ui/react';
-import { AclPrincipalGroup, principalGroupsView } from './Models';
-import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
-import { UserRoleTags } from './UserPermissionAssignments';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { Features } from '../../../state/supportedFeatures';
+import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
+import { type AclPrincipalGroup, principalGroupsView } from './Models';
+import { UserRoleTags } from './UserPermissionAssignments';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
-  @observable username: string = '';
+  @observable username = '';
   @observable mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512' = 'SCRAM-SHA-256';
 
-  @observable isValidUsername: boolean = false;
-  @observable isValidPassword: boolean = false;
+  @observable isValidUsername = false;
+  @observable isValidPassword = false;
 
-  @observable generateWithSpecialChars: boolean = false;
+  @observable generateWithSpecialChars = false;
   @observable step: 'CREATE_USER' | 'CREATE_USER_CONFIRMATION' = 'CREATE_USER';
-  @observable isCreating: boolean = false;
+  @observable isCreating = false;
 
   @observable selectedRoles: string[] = [];
 
@@ -98,7 +98,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                   // Remove user from all its roles
                   const promises = [];
                   for (const [roleName, members] of rolesApi.roleMembers) {
-                    if (members.any((m) => m.name == userName)) {
+                    if (members.any((m) => m.name === userName)) {
                       // is this user part of this role?
                       // then remove it
                       promises.push(rolesApi.updateRoleMembership(roleName, [], [userName]));
@@ -146,15 +146,15 @@ const UserPermissionDetails = observer(
     const roles: string[] = [];
     if (Features.rolesApi) {
       for (const [roleName, members] of rolesApi.roleMembers) {
-        if (!members.any((m) => m.name == p.userName)) continue; // this role doesn't contain our user
+        if (!members.any((m) => m.name === p.userName)) continue; // this role doesn't contain our user
         roles.push(roleName);
       }
     }
 
     // Get all AclPrincipal groups, find the ones that apply
     const groups = principalGroupsView.principalGroups.filter((g) => {
-      if (g.principalType == 'User' && (g.principalName == p.userName || g.principalName === '*')) return true;
-      if (g.principalType == 'RedpandaRole' && roles.includes(g.principalName)) return true;
+      if (g.principalType === 'User' && (g.principalName === p.userName || g.principalName === '*')) return true;
+      if (g.principalType === 'RedpandaRole' && roles.includes(g.principalName)) return true;
       return false;
     });
 
@@ -171,7 +171,7 @@ const PrincipalGroupTables = observer(
       <>
         {p.groups.map((r) => (
           <>
-            {r.principalType == 'RedpandaRole' ? (
+            {r.principalType === 'RedpandaRole' ? (
               <ChakraLink as={ReactRouterLink} to={`/security/roles/${r.principalName}/details`}>
                 <Heading as="h3" mt="4">
                   {r.principalName}
@@ -206,16 +206,16 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
     const allow: string[] = [];
     const deny: string[] = [];
 
-    if (topicAcl.all == 'Allow') allow.push('All');
-    else if (topicAcl.all == 'Deny') deny.push('All');
+    if (topicAcl.all === 'Allow') allow.push('All');
+    else if (topicAcl.all === 'Deny') deny.push('All');
     else {
       for (const [permName, value] of Object.entries(topicAcl.permissions)) {
-        if (value == 'Allow') allow.push(permName);
-        if (value == 'Deny') deny.push(permName);
+        if (value === 'Allow') allow.push(permName);
+        if (value === 'Deny') deny.push(permName);
       }
     }
 
-    if (allow.length == 0 && deny.length == 0) continue;
+    if (allow.length === 0 && deny.length === 0) continue;
 
     entries.push({
       type: 'Topic',
@@ -228,16 +228,16 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
     const allow: string[] = [];
     const deny: string[] = [];
 
-    if (groupAcl.all == 'Allow') allow.push('All');
-    else if (groupAcl.all == 'Deny') deny.push('All');
+    if (groupAcl.all === 'Allow') allow.push('All');
+    else if (groupAcl.all === 'Deny') deny.push('All');
     else {
       for (const [permName, value] of Object.entries(groupAcl.permissions)) {
-        if (value == 'Allow') allow.push(permName);
-        if (value == 'Deny') deny.push(permName);
+        if (value === 'Allow') allow.push(permName);
+        if (value === 'Deny') deny.push(permName);
       }
     }
 
-    if (allow.length == 0 && deny.length == 0) continue;
+    if (allow.length === 0 && deny.length === 0) continue;
 
     entries.push({
       type: 'ConsumerGroup',
@@ -250,16 +250,16 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
     const allow: string[] = [];
     const deny: string[] = [];
 
-    if (transactId.all == 'Allow') allow.push('All');
-    else if (transactId.all == 'Deny') deny.push('All');
+    if (transactId.all === 'Allow') allow.push('All');
+    else if (transactId.all === 'Deny') deny.push('All');
     else {
       for (const [permName, value] of Object.entries(transactId.permissions)) {
-        if (value == 'Allow') allow.push(permName);
-        if (value == 'Deny') deny.push(permName);
+        if (value === 'Allow') allow.push(permName);
+        if (value === 'Deny') deny.push(permName);
       }
     }
 
-    if (allow.length == 0 && deny.length == 0) continue;
+    if (allow.length === 0 && deny.length === 0) continue;
 
     entries.push({
       type: 'TransactionalID',
@@ -275,12 +275,12 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
     const allow: string[] = [];
     const deny: string[] = [];
 
-    if (clusterAcls.all == 'Allow') allow.push('All');
-    else if (clusterAcls.all == 'Deny') deny.push('All');
+    if (clusterAcls.all === 'Allow') allow.push('All');
+    else if (clusterAcls.all === 'Deny') deny.push('All');
     else {
       for (const [permName, value] of Object.entries(clusterAcls.permissions)) {
-        if (value == 'Allow') allow.push(permName);
-        if (value == 'Deny') deny.push(permName);
+        if (value === 'Allow') allow.push(permName);
+        if (value === 'Deny') deny.push(permName);
       }
     }
 
@@ -294,7 +294,7 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
       });
   }
 
-  if (entries.length == 0) return <>No permissions assigned</>;
+  if (entries.length === 0) return <>No permissions assigned</>;
 
   return (
     <>

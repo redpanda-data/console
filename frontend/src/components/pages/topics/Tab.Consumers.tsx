@@ -9,20 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC } from 'react';
-import { Topic, TopicConsumer } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
+import React, { type FC } from 'react';
+import type { Topic, TopicConsumer } from '../../../state/restInterfaces';
 
 import '../../../utils/arrayExtensions';
 
-import { api } from '../../../state/backendApi';
-import { appGlobal } from '../../../state/appGlobal';
 import { DataTable } from '@redpanda-data/ui';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import usePaginationParams from '../../../hooks/usePaginationParams';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
 import { uiState } from '../../../state/uiState';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 type TopicConsumersProps = { topic: Topic };
 
@@ -45,8 +45,8 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
       onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
         uiState.topicSettings.consumerPageSize = pageSize;
         editQuery((query) => {
-          query['page'] = String(pageIndex);
-          query['pageSize'] = String(pageSize);
+          query.page = String(pageIndex);
+          query.pageSize = String(pageSize);
         });
       })}
       sorting

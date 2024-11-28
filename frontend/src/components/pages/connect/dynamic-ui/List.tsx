@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, useState } from 'react';
-import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
-import { arrayMoveMutable } from 'array-move';
-import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 import { Button, Input, Tooltip } from '@redpanda-data/ui';
+import { arrayMoveMutable } from 'array-move';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { Component, useState } from 'react';
+import { DragDropContext, Draggable, type DropResult, Droppable, type ResponderProvided } from 'react-beautiful-dnd';
 
 @observer
 export class CommaSeparatedStringList extends Component<{
@@ -87,15 +87,15 @@ export class CommaSeparatedStringList extends Component<{
               setHasFocus(false);
             }}
             onKeyDown={(e) => {
-              if (e.key == 'Enter') {
+              if (e.key === 'Enter') {
                 // can we rename that entry?
-                if (this.data.any((x) => x.id == valuePending)) {
+                if (this.data.any((x) => x.id === valuePending)) {
                   // no, already exists
                   e.stopPropagation();
                   return;
                 }
 
-                if (/^[a-z][a-z_\d]*$/i.test(valuePending) == false) {
+                if (/^[a-z][a-z_\d]*$/i.test(valuePending) === false) {
                   // no, invalid characters
                   e.stopPropagation();
                   return;
@@ -103,7 +103,7 @@ export class CommaSeparatedStringList extends Component<{
 
                 item.id = valuePending;
                 (e.target as HTMLElement).blur();
-              } else if (e.key == 'Escape') {
+              } else if (e.key === 'Escape') {
                 (e.target as HTMLElement).blur();
               }
             }}
@@ -129,7 +129,7 @@ export class CommaSeparatedStringList extends Component<{
   AddButton = observer(() => {
     return (
       <div className="createEntryRow">
-        <div className={'inputWrapper' + (this.newEntryError ? ' hasError' : '')} style={{ height: '100%' }}>
+        <div className={`inputWrapper${this.newEntryError ? ' hasError' : ''}`} style={{ height: '100%' }}>
           <Input
             style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
             value={this.newEntry ?? ''}
@@ -140,9 +140,9 @@ export class CommaSeparatedStringList extends Component<{
 
               if (!this.newEntry) return;
 
-              if (this.data.any((x) => x.id == this.newEntry)) this.newEntryError = 'Entry already exists';
+              if (this.data.any((x) => x.id === this.newEntry)) this.newEntryError = 'Entry already exists';
 
-              if (/^[a-z][a-z_\d]*$/i.test(this.newEntry) == false)
+              if (/^[a-z][a-z_\d]*$/i.test(this.newEntry) === false)
                 this.newEntryError = 'Name is not valid (only letters, digits, underscore)';
             }}
             placeholder={this.props.locale?.addInputPlaceholder ?? 'Enter a name...'}
@@ -155,7 +155,7 @@ export class CommaSeparatedStringList extends Component<{
         <Button
           style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
           variant="solid"
-          disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length == 0}
+          disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length === 0}
           onClick={() => {
             this.data.push({ id: this.newEntry! });
             this.newEntry = null;

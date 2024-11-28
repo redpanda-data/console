@@ -9,13 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-import { Component } from 'react';
-import { action, observable } from 'mobx';
 import { XCircleIcon } from '@heroicons/react/solid';
 import {
   Box,
-  Text,
   Button,
   Flex,
   Modal,
@@ -24,7 +20,11 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Text,
 } from '@redpanda-data/ui';
+import { action, observable } from 'mobx';
+import React from 'react';
+import { Component } from 'react';
 
 class ErrorModal extends Component<ErrorModalProps> {
   title: string;
@@ -104,7 +104,7 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
   const key = nextErrorKey++;
 
   // keep formatting for strings
-  if (typeof content == 'string') {
+  if (typeof content === 'string') {
     content = (
       <div
         style={{
@@ -154,11 +154,11 @@ const onClose = action((key: number) => {
 });
 
 const afterClose = action((key: number) => {
-  errorModals.removeAll((x) => x.key == key);
+  errorModals.removeAll((x) => x.key === key);
 });
 
 export function renderErrorModals() {
-  if (errorModals.length == 0) return null;
+  if (errorModals.length === 0) return null;
   const e = errorModals[0];
   return <ErrorModal {...e} />;
 }

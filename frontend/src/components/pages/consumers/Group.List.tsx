@@ -9,25 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { observer } from 'mobx-react';
+import React from 'react';
 
-import { api } from '../../../state/backendApi';
-import { PageComponent, PageInitHelper } from '../Page';
-import { GroupDescription } from '../../../state/restInterfaces';
-import { uiSettings } from '../../../state/ui';
+import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
+import { type IReactionDisposer, autorun } from 'mobx';
+import { Link } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
-import { GroupState } from './Group.Details';
-import { autorun, IReactionDisposer } from 'mobx';
+import { api } from '../../../state/backendApi';
+import type { GroupDescription } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/queryHelper';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
-import { ShortNum } from '../../misc/ShortNum';
-import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
+import Section from '../../misc/Section';
+import { ShortNum } from '../../misc/ShortNum';
 import { Statistic } from '../../misc/Statistic';
-import { Link } from 'react-router-dom';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { GroupState } from './Group.Details';
 
 @observer
 class GroupList extends PageComponent {
@@ -44,14 +44,14 @@ class GroupList extends PageComponent {
   componentDidMount() {
     // 1. use 'q' parameter for quick search (if it exists)
     editQuery((query) => {
-      if (query['q']) uiSettings.consumerGroupList.quickSearch = String(query['q']);
+      if (query.q) uiSettings.consumerGroupList.quickSearch = String(query.q);
     });
 
     // 2. whenever the quick search box changes, update the url
     this.quickSearchReaction = autorun(() => {
       editQuery((query) => {
         const q = String(uiSettings.consumerGroupList.quickSearch);
-        if (q) query['q'] = q;
+        if (q) query.q = q;
       });
     });
   }
@@ -142,7 +142,7 @@ class GroupList extends PageComponent {
                       <this.GroupId group={original} />
                     </Link>
                   ),
-                  size: Infinity,
+                  size: Number.POSITIVE_INFINITY,
                 },
                 {
                   header: 'Coordinator',
@@ -194,7 +194,7 @@ class GroupList extends PageComponent {
       </Text>
     );
 
-    if (protocol == 'consumer') {
+    if (protocol === 'consumer') {
       return groupIdEl;
     }
 

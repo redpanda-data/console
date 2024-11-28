@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { ConfigEntry, Topic } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
+import type { ConfigEntry, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
-import { prettyBytesOrNA } from '../../../utils/utils';
-import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
-import { Box, Flex, Text, Divider, Tooltip } from '@redpanda-data/ui';
+import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import { MdInfoOutline } from 'react-icons/md';
-import { CleanupPolicyType } from './types';
+import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import type { CleanupPolicyType } from './types';
 
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
@@ -39,7 +39,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   // Config Entries / Separator
   const configEntries = api.topicConfig.get(topic.topicName)?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
-  const cleanupPolicy = configEntries?.find((x) => x.name == 'cleanup.policy')?.value;
+  const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
 
   const retentionMs = filteredConfigEntries?.find((e) => e.name === 'retention.ms');
   const retentionBytes = filteredConfigEntries?.find((e) => e.name === 'retention.bytes');
@@ -57,7 +57,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
         <Text as="dt" fontWeight="bold">
           Size:
         </Text>
-        <Text as="dd">{!!topic ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes) : '...'}</Text>
+        <Text as="dd">{topic ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes) : '...'}</Text>
       </Flex>
       <Box>
         <Divider orientation="vertical" />
@@ -111,7 +111,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
                 <>
                   {formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
                   {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
-                  {isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
+                  {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
                 </>
               </Text>
             )}
@@ -132,7 +132,9 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
                   <>
                     {formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')} or{' '}
                     {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
-                    {isFinite(Number(retentionBytes.value)) && Number(retentionBytes.value) !== -1 && ' / partition'}
+                    {Number.isFinite(Number(retentionBytes.value)) &&
+                      Number(retentionBytes.value) !== -1 &&
+                      ' / partition'}
                   </>
                 )}
               </Text>
@@ -150,9 +152,9 @@ function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntr
   const newConfig: ConfigEntry[] = [];
   for (const e of config) newConfig.push(e);
 
-  if (config.find((e) => e.name == 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
+  if (config.find((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
     // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
-    newConfig.removeAll((e) => e.name == 'retention.bytes' || e.name == 'retention.ms');
+    newConfig.removeAll((e) => e.name === 'retention.bytes' || e.name === 'retention.ms');
   }
 
   return newConfig;

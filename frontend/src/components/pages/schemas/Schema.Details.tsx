@@ -9,15 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useState } from 'react';
-import { observer } from 'mobx-react';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { PageComponent } from '../Page';
-import { DefaultSkeleton, Label, Button } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import { makeObservable, observable } from 'mobx';
-import { editQuery } from '../../../utils/queryHelper';
+import { createStandaloneToast } from '@chakra-ui/react';
 import {
   Alert,
   AlertDescription,
@@ -30,22 +22,30 @@ import {
   Grid,
   GridItem,
   ListItem,
+  Skeleton,
   Tabs,
   UnorderedList,
   useToast,
-  Skeleton,
 } from '@redpanda-data/ui';
-import { SmallStat } from '../../misc/SmallStat';
-import { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
 import { Text } from '@redpanda-data/ui';
 import { Link } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { SingleSelect } from '../../misc/Select';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
-import { KowlDiffEditor } from '../../misc/KowlEditor';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
 import { uiState } from '../../../state/uiState';
-import { createStandaloneToast } from '@chakra-ui/react';
+import { editQuery } from '../../../utils/queryHelper';
+import { Button, DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { decodeURIComponentPercents } from '../../../utils/utils';
+import { KowlDiffEditor } from '../../misc/KowlEditor';
+import PageContent from '../../misc/PageContent';
+import { SingleSelect } from '../../misc/Select';
+import { SmallStat } from '../../misc/SmallStat';
+import { PageComponent } from '../Page';
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
@@ -74,7 +74,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
     const prevName = decodeURIComponentPercents(prevProps.subjectName);
 
-    if (prevName != this.subjectNameRaw) {
+    if (prevName !== this.subjectNameRaw) {
       this.updateTitleAndBreadcrumbs();
       this.refreshData();
     }
@@ -122,7 +122,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
   }
 
   render() {
-    const isSoftDeleted = api.schemaSubjects?.find((x) => x.name == this.subjectNameRaw)?.isSoftDeleted;
+    const isSoftDeleted = api.schemaSubjects?.find((x) => x.name === this.subjectNameRaw)?.isSoftDeleted;
     const subject = api.schemaDetails.get(this.subjectNameRaw);
     if (!subject) return DefaultSkeleton;
 
@@ -251,11 +251,11 @@ function getVersionFromQuery(): 'latest' | number | undefined {
   if (query.has('version')) {
     const versionStr = query.get('version');
 
-    if (versionStr != '' && !isNaN(Number(versionStr))) {
+    if (versionStr !== '' && !Number.isNaN(Number(versionStr))) {
       return Number(versionStr);
     }
 
-    if (versionStr == 'latest') return 'latest';
+    if (versionStr === 'latest') return 'latest';
 
     console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
   }
@@ -269,17 +269,14 @@ export function schemaTypeToCodeBlockLanguage(type: string) {
     case 'json':
     case 'avro':
       return 'json';
-
     default:
-    case 'proto':
-    case 'protobuf':
       return 'protobuf';
   }
 }
 
 export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   const lower = schema.type.toLowerCase();
-  if (lower == 'avro' || lower == 'json') return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+  if (lower === 'avro' || lower === 'json') return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
   return schema.schema;
 }
 
@@ -290,17 +287,17 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
   const queryVersion = getVersionFromQuery();
   const defaultVersion =
-    queryVersion && queryVersion != 'latest'
+    queryVersion && queryVersion !== 'latest'
       ? queryVersion
-      : subject.latestActiveVersion == -1 // if we don't have a latestActiveVersion, use the last version there is
+      : subject.latestActiveVersion === -1 // if we don't have a latestActiveVersion, use the last version there is
         ? subject.schemas.last()?.version
         : subject.latestActiveVersion;
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
-  const schema = subject.schemas.first((x) => x.version == selectedVersion)!;
+  const schema = subject.schemas.first((x) => x.version === selectedVersion)!;
 
   if (!schema) {
-    if (selectedVersion != defaultVersion) {
+    if (selectedVersion !== defaultVersion) {
       setSelectedVersion(defaultVersion);
     }
 
@@ -326,9 +323,9 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                   label:
                     String(v.version) +
                     (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                    (subject.versions[subject.versions.length - 1] == v ? ' (latest)' : ''),
+                    (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
                 }))}
-                isDisabled={subject.versions.length == 0}
+                isDisabled={subject.versions.length === 0}
               />
             </Box>
           </Label>
@@ -403,7 +400,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         duration: 4000,
                         isClosable: false,
                         title: `Schema ${subject.name} ${schema.version} has been recovered`,
-                        description: 'Schema ID: ' + r.id,
+                        description: `Schema ID: ${r.id}`,
                       });
                       api.refreshSchemaSubjects(true);
                       await api.refreshSchemaDetails(subject.name, true);
@@ -420,7 +417,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         duration: null,
                         isClosable: true,
                         title: `Failed to recover schema ${subject.name} ${schema.version} `,
-                        description: 'Error: ' + String(err),
+                        description: `Error: ${String(err)}`,
                       });
                     });
                 }}
@@ -507,13 +504,13 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
   const subject = p.subject;
 
   const defaultVersionLeft = subject.versions[0].version;
-  const defaultVersionRight = subject.latestActiveVersion == -1 ? defaultVersionLeft : subject.latestActiveVersion;
+  const defaultVersionRight = subject.latestActiveVersion === -1 ? defaultVersionLeft : subject.latestActiveVersion;
 
   const [selectedVersionLeft, setSelectedVersionLeft] = useState(defaultVersionLeft);
   const [selectedVersionRight, setSelectedVersionRight] = useState(defaultVersionRight);
 
-  const schemaLeft = subject.schemas.first((x) => x.version == selectedVersionLeft);
-  const schemaRight = subject.schemas.first((x) => x.version == selectedVersionRight);
+  const schemaLeft = subject.schemas.first((x) => x.version === selectedVersionLeft);
+  const schemaRight = subject.schemas.first((x) => x.version === selectedVersionRight);
 
   if (!schemaLeft) {
     setSelectedVersionLeft(subject.versions[0].version);
@@ -543,9 +540,9 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                     label:
                       String(v.version) +
                       (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                      (subject.versions[subject.versions.length - 1] == v ? ' (latest)' : ''),
+                      (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
                   }))}
-                  isDisabled={subject.versions.length == 0}
+                  isDisabled={subject.versions.length === 0}
                 />
               </Box>
             </Label>
@@ -570,9 +567,9 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                     label:
                       String(v.version) +
                       (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                      (subject.versions[subject.versions.length - 1] == v ? ' (latest)' : ''),
+                      (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
                   }))}
-                  isDisabled={subject.versions.length == 0}
+                  isDisabled={subject.versions.length === 0}
                 />
               </Box>
             </Label>
@@ -603,7 +600,7 @@ const SchemaReferences = observer(
     const version = schema.version;
 
     const referencedByVersions = api.schemaReferencedBy.get(subject.name);
-    const referencedBy = referencedByVersions && referencedByVersions.get(version);
+    const referencedBy = referencedByVersions?.get(version);
 
     return (
       <>

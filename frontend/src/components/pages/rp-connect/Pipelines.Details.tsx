@@ -9,36 +9,42 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
-import Section from '../../misc/Section';
+import { Alert, AlertIcon, Box, Button, DataTable, Flex, SearchField, createStandaloneToast } from '@redpanda-data/ui';
+import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
-import { appGlobal } from '../../../state/appGlobal';
-import PageContent from '../../misc/PageContent';
-import { PageComponent, PageInitHelper } from '../Page';
-import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
-import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
-import { api, createMessageSearch, MessageSearch, MessageSearchRequest, pipelinesApi } from '../../../state/backendApi';
-import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
-import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import usePaginationParams from '../../../hooks/usePaginationParams';
+import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
-  Pipeline,
-  Pipeline_Resources,
+  type Pipeline,
+  type Pipeline_Resources,
   Pipeline_State,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
-import Tabs from '../../misc/tabs/Tabs';
-import { useState } from 'react';
-import { sanitizeString } from '../../../utils/filterHelper';
+import { appGlobal } from '../../../state/appGlobal';
+import {
+  type MessageSearch,
+  type MessageSearchRequest,
+  api,
+  createMessageSearch,
+  pipelinesApi,
+} from '../../../state/backendApi';
+import type { TopicMessage } from '../../../state/restInterfaces';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
-import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { TopicMessage } from '../../../state/restInterfaces';
-import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import usePaginationParams from '../../../hooks/usePaginationParams';
-import { ColumnDef } from '@tanstack/react-table';
 import { uiState } from '../../../state/uiState';
-import { Link } from 'react-router-dom';
-import { openDeleteModal } from './modals';
+import { sanitizeString } from '../../../utils/filterHelper';
+import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
+import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
+import PageContent from '../../misc/PageContent';
+import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
+/* eslint-disable no-useless-escape */
+import Section from '../../misc/Section';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import { PipelineStatus } from './Pipelines.List';
+import { openDeleteModal } from './modals';
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
@@ -67,11 +73,12 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   render() {
     if (!pipelinesApi.pipelines) return DefaultSkeleton;
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
-    const pipeline = pipelinesApi.pipelines.first((x) => x.id == pipelineId);
+    const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
 
     if (!pipeline) return DefaultSkeleton;
-    const isStopped = pipeline.state == Pipeline_State.STOPPED;
-    const isTransitioningState = pipeline.state == Pipeline_State.STARTING || pipeline.state == Pipeline_State.STOPPING;
+    const isStopped = pipeline.state === Pipeline_State.STOPPED;
+    const isTransitioningState =
+      pipeline.state === Pipeline_State.STARTING || pipeline.state === Pipeline_State.STOPPING;
 
     const error = pipeline.status?.error;
 
@@ -114,11 +121,11 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
                   await pipelinesApi.refreshPipelines(true);
                   // if we can't find the pipeline we're checking anymore it got deleted
-                  const p = pipelinesApi.pipelines?.first((x) => x.id == pipeline.id);
+                  const p = pipelinesApi.pipelines?.first((x) => x.id === pipeline.id);
                   if (!p) return;
 
                   // if its no longer in a transition state, we're done
-                  if (p.state != Pipeline_State.STARTING && p.state != Pipeline_State.STOPPING) return;
+                  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) return;
                 }
               };
 
@@ -240,7 +247,7 @@ const LogsTab = observer(
     pipeline: Pipeline;
   }) => {
     const topicName = '__redpanda.connect.logs';
-    const topic = api.topics?.first((x) => x.topicName == topicName);
+    const topic = api.topics?.first((x) => x.topicName === topicName);
 
     const createLogsTabState = () => {
       const search: MessageSearch = createMessageSearch();
@@ -276,10 +283,10 @@ const LogsTab = observer(
       };
       const messages = await search.startSearch(searchReq);
 
-      if (messages && messages.length == 1) {
+      if (messages && messages.length === 1) {
         // We must update the old message (that still says "payload too large")
         // So we just find its index and replace it in the array we are currently displaying
-        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID == partitionID && x.offset == offset);
+        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (indexOfOldMessage > -1) {
           state.messages[indexOfOldMessage] = messages[0];
         } else {
@@ -360,7 +367,7 @@ const LogsTab = observer(
               <ExpandedMessage
                 msg={original}
                 loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest!.topicName, original.partitionID, original.offset)
+                  loadLargeMessage(state.search.searchRequest?.topicName, original.partitionID, original.offset)
                 }
               />
             )}
@@ -374,8 +381,8 @@ const LogsTab = observer(
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
   if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
-  if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
+  if (m.keyJson?.toLowerCase().includes(str)) return true;
+  if (m.valueJson?.toLowerCase().includes(str)) return true;
   return false;
 }
 
@@ -406,11 +413,11 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, pi
     try {
       search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
-        console.error('error in pipelineLogsMessageSearch: ' + msg);
+        console.error(`error in pipelineLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
-      console.error('error in pipelineLogsMessageSearch: ' + ((error as Error).message ?? String(error)));
+      console.error(`error in pipelineLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return [];
     }
   });

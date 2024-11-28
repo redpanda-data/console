@@ -10,7 +10,7 @@ const modals = observable([]) as {
 }[];
 
 function removeModal(id: number) {
-  const index = modals.findIndex((x) => x.id == id);
+  const index = modals.findIndex((x) => x.id === id);
   if (index < 0) return;
   modals.splice(index, 1);
 }

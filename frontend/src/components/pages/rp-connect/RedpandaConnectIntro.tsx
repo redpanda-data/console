@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Link as ChakraLink } from '@chakra-ui/react';
 import {
   Alert,
   AlertDescription,
@@ -15,11 +15,11 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+import { useState } from 'react';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import RedpandaConnectLogo from '../../../assets/redpanda/rp-connect.svg';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { SingleSelect } from '../../misc/Select';
-import { Link as ReactRouterLink } from 'react-router-dom';
-import { Link as ChakraLink } from '@chakra-ui/react';
 
 const installInstructions = {
   Linux: `curl -LO https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip &&

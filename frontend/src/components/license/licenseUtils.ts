@@ -1,4 +1,4 @@
-import { License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { type License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
 
 /**

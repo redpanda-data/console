@@ -1,3 +1,4 @@
+import { Link as ChakraLink } from '@chakra-ui/react';
 import {
   Alert,
   AlertDescription,
@@ -12,9 +13,8 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
-import { Link as ChakraLink } from '@chakra-ui/react';
 import Tabs from '../../misc/tabs/Tabs';
-import { PageComponent, PageInitHelper } from '../Page';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const rpkInitTransform = 'rpk transform init --language=tinygo';
 
@@ -58,15 +58,14 @@ export class TransformsSetup extends PageComponent<{}> {
   }
 }
 
-const exampleDir =
-  `
+const exampleDir = `${`
 .
 |-- go.mod
 |-- go.sum
 |-- README.md
 |-- transform.go
 |-- transform.yaml
-`.trim() + '\n';
+`.trim()}\n`;
 
 function TabGo(_p: {}) {
   return (

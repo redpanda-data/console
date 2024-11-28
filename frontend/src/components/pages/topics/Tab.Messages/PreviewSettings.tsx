@@ -9,25 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { arrayMoveMutable } from 'array-move';
-import { computed, makeObservable } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { Component } from 'react';
-import {
-  DragDropContext,
-  Draggable,
-  DraggableProvided,
-  Droppable,
-  DropResult,
-  ResponderProvided,
-} from 'react-beautiful-dnd';
-import { MessageSearch } from '../../../../state/backendApi';
-import { PreviewTagV2 } from '../../../../state/ui';
-import { uiState } from '../../../../state/uiState';
-import { IsDev } from '../../../../utils/env';
-import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUtils';
-import { CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
-import globExampleImg from '../../../../assets/globExample.png';
 import { GearIcon, InfoIcon, ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 import {
   Box,
@@ -45,6 +26,25 @@ import {
   Popover,
   useDisclosure,
 } from '@redpanda-data/ui';
+import { arrayMoveMutable } from 'array-move';
+import { computed, makeObservable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { Component } from 'react';
+import {
+  DragDropContext,
+  Draggable,
+  type DraggableProvided,
+  type DropResult,
+  Droppable,
+  type ResponderProvided,
+} from 'react-beautiful-dnd';
+import globExampleImg from '../../../../assets/globExample.png';
+import type { MessageSearch } from '../../../../state/backendApi';
+import type { PreviewTagV2 } from '../../../../state/ui';
+import { uiState } from '../../../../state/uiState';
+import { IsDev } from '../../../../utils/env';
+import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUtils';
+import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/Select';
 
 const PatternHelpDrawer = () => {
@@ -206,15 +206,15 @@ export class PreviewSettings extends Component<{
 
     const tags = uiState.topicSettings.previewTags;
     // add ids to elements that don't have any
-    const getFreeId = function (): string {
+    const getFreeId = (): string => {
       let i = 1;
       // eslint-disable-next-line no-loop-func
-      while (tags.any((t) => t.id == String(i))) i++;
+      while (tags.any((t) => t.id === String(i))) i++;
       return String(i);
     };
     tags.filter((t) => !t.id).forEach((t) => (t.id = getFreeId()));
 
-    const onDragEnd = function (result: DropResult, _provided: ResponderProvided) {
+    const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
       if (!result.destination) return;
       arrayMoveMutable(tags, result.source.index, result.destination.index);
     };
@@ -224,8 +224,8 @@ export class PreviewSettings extends Component<{
         <div>
           <span>
             When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
-            <Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton></Popover> to
-            this list to show found values as previews.
+            <Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton /> to this list
+            to show found values as previews.
           </span>
         </div>
 
@@ -242,7 +242,7 @@ export class PreviewSettings extends Component<{
                             tag={tag}
                             index={index}
                             draggableProvided={draggableProvided}
-                            onRemove={() => tags.removeAll((t) => t.id == tag.id)}
+                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
                             allCurrentKeys={currentKeys}
                           />
                         </div>
@@ -412,12 +412,12 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
   const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
 
   for (const t of tags) {
-    if (t.pattern.length == 0) continue;
+    if (t.pattern.length === 0) continue;
 
     const trimmed = t.pattern.trim();
     const searchPath = parseJsonPath(trimmed);
     if (searchPath == null) continue;
-    if (typeof searchPath == 'string') continue; // todo: show error to user
+    if (typeof searchPath === 'string') continue; // todo: show error to user
 
     const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
       // We'll never get called for '*' or '**' patterns
@@ -436,7 +436,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
 
   // order results by the tag they were created from, and then their path
   results.sort((a, b) => {
-    if (a.tag != b.tag) {
+    if (a.tag !== b.tag) {
       const indexA = tags.indexOf(a.tag);
       const indexB = tags.indexOf(b.tag);
       return indexA - indexB;
@@ -444,7 +444,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
 
     // first sort by path length
     const pathLengthDiff = a.prop.path.length - b.prop.path.length;
-    if (pathLengthDiff != 0) return pathLengthDiff;
+    if (pathLengthDiff !== 0) return pathLengthDiff;
 
     // then alphabetically
     const pathA = a.fullPath;
@@ -503,22 +503,22 @@ function parseJsonPath(str: string): string[] | string {
         start = pos + 1; // start just after the quote
         end = str.indexOf(c, start); // and collect until the closing quote
 
-        if (end == -1) return 'missing closing quote, quote was opened at index ' + (start - 1);
+        if (end === -1) return `missing closing quote, quote was opened at index ${start - 1}`;
         match = str.slice(start, end);
 
         if (match.length > 0) result.push(match);
 
-        pos = end == -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
+        pos = end === -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
         break;
 
       case '.':
         // A dot, skip over it
 
-        if (pos == 0) return 'pattern cannot start with a dot';
+        if (pos === 0) return 'pattern cannot start with a dot';
         pos++;
         if (pos >= str.length) return 'pattern can not end with a dot';
         c = str[pos];
-        if (c == '.') return 'pattern cannot contain more than one dot in a row';
+        if (c === '.') return 'pattern cannot contain more than one dot in a row';
         break;
 
       default:
@@ -530,7 +530,7 @@ function parseJsonPath(str: string): string[] | string {
 
         if (match.length > 0) result.push(match);
 
-        pos = end == -1 ? str.length : end; // continue after the end
+        pos = end === -1 ? str.length : end; // continue after the end
         break;
     }
   }
@@ -551,7 +551,7 @@ function parseJsonPath(str: string): string[] | string {
   //
 
   for (const segment of result) {
-    if (segment != '**' && segment.includes('**'))
+    if (segment !== '**' && segment.includes('**'))
       return "path segment '**' must not have anything before or after it (except for dots of course)";
   }
 
@@ -567,7 +567,7 @@ function indexOfMany(str: string, matches: string[], position: number): number {
   // but skip over -1, because that means the string didn't contain that match
   let smallest = -1;
   for (const i of indices) {
-    if (smallest == -1 || i < smallest) smallest = i;
+    if (smallest === -1 || i < smallest) smallest = i;
   }
 
   return smallest;
@@ -617,7 +617,7 @@ if (IsDev) {
     const expected = test.output;
     let result = parseJsonPath(test.input);
 
-    if (typeof result == 'string') result = null as unknown as string[]; // string means error message
+    if (typeof result === 'string') result = null as unknown as string[]; // string means error message
 
     if (result === null && expected === null) continue;
 
@@ -626,9 +626,9 @@ if (IsDev) {
     if (result !== null && expected === null) hasError = true; // matched something we don't want
 
     if (!hasError && result && expected) {
-      if (result.length != expected.length) hasError = true; // wrong length
+      if (result.length !== expected.length) hasError = true; // wrong length
 
-      for (let i = 0; i < result.length && !hasError; i++) if (result[i] != expected[i]) hasError = true; // wrong array entry
+      for (let i = 0; i < result.length && !hasError; i++) if (result[i] !== expected[i]) hasError = true; // wrong array entry
     }
 
     if (hasError)
@@ -642,7 +642,7 @@ function wildcardToRegex(pattern: string): RegExp {
   const components = pattern.split('*'); // split by '*' symbol
   const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
   const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
-  return new RegExp('^' + joined + '$');
+  return new RegExp(`^${joined}$`);
 }
 
 function regexEscape(regexPattern: string): string {

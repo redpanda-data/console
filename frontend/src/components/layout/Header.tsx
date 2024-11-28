@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { Box, Breadcrumbs, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { useRouteMatch } from 'react-router-dom';
 import { isEmbedded } from '../../config';
-import { BreadcrumbEntry, uiState } from '../../state/uiState';
+import { type BreadcrumbEntry, uiState } from '../../state/uiState';
+import { IsDev } from '../../utils/env';
 import { UserPreferencesButton } from '../misc/UserPreferences';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
-import { IsDev } from '../../utils/env';
-import { Box, Text, ColorModeSwitch, Flex, Breadcrumbs, CopyButton } from '@redpanda-data/ui';
-import { computed } from 'mobx';
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
@@ -121,7 +121,7 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName == 'create-connector') return false;
+  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
 
   if (schemaCreateMatch) return false;
 

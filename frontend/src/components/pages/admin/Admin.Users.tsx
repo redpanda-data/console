@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
-import { UserDetails } from '../../../state/restInterfaces';
 import { observer } from 'mobx-react';
+import { Component } from 'react';
 import { api } from '../../../state/backendApi';
+import type { UserDetails } from '../../../state/restInterfaces';
 import { MotionDiv } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
-import { RoleComponent } from './Admin.Roles';
+import { Accordion, Box, DataTable, Flex, SearchField, Text, Tooltip } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { Accordion, Box, Text, DataTable, Flex, SearchField, Tooltip } from '@redpanda-data/ui';
 import { MdOutlinePermIdentity } from 'react-icons/md';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { RoleComponent } from './Admin.Roles';
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -56,7 +56,7 @@ export class AdminUsers extends Component<{}> {
             header: 'Identifier',
             accessorKey: 'internalIdentifier',
             cell: ({ row }) => {
-              if (row.original.internalIdentifier == api.userData?.user.internalIdentifier) {
+              if (row.original.internalIdentifier === api.userData?.user.internalIdentifier) {
                 return (
                   <Flex gap={2}>
                     <Tooltip label="You are currently logged in as this user" placement="top" hasArrow>
@@ -78,7 +78,7 @@ export class AdminUsers extends Component<{}> {
             accessorKey: 'roles',
             cell: ({ row: { original: user } }) => user.grantedRoles.map((r) => r.role.name).join(', '),
           }, // can't sort
-          { size: Infinity, header: 'Login', accessorKey: 'loginProvider' },
+          { size: Number.POSITIVE_INFINITY, header: 'Login', accessorKey: 'loginProvider' },
         ]}
         subComponent={({ row: { original: user } }) => (
           <Box py={6} px={10}>

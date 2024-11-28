@@ -16,18 +16,18 @@ import {
   FormHelperText,
   Grid,
   Input,
-  isMultiValue,
   Select,
+  isMultiValue,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { api } from '../../../../../state/backendApi';
-import { Property } from '../../../../../state/connect/state';
+import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';
 
 export const TopicInput = observer((p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
   const state = useLocalObservable(() => {
     const props = new Map(p.properties.map((p) => [p.name, p]));
-    const topicsRegex = p.properties.find((x) => x.name == 'topics.regex');
+    const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
     const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
 
     api.refreshTopics();
@@ -39,7 +39,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         return this.properties.get(this._selected)!;
       },
       get isRegex() {
-        return this._selected == 'topics.regex';
+        return this._selected === 'topics.regex';
       },
       setSelectedProp(input: string) {
         this.property.value = '';
@@ -53,10 +53,9 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         if (this.isRegex) {
           const regex = new RegExp(String(this.property.value));
           return allTopics.filter((t) => regex.test(t));
-        } else {
-          const validTopics = String(this.property.value).split(',');
-          return allTopics.filter((t) => validTopics.includes(t));
         }
+        const validTopics = String(this.property.value).split(',');
+        return allTopics.filter((t) => validTopics.includes(t));
       },
     };
   });
@@ -85,7 +84,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         </FormHelperText>
 
         {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
-        {state.isRegex || p.connectorType == 'source' ? (
+        {state.isRegex || p.connectorType === 'source' ? (
           <Input
             value={String(state.property.value)}
             onChange={(e) => (state.property.value = e.target.value)}

@@ -9,24 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useState } from 'react';
-import { observer } from 'mobx-react';
-import { api } from '../../../state/backendApi';
-import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
-import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
-import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
-import { HiOutlineTrash } from 'react-icons/hi';
-import {
-  AclPrincipalGroup,
-  createEmptyClusterAcl,
-  createEmptyConsumerGroupAcl,
-  createEmptyTopicAcl,
-  createEmptyTransactionalIdAcl,
-  PrincipalType,
-  ResourceACLs,
-  unpackPrincipalGroup,
-} from './Models';
-import { Operation } from './Operation';
 import {
   Box,
   Button,
@@ -45,11 +27,29 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
-  useToast,
   VStack,
+  useToast,
 } from '@redpanda-data/ui';
-import { SingleSelect } from '../../misc/Select';
 import { comparer } from 'mobx';
+import { observer } from 'mobx-react';
+import { useState } from 'react';
+import { HiOutlineTrash } from 'react-icons/hi';
+import { api } from '../../../state/backendApi';
+import { AclOperation, type AclStrOperation, type AclStrResourceType } from '../../../state/restInterfaces';
+import { AnimatePresence, MotionDiv, animProps_radioOptionGroup } from '../../../utils/animationProps';
+import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
+import { SingleSelect } from '../../misc/Select';
+import {
+  type AclPrincipalGroup,
+  type PrincipalType,
+  type ResourceACLs,
+  createEmptyClusterAcl,
+  createEmptyConsumerGroupAcl,
+  createEmptyTopicAcl,
+  createEmptyTransactionalIdAcl,
+  unpackPrincipalGroup,
+} from './Models';
+import { Operation } from './Operation';
 
 export const AclPrincipalGroupEditor = observer(
   (p: {
@@ -69,30 +69,29 @@ export const AclPrincipalGroupEditor = observer(
     const [isTransactionalIDValid, setTransactionalIDIsValid] = useState(true);
 
     const noNameOrNameInUse =
-      p.type == 'create' &&
+      p.type === 'create' &&
       (!group.principalName ||
-        api.ACLs?.aclResources.any((r) => r.acls.any((a) => a.principal == 'User:' + group.principalName)));
+        api.ACLs?.aclResources.any((r) => r.acls.any((a) => a.principal === `User:${group.principalName}`)));
 
     const onOK = async () => {
       setError(undefined);
       setIsLoading(true);
       try {
-        if (group.principalName.length == 0) throw new Error('The principal field can not be empty.');
+        if (group.principalName.length === 0) throw new Error('The principal field can not be empty.');
 
         const allToCreate = unpackPrincipalGroup(group);
 
-        if (allToCreate.length == 0) {
-          if (p.type == 'create') {
+        if (allToCreate.length === 0) {
+          if (p.type === 'create') {
             throw new Error(
               'Creating an ACL group requires at least one resource to be targeted. Topic/Group targets with an empty selector are not valid.',
             );
-          } else {
-            throw new Error('No targeted resources. You can delete this ACL group from the list view.');
           }
+          throw new Error('No targeted resources. You can delete this ACL group from the list view.');
         }
 
         // Ignore creation of ACLs that already exist, and delete ACLs that are no longer needed
-        if (p.type == 'edit') {
+        if (p.type === 'edit') {
           if (group.sourceEntries.length > 0) {
             const requests = group.sourceEntries.map((acl) => {
               // try to find this in allToCreate
@@ -101,10 +100,9 @@ export const AclPrincipalGroupEditor = observer(
                 // acl already exists, remove it from the list
                 allToCreate.splice(foundIdx, 1);
                 return Promise.resolve();
-              } else {
-                // acl should no longer exist, delete it
-                return api.deleteACLs(acl);
               }
+              // acl should no longer exist, delete it
+              return api.deleteACLs(acl);
             });
             await Promise.allSettled(requests);
           }
@@ -124,10 +122,10 @@ export const AclPrincipalGroupEditor = observer(
         );
 
         const results = await Promise.allSettled(requests);
-        const rejected = results.filter((x) => x.status == 'rejected');
+        const rejected = results.filter((x) => x.status === 'rejected');
         if (rejected.length) {
           console.error('some create acl requests failed', { results, rejected });
-          throw new Error(rejected.length + ' requests failed');
+          throw new Error(`${rejected.length} requests failed`);
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -136,7 +134,7 @@ export const AclPrincipalGroupEditor = observer(
         return;
       }
 
-      if (p.type == 'create') {
+      if (p.type === 'create') {
         toast({
           status: 'success',
           description: (
@@ -166,7 +164,7 @@ export const AclPrincipalGroupEditor = observer(
       <Modal isOpen onClose={() => {}}>
         <ModalOverlay />
         <ModalContent minW="6xl">
-          <ModalHeader>{p.type == 'create' ? 'Create ACL' : 'Edit ACL'}</ModalHeader>
+          <ModalHeader>{p.type === 'create' ? 'Create ACL' : 'Edit ACL'}</ModalHeader>
           <ModalBody>
             <VStack gap={6} w="full">
               <AnimatePresence>
@@ -241,16 +239,16 @@ export const AclPrincipalGroupEditor = observer(
                 <Button
                   variant="outline"
                   onClick={() => {
-                    if (group.topicAcls.length == 0) group.topicAcls.push(createEmptyTopicAcl());
+                    if (group.topicAcls.length === 0) group.topicAcls.push(createEmptyTopicAcl());
                     group.topicAcls[0].selector = '*';
                     group.topicAcls[0].all = 'Allow';
 
-                    if (group.consumerGroupAcls.length == 0)
+                    if (group.consumerGroupAcls.length === 0)
                       group.consumerGroupAcls.push(createEmptyConsumerGroupAcl());
                     group.consumerGroupAcls[0].selector = '*';
                     group.consumerGroupAcls[0].all = 'Allow';
 
-                    if (group.transactionalIdAcls.length == 0)
+                    if (group.transactionalIdAcls.length === 0)
                       group.transactionalIdAcls.push(createEmptyTransactionalIdAcl());
                     group.transactionalIdAcls[0].selector = '*';
                     group.transactionalIdAcls[0].all = 'Allow';
@@ -262,7 +260,7 @@ export const AclPrincipalGroupEditor = observer(
                 </Button>
               </HStack>
 
-              {noNameOrNameInUse == true ? (
+              {noNameOrNameInUse === true ? (
                 <Box color="red" alignSelf="start" fontWeight="500" fontSize="small">
                   Creating new ACLs requires an unused principal name to be entered
                 </Box>
@@ -387,16 +385,16 @@ export const ResourceACLsEditor = observer(
     }
 
     const isCluster = !('selector' in res);
-    const isAllSet = res.all == 'Allow' || res.all == 'Deny';
+    const isAllSet = res.all === 'Allow' || res.all === 'Deny';
 
     let resourceName = 'Cluster';
-    if (p.resourceType == 'Topic') resourceName = 'Topic';
-    if (p.resourceType == 'Group') resourceName = 'Consumer Group';
-    if (p.resourceType == 'TransactionalID') resourceName = 'Transactional ID';
+    if (p.resourceType === 'Topic') resourceName = 'Topic';
+    if (p.resourceType === 'Group') resourceName = 'Consumer Group';
+    if (p.resourceType === 'TransactionalID') resourceName = 'Transactional ID';
 
     const isInvalid =
-      (!isCluster && res.patternType == 'Literal' && res.selector == '') ||
-      (!isCluster && res.patternType == 'Prefixed' && res.selector == '');
+      (!isCluster && res.patternType === 'Literal' && res.selector === '') ||
+      (!isCluster && res.patternType === 'Prefixed' && res.selector === '');
 
     const errorText = 'Selector cannot be empty';
     p.setIsFormValid(!isInvalid);
@@ -428,7 +426,7 @@ export const ResourceACLsEditor = observer(
                     value={res.patternType as 'Any' | 'Literal' | 'Prefixed'}
                     onChange={(e) => {
                       res.patternType = e;
-                      if (e == 'Any') {
+                      if (e === 'Any') {
                         res.selector = '*';
                       } else {
                         res.selector = '';
@@ -451,7 +449,7 @@ export const ResourceACLsEditor = observer(
                   data-testid={`${resourceName}-selector`}
                   value={res.selector}
                   onChange={(e) => (res.selector = e.target.value)}
-                  isDisabled={res.patternType == 'Any'}
+                  isDisabled={res.patternType === 'Any'}
                   spellCheck={false}
                 />
               </InputGroup>

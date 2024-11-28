@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { type RouteComponentProps, withRouter } from 'react-router-dom';
 
 import { appGlobal } from '../../state/appGlobal';
 

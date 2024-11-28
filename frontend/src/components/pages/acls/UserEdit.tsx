@@ -9,14 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
-import { makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
 import {
   Box,
   Button,
@@ -27,9 +19,17 @@ import {
   redpandaTheme,
   redpandaToastOptions,
 } from '@redpanda-data/ui';
-import { RoleSelector } from './UserCreate';
-import { UpdateRoleMembershipResponse } from '../../../protogen/redpanda/api/console/v1alpha1/security_pb';
+import { makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import type { UpdateRoleMembershipResponse } from '../../../protogen/redpanda/api/console/v1alpha1/security_pb';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import { PageComponent, type PageInitHelper } from '../Page';
+import { RoleSelector } from './UserCreate';
 
 const { ToastContainer, toast } = createStandaloneToast({
   theme: redpandaTheme,
@@ -52,7 +52,7 @@ class UserEditPage extends PageComponent<{ userName: string }> {
   }
 
   initPage(p: PageInitHelper): void {
-    p.title = 'Edit user ' + this.props.userName;
+    p.title = `Edit user ${this.props.userName}`;
     p.addBreadcrumb('Access control', '/security');
     p.addBreadcrumb('Users', '/security/users');
     p.addBreadcrumb(this.props.userName, `/security/users/${this.props.userName}/edit`);
@@ -79,10 +79,10 @@ class UserEditPage extends PageComponent<{ userName: string }> {
     const userName = this.props.userName;
 
     // Load roles the user is assigned to, for this we need all roles
-    if (this.selectedRoles == undefined || this.originalRoles == undefined) {
+    if (this.selectedRoles === undefined || this.originalRoles === undefined) {
       this.originalRoles = new Set<string>();
       for (const [name, members] of rolesApi.roleMembers) {
-        if (members.any((x) => x.name == userName)) this.originalRoles.add(name);
+        if (members.any((x) => x.name === userName)) this.originalRoles.add(name);
       }
 
       this.selectedRoles = [...this.originalRoles.values()];

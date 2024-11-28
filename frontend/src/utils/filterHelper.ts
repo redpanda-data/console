@@ -21,7 +21,8 @@ export function sanitizeString(input: string) {
       const code = char.charCodeAt(0);
       if (code > 0 && code < 128) {
         return char;
-      } else if (code >= 128 && code <= 255) {
+      }
+      if (code >= 128 && code <= 255) {
         //Hex escape encoding
         return `/x${code.toString(16)}`.replace('/', '\\');
       }

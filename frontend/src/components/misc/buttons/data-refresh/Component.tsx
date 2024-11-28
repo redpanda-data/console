@@ -1,3 +1,6 @@
+import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
+import { autorun, observable } from 'mobx';
+import { observer } from 'mobx-react';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -9,11 +12,8 @@
  * by the Apache License, Version 2.0
  */
 import { MdOutlineCached, MdPause, MdPlayCircleOutline } from 'react-icons/md';
-import { IconButton, Popover, Text, Flex, Box, Spinner } from '@redpanda-data/ui';
-import { autorun, observable } from 'mobx';
-import { observer } from 'mobx-react';
 import { appGlobal } from '../../../../state/appGlobal';
-import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
+import { REST_CACHE_DURATION_SEC, api } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 
@@ -73,7 +73,7 @@ const autoRefresh = observable(
 
 autorun(() => {
   const currentRequests = api.activeRequests.length;
-  if (currentRequests == 0) {
+  if (currentRequests === 0) {
     autoRefresh.maxRequestCount = 0;
   }
   if (currentRequests > autoRefresh.maxRequestCount) {

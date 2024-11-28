@@ -9,33 +9,33 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, CSSProperties, ReactNode, useState } from 'react';
-import { toJson } from './jsonUtils';
-import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
+import { Skeleton } from '@chakra-ui/react';
+import { InfoIcon } from '@primer/octicons-react';
 import {
   Box,
-  Button as RpButton,
-  ButtonProps as RpButtonProps,
-  createStandaloneToast,
   Flex,
-  PlacementWithLogical,
+  type PlacementWithLogical,
   Progress,
   RadioGroup,
+  Button as RpButton,
+  type ButtonProps as RpButtonProps,
+  Text,
+  type ToastId,
+  Tooltip,
+  createStandaloneToast,
   redpandaTheme,
   redpandaToastOptions,
-  Text,
-  ToastId,
-  Tooltip,
 } from '@redpanda-data/ui';
-import { TimestampDisplayFormat } from '../state/ui';
-import { observer } from 'mobx-react';
 import { motion } from 'framer-motion';
-import { animProps } from './animationProps';
 import { makeObservable, observable } from 'mobx';
-import { InfoIcon } from '@primer/octicons-react';
-import colors from '../colors';
-import { Skeleton } from '@chakra-ui/react';
+import { observer } from 'mobx-react';
+import React, { Component, type CSSProperties, type ReactNode, useState } from 'react';
 import { MdContentCopy, MdHelpOutline, MdOutlineDownload } from 'react-icons/md';
+import colors from '../colors';
+import type { TimestampDisplayFormat } from '../state/ui';
+import { animProps } from './animationProps';
+import { toJson } from './jsonUtils';
+import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
 
 const defaultLocale = 'en';
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -51,7 +51,7 @@ export function numberToThousandsString(n: number): JSX.Element {
 
   const result: JSX.Element[] = [];
   for (let i = 0; i < parts.length; i++) {
-    const last = i == parts.length - 1;
+    const last = i === parts.length - 1;
 
     // Add the number block itself; React.Fragment is used explicitly to avoid missing key warning
     result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
@@ -59,7 +59,7 @@ export function numberToThousandsString(n: number): JSX.Element {
     // Add a dot
     if (!last)
       result.push(
-        <span key={i + '.'} className="noSelect nbspSeparator">
+        <span key={`${i}.`} className="noSelect nbspSeparator">
           {separator}
         </span>,
       );
@@ -72,7 +72,7 @@ export function numberToThousandsString(n: number): JSX.Element {
 export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; format: TimestampDisplayFormat }> {
   render() {
     const { unixEpochMillisecond: ts, format } = this.props;
-    if (format == 'relative') DebugTimerStore.Instance.useSeconds();
+    if (format === 'relative') DebugTimerStore.Instance.useSeconds();
 
     switch (format) {
       case 'unixTimestamp':
@@ -84,7 +84,7 @@ export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; 
       case 'unixMillis':
         return ts.toString();
       case 'relative':
-        return prettyMilliseconds(Date.now() - ts, { compact: true }) + ' ago';
+        return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
     }
 
     // format 'default' -> locale datetime
@@ -97,7 +97,7 @@ export const copyIcon = (
     <path
       fillRule="evenodd"
       d="M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z"
-    ></path>
+    />
   </svg>
 );
 
@@ -157,7 +157,7 @@ export function QuickTable(
               <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className="keyCell">
                 {React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}
               </td>
-              <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
+              <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }} />
               <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className="valueCell">
                 {React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}
               </td>
@@ -165,7 +165,7 @@ export function QuickTable(
 
             {showVerticalGutter && i < entries.length - 1 && (
               <tr>
-                <td style={{ padding: 0, paddingBottom: o.gapHeight }}></td>
+                <td style={{ padding: 0, paddingBottom: o.gapHeight }} />
               </tr>
             )}
           </React.Fragment>
@@ -370,7 +370,7 @@ export class RadioOptionGroup<T extends string | null = string> extends Componen
             <Box p={3}>
               <Text fontWeight={500}>{kv.title}</Text>
               <Text color="gray.500">{kv.subTitle}</Text>
-              {kv.content && (p.showContent == 'always' || p.value == kv.value) && (
+              {kv.content && (p.showContent === 'always' || p.value === kv.value) && (
                 <Box key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
                   <div>{kv.content}</div>
                 </Box>
@@ -439,7 +439,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
   lastProps = {};
   componentDidUpdate() {
     const curJson = toJson(this.props);
-    if (curJson == this.lastPropsJson) {
+    if (curJson === this.lastPropsJson) {
       // changes to observables
       this.customRender();
       return;
@@ -595,7 +595,7 @@ export function LabelTooltip(p: {
 }) {
   const style: CSSProperties = {};
 
-  if (typeof p.width == 'number') style.width = p.width + 'px';
+  if (typeof p.width === 'number') style.width = `${p.width}px`;
   if (p.nowrap === true) style.whiteSpace = 'nowrap';
   if (p.left === true) style.textAlign = 'left';
 
@@ -616,11 +616,11 @@ export function Button(p: ButtonProps) {
 
   const reason = p.disabledReason;
   const btnProps = { ...p };
-  delete btnProps.disabledReason;
+  btnProps.disabledReason = undefined;
 
   return (
     <Tooltip placement="top" label={reason} hasArrow>
-      <RpButton {...btnProps} isDisabled className={(p.className ?? '') + ' disabled'} onClick={undefined} />
+      <RpButton {...btnProps} isDisabled className={`${p.className ?? ''} disabled`} onClick={undefined} />
     </Tooltip>
   );
 }

@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-// import { IsDev } from '../../../../utils/env';
-// import { DebugEditor } from './DebugEditor';
-import { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
-import { observer } from 'mobx-react';
-import { ConnectorStepComponent } from './ConnectorStep';
-import { ConnectorStep } from '../../../../state/restInterfaces';
 import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
-import KowlEditor from '../../../misc/KowlEditor';
-import { api } from '../../../../state/backendApi';
-import { clone } from '../../../../utils/jsonUtils';
+import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { isEmbedded } from '../../../../config';
+import { api } from '../../../../state/backendApi';
+// import { IsDev } from '../../../../utils/env';
+// import { DebugEditor } from './DebugEditor';
+import type { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
+import type { ConnectorStep } from '../../../../state/restInterfaces';
+import { clone } from '../../../../utils/jsonUtils';
+import KowlEditor from '../../../misc/KowlEditor';
+import { ConnectorStepComponent } from './ConnectorStep';
 
 export interface ConfigPageProps {
   connectorStore: ConnectorPropertiesStore;
@@ -40,7 +40,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
     return <Skeleton mt={5} noOfLines={20} height={4} />;
   }
 
-  if (connectorStore.allGroups.length == 0) return <div>debug: no groups</div>;
+  if (connectorStore.allGroups.length === 0) return <div>debug: no groups</div>;
 
   // Find all steps
   const steps: {
@@ -49,7 +49,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
   }[] = [];
 
   for (const step of connectorStore.connectorStepDefinitions) {
-    const groups = connectorStore.allGroups.filter((g) => g.step.stepIndex == step.stepIndex);
+    const groups = connectorStore.allGroups.filter((g) => g.step.stepIndex === step.stepIndex);
     steps.push({ step, groups });
   }
 
@@ -67,7 +67,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
         />
       </Box>
 
-      {connectorStore.viewMode == 'form' ? (
+      {connectorStore.viewMode === 'form' ? (
         <>
           <Switch
             isChecked={connectorStore.showAdvancedOptions}
@@ -113,8 +113,8 @@ function ConnectorJsonEditor(p: {
 
     if (connectorName) {
       console.log('trying to obtain initial config from existing connector...', { name: connectorName });
-      const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName == connectorStore.clusterName);
-      const connector = cluster?.connectors.first((x) => x.name == connectorName);
+      const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === connectorStore.clusterName);
+      const connector = cluster?.connectors.first((x) => x.name === connectorName);
       if (connector) {
         console.log('success! found connector config', {
           clusterName: connectorStore.clusterName,
@@ -150,7 +150,7 @@ function ConnectorJsonEditor(p: {
         connectorStore.jsonText = x;
       }}
       options={{
-        readOnly: isEmbedded() && p.context == 'EDIT',
+        readOnly: isEmbedded() && p.context === 'EDIT',
       }}
     />
   );

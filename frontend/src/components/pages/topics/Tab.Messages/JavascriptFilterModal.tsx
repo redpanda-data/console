@@ -1,26 +1,26 @@
-import React, { FC } from 'react';
-import { observer, useLocalObservable } from 'mobx-react';
-import FilterEditor from './Editor';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Grid,
-  GridItem,
-  FormField,
-  Input,
-  Text,
   Box,
-  UnorderedList,
-  ListItem,
-  Heading,
   Button,
   Code,
+  FormField,
+  Grid,
+  GridItem,
+  Heading,
+  Input,
+  ListItem,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  UnorderedList,
 } from '@redpanda-data/ui';
-import { FilterEntry } from '../../../../state/ui';
+import { observer, useLocalObservable } from 'mobx-react';
+import React, { type FC } from 'react';
+import type { FilterEntry } from '../../../../state/ui';
+import FilterEditor from './Editor';
 
 const JavascriptFilterModal: FC<{
   currentFilter: FilterEntry;

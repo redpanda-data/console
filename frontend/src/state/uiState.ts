@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, computed, makeObservable } from 'mobx';
-import { PageDefinition } from '../components/routes';
+import { computed, makeObservable, observable } from 'mobx';
+import type { PageDefinition } from '../components/routes';
 import { api } from './backendApi';
-import { uiSettings, TopicDetailsSettings as TopicSettings } from './ui';
+import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
 
 export interface BreadcrumbOptions {
   canBeTruncated?: boolean;
@@ -31,13 +31,13 @@ class UIState {
     makeObservable(this);
   }
 
-  @observable private _pageTitle: string = ' ';
+  @observable private _pageTitle = ' ';
   @computed get pageTitle() {
     return this._pageTitle;
   }
   set pageTitle(title: string) {
     this._pageTitle = title;
-    document.title = title + ' - Redpanda Console';
+    document.title = `${title} - Redpanda Console`;
   }
 
   @observable pageBreadcrumbs: BreadcrumbEntry[] = [];
@@ -68,7 +68,7 @@ class UIState {
   public set currentTopicName(topicName: string | undefined) {
     this._currentTopicName = topicName;
     if (topicName) {
-      if (!uiSettings.perTopicSettings.any((s) => s.topicName == topicName)) {
+      if (!uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
         // console.log('creating details for topic: ' + topicName);
         const topicSettings = new TopicSettings();
         topicSettings.topicName = topicName;
@@ -83,14 +83,14 @@ class UIState {
       return new TopicSettings();
     }
 
-    const topicSettings = uiSettings.perTopicSettings.find((t) => t.topicName == n);
+    const topicSettings = uiSettings.perTopicSettings.find((t) => t.topicName === n);
     if (topicSettings) return topicSettings;
 
     throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
   }
 
   @observable loginError: string | null = null;
-  @observable isUsingDebugUserLogin: boolean = false;
+  @observable isUsingDebugUserLogin = false;
 
   // Every response from the backend contains, amongst others, the 'app-sha' header (was previously named 'app-version' which was confusing).
   // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').

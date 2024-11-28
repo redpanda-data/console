@@ -9,18 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ConfigEntry, Topic, TopicAction } from '../../../state/restInterfaces';
+import type { ConfigEntry, Topic, TopicAction } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
 import '../../../utils/arrayExtensions';
+import { LockIcon } from '@primer/octicons-react';
+import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
+import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
+import colors from '../../../colors';
+import { isServerless } from '../../../config';
+import { AppFeatures } from '../../../utils/env';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
-import { PageComponent, PageInitHelper } from '../Page';
+import { PageComponent, type PageInitHelper } from '../Page';
+import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { TopicQuickInfoStatistic } from './QuickInfo';
 import AclList from './Tab.Acl/AclList';
 import { TopicConfiguration } from './Tab.Config';
@@ -28,15 +37,6 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
-import { LockIcon } from '@primer/octicons-react';
-import { AppFeatures } from '../../../utils/env';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
-import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
-import { isServerless } from '../../../config';
-import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
-import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
-import colors from '../../../colors';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];
@@ -62,7 +62,7 @@ class TopicTab {
     }
 
     if (!topic) return true; // no data yet
-    if (!topic.allowedActions || topic.allowedActions[0] == 'all') return true; // Redpanda Console free version
+    if (!topic.allowedActions || topic.allowedActions[0] === 'all') return true; // Redpanda Console free version
 
     return topic.allowedActions.includes(this.requiredPermission);
   }
@@ -123,7 +123,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   constructor(props: any) {
     super(props);
 
-    if (isServerless()) this.topicTabs.removeAll((x) => x.id == 'documentation');
+    if (isServerless()) this.topicTabs.removeAll((x) => x.id === 'documentation');
 
     makeObservable(this);
   }
@@ -137,7 +137,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     p.title = topicName;
     p.addBreadcrumb('Topics', '/topics');
-    p.addBreadcrumb(topicName, '/topics/' + topicName, undefined, {
+    p.addBreadcrumb(topicName, `/topics/${topicName}`, undefined, {
       canBeCopied: true,
       canBeTruncated: true,
     });
@@ -153,7 +153,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     api.refreshTopicPermissions(this.props.topicName, force);
 
     // consumers are lazy loaded because they're (relatively) expensive
-    if (uiSettings.topicDetailsActiveTabKey == 'consumers') api.refreshTopicConsumers(this.props.topicName, force);
+    if (uiSettings.topicDetailsActiveTabKey === 'consumers') api.refreshTopicConsumers(this.props.topicName, force);
 
     // partitions are always required to display message count in the statistics bar
     api.refreshPartitionsForTopic(this.props.topicName, force);
@@ -164,17 +164,17 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     void api.refreshClusterHealth();
 
     // documentation can be lazy loaded
-    if (uiSettings.topicDetailsActiveTabKey == 'documentation')
+    if (uiSettings.topicDetailsActiveTabKey === 'documentation')
       api.refreshTopicDocumentation(this.props.topicName, force);
 
     // ACL can be lazy loaded
-    if (uiSettings.topicDetailsActiveTabKey == 'topicacl') api.refreshTopicAcls(this.props.topicName, force);
+    if (uiSettings.topicDetailsActiveTabKey === 'topicacl') api.refreshTopicAcls(this.props.topicName, force);
   }
 
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
     if (!api.topics) return undefined;
-    const topic = api.topics.find((e) => e.topicName == this.props.topicName);
+    const topic = api.topics.find((e) => e.topicName === this.props.topicName);
     if (!topic) return null;
     return topic;
   }
@@ -203,13 +203,13 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     // 2. if that tab is enabled, return it, otherwise return the first one that is not
     //    (todo: should probably show some message if all tabs are disabled...)
     const id = computeTabId();
-    if (this.topicTabs.first((t) => t.id == id)!?.isEnabled) return id;
+    if (this.topicTabs.first((t) => t.id === id)?.isEnabled) return id;
     return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
   }
 
   componentDidMount() {
     // fix anchor
-    const anchor = '#' + this.selectedTabId;
+    const anchor = `#${this.selectedTabId}`;
     const location = appGlobal.history.location;
     if (location.hash !== anchor) {
       location.hash = anchor;
@@ -320,9 +320,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         'Documentation',
         (t) => <TopicDocumentation topic={t} />,
         [
-          (t) => (t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null),
+          (t) => (t.documentation === 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null),
           (t) =>
-            t.documentation == 'NOT_EXISTENT'
+            t.documentation === 'NOT_EXISTENT'
               ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
               : null,
         ],
