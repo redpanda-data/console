@@ -4,7 +4,7 @@ import {observer} from 'mobx-react';
 import {appGlobal} from '../../../../state/appGlobal';
 import {pipelinesApi, rpcnSecretManagerApi} from '../../../../state/backendApi';
 import PageContent from '../../../misc/PageContent';
-import {action, makeObservable, observable} from 'mobx';
+import {action, computed, makeObservable, observable} from 'mobx';
 import {DefaultSkeleton} from '../../../../utils/tsxUtils';
 import {formatPipelineError} from '../errors';
 import {CreateSecretRequest, Scope} from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
@@ -74,10 +74,26 @@ class RpConnectSecretCreate extends PageComponent {
             });
     }
 
+    @computed
+    get isNameValid() {
+        if ((rpcnSecretManagerApi.secrets || []).any(x => x.id === this.id)) {
+            return 'Secret name is already in use';
+        }
+        if (this.id === '') {
+            return '';
+        }
+        if (!(/^[A-Z][A-Z0-9_]*$/.test(this.id))) {
+            return 'The name you entered is invalid. It must start with an uppercase letter (A–Z) and can only contain uppercase letters (A–Z), digits (0–9), and underscores (_).';
+        }
+        if (this.id.length > 255) {
+            return 'The secret name must be fewer than 255 characters.';
+        }
+        return '';
+    }
+
     render() {
         if (!rpcnSecretManagerApi.secrets) return DefaultSkeleton;
 
-        const alreadyExists = (rpcnSecretManagerApi.secrets || []).any(x => x.id === this.id);
         const isIdEmpty = this.id.trim().length === 0;
         const isSecretEmpty = this.secret.trim().length === 0;
 
@@ -85,7 +101,7 @@ class RpConnectSecretCreate extends PageComponent {
             <PageContent>
                 <ToastContainer/>
                 <Flex flexDirection="column" gap={5}>
-                    <FormField label="Secret name" isInvalid={alreadyExists} errorText="Secret name is already in use">
+                    <FormField label="Secret name" isInvalid={Boolean(this.isNameValid)} errorText={this.isNameValid}>
                         <Flex alignItems="center" gap="2">
                             <Input
                                 placeholder="Enter a secret name..."
@@ -118,7 +134,7 @@ class RpConnectSecretCreate extends PageComponent {
                     </FormField>
 
                     <ButtonGroup>
-                        <Button isLoading={this.isCreating} isDisabled={isIdEmpty || isSecretEmpty || alreadyExists} onClick={action(() => this.createSecret())}>
+                        <Button isLoading={this.isCreating} isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)} onClick={action(() => this.createSecret())}>
                             Create Secret
                         </Button>
                         <Button variant="link" disabled={this.isCreating} onClick={action(() => this.cancel())}>
