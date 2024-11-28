@@ -9,7 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { Alert, AlertIcon, Box, Button, Flex, FormField, Input, Text, createStandaloneToast } from '@redpanda-data/ui';
+import {
+  Alert,
+  AlertIcon,
+  Box,
+  Button,
+  Flex,
+  FormField,
+  Input,
+  NumberInput,
+  Text,
+  createStandaloneToast,
+} from '@redpanda-data/ui';
 import { Link as ChLink } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -23,6 +34,7 @@ import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
+import { MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const exampleContent = `
@@ -32,6 +44,7 @@ const exampleContent = `
 class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable fileName = '';
   @observable description = '';
+  @observable tasks = MIN_TASKS;
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
@@ -106,6 +119,15 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
               width={500}
             />
           </FormField>
+          <FormField label="Tasks">
+            <NumberInput
+              value={this.tasks}
+              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+              min={MIN_TASKS}
+              max={MAX_TASKS}
+              maxWidth={150}
+            />
+          </FormField>
         </Flex>
 
         <Box mt="4">
@@ -139,7 +161,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           configYaml: this.editorContent,
           description: this.description,
           displayName: this.fileName,
-          resources: undefined,
+          resources: {
+            cpuShares: tasksToCPU(this.tasks) || '0',
+            memoryShares: '0', // still required by API but unused
+          },
         }),
       )
       .then(async () => {

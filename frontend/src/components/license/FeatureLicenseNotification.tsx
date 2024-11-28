@@ -8,6 +8,7 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import {
+  ENTERPRISE_FEATURES_DOCS_LINK,
   LICENSE_WEIGHT,
   MS_IN_DAY,
   UpgradeButton,
@@ -17,7 +18,6 @@ import {
   getMillisecondsToExpiration,
   getPrettyExpirationDate,
   getPrettyTimeToExpiration,
-  ENTERPRISE_FEATURES_DOCS_LINK,
 } from './licenseUtils';
 
 const getLicenseAlertContentForFeature = (

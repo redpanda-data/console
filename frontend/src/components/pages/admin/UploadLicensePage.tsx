@@ -18,9 +18,9 @@ import type { FC } from 'react';
 import type { SetLicenseRequest, SetLicenseResponse } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
+import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/licenseUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/licenseUtils';
 
 const UploadLicenseForm: FC<{
   onUploadLicense: (license: string) => Promise<SetLicenseResponse>;
