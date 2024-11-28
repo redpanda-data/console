@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable react/jsx-key */
-
 import { observer } from 'mobx-react';
 import React, { Component, type ReactNode } from 'react';
 import { api } from '../../../state/backendApi';
@@ -88,20 +86,29 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
   render() {
     const p = this.props.permission;
     const rows: [ReactNode, ReactNode][] = [
-      [<span className="resourceLabel">Resource</span>, <span className="codeBox resourceName">{p.resourceName}</span>],
+      [
+        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
+        <span className="resourceLabel">Resource</span>,
+        <span key={p.resourceName} className="codeBox resourceName">
+          {p.resourceName}
+        </span>,
+      ],
     ];
     if (p.allowedActions.length > 0)
       rows.push([
+        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Actions</span>,
         stringsToBoxes(p.allowedActions, null, 'permissionsList'),
       ]);
     if (p.includes.length > 0 && !(p.includes[0] === '*') && !(p.includes[0] === '^*$') && !(p.includes[0] === '^.*$'))
       rows.push([
+        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Includes</span>,
         stringsToBoxes(p.includes, joinerOr, 'permissionRegex'),
       ]);
     if (p.excludes.length > 0)
       rows.push([
+        // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Excludes</span>,
         stringsToBoxes(p.excludes, joinerOr, 'permissionRegex'),
       ]);

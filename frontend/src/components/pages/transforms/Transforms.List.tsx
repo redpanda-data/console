@@ -24,12 +24,10 @@ import {
 } from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { transformsApi } from '../../../state/backendApi';
-// import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
-/* eslint-disable no-useless-escape */
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
@@ -165,13 +163,16 @@ class TransformsList extends PageComponent<{}> {
                         <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />
                       </Flex>
                     );
-                  const s = r.statuses.first((x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING)!;
+                  // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
+                  const partitionTransformStatus = r.statuses.first(
+                    (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+                  )!;
                   // const enumType = proto3.getEnumType(PartitionTransformStatus_PartitionStatus);
                   // const entry = enumType.findNumber(s.status);
 
                   return (
                     <Flex alignItems="center">
-                      <PartitionStatus status={s.status} />
+                      <PartitionStatus status={partitionTransformStatus.status} />
                     </Flex>
                   );
                 },

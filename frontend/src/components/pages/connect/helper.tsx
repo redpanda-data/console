@@ -623,6 +623,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
 
   const onOk = action(async () => {
     $state.isPending = true;
+    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     const target = props.target()!;
     try {
       await props.onOk(target);

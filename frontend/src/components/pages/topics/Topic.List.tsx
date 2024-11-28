@@ -288,6 +288,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
             <Flex gap={1}>
               <DeleteDisabledTooltip topic={record}>
                 <button
+                  type="button"
                   data-testid={`delete-topic-button-${record.topicName}`}
                   onClick={(event) => {
                     event.stopPropagation();

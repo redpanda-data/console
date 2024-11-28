@@ -11,7 +11,6 @@
 
 import { Alert, AlertIcon, Box, Button, Flex, FormField, Input, Text, createStandaloneToast } from '@redpanda-data/ui';
 import { Link as ChLink } from '@redpanda-data/ui';
-/* eslint-disable no-useless-escape */
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';

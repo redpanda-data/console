@@ -192,6 +192,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
       if (TopicTabIds.includes(key as any)) return key as TopicTabId;
 
       // use settings (last visited tab)
+      // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
       key = uiSettings.topicDetailsActiveTabKey!;
       if (TopicTabIds.includes(key as any)) return key as TopicTabId;
 

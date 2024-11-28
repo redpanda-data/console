@@ -157,6 +157,7 @@ export class CommaSeparatedStringList extends Component<{
           variant="solid"
           disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length === 0}
           onClick={() => {
+            // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             this.data.push({ id: this.newEntry! });
             this.newEntry = null;
           }}

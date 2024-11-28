@@ -64,9 +64,10 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
           }}
           PreTag="div"
           language={match[1]}
-          children={String(children).replace(/\n$/, '')}
           {...props}
-        />
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
       ) : (
         <code className={className} {...props}>
           {children}
@@ -90,10 +91,11 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
         <ReactMarkdown
           components={this.components}
           remarkPlugins={[remarkGfm, remarkEmoji]}
-          children={markdown}
           skipHtml={false}
           transformLinkUri={sanitizeUrl}
-        />
+        >
+          {markdown}
+        </ReactMarkdown>
       </div>
     );
   }

@@ -24,7 +24,7 @@ import {
 } from '@redpanda-data/ui';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { type CSSProperties, type ReactElement } from 'react';
+import React, { type ReactNode, type CSSProperties, type ReactElement } from 'react';
 import { toJson } from './jsonUtils';
 
 export type AutoModalProps = {
@@ -99,6 +99,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         try {
           state.loading = true;
           state.result = {
+            // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
             returnValue: (await options.onOk(userState!)) ?? undefined,
             error: null,
           };
@@ -108,6 +109,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
           state.loading = false;
         }
 
+        // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
         if (state.result && !state.result.error) options.onSuccess?.(userState!, state.result.returnValue);
       },
       afterClose: () => {
@@ -121,7 +123,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
   });
 
   const renderError = (err: any): ReactElement => {
-    let content;
+    let content: ReactNode;
     let title = 'Error';
     const codeBoxStyle = { fontSize: '12px', fontFamily: 'monospace', color: 'hsl(0deg 0% 25%)', margin: '0em 1em' };
 
@@ -187,6 +189,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
     } else {
       // Normal
       modalState = 'normal';
+      // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
       content = options.content(userState!);
     }
 
@@ -218,6 +221,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                   data-testid="onOk-button"
                   variant="solid"
                   isLoading={state.loading}
+                  // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
                   isDisabled={!options.isOkEnabled?.(userState!)}
                   onClick={(e) => {
                     state.modalProps?.onOk?.(e);

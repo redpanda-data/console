@@ -46,6 +46,7 @@ Expected:
 export function expect(test: () => boolean): void;
 export function expect(name: string, test: () => boolean): void;
 export function expect(testOrName: string | (() => boolean), test?: () => boolean) {
+  // biome-ignore lint/style/noNonNullAssertion: test related, will remove soon with Vitest
   const testFunc = typeof testOrName === 'function' ? (testOrName as () => boolean) : test!;
 
   const name = typeof testOrName === 'string' ? (testOrName as string) : null;

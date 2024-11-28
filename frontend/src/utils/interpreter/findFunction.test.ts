@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable */
 //
 // Usage:
 //   cd frontend/src/utils/interpreter

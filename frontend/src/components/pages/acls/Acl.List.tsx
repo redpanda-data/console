@@ -373,6 +373,7 @@ const UsersTab = observer(() => {
                     <Flex flexDirection="row" gap={4}>
                       {Features.rolesApi && (
                         <button
+                          type="button"
                           onClick={() => {
                             appGlobal.history.push(`/security/users/${entry.name}/edit`);
                           }}
@@ -399,7 +400,7 @@ const UsersTab = observer(() => {
                           await api.refreshServiceAccounts(true);
                         }}
                         buttonEl={
-                          <button>
+                          <button type="button">
                             <Icon as={TrashIcon} />
                           </button>
                         }
@@ -496,6 +497,7 @@ const RolesTab = observer(() => {
                   return (
                     <Flex flexDirection="row" gap={4}>
                       <button
+                        type="button"
                         onClick={() => {
                           appGlobal.history.push(`/security/roles/${entry.name}/edit`);
                         }}
@@ -510,7 +512,7 @@ const RolesTab = observer(() => {
                           await rolesApi.refreshRoleMembers();
                         }}
                         buttonEl={
-                          <button>
+                          <button type="button">
                             <Icon as={TrashIcon} />
                           </button>
                         }
@@ -621,6 +623,7 @@ const AclsTab = observer(
                     //     :record.principalType;
                     return (
                       <button
+                        type="button"
                         className="hoverLink"
                         onClick={() => {
                           setEditorType('edit');

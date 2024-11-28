@@ -82,6 +82,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
             <Flex>
               <Statistic title="Broker ID" value={this.id} />
               <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
+              {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
               <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
               <Statistic title="IP address" value={broker.address} />
               {broker.rack && <Statistic title="Rack" value={broker.rack} />}

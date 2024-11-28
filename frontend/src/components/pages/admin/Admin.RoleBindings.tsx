@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable react/jsx-key */
-
 import React, { Component } from 'react';
 import type { RoleBinding, Subject } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
@@ -22,17 +20,29 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
     const binding = this.props.binding;
 
     const rows: [any, any][] = [
-      [<span className="resourceLabel">Binding</span>, <span className="roleBindingId">{binding.ephemeralId}</span>],
       [
-        <span className="resourceLabelSub">Metadata</span>,
+        <span key={binding.ephemeralId} className="resourceLabel">
+          Binding
+        </span>,
+        <span key={binding.ephemeralId} className="roleBindingId">
+          {binding.ephemeralId}
+        </span>,
+      ],
+      [
+        <span key={binding.ephemeralId} className="resourceLabelSub">
+          Metadata
+        </span>,
         QuickTable(ObjToKv(binding.metadata), {
           tableStyle: { width: 'auto', fontFamily: 'monospace', fontSize: '80%' },
           gapWidth: '6px',
         }),
       ],
       [
-        <span className="resourceLabelSub">Subjects</span>,
+        <span key={binding.ephemeralId} className="resourceLabelSub">
+          Subjects
+        </span>,
         <Accordion
+          key={binding.ephemeralId}
           items={[
             {
               heading: 'click to expand',

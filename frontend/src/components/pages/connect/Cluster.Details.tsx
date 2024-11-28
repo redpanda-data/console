@@ -21,7 +21,6 @@ import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import SearchBar from '../../misc/SearchBar';
-/* eslint-disable no-useless-escape */
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';

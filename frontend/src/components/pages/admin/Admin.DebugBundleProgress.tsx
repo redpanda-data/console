@@ -82,11 +82,11 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    api.debugBundleStatuses.forEach((status) => {
+                    for (const status of api.debugBundleStatuses) {
                       if (status.value.case === 'bundleStatus') {
                         void api.cancelDebugBundleProcess({ jobId: status.value.value.jobId });
                       }
-                    });
+                    }
                   }}
                 >
                   Stop

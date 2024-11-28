@@ -172,17 +172,17 @@ const PrincipalGroupTables = observer(
         {p.groups.map((r) => (
           <>
             {r.principalType === 'RedpandaRole' ? (
-              <ChakraLink as={ReactRouterLink} to={`/security/roles/${r.principalName}/details`}>
+              <ChakraLink key={r.principalName} as={ReactRouterLink} to={`/security/roles/${r.principalName}/details`}>
                 <Heading as="h3" mt="4">
                   {r.principalName}
                 </Heading>
               </ChakraLink>
             ) : (
-              <Heading as="h3" mt="4">
+              <Heading key={r.principalName} as="h3" mt="4">
                 User: {r.principalName}
               </Heading>
             )}
-            <AclPrincipalGroupPermissionsTable group={r} />
+            <AclPrincipalGroupPermissionsTable key={r.principalName} group={r} />
           </>
         ))}
       </>

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
 import { Box, Heading, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { PropertyGroup } from '../../../../state/connect/state';

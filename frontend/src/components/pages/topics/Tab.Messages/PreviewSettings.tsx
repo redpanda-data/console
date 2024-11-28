@@ -53,6 +53,7 @@ const PatternHelpDrawer = () => {
   return (
     <>
       <button
+        type="button"
         onClick={onOpen}
         style={{
           margin: '0 2px',
@@ -188,7 +189,6 @@ export class PreviewSettings extends Component<{
   messageSearch: MessageSearch;
 }> {
   @computed.struct get allCurrentKeys() {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const unused = this.props.messageSearch.messages.length;
     return getAllMessageKeys(this.props.messageSearch.messages)
       .map((p) => p.propertyName)
@@ -208,11 +208,13 @@ export class PreviewSettings extends Component<{
     // add ids to elements that don't have any
     const getFreeId = (): string => {
       let i = 1;
-      // eslint-disable-next-line no-loop-func
       while (tags.any((t) => t.id === String(i))) i++;
       return String(i);
     };
-    tags.filter((t) => !t.id).forEach((t) => (t.id = getFreeId()));
+    const filteredTags = tags.filter((t) => t.id);
+    for (const tag of filteredTags) {
+      tag.id = getFreeId();
+    }
 
     const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
       if (!result.destination) return;

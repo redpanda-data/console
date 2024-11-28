@@ -246,6 +246,7 @@ export class StepSelectPartitions extends Component<{
       .map((topic) => {
         return {
           ...topic,
+          // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
           partitions: api.topicPartitions.get(topic.topicName)!,
           activeReassignments: this.inProgress.get(topic.topicName) ?? [],
         };

@@ -108,7 +108,6 @@ class SearchBar<TItem> extends Component<{
           )}
         </AnimatePresence>
       );
-      // eslint-disable-next-line no-extra-bind
     }).bind(this),
   );
 

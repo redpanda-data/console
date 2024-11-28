@@ -14,7 +14,7 @@ import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -38,7 +38,6 @@ import { sanitizeString } from '../../../utils/filterHelper';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsxUtils';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
-/* eslint-disable no-useless-escape */
 import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -141,8 +140,11 @@ const OverviewTab = observer(
     if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
       overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
     else {
-      const s = p.transform.statuses.first((x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING)!;
-      overallStatus = <PartitionStatus status={s.status} />;
+      // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
+      const partitionTransformStatus = p.transform.statuses.first(
+        (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+      )!;
+      overallStatus = <PartitionStatus status={partitionTransformStatus.status} />;
     }
 
     return (
@@ -157,7 +159,7 @@ const OverviewTab = observer(
                 value: (
                   <>
                     {p.transform.outputTopicNames
-                      .map((x) => <>{x}</>)
+                      .map((x) => <Fragment key={x}>{x}</Fragment>)
                       .genericJoin(() => (
                         <br />
                       ))}

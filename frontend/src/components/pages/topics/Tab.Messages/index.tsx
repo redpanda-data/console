@@ -503,6 +503,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
               <StatusIndicator
                 identityKey="messageSearch"
                 fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                 statusText={this.messageSearch.searchPhase!}
                 progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
                 bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
@@ -806,6 +807,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <Flex display="inline-flex" gap={2} alignItems="center">
               Key{' '}
               <button
+                type="button"
                 onClick={(e) => {
                   this.showDeserializersModal = true;
                   e.stopPropagation(); // don't sort
@@ -831,6 +833,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <Flex display="inline-flex" gap={2} alignItems="center">
               Value{' '}
               <button
+                type="button"
                 onClick={(e) => {
                   this.showDeserializersModal = true;
                   e.stopPropagation(); // don't sort
@@ -1063,15 +1066,17 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       const functionNames: string[] = [];
       const functions: string[] = [];
 
-      searchParams.filters
-        .filter((e) => e.isActive && e.code && e.transpiledCode)
-        .forEach((e) => {
-          const name = `filter${functionNames.length + 1}`;
-          functionNames.push(name);
-          functions.push(`function ${name}() {
-                    ${wrapFilterFragment(e.transpiledCode)}
+      const filteredSearchParams = searchParams.filters.filter(
+        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode,
+      );
+
+      for (const searchParam of filteredSearchParams) {
+        const name = `filter${functionNames.length + 1}`;
+        functionNames.push(name);
+        functions.push(`function ${name}() {
+                    ${wrapFilterFragment(searchParam.transpiledCode)}
                 }`);
-        });
+      }
 
       if (functions.length > 0) {
         filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
@@ -1581,9 +1586,9 @@ const PayloadComponent = observer(
 
           if (rawBytes) {
             let result = '';
-            rawBytes.forEach((n) => {
-              result += `${n.toString(16).padStart(2, '0')} `;
-            });
+            for (const rawByte of rawBytes) {
+              result += `${rawByte.toString(16).padStart(2, '0')} `;
+            }
             return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
           }
           return <div>Raw bytes not available</div>;
@@ -1628,7 +1633,7 @@ const PayloadComponent = observer(
 );
 
 function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
-  const elements: JSX.Element[] = [];
+  const elements: ReactNode[] = [];
   // To reduce the number of JSX elements we try to append normal chars to a single string
   // until we hit a control character.
   let sequentialChars = '';

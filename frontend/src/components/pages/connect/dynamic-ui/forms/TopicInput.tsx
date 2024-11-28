@@ -36,6 +36,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
       properties: props,
       _selected: initialSelection,
       get property() {
+        // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
         return this.properties.get(this._selected)!;
       },
       get isRegex() {

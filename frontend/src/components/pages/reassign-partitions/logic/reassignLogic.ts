@@ -195,6 +195,7 @@ function computeReplicaAssignments(
   allBrokers: ExBroker[],
 ): ExBroker[] {
   const resultBrokers: ExBroker[] = []; // result
+  // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
   const sourceBrokers = partition.replicas.map((id) => allBrokers.first((b) => b.brokerId === id)!);
   if (sourceBrokers.any((x) => x == null))
     throw new Error(
@@ -297,6 +298,7 @@ function balanceLeaders(
     for (const p of t.partitions) {
       // map plain brokers to extended brokers (those with attached tracking data)
       const newBrokers = resultAssignments[t.topic.topicName][p.id].brokers.map(
+        // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
         (b) => allExBrokers.first((e) => e.brokerId === b.brokerId)!,
       );
       const plannedLeader = newBrokers[0];
@@ -328,6 +330,7 @@ function balanceLeaders(
         // Update final assignments
         // mapping our extendedBrokers back to the "simple" brokers
         resultAssignments[t.topic.topicName][p.id].brokers = newBrokers.map(
+          // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
           (exBroker) => apiData.brokers.first((b) => b.brokerId === exBroker.brokerId)!,
         );
 
@@ -585,9 +588,11 @@ function calcRange<T>(
       maxValue: 0,
     };
 
+  // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
   const max = ar.maxBy(selector)!;
   const maxVal = selector(max);
 
+  // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
   const min = ar.minBy(selector)!;
   const minVal = selector(min);
 

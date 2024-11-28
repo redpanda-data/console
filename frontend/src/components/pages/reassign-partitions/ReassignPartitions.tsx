@@ -281,6 +281,7 @@ class ReassignPartitions extends PageComponent {
                         <StepReview
                           partitionSelection={this.partitionSelection}
                           topicsWithMoves={this.topicsWithMoves}
+                          // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                           assignments={this.reassignmentRequest!}
                           reassignPartitions={this}
                         />

@@ -643,7 +643,6 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
     case 'center':
       top = (rect.top + rect.bottom) / 2;
       break;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     case 'end':
       top = rect.bottom;
       break;

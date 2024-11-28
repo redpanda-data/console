@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-useless-escape */
 import {
   type IReactionDisposer,
   action,
@@ -156,6 +155,7 @@ export class ConnectClusterStore {
       this.connectors = new Map();
       await this.refreshData(false);
 
+      // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
       this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
       this.features.secretStore = !!this.additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
       this.isInitialized = true;
@@ -165,6 +165,7 @@ export class ConnectClusterStore {
   async refreshData(force: boolean) {
     await api.refreshConnectClusters(force);
     await api.refreshClusterAdditionalInfo(this.clusterName, force);
+    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
   }
 
@@ -559,12 +560,15 @@ export class ConnectorPropertiesStore {
             .map((k) => {
               const prop = this.propsByName.get(k);
 
-              if (!prop)
+              if (!prop) {
                 console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
                   step: step.name,
                   group: groupDef,
                   referencedConfigKey: k,
                 });
+              }
+
+              // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
               return prop!;
             })
             .filter((x) => x != null);

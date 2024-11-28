@@ -24,6 +24,7 @@ export interface FeatureEntry {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: need to use class to ensure MobX support
 export class Feature {
   static readonly ClusterConfig: FeatureEntry = { endpoint: '/api/cluster/config', method: 'GET' };
   static readonly ConsumerGroups: FeatureEntry = { endpoint: '/api/consumer-groups', method: 'GET' };

@@ -213,7 +213,7 @@ export function NumInput(p: {
 
   return (
     <InputGroup>
-      {p.addonBefore && <InputLeftAddon children={p.addonBefore} />}
+      {p.addonBefore && <InputLeftAddon>{p.addonBefore}</InputLeftAddon>}
 
       <Input
         className={`numericInput ${p.className ?? ''}`}
@@ -249,7 +249,7 @@ export function NumInput(p: {
         }}
       />
 
-      {p.addonAfter && <InputRightAddon p="0" children={p.addonAfter} />}
+      {p.addonAfter && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
     </InputGroup>
   );
 }

@@ -53,6 +53,7 @@ const DIGITS_ONLY_REGEX = /^\d*$/;
 function TrashIcon() {
   return (
     <svg width="66" height="67" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <title>Trash</title>
       <circle cx="33" cy="33.6" r="33" fill="#F53649" />
       <path
         d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29"
@@ -448,6 +449,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     if (isAllPartitions && isHighWatermark) {
       api.deleteTopicRecordsFromAllPartitionsHighWatermark(topic.topicName).then(handleFinish);
     } else if (isSpecficPartition && isManualOffset) {
+      // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
       api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(handleFinish);
     } else if (isTimestamp && timestamp != null) {
       api.getTopicOffsetsByTimestamp([topic.topicName], timestamp).then((topicOffsets) => {
@@ -461,6 +463,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
           if (partitionOffset != null) {
+            // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(handleFinish);
           } else {
             setErrors([

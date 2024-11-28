@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-extend-native */
 export {};
 
 declare global {
@@ -187,7 +186,7 @@ Array.prototype.all = function all<T>(this: T[], selector: (x: T) => boolean) {
 
 Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) => K): Map<K, T[]> {
   const map = new Map();
-  this.forEach((item) => {
+  for (const item of this) {
     const key = keySelector(item);
     const collection = map.get(key);
     if (!collection) {
@@ -195,7 +194,7 @@ Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) 
     } else {
       collection.push(item);
     }
-  });
+  }
   return map;
 };
 
@@ -203,6 +202,7 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
   const map = this.groupBy(keySelector);
 
   const ar: { key: K; items: T[] }[] = [];
+
   map.forEach((items, key) => {
     ar.push({ key, items });
   });
@@ -255,13 +255,13 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
   const set = new Set<any>();
   const ar: T[] = [];
 
-  this.forEach((item) => {
+  for (const item of this) {
     const key = keySelector(item);
     if (!set.has(key)) {
       set.add(key);
       ar.push(item);
     }
-  });
+  }
 
   return ar;
 };

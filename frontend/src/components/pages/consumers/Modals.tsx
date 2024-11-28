@@ -366,14 +366,22 @@ export class EditOffsetsModal extends Component<{
 
       if (op === 'startOffset') {
         // Earliest
-        this.props.offsets.forEach((x) => (x.newOffset = -2));
+        for (const x of this.props.offsets) {
+          x.newOffset = -2;
+        }
       } else if (op === 'endOffset') {
         // Latest
-        this.props.offsets.forEach((x) => (x.newOffset = -1));
+        for (const x of this.props.offsets) {
+          x.newOffset = -1;
+        }
       } else if (op === 'time') {
         // Time
-        // this.props.offsets.forEach(x => x.newOffset = new Date(this.timestampUtcMs));
-        this.props.offsets.forEach((x) => (x.newOffset = 'fetching offsets...' as any));
+        // for (const x of this.props.offsets) {
+        //   x.newOffset = new Date(this.timestampUtcMs) as any;
+        // }
+        for (const x of this.props.offsets) {
+          x.newOffset = 'fetching offsets...' as any;
+        }
         const requiredTopics = this.props.offsets.map((x) => x.topicName).distinct();
 
         const propOffsets = this.props.offsets;
@@ -411,12 +419,12 @@ export class EditOffsetsModal extends Component<{
             return;
           }
 
-          propOffsets.forEach((x) => {
+          for (const x of propOffsets) {
             const responseOffset = offsetsForTimestamp
               .first((t) => t.topicName === x.topicName)
               ?.partitions.first((p) => p.partitionId === x.partitionId);
             x.newOffset = responseOffset;
-          });
+          }
         });
       } else {
         // Other group
@@ -559,6 +567,7 @@ export class EditOffsetsModal extends Component<{
   @action
   async onApplyEdit() {
     const group = this.props.group;
+    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     const offsets = this.props.offsets!;
 
     this.isApplyingEdit = true;
@@ -579,7 +588,6 @@ export class EditOffsetsModal extends Component<{
         .filter((t) => t.partitions.length > 0);
       if (errors.length > 0) {
         console.error('apply offsets, backend errors', { errors: errors, request: topics });
-        // eslint-disable-next-line no-throw-literal
         throw { errors: errors, request: topics };
       }
 
@@ -840,6 +848,7 @@ export class DeleteOffsetsModal extends Component<{
   @action
   async onDeleteOffsets() {
     const group = this.props.group;
+    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     const offsets = this.props.offsets!;
 
     const toastMsg = 'Deleting offsets';
@@ -862,7 +871,6 @@ export class DeleteOffsetsModal extends Component<{
           .filter((t) => t.partitions.length > 0);
         if (errors.length > 0) {
           console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
-          // eslint-disable-next-line no-throw-literal
           throw { request: deleteRequest, errors: errors };
         }
       }

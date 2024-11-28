@@ -166,11 +166,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   useEffect(() => {
     setValue('key.data', '');
-  }, [keyPayloadOptions.encoding, setValue]);
+  }, [setValue]);
 
   useEffect(() => {
     setValue('value.data', '');
-  }, [valuePayloadOptions.encoding, setValue]);
+  }, [setValue]);
 
   const showKeySchemaSelection =
     keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF;
@@ -205,14 +205,18 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   useEffect(() => {
     return autorun(() => {
-      api.schemaSubjects
-        ?.filter(
+      const filteredSoftDeletedSchemaSubjects =
+        api.schemaSubjects?.filter(
           (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
-        )
-        ?.filter((x) => x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()))
-        .forEach((x) => {
-          void api.refreshSchemaDetails(x.name);
-        });
+        ) ?? [];
+
+      const formattedSchemaSubjects = filteredSoftDeletedSchemaSubjects?.filter((x) =>
+        x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()),
+      );
+
+      for (const schemaSubject of formattedSchemaSubjects) {
+        void api.refreshSchemaDetails(schemaSubject.name);
+      }
     });
   }, []);
 

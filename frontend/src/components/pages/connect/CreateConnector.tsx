@@ -290,12 +290,15 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           onActiveClusterChange={(clusterName) => {
             uiState.pageBreadcrumbs = [
               { title: 'Connectors', linkTo: '/connect-clusters' },
+              // biome-ignore lint/style/noNonNullAssertion: we know clusterName is defined
               { title: clusterName!, linkTo: `/connect-clusters/${encodeURIComponent(clusterName!)}` },
               {
                 title: 'Create Connector',
+                // biome-ignore lint/style/noNonNullAssertion: we know clusterName is defined
                 linkTo: `/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`,
               },
             ];
+            // biome-ignore lint/style/noNonNullAssertion: we know clusterName is defined
             history.push(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
           }}
           selectedPlugin={selectedPlugin}

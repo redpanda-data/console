@@ -294,7 +294,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
         : subject.latestActiveVersion;
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
-  const schema = subject.schemas.first((x) => x.version === selectedVersion)!;
+  const schema = subject.schemas.first((x) => x.version === selectedVersion);
 
   if (!schema) {
     if (selectedVersion !== defaultVersion) {

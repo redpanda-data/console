@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/* eslint-disable no-extend-native */
-
 export {};
 
 declare global {

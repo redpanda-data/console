@@ -38,7 +38,6 @@ import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/ts
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
-/* eslint-disable no-useless-escape */
 import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';

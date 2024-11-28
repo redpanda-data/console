@@ -119,6 +119,7 @@ export class StepReview extends Component<{
                 <ReviewPartitionTable
                   topic={topic.topic}
                   topicPartitions={topic.selectedPartitions}
+                  // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                   assignments={this.props.assignments.topics.first((t) => t.topicName === topic.topicName)!}
                 />
               ) : (

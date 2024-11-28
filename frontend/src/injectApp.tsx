@@ -14,6 +14,7 @@ import EmbeddedApp, { type EmbeddedProps } from './EmbeddedApp';
 
 const injector = async (parentElementId: string, props: EmbeddedProps) => {
   const container = document.getElementById(parentElementId);
+  // biome-ignore lint/style/noNonNullAssertion: bootstrapping the app for embedded mode
   const root = createRoot(container!);
   root.render(<EmbeddedApp {...props} />);
   return root;

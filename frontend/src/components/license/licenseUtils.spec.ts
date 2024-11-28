@@ -1,5 +1,4 @@
 import { License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-/* eslint-disable no-extend-native */
 import {
   getPrettyTimeToExpiration,
   licenseIsExpired,

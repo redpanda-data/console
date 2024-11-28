@@ -101,17 +101,19 @@ class StatsBarTab extends Component {
         >
           <Label text="Topic Details">
             <Checkbox
-              children="Enabled"
               isChecked={uiSettings.topicDetailsShowStatisticsBar}
               onChange={(e) => (uiSettings.topicDetailsShowStatisticsBar = e.target.checked)}
-            />
+            >
+              Enabled
+            </Checkbox>
           </Label>
           <Label text="Consumer Group Details">
             <Checkbox
-              children="Enabled"
               isChecked={uiSettings.consumerGroupDetails.showStatisticsBar}
               onChange={(e) => (uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked)}
-            />
+            >
+              Enabled
+            </Checkbox>
           </Label>
         </div>
       </div>

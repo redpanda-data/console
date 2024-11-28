@@ -131,17 +131,19 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
               true,
             );
 
-            unpackPrincipalGroup(aclPrincipalGroup).forEach(async (x) => {
+            const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
+
+            for (const aclFlat of unpackedPrincipalGroup) {
               await api.createACL({
-                host: x.host,
-                principal: x.principal,
-                resourceType: x.resourceType,
-                resourceName: x.resourceName,
-                resourcePatternType: x.resourcePatternType as unknown as 'Literal' | 'Prefixed',
-                operation: x.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
-                permissionType: x.permissionType as unknown as 'Allow' | 'Deny',
+                host: aclFlat.host,
+                principal: aclFlat.principal,
+                resourceType: aclFlat.resourceType,
+                resourceName: aclFlat.resourceName,
+                resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
+                operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
+                permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
               });
-            });
+            }
 
             setIsLoading(false);
             toast({

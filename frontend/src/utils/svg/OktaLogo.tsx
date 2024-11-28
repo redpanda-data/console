@@ -13,6 +13,7 @@ import React from 'react';
 
 export default (
   <svg viewBox="0 0 260 260" focusable={false}>
+    <title>Okta</title>
     <g transform="translate(0,260) scale(0.100000,-0.100000)" fill="currentColor" stroke="none">
       <path
         d="M311 2393 c-13 -3 -45 -26 -71 -52 -68 -68 -71 -86 -72 -480 0 -402

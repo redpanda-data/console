@@ -10,7 +10,6 @@
  */
 
 import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
-/* eslint-disable no-useless-escape */
 import { observer } from 'mobx-react';
 import type { Property } from '../../../../state/connect/state';
 import { PropertyWidth } from '../../../../state/restInterfaces';
