@@ -5,7 +5,10 @@
 
 import { ListMessagesRequest, ListMessagesResponse } from "./list_messages_pb";
 import { MethodKind } from "@bufbuild/protobuf";
-import { PublishMessageRequest, PublishMessageResponse } from "./publish_messages_pb";
+import {
+	PublishMessageRequest,
+	PublishMessageResponse,
+} from "./publish_messages_pb";
 
 /**
  * ConsoleService represents the Console API service.
@@ -13,30 +16,29 @@ import { PublishMessageRequest, PublishMessageResponse } from "./publish_message
  * @generated from service redpanda.api.console.v1alpha1.ConsoleService
  */
 export const ConsoleService = {
-  typeName: "redpanda.api.console.v1alpha1.ConsoleService",
-  methods: {
-    /**
-     * ListMessages lists the messages according to the requested query.
-     *
-     * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListMessages
-     */
-    listMessages: {
-      name: "ListMessages",
-      I: ListMessagesRequest,
-      O: ListMessagesResponse,
-      kind: MethodKind.ServerStreaming,
-    },
-    /**
-     * PublishMessage publishes message.
-     *
-     * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.PublishMessage
-     */
-    publishMessage: {
-      name: "PublishMessage",
-      I: PublishMessageRequest,
-      O: PublishMessageResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.console.v1alpha1.ConsoleService",
+	methods: {
+		/**
+		 * ListMessages lists the messages according to the requested query.
+		 *
+		 * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.ListMessages
+		 */
+		listMessages: {
+			name: "ListMessages",
+			I: ListMessagesRequest,
+			O: ListMessagesResponse,
+			kind: MethodKind.ServerStreaming,
+		},
+		/**
+		 * PublishMessage publishes message.
+		 *
+		 * @generated from rpc redpanda.api.console.v1alpha1.ConsoleService.PublishMessage
+		 */
+		publishMessage: {
+			name: "PublishMessage",
+			I: PublishMessageRequest,
+			O: PublishMessageResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

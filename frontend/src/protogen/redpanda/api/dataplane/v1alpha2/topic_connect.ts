@@ -3,69 +3,81 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateTopicRequest, CreateTopicResponse, DeleteTopicRequest, DeleteTopicResponse, GetTopicConfigurationsRequest, GetTopicConfigurationsResponse, ListTopicsRequest, ListTopicsResponse, SetTopicConfigurationsRequest, SetTopicConfigurationsResponse, UpdateTopicConfigurationsRequest, UpdateTopicConfigurationsResponse } from "./topic_pb";
+import {
+	CreateTopicRequest,
+	CreateTopicResponse,
+	DeleteTopicRequest,
+	DeleteTopicResponse,
+	GetTopicConfigurationsRequest,
+	GetTopicConfigurationsResponse,
+	ListTopicsRequest,
+	ListTopicsResponse,
+	SetTopicConfigurationsRequest,
+	SetTopicConfigurationsResponse,
+	UpdateTopicConfigurationsRequest,
+	UpdateTopicConfigurationsResponse,
+} from "./topic_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha2.TopicService
  */
 export const TopicService = {
-  typeName: "redpanda.api.dataplane.v1alpha2.TopicService",
-  methods: {
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.CreateTopic
-     */
-    createTopic: {
-      name: "CreateTopic",
-      I: CreateTopicRequest,
-      O: CreateTopicResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.ListTopics
-     */
-    listTopics: {
-      name: "ListTopics",
-      I: ListTopicsRequest,
-      O: ListTopicsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.DeleteTopic
-     */
-    deleteTopic: {
-      name: "DeleteTopic",
-      I: DeleteTopicRequest,
-      O: DeleteTopicResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.GetTopicConfigurations
-     */
-    getTopicConfigurations: {
-      name: "GetTopicConfigurations",
-      I: GetTopicConfigurationsRequest,
-      O: GetTopicConfigurationsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.UpdateTopicConfigurations
-     */
-    updateTopicConfigurations: {
-      name: "UpdateTopicConfigurations",
-      I: UpdateTopicConfigurationsRequest,
-      O: UpdateTopicConfigurationsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.SetTopicConfigurations
-     */
-    setTopicConfigurations: {
-      name: "SetTopicConfigurations",
-      I: SetTopicConfigurationsRequest,
-      O: SetTopicConfigurationsResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.dataplane.v1alpha2.TopicService",
+	methods: {
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.CreateTopic
+		 */
+		createTopic: {
+			name: "CreateTopic",
+			I: CreateTopicRequest,
+			O: CreateTopicResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.ListTopics
+		 */
+		listTopics: {
+			name: "ListTopics",
+			I: ListTopicsRequest,
+			O: ListTopicsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.DeleteTopic
+		 */
+		deleteTopic: {
+			name: "DeleteTopic",
+			I: DeleteTopicRequest,
+			O: DeleteTopicResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.GetTopicConfigurations
+		 */
+		getTopicConfigurations: {
+			name: "GetTopicConfigurations",
+			I: GetTopicConfigurationsRequest,
+			O: GetTopicConfigurationsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.UpdateTopicConfigurations
+		 */
+		updateTopicConfigurations: {
+			name: "UpdateTopicConfigurations",
+			I: UpdateTopicConfigurationsRequest,
+			O: UpdateTopicConfigurationsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TopicService.SetTopicConfigurations
+		 */
+		setTopicConfigurations: {
+			name: "SetTopicConfigurations",
+			I: SetTopicConfigurationsRequest,
+			O: SetTopicConfigurationsResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

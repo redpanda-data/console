@@ -9,69 +9,90 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-import { PageComponent, PageInitHelper } from './Page';
+import React from "react";
+import { PageComponent, PageInitHelper } from "./Page";
 
-import { motion } from 'framer-motion'
-import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
-import { observer } from 'mobx-react';
-import { makeObservable, observable } from 'mobx';
-import { Checkbox } from '@redpanda-data/ui';
+import { motion } from "framer-motion";
+import {
+	AnimatePresence,
+	animProps,
+	MotionDiv,
+} from "../../utils/animationProps";
+import { observer } from "mobx-react";
+import { makeObservable, observable } from "mobx";
+import { Checkbox } from "@redpanda-data/ui";
 
 @observer
 export class UrlTestPage extends PageComponent {
+	@observable test: boolean = true;
 
-    @observable test: boolean = true;
+	constructor(p: any) {
+		super(p);
+		makeObservable(this);
+	}
 
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
+	initPage(p: PageInitHelper) {
+		p.title = "DEBUG PLACEHOLDER";
+	}
 
-    initPage(p: PageInitHelper) {
-        p.title = 'DEBUG PLACEHOLDER';
-    }
+	render() {
+		const p = this.props;
+		return (
+			<MotionDiv>
+				<div>
+					<h4>Path:</h4>
+					<p>{p.matchedPath}</p>
+				</div>
 
-    render() {
-        const p = this.props;
-        return (
-            <MotionDiv>
-                <div>
-                    <h4>Path:</h4>
-                    <p>{p.matchedPath}</p>
-                </div>
+				<div>
+					<h4>Query:</h4>
+					<pre>{JSON.stringify(p.query, null, 4)}</pre>
+				</div>
 
-                <div>
-                    <h4>Query:</h4>
-                    <pre>{JSON.stringify(p.query, null, 4)}</pre>
-                </div>
+				<div>
+					<h4>All Props:</h4>
+					<pre>{JSON.stringify(p, null, 4)}</pre>
+				</div>
 
-                <div>
-                    <h4>All Props:</h4>
-                    <pre>{JSON.stringify(p, null, 4)}</pre>
-                </div>
-
-                <div>
-                    <h4>Test</h4>
-                    <div><Checkbox isChecked={this.test} onChange={e => this.test = e.target.checked}>Test Prop</Checkbox></div>
-                    <AnimatePresence >
-
-                        {this.test
-
-                            ? <motion.div key="a" {...animProps} style={{ padding: '2em 3em', borderRadius: '6px', background: '#f008' }}>
-                                <h3>The first test container</h3>
-                            </motion.div>
-
-                            : <motion.div key="b" {...animProps} style={{ padding: '2em 3em', borderRadius: '6px', background: '#f608' }} >
-                                <h3>Another one! (This is the second container)</h3>
-                            </motion.div>
-
-                        }
-                    </AnimatePresence>
-                </div>
-
-
-            </MotionDiv>
-        );
-    }
+				<div>
+					<h4>Test</h4>
+					<div>
+						<Checkbox
+							isChecked={this.test}
+							onChange={(e) => (this.test = e.target.checked)}
+						>
+							Test Prop
+						</Checkbox>
+					</div>
+					<AnimatePresence>
+						{this.test ? (
+							<motion.div
+								key="a"
+								{...animProps}
+								style={{
+									padding: "2em 3em",
+									borderRadius: "6px",
+									background: "#f008",
+								}}
+							>
+								<h3>The first test container</h3>
+							</motion.div>
+						) : (
+							<motion.div
+								key="b"
+								{...animProps}
+								style={{
+									padding: "2em 3em",
+									borderRadius: "6px",
+									background: "#f608",
+								}}
+							>
+								<h3>Another one! (This is the second container)</h3>
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</div>
+			</MotionDiv>
+		);
+	}
 }

@@ -3,7 +3,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
+import type {
+	BinaryReadOptions,
+	FieldList,
+	JsonReadOptions,
+	JsonValue,
+	PartialMessage,
+	PlainMessage,
+} from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
@@ -12,39 +19,51 @@ import { Message, proto3 } from "@bufbuild/protobuf";
  * @generated from message redpanda.api.console.v1alpha1.Role
  */
 export class Role extends Message<Role> {
-  /**
-   * The name of the role.
-   *
-   * @generated from field: string name = 1;
-   */
-  name = "";
+	/**
+	 * The name of the role.
+	 *
+	 * @generated from field: string name = 1;
+	 */
+	name = "";
 
-  constructor(data?: PartialMessage<Role>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<Role>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.Role";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.Role";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Role {
-    return new Role().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): Role {
+		return new Role().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Role {
-    return new Role().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): Role {
+		return new Role().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Role {
-    return new Role().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): Role {
+		return new Role().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: Role | PlainMessage<Role> | undefined, b: Role | PlainMessage<Role> | undefined): boolean {
-    return proto3.util.equals(Role, a, b);
-  }
+	static equals(
+		a: Role | PlainMessage<Role> | undefined,
+		b: Role | PlainMessage<Role> | undefined,
+	): boolean {
+		return proto3.util.equals(Role, a, b);
+	}
 }
 
 /**
@@ -53,56 +72,74 @@ export class Role extends Message<Role> {
  * @generated from message redpanda.api.console.v1alpha1.ListRolesRequest
  */
 export class ListRolesRequest extends Message<ListRolesRequest> {
-  /**
-   * Optional filter.
-   *
-   * @generated from field: optional redpanda.api.console.v1alpha1.ListRolesRequest.Filter filter = 1;
-   */
-  filter?: ListRolesRequest_Filter;
+	/**
+	 * Optional filter.
+	 *
+	 * @generated from field: optional redpanda.api.console.v1alpha1.ListRolesRequest.Filter filter = 1;
+	 */
+	filter?: ListRolesRequest_Filter;
 
-  /**
-   * Page size.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize = 0;
+	/**
+	 * Page size.
+	 *
+	 * @generated from field: int32 page_size = 2;
+	 */
+	pageSize = 0;
 
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken = "";
+	/**
+	 * Value of the next_page_token field returned by the previous response.
+	 * If not provided, the system assumes the first page is requested.
+	 *
+	 * @generated from field: string page_token = 3;
+	 */
+	pageToken = "";
 
-  constructor(data?: PartialMessage<ListRolesRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ListRolesRequest>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "filter", kind: "message", T: ListRolesRequest_Filter, opt: true },
-    { no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesRequest";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{
+			no: 1,
+			name: "filter",
+			kind: "message",
+			T: ListRolesRequest_Filter,
+			opt: true,
+		},
+		{ no: 2, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+		{ no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesRequest {
-    return new ListRolesRequest().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ListRolesRequest {
+		return new ListRolesRequest().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRolesRequest {
-    return new ListRolesRequest().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ListRolesRequest {
+		return new ListRolesRequest().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRolesRequest {
-    return new ListRolesRequest().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ListRolesRequest {
+		return new ListRolesRequest().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: ListRolesRequest | PlainMessage<ListRolesRequest> | undefined, b: ListRolesRequest | PlainMessage<ListRolesRequest> | undefined): boolean {
-    return proto3.util.equals(ListRolesRequest, a, b);
-  }
+	static equals(
+		a: ListRolesRequest | PlainMessage<ListRolesRequest> | undefined,
+		b: ListRolesRequest | PlainMessage<ListRolesRequest> | undefined,
+	): boolean {
+		return proto3.util.equals(ListRolesRequest, a, b);
+	}
 }
 
 /**
@@ -111,55 +148,84 @@ export class ListRolesRequest extends Message<ListRolesRequest> {
  * @generated from message redpanda.api.console.v1alpha1.ListRolesRequest.Filter
  */
 export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
-  /**
-   * Filter results only roles named with the prefix.
-   *
-   * @generated from field: string name_prefix = 1;
-   */
-  namePrefix = "";
+	/**
+	 * Filter results only roles named with the prefix.
+	 *
+	 * @generated from field: string name_prefix = 1;
+	 */
+	namePrefix = "";
 
-  /**
-   * Filter results to only roles with names which contain the string.
-   *
-   * @generated from field: string name_contains = 2;
-   */
-  nameContains = "";
+	/**
+	 * Filter results to only roles with names which contain the string.
+	 *
+	 * @generated from field: string name_contains = 2;
+	 */
+	nameContains = "";
 
-  /**
-   * Return only roles assigned to this principal.
-   *
-   * @generated from field: string principal = 3;
-   */
-  principal = "";
+	/**
+	 * Return only roles assigned to this principal.
+	 *
+	 * @generated from field: string principal = 3;
+	 */
+	principal = "";
 
-  constructor(data?: PartialMessage<ListRolesRequest_Filter>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ListRolesRequest_Filter>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesRequest.Filter";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.console.v1alpha1.ListRolesRequest.Filter";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{
+			no: 1,
+			name: "name_prefix",
+			kind: "scalar",
+			T: 9 /* ScalarType.STRING */,
+		},
+		{
+			no: 2,
+			name: "name_contains",
+			kind: "scalar",
+			T: 9 /* ScalarType.STRING */,
+		},
+		{ no: 3, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesRequest_Filter {
-    return new ListRolesRequest_Filter().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ListRolesRequest_Filter {
+		return new ListRolesRequest_Filter().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRolesRequest_Filter {
-    return new ListRolesRequest_Filter().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ListRolesRequest_Filter {
+		return new ListRolesRequest_Filter().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRolesRequest_Filter {
-    return new ListRolesRequest_Filter().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ListRolesRequest_Filter {
+		return new ListRolesRequest_Filter().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: ListRolesRequest_Filter | PlainMessage<ListRolesRequest_Filter> | undefined, b: ListRolesRequest_Filter | PlainMessage<ListRolesRequest_Filter> | undefined): boolean {
-    return proto3.util.equals(ListRolesRequest_Filter, a, b);
-  }
+	static equals(
+		a:
+			| ListRolesRequest_Filter
+			| PlainMessage<ListRolesRequest_Filter>
+			| undefined,
+		b:
+			| ListRolesRequest_Filter
+			| PlainMessage<ListRolesRequest_Filter>
+			| undefined,
+	): boolean {
+		return proto3.util.equals(ListRolesRequest_Filter, a, b);
+	}
 }
 
 /**
@@ -168,47 +234,64 @@ export class ListRolesRequest_Filter extends Message<ListRolesRequest_Filter> {
  * @generated from message redpanda.api.console.v1alpha1.ListRolesResponse
  */
 export class ListRolesResponse extends Message<ListRolesResponse> {
-  /**
-   * The roles in the system.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.Role roles = 1;
-   */
-  roles: Role[] = [];
+	/**
+	 * The roles in the system.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.Role roles = 1;
+	 */
+	roles: Role[] = [];
 
-  /**
-   * Token to retrieve the next page.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken = "";
+	/**
+	 * Token to retrieve the next page.
+	 *
+	 * @generated from field: string next_page_token = 2;
+	 */
+	nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListRolesResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ListRolesResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "roles", kind: "message", T: Role, repeated: true },
-    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.ListRolesResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "roles", kind: "message", T: Role, repeated: true },
+		{
+			no: 2,
+			name: "next_page_token",
+			kind: "scalar",
+			T: 9 /* ScalarType.STRING */,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRolesResponse {
-    return new ListRolesResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ListRolesResponse {
+		return new ListRolesResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRolesResponse {
-    return new ListRolesResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ListRolesResponse {
+		return new ListRolesResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRolesResponse {
-    return new ListRolesResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ListRolesResponse {
+		return new ListRolesResponse().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: ListRolesResponse | PlainMessage<ListRolesResponse> | undefined, b: ListRolesResponse | PlainMessage<ListRolesResponse> | undefined): boolean {
-    return proto3.util.equals(ListRolesResponse, a, b);
-  }
+	static equals(
+		a: ListRolesResponse | PlainMessage<ListRolesResponse> | undefined,
+		b: ListRolesResponse | PlainMessage<ListRolesResponse> | undefined,
+	): boolean {
+		return proto3.util.equals(ListRolesResponse, a, b);
+	}
 }
 
 /**
@@ -217,39 +300,51 @@ export class ListRolesResponse extends Message<ListRolesResponse> {
  * @generated from message redpanda.api.console.v1alpha1.CreateRoleRequest
  */
 export class CreateRoleRequest extends Message<CreateRoleRequest> {
-  /**
-   * The role to create.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
-   */
-  role?: Role;
+	/**
+	 * The role to create.
+	 *
+	 * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
+	 */
+	role?: Role;
 
-  constructor(data?: PartialMessage<CreateRoleRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<CreateRoleRequest>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.CreateRoleRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role", kind: "message", T: Role },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.CreateRoleRequest";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role", kind: "message", T: Role },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRoleRequest {
-    return new CreateRoleRequest().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): CreateRoleRequest {
+		return new CreateRoleRequest().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateRoleRequest {
-    return new CreateRoleRequest().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): CreateRoleRequest {
+		return new CreateRoleRequest().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateRoleRequest {
-    return new CreateRoleRequest().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): CreateRoleRequest {
+		return new CreateRoleRequest().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: CreateRoleRequest | PlainMessage<CreateRoleRequest> | undefined, b: CreateRoleRequest | PlainMessage<CreateRoleRequest> | undefined): boolean {
-    return proto3.util.equals(CreateRoleRequest, a, b);
-  }
+	static equals(
+		a: CreateRoleRequest | PlainMessage<CreateRoleRequest> | undefined,
+		b: CreateRoleRequest | PlainMessage<CreateRoleRequest> | undefined,
+	): boolean {
+		return proto3.util.equals(CreateRoleRequest, a, b);
+	}
 }
 
 /**
@@ -258,39 +353,51 @@ export class CreateRoleRequest extends Message<CreateRoleRequest> {
  * @generated from message redpanda.api.console.v1alpha1.CreateRoleResponse
  */
 export class CreateRoleResponse extends Message<CreateRoleResponse> {
-  /**
-   * The role.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
-   */
-  role?: Role;
+	/**
+	 * The role.
+	 *
+	 * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
+	 */
+	role?: Role;
 
-  constructor(data?: PartialMessage<CreateRoleResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<CreateRoleResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.CreateRoleResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role", kind: "message", T: Role },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.CreateRoleResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role", kind: "message", T: Role },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateRoleResponse {
-    return new CreateRoleResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): CreateRoleResponse {
+		return new CreateRoleResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateRoleResponse {
-    return new CreateRoleResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): CreateRoleResponse {
+		return new CreateRoleResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateRoleResponse {
-    return new CreateRoleResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): CreateRoleResponse {
+		return new CreateRoleResponse().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: CreateRoleResponse | PlainMessage<CreateRoleResponse> | undefined, b: CreateRoleResponse | PlainMessage<CreateRoleResponse> | undefined): boolean {
-    return proto3.util.equals(CreateRoleResponse, a, b);
-  }
+	static equals(
+		a: CreateRoleResponse | PlainMessage<CreateRoleResponse> | undefined,
+		b: CreateRoleResponse | PlainMessage<CreateRoleResponse> | undefined,
+	): boolean {
+		return proto3.util.equals(CreateRoleResponse, a, b);
+	}
 }
 
 /**
@@ -299,39 +406,51 @@ export class CreateRoleResponse extends Message<CreateRoleResponse> {
  * @generated from message redpanda.api.console.v1alpha1.GetRoleRequest
  */
 export class GetRoleRequest extends Message<GetRoleRequest> {
-  /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
-   */
-  roleName = "";
+	/**
+	 * The role name.
+	 *
+	 * @generated from field: string role_name = 1;
+	 */
+	roleName = "";
 
-  constructor(data?: PartialMessage<GetRoleRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<GetRoleRequest>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.GetRoleRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.GetRoleRequest";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRoleRequest {
-    return new GetRoleRequest().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): GetRoleRequest {
+		return new GetRoleRequest().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetRoleRequest {
-    return new GetRoleRequest().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): GetRoleRequest {
+		return new GetRoleRequest().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetRoleRequest {
-    return new GetRoleRequest().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): GetRoleRequest {
+		return new GetRoleRequest().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: GetRoleRequest | PlainMessage<GetRoleRequest> | undefined, b: GetRoleRequest | PlainMessage<GetRoleRequest> | undefined): boolean {
-    return proto3.util.equals(GetRoleRequest, a, b);
-  }
+	static equals(
+		a: GetRoleRequest | PlainMessage<GetRoleRequest> | undefined,
+		b: GetRoleRequest | PlainMessage<GetRoleRequest> | undefined,
+	): boolean {
+		return proto3.util.equals(GetRoleRequest, a, b);
+	}
 }
 
 /**
@@ -340,47 +459,65 @@ export class GetRoleRequest extends Message<GetRoleRequest> {
  * @generated from message redpanda.api.console.v1alpha1.GetRoleResponse
  */
 export class GetRoleResponse extends Message<GetRoleResponse> {
-  /**
-   * The Role.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
-   */
-  role?: Role;
+	/**
+	 * The Role.
+	 *
+	 * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
+	 */
+	role?: Role;
 
-  /**
-   * Members assigned to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
-   */
-  members: RoleMembership[] = [];
+	/**
+	 * Members assigned to the role.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
+	 */
+	members: RoleMembership[] = [];
 
-  constructor(data?: PartialMessage<GetRoleResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<GetRoleResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.GetRoleResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role", kind: "message", T: Role },
-    { no: 2, name: "members", kind: "message", T: RoleMembership, repeated: true },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.GetRoleResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role", kind: "message", T: Role },
+		{
+			no: 2,
+			name: "members",
+			kind: "message",
+			T: RoleMembership,
+			repeated: true,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRoleResponse {
-    return new GetRoleResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): GetRoleResponse {
+		return new GetRoleResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetRoleResponse {
-    return new GetRoleResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): GetRoleResponse {
+		return new GetRoleResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetRoleResponse {
-    return new GetRoleResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): GetRoleResponse {
+		return new GetRoleResponse().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: GetRoleResponse | PlainMessage<GetRoleResponse> | undefined, b: GetRoleResponse | PlainMessage<GetRoleResponse> | undefined): boolean {
-    return proto3.util.equals(GetRoleResponse, a, b);
-  }
+	static equals(
+		a: GetRoleResponse | PlainMessage<GetRoleResponse> | undefined,
+		b: GetRoleResponse | PlainMessage<GetRoleResponse> | undefined,
+	): boolean {
+		return proto3.util.equals(GetRoleResponse, a, b);
+	}
 }
 
 /**
@@ -389,47 +526,59 @@ export class GetRoleResponse extends Message<GetRoleResponse> {
  * @generated from message redpanda.api.console.v1alpha1.DeleteRoleRequest
  */
 export class DeleteRoleRequest extends Message<DeleteRoleRequest> {
-  /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
-   */
-  roleName = "";
+	/**
+	 * The role name.
+	 *
+	 * @generated from field: string role_name = 1;
+	 */
+	roleName = "";
 
-  /**
-   * Whether to delete the ACLs bound to the role.
-   *
-   * @generated from field: bool delete_acls = 2;
-   */
-  deleteAcls = false;
+	/**
+	 * Whether to delete the ACLs bound to the role.
+	 *
+	 * @generated from field: bool delete_acls = 2;
+	 */
+	deleteAcls = false;
 
-  constructor(data?: PartialMessage<DeleteRoleRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<DeleteRoleRequest>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.DeleteRoleRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "delete_acls", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.DeleteRoleRequest";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+		{ no: 2, name: "delete_acls", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteRoleRequest {
-    return new DeleteRoleRequest().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): DeleteRoleRequest {
+		return new DeleteRoleRequest().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteRoleRequest {
-    return new DeleteRoleRequest().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): DeleteRoleRequest {
+		return new DeleteRoleRequest().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteRoleRequest {
-    return new DeleteRoleRequest().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): DeleteRoleRequest {
+		return new DeleteRoleRequest().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: DeleteRoleRequest | PlainMessage<DeleteRoleRequest> | undefined, b: DeleteRoleRequest | PlainMessage<DeleteRoleRequest> | undefined): boolean {
-    return proto3.util.equals(DeleteRoleRequest, a, b);
-  }
+	static equals(
+		a: DeleteRoleRequest | PlainMessage<DeleteRoleRequest> | undefined,
+		b: DeleteRoleRequest | PlainMessage<DeleteRoleRequest> | undefined,
+	): boolean {
+		return proto3.util.equals(DeleteRoleRequest, a, b);
+	}
 }
 
 /**
@@ -438,31 +587,42 @@ export class DeleteRoleRequest extends Message<DeleteRoleRequest> {
  * @generated from message redpanda.api.console.v1alpha1.DeleteRoleResponse
  */
 export class DeleteRoleResponse extends Message<DeleteRoleResponse> {
-  constructor(data?: PartialMessage<DeleteRoleResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<DeleteRoleResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.DeleteRoleResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.DeleteRoleResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => []);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteRoleResponse {
-    return new DeleteRoleResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): DeleteRoleResponse {
+		return new DeleteRoleResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteRoleResponse {
-    return new DeleteRoleResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): DeleteRoleResponse {
+		return new DeleteRoleResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteRoleResponse {
-    return new DeleteRoleResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): DeleteRoleResponse {
+		return new DeleteRoleResponse().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: DeleteRoleResponse | PlainMessage<DeleteRoleResponse> | undefined, b: DeleteRoleResponse | PlainMessage<DeleteRoleResponse> | undefined): boolean {
-    return proto3.util.equals(DeleteRoleResponse, a, b);
-  }
+	static equals(
+		a: DeleteRoleResponse | PlainMessage<DeleteRoleResponse> | undefined,
+		b: DeleteRoleResponse | PlainMessage<DeleteRoleResponse> | undefined,
+	): boolean {
+		return proto3.util.equals(DeleteRoleResponse, a, b);
+	}
 }
 
 /**
@@ -471,64 +631,89 @@ export class DeleteRoleResponse extends Message<DeleteRoleResponse> {
  * @generated from message redpanda.api.console.v1alpha1.ListRoleMembersRequest
  */
 export class ListRoleMembersRequest extends Message<ListRoleMembersRequest> {
-  /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
-   */
-  roleName = "";
+	/**
+	 * The role name.
+	 *
+	 * @generated from field: string role_name = 1;
+	 */
+	roleName = "";
 
-  /**
-   * Optional filter.
-   *
-   * @generated from field: optional redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter filter = 2;
-   */
-  filter?: ListRoleMembersRequest_Filter;
+	/**
+	 * Optional filter.
+	 *
+	 * @generated from field: optional redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter filter = 2;
+	 */
+	filter?: ListRoleMembersRequest_Filter;
 
-  /**
-   * Page size.
-   *
-   * @generated from field: int32 page_size = 3;
-   */
-  pageSize = 0;
+	/**
+	 * Page size.
+	 *
+	 * @generated from field: int32 page_size = 3;
+	 */
+	pageSize = 0;
 
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 4;
-   */
-  pageToken = "";
+	/**
+	 * Value of the next_page_token field returned by the previous response.
+	 * If not provided, the system assumes the first page is requested.
+	 *
+	 * @generated from field: string page_token = 4;
+	 */
+	pageToken = "";
 
-  constructor(data?: PartialMessage<ListRoleMembersRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ListRoleMembersRequest>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListRoleMembersRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "filter", kind: "message", T: ListRoleMembersRequest_Filter, opt: true },
-    { no: 3, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.console.v1alpha1.ListRoleMembersRequest";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+		{
+			no: 2,
+			name: "filter",
+			kind: "message",
+			T: ListRoleMembersRequest_Filter,
+			opt: true,
+		},
+		{ no: 3, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+		{ no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRoleMembersRequest {
-    return new ListRoleMembersRequest().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ListRoleMembersRequest {
+		return new ListRoleMembersRequest().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRoleMembersRequest {
-    return new ListRoleMembersRequest().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ListRoleMembersRequest {
+		return new ListRoleMembersRequest().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRoleMembersRequest {
-    return new ListRoleMembersRequest().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ListRoleMembersRequest {
+		return new ListRoleMembersRequest().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: ListRoleMembersRequest | PlainMessage<ListRoleMembersRequest> | undefined, b: ListRoleMembersRequest | PlainMessage<ListRoleMembersRequest> | undefined): boolean {
-    return proto3.util.equals(ListRoleMembersRequest, a, b);
-  }
+	static equals(
+		a:
+			| ListRoleMembersRequest
+			| PlainMessage<ListRoleMembersRequest>
+			| undefined,
+		b:
+			| ListRoleMembersRequest
+			| PlainMessage<ListRoleMembersRequest>
+			| undefined,
+	): boolean {
+		return proto3.util.equals(ListRoleMembersRequest, a, b);
+	}
 }
 
 /**
@@ -537,39 +722,66 @@ export class ListRoleMembersRequest extends Message<ListRoleMembersRequest> {
  * @generated from message redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter
  */
 export class ListRoleMembersRequest_Filter extends Message<ListRoleMembersRequest_Filter> {
-  /**
-   * Filter results to only members with names which contain the string.
-   *
-   * @generated from field: string name_contains = 1;
-   */
-  nameContains = "";
+	/**
+	 * Filter results to only members with names which contain the string.
+	 *
+	 * @generated from field: string name_contains = 1;
+	 */
+	nameContains = "";
 
-  constructor(data?: PartialMessage<ListRoleMembersRequest_Filter>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ListRoleMembersRequest_Filter>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{
+			no: 1,
+			name: "name_contains",
+			kind: "scalar",
+			T: 9 /* ScalarType.STRING */,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRoleMembersRequest_Filter {
-    return new ListRoleMembersRequest_Filter().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ListRoleMembersRequest_Filter {
+		return new ListRoleMembersRequest_Filter().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRoleMembersRequest_Filter {
-    return new ListRoleMembersRequest_Filter().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ListRoleMembersRequest_Filter {
+		return new ListRoleMembersRequest_Filter().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRoleMembersRequest_Filter {
-    return new ListRoleMembersRequest_Filter().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ListRoleMembersRequest_Filter {
+		return new ListRoleMembersRequest_Filter().fromJsonString(
+			jsonString,
+			options,
+		);
+	}
 
-  static equals(a: ListRoleMembersRequest_Filter | PlainMessage<ListRoleMembersRequest_Filter> | undefined, b: ListRoleMembersRequest_Filter | PlainMessage<ListRoleMembersRequest_Filter> | undefined): boolean {
-    return proto3.util.equals(ListRoleMembersRequest_Filter, a, b);
-  }
+	static equals(
+		a:
+			| ListRoleMembersRequest_Filter
+			| PlainMessage<ListRoleMembersRequest_Filter>
+			| undefined,
+		b:
+			| ListRoleMembersRequest_Filter
+			| PlainMessage<ListRoleMembersRequest_Filter>
+			| undefined,
+	): boolean {
+		return proto3.util.equals(ListRoleMembersRequest_Filter, a, b);
+	}
 }
 
 /**
@@ -578,55 +790,85 @@ export class ListRoleMembersRequest_Filter extends Message<ListRoleMembersReques
  * @generated from message redpanda.api.console.v1alpha1.ListRoleMembersResponse
  */
 export class ListRoleMembersResponse extends Message<ListRoleMembersResponse> {
-  /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
-   */
-  roleName = "";
+	/**
+	 * The role name.
+	 *
+	 * @generated from field: string role_name = 1;
+	 */
+	roleName = "";
 
-  /**
-   * Members assigned to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
-   */
-  members: RoleMembership[] = [];
+	/**
+	 * Members assigned to the role.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
+	 */
+	members: RoleMembership[] = [];
 
-  /**
-   * Token to retrieve the next page.
-   *
-   * @generated from field: string next_page_token = 3;
-   */
-  nextPageToken = "";
+	/**
+	 * Token to retrieve the next page.
+	 *
+	 * @generated from field: string next_page_token = 3;
+	 */
+	nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListRoleMembersResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ListRoleMembersResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ListRoleMembersResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "members", kind: "message", T: RoleMembership, repeated: true },
-    { no: 3, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.console.v1alpha1.ListRoleMembersResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+		{
+			no: 2,
+			name: "members",
+			kind: "message",
+			T: RoleMembership,
+			repeated: true,
+		},
+		{
+			no: 3,
+			name: "next_page_token",
+			kind: "scalar",
+			T: 9 /* ScalarType.STRING */,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRoleMembersResponse {
-    return new ListRoleMembersResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ListRoleMembersResponse {
+		return new ListRoleMembersResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListRoleMembersResponse {
-    return new ListRoleMembersResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ListRoleMembersResponse {
+		return new ListRoleMembersResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListRoleMembersResponse {
-    return new ListRoleMembersResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ListRoleMembersResponse {
+		return new ListRoleMembersResponse().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: ListRoleMembersResponse | PlainMessage<ListRoleMembersResponse> | undefined, b: ListRoleMembersResponse | PlainMessage<ListRoleMembersResponse> | undefined): boolean {
-    return proto3.util.equals(ListRoleMembersResponse, a, b);
-  }
+	static equals(
+		a:
+			| ListRoleMembersResponse
+			| PlainMessage<ListRoleMembersResponse>
+			| undefined,
+		b:
+			| ListRoleMembersResponse
+			| PlainMessage<ListRoleMembersResponse>
+			| undefined,
+	): boolean {
+		return proto3.util.equals(ListRoleMembersResponse, a, b);
+	}
 }
 
 /**
@@ -635,39 +877,51 @@ export class ListRoleMembersResponse extends Message<ListRoleMembersResponse> {
  * @generated from message redpanda.api.console.v1alpha1.RoleMembership
  */
 export class RoleMembership extends Message<RoleMembership> {
-  /**
-   * The name of the principal assigned to the role.
-   *
-   * @generated from field: string principal = 1;
-   */
-  principal = "";
+	/**
+	 * The name of the principal assigned to the role.
+	 *
+	 * @generated from field: string principal = 1;
+	 */
+	principal = "";
 
-  constructor(data?: PartialMessage<RoleMembership>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<RoleMembership>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.RoleMembership";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.console.v1alpha1.RoleMembership";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "principal", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RoleMembership {
-    return new RoleMembership().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): RoleMembership {
+		return new RoleMembership().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RoleMembership {
-    return new RoleMembership().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): RoleMembership {
+		return new RoleMembership().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RoleMembership {
-    return new RoleMembership().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): RoleMembership {
+		return new RoleMembership().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: RoleMembership | PlainMessage<RoleMembership> | undefined, b: RoleMembership | PlainMessage<RoleMembership> | undefined): boolean {
-    return proto3.util.equals(RoleMembership, a, b);
-  }
+	static equals(
+		a: RoleMembership | PlainMessage<RoleMembership> | undefined,
+		b: RoleMembership | PlainMessage<RoleMembership> | undefined,
+	): boolean {
+		return proto3.util.equals(RoleMembership, a, b);
+	}
 }
 
 /**
@@ -676,64 +930,92 @@ export class RoleMembership extends Message<RoleMembership> {
  * @generated from message redpanda.api.console.v1alpha1.UpdateRoleMembershipRequest
  */
 export class UpdateRoleMembershipRequest extends Message<UpdateRoleMembershipRequest> {
-  /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
-   */
-  roleName = "";
+	/**
+	 * The role name.
+	 *
+	 * @generated from field: string role_name = 1;
+	 */
+	roleName = "";
 
-  /**
-   * Create the role if it doesn't already exist.
-   * If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
-   *
-   * @generated from field: bool create = 2;
-   */
-  create = false;
+	/**
+	 * Create the role if it doesn't already exist.
+	 * If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
+	 *
+	 * @generated from field: bool create = 2;
+	 */
+	create = false;
 
-  /**
-   * Members to assign to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership add = 3;
-   */
-  add: RoleMembership[] = [];
+	/**
+	 * Members to assign to the role.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership add = 3;
+	 */
+	add: RoleMembership[] = [];
 
-  /**
-   * Members to remove from the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership remove = 4;
-   */
-  remove: RoleMembership[] = [];
+	/**
+	 * Members to remove from the role.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership remove = 4;
+	 */
+	remove: RoleMembership[] = [];
 
-  constructor(data?: PartialMessage<UpdateRoleMembershipRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<UpdateRoleMembershipRequest>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.UpdateRoleMembershipRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "create", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "add", kind: "message", T: RoleMembership, repeated: true },
-    { no: 4, name: "remove", kind: "message", T: RoleMembership, repeated: true },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.console.v1alpha1.UpdateRoleMembershipRequest";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+		{ no: 2, name: "create", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+		{ no: 3, name: "add", kind: "message", T: RoleMembership, repeated: true },
+		{
+			no: 4,
+			name: "remove",
+			kind: "message",
+			T: RoleMembership,
+			repeated: true,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRoleMembershipRequest {
-    return new UpdateRoleMembershipRequest().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): UpdateRoleMembershipRequest {
+		return new UpdateRoleMembershipRequest().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateRoleMembershipRequest {
-    return new UpdateRoleMembershipRequest().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): UpdateRoleMembershipRequest {
+		return new UpdateRoleMembershipRequest().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateRoleMembershipRequest {
-    return new UpdateRoleMembershipRequest().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): UpdateRoleMembershipRequest {
+		return new UpdateRoleMembershipRequest().fromJsonString(
+			jsonString,
+			options,
+		);
+	}
 
-  static equals(a: UpdateRoleMembershipRequest | PlainMessage<UpdateRoleMembershipRequest> | undefined, b: UpdateRoleMembershipRequest | PlainMessage<UpdateRoleMembershipRequest> | undefined): boolean {
-    return proto3.util.equals(UpdateRoleMembershipRequest, a, b);
-  }
+	static equals(
+		a:
+			| UpdateRoleMembershipRequest
+			| PlainMessage<UpdateRoleMembershipRequest>
+			| undefined,
+		b:
+			| UpdateRoleMembershipRequest
+			| PlainMessage<UpdateRoleMembershipRequest>
+			| undefined,
+	): boolean {
+		return proto3.util.equals(UpdateRoleMembershipRequest, a, b);
+	}
 }
 
 /**
@@ -742,54 +1024,87 @@ export class UpdateRoleMembershipRequest extends Message<UpdateRoleMembershipReq
  * @generated from message redpanda.api.console.v1alpha1.UpdateRoleMembershipResponse
  */
 export class UpdateRoleMembershipResponse extends Message<UpdateRoleMembershipResponse> {
-  /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
-   */
-  roleName = "";
+	/**
+	 * The role name.
+	 *
+	 * @generated from field: string role_name = 1;
+	 */
+	roleName = "";
 
-  /**
-   * Members assigned to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership added = 2;
-   */
-  added: RoleMembership[] = [];
+	/**
+	 * Members assigned to the role.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership added = 2;
+	 */
+	added: RoleMembership[] = [];
 
-  /**
-   * Members removed from the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership removed = 3;
-   */
-  removed: RoleMembership[] = [];
+	/**
+	 * Members removed from the role.
+	 *
+	 * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership removed = 3;
+	 */
+	removed: RoleMembership[] = [];
 
-  constructor(data?: PartialMessage<UpdateRoleMembershipResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<UpdateRoleMembershipResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.UpdateRoleMembershipResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "added", kind: "message", T: RoleMembership, repeated: true },
-    { no: 3, name: "removed", kind: "message", T: RoleMembership, repeated: true },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.console.v1alpha1.UpdateRoleMembershipResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+		{
+			no: 2,
+			name: "added",
+			kind: "message",
+			T: RoleMembership,
+			repeated: true,
+		},
+		{
+			no: 3,
+			name: "removed",
+			kind: "message",
+			T: RoleMembership,
+			repeated: true,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRoleMembershipResponse {
-    return new UpdateRoleMembershipResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): UpdateRoleMembershipResponse {
+		return new UpdateRoleMembershipResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateRoleMembershipResponse {
-    return new UpdateRoleMembershipResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): UpdateRoleMembershipResponse {
+		return new UpdateRoleMembershipResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateRoleMembershipResponse {
-    return new UpdateRoleMembershipResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): UpdateRoleMembershipResponse {
+		return new UpdateRoleMembershipResponse().fromJsonString(
+			jsonString,
+			options,
+		);
+	}
 
-  static equals(a: UpdateRoleMembershipResponse | PlainMessage<UpdateRoleMembershipResponse> | undefined, b: UpdateRoleMembershipResponse | PlainMessage<UpdateRoleMembershipResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateRoleMembershipResponse, a, b);
-  }
+	static equals(
+		a:
+			| UpdateRoleMembershipResponse
+			| PlainMessage<UpdateRoleMembershipResponse>
+			| undefined,
+		b:
+			| UpdateRoleMembershipResponse
+			| PlainMessage<UpdateRoleMembershipResponse>
+			| undefined,
+	): boolean {
+		return proto3.util.equals(UpdateRoleMembershipResponse, a, b);
+	}
 }
-

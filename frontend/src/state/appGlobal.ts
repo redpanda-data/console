@@ -9,32 +9,33 @@
  * by the Apache License, Version 2.0
  */
 
-
-import { History } from 'history';
-import { api } from './backendApi';
-import { uiState } from './uiState';
+import { History } from "history";
+import { api } from "./backendApi";
+import { uiState } from "./uiState";
 
 class AppGlobal {
-    private _history = (null as unknown as History<any>);
-    get history() { return this._history }
+	private _history = null as unknown as History<any>;
+	get history() {
+		return this._history;
+	}
 
-    set history(h: History<any>) {
-        if (this._history === h || !h) return;
-        if (this._history) throw new Error('_history should not be overwritten');
+	set history(h: History<any>) {
+		if (this._history === h || !h) return;
+		if (this._history) throw new Error("_history should not be overwritten");
 
-        this._history = h;
+		this._history = h;
 
-        h.listen((location, _action) => {
-            api.errors = [];
-            uiState.pathName = location.pathname;
-        });
-        uiState.pathName = h.location.pathname;
-    }
+		h.listen((location, _action) => {
+			api.errors = [];
+			uiState.pathName = location.pathname;
+		});
+		uiState.pathName = h.location.pathname;
+	}
 
-    onRefresh: (() => void) = () => {
-        // intended for pages to set
-    }
+	onRefresh: () => void = () => {
+		// intended for pages to set
+	};
 
-    searchMessagesFunc?:  (source: 'auto' | 'manual') => void = undefined;
+	searchMessagesFunc?: (source: "auto" | "manual") => void = undefined;
 }
 export const appGlobal = new AppGlobal();

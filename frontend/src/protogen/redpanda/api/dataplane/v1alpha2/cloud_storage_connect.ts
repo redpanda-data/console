@@ -3,7 +3,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeleteMountTaskRequest, DeleteMountTaskResponse, GetMountTaskRequest, GetMountTaskResponse, ListMountableTopicsRequest, ListMountableTopicsResponse, ListMountTasksRequest, ListMountTasksResponse, MountTopicsRequest, MountTopicsResponse, UnmountTopicsRequest, UnmountTopicsResponse, UpdateMountTaskRequest, UpdateMountTaskResponse } from "./cloud_storage_pb";
+import {
+	DeleteMountTaskRequest,
+	DeleteMountTaskResponse,
+	GetMountTaskRequest,
+	GetMountTaskResponse,
+	ListMountableTopicsRequest,
+	ListMountableTopicsResponse,
+	ListMountTasksRequest,
+	ListMountTasksResponse,
+	MountTopicsRequest,
+	MountTopicsResponse,
+	UnmountTopicsRequest,
+	UnmountTopicsResponse,
+	UpdateMountTaskRequest,
+	UpdateMountTaskResponse,
+} from "./cloud_storage_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -13,71 +28,70 @@ import { MethodKind } from "@bufbuild/protobuf";
  * @generated from service redpanda.api.dataplane.v1alpha2.CloudStorageService
  */
 export const CloudStorageService = {
-  typeName: "redpanda.api.dataplane.v1alpha2.CloudStorageService",
-  methods: {
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.MountTopics
-     */
-    mountTopics: {
-      name: "MountTopics",
-      I: MountTopicsRequest,
-      O: MountTopicsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.UnmountTopics
-     */
-    unmountTopics: {
-      name: "UnmountTopics",
-      I: UnmountTopicsRequest,
-      O: UnmountTopicsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.ListMountableTopics
-     */
-    listMountableTopics: {
-      name: "ListMountableTopics",
-      I: ListMountableTopicsRequest,
-      O: ListMountableTopicsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.ListMountTasks
-     */
-    listMountTasks: {
-      name: "ListMountTasks",
-      I: ListMountTasksRequest,
-      O: ListMountTasksResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.GetMountTask
-     */
-    getMountTask: {
-      name: "GetMountTask",
-      I: GetMountTaskRequest,
-      O: GetMountTaskResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.DeleteMountTask
-     */
-    deleteMountTask: {
-      name: "DeleteMountTask",
-      I: DeleteMountTaskRequest,
-      O: DeleteMountTaskResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.UpdateMountTask
-     */
-    updateMountTask: {
-      name: "UpdateMountTask",
-      I: UpdateMountTaskRequest,
-      O: UpdateMountTaskResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.dataplane.v1alpha2.CloudStorageService",
+	methods: {
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.MountTopics
+		 */
+		mountTopics: {
+			name: "MountTopics",
+			I: MountTopicsRequest,
+			O: MountTopicsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.UnmountTopics
+		 */
+		unmountTopics: {
+			name: "UnmountTopics",
+			I: UnmountTopicsRequest,
+			O: UnmountTopicsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.ListMountableTopics
+		 */
+		listMountableTopics: {
+			name: "ListMountableTopics",
+			I: ListMountableTopicsRequest,
+			O: ListMountableTopicsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.ListMountTasks
+		 */
+		listMountTasks: {
+			name: "ListMountTasks",
+			I: ListMountTasksRequest,
+			O: ListMountTasksResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.GetMountTask
+		 */
+		getMountTask: {
+			name: "GetMountTask",
+			I: GetMountTaskRequest,
+			O: GetMountTaskResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.DeleteMountTask
+		 */
+		deleteMountTask: {
+			name: "DeleteMountTask",
+			I: DeleteMountTaskRequest,
+			O: DeleteMountTaskResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.CloudStorageService.UpdateMountTask
+		 */
+		updateMountTask: {
+			name: "UpdateMountTask",
+			I: UpdateMountTaskRequest,
+			O: UpdateMountTaskResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

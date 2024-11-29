@@ -12,21 +12,20 @@ import { DummyMethodResponse } from "./dummy_pb";
  * @generated from service redpanda.api.dataplane.v1alpha2.DummyService
  */
 export const DummyService = {
-  typeName: "redpanda.api.dataplane.v1alpha2.DummyService",
-  methods: {
-    /**
-     * buf:lint:ignore RPC_REQUEST_STANDARD_NAME
-     * buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
-     * buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-     *
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.DummyService.DummyMethod
-     */
-    dummyMethod: {
-      name: "DummyMethod",
-      I: Empty,
-      O: DummyMethodResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.dataplane.v1alpha2.DummyService",
+	methods: {
+		/**
+		 * buf:lint:ignore RPC_REQUEST_STANDARD_NAME
+		 * buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+		 * buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+		 *
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.DummyService.DummyMethod
+		 */
+		dummyMethod: {
+			name: "DummyMethod",
+			I: Empty,
+			O: DummyMethodResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

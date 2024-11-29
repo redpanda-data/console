@@ -1,74 +1,92 @@
-import { observer } from 'mobx-react';
-import { openModal } from '../../../utils/ModalContainer';
-import { Box, Button, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
-import { useState } from 'react';
+import { observer } from "mobx-react";
+import { openModal } from "../../../utils/ModalContainer";
+import {
+	Box,
+	Button,
+	Input,
+	Modal,
+	ModalBody,
+	ModalCloseButton,
+	ModalContent,
+	ModalFooter,
+	ModalHeader,
+	ModalOverlay,
+} from "@redpanda-data/ui";
+import { useState } from "react";
 
-const ExplicitConfirmModal = observer((p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: JSX.Element;
-    secondaryButtonContent: JSX.Element;
+const ExplicitConfirmModal = observer(
+	(p: {
+		title: JSX.Element;
+		body: JSX.Element;
+		primaryButtonContent: JSX.Element;
+		secondaryButtonContent: JSX.Element;
 
-    onPrimaryButton: (closeModal: () => void) => void,
-    onSecondaryButton: (closeModal: () => void) => void,
+		onPrimaryButton: (closeModal: () => void) => void;
+		onSecondaryButton: (closeModal: () => void) => void;
 
-    closeModal: () => void;
+		closeModal: () => void;
 
-    requiredText?: string;
-}) => {
+		requiredText?: string;
+	}) => {
+		const [confirmBoxText, setConfirmBoxText] = useState("");
 
-    const [confirmBoxText, setConfirmBoxText] = useState('');
+		const requiredText = p.requiredText ?? "delete";
+		const isConfirmEnabled = confirmBoxText == requiredText;
 
-    const requiredText = p.requiredText ?? 'delete';
-    const isConfirmEnabled = confirmBoxText == requiredText;
+		return (
+			<Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+				<ModalOverlay />
+				<ModalContent>
+					<ModalHeader mr="4">{p.title}</ModalHeader>
+					<ModalCloseButton />
+					<ModalBody>
+						{p.body}
 
-    return <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-            <ModalHeader mr="4">{p.title}</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-                {p.body}
+						<Box mt="4">
+							To confirm, enter "{requiredText}":
+							<Input
+								onChange={(e) => setConfirmBoxText(e.target.value)}
+								autoFocus
+							/>
+						</Box>
+					</ModalBody>
 
-                <Box mt="4">
-                    To confirm, enter "{requiredText}":
-                    <Input onChange={e => setConfirmBoxText(e.target.value)} autoFocus />
-                </Box>
-            </ModalBody>
+					<ModalFooter>
+						<Button
+							mr={3}
+							isDisabled={!isConfirmEnabled}
+							onClick={() => p.onPrimaryButton(p.closeModal)}
+							colorScheme="red"
+						>
+							{p.primaryButtonContent}
+						</Button>
+						<Button
+							variant="outline"
+							onClick={() => p.onSecondaryButton(p.closeModal)}
+						>
+							{p.secondaryButtonContent}
+						</Button>
+					</ModalFooter>
+				</ModalContent>
+			</Modal>
+		);
+	},
+);
 
-            <ModalFooter>
-                <Button mr={3} isDisabled={!isConfirmEnabled} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme="red">
-                    {p.primaryButtonContent}
-                </Button>
-                <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
-                    {p.secondaryButtonContent}
-                </Button>
-            </ModalFooter>
-        </ModalContent>
-    </Modal>
-});
+export function openDeleteModal(transformName: string, onConfirm: () => void) {
+	openModal(ExplicitConfirmModal, {
+		title: <>Permanently delete transform {transformName}</>,
+		body: <>Deleting a transform cannot be undone.</>,
+		primaryButtonContent: <>Delete</>,
+		secondaryButtonContent: <>Cancel</>,
 
-export function openDeleteModal(
-    transformName: string,
-    onConfirm: () => void
-) {
+		onPrimaryButton: (closeModal) => {
+			onConfirm();
+			closeModal();
+		},
 
-    openModal(ExplicitConfirmModal, {
-        title: <>Permanently delete transform {transformName}</>,
-        body: <>
-            Deleting a transform cannot be undone.
-        </>,
-        primaryButtonContent: <>Delete</>,
-        secondaryButtonContent: <>Cancel</>,
-
-        onPrimaryButton: (closeModal) => {
-            onConfirm();
-            closeModal();
-        },
-
-        onSecondaryButton: (closeModal) => {
-            closeModal();
-        },
-    });
-
+		onSecondaryButton: (closeModal) => {
+			closeModal();
+		},
+	});
 }

@@ -5,69 +5,98 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
+import type {
+	BinaryReadOptions,
+	FieldList,
+	JsonReadOptions,
+	JsonValue,
+	PartialMessage,
+	PlainMessage,
+} from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { BadRequest, ErrorInfo, Help, QuotaFailure } from "../../../../google/rpc/error_details_pb";
+import {
+	BadRequest,
+	ErrorInfo,
+	Help,
+	QuotaFailure,
+} from "../../../../google/rpc/error_details_pb";
 import { DeployTransformRequest } from "./transform_pb";
 
 /**
  * @generated from message redpanda.api.dataplane.v1alpha1.DummyMethodResponse
  */
 export class DummyMethodResponse extends Message<DummyMethodResponse> {
-  /**
-   * @generated from field: google.rpc.BadRequest bad_request = 1;
-   */
-  badRequest?: BadRequest;
+	/**
+	 * @generated from field: google.rpc.BadRequest bad_request = 1;
+	 */
+	badRequest?: BadRequest;
 
-  /**
-   * @generated from field: google.rpc.ErrorInfo error_info = 2;
-   */
-  errorInfo?: ErrorInfo;
+	/**
+	 * @generated from field: google.rpc.ErrorInfo error_info = 2;
+	 */
+	errorInfo?: ErrorInfo;
 
-  /**
-   * @generated from field: google.rpc.QuotaFailure quota_failure = 3;
-   */
-  quotaFailure?: QuotaFailure;
+	/**
+	 * @generated from field: google.rpc.QuotaFailure quota_failure = 3;
+	 */
+	quotaFailure?: QuotaFailure;
 
-  /**
-   * @generated from field: google.rpc.Help help = 4;
-   */
-  help?: Help;
+	/**
+	 * @generated from field: google.rpc.Help help = 4;
+	 */
+	help?: Help;
 
-  /**
-   * @generated from field: redpanda.api.dataplane.v1alpha1.DeployTransformRequest deploy_transform_request = 5;
-   */
-  deployTransformRequest?: DeployTransformRequest;
+	/**
+	 * @generated from field: redpanda.api.dataplane.v1alpha1.DeployTransformRequest deploy_transform_request = 5;
+	 */
+	deployTransformRequest?: DeployTransformRequest;
 
-  constructor(data?: PartialMessage<DummyMethodResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<DummyMethodResponse>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1alpha1.DummyMethodResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "bad_request", kind: "message", T: BadRequest },
-    { no: 2, name: "error_info", kind: "message", T: ErrorInfo },
-    { no: 3, name: "quota_failure", kind: "message", T: QuotaFailure },
-    { no: 4, name: "help", kind: "message", T: Help },
-    { no: 5, name: "deploy_transform_request", kind: "message", T: DeployTransformRequest },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName =
+		"redpanda.api.dataplane.v1alpha1.DummyMethodResponse";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "bad_request", kind: "message", T: BadRequest },
+		{ no: 2, name: "error_info", kind: "message", T: ErrorInfo },
+		{ no: 3, name: "quota_failure", kind: "message", T: QuotaFailure },
+		{ no: 4, name: "help", kind: "message", T: Help },
+		{
+			no: 5,
+			name: "deploy_transform_request",
+			kind: "message",
+			T: DeployTransformRequest,
+		},
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DummyMethodResponse {
-    return new DummyMethodResponse().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): DummyMethodResponse {
+		return new DummyMethodResponse().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DummyMethodResponse {
-    return new DummyMethodResponse().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): DummyMethodResponse {
+		return new DummyMethodResponse().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DummyMethodResponse {
-    return new DummyMethodResponse().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): DummyMethodResponse {
+		return new DummyMethodResponse().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: DummyMethodResponse | PlainMessage<DummyMethodResponse> | undefined, b: DummyMethodResponse | PlainMessage<DummyMethodResponse> | undefined): boolean {
-    return proto3.util.equals(DummyMethodResponse, a, b);
-  }
+	static equals(
+		a: DummyMethodResponse | PlainMessage<DummyMethodResponse> | undefined,
+		b: DummyMethodResponse | PlainMessage<DummyMethodResponse> | undefined,
+	): boolean {
+		return proto3.util.equals(DummyMethodResponse, a, b);
+	}
 }
-

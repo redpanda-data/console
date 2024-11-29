@@ -3,7 +3,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
+import type {
+	BinaryReadOptions,
+	FieldList,
+	JsonReadOptions,
+	JsonValue,
+	PartialMessage,
+	PlainMessage,
+} from "@bufbuild/protobuf";
 import { Any, Message, proto3 } from "@bufbuild/protobuf";
 import { Code } from "../../../../google/rpc/code_pb";
 
@@ -11,102 +18,102 @@ import { Code } from "../../../../google/rpc/code_pb";
  * @generated from enum redpanda.api.common.v1alpha1.Reason
  */
 export enum Reason {
-  /**
-   * @generated from enum value: REASON_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
+	/**
+	 * @generated from enum value: REASON_UNSPECIFIED = 0;
+	 */
+	UNSPECIFIED = 0,
 
-  /**
-   * The specified resource could not be found.
-   *
-   * @generated from enum value: REASON_RESOURCE_NOT_FOUND = 1;
-   */
-  RESOURCE_NOT_FOUND = 1,
+	/**
+	 * The specified resource could not be found.
+	 *
+	 * @generated from enum value: REASON_RESOURCE_NOT_FOUND = 1;
+	 */
+	RESOURCE_NOT_FOUND = 1,
 
-  /**
-   * The input provided with the request is invalid.
-   *
-   * @generated from enum value: REASON_INVALID_INPUT = 2;
-   */
-  INVALID_INPUT = 2,
+	/**
+	 * The input provided with the request is invalid.
+	 *
+	 * @generated from enum value: REASON_INVALID_INPUT = 2;
+	 */
+	INVALID_INPUT = 2,
 
-  /**
-   * Authentication token is missing.
-   *
-   * @generated from enum value: REASON_NO_AUTHENTICATION_TOKEN = 3;
-   */
-  NO_AUTHENTICATION_TOKEN = 3,
+	/**
+	 * Authentication token is missing.
+	 *
+	 * @generated from enum value: REASON_NO_AUTHENTICATION_TOKEN = 3;
+	 */
+	NO_AUTHENTICATION_TOKEN = 3,
 
-  /**
-   * The authentication token provided has expired.
-   *
-   * @generated from enum value: REASON_AUTHENTICATION_TOKEN_EXPIRED = 4;
-   */
-  AUTHENTICATION_TOKEN_EXPIRED = 4,
+	/**
+	 * The authentication token provided has expired.
+	 *
+	 * @generated from enum value: REASON_AUTHENTICATION_TOKEN_EXPIRED = 4;
+	 */
+	AUTHENTICATION_TOKEN_EXPIRED = 4,
 
-  /**
-   * The authentication token provided is invalid.
-   *
-   * @generated from enum value: REASON_AUTHENTICATION_TOKEN_INVALID = 5;
-   */
-  AUTHENTICATION_TOKEN_INVALID = 5,
+	/**
+	 * The authentication token provided is invalid.
+	 *
+	 * @generated from enum value: REASON_AUTHENTICATION_TOKEN_INVALID = 5;
+	 */
+	AUTHENTICATION_TOKEN_INVALID = 5,
 
-  /**
-   * The user does not have the necessary permissions.
-   *
-   * @generated from enum value: REASON_PERMISSION_DENIED = 6;
-   */
-  PERMISSION_DENIED = 6,
+	/**
+	 * The user does not have the necessary permissions.
+	 *
+	 * @generated from enum value: REASON_PERMISSION_DENIED = 6;
+	 */
+	PERMISSION_DENIED = 6,
 
-  /**
-   * The request cannot be completed due to server error.
-   *
-   * @generated from enum value: REASON_SERVER_ERROR = 7;
-   */
-  SERVER_ERROR = 7,
+	/**
+	 * The request cannot be completed due to server error.
+	 *
+	 * @generated from enum value: REASON_SERVER_ERROR = 7;
+	 */
+	SERVER_ERROR = 7,
 
-  /**
-   * The request rate is too high.
-   *
-   * @generated from enum value: REASON_TOO_MANY_REQUESTS = 8;
-   */
-  TOO_MANY_REQUESTS = 8,
+	/**
+	 * The request rate is too high.
+	 *
+	 * @generated from enum value: REASON_TOO_MANY_REQUESTS = 8;
+	 */
+	TOO_MANY_REQUESTS = 8,
 
-  /**
-   * The request timed out.
-   *
-   * @generated from enum value: REASON_TIMEOUT = 9;
-   */
-  TIMEOUT = 9,
+	/**
+	 * The request timed out.
+	 *
+	 * @generated from enum value: REASON_TIMEOUT = 9;
+	 */
+	TIMEOUT = 9,
 
-  /**
-   * The feature is not configured.
-   *
-   * @generated from enum value: REASON_FEATURE_NOT_CONFIGURED = 10;
-   */
-  FEATURE_NOT_CONFIGURED = 10,
+	/**
+	 * The feature is not configured.
+	 *
+	 * @generated from enum value: REASON_FEATURE_NOT_CONFIGURED = 10;
+	 */
+	FEATURE_NOT_CONFIGURED = 10,
 
-  /**
-   * The feature is not supported in the requested environment.
-   *
-   * @generated from enum value: REASON_FEATURE_NOT_SUPPORTED = 11;
-   */
-  FEATURE_NOT_SUPPORTED = 11,
+	/**
+	 * The feature is not supported in the requested environment.
+	 *
+	 * @generated from enum value: REASON_FEATURE_NOT_SUPPORTED = 11;
+	 */
+	FEATURE_NOT_SUPPORTED = 11,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Reason)
 proto3.util.setEnumType(Reason, "redpanda.api.common.v1alpha1.Reason", [
-  { no: 0, name: "REASON_UNSPECIFIED" },
-  { no: 1, name: "REASON_RESOURCE_NOT_FOUND" },
-  { no: 2, name: "REASON_INVALID_INPUT" },
-  { no: 3, name: "REASON_NO_AUTHENTICATION_TOKEN" },
-  { no: 4, name: "REASON_AUTHENTICATION_TOKEN_EXPIRED" },
-  { no: 5, name: "REASON_AUTHENTICATION_TOKEN_INVALID" },
-  { no: 6, name: "REASON_PERMISSION_DENIED" },
-  { no: 7, name: "REASON_SERVER_ERROR" },
-  { no: 8, name: "REASON_TOO_MANY_REQUESTS" },
-  { no: 9, name: "REASON_TIMEOUT" },
-  { no: 10, name: "REASON_FEATURE_NOT_CONFIGURED" },
-  { no: 11, name: "REASON_FEATURE_NOT_SUPPORTED" },
+	{ no: 0, name: "REASON_UNSPECIFIED" },
+	{ no: 1, name: "REASON_RESOURCE_NOT_FOUND" },
+	{ no: 2, name: "REASON_INVALID_INPUT" },
+	{ no: 3, name: "REASON_NO_AUTHENTICATION_TOKEN" },
+	{ no: 4, name: "REASON_AUTHENTICATION_TOKEN_EXPIRED" },
+	{ no: 5, name: "REASON_AUTHENTICATION_TOKEN_INVALID" },
+	{ no: 6, name: "REASON_PERMISSION_DENIED" },
+	{ no: 7, name: "REASON_SERVER_ERROR" },
+	{ no: 8, name: "REASON_TOO_MANY_REQUESTS" },
+	{ no: 9, name: "REASON_TIMEOUT" },
+	{ no: 10, name: "REASON_FEATURE_NOT_CONFIGURED" },
+	{ no: 11, name: "REASON_FEATURE_NOT_SUPPORTED" },
 ]);
 
 /**
@@ -123,59 +130,70 @@ proto3.util.setEnumType(Reason, "redpanda.api.common.v1alpha1.Reason", [
  * @generated from message redpanda.api.common.v1alpha1.ErrorStatus
  */
 export class ErrorStatus extends Message<ErrorStatus> {
-  /**
-   * The status code, which should be an enum value of
-   * [google.rpc.Code][google.rpc.Code].
-   *
-   * @generated from field: google.rpc.Code code = 1;
-   */
-  code = Code.OK;
+	/**
+	 * The status code, which should be an enum value of
+	 * [google.rpc.Code][google.rpc.Code].
+	 *
+	 * @generated from field: google.rpc.Code code = 1;
+	 */
+	code = Code.OK;
 
-  /**
-   * A developer-facing error message, which should be in English. Any
-   * user-facing error message should be localized and sent in the
-   * [google.rpc.Status.details][google.rpc.Status.details] field, or localized
-   * by the client.
-   *
-   * @generated from field: string message = 2;
-   */
-  message = "";
+	/**
+	 * A developer-facing error message, which should be in English. Any
+	 * user-facing error message should be localized and sent in the
+	 * [google.rpc.Status.details][google.rpc.Status.details] field, or localized
+	 * by the client.
+	 *
+	 * @generated from field: string message = 2;
+	 */
+	message = "";
 
-  /**
-   * A list of messages that carry the error details.  There is a common set of
-   * message types for APIs to use.
-   *
-   * @generated from field: repeated google.protobuf.Any details = 3;
-   */
-  details: Any[] = [];
+	/**
+	 * A list of messages that carry the error details.  There is a common set of
+	 * message types for APIs to use.
+	 *
+	 * @generated from field: repeated google.protobuf.Any details = 3;
+	 */
+	details: Any[] = [];
 
-  constructor(data?: PartialMessage<ErrorStatus>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
+	constructor(data?: PartialMessage<ErrorStatus>) {
+		super();
+		proto3.util.initPartial(data, this);
+	}
 
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.common.v1alpha1.ErrorStatus";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "code", kind: "enum", T: proto3.getEnumType(Code) },
-    { no: 2, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "details", kind: "message", T: Any, repeated: true },
-  ]);
+	static readonly runtime: typeof proto3 = proto3;
+	static readonly typeName = "redpanda.api.common.v1alpha1.ErrorStatus";
+	static readonly fields: FieldList = proto3.util.newFieldList(() => [
+		{ no: 1, name: "code", kind: "enum", T: proto3.getEnumType(Code) },
+		{ no: 2, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+		{ no: 3, name: "details", kind: "message", T: Any, repeated: true },
+	]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ErrorStatus {
-    return new ErrorStatus().fromBinary(bytes, options);
-  }
+	static fromBinary(
+		bytes: Uint8Array,
+		options?: Partial<BinaryReadOptions>,
+	): ErrorStatus {
+		return new ErrorStatus().fromBinary(bytes, options);
+	}
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ErrorStatus {
-    return new ErrorStatus().fromJson(jsonValue, options);
-  }
+	static fromJson(
+		jsonValue: JsonValue,
+		options?: Partial<JsonReadOptions>,
+	): ErrorStatus {
+		return new ErrorStatus().fromJson(jsonValue, options);
+	}
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ErrorStatus {
-    return new ErrorStatus().fromJsonString(jsonString, options);
-  }
+	static fromJsonString(
+		jsonString: string,
+		options?: Partial<JsonReadOptions>,
+	): ErrorStatus {
+		return new ErrorStatus().fromJsonString(jsonString, options);
+	}
 
-  static equals(a: ErrorStatus | PlainMessage<ErrorStatus> | undefined, b: ErrorStatus | PlainMessage<ErrorStatus> | undefined): boolean {
-    return proto3.util.equals(ErrorStatus, a, b);
-  }
+	static equals(
+		a: ErrorStatus | PlainMessage<ErrorStatus> | undefined,
+		b: ErrorStatus | PlainMessage<ErrorStatus> | undefined,
+	): boolean {
+		return proto3.util.equals(ErrorStatus, a, b);
+	}
 }
-

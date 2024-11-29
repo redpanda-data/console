@@ -3,42 +3,48 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeleteTransformRequest, DeleteTransformResponse, GetTransformRequest, GetTransformResponse, ListTransformsRequest, ListTransformsResponse } from "./transform_pb";
+import {
+	DeleteTransformRequest,
+	DeleteTransformResponse,
+	GetTransformRequest,
+	GetTransformResponse,
+	ListTransformsRequest,
+	ListTransformsResponse,
+} from "./transform_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * @generated from service redpanda.api.dataplane.v1alpha2.TransformService
  */
 export const TransformService = {
-  typeName: "redpanda.api.dataplane.v1alpha2.TransformService",
-  methods: {
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TransformService.ListTransforms
-     */
-    listTransforms: {
-      name: "ListTransforms",
-      I: ListTransformsRequest,
-      O: ListTransformsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TransformService.GetTransform
-     */
-    getTransform: {
-      name: "GetTransform",
-      I: GetTransformRequest,
-      O: GetTransformResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha2.TransformService.DeleteTransform
-     */
-    deleteTransform: {
-      name: "DeleteTransform",
-      I: DeleteTransformRequest,
-      O: DeleteTransformResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.dataplane.v1alpha2.TransformService",
+	methods: {
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TransformService.ListTransforms
+		 */
+		listTransforms: {
+			name: "ListTransforms",
+			I: ListTransformsRequest,
+			O: ListTransformsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TransformService.GetTransform
+		 */
+		getTransform: {
+			name: "GetTransform",
+			I: GetTransformRequest,
+			O: GetTransformResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha2.TransformService.DeleteTransform
+		 */
+		deleteTransform: {
+			name: "DeleteTransform",
+			I: DeleteTransformRequest,
+			O: DeleteTransformResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

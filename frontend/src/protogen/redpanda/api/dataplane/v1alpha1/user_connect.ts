@@ -3,7 +3,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateUserRequest, CreateUserResponse, DeleteUserRequest, DeleteUserResponse, ListUsersRequest, ListUsersResponse, UpdateUserRequest, UpdateUserResponse } from "./user_pb";
+import {
+	CreateUserRequest,
+	CreateUserResponse,
+	DeleteUserRequest,
+	DeleteUserResponse,
+	ListUsersRequest,
+	ListUsersResponse,
+	UpdateUserRequest,
+	UpdateUserResponse,
+} from "./user_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -11,48 +20,47 @@ import { MethodKind } from "@bufbuild/protobuf";
  * @deprecated
  */
 export const UserService = {
-  typeName: "redpanda.api.dataplane.v1alpha1.UserService",
-  methods: {
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.CreateUser
-     * @deprecated
-     */
-    createUser: {
-      name: "CreateUser",
-      I: CreateUserRequest,
-      O: CreateUserResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.UpdateUser
-     * @deprecated
-     */
-    updateUser: {
-      name: "UpdateUser",
-      I: UpdateUserRequest,
-      O: UpdateUserResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.ListUsers
-     * @deprecated
-     */
-    listUsers: {
-      name: "ListUsers",
-      I: ListUsersRequest,
-      O: ListUsersResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.DeleteUser
-     * @deprecated
-     */
-    deleteUser: {
-      name: "DeleteUser",
-      I: DeleteUserRequest,
-      O: DeleteUserResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.dataplane.v1alpha1.UserService",
+	methods: {
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.CreateUser
+		 * @deprecated
+		 */
+		createUser: {
+			name: "CreateUser",
+			I: CreateUserRequest,
+			O: CreateUserResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.UpdateUser
+		 * @deprecated
+		 */
+		updateUser: {
+			name: "UpdateUser",
+			I: UpdateUserRequest,
+			O: UpdateUserResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.ListUsers
+		 * @deprecated
+		 */
+		listUsers: {
+			name: "ListUsers",
+			I: ListUsersRequest,
+			O: ListUsersResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.UserService.DeleteUser
+		 * @deprecated
+		 */
+		deleteUser: {
+			name: "DeleteUser",
+			I: DeleteUserRequest,
+			O: DeleteUserResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

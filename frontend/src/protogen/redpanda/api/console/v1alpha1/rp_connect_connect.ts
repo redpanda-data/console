@@ -10,19 +10,18 @@ import { MethodKind } from "@bufbuild/protobuf";
  * @generated from service redpanda.api.console.v1alpha1.RedpandaConnectService
  */
 export const RedpandaConnectService = {
-  typeName: "redpanda.api.console.v1alpha1.RedpandaConnectService",
-  methods: {
-    /**
-     * LintConfig lists the given YAML config and returns all linting issues.
-     *
-     * @generated from rpc redpanda.api.console.v1alpha1.RedpandaConnectService.LintConfig
-     */
-    lintConfig: {
-      name: "LintConfig",
-      I: LintConfigRequest,
-      O: LintConfigResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.console.v1alpha1.RedpandaConnectService",
+	methods: {
+		/**
+		 * LintConfig lists the given YAML config and returns all linting issues.
+		 *
+		 * @generated from rpc redpanda.api.console.v1alpha1.RedpandaConnectService.LintConfig
+		 */
+		lintConfig: {
+			name: "LintConfig",
+			I: LintConfigRequest,
+			O: LintConfigResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

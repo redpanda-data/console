@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useMemo } from "react";
+import { useLocation } from "react-router-dom";
 
 /**
  * Custom hook for parsing pagination parameters from the URL search query.
@@ -17,22 +17,29 @@ import { useLocation } from 'react-router-dom';
  * // In a component using react-router
  * const { pageSize, pageIndex } = usePaginationParams(20);
  */
-const usePaginationParams = (defaultPageSize: number = 10, totalDataLength: number): { pageSize: number; pageIndex: number } => {
-    const { search} = useLocation();
+const usePaginationParams = (
+	defaultPageSize: number = 10,
+	totalDataLength: number,
+): { pageSize: number; pageIndex: number } => {
+	const { search } = useLocation();
 
-    return useMemo(() => {
-        const searchParams = new URLSearchParams(search);
-        const pageSize = searchParams.has('pageSize') ? Number(searchParams.get('pageSize')) : defaultPageSize;
-        const pageIndex = searchParams.has('page') ? Number(searchParams.get('page')) : 0;
-        const totalPages = Math.ceil(totalDataLength / pageSize);
+	return useMemo(() => {
+		const searchParams = new URLSearchParams(search);
+		const pageSize = searchParams.has("pageSize")
+			? Number(searchParams.get("pageSize"))
+			: defaultPageSize;
+		const pageIndex = searchParams.has("page")
+			? Number(searchParams.get("page"))
+			: 0;
+		const totalPages = Math.ceil(totalDataLength / pageSize);
 
-        const boundedPageIndex = Math.max(0, Math.min(pageIndex, totalPages - 1));
+		const boundedPageIndex = Math.max(0, Math.min(pageIndex, totalPages - 1));
 
-        return {
-            pageSize,
-            pageIndex: boundedPageIndex,
-        }
-    }, [search, defaultPageSize, totalDataLength])
+		return {
+			pageSize,
+			pageIndex: boundedPageIndex,
+		};
+	}, [search, defaultPageSize, totalDataLength]);
 };
 
 export default usePaginationParams;

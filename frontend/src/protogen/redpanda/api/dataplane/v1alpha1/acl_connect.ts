@@ -3,7 +3,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateACLRequest, CreateACLResponse, DeleteACLsRequest, DeleteACLsResponse, ListACLsRequest, ListACLsResponse } from "./acl_pb";
+import {
+	CreateACLRequest,
+	CreateACLResponse,
+	DeleteACLsRequest,
+	DeleteACLsResponse,
+	ListACLsRequest,
+	ListACLsResponse,
+} from "./acl_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -11,38 +18,37 @@ import { MethodKind } from "@bufbuild/protobuf";
  * @deprecated
  */
 export const ACLService = {
-  typeName: "redpanda.api.dataplane.v1alpha1.ACLService",
-  methods: {
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.ListACLs
-     * @deprecated
-     */
-    listACLs: {
-      name: "ListACLs",
-      I: ListACLsRequest,
-      O: ListACLsResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.CreateACL
-     * @deprecated
-     */
-    createACL: {
-      name: "CreateACL",
-      I: CreateACLRequest,
-      O: CreateACLResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.DeleteACLs
-     * @deprecated
-     */
-    deleteACLs: {
-      name: "DeleteACLs",
-      I: DeleteACLsRequest,
-      O: DeleteACLsResponse,
-      kind: MethodKind.Unary,
-    },
-  }
+	typeName: "redpanda.api.dataplane.v1alpha1.ACLService",
+	methods: {
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.ListACLs
+		 * @deprecated
+		 */
+		listACLs: {
+			name: "ListACLs",
+			I: ListACLsRequest,
+			O: ListACLsResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.CreateACL
+		 * @deprecated
+		 */
+		createACL: {
+			name: "CreateACL",
+			I: CreateACLRequest,
+			O: CreateACLResponse,
+			kind: MethodKind.Unary,
+		},
+		/**
+		 * @generated from rpc redpanda.api.dataplane.v1alpha1.ACLService.DeleteACLs
+		 * @deprecated
+		 */
+		deleteACLs: {
+			name: "DeleteACLs",
+			I: DeleteACLsRequest,
+			O: DeleteACLsResponse,
+			kind: MethodKind.Unary,
+		},
+	},
 } as const;
-

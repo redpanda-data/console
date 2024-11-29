@@ -9,91 +9,92 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-import { observer } from 'mobx-react';
-import { PageComponent, PageInitHelper } from '../Page';
-import { api } from '../../../state/backendApi';
-import { toJson } from '../../../utils/jsonUtils';
-import { appGlobal } from '../../../state/appGlobal';
-import { AdminUsers } from './Admin.Users';
-import { AdminRoles } from './Admin.Roles';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import Section from '../../misc/Section';
-import PageContent from '../../misc/PageContent';
-import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
-import { AdminDebugBundle } from './Admin.DebugBundle';
-import { AdminLicenses } from './Admin.Licenses';
-import { Features } from '../../../state/supportedFeatures';
-
+import React from "react";
+import { observer } from "mobx-react";
+import { PageComponent, PageInitHelper } from "../Page";
+import { api } from "../../../state/backendApi";
+import { toJson } from "../../../utils/jsonUtils";
+import { appGlobal } from "../../../state/appGlobal";
+import { AdminUsers } from "./Admin.Users";
+import { AdminRoles } from "./Admin.Roles";
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
+import Section from "../../misc/Section";
+import PageContent from "../../misc/PageContent";
+import { Alert, AlertIcon, Tabs } from "@redpanda-data/ui";
+import { AdminDebugBundle } from "./Admin.DebugBundle";
+import { AdminLicenses } from "./Admin.Licenses";
+import { Features } from "../../../state/supportedFeatures";
 
 @observer
 export default class AdminPage extends PageComponent {
+	initPage(p: PageInitHelper): void {
+		p.title = "Admin";
+		p.addBreadcrumb("Admin", "/admin");
 
+		this.refreshData(true);
+		appGlobal.onRefresh = () => this.refreshData(true);
+	}
 
-    initPage(p: PageInitHelper): void {
-        p.title = 'Admin';
-        p.addBreadcrumb('Admin', '/admin');
+	refreshData(force: boolean) {
+		api.refreshAdminInfo(force);
+		void api.refreshDebugBundleStatuses();
+	}
 
-        this.refreshData(true);
-        appGlobal.onRefresh = () => this.refreshData(true);
+	render() {
+		if (api.adminInfo === undefined) return DefaultSkeleton;
+		const hasAdminPermissions = api.adminInfo !== null;
 
-    }
+		const items = [
+			{
+				key: "users",
+				name: "Users",
+				component: <AdminUsers />,
+			},
+			{
+				key: "roles",
+				name: "Roles",
+				component: <AdminRoles />,
+			},
+			{
+				key: "permissionsDebug",
+				name: "Permissions debug",
+				component: (
+					<code>
+						<pre>{toJson(api.adminInfo, 4)}</pre>
+					</code>
+				),
+			},
+		];
 
-    refreshData(force: boolean) {
-        api.refreshAdminInfo(force);
-        void api.refreshDebugBundleStatuses();
-    }
+		if (api.userData?.canViewDebugBundle && Features.debugBundle) {
+			items.push({
+				key: "debugBundle",
+				name: "Debug bundle",
+				component: <AdminDebugBundle />,
+			});
+		}
 
-    render() {
-        if (api.adminInfo === undefined) return DefaultSkeleton;
-        const hasAdminPermissions = api.adminInfo !== null;
+		items.push({
+			key: "licenses",
+			name: "License details",
+			component: <AdminLicenses />,
+		});
 
-        const items = [
-            {
-                key: 'users',
-                name: 'Users',
-                component: <AdminUsers />
-            },
-            {
-                key: 'roles',
-                name: 'Roles',
-                component: <AdminRoles />
-            },
-            {
-                key: 'permissionsDebug',
-                name: 'Permissions debug',
-                component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
-            },
-        ]
-
-        if(api.userData?.canViewDebugBundle && Features.debugBundle) {
-            items.push({
-                key: 'debugBundle',
-                name: 'Debug bundle',
-                component: <AdminDebugBundle/>
-            });
-        }
-
-        items.push({
-            key: 'licenses',
-            name: 'License details',
-            component: <AdminLicenses />
-        })
-
-        return <PageContent>
-            <Section>
-                {hasAdminPermissions ?
-                    <Tabs size="lg" items={items} />
-
-                    : <div>
-                        <Alert status="error">
-                            <AlertIcon />
-                            You do not have the necessary permissions to view this page.
-                        </Alert>
-                    </div>
-                }
-            </Section>
-        </PageContent>
-
-    }
+		return (
+			<PageContent>
+				<Section>
+					{hasAdminPermissions ? (
+						<Tabs size="lg" items={items} />
+					) : (
+						<div>
+							<Alert status="error">
+								<AlertIcon />
+								You do not have the necessary permissions to view this page.
+							</Alert>
+						</div>
+					)}
+				</Section>
+			</PageContent>
+		);
+	}
 }
