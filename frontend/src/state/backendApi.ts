@@ -1071,12 +1071,19 @@ const apiStore = {
   },
 
   async refreshSchemaUsagesById(schemaId: number, force?: boolean): Promise<void> {
-    await cachedApiRequest<SchemaVersion[]>(
+    type SchemaNotConfiguredType = { isConfigured: false };
+    function isSchemaVersionArray(r: SchemaVersion[] | SchemaNotConfiguredType): r is SchemaVersion[] {
+      return Array.isArray(r);
+    }
+
+    await cachedApiRequest<SchemaVersion[] | { isConfigured: false }>(
       `${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`,
       force,
     ).then(
       (r) => {
-        this.schemaUsagesById.set(schemaId, r);
+        if (isSchemaVersionArray(r)) {
+          this.schemaUsagesById.set(schemaId, r);
+        }
       },
       (err) => {
         if (err instanceof Error) {
