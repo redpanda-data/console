@@ -25,9 +25,6 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
   [License_Type.ENTERPRISE]: 3,
 };
 
-const isAuthEnterpriseFeature = (feature: ListEnterpriseFeaturesResponse_Feature) =>
-  feature.name === 'sso' || feature.name === 'rbac';
-
 export const isEnterpriseFeatureUsed = (
   featureName: string,
   features: ListEnterpriseFeaturesResponse_Feature[],

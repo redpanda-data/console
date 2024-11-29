@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Link, Text } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect } from 'react';
 import {
@@ -20,7 +20,7 @@ import {
 } from './licenseUtils';
 
 const getLicenseAlertContentForFeature = (
-  featureName: 'rbac' | 'reassignPartitions',
+  _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
