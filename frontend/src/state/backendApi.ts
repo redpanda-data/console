@@ -1071,20 +1071,20 @@ const apiStore = {
   },
 
   async refreshSchemaUsagesById(schemaId: number, force?: boolean): Promise<void> {
-    type SchemaNotConfiguredType = { isConfigured: false }
+    type SchemaNotConfiguredType = { isConfigured: false };
     function isSchemaVersionArray(r: SchemaVersion[] | SchemaNotConfiguredType): r is SchemaVersion[] {
-        return Array.isArray(r)
+      return Array.isArray(r);
     }
 
     await cachedApiRequest<SchemaVersion[] | { isConfigured: false }>(
       `${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`,
       force,
     ).then(
-        (r) => {
-            if (isSchemaVersionArray(r)) {
-                this.schemaUsagesById.set(schemaId, r);
-            }
-        },
+      (r) => {
+        if (isSchemaVersionArray(r)) {
+          this.schemaUsagesById.set(schemaId, r);
+        }
+      },
       (err) => {
         if (err instanceof Error) {
           // Currently we don't get helpful status codes (502) so we have to inspect the message
