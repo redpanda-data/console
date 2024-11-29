@@ -12,38 +12,34 @@
 import { appGlobal } from '../state/appGlobal';
 
 export const queryToObj = (str: string) => {
-    const query = new URLSearchParams(str);
-    const obj = {} as Record<string, string>;
-    for (const [k, v] of query.entries())
-        obj[k] = v;
+  const query = new URLSearchParams(str);
+  const obj = {} as Record<string, string>;
+  for (const [k, v] of query.entries()) obj[k] = v;
 
-    return obj;
-}
-export const objToQuery = (obj: { [key: string]: any; }) => {
-    // '?' + queryString.stringify(obj, stringifyOptions)
-    const query = new URLSearchParams();
-    for (const [k, v] of Object.entries(obj)) {
-        if (v === null || v === undefined || v === '')
-            continue;
+  return obj;
+};
+export const objToQuery = (obj: { [key: string]: any }) => {
+  // '?' + queryString.stringify(obj, stringifyOptions)
+  const query = new URLSearchParams();
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === null || v === undefined || v === '') continue;
 
-        query.append(k, String(v));
-    }
-    return '?' + query.toString();
-}
-
+    query.append(k, String(v));
+  }
+  return `?${query.toString()}`;
+};
 
 // edit the current search query,
 // IFF you make any changes inside editFunction, it returns the stringified version of the search query
 export function editQuery(editFunction: (queryObject: Record<string, string | null | undefined>) => void) {
-    const currentObj = queryToObj(window.location.search);
-    editFunction(currentObj);
+  const currentObj = queryToObj(window.location.search);
+  editFunction(currentObj);
 
-    const newQuery = objToQuery(currentObj);
+  const newQuery = objToQuery(currentObj);
 
-    if (window.location.search != newQuery) {
-        //console.log(`changing search: (${window.location.search}) -> (${search})`);
-        appGlobal.history.location.search = newQuery;
-        appGlobal.history.replace(appGlobal.history.location);
-    }
+  if (window.location.search !== newQuery) {
+    //console.log(`changing search: (${window.location.search}) -> (${search})`);
+    appGlobal.history.location.search = newQuery;
+    appGlobal.history.replace(appGlobal.history.location);
+  }
 }
-

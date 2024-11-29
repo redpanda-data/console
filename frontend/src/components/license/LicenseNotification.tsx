@@ -1,67 +1,102 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { api } from '../../state/backendApi';
-import { getPrettyTimeToExpiration, licenseCanExpire, licenseIsExpired, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
-import { License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
+import {
+  getPrettyTimeToExpiration,
+  licenseCanExpire,
+  licenseIsExpired,
+  licenseSoonToExpire,
+  prettyLicenseType,
+} from './licenseUtils';
 
 export const LicenseNotification = observer(() => {
-    const location = useLocation();
-    const visibleExpiredEnterpriseLicenses = api.licenses.filter(licenseIsExpired).filter(license => license.type === License_Type.ENTERPRISE) ?? [];
-    const soonToExpireLicenses = api.licenses
-            .filter(license => licenseSoonToExpire(license))
-            .filter(license => licenseCanExpire(license))
-        ?? [];
+  const location = useLocation();
 
-    const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
-    const showEnterpriseFeaturesWarning = api.licenseViolation;
+  // This Global License Notification banner is used only for Enterprise licenses
+  // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
+  // Community Licenses can't expire at all.
+  const enterpriseLicenses = api.licenses.filter((license) => license.type === License_Type.ENTERPRISE);
 
-    if (api.licensesLoaded === undefined) {
-        return null;
-    }
+  const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
+  const soonToExpireLicenses = enterpriseLicenses.filter((license) => licenseSoonToExpire(license)) ?? [];
 
-    if (location.pathname === '/admin/upload-license') {
-        return null;
-    }
+  const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
 
-    if (!showSomeLicenseExpirationInfo && !showEnterpriseFeaturesWarning) {
-        return null;
-    }
+  if (api.licensesLoaded === undefined) {
+    return null;
+  }
 
-    const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter(x => x.enabled)
+  // For these paths, we don't need to show a notification banner because the pages themselves handle license management
+  if (location.pathname === '/admin/upload-license' || location.pathname === '/trial-expired') {
+    return null;
+  }
 
-    return (
-        <Box>
-            <Alert
-                mb={4}
-                status="warning"
-                variant="subtle"
-            >
-                <AlertIcon/>
-                <AlertDescription>
-                    {soonToExpireLicenses.length > 0 && <Box>
-                        {soonToExpireLicenses.map((license, idx) =>
-                            <Text key={idx}>Your {prettyLicenseType(license, true)} license is expiring in {getPrettyTimeToExpiration(license)}.</Text>
-                        )}
-                    </Box>}
+  if (!showSomeLicenseExpirationInfo && !api.licenseViolation) {
+    return null;
+  }
 
-                    {visibleExpiredEnterpriseLicenses.length > 0 && <Box>
-                        {visibleExpiredEnterpriseLicenses.map((license, idx) =>
-                            <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>
-                        )}
-                    </Box>}
+  const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter((x) => x.enabled);
 
-                    {showEnterpriseFeaturesWarning && <Text>
-                        You're using Enterprise {activeEnterpriseFeatures.length === 1 ? 'feature' : 'features'} <strong>{activeEnterpriseFeatures.map(x => x.name).join(', ')}</strong> in your connected Redpanda cluster. {activeEnterpriseFeatures.length === 1 ? 'This feature requires a license' : 'These features require a license'}.
-                    </Text>}
+  const visibleSoonToExpireLicenses =
+    soonToExpireLicenses.length > 1 && new Set(soonToExpireLicenses.map((x) => x.expiresAt)).size === 1
+      ? soonToExpireLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
+      : soonToExpireLicenses;
 
-                    <Flex gap={2} my={2}>
-                        {api.isAdminApiConfigured && <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button>}
-                        {soonToExpireLicenses.length > 0 && <Button variant="outline" size="sm" as="a" target="_blank" href="https://redpanda.com/license-request">Renew license</Button>}
-                        {showEnterpriseFeaturesWarning && <Button variant="outline" size="sm" as="a" target="_blank" href="https://www.redpanda.com/try-redpanda">Request a trial</Button>}
-                    </Flex>
-                </AlertDescription>
-            </Alert>
-        </Box>
-    );
+  const visibleExpiredLicenses =
+    visibleExpiredEnterpriseLicenses.length > 1 &&
+    new Set(visibleExpiredEnterpriseLicenses.map((x) => x.expiresAt)).size === 1
+      ? visibleExpiredEnterpriseLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
+      : visibleExpiredEnterpriseLicenses;
+
+  return (
+    <Box>
+      <Alert mb={4} status="info" variant="subtle">
+        <AlertIcon />
+        <AlertDescription>
+          {visibleSoonToExpireLicenses.length > 0 && (
+            <Box>
+              {visibleSoonToExpireLicenses.map((license, idx) => (
+                <Text key={idx}>
+                  Your {prettyLicenseType(license, true)} license is expiring in {getPrettyTimeToExpiration(license)}.
+                </Text>
+              ))}
+            </Box>
+          )}
+
+          {visibleExpiredLicenses.length > 0 && (
+            <Box>
+              {visibleExpiredLicenses.map((license, idx) => (
+                <Text key={idx}>Your {prettyLicenseType(license, true)} license has expired.</Text>
+              ))}
+            </Box>
+          )}
+
+          {api.licenseViolation && (
+            <Text>
+              You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
+              <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
+              cluster.{' '}
+              {activeEnterpriseFeatures.length === 1
+                ? 'This feature requires a license'
+                : 'These features require a license'}
+              .
+            </Text>
+          )}
+
+          <Flex gap={2} my={2}>
+            {api.isAdminApiConfigured && (
+              <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">
+                Upload license
+              </Button>
+            )}
+            <Button variant="outline" size="sm" as="a" target="_blank" href="https://support.redpanda.com/">
+              Request a license
+            </Button>
+          </Flex>
+        </AlertDescription>
+      </Alert>
+    </Box>
+  );
 });

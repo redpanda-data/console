@@ -9,64 +9,69 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import AclList from './AclList';
 import { observable } from 'mobx';
-import { AclStrOperation, AclStrPermission, AclStrResourceType, GetAclOverviewResponse } from '../../../../state/restInterfaces';
+import React from 'react';
+import type {
+  AclStrOperation,
+  AclStrPermission,
+  AclStrResourceType,
+  GetAclOverviewResponse,
+} from '../../../../state/restInterfaces';
+import AclList from './AclList';
 
 it('renders an empty table when no data is present', () => {
-    const store = observable({
-        isAuthorizerEnabled: true,
-        aclResources: [],
-    });
+  const store = observable({
+    isAuthorizerEnabled: true,
+    aclResources: [],
+  });
 
-    render(<AclList acl={store} />);
-    expect(screen.getByText('No Data')).toBeInTheDocument();
+  render(<AclList acl={store} />);
+  expect(screen.getByText('No Data')).toBeInTheDocument();
 });
 
 it('a table with one entry', () => {
-    const store = observable({
-        isAuthorizerEnabled: true,
-        aclResources: [
-            {
-                resourceType: 'Topic' as AclStrResourceType,
-                resourceName: 'Test Topic',
-                resourcePatternType: 'Unknown',
-                acls: [
-                    {
-                        principal: 'test principal',
-                        host: '*',
-                        operation: 'All' as AclStrOperation,
-                        permissionType: 'Allow' as AclStrPermission,
-                    },
-                ],
-            },
+  const store = observable({
+    isAuthorizerEnabled: true,
+    aclResources: [
+      {
+        resourceType: 'Topic' as AclStrResourceType,
+        resourceName: 'Test Topic',
+        resourcePatternType: 'Unknown',
+        acls: [
+          {
+            principal: 'test principal',
+            host: '*',
+            operation: 'All' as AclStrOperation,
+            permissionType: 'Allow' as AclStrPermission,
+          },
         ],
-    } as GetAclOverviewResponse);
+      },
+    ],
+  } as GetAclOverviewResponse);
 
-    render(<AclList acl={store} />);
+  render(<AclList acl={store} />);
 
-    expect(screen.getByText('Topic')).toBeInTheDocument();
-    expect(screen.getByText('Test Topic')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('test principal')).toBeInTheDocument();
-    expect(screen.getByText('Any')).toBeInTheDocument();
-    expect(screen.getByText('All')).toBeInTheDocument();
-    expect(screen.getByText('Allow')).toBeInTheDocument();
+  expect(screen.getByText('Topic')).toBeInTheDocument();
+  expect(screen.getByText('Test Topic')).toBeInTheDocument();
+  expect(screen.getByText('1')).toBeInTheDocument();
+  expect(screen.getByText('test principal')).toBeInTheDocument();
+  expect(screen.getByText('Any')).toBeInTheDocument();
+  expect(screen.getByText('All')).toBeInTheDocument();
+  expect(screen.getByText('Allow')).toBeInTheDocument();
 });
 
 it('informs user about missing permission to view ACLs', () => {
-    render(<AclList acl={null} />);
-    expect(screen.getByText('You do not have the necessary permissions to view ACLs')).toBeInTheDocument();
+  render(<AclList acl={null} />);
+  expect(screen.getByText('You do not have the necessary permissions to view ACLs')).toBeInTheDocument();
 });
 
 it('informs user about missing authorizer config in Kafka cluster', () => {
-    const store = observable({
-        isAuthorizerEnabled: false,
-        aclResources: [],
-    });
+  const store = observable({
+    isAuthorizerEnabled: false,
+    aclResources: [],
+  });
 
-    render(<AclList acl={store} />);
-    expect(screen.getByText('There\'s no authorizer configured in your Kafka cluster')).toBeInTheDocument();
+  render(<AclList acl={store} />);
+  expect(screen.getByText("There's no authorizer configured in your Kafka cluster")).toBeInTheDocument();
 });

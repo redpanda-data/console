@@ -642,6 +642,16 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
    */
   brokerStatuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] = [];
 
+  /**
+   * true if any of the brokers have debug bundle process
+   * status regardless of error state
+   * false if we get "debug bundle process not started" error
+   * for all brokers
+   *
+   * @generated from field: bool has_debug_process = 2;
+   */
+  hasDebugProcess = false;
+
   constructor(data?: PartialMessage<GetDebugBundleStatusResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -651,6 +661,7 @@ export class GetDebugBundleStatusResponse extends Message<GetDebugBundleStatusRe
   static readonly typeName = "redpanda.api.console.v1alpha1.GetDebugBundleStatusResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "broker_statuses", kind: "message", T: GetDebugBundleStatusResponse_DebugBundleBrokerStatus, repeated: true },
+    { no: 2, name: "has_debug_process", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDebugBundleStatusResponse {

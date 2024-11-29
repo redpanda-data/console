@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateConnectSecretRequest, CreateConnectSecretResponse, CreateSecretRequest, CreateSecretResponse, DeleteConnectSecretRequest, DeleteConnectSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetConnectSecretRequest, GetConnectSecretResponse, GetSecretRequest, GetSecretResponse, ListConnectSecretsRequest, ListConnectSecretsResponse, ListSecretsRequest, ListSecretsResponse, UpdateConnectSecretRequest, UpdateConnectSecretResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
+import { CreateConnectSecretRequest, CreateConnectSecretResponse, CreateSecretRequest, CreateSecretResponse, DeleteConnectSecretRequest, DeleteConnectSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetConnectSecretRequest, GetConnectSecretResponse, GetSecretRequest, GetSecretResponse, ListConnectSecretsRequest, ListConnectSecretsResponse, ListSecretScopesRequest, ListSecretScopesResponse, ListSecretsRequest, ListSecretsResponse, UpdateConnectSecretRequest, UpdateConnectSecretResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -65,6 +65,17 @@ export const SecretService = {
       name: "DeleteSecret",
       I: DeleteSecretRequest,
       O: DeleteSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListSecretScopes lists the supported secret scopes.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha2.SecretService.ListSecretScopes
+     */
+    listSecretScopes: {
+      name: "ListSecretScopes",
+      I: ListSecretScopesRequest,
+      O: ListSecretScopesResponse,
       kind: MethodKind.Unary,
     },
     /**

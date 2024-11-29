@@ -2,8 +2,8 @@
 
 ## v2.8.0-beta.1
 
-- [FEATURE] Add debug bundle support to Console, enabling Console to now generate cluster wide debug bundles.
-- [CHANGE] Improve Redpanda license checks.
+- [FEATURE] Add debug bundle support, enabling Console to now generate cluster wide debug bundles on Redpanda clusters.
+- [CHANGE] Ability to upload Redpanda enterprise licenses via Console, as well as loading licenses from a Redpanda cluster.
 - [CHANGE] Move to rspack/rsbuild.
 - [IMPROVEMENT] Add support for CBOR payload deserialization.
 - [IMPROVEMENT] Make git max clone depth configurable.

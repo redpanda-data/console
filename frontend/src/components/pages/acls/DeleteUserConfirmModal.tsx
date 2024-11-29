@@ -9,18 +9,28 @@
  * by the Apache License, Version 2.0
  */
 
-import { FC } from 'react';
-import { Text, ConfirmItemDeleteModal } from '@redpanda-data/ui';
-
+import { ConfirmItemDeleteModal, Text } from '@redpanda-data/ui';
+import type { FC } from 'react';
 
 export const DeleteUserConfirmModal: FC<{
-    userName: string;
-    onConfirm: () => void;
-    buttonEl: React.ReactElement
+  userName: string;
+  onConfirm: () => void;
+  buttonEl: React.ReactElement;
 }> = ({ userName, onConfirm, buttonEl }) => {
-    return (
-        <ConfirmItemDeleteModal heading={'Delete user ' + userName} itemType="user" trigger={buttonEl} primaryActionLabel="Delete" secondaryActionLabel="Cancel" onConfirm={onConfirm} inputMatchText={userName}>
-            <Text>This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need to be recreated and reassigned to them to be used again. To confirm, type the user name in the box below.</Text>
-        </ConfirmItemDeleteModal>
-    )
-}
+  return (
+    <ConfirmItemDeleteModal
+      heading={`Delete user ${userName}`}
+      itemType="user"
+      trigger={buttonEl}
+      primaryActionLabel="Delete"
+      secondaryActionLabel="Cancel"
+      onConfirm={onConfirm}
+      inputMatchText={userName}
+    >
+      <Text>
+        This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need to
+        be recreated and reassigned to them to be used again. To confirm, type the user name in the box below.
+      </Text>
+    </ConfirmItemDeleteModal>
+  );
+};

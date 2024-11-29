@@ -16,7 +16,7 @@ export interface HiddenRadioOption<ValueType> {
   checked?: boolean;
   disabled?: boolean;
   value: ValueType;
-  render: (option: HiddenRadioOption<ValueType>) => JSX.Element
+  render: (option: HiddenRadioOption<ValueType>) => JSX.Element;
 }
 
 export interface HiddenRadioListProps<ValueType> {
@@ -27,27 +27,35 @@ export interface HiddenRadioListProps<ValueType> {
   disabled?: boolean;
 }
 
-export function HiddenRadioList<ValueType>({options, name, onChange, value, ...rest}: HiddenRadioListProps<ValueType>) {
+export function HiddenRadioList<ValueType>({
+  options,
+  name,
+  onChange,
+  value,
+  ...rest
+}: HiddenRadioListProps<ValueType>) {
   const allDisabled = rest.disabled ?? false;
 
-  return (<ul className={styles.radioCardGroup}>
-    {options.map((option, i) => {
-      const checked = (option.value === value || option.checked) ?? false;
-      const disabled = (allDisabled || option.disabled) ?? false;
-      return (
+  return (
+    <ul className={styles.radioCardGroup}>
+      {options.map((option, i) => {
+        const checked = (option.value === value || option.checked) ?? false;
+        const disabled = (allDisabled || option.disabled) ?? false;
+        return (
           <li key={i}>
             <label>
               <input
-                  type="radio"
-                  name={name}
-                  onChange={() => onChange(option.value)}
-                  checked={checked}
-                  disabled={disabled}
+                type="radio"
+                name={name}
+                onChange={() => onChange(option.value)}
+                checked={checked}
+                disabled={disabled}
               />
-              {option.render({...option, checked, disabled})}
+              {option.render({ ...option, checked, disabled })}
             </label>
           </li>
-      );
-    })}
-  </ul>);
+        );
+      })}
+    </ul>
+  );
 }

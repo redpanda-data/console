@@ -166,6 +166,12 @@ message GetDebugBundleStatusResponse {
   }
 
   repeated DebugBundleBrokerStatus broker_statuses = 1;
+
+  // true if any of the brokers have debug bundle process
+  // status regardless of error state
+  // false if we get "debug bundle process not started" error
+  // for all brokers
+  bool has_debug_process = 2;
 }
 
 message CancelDebugBundleProcessRequest {
