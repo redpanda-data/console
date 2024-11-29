@@ -2,8 +2,9 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "useDefineForClassFields": true,
-    "target": "es2019",
+    "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["vitest/globals"],
     "emitDecoratorMetadata": true,
     "allowJs": true,
     "skipLibCheck": true,
@@ -17,8 +18,13 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": "src",
+    "incremental": true,
     "strictPropertyInitialization": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": false // needs to remain false because of Class components
   },
   "include": ["src"],
   "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts"],
