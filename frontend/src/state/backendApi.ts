@@ -1094,11 +1094,14 @@ const apiStore = {
 
         let subjectVersions = this.schemaReferencedBy.get(subjectName);
         if (!subjectVersions) {
+          // @ts-ignore MobX does not play nice with TypeScript 5: Type 'ObservableMap<number, SchemaReferencedByEntry[]>' is not assignable to type 'Map<number, SchemaReferencedByEntry[]>'.
           subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
-          this.schemaReferencedBy.set(subjectName, subjectVersions);
+          if (subjectVersions) {
+            this.schemaReferencedBy.set(subjectName, subjectVersions);
+          }
         }
 
-        subjectVersions.set(version, cleanedReferences);
+        subjectVersions?.set(version, cleanedReferences);
       })
       .catch(() => {});
   },

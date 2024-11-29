@@ -48,7 +48,7 @@
     "@tanstack/react-query": "^5.61.5",
     "array-move": "^4",
     "framer-motion": "^7",
-    "js-base64": "^3.7.5",
+    "js-base64": "^3.7.7",
     "mobx": "^6.10",
     "mobx-react": "^7.6",
     "moment": "^2.29.4",
@@ -98,7 +98,7 @@
     "node-fetch": "^3.3.0",
     "tar-stream": "^2.2.0",
     "ts-node": "^10.9",
-    "typescript": "^4.9.5",
+    "typescript": "^5.7.2",
     "vite-plugin-env-compatible": "^2.0.1",
     "vite-tsconfig-paths": "^5.1.3",
     "vitest": "^2.1.6"

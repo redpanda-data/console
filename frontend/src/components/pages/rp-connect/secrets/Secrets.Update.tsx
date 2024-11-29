@@ -50,6 +50,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
         this.props.secretId,
         new UpdateSecretRequest({
           id: this.props.secretId,
+          // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
           secretData: base64ToUInt8Array(encodeBase64(this.secret)),
           scopes: [Scope.REDPANDA_CONNECT],
         }),
