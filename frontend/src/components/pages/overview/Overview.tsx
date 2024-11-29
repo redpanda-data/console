@@ -289,11 +289,11 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
       <GridItem>{firstLeft}</GridItem>
       <GridItem>{firstRight}</GridItem>
 
-      {rest?.map(([left, right], idx) => (
+      {rest?.map((item, idx) => (
         <React.Fragment key={idx}>
           <GridItem />
-          <GridItem>{left}</GridItem>
-          <GridItem>{right}</GridItem>
+          <GridItem>{item?.[0]}</GridItem>
+          <GridItem>{item?.[1]}</GridItem>
         </React.Fragment>
       ))}
     </>

@@ -398,7 +398,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const isHighWatermark = offsetOption === 'highWatermark';
   const isTimestamp = offsetOption === 'timestamp';
 
-  const handleFinish = async (responseData: DeleteRecordsResponseData | null | undefined) => {
+  // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
+  const handleFinish = async (responseData: void | DeleteRecordsResponseData | null | undefined) => {
     if (responseData == null) {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;

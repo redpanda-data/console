@@ -1632,7 +1632,7 @@ const PayloadComponent = observer(
   },
 );
 
-function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
+function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
   const elements: ReactNode[] = [];
   // To reduce the number of JSX elements we try to append normal chars to a single string
   // until we hit a control character.

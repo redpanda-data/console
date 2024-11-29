@@ -197,7 +197,7 @@ const KafkaConnectorMain = observer(
               component: (
                 <Box mt="8">
                   <Box maxWidth="800px">
-                    <ConfigPage connectorStore={connectorStore} context="EDIT" />
+                    {connectorStore && <ConfigPage connectorStore={connectorStore} context="EDIT" />}
                   </Box>
 
                   {/* Update Config Button */}
@@ -214,7 +214,10 @@ const KafkaConnectorMain = observer(
                         isDisabled={(() => {
                           if (!canEdit) return true;
                           if (!connector) return true;
-                          if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
+                          const connectorConfigObject = connectorStore?.getConfigObject();
+                          if (connectorConfigObject && comparer.shallow(connector.config, connectorConfigObject)) {
+                            return true;
+                          }
                         })()}
                         onClick={() => {
                           $state.updatingConnector = { clusterName, connectorName };
@@ -551,7 +554,7 @@ const ConnectorDetails = observer(
   }) => {
     const store = p.connectClusterStore.getConnectorStore(p.connector.name);
 
-    const allProps = [...store.propsByName.values()];
+    const allProps = [...(store?.propsByName.values() ?? [])];
 
     const items = allProps
       .filter((x) => {
@@ -566,7 +569,7 @@ const ConnectorDetails = observer(
       })
       .orderBy((x) => {
         let i = 0;
-        for (const s of store.connectorStepDefinitions)
+        for (const s of store?.connectorStepDefinitions ?? [])
           for (const g of s.groups)
             for (const p of g.config_keys) {
               if (p === x.name) return i;
@@ -742,7 +745,7 @@ const LogsTab = observer(
               <ExpandedMessage
                 msg={original}
                 loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest?.topicName, original.partitionID, original.offset)
+                  loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
                 }
               />
             )}

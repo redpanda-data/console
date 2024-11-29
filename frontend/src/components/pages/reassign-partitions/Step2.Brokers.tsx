@@ -29,7 +29,7 @@ export class StepSelectBrokers extends Component<{
 
   constructor(props: any) {
     super(props);
-    this.brokers = api.clusterInfo?.brokers;
+    this.brokers = api.clusterInfo?.brokers ?? [];
   }
 
   render() {
