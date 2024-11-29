@@ -5,7 +5,7 @@ import {
   type UnaryRequest,
   createPromiseClient,
   ConnectError,
-  Code
+  Code,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { type Monaco, loader } from '@monaco-editor/react';
@@ -59,31 +59,30 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
  *
  */
 const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-    try {
-        return await next(req);
-    } catch (error) {
-        if (error instanceof ConnectError) {
-            if (error.code === Code.FailedPrecondition) {
-                for (const detail of error.details) {
-                    // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-                    if(detail?.type && detail?.debug) {
-                        if (
-                            // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-                            detail.type === 'google.rpc.ErrorInfo' &&
-                            // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-                            detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
-                        ) {
-                           appGlobal.history.replace('/trial-expired')
-                        }
-                    }
-                }
+  try {
+    return await next(req);
+  } catch (error) {
+    if (error instanceof ConnectError) {
+      if (error.code === Code.FailedPrecondition) {
+        for (const detail of error.details) {
+          // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+          if (detail?.type && detail?.debug) {
+            if (
+              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+              detail.type === 'google.rpc.ErrorInfo' &&
+              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+              detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
+            ) {
+              appGlobal.history.replace('/trial-expired');
             }
+          }
         }
-        // Re-throw the error to ensure it's handled by other interceptors or the calling code
-        throw error;
+      }
     }
+    // Re-throw the error to ensure it's handled by other interceptors or the calling code
+    throw error;
+  }
 };
-
 
 export interface SetConfigArguments {
   fetch?: WindowOrWorkerGlobalScope['fetch'];

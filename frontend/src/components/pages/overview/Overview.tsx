@@ -21,7 +21,7 @@ import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
 import './Overview.scss';
 import {
-    Badge,
+  Badge,
   Box,
   Button,
   DataTable,
@@ -43,8 +43,11 @@ import colors from '../../../colors';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
-import { getEnterpriseCTALink, isLicenseWithEnterpriseAccess, licensesToSimplifiedPreview } from '../../license/licenseUtils';
-
+import {
+  getEnterpriseCTALink,
+  isLicenseWithEnterpriseAccess,
+  licensesToSimplifiedPreview,
+} from '../../license/licenseUtils';
 
 @observer
 class Overview extends PageComponent {
@@ -106,8 +109,8 @@ class Overview extends PageComponent {
 
     return (
       <Box>
-          <OverviewLicenseNotification />
-          <PageContent className="overviewGrid">
+        <OverviewLicenseNotification />
+        <PageContent className="overviewGrid">
           <Section py={5} my={4}>
             <Flex>
               <Statistic
@@ -415,16 +418,20 @@ function ClusterDetails() {
         }
       />
 
-      {!api.isRedpanda && !api.licenses.some(isLicenseWithEnterpriseAccess) && <>
-            <GridItem />
-            <GridItem colSpan={{base: 1, lg: 2}}>
-                <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
-                    <Badge variant="info"><Text textDecoration="underline">Redpanda Enterprise trial available</Text></Badge>
-                </Link>
-            </GridItem>
-        </>}
+      {!api.isRedpanda && !api.licenses.some(isLicenseWithEnterpriseAccess) && (
+        <>
+          <GridItem />
+          <GridItem colSpan={{ base: 1, lg: 2 }}>
+            <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
+              <Badge variant="info">
+                <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
+              </Badge>
+            </Link>
+          </GridItem>
+        </>
+      )}
 
-        {api.isRedpanda && api.isAdminApiConfigured && (
+      {api.isRedpanda && api.isAdminApiConfigured && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>

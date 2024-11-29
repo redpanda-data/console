@@ -69,7 +69,6 @@ import {
 } from './logic/utils';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 
-
 export interface PartitionSelection {
   // Which partitions are selected?
   [topicName: string]: number[]; // topicName -> array of partitionIds
@@ -219,13 +218,16 @@ class ReassignPartitions extends PageComponent {
           <PageContent>
             <FeatureLicenseNotification featureName="reassignPartitions" />
 
-                {/* Statistics */}
-                <Section py={4}>
-                        <Flex>
-                        <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
-                        <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
-                        <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
-                        <Statistic title="Total Partitions" value={partitionCountLeaders != null && partitionCountOnlyReplicated != null
+            {/* Statistics */}
+            <Section py={4}>
+              <Flex>
+                <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
+                <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
+                <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
+                <Statistic
+                  title="Total Partitions"
+                  value={
+                    partitionCountLeaders != null && partitionCountOnlyReplicated != null
                       ? partitionCountLeaders + partitionCountOnlyReplicated
                       : '...'
                   }

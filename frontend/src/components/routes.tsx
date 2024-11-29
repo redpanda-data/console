@@ -423,6 +423,5 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
   MakeRoute<{}>('/admin/:tab?', AdminPage, 'Admin'),
 
-  MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired')
-
+  MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 ].filterNull();

@@ -443,7 +443,7 @@ const RolesTab = observer(() => {
 
       <FeatureLicenseNotification featureName="rbac" />
 
-        <SearchField
+      <SearchField
         width="300px"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}

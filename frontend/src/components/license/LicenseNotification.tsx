@@ -12,26 +12,24 @@ import {
 } from './licenseUtils';
 
 export const LicenseNotification = observer(() => {
-    const location = useLocation();
+  const location = useLocation();
 
-    // This Global License Notification banner is used only for Enterprise licenses
-    // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
-    // Community Licenses can't expire at all.
-    const enterpriseLicenses = api.licenses.filter(license => license.type === License_Type.ENTERPRISE)
+  // This Global License Notification banner is used only for Enterprise licenses
+  // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
+  // Community Licenses can't expire at all.
+  const enterpriseLicenses = api.licenses.filter((license) => license.type === License_Type.ENTERPRISE);
 
-    const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
-    const soonToExpireLicenses = enterpriseLicenses
-            .filter(license => licenseSoonToExpire(license))
-        ?? [];
+  const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
+  const soonToExpireLicenses = enterpriseLicenses.filter((license) => licenseSoonToExpire(license)) ?? [];
 
-    const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
+  const showSomeLicenseExpirationInfo = visibleExpiredEnterpriseLicenses.length || soonToExpireLicenses.length;
 
   if (api.licensesLoaded === undefined) {
     return null;
   }
 
   // For these paths, we don't need to show a notification banner because the pages themselves handle license management
-    if (location.pathname === '/admin/upload-license' || location.pathname === '/trial-expired') {
+  if (location.pathname === '/admin/upload-license' || location.pathname === '/trial-expired') {
     return null;
   }
 
@@ -41,20 +39,20 @@ export const LicenseNotification = observer(() => {
 
   const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter((x) => x.enabled);
 
-  const visibleSoonToExpireLicenses = soonToExpireLicenses.length > 1 && new Set(soonToExpireLicenses.map(x => x.expiresAt)).size === 1 ?
-         soonToExpireLicenses.filter(x => x.source === License_Source.REDPANDA_CORE) : soonToExpireLicenses
+  const visibleSoonToExpireLicenses =
+    soonToExpireLicenses.length > 1 && new Set(soonToExpireLicenses.map((x) => x.expiresAt)).size === 1
+      ? soonToExpireLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
+      : soonToExpireLicenses;
 
-    const visibleExpiredLicenses = visibleExpiredEnterpriseLicenses.length > 1 && new Set(visibleExpiredEnterpriseLicenses.map(x => x.expiresAt)).size === 1 ?
-        visibleExpiredEnterpriseLicenses.filter(x => x.source === License_Source.REDPANDA_CORE) : visibleExpiredEnterpriseLicenses
+  const visibleExpiredLicenses =
+    visibleExpiredEnterpriseLicenses.length > 1 &&
+    new Set(visibleExpiredEnterpriseLicenses.map((x) => x.expiresAt)).size === 1
+      ? visibleExpiredEnterpriseLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
+      : visibleExpiredEnterpriseLicenses;
 
-
-
-
-    return (
-        <Box>
-            <Alert
-                mb={4}
-                status="info" variant="subtle">
+  return (
+    <Box>
+      <Alert mb={4} status="info" variant="subtle">
         <AlertIcon />
         <AlertDescription>
           {visibleSoonToExpireLicenses.length > 0 && (
@@ -87,12 +85,18 @@ export const LicenseNotification = observer(() => {
             </Text>
           )}
 
-                    <Flex gap={2} my={2}>
-                        {api.isAdminApiConfigured && <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">Upload license</Button>}
-                        <Button variant="outline" size="sm" as="a" target="_blank" href="https://support.redpanda.com/">Request a license</Button>
-                    </Flex>
-                </AlertDescription>
-            </Alert>
-        </Box>
-    );
+          <Flex gap={2} my={2}>
+            {api.isAdminApiConfigured && (
+              <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">
+                Upload license
+              </Button>
+            )}
+            <Button variant="outline" size="sm" as="a" target="_blank" href="https://support.redpanda.com/">
+              Request a license
+            </Button>
+          </Flex>
+        </AlertDescription>
+      </Alert>
+    </Box>
+  );
 });

@@ -92,7 +92,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
             },
           };
         } else if (r.status === 403) {
-          void handleExpiredLicenseError(r)
+          void handleExpiredLicenseError(r);
         }
       });
 
