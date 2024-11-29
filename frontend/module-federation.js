@@ -4,8 +4,8 @@ module.exports = {
     name: 'rp_console',
 
     exposes: {
-        './EmbeddedApp': './src/EmbeddedApp',
-        './injectApp': './src/injectApp',
+        './EmbeddedApp': './src/EmbeddedApp.tsx',
+        './injectApp': './src/injectApp.tsx',
         './config': './src/config.ts',
     },
 

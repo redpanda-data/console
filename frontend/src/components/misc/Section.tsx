@@ -9,20 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode } from 'react';
-import { ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
+import { type ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
+import React, { type ReactNode } from 'react';
 
 // Note: this component is intended to be temporary until all components are migrated @redpanda-data/ui
-function Section(props: { children: ReactNode; id?: string; } & ChakraProps) {
-    return <ChakraSection
-        px={6} py={6}
-
-        boxShadow="4px 4px 0px 0px rgb(0 0 0 / 10%)"
-        border="1px solid #C5CBD2"
-        borderRadius="8px"
-
-        {...props}
-    />;
+function Section(props: { children: ReactNode; id?: string } & ChakraProps) {
+  return (
+    <ChakraSection
+      px={6}
+      py={6}
+      boxShadow="4px 4px 0px 0px rgb(0 0 0 / 10%)"
+      border="1px solid #C5CBD2"
+      borderRadius="8px"
+      {...props}
+    />
+  );
 }
 
 export default Section;

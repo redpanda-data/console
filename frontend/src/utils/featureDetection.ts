@@ -9,4 +9,4 @@
  * by the Apache License, Version 2.0
  */
 
-export const isClipboardAvailable = Boolean(navigator?.clipboard)
+export const isClipboardAvailable = Boolean(navigator?.clipboard);

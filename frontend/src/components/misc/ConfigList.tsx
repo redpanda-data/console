@@ -11,113 +11,134 @@
 
 import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
 import colors from '../../colors';
-import { ConfigEntry } from '../../state/restInterfaces';
-import { ValueDisplay } from '../../state/ui';
+import type { ConfigEntry } from '../../state/restInterfaces';
+import type { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { equalsIgnoreCase } from '../../utils/utils';
 
 import styles from './ConfigList.module.scss';
 
-import { DataTable, Flex, Tooltip, Text, Box } from '@redpanda-data/ui';
-import { ColumnDef } from '@tanstack/react-table';
+import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
+import type { ColumnDef } from '@tanstack/react-table';
 
-export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay; renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
-    const allTypesUnknown = configEntries.all(x => equalsIgnoreCase(x.type, 'unknown'));
+export function ConfigList({
+  configEntries,
+  valueDisplay,
+  renderTooltip,
+}: {
+  configEntries: ConfigEntry[];
+  valueDisplay: ValueDisplay;
+  renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element;
+}) {
+  const allTypesUnknown = configEntries.all((x) => equalsIgnoreCase(x.type, 'unknown'));
 
-    const tableColumns: ColumnDef<ConfigEntry>[] = [
-        {
-            header: 'Configuration',
-            accessorKey: 'name',
-            cell: ({row: {original: record}}) => {
-                let name = (
-                    <Flex className={styles.nameText}>
-                        {record.name}
-                    </Flex>
-                );
-                if (renderTooltip) name = renderTooltip(record, name);
+  const tableColumns: ColumnDef<ConfigEntry>[] = [
+    {
+      header: 'Configuration',
+      accessorKey: 'name',
+      cell: ({ row: { original: record } }) => {
+        let name = <Flex className={styles.nameText}>{record.name}</Flex>;
+        if (renderTooltip) name = renderTooltip(record, name);
 
-                const sensitive = record.isSensitive && (
-                    <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
-                        <Box>
-                            <MdOutlineVisibilityOff color={colors.brandOrange}/>
-                        </Box>
-                    </Tooltip>
-                );
+        const sensitive = record.isSensitive && (
+          <Tooltip label="Value has been redacted because it's sensitive" placement="top" hasArrow>
+            <Box>
+              <MdOutlineVisibilityOff color={colors.brandOrange} />
+            </Box>
+          </Tooltip>
+        );
 
-                return (
-                    <div className={styles.name}>
-                        {name}
-                        <span className={styles.configFlags}>{sensitive}</span>
-                    </div>
-                );
-            }
-        },
-        {
-            header: 'Value',
-            accessorKey: 'value',
-            size: Infinity,
-            cell: ({row: {original: record}}) => <Text
-                wordBreak="break-all" whiteSpace="break-spaces"
-                className={styles.value}>{formatConfigValue(record.name, record.value, valueDisplay)}</Text>
-        },
-    ]
+        return (
+          <div className={styles.name}>
+            {name}
+            <span className={styles.configFlags}>{sensitive}</span>
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Value',
+      accessorKey: 'value',
+      size: Number.POSITIVE_INFINITY,
+      cell: ({ row: { original: record } }) => (
+        <Text wordBreak="break-all" whiteSpace="break-spaces" className={styles.value}>
+          {formatConfigValue(record.name, record.value, valueDisplay)}
+        </Text>
+      ),
+    },
+  ];
 
-    if (!allTypesUnknown) {
-        tableColumns.push({
-            header: 'Type',
-            size: 120,
-            accessorKey: 'type',
-            cell: ({row: {original: {type}}}) => <span className={styles.type}>{type?.toLowerCase()}</span>
-        })
-    }
-
+  if (!allTypesUnknown) {
     tableColumns.push({
-        id: 'source',
-        header: () => (
-            <span className={styles.sourceHeader}>
-                Source
-                <Tooltip
-                    label={
-                        <>
-                            <p>Resources can be configured at different levels. Example: A topic config may be inherited
-                                from the static broker config.</p>
-                            <p>Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic
-                                Broker Logger and Default config.</p>
-                        </>
-                    }
-                    placement="left"
-                    hasArrow
-                >
-                    <Box>
-                        <MdInfoOutline size={12} />
-                    </Box>
-                </Tooltip>
-            </span>
-        ),
-        size: 180,
-        accessorKey: 'source',
-        cell: ({row: {original: {source}}}) => <span
-            className={styles.source}>{source?.toLowerCase().split('_').join(' ')}</span>
-    })
+      header: 'Type',
+      size: 120,
+      accessorKey: 'type',
+      cell: ({
+        row: {
+          original: { type },
+        },
+      }) => <span className={styles.type}>{type?.toLowerCase()}</span>,
+    });
+  }
 
-    return (
-        <DataTable<ConfigEntry>
-            data={configEntries}
-            pagination={false}
-            sorting={false}
-            getRowCanExpand={row => (row.original.synonyms?.length ?? 0) > 0 }
-            subComponent={({row}) => {
-                if(!row.original.synonyms?.length) {
-                    return null
-                }
-                return <Box py={6} px={10}><DataTable<ConfigEntry>
-                    // @ts-ignore TODO - we need to fix types here and find a shared interface
-                    data={row.original.synonyms}
-                    columns={tableColumns}
-                /></Box>
-            }}
-            rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
-            columns={tableColumns}
-        />
-    );
+  tableColumns.push({
+    id: 'source',
+    header: () => (
+      <span className={styles.sourceHeader}>
+        Source
+        <Tooltip
+          label={
+            <>
+              <p>
+                Resources can be configured at different levels. Example: A topic config may be inherited from the
+                static broker config.
+              </p>
+              <p>
+                Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger
+                and Default config.
+              </p>
+            </>
+          }
+          placement="left"
+          hasArrow
+        >
+          <Box>
+            <MdInfoOutline size={12} />
+          </Box>
+        </Tooltip>
+      </span>
+    ),
+    size: 180,
+    accessorKey: 'source',
+    cell: ({
+      row: {
+        original: { source },
+      },
+    }) => <span className={styles.source}>{source?.toLowerCase().split('_').join(' ')}</span>,
+  });
+
+  return (
+    <DataTable<ConfigEntry>
+      data={configEntries}
+      pagination={false}
+      sorting={false}
+      getRowCanExpand={(row) => (row.original.synonyms?.length ?? 0) > 0}
+      subComponent={({ row }) => {
+        if (!row.original.synonyms?.length) {
+          return null;
+        }
+        return (
+          <Box py={6} px={10}>
+            <DataTable<ConfigEntry>
+              // @ts-ignore TODO - we need to fix types here and find a shared interface
+              data={row.original.synonyms}
+              columns={tableColumns}
+            />
+          </Box>
+        );
+      }}
+      rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
+      columns={tableColumns}
+    />
+  );
 }

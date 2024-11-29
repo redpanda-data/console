@@ -1,4 +1,4 @@
-import { License, License_Source, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { type License, License_Source, License_Type, ListEnterpriseFeaturesResponse_Feature } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
@@ -52,7 +52,8 @@ export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesRespon
  * @param {string} license.type - The type of the license (e.g., `COMMUNITY`).
  * @returns {boolean} - Returns `true` if the license is expired, otherwise `false`.
  */
-export const licenseIsExpired = (license: License): boolean => license.type !== License_Type.COMMUNITY && new Date(Number(license.expiresAt) * 1000) < new Date()
+export const licenseIsExpired = (license: License): boolean =>
+  license.type !== License_Type.COMMUNITY && new Date(Number(license.expiresAt) * 1000) < new Date();
 
 /**
  * Checks if a license is about to expire within a specified number of days.
@@ -64,23 +65,26 @@ export const licenseIsExpired = (license: License): boolean => license.type !== 
  * for `TRIAL` licenses and 30 days for `ENTERPRISE` licenses.
  * @returns {boolean} - Returns `true` if the license will expire within the specified number of days, otherwise `false`.
  */
-export const licenseSoonToExpire = (license: License, offsetInDays: Partial<Record<License_Type, number>> = {
+export const licenseSoonToExpire = (
+  license: License,
+  offsetInDays: Partial<Record<License_Type, number>> = {
     [License_Type.TRIAL]: 15,
     [License_Type.ENTERPRISE]: 30,
-}): boolean => {
-    const daysToExpire: number | undefined = offsetInDays[license.type]
+  },
+): boolean => {
+  const daysToExpire: number | undefined = offsetInDays[license.type];
 
-    if(daysToExpire === undefined) {
-        return false
-    }
+  if (daysToExpire === undefined) {
+    return false;
+  }
 
-    const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
-    const offsetInMilliseconds = daysToExpire * millisecondsInADay;
+  const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
+  const offsetInMilliseconds = daysToExpire * millisecondsInADay;
 
-    const timeToExpiration = getMillisecondsToExpiration(license);
+  const timeToExpiration = getMillisecondsToExpiration(license);
 
-    // Check if the license expires within the offset period
-    return timeToExpiration > 0 && timeToExpiration <= offsetInMilliseconds;
+  // Check if the license expires within the offset period
+  return timeToExpiration > 0 && timeToExpiration <= offsetInMilliseconds;
 };
 
 /**
@@ -120,23 +124,23 @@ export const getPrettyExpirationDate = (license: License): string => {
  * @returns {number} - The time remaining until expiration in milliseconds. If the license has already expired, returns 0.
  */
 export const getMillisecondsToExpiration = (license: License): number => {
-    const expirationDate = getExpirationDate(license);
-    const currentTime = new Date();
+  const expirationDate = getExpirationDate(license);
+  const currentTime = new Date();
 
-    const timeRemaining = expirationDate.getTime() - currentTime.getTime();
+  const timeRemaining = expirationDate.getTime() - currentTime.getTime();
 
-    return timeRemaining > 0 ? timeRemaining : 0;
+  return timeRemaining > 0 ? timeRemaining : 0;
 };
 
 export const getPrettyTimeToExpiration = (license: License) => {
-    const timeToExpiration = getMillisecondsToExpiration(license);
+  const timeToExpiration = getMillisecondsToExpiration(license);
 
-    if (timeToExpiration === 0) {
-        return 'License has expired';
-    }
+  if (timeToExpiration === 0) {
+    return 'License has expired';
+  }
 
-    return prettyMilliseconds(Math.abs(timeToExpiration), {unitCount: 1, verbose: true, secondsDecimalDigits: 0})
-}
+  return prettyMilliseconds(Math.abs(timeToExpiration), { unitCount: 1, verbose: true, secondsDecimalDigits: 0 });
+};
 
 /**
  * Returns a user-friendly string representing the type of a license.
@@ -150,20 +154,20 @@ export const getPrettyTimeToExpiration = (license: License) => {
  *                     - 'Trial' for `TRIAL`
  */
 export const prettyLicenseType = (license: License, showSource = false): string => {
-    const licenseType = ({
-        [License_Type.COMMUNITY]: 'Community',
-        [License_Type.UNSPECIFIED]: 'Unspecified',
-        [License_Type.ENTERPRISE]: 'Enterprise',
-        [License_Type.TRIAL]: 'Trial',
-    })[license.type];
+  const licenseType = {
+    [License_Type.COMMUNITY]: 'Community',
+    [License_Type.UNSPECIFIED]: 'Unspecified',
+    [License_Type.ENTERPRISE]: 'Enterprise',
+    [License_Type.TRIAL]: 'Trial',
+  }[license.type];
 
-    const sourceType = ({
-        [License_Source.UNSPECIFIED]: 'Unspecified',
-        [License_Source.REDPANDA_CONSOLE]: 'Console',
-        [License_Source.REDPANDA_CORE]: 'Redpanda',
-    })[license.source]
+  const sourceType = {
+    [License_Source.UNSPECIFIED]: 'Unspecified',
+    [License_Source.REDPANDA_CONSOLE]: 'Console',
+    [License_Source.REDPANDA_CORE]: 'Redpanda',
+  }[license.source];
 
-    return showSource ? `${sourceType} ${licenseType}` : licenseType
+  return showSource ? `${sourceType} ${licenseType}` : licenseType;
 };
 
 /**
@@ -176,11 +180,11 @@ export const prettyLicenseType = (license: License, showSource = false): string 
  * @returns {string} - A formatted expiration date string in the user's locale, or an empty string if the license is of type `COMMUNITY`.
  */
 export const prettyExpirationDate = (license: License): string => {
-    if (!licenseCanExpire(license)) {
-        return '';
-    }
+  if (!licenseCanExpire(license)) {
+    return '';
+  }
 
-    return new Date(Number(license.expiresAt) * 1000).toLocaleDateString();
+  return new Date(Number(license.expiresAt) * 1000).toLocaleDateString();
 };
 
 /**
@@ -191,8 +195,7 @@ export const prettyExpirationDate = (license: License): string => {
  * @param {License_Type} license.type - The type of the license.
  * @returns {boolean} - Returns `true` if the license type can expire, otherwise `false`.
  */
-export const licenseCanExpire = (license: License): boolean => license.type !== License_Type.COMMUNITY
-
+export const licenseCanExpire = (license: License): boolean => license.type !== License_Type.COMMUNITY;
 
 /**
  * Determines whether the given license grants access to enterprise-level features.
@@ -270,27 +273,29 @@ export const isLicenseWithEnterpriseAccess = (license: License): boolean => lice
  * // ]
  * ```
  */
-export const licensesToSimplifiedPreview = (licenses: License[]): Array<{
-    name: string;
-    expiresAt: string;
+export const licensesToSimplifiedPreview = (
+  licenses: License[],
+): Array<{
+  name: string;
+  expiresAt: string;
 }> => {
-    const groupedLicenses = licenses.groupBy(x => x.type)
+  const groupedLicenses = licenses.groupBy((x) => x.type);
 
-    return [...groupedLicenses.values()].map(licenses => {
-        const [firstLicenseToExpire] = licenses.orderBy(x => Number(x.expiresAt))
+  return [...groupedLicenses.values()].map((licenses) => {
+    const [firstLicenseToExpire] = licenses.orderBy((x) => Number(x.expiresAt));
 
-        if (licenses.length === 1) {
-            return {
-                name: prettyLicenseType(firstLicenseToExpire, true),
-                expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
-            };
-        }
-        return {
-            name: prettyLicenseType(firstLicenseToExpire, false),
-            expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
-        };
-    });
-}
+    if (licenses.length === 1) {
+      return {
+        name: prettyLicenseType(firstLicenseToExpire, true),
+        expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+      };
+    }
+    return {
+      name: prettyLicenseType(firstLicenseToExpire, false),
+      expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+    };
+  });
+};
 
 type EnterpriseLinkType = 'tryEnterprise' | 'upgrade'
 export const resolveEnterpriseCTALink = (

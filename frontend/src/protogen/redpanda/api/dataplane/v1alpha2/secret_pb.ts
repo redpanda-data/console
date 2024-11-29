@@ -618,6 +618,78 @@ export class DeleteSecretResponse extends Message<DeleteSecretResponse> {
 }
 
 /**
+ * ListSecretScopesRequest is the request of ListSecretScopes.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha2.ListSecretScopesRequest
+ */
+export class ListSecretScopesRequest extends Message<ListSecretScopesRequest> {
+  constructor(data?: PartialMessage<ListSecretScopesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.ListSecretScopesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSecretScopesRequest {
+    return new ListSecretScopesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSecretScopesRequest {
+    return new ListSecretScopesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSecretScopesRequest {
+    return new ListSecretScopesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSecretScopesRequest | PlainMessage<ListSecretScopesRequest> | undefined, b: ListSecretScopesRequest | PlainMessage<ListSecretScopesRequest> | undefined): boolean {
+    return proto3.util.equals(ListSecretScopesRequest, a, b);
+  }
+}
+
+/**
+ * ListSecretScopesResponse is the response of ListSecretScopes.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha2.ListSecretScopesResponse
+ */
+export class ListSecretScopesResponse extends Message<ListSecretScopesResponse> {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha2.Scope scopes = 1;
+   */
+  scopes: Scope[] = [];
+
+  constructor(data?: PartialMessage<ListSecretScopesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.ListSecretScopesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "scopes", kind: "enum", T: proto3.getEnumType(Scope), repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSecretScopesResponse {
+    return new ListSecretScopesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSecretScopesResponse {
+    return new ListSecretScopesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSecretScopesResponse {
+    return new ListSecretScopesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSecretScopesResponse | PlainMessage<ListSecretScopesResponse> | undefined, b: ListSecretScopesResponse | PlainMessage<ListSecretScopesResponse> | undefined): boolean {
+    return proto3.util.equals(ListSecretScopesResponse, a, b);
+  }
+}
+
+/**
  * GetConnectSecretRequest is the request of GetSecret.
  *
  * @generated from message redpanda.api.dataplane.v1alpha2.GetConnectSecretRequest
