@@ -40,14 +40,14 @@ import { FaCrown } from 'react-icons/fa';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';
-import { Statistic } from '../../misc/Statistic';
-import ClusterHealthOverview from './ClusterHealthOverview';
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
   licensesToSimplifiedPreview,
 } from '../../license/licenseUtils';
+import { Statistic } from '../../misc/Statistic';
+import ClusterHealthOverview from './ClusterHealthOverview';
 
 @observer
 class Overview extends PageComponent {

@@ -1,11 +1,11 @@
 import {
+  Code,
+  ConnectError,
   type Interceptor as ConnectRpcInterceptor,
   type PromiseClient,
   type StreamRequest,
   type UnaryRequest,
   createPromiseClient,
-  ConnectError,
-  Code,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { type Monaco, loader } from '@monaco-editor/react';
@@ -33,10 +33,10 @@ import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeli
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { SecretService as RPCNSecretService } from './protogen/redpanda/api/dataplane/v1alpha2/secret_connect';
+import { appGlobal } from './state/appGlobal';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
 import { AppFeatures, getBasePath } from './utils/env';
-import { appGlobal } from './state/appGlobal';
 
 declare const __webpack_public_path__: string;
 

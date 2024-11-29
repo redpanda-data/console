@@ -8,7 +8,6 @@ import {
   prettyLicenseType,
   resolveEnterpriseCTALink,
 } from './licenseUtils';
-
 import '../../utils/arrayExtensions';
 
 describe('licenseUtils', () => {
@@ -156,32 +155,32 @@ describe('licenseUtils', () => {
   });
 
   describe('resolveEnterpriseCTALink', () => {
-    it('should return the correct URL for tryEnterprise with query parameters', () => {
+    test('should return the correct URL for tryEnterprise with query parameters', () => {
       const result = resolveEnterpriseCTALink('tryEnterprise', '12345-uuid', true);
-      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_uuid=12345-uuid&platform=1');
+      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_id=12345-uuid&platform=1');
     });
 
-    it('should return the correct URL for upgrade with query parameters', () => {
+    test('should return the correct URL for upgrade with query parameters', () => {
       const result = resolveEnterpriseCTALink('upgrade', '67890-uuid', false);
-      expect(result).toBe('https://redpanda.com/upgrade?cluster_uuid=67890-uuid&platform=2');
+      expect(result).toBe('https://redpanda.com/upgrade?cluster_id=67890-uuid&platform=2');
     });
 
-    it('should encode special characters in query parameters', () => {
+    test('should encode special characters in query parameters', () => {
       const result = resolveEnterpriseCTALink('tryEnterprise', '12345&uuid', true);
-      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_uuid=12345%26uuid&platform=1');
+      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_id=12345%26uuid&platform=1');
     });
 
-    it('should throw an error for an invalid EnterpriseLinkType', () => {
+    test('should throw an error for an invalid EnterpriseLinkType', () => {
       // @ts-expect-error Testing invalid input
       expect(() => resolveEnterpriseCTALink('invalidType', '12345-uuid', true)).toThrow();
     });
 
-    it('should handle redpanda platform correctly', () => {
+    test('should handle redpanda platform correctly', () => {
       const result = resolveEnterpriseCTALink('tryEnterprise', '12345-uuid', true);
       expect(result).toContain('platform=1');
     });
 
-    it('should handle kafka platform correctly', () => {
+    test('should handle kafka platform correctly', () => {
       const result = resolveEnterpriseCTALink('upgrade', '12345-uuid', false);
       expect(result).toContain('platform=2');
     });

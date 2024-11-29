@@ -66,8 +66,8 @@ import {
 import type { AclPrincipalGroup } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
-import { UserRoleTags } from './UserPermissionAssignments';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
+import { UserRoleTags } from './UserPermissionAssignments';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({

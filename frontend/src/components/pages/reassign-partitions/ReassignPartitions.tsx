@@ -51,6 +51,7 @@ import { IsDev } from '../../../utils/env';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { scrollTo, scrollToTop } from '../../../utils/utils';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { showErrorModal } from '../../misc/ErrorModal';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
@@ -67,7 +68,6 @@ import {
   partitionSelectionToTopicPartitions,
   topicAssignmentsToReassignmentRequest,
 } from './logic/utils';
-import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 
 export interface PartitionSelection {
   // Which partitions are selected?

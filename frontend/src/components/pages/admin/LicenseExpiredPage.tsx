@@ -1,9 +1,9 @@
 import { Avatars, Box, Flex, Image, Link, Text, VStack } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { PageComponent } from '../Page';
-import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/licenseUtils';
+import { PageComponent } from '../Page';
 
 @observer
 export default class LicenseExpiredPage extends PageComponent {

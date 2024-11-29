@@ -1,14 +1,14 @@
+import { Button, Link } from '@redpanda-data/ui';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import {
   type License,
   License_Source,
   License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
+  type ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { prettyMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
-import { Button, Link } from '@redpanda-data/ui';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { prettyMilliseconds } from '../../utils/utils';
 
 enum Platform {
   PLATFORM_UNSPECIFIED = 0,
