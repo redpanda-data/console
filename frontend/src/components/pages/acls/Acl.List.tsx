@@ -430,6 +430,7 @@ const RolesTab = observer(() => {
       return false;
     }
   });
+  // @ts-ignore perhaps required for MobX?
   const _isLoading = rolesApi.roles == null;
 
   const rolesWithMembers = roles.map((r) => {

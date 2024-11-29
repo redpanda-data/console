@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
+import { Component } from 'react';
 import type { RoleBinding, Subject } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Accordion } from '@redpanda-data/ui';

@@ -14,7 +14,7 @@ import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, useState } from 'react';
+import { Component, useState } from 'react';
 import { DragDropContext, Draggable, type DropResult, Droppable, type ResponderProvided } from 'react-beautiful-dnd';
 
 @observer

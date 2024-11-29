@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { numberToThousandsString } from '../../utils/tsxUtils';
 
 export function ShortNum(p: { value: number; tooltip?: boolean; className?: string; style?: CSSProperties }) {

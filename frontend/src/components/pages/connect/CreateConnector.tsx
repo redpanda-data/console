@@ -33,7 +33,7 @@ import {
 } from '@redpanda-data/ui';
 import { comparer } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';

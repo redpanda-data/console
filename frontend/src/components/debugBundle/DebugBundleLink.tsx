@@ -1,5 +1,4 @@
 import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
-import React from 'react';
 import { MdDeleteOutline } from 'react-icons/md';
 import { config } from '../../config';
 import type {

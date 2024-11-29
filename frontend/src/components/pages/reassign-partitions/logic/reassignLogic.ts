@@ -612,6 +612,7 @@ function calcRange<T>(
  * if not useful simply delete them
  * */
 
+// @ts-ignore perhaps this is needed later on?
 function _dumpBrokerInfo(title: string, brokers: ExBroker[]) {
   console.log(title);
   console.table(

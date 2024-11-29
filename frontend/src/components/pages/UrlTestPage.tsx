@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { PageComponent, type PageInitHelper } from './Page';
 
 import { Checkbox } from '@redpanda-data/ui';

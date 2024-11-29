@@ -1585,7 +1585,7 @@ const apiStore = {
   async createConnector(
     clusterName: string,
     connectorName: string,
-    pluginClassName: string,
+    _pluginClassName: string, // needs to be kept to avoid larger refactor despite not being used.
     config: object,
   ): Promise<void> {
     // POST "/kafka-connect/clusters/{clusterName}/connectors"
@@ -2107,7 +2107,7 @@ export const rpcnSecretManagerApi = observable({
 
     await client.createSecret(secret);
   },
-  async update(id: string, updateSecretRequest: UpdateSecretRequest) {
+  async update(_id: string, updateSecretRequest: UpdateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 

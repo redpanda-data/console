@@ -10,7 +10,6 @@
  */
 
 import { observer } from 'mobx-react';
-import React from 'react';
 import { toJson } from '../../../../utils/jsonUtils';
 
 import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';

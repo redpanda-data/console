@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import styles from './HiddenRadioList.module.scss';
 
 export interface HiddenRadioOption<ValueType> {

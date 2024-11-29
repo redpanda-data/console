@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
+import { Component } from 'react';
 import type { uiSettings } from '../../../../state/ui';
 import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/numberExtensions';

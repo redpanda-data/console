@@ -15,7 +15,6 @@ import {
   createStandaloneToast,
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import React from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import EmptyConnectors from '../../../../assets/redpanda/EmptyConnectors.svg';
 import { DeleteSecretRequest, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';

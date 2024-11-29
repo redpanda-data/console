@@ -1,5 +1,4 @@
 import { Box, Button, Flex, Grid, Link, List, ListItem, Text } from '@redpanda-data/ui';
-import React from 'react';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';

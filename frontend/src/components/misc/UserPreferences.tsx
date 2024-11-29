@@ -29,7 +29,7 @@ import {
 } from '@redpanda-data/ui';
 import { transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { Component, type FC, useState } from 'react';
+import { Component, type FC, useState } from 'react';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 

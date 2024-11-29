@@ -9,11 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import React from 'react';
-
 import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
 import { type IReactionDisposer, autorun } from 'mobx';
+import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
