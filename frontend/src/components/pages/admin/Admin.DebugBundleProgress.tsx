@@ -9,102 +9,96 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from "mobx-react";
-import { api } from "../../../state/backendApi";
-import "../../../utils/arrayExtensions";
-import { makeObservable, observable } from "mobx";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
-import { Box, Button, Flex, Text } from "@redpanda-data/ui";
-import { PageComponent, PageInitHelper } from "../Page";
-import { appGlobal } from "../../../state/appGlobal";
-import DebugBundleOverview from "./DebugBundleOverview";
-import DebugBundleLink from "../../debugBundle/DebugBundleLink";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { observer } from 'mobx-react';
+import { api } from '../../../state/backendApi';
+import '../../../utils/arrayExtensions';
+import { makeObservable, observable } from 'mobx';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Box, Button, Flex, Text } from '@redpanda-data/ui';
+import { PageComponent, PageInitHelper } from '../Page';
+import { appGlobal } from '../../../state/appGlobal';
+import DebugBundleOverview from './DebugBundleOverview';
+import DebugBundleLink from '../../debugBundle/DebugBundleLink';
+import { Link as ReactRouterLink } from 'react-router-dom';
 
 @observer
 export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
-	@observable advancedForm = false;
-	@observable submitInProgress = false;
+  @observable advancedForm = false;
+  @observable submitInProgress = false;
 
-	@observable jobId: string | undefined = undefined;
+  @observable jobId: string | undefined = undefined;
 
-	initPage(p: PageInitHelper): void {
-		p.title = "Generate debug bundle";
-		p.addBreadcrumb("Admin", "/admin");
-		p.addBreadcrumb("Generate debug bundle", "/admin/debug-bundle/progress");
+  initPage(p: PageInitHelper): void {
+    p.title = 'Generate debug bundle';
+    p.addBreadcrumb('Admin', '/admin');
+    p.addBreadcrumb('Generate debug bundle', '/admin/debug-bundle/progress');
 
-		this.refreshData(true);
-		appGlobal.onRefresh = () => this.refreshData(true);
-	}
+    this.refreshData(true);
+    appGlobal.onRefresh = () => this.refreshData(true);
+  }
 
-	refreshData(force: boolean) {
-		api.refreshAdminInfo(force);
-		api.refreshDebugBundleStatuses();
-	}
+  refreshData(force: boolean) {
+    api.refreshAdminInfo(force);
+    api.refreshDebugBundleStatuses();
+  }
 
-	constructor(p: any) {
-		super(p);
-		makeObservable(this);
-	}
+  constructor(p: any) {
+    super(p);
+    makeObservable(this);
+  }
 
-	render() {
-		if (!api.adminInfo) return DefaultSkeleton;
+  render() {
+    if (!api.adminInfo) return DefaultSkeleton;
 
-		return (
-			<Box>
-				<Text>
-					Collect environment data that can help debug and diagnose issues with
-					a Redpanda cluster, a broker, or the machine it’s running on. This
-					will bundle the collected data into a ZIP file.
-				</Text>
+    return (
+      <Box>
+        <Text>
+          Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the
+          machine it’s running on. This will bundle the collected data into a ZIP file.
+        </Text>
 
-				{api.isDebugBundleInProgress && (
-					<Box mt={6}>
-						<Text>Generating bundle...</Text>
-					</Box>
-				)}
+        {api.isDebugBundleInProgress && (
+          <Box mt={6}>
+            <Text>Generating bundle...</Text>
+          </Box>
+        )}
 
-				{!api.isDebugBundleInProgress && (
-					<Box>
-						<Flex gap={2} my={2}>
-							<Text fontWeight="bold">Debug bundle complete:</Text>
-							{api.canDownloadDebugBundle && (
-								<DebugBundleLink
-									statuses={api.debugBundleStatuses}
-									showDatetime={false}
-								/>
-							)}
-						</Flex>
-					</Box>
-				)}
+        {!api.isDebugBundleInProgress && (
+          <Box>
+            <Flex gap={2} my={2}>
+              <Text fontWeight="bold">Debug bundle complete:</Text>
+              {api.canDownloadDebugBundle && (
+                <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
+              )}
+            </Flex>
+          </Box>
+        )}
 
-				{api.debugBundleStatuses && (
-					<DebugBundleOverview statuses={api.debugBundleStatuses} />
-				)}
+        {api.debugBundleStatuses && <DebugBundleOverview statuses={api.debugBundleStatuses} />}
 
-				<Box my={2}>
-					{api.isDebugBundleInProgress ? (
-						<Button
-							variant="outline"
-							onClick={() => {
-								api.debugBundleStatuses.forEach((status) => {
-									if (status.value.case === "bundleStatus") {
-										void api.cancelDebugBundleProcess({
-											jobId: status.value.value.jobId,
-										});
-									}
-								});
-							}}
-						>
-							Stop
-						</Button>
-					) : (
-						<Button variant="outline" as={ReactRouterLink} to="/admin">
-							Done
-						</Button>
-					)}
-				</Box>
-			</Box>
-		);
-	}
+        <Box my={2}>
+          {api.isDebugBundleInProgress ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                api.debugBundleStatuses.forEach((status) => {
+                  if (status.value.case === 'bundleStatus') {
+                    void api.cancelDebugBundleProcess({
+                      jobId: status.value.value.jobId,
+                    });
+                  }
+                });
+              }}
+            >
+              Stop
+            </Button>
+          ) : (
+            <Button variant="outline" as={ReactRouterLink} to="/admin">
+              Done
+            </Button>
+          )}
+        </Box>
+      </Box>
+    );
+  }
 }

@@ -13,9 +13,9 @@
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 declare namespace NodeJS {
-	interface Global {
-		value: any;
-	}
+  interface Global {
+    value: any;
+  }
 }
 
 global.value = {};

@@ -9,45 +9,45 @@
  * by the Apache License, Version 2.0
  */
 
-import { useState } from "react";
-import { Box, Icon, Text } from "@redpanda-data/ui";
-import { ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { useState } from 'react';
+import { Box, Icon, Text } from '@redpanda-data/ui';
+import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 
 export function ExpandableText(p: { children: string; maxChars: number }) {
-	const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-	const showExpander = p.children.length > p.maxChars;
+  const showExpander = p.children.length > p.maxChars;
 
-	const isTruncated = showExpander && !expanded;
-	const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
+  const isTruncated = showExpander && !expanded;
+  const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
 
-	return (
-		<Text>
-			{text}
+  return (
+    <Text>
+      {text}
 
-			{isTruncated && <>...</>}
+      {isTruncated && <>...</>}
 
-			{showExpander && (
-				<Box
-					display="inline"
-					onClick={() => setExpanded(!expanded)}
-					fontWeight="semibold"
-					cursor="pointer"
-					px="2"
-					userSelect="none"
-					mt="1px"
-				>
-					{expanded ? (
-						<span style={{ whiteSpace: "nowrap" }}>
-							less <Icon as={ChevronUpIcon} />
-						</span>
-					) : (
-						<span style={{ whiteSpace: "nowrap" }}>
-							more <Icon as={ChevronDownIcon} />
-						</span>
-					)}
-				</Box>
-			)}
-		</Text>
-	);
+      {showExpander && (
+        <Box
+          display="inline"
+          onClick={() => setExpanded(!expanded)}
+          fontWeight="semibold"
+          cursor="pointer"
+          px="2"
+          userSelect="none"
+          mt="1px"
+        >
+          {expanded ? (
+            <span style={{ whiteSpace: 'nowrap' }}>
+              less <Icon as={ChevronUpIcon} />
+            </span>
+          ) : (
+            <span style={{ whiteSpace: 'nowrap' }}>
+              more <Icon as={ChevronDownIcon} />
+            </span>
+          )}
+        </Box>
+      )}
+    </Text>
+  );
 }

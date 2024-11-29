@@ -9,32 +9,32 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from "mobx-react";
-import AppFooter from "../layout/Footer";
-import AppPageHeader from "../layout/Header";
-import { ErrorDisplay } from "../misc/ErrorDisplay";
-import { renderErrorModals } from "../misc/ErrorModal";
-import { RouteView } from "../routes";
-import { ModalContainer } from "../../utils/ModalContainer";
-import { LicenseNotification } from "../license/LicenseNotification";
+import { observer } from 'mobx-react';
+import AppFooter from '../layout/Footer';
+import AppPageHeader from '../layout/Header';
+import { ErrorDisplay } from '../misc/ErrorDisplay';
+import { renderErrorModals } from '../misc/ErrorModal';
+import { RouteView } from '../routes';
+import { ModalContainer } from '../../utils/ModalContainer';
+import { LicenseNotification } from '../license/LicenseNotification';
 
 export const AppContent = observer(() => (
-	<div id="mainLayout">
-		{/* Page */}
-		<LicenseNotification />
-		<ModalContainer />
-		<AppPageHeader />
+  <div id="mainLayout">
+    {/* Page */}
+    <LicenseNotification />
+    <ModalContainer />
+    <AppPageHeader />
 
-		<ErrorDisplay>
-			<RouteView />
-		</ErrorDisplay>
+    <ErrorDisplay>
+      <RouteView />
+    </ErrorDisplay>
 
-		<AppFooter />
+    <AppFooter />
 
-		{/* Currently disabled, read todo comment on UpdatePopup */}
-		{/* <UpdatePopup /> */}
-		{renderErrorModals()}
-	</div>
+    {/* Currently disabled, read todo comment on UpdatePopup */}
+    {/* <UpdatePopup /> */}
+    {renderErrorModals()}
+  </div>
 ));
 
 export default AppContent;

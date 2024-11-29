@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { Topic } from "../../../state/restInterfaces";
-import "../../../utils/arrayExtensions";
-import { api } from "../../../state/backendApi";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkEmoji from "remark-emoji";
-import { uriTransformer as baseUriTransformer } from "react-markdown";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { observer } from "mobx-react";
-import { Button, Empty, VStack } from "@redpanda-data/ui";
+import React, { Component } from 'react';
+import { Topic } from '../../../state/restInterfaces';
+import '../../../utils/arrayExtensions';
+import { api } from '../../../state/backendApi';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkEmoji from 'remark-emoji';
+import { uriTransformer as baseUriTransformer } from 'react-markdown';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { observer } from 'mobx-react';
+import { Button, Empty, VStack } from '@redpanda-data/ui';
 
 // Test for link sanitizer
 /*
@@ -32,133 +32,120 @@ My nonsuspious link
 </a>
 */
 
-const allowedProtocols = ["http://", "https://", "mailto://"];
+const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
-function sanitizeUrl(
-	uri: string,
-	_children?: any,
-	_title?: string | null,
-): string {
-	const baseTransformed = baseUriTransformer(uri);
-	if (baseTransformed != uri) return baseTransformed;
+function sanitizeUrl(uri: string, _children?: any, _title?: string | null): string {
+  const baseTransformed = baseUriTransformer(uri);
+  if (baseTransformed != uri) return baseTransformed;
 
-	const cleanedUri = uri.trim().toLocaleLowerCase();
+  const cleanedUri = uri.trim().toLocaleLowerCase();
 
-	for (const p of allowedProtocols)
-		if (cleanedUri.startsWith(p)) {
-			return uri;
-		}
+  for (const p of allowedProtocols)
+    if (cleanedUri.startsWith(p)) {
+      return uri;
+    }
 
-	return ""; // didn't match any allowed protocol, remove the link
+  return ''; // didn't match any allowed protocol, remove the link
 }
 
 @observer
 export class TopicDocumentation extends Component<{ topic: Topic }> {
-	private components = {
-		code({ inline, className, children, ...props }: any) {
-			const match = /language-(\w+)/.exec(className || "");
-			return !inline && match ? (
-				<SyntaxHighlighter
-					style={vs}
-					customStyle={{
-						"background-color": null,
-						border: null,
-						margin: null,
-						padding: null,
-					}}
-					PreTag="div"
-					language={match[1]}
-					children={String(children).replace(/\n$/, "")}
-					{...props}
-				/>
-			) : (
-				<code className={className} {...props}>
-					{children}
-				</code>
-			);
-		},
-	};
+  private components = {
+    code({ inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={vs}
+          customStyle={{
+            'background-color': null,
+            border: null,
+            margin: null,
+            padding: null,
+          }}
+          PreTag="div"
+          language={match[1]}
+          children={String(children).replace(/\n$/, '')}
+          {...props}
+        />
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
+  };
 
-	render() {
-		const docu = api.topicDocumentation.get(this.props.topic.topicName);
-		if (docu === undefined) return DefaultSkeleton; // not yet loaded
-		if (!docu.isEnabled) return errorNotConfigured;
+  render() {
+    const docu = api.topicDocumentation.get(this.props.topic.topicName);
+    if (docu === undefined) return DefaultSkeleton; // not yet loaded
+    if (!docu.isEnabled) return errorNotConfigured;
 
-		const markdown = docu?.text;
-		if (markdown === null || markdown === undefined) return errorNotFound;
+    const markdown = docu?.text;
+    if (markdown === null || markdown === undefined) return errorNotFound;
 
-		if (markdown === "") return errorEmpty;
+    if (markdown === '') return errorEmpty;
 
-		return (
-			<div className="topicDocumentation">
-				<ReactMarkdown
-					components={this.components}
-					remarkPlugins={[remarkGfm, remarkEmoji]}
-					children={markdown}
-					skipHtml={false}
-					transformLinkUri={sanitizeUrl}
-				/>
-			</div>
-		);
-	}
+    return (
+      <div className="topicDocumentation">
+        <ReactMarkdown
+          components={this.components}
+          remarkPlugins={[remarkGfm, remarkEmoji]}
+          children={markdown}
+          skipHtml={false}
+          transformLinkUri={sanitizeUrl}
+        />
+      </div>
+    );
+  }
 }
 
 const errorNotConfigured = renderDocuError(
-	"Not Configured",
-	<>
-		<p>Topic Documentation is not configured in Redpanda Console.</p>
-		<p>
-			Provide the connection credentials in the Redpanda Console config, to
-			fetch and display docmentation for the topics.
-		</p>
-	</>,
+  'Not Configured',
+  <>
+    <p>Topic Documentation is not configured in Redpanda Console.</p>
+    <p>
+      Provide the connection credentials in the Redpanda Console config, to fetch and display docmentation for the
+      topics.
+    </p>
+  </>,
 );
 const errorNotFound = renderDocuError(
-	"Not Found",
-	<>
-		<p>No documentation file was found for this topic.</p>
-		<ul style={{ listStyle: "none" }}>
-			<li>
-				Ensure the Git connection to the documentation repository is configured
-				correctly in the Redpanda Console backend.
-			</li>
-			<li>
-				Ensure that a markdown file (named just like the topic) exists in the
-				repository.
-			</li>
-		</ul>
-	</>,
+  'Not Found',
+  <>
+    <p>No documentation file was found for this topic.</p>
+    <ul style={{ listStyle: 'none' }}>
+      <li>
+        Ensure the Git connection to the documentation repository is configured correctly in the Redpanda Console
+        backend.
+      </li>
+      <li>Ensure that a markdown file (named just like the topic) exists in the repository.</li>
+    </ul>
+  </>,
 );
 const errorEmpty = renderDocuError(
-	"Empty",
-	<>
-		<p>The documentation file is empty.</p>
-		<p>
-			In case you just changed the file, keep in mind that Redpanda Console will
-			only
-			<br />
-			periodically check the documentation repo for changes (every minute by
-			default).
-		</p>
-	</>,
+  'Empty',
+  <>
+    <p>The documentation file is empty.</p>
+    <p>
+      In case you just changed the file, keep in mind that Redpanda Console will only
+      <br />
+      periodically check the documentation repo for changes (every minute by default).
+    </p>
+  </>,
 );
 
 // todo: use common renderError function everywhere
 // todo: use <MotionAlways> for them
 function renderDocuError(title: string, body: JSX.Element) {
-	return (
-		<motion.div {...animProps} key={"b"} style={{ margin: "2rem 1rem" }}>
-			<VStack gap={4}>
-				<Empty description={title} />
-				{body}
-				<a
-					target="_blank"
-					rel="noopener noreferrer"
-					href="https://docs.redpanda.com/docs/manage/console/"
-				>
-					<Button variant="solid">Redpanda Console Documentation</Button>
-				</a>
-			</VStack>
-		</motion.div>
-	);
+  return (
+    <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
+      <VStack gap={4}>
+        <Empty description={title} />
+        {body}
+        <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+          <Button variant="solid">Redpanda Console Documentation</Button>
+        </a>
+      </VStack>
+    </motion.div>
+  );
 }

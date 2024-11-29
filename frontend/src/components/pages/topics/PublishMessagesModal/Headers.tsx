@@ -9,93 +9,91 @@
  * by the Apache License, Version 2.0
  */
 
-import { PlusIcon, TrashIcon } from "@primer/octicons-react";
-import { observer } from "mobx-react";
-import "./headersEditor.scss";
-import { Button, Input } from "@redpanda-data/ui";
+import { PlusIcon, TrashIcon } from '@primer/octicons-react';
+import { observer } from 'mobx-react';
+import './headersEditor.scss';
+import { Button, Input } from '@redpanda-data/ui';
 
 interface Header {
-	key: string;
-	value: string;
+  key: string;
+  value: string;
 }
 
 export interface Props {
-	items: Header[];
+  items: Header[];
 }
 const HeadersEditor = observer((p: Props): JSX.Element => {
-	return (
-		<div className="headersEditor">
-			<table>
-				<thead>
-					<tr>
-						<th className="index">#</th>
-						<th className="name">Header Name</th>
-						<th className="value">Value</th>
-						<th className="actions">Action</th>
-					</tr>
-				</thead>
-				<tbody>
-					{p.items.map((h, i) => (
-						<HeaderComp key={String(i)} list={p.items} header={h} index={i} />
-					))}
-				</tbody>
-			</table>
-			<Button
-				variant="outline"
-				width="100%"
-				onClick={() => {
-					p.items.push({ key: "", value: "" });
-				}}
-			>
-				<span style={{ opacity: 0.66 }}>
-					<PlusIcon size="small" />
-				</span>
-				Add Row
-			</Button>
-		</div>
-	);
+  return (
+    <div className="headersEditor">
+      <table>
+        <thead>
+          <tr>
+            <th className="index">#</th>
+            <th className="name">Header Name</th>
+            <th className="value">Value</th>
+            <th className="actions">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {p.items.map((h, i) => (
+            <HeaderComp key={String(i)} list={p.items} header={h} index={i} />
+          ))}
+        </tbody>
+      </table>
+      <Button
+        variant="outline"
+        width="100%"
+        onClick={() => {
+          p.items.push({ key: '', value: '' });
+        }}
+      >
+        <span style={{ opacity: 0.66 }}>
+          <PlusIcon size="small" />
+        </span>
+        Add Row
+      </Button>
+    </div>
+  );
 });
 export default HeadersEditor;
 
-const HeaderComp = observer(
-	(p: { list: Header[]; header: Header; index: number }) => {
-		const { key, value } = p.header;
-		return (
-			<tr>
-				<td className="index">{p.index + 1}</td>
-				<td className="name">
-					<Input
-						placeholder="Key"
-						borderRightRadius="0"
-						spellCheck={false}
-						value={key}
-						onChange={(e) => (p.header.key = e.target.value)}
-					/>
-				</td>
-				<td className="value">
-					<Input
-						placeholder="Value"
-						spellCheck={false}
-						value={value}
-						onChange={(e) => (p.header.value = e.target.value)}
-					/>
-				</td>
-				<td className="actions">
-					<Button
-						variant="ghost"
-						className="iconButton"
-						onClick={(event) => {
-							event.stopPropagation();
-							p.list.remove(p.header);
-						}}
-					>
-						<TrashIcon size={20} />
-					</Button>
-				</td>
-			</tr>
-		);
-	},
-);
+const HeaderComp = observer((p: { list: Header[]; header: Header; index: number }) => {
+  const { key, value } = p.header;
+  return (
+    <tr>
+      <td className="index">{p.index + 1}</td>
+      <td className="name">
+        <Input
+          placeholder="Key"
+          borderRightRadius="0"
+          spellCheck={false}
+          value={key}
+          onChange={(e) => (p.header.key = e.target.value)}
+        />
+      </td>
+      <td className="value">
+        <Input
+          placeholder="Value"
+          spellCheck={false}
+          value={value}
+          onChange={(e) => (p.header.value = e.target.value)}
+        />
+      </td>
+      <td className="actions">
+        <Button
+          variant="ghost"
+          className="iconButton"
+          onClick={(event) => {
+            event.stopPropagation();
+            p.list.remove(p.header);
+          }}
+        >
+          <TrashIcon size={20} />
+        </Button>
+      </td>
+    </tr>
+  );
+});
 
 /*
 
