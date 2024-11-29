@@ -418,7 +418,7 @@ function ClusterDetails() {
         }
       />
 
-      {!api.isRedpanda && !api.licenses.some(isLicenseWithEnterpriseAccess) && (
+      {!api.licenses.some(isLicenseWithEnterpriseAccess) && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
