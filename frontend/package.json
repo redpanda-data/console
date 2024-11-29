@@ -20,6 +20,7 @@
     "test:coverage": "TZ=GMT vitest run --coverage",
     "test:ui": "TZ=GMT vitest --ui",
     "test:watch": "TZ=GMT vitest --watch --ui",
+    "type:check": "tsc --noEmit --incremental --p tsconfig.base.json",
     "lint": "biome check src/* --write --unsafe",
     "linter": "biome ci src/*",
     "lint:check": "biome ci src/*",
