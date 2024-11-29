@@ -67,6 +67,7 @@ import {
   partitionSelectionToTopicPartitions,
   topicAssignmentsToReassignmentRequest,
 } from './logic/utils';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 
 export interface PartitionSelection {
   // Which partitions are selected?
@@ -215,6 +216,8 @@ class ReassignPartitions extends PageComponent {
         <ToastContainer />
         <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
           <PageContent>
+            <FeatureLicenseNotification featureName="reassignPartitions" />
+
             {/* Statistics */}
             <Section py={4}>
               <Flex>

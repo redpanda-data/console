@@ -21,6 +21,7 @@ import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
 import './Overview.scss';
 import {
+  Badge,
   Box,
   Button,
   DataTable,
@@ -39,9 +40,14 @@ import { FaCrown } from 'react-icons/fa';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';
-import { licensesToSimplifiedPreview } from '../../license/licenseUtils';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
+import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
+import {
+  getEnterpriseCTALink,
+  isLicenseWithEnterpriseAccess,
+  licensesToSimplifiedPreview,
+} from '../../license/licenseUtils';
 
 @observer
 class Overview extends PageComponent {
@@ -102,7 +108,8 @@ class Overview extends PageComponent {
     const version = overview.redpanda.version ?? overview.kafka.version;
 
     return (
-      <>
+      <Box>
+        <OverviewLicenseNotification />
         <PageContent className="overviewGrid">
           <Section py={5} my={4}>
             <Flex>
@@ -239,7 +246,7 @@ class Overview extends PageComponent {
             </GridItem>
           </Grid>
         </PageContent>
-      </>
+      </Box>
     );
   }
 }
@@ -410,6 +417,19 @@ function ClusterDetails() {
               ]
         }
       />
+
+      {!api.licenses.some(isLicenseWithEnterpriseAccess) && (
+        <>
+          <GridItem />
+          <GridItem colSpan={{ base: 1, lg: 2 }}>
+            <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
+              <Badge variant="info">
+                <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
+              </Badge>
+            </Link>
+          </GridItem>
+        </>
+      )}
 
       {api.isRedpanda && api.isAdminApiConfigured && (
         <>

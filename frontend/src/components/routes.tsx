@@ -69,6 +69,7 @@ import { TopicProducePage } from './pages/topics/Topic.Produce';
 import TransformDetails from './pages/transforms/Transform.Details';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 
 //
 //	Route Types
@@ -421,4 +422,6 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(() => api.userData?.canViewConsoleUsers ?? false),
   ),
   MakeRoute<{}>('/admin/:tab?', AdminPage, 'Admin'),
+
+  MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 ].filterNull();

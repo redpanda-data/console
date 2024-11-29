@@ -1396,6 +1396,7 @@ export type OverviewKafka = OverviewStatus & {
   replicasCount: number;
 
   controllerId: number;
+  clusterId: string;
 
   brokers: OverviewKafkaBroker[];
 

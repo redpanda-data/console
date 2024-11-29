@@ -156,7 +156,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                 <Flex flexDirection="column" gap={4}>
                   <Box>
                     <Text fontWeight="normal">
-                      To use Console's enterprise features, you'll need to restart console.
+                      A restart will be needed to use Redpanda Console's enterprise features.
                     </Text>
                     <Text fontWeight="normal">
                       Enterprise features in your Redpanda cluster will be available right away.

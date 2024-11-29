@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { api } from '../state/backendApi';
+import { api, handleExpiredLicenseError } from '../state/backendApi';
 import type { UserData } from '../state/restInterfaces';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
@@ -81,6 +81,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
             canListTransforms: true,
             canCreateTransforms: true,
             canDeleteTransforms: true,
+            canViewDebugBundle: true,
             seat: null as any,
             user: {
               providerID: -1,
@@ -90,6 +91,8 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
               meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
             },
           };
+        } else if (r.status === 403) {
+          void handleExpiredLicenseError(r);
         }
       });
 

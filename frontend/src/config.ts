@@ -4,6 +4,8 @@ import {
   type StreamRequest,
   type UnaryRequest,
   createPromiseClient,
+  ConnectError,
+  Code,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { type Monaco, loader } from '@monaco-editor/react';
@@ -34,6 +36,7 @@ import { SecretService as RPCNSecretService } from './protogen/redpanda/api/data
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
 import { AppFeatures, getBasePath } from './utils/env';
+import { appGlobal } from './state/appGlobal';
 
 declare const __webpack_public_path__: string;
 
@@ -44,6 +47,41 @@ const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
   if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
   return await next(req);
+};
+
+/**
+ * Interceptor to handle license expiration errors in gRPC responses.
+ *
+ * This interceptor checks if the error is of type `ConnectError` with the
+ * code `FailedPrecondition` and inspects the `details` array for an entry
+ * with type `google.rpc.ErrorInfo` and a reason of `REASON_ENTERPRISE_LICENSE_EXPIRED`.
+ * If such an error is detected, it redirects the user to the `/trial-expired` page.
+ *
+ */
+const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+  try {
+    return await next(req);
+  } catch (error) {
+    if (error instanceof ConnectError) {
+      if (error.code === Code.FailedPrecondition) {
+        for (const detail of error.details) {
+          // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+          if (detail?.type && detail?.debug) {
+            if (
+              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+              detail.type === 'google.rpc.ErrorInfo' &&
+              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+              detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
+            ) {
+              appGlobal.history.replace('/trial-expired');
+            }
+          }
+        }
+      }
+    }
+    // Re-throw the error to ensure it's handled by other interceptors or the calling code
+    throw error;
+  }
 };
 
 export interface SetConfigArguments {
@@ -111,7 +149,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
   const transport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
-    interceptors: [addBearerTokenInterceptor],
+    interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   });
 
   const licenseGrpcClient = createPromiseClient(LicenseService, transport);

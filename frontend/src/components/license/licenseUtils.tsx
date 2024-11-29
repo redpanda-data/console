@@ -1,5 +1,53 @@
-import { type License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import {
+  type License,
+  License_Source,
+  License_Type,
+  ListEnterpriseFeaturesResponse_Feature,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { prettyMilliseconds } from '../../utils/utils';
+import { api } from '../../state/backendApi';
+import { AppFeatures } from '../../utils/env';
+import { Button, Link } from '@redpanda-data/ui';
+import { Link as ReactRouterLink } from 'react-router-dom';
+
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0,
+  PLATFORM_REDPANDA = 1,
+  PLATFORM_NON_REDPANDA = 2,
+}
+
+export const MS_IN_DAY = 24 * 60 * 60 * 1000;
+
+export const LICENSE_WEIGHT: Record<License_Type, number> = {
+  [License_Type.UNSPECIFIED]: -1,
+  [License_Type.COMMUNITY]: 1,
+  [License_Type.TRIAL]: 2,
+  [License_Type.ENTERPRISE]: 3,
+};
+
+const isAuthEnterpriseFeature = (feature: ListEnterpriseFeaturesResponse_Feature) =>
+  feature.name === 'sso' || feature.name === 'rbac';
+
+export const isEnterpriseFeatureUsed = (
+  featureName: string,
+  features: ListEnterpriseFeaturesResponse_Feature[],
+): boolean => {
+  return features.some((feature) => feature.enabled && feature.name === featureName);
+};
+
+/**
+ * Checks if a list of enterprise features includes enabled features for authentication,
+ * specifically 'sso' (Single Sign-On) or 'rbac' (Reassign Partitions).
+ *
+ * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'reassign partitions' is found, otherwise `false`.
+ */
+export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean => {
+  return AppFeatures[feature] ?? false;
+};
+
+export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
+  return features.some((feature) => feature.enabled);
+};
 
 /**
  * Checks if a license is expired.
@@ -39,10 +87,39 @@ export const licenseSoonToExpire = (
   const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
   const offsetInMilliseconds = daysToExpire * millisecondsInADay;
 
-  const timeToExpiration = getTimeToExpiration(license);
+  const timeToExpiration = getMillisecondsToExpiration(license);
 
   // Check if the license expires within the offset period
   return timeToExpiration > 0 && timeToExpiration <= offsetInMilliseconds;
+};
+
+/**
+ * Calculates the expiration date of a license.
+ *
+ * @param {License} license - The license object containing the expiration timestamp.
+ * @returns {Date} The expiration date as a JavaScript Date object.
+ */
+export const getExpirationDate = (license: License): Date => {
+  return new Date(Number(license.expiresAt) * 1000);
+};
+
+/**
+ * Formats the expiration date of a given license into a user-friendly string format.
+ *
+ * @param license - The license object containing the expiration date information.
+ * @returns A string representing the expiration date in the format MM/DD/YYYY.
+ *
+ * @remarks
+ * This function utilizes `Intl.DateTimeFormat` to ensure consistent date formatting
+ * regardless of the user's local environment. It formats the date using the 'en-US' locale
+ * with two-digit month, day, and four-digit year.
+ */
+export const getPrettyExpirationDate = (license: License): string => {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(getExpirationDate(license));
 };
 
 /**
@@ -52,8 +129,8 @@ export const licenseSoonToExpire = (
  * @param {string} license.expiresAt - The Unix timestamp (in seconds) when the license expires.
  * @returns {number} - The time remaining until expiration in milliseconds. If the license has already expired, returns 0.
  */
-const getTimeToExpiration = (license: License): number => {
-  const expirationDate = new Date(Number(license.expiresAt) * 1000);
+export const getMillisecondsToExpiration = (license: License): number => {
+  const expirationDate = getExpirationDate(license);
   const currentTime = new Date();
 
   const timeRemaining = expirationDate.getTime() - currentTime.getTime();
@@ -62,13 +139,13 @@ const getTimeToExpiration = (license: License): number => {
 };
 
 export const getPrettyTimeToExpiration = (license: License) => {
-  const timeToExpiration = getTimeToExpiration(license);
+  const timeToExpiration = getMillisecondsToExpiration(license);
 
   if (timeToExpiration === 0) {
     return 'License has expired';
   }
 
-  return prettyMilliseconds(Math.abs(timeToExpiration), { unitCount: 2, verbose: true, secondsDecimalDigits: 0 });
+  return prettyMilliseconds(Math.abs(timeToExpiration), { unitCount: 1, verbose: true, secondsDecimalDigits: 0 });
 };
 
 /**
@@ -125,6 +202,18 @@ export const prettyExpirationDate = (license: License): string => {
  * @returns {boolean} - Returns `true` if the license type can expire, otherwise `false`.
  */
 export const licenseCanExpire = (license: License): boolean => license.type !== License_Type.COMMUNITY;
+
+/**
+ * Determines whether the given license grants access to enterprise-level features.
+ *
+ * This function checks if the license type is either `TRIAL` or `ENTERPRISE`,
+ * as both license types provide access to enterprise features.
+ *
+ * @param license - The license object to evaluate.
+ * @returns `true` if the license type is `TRIAL` or `ENTERPRISE`, otherwise `false`.
+ */
+export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
+  license.type === License_Type.TRIAL || license.type === License_Type.ENTERPRISE;
 
 /**
  * Simplifies a list of licenses by grouping them based on their type and returning a simplified preview of each type.
@@ -214,3 +303,49 @@ export const licensesToSimplifiedPreview = (
     };
   });
 };
+
+type EnterpriseLinkType = 'tryEnterprise' | 'upgrade';
+export const resolveEnterpriseCTALink = (
+  type: EnterpriseLinkType,
+  cluster_uuid: string | undefined,
+  isRedpanda: boolean,
+) => {
+  const urls: Record<EnterpriseLinkType, string> = {
+    tryEnterprise: 'https://redpanda.com/try-enterprise',
+    upgrade: 'https://redpanda.com/upgrade',
+  };
+
+  const baseUrl = urls[type];
+  const url = new URL(baseUrl);
+
+  url.searchParams.append('cluster_id', cluster_uuid ?? '');
+  url.searchParams.append('platform', `${isRedpanda ? Platform.PLATFORM_REDPANDA : Platform.PLATFORM_NON_REDPANDA}`);
+
+  return url.toString();
+};
+
+export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
+  return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka.clusterId, api.isRedpanda);
+};
+
+export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
+export const UploadLicenseButton = () =>
+  api.isAdminApiConfigured ? (
+    <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">
+      Upload license
+    </Button>
+  ) : null;
+export const UpgradeButton = () => (
+  <Button
+    variant="outline"
+    size="sm"
+    as={Link}
+    target="_blank"
+    href={getEnterpriseCTALink('upgrade')}
+    style={{
+      textDecoration: 'none',
+    }}
+  >
+    Upgrade
+  </Button>
+);

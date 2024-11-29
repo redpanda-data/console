@@ -316,6 +316,37 @@ function cachedApiRequest<T>(url: string, force = false): Promise<T> {
   return entry.lastPromise;
 }
 
+export async function handleExpiredLicenseError(r: Response) {
+  const data = await r.json();
+  if (data.message.includes('license expired')) {
+    uiState.isUsingDebugUserLogin = true;
+    api.userData = {
+      canViewConsoleUsers: false,
+      canListAcls: true,
+      canListQuotas: true,
+      canPatchConfigs: true,
+      canReassignPartitions: true,
+      canCreateSchemas: true,
+      canDeleteSchemas: true,
+      canManageSchemaRegistry: true,
+      canViewSchemas: true,
+      canListTransforms: true,
+      canCreateTransforms: true,
+      canDeleteTransforms: true,
+      canViewDebugBundle: true,
+      seat: null as any,
+      user: {
+        providerID: -1,
+        providerName: '',
+        id: '',
+        internalIdentifier: '',
+        meta: { avatarUrl: '', email: '', name: '' },
+      },
+    };
+    appGlobal.history.replace('/trial-expired');
+  }
+}
+
 //
 // BackendAPI
 //
@@ -417,6 +448,8 @@ const apiStore = {
             meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
           },
         };
+      } else if (r.status === 403) {
+        void handleExpiredLicenseError(r);
       }
     });
   },
@@ -1711,12 +1744,12 @@ const apiStore = {
     await Promise.all([
       client.listEnterpriseFeatures({}).then((enterpriseFeaturesResponse) => {
         this.enterpriseFeaturesUsed = enterpriseFeaturesResponse.features;
+        this.licenseViolation = enterpriseFeaturesResponse.violation;
       }),
       client
         .listLicenses({})
         .then((licensesResponse) => {
           this.licenses = licensesResponse.licenses;
-          this.licenseViolation = licensesResponse.violation;
 
           this.licensesLoaded = 'loaded';
         })
