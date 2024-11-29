@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import React, { Component, type ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
 import { api } from '../../../state/backendApi';
 import type { Permission, Role, RoleBinding } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';

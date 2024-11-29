@@ -3,13 +3,7 @@ import { observer } from 'mobx-react';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
-import {
-  getPrettyTimeToExpiration,
-  licenseCanExpire,
-  licenseIsExpired,
-  licenseSoonToExpire,
-  prettyLicenseType,
-} from './licenseUtils';
+import { getPrettyTimeToExpiration, licenseIsExpired, licenseSoonToExpire, prettyLicenseType } from './licenseUtils';
 
 export const LicenseNotification = observer(() => {
   const location = useLocation();

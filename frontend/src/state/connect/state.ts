@@ -176,10 +176,10 @@ export class ConnectClusterStore {
     updatedConfig: Record<string, any> = {},
   ) {
     const connector = this.getConnector(pluginClass);
-    const secrets = connector.secrets;
+    const secrets = connector?.secrets;
     if (secrets) {
       try {
-        const connectorName = connector.propsByName.get('name');
+        const connectorName = connector?.propsByName.get('name');
         if (!connectorName) throw new Error("For some reason your connector doesn't have a name");
 
         for (const [key, secret] of secrets.secrets) {
@@ -188,7 +188,7 @@ export class ConnectClusterStore {
             connectorName.value as string,
             secret.serialized,
           )) as CreateSecretResponse;
-          const property = connector.propsByName.get(key);
+          const property = connector?.propsByName.get(key);
 
           if (property) {
             property.value = secret.getSecretString(key, createSecretResponse?.secretId);
@@ -200,7 +200,7 @@ export class ConnectClusterStore {
       }
     }
     try {
-      const configObj = connector.getConfigObject();
+      const configObj = connector?.getConfigObject();
       const finalProperties: Record<string, any> = { ...updatedConfig, ...configObj };
 
       // If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
@@ -227,7 +227,7 @@ export class ConnectClusterStore {
 
   deleteConnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
     const connectorState = this.getConnectorStore(connectorName);
-    const secrets = connectorState.secrets;
+    const secrets = connectorState?.secrets;
 
     yield api.deleteConnector(this.clusterName, connectorName);
 
@@ -256,7 +256,12 @@ export class ConnectClusterStore {
           }
         }
       }
-      if (remoteConnector) yield api.updateConnector(this.clusterName, connectorName, connectorState.getConfigObject());
+      if (remoteConnector) {
+        const connectorConfigObject = connectorState?.getConfigObject();
+        if (connectorConfigObject) {
+          yield api.updateConnector(this.clusterName, connectorName, connectorConfigObject);
+        }
+      }
     }
   });
 
@@ -273,18 +278,20 @@ export class ConnectClusterStore {
     let connectorStore = this.connectors.get(identifier);
     if (!connectorStore) {
       const connectorType = this.additionalClusterInfo.plugins.first((x) => x.class === pluginClassName)?.type;
-      connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
-        secretStore: this.features.secretStore,
-        editing: initialConfig != null,
-      });
-      this.connectors.set(identifier, connectorStore);
+      if (connectorType) {
+        connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
+          secretStore: this.features.secretStore,
+          editing: initialConfig != null,
+        });
+        this.connectors.set(identifier, connectorStore);
+      }
     }
     return connectorStore;
   }
 
   getConnectorStore(connectorName: string) {
     const connector = this.getRemoteConnector(connectorName);
-    const connectorProperties = this.getConnector(connector?.class, connectorName, connector?.config);
+    const connectorProperties = this.getConnector(connector?.class ?? '', connectorName, connector?.config);
     return connectorProperties;
   }
 

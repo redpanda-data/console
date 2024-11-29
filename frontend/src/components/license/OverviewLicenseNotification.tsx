@@ -1,11 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect } from 'react';
-import {
-  type License,
-  License_Type,
-  type ListEnterpriseFeaturesResponse_Feature,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import {
   DISABLE_SSO_DOCS_LINK,
@@ -20,7 +16,6 @@ import {
 
 const getLicenseAlertContent = (
   license: License | undefined,
-  enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (license === undefined || license.type !== License_Type.TRIAL) {
     return null;
@@ -150,8 +145,7 @@ export const OverviewLicenseNotification: FC = observer(() => {
   }, []);
 
   const license = api.licenses.filter((license) => license.type === License_Type.TRIAL).first();
-  const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
-  const alertContent = getLicenseAlertContent(license, enterpriseFeaturesUsed);
+  const alertContent = getLicenseAlertContent(license);
 
   // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (api.clusterOverview === null) {

@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-
 export default (
   <svg viewBox="0 0 260 260" focusable={false}>
     <title>Okta</title>

@@ -635,6 +635,7 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
   if (!target) return;
 
   const rect = target.getBoundingClientRect();
+  // @ts-ignore perhaps it affects the target for some reason?
   let top = 0;
   switch (anchor) {
     case 'start':

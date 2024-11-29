@@ -16,7 +16,7 @@ export function toJson(obj: any, space?: string | number | undefined): string {
   try {
     return JSON.stringify(
       obj,
-      (key: string, value: any) => {
+      (_key: string, value: any) => {
         if (typeof value === 'object' && value !== null) {
           if (seen.has(value)) {
             return;
@@ -45,7 +45,7 @@ export function clone<T>(obj: T): T {
 // Accesses all members of an object by serializing it
 
 export function touch(obj: any): void {
-  JSON.stringify(obj, (k, v) => {
+  JSON.stringify(obj, (_k, v) => {
     if (typeof v === 'object') return v;
     return '';
   });

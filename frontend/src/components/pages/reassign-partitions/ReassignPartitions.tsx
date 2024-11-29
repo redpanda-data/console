@@ -34,7 +34,6 @@ import {
 import { motion } from 'framer-motion';
 import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
-import React from 'react';
 import { MdOutlineErrorOutline } from 'react-icons/md';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
@@ -107,7 +106,7 @@ class ReassignPartitions extends PageComponent {
   @observable _debug_topicPartitions: TopicPartitions[] | null = null;
   @observable _debug_brokers: Broker[] | null = null;
 
-  refreshTopicConfigsTimer: NodeJS.Timer | null = null;
+  refreshTopicConfigsTimer: number | null = null;
   refreshTopicConfigsRequestsInProgress = 0;
 
   @observable topicsWithThrottle: string[] = [];
@@ -490,7 +489,7 @@ class ReassignPartitions extends PageComponent {
 
       // error checking will happen inside computeReassignments
       const apiData = {
-        brokers: api.clusterInfo?.brokers,
+        brokers: api.clusterInfo?.brokers ?? [],
         topics: api.topics as Topic[],
         topicPartitions: apiTopicPartitions,
       };
@@ -655,10 +654,8 @@ class ReassignPartitions extends PageComponent {
       duration: null,
     });
     try {
-      let response = await api.setReplicationThrottleRate(
-        api.clusterInfo?.brokers.map((b) => b.brokerId),
-        maxBytesPerSecond,
-      );
+      const brokerIds = api.clusterInfo?.brokers.map((b) => b.brokerId) ?? [];
+      let response = await api.setReplicationThrottleRate(brokerIds, maxBytesPerSecond);
       let errors = response.patchedConfigs.filter((c) => c.error);
       if (errors.length > 0) throw new Error(toJson(errors));
 
@@ -716,12 +713,12 @@ class ReassignPartitions extends PageComponent {
   startRefreshingTopicConfigs() {
     if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
     if (this.refreshTopicConfigsTimer == null)
-      this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
+      this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
   }
   stopRefreshingTopicConfigs() {
     if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error().stack });
     if (this.refreshTopicConfigsTimer) {
-      clearInterval(this.refreshTopicConfigsTimer);
+      window.clearInterval(this.refreshTopicConfigsTimer);
       this.refreshTopicConfigsTimer = null;
     }
   }
@@ -746,6 +743,7 @@ class ReassignPartitions extends PageComponent {
       newThrottledTopics.removeAll((t) => inProgress.includes(t));
 
       // Update observable
+      // @ts-ignore perhaps this is needed later on?
       const _changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
       // if (changes.added || changes.removed)
       //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
@@ -845,6 +843,7 @@ const steps: WizardStep[] = [
         if (selectedRacks.length === 1 && allRacks.length >= 2) {
           let selectedRack = selectedRacks[0];
           if (!selectedRack || selectedRack.length === 0) selectedRack = '(empty)';
+          // @ts-ignore perhaps this is needed later on?
           const _msgStart =
             selectedBrokers.length === 1
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `

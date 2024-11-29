@@ -12,7 +12,7 @@
 import { WarningIcon } from '@chakra-ui/icons';
 import { Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import React, { type FC, type ReactElement } from 'react';
+import type { FC, ReactElement } from 'react';
 import { api } from '../../state/backendApi';
 
 export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children }) => {

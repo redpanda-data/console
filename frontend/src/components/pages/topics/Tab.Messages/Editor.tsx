@@ -81,8 +81,13 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
 
   const handleValueChange: OnChange = async () => {
     const editorValue = (await getEditorValue()) ?? '';
-    const result = await tsWorkerClient?.getEmitOutput(editorUri?.toString());
-    setTimeout(() => onValueChange(editorValue, result.outputFiles[0].text));
+    const formattedEditorUri = editorUri?.toString();
+    if (formattedEditorUri) {
+      const result = await tsWorkerClient?.getEmitOutput(formattedEditorUri);
+      if (result) {
+        setTimeout(() => onValueChange(editorValue, result?.outputFiles[0]?.text));
+      }
+    }
   };
 
   return (
