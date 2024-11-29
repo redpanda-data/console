@@ -1,23 +1,23 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { FC, ReactElement, useEffect } from 'react';
+import { type FC, type ReactElement, useEffect } from 'react';
 import {
-  License,
+  type License,
   License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
+  type ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 import {
+  LICENSE_WEIGHT,
+  MS_IN_DAY,
+  UpgradeButton,
+  UploadLicenseButton,
+  coreHasEnterpriseFeatures,
   getEnterpriseCTALink,
   getMillisecondsToExpiration,
   getPrettyExpirationDate,
   getPrettyTimeToExpiration,
-  LICENSE_WEIGHT,
-  MS_IN_DAY,
-  coreHasEnterpriseFeatures,
-  UploadLicenseButton,
-  UpgradeButton,
 } from './licenseUtils';
-import { api } from '../../state/backendApi';
 
 const getLicenseAlertContentForFeature = (
   featureName: 'rbac' | 'reassignPartitions',
@@ -49,11 +49,8 @@ const getLicenseAlertContentForFeature = (
         ),
         status: 'info',
       };
-    } else if (
-      msToExpiration > 0 &&
-      msToExpiration < 15 * MS_IN_DAY &&
-      coreHasEnterpriseFeatures(enterpriseFeaturesUsed)
-    ) {
+    }
+    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
       return {
         message: (
           <Box>
@@ -90,23 +87,23 @@ const getLicenseAlertContentForFeature = (
           ),
           status: 'info',
         };
-      } else {
-        return {
-          message: (
-            <Box>
-              <Text>
-                This is a Redpanda Enterprise feature. Try it with our{' '}
-                <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
-                  Redpanda Enterprise Trial
-                </Link>
-                .
-              </Text>
-            </Box>
-          ),
-          status: 'info',
-        };
       }
-    } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
+      return {
+        message: (
+          <Box>
+            <Text>
+              This is a Redpanda Enterprise feature. Try it with our{' '}
+              <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
+                Redpanda Enterprise Trial
+              </Link>
+              .
+            </Text>
+          </Box>
+        ),
+        status: 'info',
+      };
+    }
+    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
       return {
         message: (
           <Box>

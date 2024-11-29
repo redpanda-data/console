@@ -1,22 +1,22 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { FC, ReactElement, useEffect } from 'react';
+import { type FC, type ReactElement, useEffect } from 'react';
 import {
-  License,
+  type License,
   License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
+  type ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 import {
-  consoleHasEnterpriseFeature,
   DISABLE_SSO_DOCS_LINK,
-  getEnterpriseCTALink,
-  getMillisecondsToExpiration,
-  getPrettyTimeToExpiration,
   MS_IN_DAY,
   UpgradeButton,
   UploadLicenseButton,
+  consoleHasEnterpriseFeature,
+  getEnterpriseCTALink,
+  getMillisecondsToExpiration,
+  getPrettyTimeToExpiration,
 } from './licenseUtils';
-import { api } from '../../state/backendApi';
 
 const getLicenseAlertContent = (
   license: License | undefined,
@@ -43,7 +43,8 @@ const getLicenseAlertContent = (
         ),
         status: 'info',
       };
-    } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
+    }
+    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
       if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
         return {
           message: (
@@ -68,27 +69,26 @@ const getLicenseAlertContent = (
           ),
           status: 'warning',
         };
-      } else {
-        return {
-          message: (
-            <Box>
-              <Text>
-                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-                enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
-                <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
-                  contact us
-                </Link>
-                .
-              </Text>
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <UpgradeButton />
-              </Flex>
-            </Box>
-          ),
-          status: 'warning',
-        };
       }
+      return {
+        message: (
+          <Box>
+            <Text>
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
+              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+                contact us
+              </Link>
+              .
+            </Text>
+            <Flex gap={2} my={2}>
+              <UploadLicenseButton />
+              <UpgradeButton />
+            </Flex>
+          </Box>
+        ),
+        status: 'warning',
+      };
     }
   } else {
     // Kafka
@@ -117,27 +117,26 @@ const getLicenseAlertContent = (
           ),
           status: 'warning',
         };
-      } else {
-        return {
-          message: (
-            <Box>
-              <Text>
-                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-                enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
-                <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
-                  contact us
-                </Link>
-                .
-              </Text>
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <UpgradeButton />
-              </Flex>
-            </Box>
-          ),
-          status: 'warning',
-        };
       }
+      return {
+        message: (
+          <Box>
+            <Text>
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
+              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+                contact us
+              </Link>
+              .
+            </Text>
+            <Flex gap={2} my={2}>
+              <UploadLicenseButton />
+              <UpgradeButton />
+            </Flex>
+          </Box>
+        ),
+        status: 'warning',
+      };
     }
   }
 
