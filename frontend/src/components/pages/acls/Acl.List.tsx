@@ -68,6 +68,7 @@ import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { UserRoleTags } from './UserPermissionAssignments';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -442,7 +443,9 @@ const RolesTab = observer(() => {
     <Flex flexDirection="column" gap="4">
       <Box>Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.</Box>
 
-      <FeatureLicenseNotification featureName="rbac" />
+      <NullFallbackBoundary>
+        <FeatureLicenseNotification featureName="rbac" />
+      </NullFallbackBoundary>
 
       <SearchField
         width="300px"

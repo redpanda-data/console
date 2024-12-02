@@ -48,6 +48,7 @@ import {
 } from '../../license/licenseUtils';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 
 @observer
 class Overview extends PageComponent {
@@ -109,7 +110,10 @@ class Overview extends PageComponent {
 
     return (
       <Box>
-        <OverviewLicenseNotification />
+        <NullFallbackBoundary>
+          <OverviewLicenseNotification />
+        </NullFallbackBoundary>
+
         <PageContent className="overviewGrid">
           <Section py={5} my={4}>
             <Flex>
