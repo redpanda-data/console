@@ -160,7 +160,10 @@ export default class UploadLicensePage extends PageComponent<{}> {
                       A restart will be needed to use Redpanda Console's enterprise features.
                     </Text>
                     <Text fontWeight="normal">
-                        <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">Enterprise features</Link> in your Redpanda cluster will be available right away.
+                      <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                        Enterprise features
+                      </Link>{' '}
+                      in your Redpanda cluster will be available right away.
                     </Text>
                   </Box>
                   <Box>

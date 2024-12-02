@@ -4,7 +4,15 @@ import { Fragment } from 'react';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
-import { coreHasEnterpriseFeatures, getMillisecondsToExpiration, getPrettyTimeToExpiration, licenseIsExpired, licenseSoonToExpire, MS_IN_DAY, prettyLicenseType } from './licenseUtils';
+import {
+  coreHasEnterpriseFeatures,
+  getMillisecondsToExpiration,
+  getPrettyTimeToExpiration,
+  licenseIsExpired,
+  licenseSoonToExpire,
+  MS_IN_DAY,
+  prettyLicenseType,
+} from './licenseUtils';
 import { capitalizeFirst, titleCase } from '../../utils/utils';
 
 export const LicenseNotification = observer(() => {
@@ -18,7 +26,8 @@ export const LicenseNotification = observer(() => {
   const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
   const soonToExpireLicenses = enterpriseLicenses.filter((license) => licenseSoonToExpire(license)) ?? [];
 
-  const showSomeLicenseExpirationInfo = (visibleExpiredEnterpriseLicenses.length > 0 && api.licenseViolation) || soonToExpireLicenses.length;
+  const showSomeLicenseExpirationInfo =
+    (visibleExpiredEnterpriseLicenses.length > 0 && api.licenseViolation) || soonToExpireLicenses.length;
 
   if (api.licensesLoaded === undefined) {
     return null;
@@ -53,26 +62,39 @@ export const LicenseNotification = observer(() => {
         status={
           visibleExpiredLicenses.length > 0 ||
           api.licenseViolation ||
-          soonToExpireLicenses.some(license => {
-              const msToExpiration = getMillisecondsToExpiration(license);
-              return (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY)
+          soonToExpireLicenses.some((license) => {
+            const msToExpiration = getMillisecondsToExpiration(license);
+            return msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY;
           })
-              ? 'warning' : 'info'}
+            ? 'warning'
+            : 'info'
+        }
         variant="subtle"
       >
         <AlertIcon />
         <AlertDescription>
           {visibleSoonToExpireLicenses.length > 0 && (
             <Fragment>
-                {capitalizeFirst(visibleSoonToExpireLicenses.map(license => `your ${prettyLicenseType(license, true)} license will expire in ${getPrettyTimeToExpiration(license)}`).join(' and '))}.{' '}
+              {capitalizeFirst(
+                visibleSoonToExpireLicenses
+                  .map(
+                    (license) =>
+                      `your ${prettyLicenseType(license, true)} license will expire in ${getPrettyTimeToExpiration(license)}`,
+                  )
+                  .join(' and '),
+              )}
+              .{' '}
             </Fragment>
           )}
 
           {visibleExpiredLicenses.length > 0 && api.licenseViolation && (
             <Fragment>
-              {capitalizeFirst(visibleExpiredLicenses.map((license, idx) => (
-                  `your ${prettyLicenseType(license, true)} license has expired`
-              )).join(' and '))}.{' '}
+              {capitalizeFirst(
+                visibleExpiredLicenses
+                  .map((license, idx) => `your ${prettyLicenseType(license, true)} license has expired`)
+                  .join(' and '),
+              )}
+              .{' '}
             </Fragment>
           )}
 
@@ -81,11 +103,13 @@ export const LicenseNotification = observer(() => {
               You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
               <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
               cluster.{' '}
-                {api.licenseViolation && <>
-                    {activeEnterpriseFeatures.length === 1
-                        ? 'This feature requires a license.'
-                        : 'These features require a license.'}
-                </>}
+              {api.licenseViolation && (
+                <>
+                  {activeEnterpriseFeatures.length === 1
+                    ? 'This feature requires a license.'
+                    : 'These features require a license.'}
+                </>
+              )}
             </Fragment>
           )}
 

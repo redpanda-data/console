@@ -330,7 +330,8 @@ export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
 
-export const ENTERPRISE_FEATURES_DOCS_LINK = 'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
+export const ENTERPRISE_FEATURES_DOCS_LINK =
+  'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
 
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (

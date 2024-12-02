@@ -616,8 +616,8 @@ export function titleCase(str: string): string {
 }
 
 export function capitalizeFirst(str: string): string {
-    if (!str) return str; // Handle empty or falsy strings
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  if (!str) return str; // Handle empty or falsy strings
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
