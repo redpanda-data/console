@@ -1052,3 +1052,190 @@ export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineS
   }
 }
 
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.PipelinesForSecret
+ */
+export class PipelinesForSecret extends Message<PipelinesForSecret> {
+  /**
+   * @generated from field: string secret_id = 1;
+   */
+  secretId = "";
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha2.Pipeline pipelines = 2;
+   */
+  pipelines: Pipeline[] = [];
+
+  constructor(data?: PartialMessage<PipelinesForSecret>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.PipelinesForSecret";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "secret_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "pipelines", kind: "message", T: Pipeline, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelinesForSecret {
+    return new PipelinesForSecret().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PipelinesForSecret {
+    return new PipelinesForSecret().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PipelinesForSecret {
+    return new PipelinesForSecret().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PipelinesForSecret | PlainMessage<PipelinesForSecret> | undefined, b: PipelinesForSecret | PlainMessage<PipelinesForSecret> | undefined): boolean {
+    return proto3.util.equals(PipelinesForSecret, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest
+ */
+export class GetPipelinesForSecretRequest extends Message<GetPipelinesForSecretRequest> {
+  /**
+   * Secret ID.
+   *
+   * @generated from field: string secret_id = 1;
+   */
+  secretId = "";
+
+  constructor(data?: PartialMessage<GetPipelinesForSecretRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "secret_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesForSecretRequest {
+    return new GetPipelinesForSecretRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesForSecretRequest {
+    return new GetPipelinesForSecretRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesForSecretRequest {
+    return new GetPipelinesForSecretRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesForSecretRequest | PlainMessage<GetPipelinesForSecretRequest> | undefined, b: GetPipelinesForSecretRequest | PlainMessage<GetPipelinesForSecretRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesForSecretRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse
+ */
+export class GetPipelinesForSecretResponse extends Message<GetPipelinesForSecretResponse> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.PipelinesForSecret pipelines_for_secret = 1;
+   */
+  pipelinesForSecret?: PipelinesForSecret;
+
+  constructor(data?: PartialMessage<GetPipelinesForSecretResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pipelines_for_secret", kind: "message", T: PipelinesForSecret },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesForSecretResponse {
+    return new GetPipelinesForSecretResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesForSecretResponse {
+    return new GetPipelinesForSecretResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesForSecretResponse {
+    return new GetPipelinesForSecretResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesForSecretResponse | PlainMessage<GetPipelinesForSecretResponse> | undefined, b: GetPipelinesForSecretResponse | PlainMessage<GetPipelinesForSecretResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesForSecretResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest
+ */
+export class GetPipelinesBySecretsRequest extends Message<GetPipelinesBySecretsRequest> {
+  constructor(data?: PartialMessage<GetPipelinesBySecretsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesBySecretsRequest {
+    return new GetPipelinesBySecretsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsRequest {
+    return new GetPipelinesBySecretsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsRequest {
+    return new GetPipelinesBySecretsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesBySecretsRequest | PlainMessage<GetPipelinesBySecretsRequest> | undefined, b: GetPipelinesBySecretsRequest | PlainMessage<GetPipelinesBySecretsRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesBySecretsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse
+ */
+export class GetPipelinesBySecretsResponse extends Message<GetPipelinesBySecretsResponse> {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha2.PipelinesForSecret pipelines_for_secret = 1;
+   */
+  pipelinesForSecret: PipelinesForSecret[] = [];
+
+  constructor(data?: PartialMessage<GetPipelinesBySecretsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pipelines_for_secret", kind: "message", T: PipelinesForSecret, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesBySecretsResponse {
+    return new GetPipelinesBySecretsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsResponse {
+    return new GetPipelinesBySecretsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsResponse {
+    return new GetPipelinesBySecretsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesBySecretsResponse | PlainMessage<GetPipelinesBySecretsResponse> | undefined, b: GetPipelinesBySecretsResponse | PlainMessage<GetPipelinesBySecretsResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesBySecretsResponse, a, b);
+  }
+}
+

@@ -28,6 +28,8 @@ const (
 	PipelineService_StopPipeline_FullMethodName                   = "/redpanda.api.dataplane.v1alpha2.PipelineService/StopPipeline"
 	PipelineService_StartPipeline_FullMethodName                  = "/redpanda.api.dataplane.v1alpha2.PipelineService/StartPipeline"
 	PipelineService_GetPipelineServiceConfigSchema_FullMethodName = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelineServiceConfigSchema"
+	PipelineService_GetPipelinesForSecret_FullMethodName          = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelinesForSecret"
+	PipelineService_GetPipelinesBySecrets_FullMethodName          = "/redpanda.api.dataplane.v1alpha2.PipelineService/GetPipelinesBySecrets"
 )
 
 // PipelineServiceClient is the client API for PipelineService service.
@@ -51,6 +53,12 @@ type PipelineServiceClient interface {
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
+	// GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
+	// in the Redpanda cluster for the given secret.
+	GetPipelinesForSecret(ctx context.Context, in *GetPipelinesForSecretRequest, opts ...grpc.CallOption) (*GetPipelinesForSecretResponse, error)
+	// GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
+	// in the Redpanda cluster for all secrets.
+	GetPipelinesBySecrets(ctx context.Context, in *GetPipelinesBySecretsRequest, opts ...grpc.CallOption) (*GetPipelinesBySecretsResponse, error)
 }
 
 type pipelineServiceClient struct {
@@ -133,6 +141,24 @@ func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Conte
 	return out, nil
 }
 
+func (c *pipelineServiceClient) GetPipelinesForSecret(ctx context.Context, in *GetPipelinesForSecretRequest, opts ...grpc.CallOption) (*GetPipelinesForSecretResponse, error) {
+	out := new(GetPipelinesForSecretResponse)
+	err := c.cc.Invoke(ctx, PipelineService_GetPipelinesForSecret_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelineServiceClient) GetPipelinesBySecrets(ctx context.Context, in *GetPipelinesBySecretsRequest, opts ...grpc.CallOption) (*GetPipelinesBySecretsResponse, error) {
+	out := new(GetPipelinesBySecretsResponse)
+	err := c.cc.Invoke(ctx, PipelineService_GetPipelinesBySecrets_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PipelineServiceServer is the server API for PipelineService service.
 // All implementations must embed UnimplementedPipelineServiceServer
 // for forward compatibility
@@ -154,6 +180,12 @@ type PipelineServiceServer interface {
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)
+	// GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
+	// in the Redpanda cluster for the given secret.
+	GetPipelinesForSecret(context.Context, *GetPipelinesForSecretRequest) (*GetPipelinesForSecretResponse, error)
+	// GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
+	// in the Redpanda cluster for all secrets.
+	GetPipelinesBySecrets(context.Context, *GetPipelinesBySecretsRequest) (*GetPipelinesBySecretsResponse, error)
 	mustEmbedUnimplementedPipelineServiceServer()
 }
 
@@ -184,6 +216,12 @@ func (UnimplementedPipelineServiceServer) StartPipeline(context.Context, *StartP
 }
 func (UnimplementedPipelineServiceServer) GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPipelineServiceConfigSchema not implemented")
+}
+func (UnimplementedPipelineServiceServer) GetPipelinesForSecret(context.Context, *GetPipelinesForSecretRequest) (*GetPipelinesForSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPipelinesForSecret not implemented")
+}
+func (UnimplementedPipelineServiceServer) GetPipelinesBySecrets(context.Context, *GetPipelinesBySecretsRequest) (*GetPipelinesBySecretsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPipelinesBySecrets not implemented")
 }
 func (UnimplementedPipelineServiceServer) mustEmbedUnimplementedPipelineServiceServer() {}
 
@@ -342,6 +380,42 @@ func _PipelineService_GetPipelineServiceConfigSchema_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_GetPipelinesForSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPipelinesForSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).GetPipelinesForSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_GetPipelinesForSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).GetPipelinesForSecret(ctx, req.(*GetPipelinesForSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelineService_GetPipelinesBySecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPipelinesBySecretsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).GetPipelinesBySecrets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_GetPipelinesBySecrets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).GetPipelinesBySecrets(ctx, req.(*GetPipelinesBySecretsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PipelineService_ServiceDesc is the grpc.ServiceDesc for PipelineService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -380,6 +454,14 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPipelineServiceConfigSchema",
 			Handler:    _PipelineService_GetPipelineServiceConfigSchema_Handler,
+		},
+		{
+			MethodName: "GetPipelinesForSecret",
+			Handler:    _PipelineService_GetPipelinesForSecret_Handler,
+		},
+		{
+			MethodName: "GetPipelinesBySecrets",
+			Handler:    _PipelineService_GetPipelinesBySecrets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
