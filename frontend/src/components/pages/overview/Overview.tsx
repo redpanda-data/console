@@ -406,12 +406,12 @@ function ClusterDetails() {
               ]
             : [
                 ...licensesToSimplifiedPreview(licenses).map(
-                  ({ name, expiresAt }) =>
+                  ({ name, expiresAt, isExpired }) =>
                     [
                       <Text key={0} data-testid="overview-license-name">
                         {name}
                       </Text>,
-                      expiresAt.length > 0 ? `(expiring ${expiresAt})` : '',
+                      expiresAt.length > 0 ? `(${isExpired ? 'expired' : 'expiring'} ${expiresAt})` : '',
                     ] as [left: ReactNode, right: ReactNode],
                 ),
               ]

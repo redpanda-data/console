@@ -12,6 +12,7 @@ import {
   getEnterpriseCTALink,
   getMillisecondsToExpiration,
   getPrettyTimeToExpiration,
+  ENTERPRISE_FEATURES_DOCS_LINK,
 } from './licenseUtils';
 
 const getLicenseAlertContent = (
@@ -39,7 +40,7 @@ const getLicenseAlertContent = (
         status: 'info',
       };
     }
-    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
+    if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY) {
       if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
         return {
           message: (
@@ -69,8 +70,11 @@ const getLicenseAlertContent = (
         message: (
           <Box>
             <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                enterprise features
+              </Link>{' '}
+              will become unavailable. To get a full Redpanda Enterprise license,{' '}
               <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
                 contact us
               </Link>
@@ -117,8 +121,11 @@ const getLicenseAlertContent = (
         message: (
           <Box>
             <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                enterprise features
+              </Link>{' '}
+              will become unavailable. To get a full Redpanda Enterprise license,{' '}
               <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
                 contact us
               </Link>
