@@ -132,7 +132,7 @@ export const getMillisecondsToExpiration = (license: License): number => {
 
   const timeRemaining = expirationDate.getTime() - currentTime.getTime();
 
-  return timeRemaining > 0 ? timeRemaining : 0;
+  return timeRemaining > 0 ? timeRemaining : -1;
 };
 
 export const getPrettyTimeToExpiration = (license: License) => {
@@ -282,6 +282,7 @@ export const licensesToSimplifiedPreview = (
 ): Array<{
   name: string;
   expiresAt: string;
+  isExpired: boolean;
 }> => {
   const groupedLicenses = licenses.groupBy((x) => x.type);
 
@@ -292,11 +293,13 @@ export const licensesToSimplifiedPreview = (
       return {
         name: prettyLicenseType(firstLicenseToExpire, true),
         expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+        isExpired: getMillisecondsToExpiration(firstLicenseToExpire) === -1,
       };
     }
     return {
       name: prettyLicenseType(firstLicenseToExpire, false),
       expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+      isExpired: getMillisecondsToExpiration(firstLicenseToExpire) === -1,
     };
   });
 };
@@ -326,6 +329,9 @@ export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
 };
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
+
+export const ENTERPRISE_FEATURES_DOCS_LINK = 'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
+
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
     <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">

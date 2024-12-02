@@ -8,15 +8,15 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import {
-  LICENSE_WEIGHT,
-  MS_IN_DAY,
-  UpgradeButton,
-  UploadLicenseButton,
-  coreHasEnterpriseFeatures,
-  getEnterpriseCTALink,
-  getMillisecondsToExpiration,
-  getPrettyExpirationDate,
-  getPrettyTimeToExpiration,
+    LICENSE_WEIGHT,
+    MS_IN_DAY,
+    UpgradeButton,
+    UploadLicenseButton,
+    coreHasEnterpriseFeatures,
+    getEnterpriseCTALink,
+    getMillisecondsToExpiration,
+    getPrettyExpirationDate,
+    getPrettyTimeToExpiration, ENTERPRISE_FEATURES_DOCS_LINK,
 } from './licenseUtils';
 
 const getLicenseAlertContentForFeature = (
@@ -50,13 +50,13 @@ const getLicenseAlertContentForFeature = (
         status: 'info',
       };
     }
-    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
+    if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
       return {
         message: (
           <Box>
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+                <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">enterprise features</Link> will become unavailable. To get a full Redpanda Enterprise license,{' '}
               <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
                 contact us
               </Link>
@@ -109,7 +109,7 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+                <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">enterprise features</Link> will become unavailable. To get a full Redpanda Enterprise license,{' '}
               <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
                 contact us
               </Link>
