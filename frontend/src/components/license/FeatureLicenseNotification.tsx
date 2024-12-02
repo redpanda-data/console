@@ -56,7 +56,7 @@ const getLicenseAlertContentForFeature = (
         message: (
           <Box>
             <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
               <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
                 enterprise features
               </Link>{' '}
@@ -112,7 +112,7 @@ const getLicenseAlertContentForFeature = (
         message: (
           <Box>
             <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
               <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
                 enterprise features
               </Link>{' '}
