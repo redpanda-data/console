@@ -418,7 +418,7 @@ function ClusterDetails() {
         }
       />
 
-      {!api.licenses.some(isLicenseWithEnterpriseAccess) && (
+      {api.licensesLoaded === 'loaded' && !api.licenses.some(isLicenseWithEnterpriseAccess) && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
