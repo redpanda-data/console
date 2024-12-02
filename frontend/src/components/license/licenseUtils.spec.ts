@@ -129,7 +129,7 @@ describe('licenseUtils', () => {
       ];
 
       const result = licensesToSimplifiedPreview(licenses);
-      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '9/8/2034' }]); // Based on the earlier expiration timestamp
+      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '9/8/2034', isExpired: false }]); // Based on the earlier expiration timestamp
     });
 
     test('should handle licenses with different types separately', () => {
@@ -148,8 +148,8 @@ describe('licenseUtils', () => {
 
       const result = licensesToSimplifiedPreview(licenses);
       expect(result).toEqual([
-        { name: 'Console Community', expiresAt: '' },
-        { name: 'Redpanda Enterprise', expiresAt: '7/15/2122' }, // Based on the expiration timestamp
+        { name: 'Console Community', expiresAt: '', isExpired: false },
+        { name: 'Redpanda Enterprise', expiresAt: '7/15/2122', isExpired: false }, // Based on the expiration timestamp
       ]);
     });
   });

@@ -138,7 +138,7 @@ export const getMillisecondsToExpiration = (license: License): number => {
 export const getPrettyTimeToExpiration = (license: License) => {
   const timeToExpiration = getMillisecondsToExpiration(license);
 
-  if (timeToExpiration === 0) {
+  if (timeToExpiration === -1) {
     return 'License has expired';
   }
 
