@@ -13,7 +13,7 @@ import {
   MS_IN_DAY,
   prettyLicenseType,
 } from './licenseUtils';
-import { capitalizeFirst, titleCase } from '../../utils/utils';
+import { capitalizeFirst } from '../../utils/utils';
 
 export const LicenseNotification = observer(() => {
   const location = useLocation();
@@ -91,7 +91,7 @@ export const LicenseNotification = observer(() => {
             <Fragment>
               {capitalizeFirst(
                 visibleExpiredLicenses
-                  .map((license, idx) => `your ${prettyLicenseType(license, true)} license has expired`)
+                  .map((license) => `your ${prettyLicenseType(license, true)} license has expired`)
                   .join(' and '),
               )}
               .{' '}
