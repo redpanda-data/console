@@ -1,18 +1,20 @@
 # Changelog
 
-## v2.8.0-beta.1
+## v2.8.0 / 2024-12-03
 
 - [FEATURE] Add debug bundle support, enabling Console to now generate cluster wide debug bundles on Redpanda clusters.
-- [CHANGE] Ability to upload Redpanda enterprise licenses via Console, as well as loading licenses from a Redpanda cluster.
-- [CHANGE] Move to rspack/rsbuild.
 - [IMPROVEMENT] Add support for CBOR payload deserialization.
 - [IMPROVEMENT] Make git max clone depth configurable.
 - [IMPROVEMENT] Redpanda Connect in Cloud functionality and usability improvements.
 - [IMPROVEMENT] Relax regex restriction to allow greater set of characters for Role names.
+- [CHANGE] Ability to upload Redpanda enterprise licenses via Console, as well as loading licenses from a Redpanda cluster.
+- [BUFGIX] Fix the grammar in the partition error message
+- [BUFGIX] Fix a rendering error if schemaVersion is requested but not supported.
 - [BUFGIX] Fix a bug with topic creation under certain scenarios.
 - [BUFGIX] Fix topic list sorting to use partition count.
+- [SECURITY] Update elliptic package in frontend.
 
-## v2.7.2 / 2024-11-06
+## v2.7.2 / 2024-09-06
 
 - [SECURITY] Built with Go 1.23.1 which comes with secure CipherSuites by default.
 - [IMPROVEMENT] Minor visual improvements (e.g. padding on the loading spinner in the breadcrumb).
