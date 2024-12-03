@@ -75,9 +75,12 @@ func (b *basePathMiddleware) Wrap(next http.Handler) http.Handler {
 		// Strip prefix from the request url
 		var path string
 		rctx := chi.RouteContext(r.Context())
-		if rctx.RoutePath != "" {
+		switch {
+		case rctx.RoutePath != "":
 			path = rctx.RoutePath
-		} else {
+		case r.URL.RawPath != "":
+			path = r.URL.RawPath
+		default:
 			path = r.URL.Path
 		}
 
@@ -89,6 +92,11 @@ func (b *basePathMiddleware) Wrap(next http.Handler) http.Handler {
 		// URL.path
 		if strings.HasPrefix(r.URL.Path, prefix) {
 			r.URL.Path = "/" + strings.TrimPrefix(r.URL.Path, prefix)
+		}
+
+		// URL.RawPath
+		if strings.HasPrefix(r.URL.RawPath, prefix) {
+			r.URL.RawPath = "/" + strings.TrimPrefix(r.URL.RawPath, prefix)
 		}
 
 		// requestURI
