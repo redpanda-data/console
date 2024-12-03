@@ -5,6 +5,7 @@ import { type License, License_Type } from '../../protogen/redpanda/api/console/
 import { api } from '../../state/backendApi';
 import {
   DISABLE_SSO_DOCS_LINK,
+  ENTERPRISE_FEATURES_DOCS_LINK,
   MS_IN_DAY,
   UpgradeButton,
   UploadLicenseButton,
@@ -12,7 +13,6 @@ import {
   getEnterpriseCTALink,
   getMillisecondsToExpiration,
   getPrettyTimeToExpiration,
-  ENTERPRISE_FEATURES_DOCS_LINK,
 } from './licenseUtils';
 
 const getLicenseAlertContent = (

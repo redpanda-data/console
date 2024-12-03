@@ -52,6 +52,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { scrollTo, scrollToTop } from '../../../utils/utils';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { showErrorModal } from '../../misc/ErrorModal';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
@@ -67,7 +68,6 @@ import {
   partitionSelectionToTopicPartitions,
   topicAssignmentsToReassignmentRequest,
 } from './logic/utils';
-import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 
 export interface PartitionSelection {
   // Which partitions are selected?

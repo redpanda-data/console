@@ -46,9 +46,9 @@ import {
   isLicenseWithEnterpriseAccess,
   licensesToSimplifiedPreview,
 } from '../../license/licenseUtils';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
-import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 
 @observer
 class Overview extends PageComponent {

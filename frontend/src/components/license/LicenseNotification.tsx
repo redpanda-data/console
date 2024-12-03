@@ -4,16 +4,16 @@ import { Fragment } from 'react';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
+import { capitalizeFirst } from '../../utils/utils';
 import {
+  MS_IN_DAY,
   coreHasEnterpriseFeatures,
   getMillisecondsToExpiration,
   getPrettyTimeToExpiration,
   licenseIsExpired,
   licenseSoonToExpire,
-  MS_IN_DAY,
   prettyLicenseType,
 } from './licenseUtils';
-import { capitalizeFirst } from '../../utils/utils';
 
 export const LicenseNotification = observer(() => {
   const location = useLocation();
@@ -103,13 +103,10 @@ export const LicenseNotification = observer(() => {
               You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
               <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
               cluster.{' '}
-              {api.licenseViolation && (
-                <>
-                  {activeEnterpriseFeatures.length === 1
-                    ? 'This feature requires a license.'
-                    : 'These features require a license.'}
-                </>
-              )}
+              {api.licenseViolation &&
+                (activeEnterpriseFeatures.length === 1
+                  ? 'This feature requires a license.'
+                  : 'These features require a license.')}
             </Fragment>
           )}
 
