@@ -11,7 +11,6 @@
 
 import Editor, { type EditorProps, type Monaco, DiffEditor, type DiffEditorProps } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import React from 'react';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;

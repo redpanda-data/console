@@ -17,7 +17,7 @@ import {
   type ThemeTypings,
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { openModal } from '../../../utils/ModalContainer';
 
 const GenericModal = observer(
@@ -110,7 +110,7 @@ const InfoModal = observer(
   (p: {
     title: JSX.Element;
     body: JSX.Element;
-    primaryButtonContent: JSX.Element;
+    primaryButtonContent: ReactNode;
     onClose?: () => void;
     closeModal: () => void;
   }) => {
@@ -140,7 +140,7 @@ const InfoModal = observer(
 export function openInfoModal(p: {
   title: JSX.Element;
   body: JSX.Element;
-  btnContent?: JSX.Element;
+  btnContent?: ReactNode;
   onClose?: () => void;
 }) {
   openModal(InfoModal, {

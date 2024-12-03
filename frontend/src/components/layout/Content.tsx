@@ -16,12 +16,15 @@ import AppPageHeader from '../layout/Header';
 import { LicenseNotification } from '../license/LicenseNotification';
 import { ErrorDisplay } from '../misc/ErrorDisplay';
 import { renderErrorModals } from '../misc/ErrorModal';
+import { NullFallbackBoundary } from '../misc/NullFallbackBoundary';
 import { RouteView } from '../routes';
 
 export const AppContent = observer(() => (
   <div id="mainLayout">
     {/* Page */}
-    <LicenseNotification />
+    <NullFallbackBoundary>
+      <LicenseNotification />
+    </NullFallbackBoundary>
     <ModalContainer />
     <AppPageHeader />
 

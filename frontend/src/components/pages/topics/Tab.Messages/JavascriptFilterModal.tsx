@@ -18,7 +18,7 @@ import {
   UnorderedList,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { type FC } from 'react';
+import type { FC } from 'react';
 import type { FilterEntry } from '../../../../state/ui';
 import FilterEditor from './Editor';
 

@@ -1,26 +1,22 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { FC, ReactElement, useEffect } from 'react';
+import { type FC, type ReactElement, useEffect } from 'react';
+import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 import {
-  License,
-  License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import {
-  consoleHasEnterpriseFeature,
   DISABLE_SSO_DOCS_LINK,
-  getEnterpriseCTALink,
-  getMillisecondsToExpiration,
-  getPrettyTimeToExpiration,
+  ENTERPRISE_FEATURES_DOCS_LINK,
   MS_IN_DAY,
   UpgradeButton,
   UploadLicenseButton,
+  consoleHasEnterpriseFeature,
+  getEnterpriseCTALink,
+  getMillisecondsToExpiration,
+  getPrettyTimeToExpiration,
 } from './licenseUtils';
-import { api } from '../../state/backendApi';
 
 const getLicenseAlertContent = (
   license: License | undefined,
-  enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (license === undefined || license.type !== License_Type.TRIAL) {
     return null;
@@ -43,7 +39,8 @@ const getLicenseAlertContent = (
         ),
         status: 'info',
       };
-    } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
+    }
+    if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY) {
       if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
         return {
           message: (
@@ -68,27 +65,29 @@ const getLicenseAlertContent = (
           ),
           status: 'warning',
         };
-      } else {
-        return {
-          message: (
-            <Box>
-              <Text>
-                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-                enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
-                <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
-                  contact us
-                </Link>
-                .
-              </Text>
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <UpgradeButton />
-              </Flex>
-            </Box>
-          ),
-          status: 'warning',
-        };
       }
+      return {
+        message: (
+          <Box>
+            <Text>
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                enterprise features
+              </Link>{' '}
+              will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+                contact us
+              </Link>
+              .
+            </Text>
+            <Flex gap={2} my={2}>
+              <UploadLicenseButton />
+              <UpgradeButton />
+            </Flex>
+          </Box>
+        ),
+        status: 'warning',
+      };
     }
   } else {
     // Kafka
@@ -117,27 +116,29 @@ const getLicenseAlertContent = (
           ),
           status: 'warning',
         };
-      } else {
-        return {
-          message: (
-            <Box>
-              <Text>
-                Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-                enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
-                <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
-                  contact us
-                </Link>
-                .
-              </Text>
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <UpgradeButton />
-              </Flex>
-            </Box>
-          ),
-          status: 'warning',
-        };
       }
+      return {
+        message: (
+          <Box>
+            <Text>
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                enterprise features
+              </Link>{' '}
+              will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+                contact us
+              </Link>
+              .
+            </Text>
+            <Flex gap={2} my={2}>
+              <UploadLicenseButton />
+              <UpgradeButton />
+            </Flex>
+          </Box>
+        ),
+        status: 'warning',
+      };
     }
   }
 
@@ -151,8 +152,7 @@ export const OverviewLicenseNotification: FC = observer(() => {
   }, []);
 
   const license = api.licenses.filter((license) => license.type === License_Type.TRIAL).first();
-  const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
-  const alertContent = getLicenseAlertContent(license, enterpriseFeaturesUsed);
+  const alertContent = getLicenseAlertContent(license);
 
   // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (api.clusterOverview === null) {

@@ -18,6 +18,7 @@ import type { FC } from 'react';
 import type { SetLicenseRequest, SetLicenseResponse } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
+import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/licenseUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 
@@ -159,7 +160,10 @@ export default class UploadLicensePage extends PageComponent<{}> {
                       A restart will be needed to use Redpanda Console's enterprise features.
                     </Text>
                     <Text fontWeight="normal">
-                      Enterprise features in your Redpanda cluster will be available right away.
+                      <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                        Enterprise features
+                      </Link>{' '}
+                      in your Redpanda cluster will be available right away.
                     </Text>
                   </Box>
                   <Box>

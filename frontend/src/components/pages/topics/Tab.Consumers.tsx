@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import React, { type FC } from 'react';
+import type { FC } from 'react';
 import type { Topic, TopicConsumer } from '../../../state/restInterfaces';
 
 import '../../../utils/arrayExtensions';

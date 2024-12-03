@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
+import { Component } from 'react';
 import type { Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Button, Empty, VStack } from '@redpanda-data/ui';

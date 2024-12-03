@@ -189,6 +189,7 @@ export class PreviewSettings extends Component<{
   messageSearch: MessageSearch;
 }> {
   @computed.struct get allCurrentKeys() {
+    // @ts-ignore perhaps we still need this due to MobX behavior?
     const unused = this.props.messageSearch.messages.length;
     return getAllMessageKeys(this.props.messageSearch.messages)
       .map((p) => p.propertyName)

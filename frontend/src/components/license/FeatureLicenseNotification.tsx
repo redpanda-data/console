@@ -1,26 +1,27 @@
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Link, Text } from '@redpanda-data/ui';
+import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { FC, ReactElement, useEffect } from 'react';
+import { type FC, type ReactElement, useEffect } from 'react';
 import {
-  License,
+  type License,
   License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
+  type ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 import {
+  ENTERPRISE_FEATURES_DOCS_LINK,
+  LICENSE_WEIGHT,
+  MS_IN_DAY,
+  UpgradeButton,
+  UploadLicenseButton,
+  coreHasEnterpriseFeatures,
   getEnterpriseCTALink,
   getMillisecondsToExpiration,
   getPrettyExpirationDate,
   getPrettyTimeToExpiration,
-  LICENSE_WEIGHT,
-  MS_IN_DAY,
-  coreHasEnterpriseFeatures,
-  UploadLicenseButton,
-  UpgradeButton,
 } from './licenseUtils';
-import { api } from '../../state/backendApi';
 
 const getLicenseAlertContentForFeature = (
-  featureName: 'rbac' | 'reassignPartitions',
+  _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
@@ -49,17 +50,17 @@ const getLicenseAlertContentForFeature = (
         ),
         status: 'info',
       };
-    } else if (
-      msToExpiration > 0 &&
-      msToExpiration < 15 * MS_IN_DAY &&
-      coreHasEnterpriseFeatures(enterpriseFeaturesUsed)
-    ) {
+    }
+    if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
       return {
         message: (
           <Box>
             <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                enterprise features
+              </Link>{' '}
+              will become unavailable. To get a full Redpanda Enterprise license,{' '}
               <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
                 contact us
               </Link>
@@ -90,29 +91,32 @@ const getLicenseAlertContentForFeature = (
           ),
           status: 'info',
         };
-      } else {
-        return {
-          message: (
-            <Box>
-              <Text>
-                This is a Redpanda Enterprise feature. Try it with our{' '}
-                <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
-                  Redpanda Enterprise Trial
-                </Link>
-                .
-              </Text>
-            </Box>
-          ),
-          status: 'info',
-        };
       }
-    } else if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
       return {
         message: (
           <Box>
             <Text>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your
-              enterprise features will become unavailable. To get a full Redpanda Enterprise license,{' '}
+              This is a Redpanda Enterprise feature. Try it with our{' '}
+              <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
+                Redpanda Enterprise Trial
+              </Link>
+              .
+            </Text>
+          </Box>
+        ),
+        status: 'info',
+      };
+    }
+    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
+      return {
+        message: (
+          <Box>
+            <Text>
+              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                enterprise features
+              </Link>{' '}
+              will become unavailable. To get a full Redpanda Enterprise license,{' '}
               <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
                 contact us
               </Link>

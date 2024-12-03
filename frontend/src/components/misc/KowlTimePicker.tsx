@@ -13,7 +13,6 @@ import { Box, DateTimeInput } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
-import React from 'react';
 
 @observer
 export class KowlTimePicker extends Component<{

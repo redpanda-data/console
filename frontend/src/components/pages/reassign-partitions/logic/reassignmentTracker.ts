@@ -65,8 +65,8 @@ export interface ReassignmentState {
 }
 
 export class ReassignmentTracker {
-  clusterTimer: NodeJS.Timer | null = null;
-  reassignTimer: NodeJS.Timer | null = null;
+  clusterTimer: number | null = null;
+  reassignTimer: number | null = null;
 
   @observable trackingReassignments: ReassignmentState[] = [];
 
@@ -84,10 +84,10 @@ export class ReassignmentTracker {
     if (alreadyStarted) return;
 
     // Active reassignments
-    this.reassignTimer = setInterval(() => this.refreshReassignments(), refreshIntervals.reassignments);
+    this.reassignTimer = window.setInterval(() => this.refreshReassignments(), refreshIntervals.reassignments);
 
     // Broker status
-    this.clusterTimer = setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
+    this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
     // Immediately refresh as well
     setTimeout(() => {
@@ -241,12 +241,12 @@ export class ReassignmentTracker {
 
   stop() {
     if (this.clusterTimer !== null) {
-      clearInterval(this.clusterTimer);
+      window.clearInterval(this.clusterTimer);
       this.clusterTimer = null;
     }
 
     if (this.reassignTimer !== null) {
-      clearInterval(this.reassignTimer);
+      window.clearInterval(this.reassignTimer);
       this.reassignTimer = null;
     }
   }

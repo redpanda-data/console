@@ -13,7 +13,7 @@ import { Checkbox, DataTable } from '@redpanda-data/ui';
 import type { Row } from '@tanstack/react-table';
 import { transaction } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { api } from '../../../state/backendApi';
 import type { Broker } from '../../../state/restInterfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
@@ -29,7 +29,7 @@ export class StepSelectBrokers extends Component<{
 
   constructor(props: any) {
     super(props);
-    this.brokers = api.clusterInfo?.brokers;
+    this.brokers = api.clusterInfo?.brokers ?? [];
   }
 
   render() {

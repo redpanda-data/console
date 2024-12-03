@@ -44,6 +44,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import { PipelineStatus } from './Pipelines.List';
 import { openDeleteModal } from './modals';
+import { cpuToTasks } from './tasks';
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
@@ -366,7 +367,7 @@ const LogsTab = observer(
               <ExpandedMessage
                 msg={original}
                 loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest?.topicName, original.partitionID, original.offset)
+                  loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
                 }
               />
             )}
@@ -426,10 +427,10 @@ export const PipelineResources = observer((p: { resources?: Pipeline_Resources }
   const r = p.resources;
 
   if (!r) return <>Not set</>;
-
+  const tasks = cpuToTasks(r.cpuShares);
   return (
     <Flex gap="4">
-      {r.cpuShares} CPU / {r.memoryShares} Memory
+      {tasks || '-'} Tasks ({r.cpuShares} CPU / {r.memoryShares} Memory)
     </Flex>
   );
 });

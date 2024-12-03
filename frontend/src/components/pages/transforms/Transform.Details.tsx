@@ -326,7 +326,7 @@ const LogsTab = observer(
               <ExpandedMessage
                 msg={original}
                 loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest?.topicName, original.partitionID, original.offset)
+                  loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
                 }
               />
             )}

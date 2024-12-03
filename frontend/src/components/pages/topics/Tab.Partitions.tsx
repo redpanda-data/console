@@ -11,7 +11,6 @@
 
 import { observer } from 'mobx-react';
 import type { FC } from 'react';
-import React from 'react';
 import { api } from '../../../state/backendApi';
 import type { Partition, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';

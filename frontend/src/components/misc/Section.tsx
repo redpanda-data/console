@@ -10,7 +10,7 @@
  */
 
 import { type ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
-import React, { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // Note: this component is intended to be temporary until all components are migrated @redpanda-data/ui
 function Section(props: { children: ReactNode; id?: string } & ChakraProps) {

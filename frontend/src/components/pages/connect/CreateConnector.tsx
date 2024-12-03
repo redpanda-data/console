@@ -33,7 +33,7 @@ import {
 } from '@redpanda-data/ui';
 import { comparer } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
@@ -320,7 +320,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
           {selectedPlugin ? (
             <Box maxWidth="800px">
-              <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)} context="CREATE" />
+              {/* biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex */}
+              <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)!} context="CREATE" />
             </Box>
           ) : (
             <div>no cluster or plugin selected</div>
@@ -329,8 +330,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       ),
       transitionConditionMet: async () => {
         if (selectedPlugin) {
-          connectClusterStore.getConnector(selectedPlugin.class).getConfigObject();
-          setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class).jsonText);
+          connectClusterStore.getConnector(selectedPlugin.class)?.getConfigObject();
+          setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class)?.jsonText ?? '');
           return { conditionMet: true };
         }
         return { conditionMet: false };
@@ -358,13 +359,13 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
         clearErrors();
         setLoading(true);
-        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class);
+        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '');
 
-        if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef.getConfigObject())) {
-          connectorRef.updateProperties(parsedUpdatedConfig);
+        if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef?.getConfigObject())) {
+          connectorRef?.updateProperties(parsedUpdatedConfig);
         }
 
-        const secrets = connectorRef.secrets;
+        const secrets = connectorRef?.secrets;
         if (secrets) {
           for (const p of connectorRef.propsByName.values()) {
             if (p.entry.definition.type === DataType.Password) {
@@ -382,12 +383,12 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           }
         }
 
-        const propertiesObject: Record<string, any> = connectorRef.getConfigObject();
+        const propertiesObject: Record<string, any> | undefined = connectorRef?.getConfigObject();
         try {
           const validationResult = await api.validateConnectorConfig(
             activeCluster,
-            selectedPlugin?.class,
-            propertiesObject,
+            selectedPlugin?.class ?? '',
+            propertiesObject ?? {},
           );
 
           const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
@@ -404,14 +405,14 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         try {
           openCreatingModal();
 
-          await connectClusterStore.createConnector(selectedPlugin?.class, parsedUpdatedConfig);
+          await connectClusterStore.createConnector(selectedPlugin?.class ?? '', parsedUpdatedConfig);
 
           // Wait a bit for the connector to appear, then navigate to it
           const maxScanTime = 10000;
           const intervalSec = 100;
           const timer = new TimeSince();
 
-          const connectorName = connectorRef.propsByName.get('name')?.value as string;
+          const connectorName = connectorRef?.propsByName.get('name')?.value as string;
 
           while (true) {
             const elapsedTime = timer.value;

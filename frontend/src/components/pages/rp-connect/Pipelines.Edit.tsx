@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Flex, FormField, Input, createStandaloneToast } from '@redpanda-data/ui';
+import { Box, Button, Flex, FormField, Input, NumberInput, createStandaloneToast } from '@redpanda-data/ui';
 import { Link as ChLink } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -22,12 +22,14 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { PipelineEditor } from './Pipelines.Create';
 import { formatPipelineError } from './errors';
+import { MAX_TASKS, MIN_TASKS, cpuToTasks, tasksToCPU } from './tasks';
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
 class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   @observable displayName = undefined as unknown as string;
   @observable description = undefined as unknown as string;
+  @observable tasks = undefined as unknown as number;
   @observable editorContent = undefined as unknown as string;
   @observable isUpdating = false;
   @observable secrets: string[] = [];
@@ -67,6 +69,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     if (this.displayName === undefined) {
       this.displayName = pipeline.displayName;
       this.description = pipeline.description;
+      this.tasks = cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS;
       this.editorContent = pipeline.configYaml;
     }
 
@@ -113,6 +116,15 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             width={500}
           />
         </FormField>
+        <FormField label="Tasks">
+          <NumberInput
+            value={this.tasks}
+            onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+            min={MIN_TASKS}
+            max={MAX_TASKS}
+            maxWidth={150}
+          />
+        </FormField>
 
         <Box mt="4">
           <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
@@ -147,7 +159,10 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           displayName: this.displayName,
           configYaml: this.editorContent,
           description: this.description,
-          resources: undefined,
+          resources: {
+            cpuShares: tasksToCPU(this.tasks) || '0',
+            memoryShares: '0', // still required by API but unused
+          },
         }),
       )
       .then(async () => {

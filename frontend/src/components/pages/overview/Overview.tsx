@@ -40,14 +40,15 @@ import { FaCrown } from 'react-icons/fa';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';
-import { Statistic } from '../../misc/Statistic';
-import ClusterHealthOverview from './ClusterHealthOverview';
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
   licensesToSimplifiedPreview,
 } from '../../license/licenseUtils';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
+import { Statistic } from '../../misc/Statistic';
+import ClusterHealthOverview from './ClusterHealthOverview';
 
 @observer
 class Overview extends PageComponent {
@@ -109,7 +110,10 @@ class Overview extends PageComponent {
 
     return (
       <Box>
-        <OverviewLicenseNotification />
+        <NullFallbackBoundary>
+          <OverviewLicenseNotification />
+        </NullFallbackBoundary>
+
         <PageContent className="overviewGrid">
           <Section py={5} my={4}>
             <Flex>
@@ -289,11 +293,11 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
       <GridItem>{firstLeft}</GridItem>
       <GridItem>{firstRight}</GridItem>
 
-      {rest?.map(([left, right], idx) => (
+      {rest?.map((item, idx) => (
         <React.Fragment key={idx}>
           <GridItem />
-          <GridItem>{left}</GridItem>
-          <GridItem>{right}</GridItem>
+          <GridItem>{item?.[0]}</GridItem>
+          <GridItem>{item?.[1]}</GridItem>
         </React.Fragment>
       ))}
     </>
@@ -406,19 +410,19 @@ function ClusterDetails() {
               ]
             : [
                 ...licensesToSimplifiedPreview(licenses).map(
-                  ({ name, expiresAt }) =>
+                  ({ name, expiresAt, isExpired }) =>
                     [
                       <Text key={0} data-testid="overview-license-name">
                         {name}
                       </Text>,
-                      expiresAt.length > 0 ? `(expiring ${expiresAt})` : '',
+                      expiresAt.length > 0 ? `(${isExpired ? 'expired' : 'expiring'} ${expiresAt})` : '',
                     ] as [left: ReactNode, right: ReactNode],
                 ),
               ]
         }
       />
 
-      {!api.licenses.some(isLicenseWithEnterpriseAccess) && (
+      {api.licensesLoaded === 'loaded' && !api.licenses.some(isLicenseWithEnterpriseAccess) && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>

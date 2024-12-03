@@ -35,7 +35,7 @@ import {
 } from '@redpanda-data/ui';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
-import React, { type CSSProperties, useRef, useState } from 'react';
+import { type CSSProperties, useRef, useState } from 'react';
 import {
   MdCheckCircleOutline,
   MdErrorOutline,

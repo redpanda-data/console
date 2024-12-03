@@ -13,7 +13,7 @@ import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui
 import type { Row } from '@tanstack/react-table';
 import { type IReactionDisposer, computed, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
 import { MdOutlineWarningAmber } from 'react-icons/md';
 import { api } from '../../../state/backendApi';

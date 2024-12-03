@@ -438,14 +438,16 @@ function ConfirmDeletionModal({
               isLoading={deletionPending}
               colorScheme="brand"
               onClick={() => {
-                setDeletionPending(true);
-                api
-                  .deleteTopic(topicToDelete?.topicName) // modal is not shown when topic is null
-                  .then(finish)
-                  .catch(setError)
-                  .finally(() => {
-                    setDeletionPending(false);
-                  });
+                if (topicToDelete?.topicName) {
+                  setDeletionPending(true);
+                  api
+                    .deleteTopic(topicToDelete?.topicName) // modal is not shown when topic is null
+                    .then(finish)
+                    .catch(setError)
+                    .finally(() => {
+                      setDeletionPending(false);
+                    });
+                }
               }}
               ml={3}
             >

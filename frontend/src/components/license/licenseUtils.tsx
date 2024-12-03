@@ -1,14 +1,14 @@
+import { Button, Link } from '@redpanda-data/ui';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import {
   type License,
   License_Source,
   License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
+  type ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { prettyMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
-import { Button, Link } from '@redpanda-data/ui';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { prettyMilliseconds } from '../../utils/utils';
 
 enum Platform {
   PLATFORM_UNSPECIFIED = 0,
@@ -24,9 +24,6 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
   [License_Type.TRIAL]: 2,
   [License_Type.ENTERPRISE]: 3,
 };
-
-const isAuthEnterpriseFeature = (feature: ListEnterpriseFeaturesResponse_Feature) =>
-  feature.name === 'sso' || feature.name === 'rbac';
 
 export const isEnterpriseFeatureUsed = (
   featureName: string,
@@ -135,13 +132,13 @@ export const getMillisecondsToExpiration = (license: License): number => {
 
   const timeRemaining = expirationDate.getTime() - currentTime.getTime();
 
-  return timeRemaining > 0 ? timeRemaining : 0;
+  return timeRemaining > 0 ? timeRemaining : -1;
 };
 
 export const getPrettyTimeToExpiration = (license: License) => {
   const timeToExpiration = getMillisecondsToExpiration(license);
 
-  if (timeToExpiration === 0) {
+  if (timeToExpiration === -1) {
     return 'License has expired';
   }
 
@@ -285,6 +282,7 @@ export const licensesToSimplifiedPreview = (
 ): Array<{
   name: string;
   expiresAt: string;
+  isExpired: boolean;
 }> => {
   const groupedLicenses = licenses.groupBy((x) => x.type);
 
@@ -295,11 +293,13 @@ export const licensesToSimplifiedPreview = (
       return {
         name: prettyLicenseType(firstLicenseToExpire, true),
         expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+        isExpired: getMillisecondsToExpiration(firstLicenseToExpire) === -1,
       };
     }
     return {
       name: prettyLicenseType(firstLicenseToExpire, false),
       expiresAt: licenseCanExpire(firstLicenseToExpire) ? prettyExpirationDate(firstLicenseToExpire) : '',
+      isExpired: getMillisecondsToExpiration(firstLicenseToExpire) === -1,
     };
   });
 };
@@ -329,6 +329,10 @@ export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
 };
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
+
+export const ENTERPRISE_FEATURES_DOCS_LINK =
+  'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
+
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
     <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">

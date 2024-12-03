@@ -43,6 +43,7 @@ import UserDetailsPage from './pages/acls/UserDetails';
 import UserEditPage from './pages/acls/UserEdit';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 import AdminPage from './pages/admin/AdminPage';
+import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
@@ -69,7 +70,6 @@ import { TopicProducePage } from './pages/topics/Topic.Produce';
 import TransformDetails from './pages/transforms/Transform.Details';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
-import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 
 //
 //	Route Types

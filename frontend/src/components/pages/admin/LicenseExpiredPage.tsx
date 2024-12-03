@@ -1,9 +1,9 @@
 import { Avatars, Box, Flex, Image, Link, Text, VStack } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { PageComponent } from '../Page';
-import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/licenseUtils';
+import { PageComponent } from '../Page';
 
 @observer
 export default class LicenseExpiredPage extends PageComponent {
@@ -17,8 +17,6 @@ export default class LicenseExpiredPage extends PageComponent {
   }
 
   render() {
-    const activeEnterpriseFeatures = api.enterpriseFeaturesUsed.filter((x) => x.enabled);
-
     return (
       <Flex align="center" justify="center" p={4}>
         <Box position="fixed" top={0} left={0} width="100vw" height="100vh" bg="white" opacity={0.5} zIndex={1000} />

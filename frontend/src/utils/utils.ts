@@ -615,6 +615,11 @@ export function titleCase(str: string): string {
   return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
+export function capitalizeFirst(str: string): string {
+  if (!str) return str; // Handle empty or falsy strings
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 /**
  * Scroll the main content region
  */
@@ -635,6 +640,7 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
   if (!target) return;
 
   const rect = target.getBoundingClientRect();
+  // @ts-ignore perhaps it affects the target for some reason?
   let top = 0;
   switch (anchor) {
     case 'start':

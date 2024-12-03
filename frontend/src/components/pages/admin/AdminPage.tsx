@@ -12,7 +12,7 @@
 import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Features } from '../../../state/supportedFeatures';

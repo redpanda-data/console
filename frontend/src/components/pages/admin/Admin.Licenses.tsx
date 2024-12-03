@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';

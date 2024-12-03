@@ -66,8 +66,9 @@ import {
 import type { AclPrincipalGroup } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
-import { UserRoleTags } from './UserPermissionAssignments';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
+import { UserRoleTags } from './UserPermissionAssignments';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -430,6 +431,7 @@ const RolesTab = observer(() => {
       return false;
     }
   });
+  // @ts-ignore perhaps required for MobX?
   const _isLoading = rolesApi.roles == null;
 
   const rolesWithMembers = roles.map((r) => {
@@ -441,7 +443,9 @@ const RolesTab = observer(() => {
     <Flex flexDirection="column" gap="4">
       <Box>Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.</Box>
 
-      <FeatureLicenseNotification featureName="rbac" />
+      <NullFallbackBoundary>
+        <FeatureLicenseNotification featureName="rbac" />
+      </NullFallbackBoundary>
 
       <SearchField
         width="300px"

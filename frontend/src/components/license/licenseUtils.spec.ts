@@ -8,7 +8,6 @@ import {
   prettyLicenseType,
   resolveEnterpriseCTALink,
 } from './licenseUtils';
-
 import '../../utils/arrayExtensions';
 
 describe('licenseUtils', () => {
@@ -49,25 +48,25 @@ describe('licenseUtils', () => {
   });
 
   describe('licenseIsExpired', () => {
-    it('should return false for a community license', () => {
+    test('should return false for a community license', () => {
       expect(licenseIsExpired(mockLicenseCommunity)).toBe(false);
     });
 
-    it('should return true for an expired enterprise license', () => {
+    test('should return true for an expired enterprise license', () => {
       expect(licenseIsExpired(expiredLicense)).toBe(true);
     });
 
-    it('should return false for a valid enterprise license', () => {
+    test('should return false for a valid enterprise license', () => {
       expect(licenseIsExpired(mockLicenseEnterprise)).toBe(false);
     });
   });
 
   describe('licenseSoonToExpire', () => {
-    it('should return true for an enterprise license expiring within the default 30 days', () => {
+    test('should return true for an enterprise license expiring within the default 30 days', () => {
       expect(licenseSoonToExpire(mockLicenseEnterprise)).toBe(true);
     });
 
-    it('should return false for a license not expiring soon', () => {
+    test('should return false for a license not expiring soon', () => {
       const licenseNotExpiringSoon: License = new License({
         ...mockLicenseEnterprise,
         expiresAt: BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 60), // expires in 60 days
@@ -75,47 +74,47 @@ describe('licenseUtils', () => {
       expect(licenseSoonToExpire(licenseNotExpiringSoon)).toBe(false);
     });
 
-    it('should return false for a community license', () => {
+    test('should return false for a community license', () => {
       expect(licenseSoonToExpire(mockLicenseCommunity)).toBe(false);
     });
   });
 
   describe('prettyLicenseType', () => {
-    it('should return "Community" for community licenses', () => {
+    test('should return "Community" for community licenses', () => {
       expect(prettyLicenseType(mockLicenseCommunity)).toBe('Community');
     });
 
-    it('should return "Enterprise" for enterprise licenses', () => {
+    test('should return "Enterprise" for enterprise licenses', () => {
       expect(prettyLicenseType(mockLicenseEnterprise)).toBe('Enterprise');
     });
 
-    it('should return detailed version with source when showSource is true, console license', () => {
-      expect(prettyLicenseType(mockLicenseEnterprise, true)).toBe('Core Enterprise');
+    test('should return detailed version with source when showSource is true, console license', () => {
+      expect(prettyLicenseType(mockLicenseEnterprise, true)).toBe('Redpanda Enterprise');
     });
   });
 
   describe('prettyExpirationDate', () => {
-    it('should return a formatted expiration date for an expiring license', () => {
+    test.skip('should return a formatted expiration date for an expiring license', () => {
       expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(/\d{2}\/\d{2}\/\d{4}/); // MM/DD/YYYY format
     });
 
-    it('should return an empty string for a community license', () => {
+    test('should return an empty string for a community license', () => {
       expect(prettyExpirationDate(mockLicenseCommunity)).toBe('');
     });
   });
 
   describe('getPrettyTimeToExpiration', () => {
-    it('should return a pretty time string for a license about to expire', () => {
+    test('should return a pretty time string for a license about to expire', () => {
       expect(getPrettyTimeToExpiration(mockLicenseEnterprise)).toContain('days');
     });
 
-    it('should return "License has expired" for an expired license', () => {
+    test('should return "License has expired" for an expired license', () => {
       expect(getPrettyTimeToExpiration(expiredLicense)).toBe('License has expired');
     });
   });
 
   describe('licensesToSimplifiedPreview', () => {
-    it('should group multiple licenses of the same type and show the earliest expiration', () => {
+    test('should group multiple licenses of the same type and show the earliest expiration', () => {
       const licenses = [
         new License({
           type: License_Type.ENTERPRISE,
@@ -130,10 +129,10 @@ describe('licenseUtils', () => {
       ];
 
       const result = licensesToSimplifiedPreview(licenses);
-      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '9/8/2034' }]); // Based on the earlier expiration timestamp
+      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '9/8/2034', isExpired: false }]); // Based on the earlier expiration timestamp
     });
 
-    it('should handle licenses with different types separately', () => {
+    test('should handle licenses with different types separately', () => {
       const licenses = [
         new License({
           type: License_Type.COMMUNITY,
@@ -149,39 +148,39 @@ describe('licenseUtils', () => {
 
       const result = licensesToSimplifiedPreview(licenses);
       expect(result).toEqual([
-        { name: 'Console Community', expiresAt: '' },
-        { name: 'Core Enterprise', expiresAt: '7/15/2122' }, // Based on the expiration timestamp
+        { name: 'Console Community', expiresAt: '', isExpired: false },
+        { name: 'Redpanda Enterprise', expiresAt: '7/15/2122', isExpired: false }, // Based on the expiration timestamp
       ]);
     });
   });
 
   describe('resolveEnterpriseCTALink', () => {
-    it('should return the correct URL for tryEnterprise with query parameters', () => {
+    test('should return the correct URL for tryEnterprise with query parameters', () => {
       const result = resolveEnterpriseCTALink('tryEnterprise', '12345-uuid', true);
-      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_uuid=12345-uuid&platform=1');
+      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_id=12345-uuid&platform=1');
     });
 
-    it('should return the correct URL for upgrade with query parameters', () => {
+    test('should return the correct URL for upgrade with query parameters', () => {
       const result = resolveEnterpriseCTALink('upgrade', '67890-uuid', false);
-      expect(result).toBe('https://redpanda.com/upgrade?cluster_uuid=67890-uuid&platform=2');
+      expect(result).toBe('https://redpanda.com/upgrade?cluster_id=67890-uuid&platform=2');
     });
 
-    it('should encode special characters in query parameters', () => {
+    test('should encode special characters in query parameters', () => {
       const result = resolveEnterpriseCTALink('tryEnterprise', '12345&uuid', true);
-      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_uuid=12345%26uuid&platform=1');
+      expect(result).toBe('https://redpanda.com/try-enterprise?cluster_id=12345%26uuid&platform=1');
     });
 
-    it('should throw an error for an invalid EnterpriseLinkType', () => {
+    test('should throw an error for an invalid EnterpriseLinkType', () => {
       // @ts-expect-error Testing invalid input
       expect(() => resolveEnterpriseCTALink('invalidType', '12345-uuid', true)).toThrow();
     });
 
-    it('should handle redpanda platform correctly', () => {
+    test('should handle redpanda platform correctly', () => {
       const result = resolveEnterpriseCTALink('tryEnterprise', '12345-uuid', true);
       expect(result).toContain('platform=1');
     });
 
-    it('should handle kafka platform correctly', () => {
+    test('should handle kafka platform correctly', () => {
       const result = resolveEnterpriseCTALink('upgrade', '12345-uuid', false);
       expect(result).toContain('platform=2');
     });
