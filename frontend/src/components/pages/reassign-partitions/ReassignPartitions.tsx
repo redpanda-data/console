@@ -67,6 +67,7 @@ import {
   partitionSelectionToTopicPartitions,
   topicAssignmentsToReassignmentRequest,
 } from './logic/utils';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 
 export interface PartitionSelection {
   // Which partitions are selected?
@@ -215,7 +216,9 @@ class ReassignPartitions extends PageComponent {
         <ToastContainer />
         <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
           <PageContent>
-            <FeatureLicenseNotification featureName="reassignPartitions" />
+            <NullFallbackBoundary>
+              <FeatureLicenseNotification featureName="reassignPartitions" />
+            </NullFallbackBoundary>
 
             {/* Statistics */}
             <Section py={4}>
