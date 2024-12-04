@@ -26,9 +26,9 @@ class RpConnectSecretCreate extends PageComponent {
   }
 
   initPage(p: PageInitHelper) {
-    p.title = 'Create Secret';
+    p.title = 'Create secret';
     p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secrets/create');
-    p.addBreadcrumb('Create Secret', '');
+    p.addBreadcrumb('Create secret', '');
 
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
@@ -145,7 +145,7 @@ class RpConnectSecretCreate extends PageComponent {
               isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)}
               onClick={action(() => this.createSecret())}
             >
-              Create Secret
+              Create secret
             </Button>
             <Button variant="link" disabled={this.isCreating} onClick={action(() => this.cancel())}>
               Cancel

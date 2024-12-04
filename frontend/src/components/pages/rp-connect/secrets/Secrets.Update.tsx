@@ -25,9 +25,9 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   }
 
   initPage(p: PageInitHelper) {
-    p.title = 'Update Secret';
+    p.title = 'Update secret';
     p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secrets/update');
-    p.addBreadcrumb('Update Secret', '');
+    p.addBreadcrumb('Update secret', '');
 
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
@@ -119,7 +119,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
 
           <ButtonGroup>
             <Button isLoading={this.isUpdating} isDisabled={isSecretEmpty} onClick={action(() => this.updateSecret())}>
-              Update Secret
+              Update secret
             </Button>
             <Button variant="link" disabled={this.isUpdating} onClick={action(() => this.cancel())}>
               Cancel
