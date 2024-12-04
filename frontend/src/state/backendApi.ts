@@ -140,7 +140,9 @@ import type { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpa
 import {
   type CreateSecretRequest,
   type DeleteSecretRequest,
+  type ListSecretScopesRequest,
   ListSecretsRequest,
+  Scope,
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
@@ -2067,6 +2069,7 @@ export const pipelinesApi = observable({
 
 export const rpcnSecretManagerApi = observable({
   secrets: undefined as undefined | Secret[],
+  isEnable: true,
 
   async refreshSecrets(_force: boolean): Promise<void> {
     const client = appConfig.rpcnSecretsClient;
@@ -2112,6 +2115,15 @@ export const rpcnSecretManagerApi = observable({
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
     await client.updateSecret(updateSecretRequest);
+  },
+  async checkScope(listSecretScopesRequest: ListSecretScopesRequest) {
+    const client = appConfig.rpcnSecretsClient;
+    if (!client) throw new Error('redpanda connect secret client is not initialized');
+
+    const scopes = await client.listSecretScopes(listSecretScopesRequest);
+    const isEnable = scopes.scopes.some((scope) => scope === Scope.REDPANDA_CONNECT);
+    this.isEnable = isEnable;
+    return isEnable;
   },
 });
 
