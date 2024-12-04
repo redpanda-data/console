@@ -46,7 +46,7 @@ class RpConnectSecretCreate extends PageComponent {
 
   async createSecret() {
     this.isCreating = true;
-
+    this.id = this.id.toUpperCase();
     rpcnSecretManagerApi
       .create(
         new CreateSecretRequest({
@@ -88,8 +88,8 @@ class RpConnectSecretCreate extends PageComponent {
     if (this.id === '') {
       return '';
     }
-    if (!/^[A-Z][A-Z0-9_]*$/.test(this.id)) {
-      return 'The name you entered is invalid. It must start with an uppercase letter (A–Z) and can only contain uppercase letters (A–Z), digits (0–9), and underscores (_).';
+    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(this.id)) {
+      return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain letters (A–Z), digits (0–9), and underscores (_).';
     }
     if (this.id.length > 255) {
       return 'The secret name must be fewer than 255 characters.';
@@ -107,7 +107,12 @@ class RpConnectSecretCreate extends PageComponent {
       <PageContent>
         <ToastContainer />
         <Flex flexDirection="column" gap={5}>
-          <FormField label="Secret name" isInvalid={Boolean(this.isNameValid)} errorText={this.isNameValid}>
+          <FormField
+            label="Secret name"
+            isInvalid={Boolean(this.isNameValid)}
+            errorText={this.isNameValid}
+            description={'This secret name will be stored in upper case.'}
+          >
             <Flex alignItems="center" gap="2">
               <Input
                 placeholder="Enter a secret name..."
@@ -117,7 +122,7 @@ class RpConnectSecretCreate extends PageComponent {
                 max={255}
                 isRequired
                 value={this.id}
-                onChange={(x) => (this.id = x.target.value.toUpperCase())}
+                onChange={(x) => (this.id = x.target.value)}
                 width={500}
                 disabled={this.isCreating}
               />
