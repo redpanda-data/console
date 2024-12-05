@@ -62,7 +62,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
           {api.isDebugBundleExpired && (
             <Text fontWeight="bold">Your previous bundle has expired and cannot be downloaded.</Text>
           )}
-          {api.isDebugBundleError && <Text>Your debug bundle was not generated. Try again.</Text>}
+          {api.isDebugBundleError && <Text>Your debug bundle was not generated.</Text>}
           {api.canDownloadDebugBundle && (
             <Box>
               <Flex gap={2}>
@@ -93,7 +93,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                 </Button>
               ) : (
                 <Button variant="outline" as={ReactRouterLink} to="/admin/debug-bundle">
-                  Done
+                  {api.isDebugBundleError ? 'Try again' : 'Done'}
                 </Button>
               )}
             </Box>
