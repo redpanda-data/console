@@ -14,8 +14,9 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { isServerless } from '../../../config';
+import { ListSecretScopesRequest } from '../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
+import { api, rpcnSecretManagerApi } from '../../../state/backendApi';
 import type { ClusterConnectorInfo, ClusterConnectorTaskInfo, ClusterConnectors } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
@@ -82,8 +83,15 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
+    this.checkRPCNSecretEnable();
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
+  }
+
+  async checkRPCNSecretEnable() {
+    if (Features.pipelinesApi) {
+      await rpcnSecretManagerApi.checkScope(new ListSecretScopesRequest());
+    }
   }
 
   async refreshData(force: boolean) {
@@ -427,6 +435,14 @@ const TabRedpandaConnect = observer((_p: { defaultView: ConnectView }) => {
       content: <RpConnectSecretsList matchedPath="/rp-connect/secrets" />,
     },
   ] as Tab[];
+
+  /**
+   * Verify if the RPCN secret is enabled. Unlike the pipeline, this feature checks
+   * the result endpoint rather than the endpoint itself.
+   */
+  if (!rpcnSecretManagerApi.isEnable) {
+    return <RpConnectPipelinesList matchedPath="/rp-connect" />;
+  }
 
   return (
     <Tabs

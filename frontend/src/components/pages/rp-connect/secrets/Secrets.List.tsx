@@ -16,7 +16,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import EmptyConnectors from '../../../../assets/redpanda/EmptyConnectors.svg';
+import SittingPanda from '../../../../assets/redpanda/SittingPanda.svg';
 import { DeleteSecretRequest, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { rpcnSecretManagerApi } from '../../../../state/backendApi';
@@ -41,7 +41,7 @@ const CreateSecretButton = () => {
 const EmptyPlaceholder = () => {
   return (
     <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
-      <Image src={EmptyConnectors} />
+      <Image src={SittingPanda} width={200} />
       <Box>You have no Redpanda Connect secrets.</Box>
       <CreateSecretButton />
     </Flex>
