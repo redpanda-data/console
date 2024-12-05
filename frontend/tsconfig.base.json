@@ -24,12 +24,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitOverride": false // needs to remain false because of Class components
+    "noImplicitOverride": false
   },
   "include": ["src"],
   "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts"],
 
-  // Set more sensible defaults to stop 'fork-ts-checker-webpack-plugin' from consuming a lot more CPU than necessary
   "watchOptions": {
     "watchFile": "useFsEvents",
     "fallbackPolling": "dynamicpriority"
