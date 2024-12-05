@@ -302,6 +302,44 @@ service PipelineService {
       }
     };
   }
+
+  // GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
+  // in the Redpanda cluster for the given secret.
+  rpc GetPipelinesForSecret(GetPipelinesForSecretRequest) returns (GetPipelinesForSecretResponse) {
+    option (google.api.http) = {get: "/v1alpha2/redpanda-connect/pipelines-for-secret"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Redpanda Connect pipelines for secret"
+      description: "Get Redpanda Connect pipelines for a given secret."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  // GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
+  // in the Redpanda cluster for all secrets.
+  rpc GetPipelinesBySecrets(GetPipelinesBySecretsRequest) returns (GetPipelinesBySecretsResponse) {
+    option (google.api.http) = {get: "/v1alpha2/redpanda-connect/pipelines-by-secrets"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Redpanda Connect pipelines by secrets"
+      description: "Get Redpanda Connect pipelines by secrets."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse"}
+          }
+        }
+      }
+    };
+  }
 }
 
 // PipelineCreate contains the details for the pipeline creation request.
@@ -475,4 +513,28 @@ message GetPipelineServiceConfigSchemaRequest {}
 message GetPipelineServiceConfigSchemaResponse {
   // JSON schema of the configuration components that are allowed for Connect pipelines.
   string config_schema = 1;
+}
+
+message PipelinesForSecret {
+  string secret_id = 1;
+  repeated Pipeline pipelines = 2;
+}
+
+message GetPipelinesForSecretRequest {
+  // Secret ID.
+  string secret_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Z][A-Z0-9_]*$"
+  ];
+}
+
+message GetPipelinesForSecretResponse {
+  PipelinesForSecret pipelines_for_secret = 1;
+}
+
+message GetPipelinesBySecretsRequest {}
+
+message GetPipelinesBySecretsResponse {
+  repeated PipelinesForSecret pipelines_for_secret = 1;
 }
