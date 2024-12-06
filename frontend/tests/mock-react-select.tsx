@@ -1,4 +1,4 @@
-import React, { type ChangeEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import { vi } from 'vitest';
 
 interface ChakraEvent {
