@@ -11,7 +11,6 @@ import { AppFeatures } from '../../utils/env';
 import { prettyMilliseconds } from '../../utils/utils';
 
 enum Platform {
-  PLATFORM_UNSPECIFIED = 0,
   PLATFORM_REDPANDA = 1,
   PLATFORM_NON_REDPANDA = 2,
 }
@@ -25,13 +24,6 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
   [License_Type.ENTERPRISE]: 3,
 };
 
-export const isEnterpriseFeatureUsed = (
-  featureName: string,
-  features: ListEnterpriseFeaturesResponse_Feature[],
-): boolean => {
-  return features.some((feature) => feature.enabled && feature.name === featureName);
-};
-
 /**
  * Checks if a list of enterprise features includes enabled features for authentication,
  * specifically 'sso' (Single Sign-On) or 'rbac' (Reassign Partitions).
@@ -42,6 +34,17 @@ export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIG
   return AppFeatures[feature] ?? false;
 };
 
+/**
+ * Determines if the CORE system includes any enabled enterprise features.
+ *
+ * This function checks a list of enterprise features and returns `true` if at least one feature is enabled,
+ * otherwise `false`.
+ *
+ * @param features - An array of `ListEnterpriseFeaturesResponse_Feature` objects representing the
+ * enterprise features and their enabled statuses.
+ *
+ * @returns `true` if at least one enterprise feature is enabled; otherwise, `false`.
+ */
 export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
   return features.some((feature) => feature.enabled);
 };
@@ -135,6 +138,24 @@ export const getMillisecondsToExpiration = (license: License): number => {
   return timeRemaining > 0 ? timeRemaining : -1;
 };
 
+/**
+ * Computes a human-readable representation of the time remaining until a license expires.
+ *
+ * This function takes a `License` object, calculates the time until expiration in milliseconds,
+ * and formats it into a user-friendly string. If the license has already expired, it returns
+ * a corresponding message.
+ *
+ * @param license - The `License` object containing expiration information.
+ *
+ * @returns A string representation of the time until expiration. For example:
+ * - If the license has expired: `"License has expired"`
+ * - If the license is still valid: `"3 days"` or `"4 hours"`, formatted using `prettyMilliseconds`.
+ *
+ * @remarks
+ * - The function internally uses `getMillisecondsToExpiration` to determine the raw time until expiration.
+ * - The `prettyMilliseconds` library is used to format the result in a human-readable way.
+ * - The result is truncated to 1 unit of time (e.g., `1 day`), with no decimal places for seconds.
+ */
 export const getPrettyTimeToExpiration = (license: License) => {
   const timeToExpiration = getMillisecondsToExpiration(license);
 

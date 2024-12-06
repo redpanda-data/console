@@ -1,5 +1,11 @@
-import { License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import {
+  License,
+  License_Source,
+  License_Type,
+  type ListEnterpriseFeaturesResponse_Feature,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import {
+  coreHasEnterpriseFeatures,
   getPrettyTimeToExpiration,
   licenseIsExpired,
   licenseSoonToExpire,
@@ -45,6 +51,31 @@ describe('licenseUtils', () => {
     type: License_Type.ENTERPRISE,
     expiresAt: BigInt(Math.floor(Date.now() / 1000) - 60 * 60 * 24), // expired yesterday
     source: License_Source.REDPANDA_CONSOLE,
+  });
+
+  describe('coreHasEnterpriseFeatures', () => {
+    test('should return true when at least one feature is enabled', () => {
+      const features: ListEnterpriseFeaturesResponse_Feature[] = [
+        { name: 'rbac', enabled: true },
+        { name: 'datalake_iceberg', enabled: false },
+        { name: 'audit_logging' },
+      ];
+      expect(coreHasEnterpriseFeatures(features)).toBe(true);
+    });
+
+    test('should return false when no features are enabled', () => {
+      const features: ListEnterpriseFeaturesResponse_Feature[] = [
+        { name: 'rbac', enabled: false },
+        { name: 'datalake_iceberg', enabled: false },
+        { name: 'audit_logging' },
+      ];
+      expect(coreHasEnterpriseFeatures(features)).toBe(false);
+    });
+
+    test('should return false for an empty list of features', () => {
+      const features: ListEnterpriseFeaturesResponse_Feature[] = [];
+      expect(coreHasEnterpriseFeatures(features)).toBe(false);
+    });
   });
 
   describe('licenseIsExpired', () => {
