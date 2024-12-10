@@ -79,6 +79,205 @@ proto3.util.setEnumType(AuthenticationMethod, "redpanda.api.console.v1alpha1.Aut
 ]);
 
 /**
+ * ServiceDomain represents different backend services or domains we integrate with.
+ * Even though we're not including resource-specific data here, we might still have
+ * domain-wide capabilities (like "CREATE_TOPIC" at the cluster level).
+ *
+ * @generated from enum redpanda.api.console.v1alpha1.ServiceDomain
+ */
+export enum ServiceDomain {
+  /**
+   * @generated from enum value: SERVICE_DOMAIN_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SERVICE_DOMAIN_KAFKA = 1;
+   */
+  KAFKA = 1,
+
+  /**
+   * @generated from enum value: SERVICE_DOMAIN_SCHEMA_REGISTRY = 2;
+   */
+  SCHEMA_REGISTRY = 2,
+
+  /**
+   * @generated from enum value: SERVICE_DOMAIN_REDPANDA = 3;
+   */
+  REDPANDA = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ServiceDomain)
+proto3.util.setEnumType(ServiceDomain, "redpanda.api.console.v1alpha1.ServiceDomain", [
+  { no: 0, name: "SERVICE_DOMAIN_UNSPECIFIED" },
+  { no: 1, name: "SERVICE_DOMAIN_KAFKA" },
+  { no: 2, name: "SERVICE_DOMAIN_SCHEMA_REGISTRY" },
+  { no: 3, name: "SERVICE_DOMAIN_REDPANDA" },
+]);
+
+/**
+ * Kafka ACL operation enumerates actions the user can perform on a Kafka cluster. The capabilties
+ * can apply globally or for specific resources (such as topics).
+ *
+ * @generated from enum redpanda.api.console.v1alpha1.KafkaAclOperation
+ */
+export enum KafkaAclOperation {
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_READ = 1;
+   */
+  READ = 1,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_WRITE = 2;
+   */
+  WRITE = 2,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_CREATE = 3;
+   */
+  CREATE = 3,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_DELETE = 4;
+   */
+  DELETE = 4,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_ALTER = 5;
+   */
+  ALTER = 5,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_DESCRIBE = 6;
+   */
+  DESCRIBE = 6,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_CLUSTER_ACTION = 7;
+   */
+  CLUSTER_ACTION = 7,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_DESCRIBE_CONFIGS = 8;
+   */
+  DESCRIBE_CONFIGS = 8,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_ALTER_CONFIGS = 9;
+   */
+  ALTER_CONFIGS = 9,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_IDEMPOTENT_WRITE = 10;
+   */
+  IDEMPOTENT_WRITE = 10,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_CREATE_TOKENS = 11;
+   */
+  CREATE_TOKENS = 11,
+
+  /**
+   * @generated from enum value: KAFKA_ACL_OPERATION_DESCRIBE_TOKENS = 12;
+   */
+  DESCRIBE_TOKENS = 12,
+}
+// Retrieve enum metadata with: proto3.getEnumType(KafkaAclOperation)
+proto3.util.setEnumType(KafkaAclOperation, "redpanda.api.console.v1alpha1.KafkaAclOperation", [
+  { no: 0, name: "KAFKA_ACL_OPERATION_UNSPECIFIED" },
+  { no: 1, name: "KAFKA_ACL_OPERATION_READ" },
+  { no: 2, name: "KAFKA_ACL_OPERATION_WRITE" },
+  { no: 3, name: "KAFKA_ACL_OPERATION_CREATE" },
+  { no: 4, name: "KAFKA_ACL_OPERATION_DELETE" },
+  { no: 5, name: "KAFKA_ACL_OPERATION_ALTER" },
+  { no: 6, name: "KAFKA_ACL_OPERATION_DESCRIBE" },
+  { no: 7, name: "KAFKA_ACL_OPERATION_CLUSTER_ACTION" },
+  { no: 8, name: "KAFKA_ACL_OPERATION_DESCRIBE_CONFIGS" },
+  { no: 9, name: "KAFKA_ACL_OPERATION_ALTER_CONFIGS" },
+  { no: 10, name: "KAFKA_ACL_OPERATION_IDEMPOTENT_WRITE" },
+  { no: 11, name: "KAFKA_ACL_OPERATION_CREATE_TOKENS" },
+  { no: 12, name: "KAFKA_ACL_OPERATION_DESCRIBE_TOKENS" },
+]);
+
+/**
+ * Schema Registry-specific capabilities.
+ *
+ * @generated from enum redpanda.api.console.v1alpha1.SchemaRegistryCapability
+ */
+export enum SchemaRegistryCapability {
+  /**
+   * @generated from enum value: SCHEMA_REGISTRY_CAPABILITY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SCHEMA_REGISTRY_CAPABILITY_READ = 1;
+   */
+  READ = 1,
+
+  /**
+   * @generated from enum value: SCHEMA_REGISTRY_CAPABILITY_WRITE = 2;
+   */
+  WRITE = 2,
+
+  /**
+   * @generated from enum value: SCHEMA_REGISTRY_CAPABILITY_DELETE = 3;
+   */
+  DELETE = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(SchemaRegistryCapability)
+proto3.util.setEnumType(SchemaRegistryCapability, "redpanda.api.console.v1alpha1.SchemaRegistryCapability", [
+  { no: 0, name: "SCHEMA_REGISTRY_CAPABILITY_UNSPECIFIED" },
+  { no: 1, name: "SCHEMA_REGISTRY_CAPABILITY_READ" },
+  { no: 2, name: "SCHEMA_REGISTRY_CAPABILITY_WRITE" },
+  { no: 3, name: "SCHEMA_REGISTRY_CAPABILITY_DELETE" },
+]);
+
+/**
+ * Redpanda cluster-wide capabilities.
+ *
+ * @generated from enum redpanda.api.console.v1alpha1.RedpandaCapability
+ */
+export enum RedpandaCapability {
+  /**
+   * @generated from enum value: REDPANDA_CAPABILITY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: REDPANDA_CAPABILITY_MANAGE_TRANSFORMS = 1;
+   */
+  MANAGE_TRANSFORMS = 1,
+
+  /**
+   * @generated from enum value: REDPANDA_CAPABILITY_MANAGE_DEBUG_BUNDLE = 2;
+   */
+  MANAGE_DEBUG_BUNDLE = 2,
+
+  /**
+   * @generated from enum value: REDPANDA_CAPABILITY_MANAGE_REDPANDA_USERS = 3;
+   */
+  MANAGE_REDPANDA_USERS = 3,
+
+  /**
+   * @generated from enum value: REDPANDA_CAPABILITY_MANAGE_RBAC = 4;
+   */
+  MANAGE_RBAC = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(RedpandaCapability)
+proto3.util.setEnumType(RedpandaCapability, "redpanda.api.console.v1alpha1.RedpandaCapability", [
+  { no: 0, name: "REDPANDA_CAPABILITY_UNSPECIFIED" },
+  { no: 1, name: "REDPANDA_CAPABILITY_MANAGE_TRANSFORMS" },
+  { no: 2, name: "REDPANDA_CAPABILITY_MANAGE_DEBUG_BUNDLE" },
+  { no: 3, name: "REDPANDA_CAPABILITY_MANAGE_REDPANDA_USERS" },
+  { no: 4, name: "REDPANDA_CAPABILITY_MANAGE_RBAC" },
+]);
+
+/**
  * @generated from message redpanda.api.console.v1alpha1.LoginSaslScramRequest
  */
 export class LoginSaslScramRequest extends Message<LoginSaslScramRequest> {
@@ -343,6 +542,11 @@ export class GetIdentityResponse extends Message<GetIdentityResponse> {
    */
   avatarUrl = "";
 
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.GetIdentityResponse.Permissions permissions = 4;
+   */
+  permissions?: GetIdentityResponse_Permissions;
+
   constructor(data?: PartialMessage<GetIdentityResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -354,6 +558,7 @@ export class GetIdentityResponse extends Message<GetIdentityResponse> {
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "authentication_method", kind: "enum", T: proto3.getEnumType(AuthenticationMethod) },
     { no: 3, name: "avatar_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "permissions", kind: "message", T: GetIdentityResponse_Permissions },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIdentityResponse {
@@ -370,6 +575,55 @@ export class GetIdentityResponse extends Message<GetIdentityResponse> {
 
   static equals(a: GetIdentityResponse | PlainMessage<GetIdentityResponse> | undefined, b: GetIdentityResponse | PlainMessage<GetIdentityResponse> | undefined): boolean {
     return proto3.util.equals(GetIdentityResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetIdentityResponse.Permissions
+ */
+export class GetIdentityResponse_Permissions extends Message<GetIdentityResponse_Permissions> {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.KafkaAclOperation kafka_cluster_operations = 4;
+   */
+  kafkaClusterOperations: KafkaAclOperation[] = [];
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.SchemaRegistryCapability schema_registry = 5;
+   */
+  schemaRegistry: SchemaRegistryCapability[] = [];
+
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.RedpandaCapability redpanda = 6;
+   */
+  redpanda: RedpandaCapability[] = [];
+
+  constructor(data?: PartialMessage<GetIdentityResponse_Permissions>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetIdentityResponse.Permissions";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 4, name: "kafka_cluster_operations", kind: "enum", T: proto3.getEnumType(KafkaAclOperation), repeated: true },
+    { no: 5, name: "schema_registry", kind: "enum", T: proto3.getEnumType(SchemaRegistryCapability), repeated: true },
+    { no: 6, name: "redpanda", kind: "enum", T: proto3.getEnumType(RedpandaCapability), repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIdentityResponse_Permissions {
+    return new GetIdentityResponse_Permissions().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIdentityResponse_Permissions {
+    return new GetIdentityResponse_Permissions().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIdentityResponse_Permissions {
+    return new GetIdentityResponse_Permissions().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIdentityResponse_Permissions | PlainMessage<GetIdentityResponse_Permissions> | undefined, b: GetIdentityResponse_Permissions | PlainMessage<GetIdentityResponse_Permissions> | undefined): boolean {
+    return proto3.util.equals(GetIdentityResponse_Permissions, a, b);
   }
 }
 
