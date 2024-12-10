@@ -14,16 +14,20 @@ import {
   AlertIcon,
   Box,
   Button,
+  Link as ChLink,
   Flex,
   FormField,
+  Heading,
   Input,
   NumberInput,
   Text,
   createStandaloneToast,
+  useDisclosure,
 } from '@redpanda-data/ui';
-import { Link as ChLink } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { editor } from 'monaco-editor';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -34,7 +38,9 @@ import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
+import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+
 const { ToastContainer, toast } = createStandaloneToast();
 
 const exampleContent = `
@@ -194,12 +200,46 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
 export default RpConnectPipelinesCreate;
 
+interface QuickActions {
+  editorInstance: editor.IStandaloneCodeEditor | null;
+}
+
+const QuickActions = ({ editorInstance }: QuickActions) => {
+  const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
+
+  if (editorInstance === null) {
+    return <Box minW={300} />;
+  }
+
+  const onAddSecret = (secretNotation: string) => {
+    const selection = editorInstance.getSelection();
+    if (selection === null) return;
+    const id = { major: 1, minor: 1 };
+    const op = { identifier: id, range: selection, text: secretNotation, forceMoveMarkers: true };
+    editorInstance.executeEdits('my-source', [op]);
+    closeAddSecret();
+  };
+
+  return (
+    <Flex gap={3} flexDirection={'column'}>
+      <Heading variant={'sm'}>Quick-add</Heading>
+      <Button variant={'outline'} onClick={openAddSecret} w={20}>
+        Secret
+      </Button>
+      <Text>Add a reference to a new or existing secret value, such as a key.</Text>
+      <SecretsQuickAdd isOpen={isAddSecretOpen} onCloseAddSecret={closeAddSecret} onAdd={onAddSecret} />
+    </Flex>
+  );
+};
+
 export const PipelineEditor = observer(
   (p: {
     yaml: string;
     onChange: (newYaml: string) => void;
     secrets?: string[];
+    quickActions?: React.FunctionComponent;
   }) => {
+    const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     return (
       <Tabs
         tabs={[
@@ -209,7 +249,7 @@ export const PipelineEditor = observer(
             content: () => (
               <Box>
                 {/* yaml editor */}
-                <Flex height="400px" maxWidth="800px">
+                <Flex height="400px" gap={7}>
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
                     path="config.yaml"
@@ -218,7 +258,11 @@ export const PipelineEditor = observer(
                       if (e) p.onChange(e);
                     }}
                     language="yaml"
+                    onMount={(editor, _) => {
+                      setEditorInstance(editor);
+                    }}
                   />
+                  <QuickActions editorInstance={editorInstance} />
                 </Flex>
                 {isKafkaConnectPipeline(p.yaml) && (
                   <Alert status="error" my={2}>
