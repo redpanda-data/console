@@ -103,7 +103,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           .
         </Box>
 
-        <Flex flexDirection="column">
+        <Flex flexDirection="column" gap={3}>
           <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
             <Flex alignItems="center" gap="2">
               <Input
@@ -125,7 +125,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
               width={500}
             />
           </FormField>
-          <FormField label="Tasks">
+          <FormField
+            label="Tasks"
+            description="One task is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines. For pipelines that include the AI Ollama components, one task is equivalent to 1 GPU. This can have cost implications."
+            w={500}
+          >
             <NumberInput
               value={this.tasks}
               onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
