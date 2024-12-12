@@ -25,6 +25,8 @@ type PipelineServiceGatewayServer struct {
 	stopPipeline                   connect_gateway.UnaryHandler[v1alpha2.StopPipelineRequest, v1alpha2.StopPipelineResponse]
 	startPipeline                  connect_gateway.UnaryHandler[v1alpha2.StartPipelineRequest, v1alpha2.StartPipelineResponse]
 	getPipelineServiceConfigSchema connect_gateway.UnaryHandler[v1alpha2.GetPipelineServiceConfigSchemaRequest, v1alpha2.GetPipelineServiceConfigSchemaResponse]
+	getPipelinesForSecret          connect_gateway.UnaryHandler[v1alpha2.GetPipelinesForSecretRequest, v1alpha2.GetPipelinesForSecretResponse]
+	getPipelinesBySecrets          connect_gateway.UnaryHandler[v1alpha2.GetPipelinesBySecretsRequest, v1alpha2.GetPipelinesBySecretsResponse]
 }
 
 // NewPipelineServiceGatewayServer constructs a Connect-Gateway gRPC server for the PipelineService
@@ -39,6 +41,8 @@ func NewPipelineServiceGatewayServer(svc PipelineServiceHandler, opts ...connect
 		stopPipeline:                   connect_gateway.NewUnaryHandler(PipelineServiceStopPipelineProcedure, svc.StopPipeline, opts...),
 		startPipeline:                  connect_gateway.NewUnaryHandler(PipelineServiceStartPipelineProcedure, svc.StartPipeline, opts...),
 		getPipelineServiceConfigSchema: connect_gateway.NewUnaryHandler(PipelineServiceGetPipelineServiceConfigSchemaProcedure, svc.GetPipelineServiceConfigSchema, opts...),
+		getPipelinesForSecret:          connect_gateway.NewUnaryHandler(PipelineServiceGetPipelinesForSecretProcedure, svc.GetPipelinesForSecret, opts...),
+		getPipelinesBySecrets:          connect_gateway.NewUnaryHandler(PipelineServiceGetPipelinesBySecretsProcedure, svc.GetPipelinesBySecrets, opts...),
 	}
 }
 
@@ -72,6 +76,14 @@ func (s *PipelineServiceGatewayServer) StartPipeline(ctx context.Context, req *v
 
 func (s *PipelineServiceGatewayServer) GetPipelineServiceConfigSchema(ctx context.Context, req *v1alpha2.GetPipelineServiceConfigSchemaRequest) (*v1alpha2.GetPipelineServiceConfigSchemaResponse, error) {
 	return s.getPipelineServiceConfigSchema(ctx, req)
+}
+
+func (s *PipelineServiceGatewayServer) GetPipelinesForSecret(ctx context.Context, req *v1alpha2.GetPipelinesForSecretRequest) (*v1alpha2.GetPipelinesForSecretResponse, error) {
+	return s.getPipelinesForSecret(ctx, req)
+}
+
+func (s *PipelineServiceGatewayServer) GetPipelinesBySecrets(ctx context.Context, req *v1alpha2.GetPipelinesBySecretsRequest) (*v1alpha2.GetPipelinesBySecretsResponse, error) {
+	return s.getPipelinesBySecrets(ctx, req)
 }
 
 // RegisterPipelineServiceHandlerGatewayServer registers the Connect handlers for the

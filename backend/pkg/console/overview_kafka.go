@@ -38,6 +38,7 @@ type OverviewKafka struct {
 	ReplicasCount   int                   `json:"replicasCount"`
 	ControllerID    int32                 `json:"controllerId"`
 	Brokers         []OverviewKafkaBroker `json:"brokers"`
+	ClusterID       string                `json:"clusterId"`
 
 	Authorizer *OverviewKafkaAuthorizer `json:"authorizer,omitempty"`
 }
@@ -146,6 +147,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 		ReplicasCount:   replicaCount,
 		ControllerID:    metadata.Controller,
 		Authorizer:      &authorizer,
+		ClusterID:       metadata.Cluster,
 	}
 }
 

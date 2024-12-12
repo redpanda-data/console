@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest, GetPipelineResponse, GetPipelineServiceConfigSchemaRequest, GetPipelineServiceConfigSchemaResponse, ListPipelinesRequest, ListPipelinesResponse, StartPipelineRequest, StartPipelineResponse, StopPipelineRequest, StopPipelineResponse, UpdatePipelineRequest, UpdatePipelineResponse } from "./pipeline_pb";
+import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest, GetPipelineResponse, GetPipelinesBySecretsRequest, GetPipelinesBySecretsResponse, GetPipelineServiceConfigSchemaRequest, GetPipelineServiceConfigSchemaResponse, GetPipelinesForSecretRequest, GetPipelinesForSecretResponse, ListPipelinesRequest, ListPipelinesResponse, StartPipelineRequest, StartPipelineResponse, StopPipelineRequest, StopPipelineResponse, UpdatePipelineRequest, UpdatePipelineResponse } from "./pipeline_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -102,6 +102,30 @@ export const PipelineService = {
       name: "GetPipelineServiceConfigSchema",
       I: GetPipelineServiceConfigSchemaRequest,
       O: GetPipelineServiceConfigSchemaResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
+     * in the Redpanda cluster for the given secret.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.GetPipelinesForSecret
+     */
+    getPipelinesForSecret: {
+      name: "GetPipelinesForSecret",
+      I: GetPipelinesForSecretRequest,
+      O: GetPipelinesForSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
+     * in the Redpanda cluster for all secrets.
+     *
+     * @generated from rpc redpanda.api.dataplane.v1alpha2.PipelineService.GetPipelinesBySecrets
+     */
+    getPipelinesBySecrets: {
+      name: "GetPipelinesBySecrets",
+      I: GetPipelinesBySecretsRequest,
+      O: GetPipelinesBySecretsResponse,
       kind: MethodKind.Unary,
     },
   }

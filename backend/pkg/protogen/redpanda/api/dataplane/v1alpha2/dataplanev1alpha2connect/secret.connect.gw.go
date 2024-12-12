@@ -22,6 +22,7 @@ type SecretServiceGatewayServer struct {
 	createSecret        connect_gateway.UnaryHandler[v1alpha2.CreateSecretRequest, v1alpha2.CreateSecretResponse]
 	updateSecret        connect_gateway.UnaryHandler[v1alpha2.UpdateSecretRequest, v1alpha2.UpdateSecretResponse]
 	deleteSecret        connect_gateway.UnaryHandler[v1alpha2.DeleteSecretRequest, v1alpha2.DeleteSecretResponse]
+	listSecretScopes    connect_gateway.UnaryHandler[v1alpha2.ListSecretScopesRequest, v1alpha2.ListSecretScopesResponse]
 	getConnectSecret    connect_gateway.UnaryHandler[v1alpha2.GetConnectSecretRequest, v1alpha2.GetConnectSecretResponse]
 	listConnectSecrets  connect_gateway.UnaryHandler[v1alpha2.ListConnectSecretsRequest, v1alpha2.ListConnectSecretsResponse]
 	createConnectSecret connect_gateway.UnaryHandler[v1alpha2.CreateConnectSecretRequest, v1alpha2.CreateConnectSecretResponse]
@@ -38,6 +39,7 @@ func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gat
 		createSecret:        connect_gateway.NewUnaryHandler(SecretServiceCreateSecretProcedure, svc.CreateSecret, opts...),
 		updateSecret:        connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
 		deleteSecret:        connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
+		listSecretScopes:    connect_gateway.NewUnaryHandler(SecretServiceListSecretScopesProcedure, svc.ListSecretScopes, opts...),
 		getConnectSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetConnectSecretProcedure, svc.GetConnectSecret, opts...),
 		listConnectSecrets:  connect_gateway.NewUnaryHandler(SecretServiceListConnectSecretsProcedure, svc.ListConnectSecrets, opts...),
 		createConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateConnectSecretProcedure, svc.CreateConnectSecret, opts...),
@@ -64,6 +66,10 @@ func (s *SecretServiceGatewayServer) UpdateSecret(ctx context.Context, req *v1al
 
 func (s *SecretServiceGatewayServer) DeleteSecret(ctx context.Context, req *v1alpha2.DeleteSecretRequest) (*v1alpha2.DeleteSecretResponse, error) {
 	return s.deleteSecret(ctx, req)
+}
+
+func (s *SecretServiceGatewayServer) ListSecretScopes(ctx context.Context, req *v1alpha2.ListSecretScopesRequest) (*v1alpha2.ListSecretScopesResponse, error) {
+	return s.listSecretScopes(ctx, req)
 }
 
 func (s *SecretServiceGatewayServer) GetConnectSecret(ctx context.Context, req *v1alpha2.GetConnectSecretRequest) (*v1alpha2.GetConnectSecretResponse, error) {

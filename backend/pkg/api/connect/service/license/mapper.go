@@ -18,6 +18,12 @@ import (
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 )
 
+// license types returned by the admin API, currently only "enterprise" and
+// "free_trial" are supported
+var (
+	rpAdminLicenseTypeEnterprise = "enterprise"
+)
+
 type mapper struct{}
 
 func (mapper) adminAPILicenseInformationToProto(in rpadmin.License) *v1alpha1.License {
@@ -26,7 +32,12 @@ func (mapper) adminAPILicenseInformationToProto(in rpadmin.License) *v1alpha1.Li
 	licenseType := v1alpha1.License_TYPE_COMMUNITY
 
 	if in.Loaded {
-		licenseType = v1alpha1.License_TYPE_ENTERPRISE
+		if in.Properties.Type == rpAdminLicenseTypeEnterprise {
+			licenseType = v1alpha1.License_TYPE_ENTERPRISE
+		} else {
+			licenseType = v1alpha1.License_TYPE_TRIAL
+		}
+
 		expiresAt = in.Properties.Expires
 	}
 
@@ -44,6 +55,8 @@ func (mapper) consoleLicenseToProto(in license.License) *v1alpha1.License {
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
 	case license.TypeEnterprise:
 		licenseType = v1alpha1.License_TYPE_ENTERPRISE
+	case redpanda.LicenseTypeFreeTrial:
+		licenseType = v1alpha1.License_TYPE_TRIAL
 	default:
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
 	}

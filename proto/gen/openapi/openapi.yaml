@@ -681,6 +681,18 @@ components:
           description: JSON schema of the configuration components that are allowed for Connect pipelines.
           type: string
       type: object
+    GetPipelinesBySecretsResponse:
+      properties:
+        pipelines_for_secret:
+          items:
+            $ref: '#/components/schemas/PipelinesForSecret'
+          type: array
+      type: object
+    GetPipelinesForSecretResponse:
+      properties:
+        pipelines_for_secret:
+          $ref: '#/components/schemas/PipelinesForSecret'
+      type: object
     GetSecretResponse:
       description: GetSecretResponse is the response of GetSecret.
       properties:
@@ -823,6 +835,14 @@ components:
         pipelines:
           items:
             $ref: '#/components/schemas/Pipeline'
+          type: array
+      type: object
+    ListSecretScopesResponse:
+      description: ListSecretScopesResponse is the response of ListSecretScopes.
+      properties:
+        scopes:
+          items:
+            $ref: '#/components/schemas/Scope'
           type: array
       type: object
     ListSecretsFilter:
@@ -1141,6 +1161,15 @@ components:
       required:
         - display_name
         - config_yaml
+      type: object
+    PipelinesForSecret:
+      properties:
+        pipelines:
+          items:
+            $ref: '#/components/schemas/Pipeline'
+          type: array
+        secret_id:
+          type: string
       type: object
     Policy:
       properties:
@@ -3264,6 +3293,77 @@ paths:
       summary: Create Redpanda Connect pipeline
       tags:
         - PipelineService
+  /v1alpha2/redpanda-connect/pipelines-by-secrets:
+    get:
+      description: Get Redpanda Connect pipelines by secrets.
+      operationId: PipelineService_GetPipelinesBySecrets
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPipelinesBySecretsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Redpanda Connect pipelines by secrets
+      tags:
+        - PipelineService
+  /v1alpha2/redpanda-connect/pipelines-for-secret:
+    get:
+      description: Get Redpanda Connect pipelines for a given secret.
+      operationId: PipelineService_GetPipelinesForSecret
+      parameters:
+        - description: Secret ID.
+          in: query
+          name: secret_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPipelinesForSecretResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Redpanda Connect pipelines for secret
+      tags:
+        - PipelineService
   /v1alpha2/redpanda-connect/pipelines/{id}:
     delete:
       description: Delete a Redpanda Connect pipeline.
@@ -3487,6 +3587,38 @@ paths:
       summary: Stops a Redpanda Connect pipeline
       tags:
         - PipelineService
+  /v1alpha2/secret-scopes:
+    get:
+      description: List supported secret scopes.
+      operationId: SecretService_ListSecretScopes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSecretScopesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Secret Scopes
+      tags:
+        - SecretService
   /v1alpha2/secrets:
     get:
       description: 'List secrets. Optional: filter based on secret name and labels.'

@@ -1,39 +1,4 @@
 {
-    "compilerOptions": {
-        "experimentalDecorators": true,
-        "useDefineForClassFields": true,
-        "target": "es2019",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "esnext"
-        ],
-        "emitDecoratorMetadata": true,
-        "allowJs": true,
-        "skipLibCheck": true,
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "strict": true,
-        "forceConsistentCasingInFileNames": true,
-        "module": "esnext",
-        "moduleResolution": "node",
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "noEmit": true,
-        "jsx": "react-jsx",
-        "strictPropertyInitialization": false,
-        "noFallthroughCasesInSwitch": true,
-    },
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "src/utils/interpreter/**"
-    ],
-
-    // Set more sensible defaults to stop 'fork-ts-checker-webpack-plugin' from consuming a lot more CPU than necessary
-    "watchOptions": {
-        "watchFile": "useFsEvents",
-        "fallbackPolling": "dynamicpriority"
-    }
+  "extends": "./tsconfig.base.json",
+  "exclude": ["node_modules"]
 }

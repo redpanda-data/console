@@ -30,8 +30,7 @@ export default defineConfig({
     viewport: { width: 1920, height: 1080 },
     headless: !!process.env.CI,
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.REACT_APP_ORIGIN ??
-      'http://localhost:3000',
+    baseURL: process.env.REACT_APP_ORIGIN ?? 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -50,28 +49,30 @@ export default defineConfig({
         storageState: 'playwright/.auth/user.json',
         // baseURL: '// console console-enterprise URL'
       },
-      dependencies: ['authenticate']
+      dependencies: ['authenticate'],
     },
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: [{
-    cwd: process.env.CI ? '../../backend/cmd' : '../../console-enterprise/backend/cmd',
-    command: process.env.CI ?
-      'go run . --config.filepath=../../console-oss/frontend/tests/config/console.enterprise.config.yaml' :
-      'go run . --config.filepath=../../../console/frontend/tests/config/console.enterprise.config.yaml',
-    url: 'http://localhost:9090/admin/startup',
-    reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    timeout: 240 * 1000
-  },
-  {
-    command: 'npm run start2',
-    url: 'http://localhost:3000',
-    timeout: 240 * 1000,
-    reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  }]
+  webServer: [
+    {
+      cwd: process.env.CI ? '../../backend/cmd' : '../../console-enterprise/backend/cmd',
+      command: process.env.CI
+        ? 'go run . --config.filepath=../../console-oss/frontend/tests/config/console.enterprise.config.yaml'
+        : 'go run . --config.filepath=../../../console/frontend/tests/config/console.enterprise.config.yaml',
+      url: 'http://localhost:9090/admin/startup',
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      timeout: 240 * 1000,
+    },
+    {
+      command: 'npm run start2',
+      url: 'http://localhost:3000',
+      timeout: 240 * 1000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
 });
