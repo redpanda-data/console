@@ -55,7 +55,7 @@ func (mapper) consoleLicenseToProto(in license.License) *v1alpha1.License {
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
 	case license.TypeEnterprise:
 		licenseType = v1alpha1.License_TYPE_ENTERPRISE
-	case redpanda.LicenseTypeFreeTrial:
+	case license.TypeFreeTrial:
 		licenseType = v1alpha1.License_TYPE_TRIAL
 	default:
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
