@@ -409,82 +409,86 @@ const apiStore = {
   debugBundleStatuses: [] as GetDebugBundleStatusResponse_DebugBundleBrokerStatus[],
   hasDebugProcess: false as boolean,
 
-    // undefined = we haven't checked yet
-    // null = call completed, and we're not logged in
-    userData: undefined as (UserData | null | undefined),
-    async logout() {
-        await appConfig.fetch('./auth/logout');
-        this.userData = null;
-    },
-    async refreshUserData() {
-        const client = appConfig.authenticationClient;
-        if (!client) throw new Error('security client is not initialized');
+  // undefined = we haven't checked yet
+  // null = call completed, and we're not logged in
+  userData: undefined as UserData | null | undefined,
+  async logout() {
+    await appConfig.fetch('./auth/logout');
+    this.userData = null;
+  },
+  async refreshUserData() {
+    const client = appConfig.authenticationClient;
+    if (!client) throw new Error('security client is not initialized');
 
-        await client.getIdentity({}).then((r) => {
-            if(r.ok) {
-                api.userData = {
-                    canViewConsoleUsers: false,
-                    canListAcls: true,
-                    canListQuotas: true,
-                    canPatchConfigs: true,
-                    canReassignPartitions: true,
-                    canCreateSchemas: true,
-                    canDeleteSchemas: true,
-                    canManageSchemaRegistry: true,
-                    canViewSchemas: true,
-                    canListTransforms: true,
-                    canCreateTransforms: true,
-                    canDeleteTransforms: true,
-                    canViewDebugBundle: true,
-                    seat: null as any,
-                    user: {
-                        providerID: r.authenticationMethod,
-                        providerName: '',
-                        id: '',
-                        internalIdentifier: '',
-                        meta: {
-                            avatarUrl: '',
-                            email: '',
-                            name: r.displayName
-                        }}
-                } as UserData;
-            }  else if (r.status === 401) {
-                // unauthorized / not logged in
-                api.userData = null;
-            } else if (r.status === 404) {
-                // not found: frontend is configured as business-version, but backend is non-business-version
-                // -> create a local fake user for debugging
-                uiState.isUsingDebugUserLogin = true;
-                api.userData = {
-                    canViewConsoleUsers: false,
-                    canListAcls: true,
-                    canListQuotas: true,
-                    canPatchConfigs: true,
-                    canReassignPartitions: true,
-                    canCreateSchemas: true,
-                    canDeleteSchemas: true,
-                    canManageSchemaRegistry: true,
-                    canViewSchemas: true,
-                    canListTransforms: true,
-                    canCreateTransforms: true,
-                    canDeleteTransforms: true,
-                    canViewDebugBundle: true,
-                    seat: null as any,
-                    user: {
-                        providerID: -1,
-                        providerName: 'debug provider',
-                        id: 'debug',
-                        internalIdentifier: 'debug',
-                        meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
-                    },
-                };
-            } else if (r.status === 403) {
-                void handleExpiredLicenseError(r);
-            }
-        }).catch(() => {
-            this.userData = null
-        })
-    },
+    await client
+      .getIdentity({})
+      .then((r) => {
+        api.userData = {
+          canViewConsoleUsers: false,
+          canListAcls: true,
+          canListQuotas: true,
+          canPatchConfigs: true,
+          canReassignPartitions: true,
+          canCreateSchemas: true,
+          canDeleteSchemas: true,
+          canManageSchemaRegistry: true,
+          canViewSchemas: true,
+          canListTransforms: true,
+          canCreateTransforms: true,
+          canDeleteTransforms: true,
+          canViewDebugBundle: true,
+          seat: null as any,
+          user: {
+            providerID: r.authenticationMethod,
+            providerName: '',
+            id: '',
+            internalIdentifier: '',
+            meta: {
+              avatarUrl: '',
+              email: '',
+              name: r.displayName,
+            },
+          },
+        } as UserData;
+
+        if (r.status === 401) {
+          // unauthorized / not logged in
+          api.userData = null;
+        } else if (r.status === 404) {
+          // not found: frontend is configured as business-version, but backend is non-business-version
+          // -> create a local fake user for debugging
+          uiState.isUsingDebugUserLogin = true;
+          api.userData = {
+            canViewConsoleUsers: false,
+            canListAcls: true,
+            canListQuotas: true,
+            canPatchConfigs: true,
+            canReassignPartitions: true,
+            canCreateSchemas: true,
+            canDeleteSchemas: true,
+            canManageSchemaRegistry: true,
+            canViewSchemas: true,
+            canListTransforms: true,
+            canCreateTransforms: true,
+            canDeleteTransforms: true,
+            canViewDebugBundle: true,
+            seat: null as any,
+            user: {
+              providerID: -1,
+              providerName: 'debug provider',
+              id: 'debug',
+              internalIdentifier: 'debug',
+              meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
+            },
+          };
+        } else if (r.status === 403) {
+          void handleExpiredLicenseError(r);
+        }
+      })
+      .catch(() => {
+        this.userData = null;
+      });
+  },
 
   // Make currently running requests observable
   activeRequests: [] as CacheEntry[],
