@@ -28,10 +28,11 @@ export const UserProfile = observer(() => {
   if (!AppFeatures.SINGLE_SIGN_ON) {
     return null;
   }
-  if (!api.userData || !api.userData.user || !api.userData.user.meta.name) {
+
+  if (!api.userData) {
     return null;
   }
-  const user = api.userData.user;
+  const user = api.userData;
 
   return (
     <>
@@ -39,10 +40,10 @@ export const UserProfile = observer(() => {
         <PopoverTrigger>
           <div className="profile">
             <div className="avatar">
-              <Avatar name={user.meta.name} src={user.meta.avatarUrl} size="sm" />
+              <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
             </div>
             <div className="text">
-              <div className="userName">{user.meta.name}</div>
+              <div className="userName">{user.displayName}</div>
               <div className="prefText">Preferences</div>
             </div>
           </div>

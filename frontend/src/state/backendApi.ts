@@ -112,6 +112,7 @@ import {
 import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
+import type { GetIdentityResponse } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import {
   PayloadEncoding,
   CompressionType as ProtoCompressionType,
@@ -411,7 +412,8 @@ const apiStore = {
 
   // undefined = we haven't checked yet
   // null = call completed, and we're not logged in
-  userData: undefined as UserData | null | undefined,
+  userData: undefined as GetIdentityResponse | null | undefined,
+
   async logout() {
     await appConfig.fetch('./auth/logout');
     this.userData = null;
@@ -422,68 +424,42 @@ const apiStore = {
 
     await client
       .getIdentity({})
-      .then((r) => {
-        api.userData = {
-          canViewConsoleUsers: false,
-          canListAcls: true,
-          canListQuotas: true,
-          canPatchConfigs: true,
-          canReassignPartitions: true,
-          canCreateSchemas: true,
-          canDeleteSchemas: true,
-          canManageSchemaRegistry: true,
-          canViewSchemas: true,
-          canListTransforms: true,
-          canCreateTransforms: true,
-          canDeleteTransforms: true,
-          canViewDebugBundle: true,
-          seat: null as any,
-          user: {
-            providerID: r.authenticationMethod,
-            providerName: '',
-            id: '',
-            internalIdentifier: '',
-            meta: {
-              avatarUrl: '',
-              email: '',
-              name: r.displayName,
-            },
-          },
-        } as UserData;
+      .then((r: GetIdentityResponse) => {
+        api.userData = r;
 
-        if (r.status === 401) {
-          // unauthorized / not logged in
-          api.userData = null;
-        } else if (r.status === 404) {
-          // not found: frontend is configured as business-version, but backend is non-business-version
-          // -> create a local fake user for debugging
-          uiState.isUsingDebugUserLogin = true;
-          api.userData = {
-            canViewConsoleUsers: false,
-            canListAcls: true,
-            canListQuotas: true,
-            canPatchConfigs: true,
-            canReassignPartitions: true,
-            canCreateSchemas: true,
-            canDeleteSchemas: true,
-            canManageSchemaRegistry: true,
-            canViewSchemas: true,
-            canListTransforms: true,
-            canCreateTransforms: true,
-            canDeleteTransforms: true,
-            canViewDebugBundle: true,
-            seat: null as any,
-            user: {
-              providerID: -1,
-              providerName: 'debug provider',
-              id: 'debug',
-              internalIdentifier: 'debug',
-              meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
-            },
-          };
-        } else if (r.status === 403) {
-          void handleExpiredLicenseError(r);
-        }
+        // if (r.status === 401) {
+        //   // unauthorized / not logged in
+        //   api.userData = null;
+        // } else if (r.status === 404) {
+        //   // not found: frontend is configured as business-version, but backend is non-business-version
+        //   // -> create a local fake user for debugging
+        //   uiState.isUsingDebugUserLogin = true;
+        //   api.userData = {
+        //     canViewConsoleUsers: false,
+        //     canListAcls: true,
+        //     canListQuotas: true,
+        //     canPatchConfigs: true,
+        //     canReassignPartitions: true,
+        //     canCreateSchemas: true,
+        //     canDeleteSchemas: true,
+        //     canManageSchemaRegistry: true,
+        //     canViewSchemas: true,
+        //     canListTransforms: true,
+        //     canCreateTransforms: true,
+        //     canDeleteTransforms: true,
+        //     canViewDebugBundle: true,
+        //     seat: null as any,
+        //     user: {
+        //       providerID: -1,
+        //       providerName: 'debug provider',
+        //       id: 'debug',
+        //       internalIdentifier: 'debug',
+        //       meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
+        //     },
+        //   };
+        // } else if (r.status === 403) {
+        //   void handleExpiredLicenseError(r);
+        // }
       })
       .catch(() => {
         this.userData = null;

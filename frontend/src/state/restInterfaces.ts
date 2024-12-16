@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { GetIdentityResponse_Permissions } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 export interface ApiError {
