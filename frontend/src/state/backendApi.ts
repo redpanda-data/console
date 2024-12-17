@@ -487,6 +487,8 @@ const apiStore = {
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
           appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}}`);
+        } else {
+          appGlobal.history.push('/login');
         }
       });
   },
