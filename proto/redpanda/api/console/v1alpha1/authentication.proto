@@ -71,16 +71,6 @@ message ListAuthenticationMethodsResponse {
   repeated AuthenticationMethod methods = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-// ServiceDomain represents different backend services or domains we integrate with.
-// Even though we're not including resource-specific data here, we might still have
-// domain-wide capabilities (like "CREATE_TOPIC" at the cluster level).
-enum ServiceDomain {
-  SERVICE_DOMAIN_UNSPECIFIED = 0;
-  SERVICE_DOMAIN_KAFKA = 1;
-  SERVICE_DOMAIN_SCHEMA_REGISTRY = 2;
-  SERVICE_DOMAIN_REDPANDA = 3;
-}
-
 // Kafka ACL operation enumerates actions the user can perform on a Kafka cluster. The capabilties
 // can apply globally or for specific resources (such as topics).
 enum KafkaAclOperation {
@@ -131,9 +121,17 @@ message GetIdentityResponse {
   Permissions permissions = 4;
 }
 
-message ClearSessionCookieRequest {}
+message ListConsoleUsersRequest {}
 
-message ClearSessionCookieResponse {}
+message ListConsoleUsersResponse {
+  message User {
+    string name = 1;
+    AuthenticationMethod auth_method = 2;
+    string role = 3;
+  }
+
+  repeated User users = 1;
+}
 
 service AuthenticationService {
   // RPC to login using SASL-SCRAM.
@@ -142,4 +140,6 @@ service AuthenticationService {
   rpc ListAuthenticationMethods(ListAuthenticationMethodsRequest) returns (ListAuthenticationMethodsResponse) {}
   // GetIdentity returns user information for the currently logged-in user.
   rpc GetIdentity(GetIdentityRequest) returns (GetIdentityResponse) {}
+  // ListConsoleUsers returns a list of all authorized Console users.
+  rpc ListConsoleUsers(ListConsoleUsersRequest) returns (ListConsoleUsersResponse) {}
 }
