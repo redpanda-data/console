@@ -1,3 +1,4 @@
+import { Link as ChakraLink } from '@chakra-ui/react';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Box,
@@ -151,14 +152,27 @@ class RpConnectSecretsList extends PageComponent {
                   ),
                   size: 400,
                 },
-                // let use this on next phase
-                // {
-                //     header: 'Pipelines',
-                //     cell: (_) => (
-                //         <Text wordBreak="break-word" whiteSpace="break-spaces">TODO</Text>
-                //     ),
-                //     size: 400,
-                // },
+                {
+                  header: 'Pipelines',
+                  cell: ({ row: { original } }) => (
+                    <Flex whiteSpace="break-spaces" flexWrap={'wrap'} alignContent={'stretch'}>
+                      {rpcnSecretManagerApi.secretsByPipeline
+                        ?.find((x) => x.secretId === original.id)
+                        ?.pipelines?.map(({ id, displayName }, index, array) => (
+                          <ChakraLink
+                            as={ReactRouterLink}
+                            wordBreak="break-word"
+                            key={`pipeline-${id}`}
+                            to={`/rp-connect/${id}`}
+                            textDecoration={'initial'}
+                          >
+                            {displayName} {index !== array.length - 1 ? ', ' : ''}
+                          </ChakraLink>
+                        ))}
+                    </Flex>
+                  ),
+                  size: 400,
+                },
                 {
                   header: '',
                   id: 'actions',
