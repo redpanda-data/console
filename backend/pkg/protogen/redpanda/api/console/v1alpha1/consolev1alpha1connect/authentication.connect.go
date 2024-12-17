@@ -44,6 +44,9 @@ const (
 	// AuthenticationServiceGetIdentityProcedure is the fully-qualified name of the
 	// AuthenticationService's GetIdentity RPC.
 	AuthenticationServiceGetIdentityProcedure = "/redpanda.api.console.v1alpha1.AuthenticationService/GetIdentity"
+	// AuthenticationServiceListConsoleUsersProcedure is the fully-qualified name of the
+	// AuthenticationService's ListConsoleUsers RPC.
+	AuthenticationServiceListConsoleUsersProcedure = "/redpanda.api.console.v1alpha1.AuthenticationService/ListConsoleUsers"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -52,6 +55,7 @@ var (
 	authenticationServiceLoginSaslScramMethodDescriptor            = authenticationServiceServiceDescriptor.Methods().ByName("LoginSaslScram")
 	authenticationServiceListAuthenticationMethodsMethodDescriptor = authenticationServiceServiceDescriptor.Methods().ByName("ListAuthenticationMethods")
 	authenticationServiceGetIdentityMethodDescriptor               = authenticationServiceServiceDescriptor.Methods().ByName("GetIdentity")
+	authenticationServiceListConsoleUsersMethodDescriptor          = authenticationServiceServiceDescriptor.Methods().ByName("ListConsoleUsers")
 )
 
 // AuthenticationServiceClient is a client for the
@@ -63,6 +67,8 @@ type AuthenticationServiceClient interface {
 	ListAuthenticationMethods(context.Context, *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error)
 	// GetIdentity returns user information for the currently logged-in user.
 	GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error)
+	// ListConsoleUsers returns a list of all authorized Console users.
+	ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error)
 }
 
 // NewAuthenticationServiceClient constructs a client for the
@@ -94,6 +100,12 @@ func NewAuthenticationServiceClient(httpClient connect.HTTPClient, baseURL strin
 			connect.WithSchema(authenticationServiceGetIdentityMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listConsoleUsers: connect.NewClient[v1alpha1.ListConsoleUsersRequest, v1alpha1.ListConsoleUsersResponse](
+			httpClient,
+			baseURL+AuthenticationServiceListConsoleUsersProcedure,
+			connect.WithSchema(authenticationServiceListConsoleUsersMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -102,6 +114,7 @@ type authenticationServiceClient struct {
 	loginSaslScram            *connect.Client[v1alpha1.LoginSaslScramRequest, v1alpha1.LoginSaslScramResponse]
 	listAuthenticationMethods *connect.Client[v1alpha1.ListAuthenticationMethodsRequest, v1alpha1.ListAuthenticationMethodsResponse]
 	getIdentity               *connect.Client[v1alpha1.GetIdentityRequest, v1alpha1.GetIdentityResponse]
+	listConsoleUsers          *connect.Client[v1alpha1.ListConsoleUsersRequest, v1alpha1.ListConsoleUsersResponse]
 }
 
 // LoginSaslScram calls redpanda.api.console.v1alpha1.AuthenticationService.LoginSaslScram.
@@ -120,6 +133,11 @@ func (c *authenticationServiceClient) GetIdentity(ctx context.Context, req *conn
 	return c.getIdentity.CallUnary(ctx, req)
 }
 
+// ListConsoleUsers calls redpanda.api.console.v1alpha1.AuthenticationService.ListConsoleUsers.
+func (c *authenticationServiceClient) ListConsoleUsers(ctx context.Context, req *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
+	return c.listConsoleUsers.CallUnary(ctx, req)
+}
+
 // AuthenticationServiceHandler is an implementation of the
 // redpanda.api.console.v1alpha1.AuthenticationService service.
 type AuthenticationServiceHandler interface {
@@ -129,6 +147,8 @@ type AuthenticationServiceHandler interface {
 	ListAuthenticationMethods(context.Context, *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error)
 	// GetIdentity returns user information for the currently logged-in user.
 	GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error)
+	// ListConsoleUsers returns a list of all authorized Console users.
+	ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error)
 }
 
 // NewAuthenticationServiceHandler builds an HTTP handler from the service implementation. It
@@ -155,6 +175,12 @@ func NewAuthenticationServiceHandler(svc AuthenticationServiceHandler, opts ...c
 		connect.WithSchema(authenticationServiceGetIdentityMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	authenticationServiceListConsoleUsersHandler := connect.NewUnaryHandler(
+		AuthenticationServiceListConsoleUsersProcedure,
+		svc.ListConsoleUsers,
+		connect.WithSchema(authenticationServiceListConsoleUsersMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.AuthenticationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthenticationServiceLoginSaslScramProcedure:
@@ -163,6 +189,8 @@ func NewAuthenticationServiceHandler(svc AuthenticationServiceHandler, opts ...c
 			authenticationServiceListAuthenticationMethodsHandler.ServeHTTP(w, r)
 		case AuthenticationServiceGetIdentityProcedure:
 			authenticationServiceGetIdentityHandler.ServeHTTP(w, r)
+		case AuthenticationServiceListConsoleUsersProcedure:
+			authenticationServiceListConsoleUsersHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -182,4 +210,8 @@ func (UnimplementedAuthenticationServiceHandler) ListAuthenticationMethods(conte
 
 func (UnimplementedAuthenticationServiceHandler) GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.AuthenticationService.GetIdentity is not implemented"))
+}
+
+func (UnimplementedAuthenticationServiceHandler) ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.AuthenticationService.ListConsoleUsers is not implemented"))
 }

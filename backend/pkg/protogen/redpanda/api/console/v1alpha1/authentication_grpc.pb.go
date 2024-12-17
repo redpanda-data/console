@@ -23,6 +23,7 @@ const (
 	AuthenticationService_LoginSaslScram_FullMethodName            = "/redpanda.api.console.v1alpha1.AuthenticationService/LoginSaslScram"
 	AuthenticationService_ListAuthenticationMethods_FullMethodName = "/redpanda.api.console.v1alpha1.AuthenticationService/ListAuthenticationMethods"
 	AuthenticationService_GetIdentity_FullMethodName               = "/redpanda.api.console.v1alpha1.AuthenticationService/GetIdentity"
+	AuthenticationService_ListConsoleUsers_FullMethodName          = "/redpanda.api.console.v1alpha1.AuthenticationService/ListConsoleUsers"
 )
 
 // AuthenticationServiceClient is the client API for AuthenticationService service.
@@ -35,6 +36,8 @@ type AuthenticationServiceClient interface {
 	ListAuthenticationMethods(ctx context.Context, in *ListAuthenticationMethodsRequest, opts ...grpc.CallOption) (*ListAuthenticationMethodsResponse, error)
 	// GetIdentity returns user information for the currently logged-in user.
 	GetIdentity(ctx context.Context, in *GetIdentityRequest, opts ...grpc.CallOption) (*GetIdentityResponse, error)
+	// ListConsoleUsers returns a list of all authorized Console users.
+	ListConsoleUsers(ctx context.Context, in *ListConsoleUsersRequest, opts ...grpc.CallOption) (*ListConsoleUsersResponse, error)
 }
 
 type authenticationServiceClient struct {
@@ -72,6 +75,15 @@ func (c *authenticationServiceClient) GetIdentity(ctx context.Context, in *GetId
 	return out, nil
 }
 
+func (c *authenticationServiceClient) ListConsoleUsers(ctx context.Context, in *ListConsoleUsersRequest, opts ...grpc.CallOption) (*ListConsoleUsersResponse, error) {
+	out := new(ListConsoleUsersResponse)
+	err := c.cc.Invoke(ctx, AuthenticationService_ListConsoleUsers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthenticationServiceServer is the server API for AuthenticationService service.
 // All implementations must embed UnimplementedAuthenticationServiceServer
 // for forward compatibility
@@ -82,6 +94,8 @@ type AuthenticationServiceServer interface {
 	ListAuthenticationMethods(context.Context, *ListAuthenticationMethodsRequest) (*ListAuthenticationMethodsResponse, error)
 	// GetIdentity returns user information for the currently logged-in user.
 	GetIdentity(context.Context, *GetIdentityRequest) (*GetIdentityResponse, error)
+	// ListConsoleUsers returns a list of all authorized Console users.
+	ListConsoleUsers(context.Context, *ListConsoleUsersRequest) (*ListConsoleUsersResponse, error)
 	mustEmbedUnimplementedAuthenticationServiceServer()
 }
 
@@ -97,6 +111,9 @@ func (UnimplementedAuthenticationServiceServer) ListAuthenticationMethods(contex
 }
 func (UnimplementedAuthenticationServiceServer) GetIdentity(context.Context, *GetIdentityRequest) (*GetIdentityResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIdentity not implemented")
+}
+func (UnimplementedAuthenticationServiceServer) ListConsoleUsers(context.Context, *ListConsoleUsersRequest) (*ListConsoleUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConsoleUsers not implemented")
 }
 func (UnimplementedAuthenticationServiceServer) mustEmbedUnimplementedAuthenticationServiceServer() {}
 
@@ -165,6 +182,24 @@ func _AuthenticationService_GetIdentity_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthenticationService_ListConsoleUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConsoleUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenticationServiceServer).ListConsoleUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthenticationService_ListConsoleUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenticationServiceServer).ListConsoleUsers(ctx, req.(*ListConsoleUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthenticationService_ServiceDesc is the grpc.ServiceDesc for AuthenticationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -183,6 +218,10 @@ var AuthenticationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetIdentity",
 			Handler:    _AuthenticationService_GetIdentity_Handler,
+		},
+		{
+			MethodName: "ListConsoleUsers",
+			Handler:    _AuthenticationService_ListConsoleUsers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

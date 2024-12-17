@@ -21,6 +21,7 @@ type AuthenticationServiceGatewayServer struct {
 	loginSaslScram            connect_gateway.UnaryHandler[v1alpha1.LoginSaslScramRequest, v1alpha1.LoginSaslScramResponse]
 	listAuthenticationMethods connect_gateway.UnaryHandler[v1alpha1.ListAuthenticationMethodsRequest, v1alpha1.ListAuthenticationMethodsResponse]
 	getIdentity               connect_gateway.UnaryHandler[v1alpha1.GetIdentityRequest, v1alpha1.GetIdentityResponse]
+	listConsoleUsers          connect_gateway.UnaryHandler[v1alpha1.ListConsoleUsersRequest, v1alpha1.ListConsoleUsersResponse]
 }
 
 // NewAuthenticationServiceGatewayServer constructs a Connect-Gateway gRPC server for the
@@ -30,6 +31,7 @@ func NewAuthenticationServiceGatewayServer(svc AuthenticationServiceHandler, opt
 		loginSaslScram:            connect_gateway.NewUnaryHandler(AuthenticationServiceLoginSaslScramProcedure, svc.LoginSaslScram, opts...),
 		listAuthenticationMethods: connect_gateway.NewUnaryHandler(AuthenticationServiceListAuthenticationMethodsProcedure, svc.ListAuthenticationMethods, opts...),
 		getIdentity:               connect_gateway.NewUnaryHandler(AuthenticationServiceGetIdentityProcedure, svc.GetIdentity, opts...),
+		listConsoleUsers:          connect_gateway.NewUnaryHandler(AuthenticationServiceListConsoleUsersProcedure, svc.ListConsoleUsers, opts...),
 	}
 }
 
@@ -43,6 +45,10 @@ func (s *AuthenticationServiceGatewayServer) ListAuthenticationMethods(ctx conte
 
 func (s *AuthenticationServiceGatewayServer) GetIdentity(ctx context.Context, req *v1alpha1.GetIdentityRequest) (*v1alpha1.GetIdentityResponse, error) {
 	return s.getIdentity(ctx, req)
+}
+
+func (s *AuthenticationServiceGatewayServer) ListConsoleUsers(ctx context.Context, req *v1alpha1.ListConsoleUsersRequest) (*v1alpha1.ListConsoleUsersResponse, error) {
+	return s.listConsoleUsers(ctx, req)
 }
 
 // RegisterAuthenticationServiceHandlerGatewayServer registers the Connect handlers for the

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetIdentityRequest, GetIdentityResponse, ListAuthenticationMethodsRequest, ListAuthenticationMethodsResponse, LoginSaslScramRequest, LoginSaslScramResponse } from "./authentication_pb";
+import { GetIdentityRequest, GetIdentityResponse, ListAuthenticationMethodsRequest, ListAuthenticationMethodsResponse, ListConsoleUsersRequest, ListConsoleUsersResponse, LoginSaslScramRequest, LoginSaslScramResponse } from "./authentication_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -43,6 +43,17 @@ export const AuthenticationService = {
       name: "GetIdentity",
       I: GetIdentityRequest,
       O: GetIdentityResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListConsoleUsers returns a list of all authorized Console users.
+     *
+     * @generated from rpc redpanda.api.console.v1alpha1.AuthenticationService.ListConsoleUsers
+     */
+    listConsoleUsers: {
+      name: "ListConsoleUsers",
+      I: ListConsoleUsersRequest,
+      O: ListConsoleUsersResponse,
       kind: MethodKind.Unary,
     },
   }

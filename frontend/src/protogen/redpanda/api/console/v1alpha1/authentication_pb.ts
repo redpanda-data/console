@@ -79,42 +79,6 @@ proto3.util.setEnumType(AuthenticationMethod, "redpanda.api.console.v1alpha1.Aut
 ]);
 
 /**
- * ServiceDomain represents different backend services or domains we integrate with.
- * Even though we're not including resource-specific data here, we might still have
- * domain-wide capabilities (like "CREATE_TOPIC" at the cluster level).
- *
- * @generated from enum redpanda.api.console.v1alpha1.ServiceDomain
- */
-export enum ServiceDomain {
-  /**
-   * @generated from enum value: SERVICE_DOMAIN_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: SERVICE_DOMAIN_KAFKA = 1;
-   */
-  KAFKA = 1,
-
-  /**
-   * @generated from enum value: SERVICE_DOMAIN_SCHEMA_REGISTRY = 2;
-   */
-  SCHEMA_REGISTRY = 2,
-
-  /**
-   * @generated from enum value: SERVICE_DOMAIN_REDPANDA = 3;
-   */
-  REDPANDA = 3,
-}
-// Retrieve enum metadata with: proto3.getEnumType(ServiceDomain)
-proto3.util.setEnumType(ServiceDomain, "redpanda.api.console.v1alpha1.ServiceDomain", [
-  { no: 0, name: "SERVICE_DOMAIN_UNSPECIFIED" },
-  { no: 1, name: "SERVICE_DOMAIN_KAFKA" },
-  { no: 2, name: "SERVICE_DOMAIN_SCHEMA_REGISTRY" },
-  { no: 3, name: "SERVICE_DOMAIN_REDPANDA" },
-]);
-
-/**
  * Kafka ACL operation enumerates actions the user can perform on a Kafka cluster. The capabilties
  * can apply globally or for specific resources (such as topics).
  *
@@ -628,64 +592,119 @@ export class GetIdentityResponse_Permissions extends Message<GetIdentityResponse
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.ClearSessionCookieRequest
+ * @generated from message redpanda.api.console.v1alpha1.ListConsoleUsersRequest
  */
-export class ClearSessionCookieRequest extends Message<ClearSessionCookieRequest> {
-  constructor(data?: PartialMessage<ClearSessionCookieRequest>) {
+export class ListConsoleUsersRequest extends Message<ListConsoleUsersRequest> {
+  constructor(data?: PartialMessage<ListConsoleUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ClearSessionCookieRequest";
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListConsoleUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ClearSessionCookieRequest {
-    return new ClearSessionCookieRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConsoleUsersRequest {
+    return new ListConsoleUsersRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ClearSessionCookieRequest {
-    return new ClearSessionCookieRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConsoleUsersRequest {
+    return new ListConsoleUsersRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ClearSessionCookieRequest {
-    return new ClearSessionCookieRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConsoleUsersRequest {
+    return new ListConsoleUsersRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ClearSessionCookieRequest | PlainMessage<ClearSessionCookieRequest> | undefined, b: ClearSessionCookieRequest | PlainMessage<ClearSessionCookieRequest> | undefined): boolean {
-    return proto3.util.equals(ClearSessionCookieRequest, a, b);
+  static equals(a: ListConsoleUsersRequest | PlainMessage<ListConsoleUsersRequest> | undefined, b: ListConsoleUsersRequest | PlainMessage<ListConsoleUsersRequest> | undefined): boolean {
+    return proto3.util.equals(ListConsoleUsersRequest, a, b);
   }
 }
 
 /**
- * @generated from message redpanda.api.console.v1alpha1.ClearSessionCookieResponse
+ * @generated from message redpanda.api.console.v1alpha1.ListConsoleUsersResponse
  */
-export class ClearSessionCookieResponse extends Message<ClearSessionCookieResponse> {
-  constructor(data?: PartialMessage<ClearSessionCookieResponse>) {
+export class ListConsoleUsersResponse extends Message<ListConsoleUsersResponse> {
+  /**
+   * @generated from field: repeated redpanda.api.console.v1alpha1.ListConsoleUsersResponse.User users = 1;
+   */
+  users: ListConsoleUsersResponse_User[] = [];
+
+  constructor(data?: PartialMessage<ListConsoleUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.console.v1alpha1.ClearSessionCookieResponse";
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListConsoleUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "users", kind: "message", T: ListConsoleUsersResponse_User, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ClearSessionCookieResponse {
-    return new ClearSessionCookieResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConsoleUsersResponse {
+    return new ListConsoleUsersResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ClearSessionCookieResponse {
-    return new ClearSessionCookieResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConsoleUsersResponse {
+    return new ListConsoleUsersResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ClearSessionCookieResponse {
-    return new ClearSessionCookieResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConsoleUsersResponse {
+    return new ListConsoleUsersResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ClearSessionCookieResponse | PlainMessage<ClearSessionCookieResponse> | undefined, b: ClearSessionCookieResponse | PlainMessage<ClearSessionCookieResponse> | undefined): boolean {
-    return proto3.util.equals(ClearSessionCookieResponse, a, b);
+  static equals(a: ListConsoleUsersResponse | PlainMessage<ListConsoleUsersResponse> | undefined, b: ListConsoleUsersResponse | PlainMessage<ListConsoleUsersResponse> | undefined): boolean {
+    return proto3.util.equals(ListConsoleUsersResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ListConsoleUsersResponse.User
+ */
+export class ListConsoleUsersResponse_User extends Message<ListConsoleUsersResponse_User> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.AuthenticationMethod auth_method = 2;
+   */
+  authMethod = AuthenticationMethod.UNSPECIFIED;
+
+  /**
+   * @generated from field: string role = 3;
+   */
+  role = "";
+
+  constructor(data?: PartialMessage<ListConsoleUsersResponse_User>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.ListConsoleUsersResponse.User";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "auth_method", kind: "enum", T: proto3.getEnumType(AuthenticationMethod) },
+    { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConsoleUsersResponse_User {
+    return new ListConsoleUsersResponse_User().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConsoleUsersResponse_User {
+    return new ListConsoleUsersResponse_User().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConsoleUsersResponse_User {
+    return new ListConsoleUsersResponse_User().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListConsoleUsersResponse_User | PlainMessage<ListConsoleUsersResponse_User> | undefined, b: ListConsoleUsersResponse_User | PlainMessage<ListConsoleUsersResponse_User> | undefined): boolean {
+    return proto3.util.equals(ListConsoleUsersResponse_User, a, b);
   }
 }
 
