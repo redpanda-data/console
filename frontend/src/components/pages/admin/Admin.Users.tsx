@@ -56,7 +56,7 @@ export class AdminUsers extends Component<{}> {
             header: 'Identifier',
             accessorKey: 'internalIdentifier',
             cell: ({ row }) => {
-              if (row.original.internalIdentifier === api.userData?.user.internalIdentifier) {
+              if (row.original.internalIdentifier === api.userData?.displayName) {
                 return (
                   <Flex gap={2}>
                     <Tooltip label="You are currently logged in as this user" placement="top" hasArrow>

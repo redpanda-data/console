@@ -19,7 +19,7 @@ import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { ObjToKv } from '../utils/tsxUtils';
-import { TimeSince, decodeBase64 } from '../utils/utils';
+import { TimeSince, decodeBase64, getOidcSubject } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -113,6 +113,12 @@ import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
 import type { GetIdentityResponse } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import {
+  AuthenticationMethod,
+  KafkaAclOperation,
+  RedpandaCapability,
+  SchemaRegistryCapability,
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import {
   PayloadEncoding,
   CompressionType as ProtoCompressionType,
@@ -337,14 +343,9 @@ export async function handleExpiredLicenseError(r: Response) {
       canCreateTransforms: true,
       canDeleteTransforms: true,
       canViewDebugBundle: true,
-      seat: null as any,
-      user: {
-        providerID: -1,
-        providerName: '',
-        id: '',
-        internalIdentifier: '',
-        meta: { avatarUrl: '', email: '', name: '' },
-      },
+      displayName: '',
+      avatarUrl: '',
+      authenticationMethod: AuthenticationMethod.UNSPECIFIED,
     };
     appGlobal.history.replace('/trial-expired');
   }
@@ -412,7 +413,7 @@ const apiStore = {
 
   // undefined = we haven't checked yet
   // null = call completed, and we're not logged in
-  userData: undefined as GetIdentityResponse | null | undefined,
+  userData: undefined as UserData | null | undefined,
 
   async logout() {
     await appConfig.fetch('./auth/logout');
@@ -425,8 +426,27 @@ const apiStore = {
     await client
       .getIdentity({})
       .then((r: GetIdentityResponse) => {
-        api.userData = r;
+        api.userData = {
+          displayName: r.displayName,
+          avatarUrl: r.avatarUrl,
+          authenticationMethod: r.authenticationMethod,
 
+          canListAcls: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE),
+          canListQuotas: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+          canPatchConfigs: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS),
+          canReassignPartitions:
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS) &&
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+          canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
+          canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
+          canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
+          canViewSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.READ),
+          canListTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+          canCreateTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+          canDeleteTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+          canViewDebugBundle: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_DEBUG_BUNDLE),
+          canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+        } as UserData;
         // if (r.status === 401) {
         //   // unauthorized / not logged in
         //   api.userData = null;
@@ -461,8 +481,13 @@ const apiStore = {
         //   void handleExpiredLicenseError(r);
         // }
       })
-      .catch(() => {
-        this.userData = null;
+      .catch((err) => {
+        if (err.code === 7) {
+          this.userData = null;
+          // TODO - solve typings, provide corresponding Reason type
+          const subject = getOidcSubject(err);
+          appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}}`);
+        }
       });
   },
 
@@ -541,7 +566,7 @@ const apiStore = {
 
   refreshTopicPermissions(topicName: string, force?: boolean) {
     if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
-    if (this.userData?.user?.providerID === -1) return; // debug user
+    if (this.userData?.authenticationMethod === AuthenticationMethod.UNSPECIFIED) return; // debug user
     cachedApiRequest<TopicPermissions | null>(
       `${appConfig.restBasePath}/permissions/topics/${encodeURIComponent(topicName)}`,
       force,

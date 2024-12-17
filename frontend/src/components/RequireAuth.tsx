@@ -2,7 +2,6 @@ import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
 import { Route, Switch } from 'react-router-dom';
 import { config as appConfig } from '../config';
-import type { GetIdentityResponse } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api } from '../state/backendApi';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
@@ -57,58 +56,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
       const client = appConfig.authenticationClient;
       if (!client) throw new Error('security client is not initialized');
 
-      client
-        .getIdentity({})
-        .then(async (r: GetIdentityResponse) => {
-          devPrint('user fetched');
-          api.userData = r;
-
-          // if (r.ok) {
-          //   devPrint('user fetched');
-          //   api.userData = (await r.json()) as UserData;
-          // } else if (r.status === 401) {
-          //   // unauthorized / not logged in
-          //   devPrint('not logged in');
-          //   api.userData = null;
-          // } else if (r.status === 404) {
-          //   // not found: server must be non-business version
-          //   devPrint(
-          //     'frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging',
-          //   );
-          //   uiState.isUsingDebugUserLogin = true;
-          //   api.userData = {
-          //     canViewConsoleUsers: false,
-          //     canListAcls: true,
-          //     canListQuotas: true,
-          //     canPatchConfigs: true,
-          //     canReassignPartitions: true,
-          //     canCreateSchemas: true,
-          //     canDeleteSchemas: true,
-          //     canManageSchemaRegistry: true,
-          //     canViewSchemas: true,
-          //     canListTransforms: true,
-          //     canCreateTransforms: true,
-          //     canDeleteTransforms: true,
-          //     seat: null as any,
-          //     user: {
-          //       providerID: r.authenticationMethod,
-          //       providerName: '',
-          //       id: '',
-          //       internalIdentifier: '',
-          //       meta: {
-          //         avatarUrl: '',
-          //         email: '',
-          //         name: r.displayName,
-          //       },
-          //     },
-          //   } as UserData;
-          // } else if (r.status === 403) {
-          //   void handleExpiredLicenseError(r);
-          // }
-        })
-        .catch((err) => {
-          api.userData = null;
-        });
+      void api.refreshUserData();
 
       return preLogin;
     }

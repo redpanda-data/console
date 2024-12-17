@@ -224,6 +224,7 @@ const LoginPage = observer(() => {
                     kafka_authentication_failed:
                       'Authenticated via OIDC, but failed to authenticate with the Kafka API.',
                     console_internal: 'An unexpected error occurred. Check backend logs.',
+                    permission_denied: `This user is not authorized to use Console. An administrator should grant user ${searchParams.get('oidc_subject') ?? ''} permissions in the Console configuration to proceed.`,
                   }[searchParams.get('error_code') as string] || 'An unexpected error occurred. Check backend logs.'}
                 </AlertDescription>
               </Alert>
@@ -243,7 +244,7 @@ const LoginPage = observer(() => {
                 );
               }
               return acc;
-            }, [])}
+            }, [] as React.ReactNode[])}
           </Stack>
         </Container>
       </Box>

@@ -23,7 +23,7 @@ export const UserProfile = observer(() => {
     void api.refreshUserData();
   }, []);
 
-  const userName = api.userData?.user?.meta?.name ?? 'null';
+  const userName = api.userData?.displayName ?? 'null';
 
   if (!AppFeatures.SINGLE_SIGN_ON) {
     return null;

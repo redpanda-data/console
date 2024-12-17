@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { GetIdentityResponse_Permissions } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import type { AuthenticationMethod } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 export interface ApiError {
@@ -525,8 +525,10 @@ export interface Seat {
   lastActivity: string; // is a datetime string, should probably be a "UnixMillis"
 }
 export interface UserData {
-  user: User;
-  seat: Seat;
+  displayName: string;
+  avatarUrl: string;
+  authenticationMethod: AuthenticationMethod;
+
   canViewConsoleUsers: boolean;
   canListAcls: boolean;
   canListQuotas: boolean;
