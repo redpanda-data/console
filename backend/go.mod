@@ -9,8 +9,8 @@ require (
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.28.1
 	github.com/basgys/goxml2json v1.1.0
-	github.com/bufbuild/protovalidate-go v0.7.2
-	github.com/carlmjohnson/requests v0.24.2
+	github.com/bufbuild/protovalidate-go v0.8.0
+	github.com/carlmjohnson/requests v0.24.3
 	github.com/cloudhut/common v0.10.0
 	github.com/cloudhut/connect-client v0.0.0-20240523140316-27c93e339567
 	github.com/docker/go-connections v0.5.0
