@@ -42,7 +42,7 @@ import {
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { type FC, useRef, useState } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
@@ -103,18 +103,12 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   async refreshData(force: boolean) {
     if (api.userData != null && !api.userData.canListAcls) return;
 
-    await Promise.allSettled([
-      api.refreshAcls(AclRequestDefault, force),
-      api.refreshServiceAccounts(true),
-      rolesApi.refreshRoles(),
-    ]);
+    await Promise.allSettled([api.refreshServiceAccounts(true), rolesApi.refreshRoles()]);
 
     await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
   }
 
   render() {
-    if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
-    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
     if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
     const warning =
@@ -144,6 +138,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         key: 'acls' as AclListTab,
         name: 'ACLs',
         component: <AclsTab data-testid="acls-tab" principalGroups={principalGroupsView.principalGroups} />,
+        isDisabled: api.userData.canListAcls ? false : 'You do not have the necessary permissions to view ACLs.',
       },
       { key: 'permissions-list' as AclListTab, name: 'Permissions list', component: <PermissionsListTab /> },
     ] as TabsItemProps[];
@@ -541,6 +536,10 @@ const AclsTab = observer(
   (p: {
     principalGroups: AclPrincipalGroup[];
   }) => {
+    useEffect(() => {
+      void api.refreshAcls(AclRequestDefault, true);
+    }, []);
+
     const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
     const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
     const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
@@ -552,6 +551,8 @@ const AclsTab = observer(
     } catch (e) {
       console.warn('Invalid expression');
     }
+
+    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
 
     return (
       <Flex flexDirection="column" gap="4">

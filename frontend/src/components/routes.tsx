@@ -310,7 +310,7 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
   MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true, routeVisibility(true, [], ['canListAcls'])),
+  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
