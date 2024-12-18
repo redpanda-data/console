@@ -34,11 +34,3 @@ func findExactTransformByName(transforms []*v1alpha2.TransformMetadata, name str
 	}
 	return nil, fmt.Errorf("the requested transform %q does not exist", name)
 }
-
-func derefString(s *string) string {
-	if s != nil {
-		return *s
-	}
-
-	return ""
-}

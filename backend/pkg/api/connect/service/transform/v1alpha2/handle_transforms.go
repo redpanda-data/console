@@ -188,8 +188,8 @@ func (s *Service) validateProtoMessage(msg proto.Message) error {
 		var fieldViolations []*errdetails.BadRequest_FieldViolation
 		for _, violation := range validationErr.Violations {
 			fieldViolationErr := &errdetails.BadRequest_FieldViolation{
-				Field:       derefString(violation.FieldPath),
-				Description: derefString(violation.Message),
+				Field:       protovalidate.FieldPathString(violation.Proto.GetField()),
+				Description: violation.Proto.GetMessage(),
 			}
 			fieldViolations = append(fieldViolations, fieldViolationErr)
 		}

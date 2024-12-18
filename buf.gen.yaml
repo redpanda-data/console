@@ -8,11 +8,11 @@ managed:
       - buf.build/bufbuild/protovalidate
 plugins:
   # Go Plugins
-  - plugin: buf.build/protocolbuffers/go:v1.31.0
+  - plugin: buf.build/protocolbuffers/go:v1.35.2
     opt: paths=source_relative
     out: backend/pkg/protogen
 
-  - plugin: buf.build/connectrpc/go:v1.14.0
+  - plugin: buf.build/connectrpc/go:v1.17.0
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
