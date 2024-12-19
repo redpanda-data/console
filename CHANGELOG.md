@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.8.1 / 2024-12-18
+
+- [SECURITY] Built with Go 1.23.4 to fix [CVE-2024-45337](https://nvd.nist.gov/vuln/detail/CVE-2024-45337).
+- [IMPROVEMENT] Add "Try Again" button if debug bundle creation failed.
+- [BUFGIX] Properly handle paths that require escaping in environments that use URL rewriting [1526](https://github.com/redpanda-data/console/pull/1526). 
+
 ## v2.8.0 / 2024-12-03
 
 - [FEATURE] Add debug bundle support, enabling Console to now generate cluster wide debug bundles on Redpanda clusters.
@@ -79,7 +85,7 @@
 
 ## v2.4.6 / 2024-04-09
 
-- [SECURITY] Update Go to v1.22.2 to address [CVE-2023-45288](https://nvd.nist.gov/vuln/detail/CVE-2023-45288)
+- [SECURITY] Update Go to v1.22.2 to address [CVE-2023-45288]([https://nvd.nist.gov/vuln/detail](https://nvd.nist.gov/vuln/detail)/CVE-2023-45288)
 - [SECURITY] Authenticated Console users with assigned viewer permissions were able to successfully perform operations that would require admin permissions (e.g. creating ACLs). This does not affect users in Redpanda Cloud.
 - [BUGFIX] Fix empty toast feedback when reassigning partitions in the UI.
 - [IMPROVEMENT] Surface dynamic broker error messages in the UI if operations such as creating topics failed.
