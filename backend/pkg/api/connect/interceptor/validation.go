@@ -68,8 +68,8 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 			var fieldViolations []*errdetails.BadRequest_FieldViolation
 			for _, violation := range validationErr.Violations {
 				fieldViolationErr := &errdetails.BadRequest_FieldViolation{
-					Field:       derefString(violation.FieldPath),
-					Description: derefString(violation.Message),
+					Field:       protovalidate.FieldPathString(violation.Proto.GetField()),
+					Description: violation.Proto.GetMessage(),
 				}
 				fieldViolations = append(fieldViolations, fieldViolationErr)
 			}
@@ -99,12 +99,4 @@ func (*ValidationInterceptor) WrapStreamingClient(next connect.StreamingClientFu
 // the server handling perspective.
 func (*ValidationInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return next
-}
-
-func derefString(s *string) string {
-	if s != nil {
-		return *s
-	}
-
-	return ""
 }

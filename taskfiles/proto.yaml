@@ -106,7 +106,7 @@ tasks:
       - :backend:install-go
     desc: install connect-gateway
     vars:
-      VERSION: 0.4.1
+      VERSION: 0.8.0
     cmds:
       - |
         {{ .PATH_PREFIX }} go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
