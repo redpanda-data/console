@@ -36,7 +36,7 @@ export class TransformsSetup extends PageComponent<{}> {
               within Redpanda.{' '}
               <ChakraLink
                 isExternal
-                href="https://docs.redpanda.com/beta/develop/data-transforms/"
+                href="https://docs.redpanda.com/current/develop/data-transforms/build/
                 style={{ textDecoration: 'underline solid 1px' }}
               >
                 Learn more

@@ -110,7 +110,7 @@ class TransformsList extends PageComponent<{}> {
           Redpanda.{' '}
           <ChakraLink
             isExternal
-            href="https://docs.redpanda.com/beta/develop/data-transforms/"
+            href="https://docs.redpanda.com/current/develop/data-transforms/how-transforms-work/"
             style={{ textDecoration: 'underline solid 1px' }}
           >
             Learn more
