@@ -101,7 +101,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
+    if (api.userData !== undefined && api.userData !== null && !api.userData.canListAcls) return;
 
     await Promise.allSettled([
       api.refreshAcls(AclRequestDefault, force),
