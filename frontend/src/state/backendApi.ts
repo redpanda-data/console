@@ -145,9 +145,9 @@ import type {
 import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequest,
-  Pipeline,
-  PipelineCreate,
-  PipelineUpdate,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import {
   type CreateSecretRequest,
@@ -491,7 +491,7 @@ const apiStore = {
           this.userData = null;
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
-          appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}}`);
+          appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}`);
         } else {
           appGlobal.history.push('/login');
         }
