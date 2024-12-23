@@ -84,7 +84,6 @@ export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 @observer
 class AclList extends PageComponent<{ tab: AclListTab }> {
-  editorType: 'create' | 'edit' = 'create';
   @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
   constructor(p: any) {
@@ -101,10 +100,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
-
     await Promise.allSettled([api.refreshServiceAccounts(true), rolesApi.refreshRoles()]);
-
     await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
   }
 
