@@ -339,6 +339,7 @@ export async function handleExpiredLicenseError(r: Response) {
       canListAcls: true,
       canListQuotas: true,
       canPatchConfigs: true,
+      canCreateRoles: true,
       canReassignPartitions: true,
       canCreateSchemas: true,
       canDeleteSchemas: true,
@@ -442,6 +443,9 @@ const apiStore = {
           canReassignPartitions:
             r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS) &&
             r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+          canCreateRoles:
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER) &&
+            r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
           canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
           canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
           canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),

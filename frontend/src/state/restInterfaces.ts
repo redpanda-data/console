@@ -534,6 +534,7 @@ export interface UserData {
   canListQuotas: boolean;
   canReassignPartitions: boolean;
   canPatchConfigs: boolean;
+  canCreateRoles: boolean;
 
   canViewSchemas: boolean;
   canCreateSchemas: boolean;

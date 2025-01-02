@@ -450,6 +450,14 @@ const RolesTab = observer(() => {
           data-testid="create-role-button"
           variant="outline"
           onClick={() => appGlobal.history.push('/security/roles/create')}
+          isDisabled={api.userData.canCreateRoles === false || !api.isAdminApiConfigured}
+          tooltip={[
+            api.userData?.canCreateRoles === false &&
+              'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
+            !api.isAdminApiConfigured && 'You need to enable Admin API.',
+          ]
+            .filter(Boolean)
+            .join(' ')}
         >
           Create role
         </Button>

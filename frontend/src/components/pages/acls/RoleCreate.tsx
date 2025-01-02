@@ -32,17 +32,10 @@ class RoleCreatePage extends PageComponent {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
-
-    await Promise.allSettled([
-      api.refreshAcls(AclRequestDefault, force),
-      api.refreshServiceAccounts(true),
-      rolesApi.refreshRoles(),
-    ]);
+    await Promise.allSettled([api.refreshServiceAccounts(true), rolesApi.refreshRoles()]);
   }
 
   render() {
-    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
     if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
     return (
