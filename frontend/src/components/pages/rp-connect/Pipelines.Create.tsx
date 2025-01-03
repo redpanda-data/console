@@ -26,7 +26,7 @@ import {
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { editor } from 'monaco-editor';
+import type { editor } from 'monaco-editor';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';

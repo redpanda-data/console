@@ -138,9 +138,9 @@ import type {
 import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequest,
-  Pipeline,
-  PipelineCreate,
-  PipelineUpdate,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import {
   type CreateSecretRequest,
