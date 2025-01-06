@@ -4651,17 +4651,15 @@ paths:
 security:
   - auth0: []
 servers:
-  - description: Dataplane API
+  - description: Data Plane API
     url: '{dataplane_api_url}'
     variables:
       dataplane_api_url:
         default: https://api-a4cb21.ck09ma3c4vs12cng3cig.fmc.prd.cloud.redpanda.com
         description: |-
-          Dataplane API.<br>
-          					The Dataplane API allows management of Topics,ACLs,Service accounts. It is exposed by each individual cluster.
-          					Retrieve the Dataplane API URL of a cluster by using the dataplane_api.url field returned by the Get Cluster endpoint.<br><br>
-          					Example (Dedicated): https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com<br>
-          					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com
+          Find the Data Plane API base URL of a cluster by calling the Get Cluster endpoint of the Control Plane API. The dataplane_api.url field is returned in the response body.<br><br>
+          					Example (Dedicated): "https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com"<br>
+          					Example (BYOC): "https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com"
 tags:
   - description: Manage Redpanda [access-control lists](https://docs.redpanda.com/current/manage/security/authorization/acl/) (ACLs).
     name: Redpanda ACLs
