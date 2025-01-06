@@ -58,7 +58,7 @@ require (
 	go.uber.org/zap v1.27.0
 	go.vallahaye.net/connect-gateway v0.8.0
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/text v0.21.0
 	google.golang.org/genproto v0.0.0-20240415180920-8c6c420018be
