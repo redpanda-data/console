@@ -22,7 +22,7 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
-import { Observer, observer, useLocalObservable } from 'mobx-react';
+import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
@@ -36,7 +36,7 @@ import { api } from '../../../state/backendApi';
 import { SingleSelect } from '../../misc/Select';
 
 type ConfigurationEditorProps = {
-  targetTopic: string | null; // topic name, or null if default configs
+  targetTopic: string; // topic name, or null if default configs
   entries: ConfigEntryExtended[];
   onForceRefresh: () => void;
 };
@@ -51,7 +51,7 @@ const ConfigEditorForm: FC<{
   onClose: () => void;
   onSuccess: () => void;
   targetTopic: string;
-}> = ({ editedEntry, onClose, targetTopic, onSuccess, onError }) => {
+}> = ({ editedEntry, onClose, targetTopic, onSuccess }) => {
   const toast = useToast();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -67,8 +67,11 @@ const ConfigEditorForm: FC<{
     },
   });
 
-  const hasInfiniteValue = ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat);
-  const valueTypeOptions = [];
+  const hasInfiniteValue = editedEntry.frontendFormat && ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat);
+  const valueTypeOptions: Array<{
+    label: string;
+    value: Inputs['valueType'];
+  }> = [];
   valueTypeOptions.push({
     label: 'Default',
     value: 'default',
@@ -87,7 +90,7 @@ const ConfigEditorForm: FC<{
   const onSubmit: SubmitHandler<Inputs> = async ({ valueType, customValue }) => {
     const operation = valueType === 'infinite' || valueType === 'custom' ? 'SET' : 'DELETE';
 
-    let value: number | string = undefined;
+    let value: number | string | undefined | null = undefined;
     if (valueType === 'infinite') {
       value = -1;
     } else if (valueType === 'custom') {
@@ -135,7 +138,7 @@ const ConfigEditorForm: FC<{
                   control={control}
                   name="valueType"
                   render={({ field: { onChange, value } }) => (
-                    <RadioGroup<Inputs['valueType']> options={valueTypeOptions} value={value} onChange={onChange} />
+                    <RadioGroup name="valueType" options={valueTypeOptions} value={value} onChange={onChange} />
                   )}
                 />
               </FormField>
@@ -180,7 +183,7 @@ const ConfigEditorForm: FC<{
             >
               Cancel
             </Button>
-            <Button variant="solid" type="submit">
+            <Button variant="solid" type="submit" isDisabled={isSubmitting}>
               Save changes
             </Button>
           </ModalFooter>
@@ -357,19 +360,20 @@ function isTopicConfigEdittable(
   return { canEdit: true };
 }
 
-export const ConfigEntryEditorController = (p: {
+export const ConfigEntryEditorController = <T extends string | number>(p: {
   entry: ConfigEntryExtended;
   value: T;
   onChange: (e: T) => void;
+  className?: string;
 }) => {
   const { entry, value, onChange } = p;
   switch (entry.frontendFormat) {
     case 'BOOLEAN':
       return (
-        <SingleSelect
+        <SingleSelect<T>
           options={[
-            { value: 'false', label: 'False' },
-            { value: 'true', label: 'True' },
+            { value: 'false' as T, label: 'False' },
+            { value: 'true' as T, label: 'True' },
           ]}
           value={value}
           onChange={onChange}
@@ -384,7 +388,7 @@ export const ConfigEntryEditorController = (p: {
           className={p.className}
           options={
             entry.enumValues?.map((value) => ({
-              value,
+              value: value as T,
               label: value,
             })) ?? []
           }
@@ -396,7 +400,7 @@ export const ConfigEntryEditorController = (p: {
         <DataSizeSelect
           allowInfinite={false}
           valueBytes={Number(value ?? 0)}
-          onChange={(e) => onChange(Math.round(e))}
+          onChange={(e) => onChange(Math.round(e) as T)}
         />
       );
     case 'DURATION':
@@ -404,23 +408,23 @@ export const ConfigEntryEditorController = (p: {
         <DurationSelect
           allowInfinite={false}
           valueMilliseconds={Number(value ?? 0)}
-          onChange={(e) => onChange(Math.round(e))}
+          onChange={(e) => onChange(Math.round(e) as T)}
         />
       );
 
     case 'PASSWORD':
-      return <PasswordInput value={value ?? ''} onChange={(x) => onChange(x.target.value)} />;
+      return <PasswordInput value={value ?? ''} onChange={(x) => onChange(x.target.value as T)} />;
 
     case 'RATIO':
-      return <RatioInput value={Number(value)} onChange={(x) => onChange(x)} />;
+      return <RatioInput value={Number(value)} onChange={(x) => onChange(x as T)} />;
 
     case 'INTEGER':
-      return <NumInput value={Number(value)} onChange={(e) => onChange(Math.round(e ?? 0))} />;
+      return <NumInput value={Number(value)} onChange={(e) => onChange(Math.round(e ?? 0) as T)} />;
 
     case 'DECIMAL':
-      return <NumInput value={Number(value)} onChange={(e) => onChange(e)} />;
+      return <NumInput value={Number(value)} onChange={(e) => onChange(e as T)} />;
     default:
-      return <Input value={String(value)} onChange={(e) => onChange(e.target.value)} />;
+      return <Input value={String(value)} onChange={(e) => onChange(e.target.value as T)} />;
   }
 };
 
