@@ -34,7 +34,7 @@
                 return window.location;
             };
             let l = window.__getLocation();
-            let base = document.querySelector("base");
+            let base = document.querySelector('base');
             if (!basePath.startsWith('__BASE')) {
                 base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + basePath;
             } else {
