@@ -9,7 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ConfigEntry, ConfigEntryExtended } from '../../state/restInterfaces';
 import { prettyBytesOrNA, prettyMilliseconds } from '../utils';
+
+export const CONFIG_INFINITE_VALUES: Record<string, number> = {
+  'flush.ms': 9223372036854,
+};
+
+export const entryHasInfiniteValue = (entry: ConfigEntry) =>
+  Number(entry.value) === CONFIG_INFINITE_VALUES[entry.name] || entry.value === '-1';
+
+export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => {
+  return CONFIG_INFINITE_VALUES[entry.name] ?? -1;
+};
 
 export function formatConfigValue(
   name: string,
@@ -51,6 +63,10 @@ export function formatConfigValue(
   if (name.endsWith('.bytes.per.second')) {
     if (num >= Number.MAX_SAFE_INTEGER) return `Infinite${suffix}`;
     return `${prettyBytesOrNA(num)}/s${suffix}`;
+  }
+
+  if (CONFIG_INFINITE_VALUES[name] && num >= CONFIG_INFINITE_VALUES[name]) {
+    return `Infinite${suffix}`;
   }
 
   // Time

@@ -26,8 +26,12 @@ import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
-import type { ConfigEntryExtended } from '../../../state/restInterfaces';
-import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
+import type { ConfigEntry, ConfigEntryExtended } from '../../../state/restInterfaces';
+import {
+  entryHasInfiniteValue,
+  formatConfigValue,
+  getInfiniteValueForEntry,
+} from '../../../utils/formatters/ConfigValueFormatter';
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
 import { MdInfoOutline } from 'react-icons/md';
@@ -62,8 +66,8 @@ const ConfigEditorForm: FC<{
     watch,
   } = useForm<Inputs>({
     defaultValues: {
-      valueType: editedEntry.isExplicitlySet ? (editedEntry.value === '-1' ? 'infinite' : 'custom') : 'default',
-      customValue: editedEntry.isExplicitlySet && editedEntry.value !== '-1' ? editedEntry.value : undefined,
+      valueType: editedEntry.isExplicitlySet ? (entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom') : 'default',
+      customValue: editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '',
     },
   });
 
@@ -92,7 +96,7 @@ const ConfigEditorForm: FC<{
 
     let value: number | string | undefined | null = undefined;
     if (valueType === 'infinite') {
-      value = -1;
+      value = getInfiniteValueForEntry(editedEntry);
     } else if (valueType === 'custom') {
       value = customValue;
     }
@@ -276,14 +280,19 @@ const ConfigGroup = observer(
         <div className="configGroupSpacer" />
         {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
         {p.entries.map((e) => (
-          <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} hasEditPermissions={p.hasEditPermissions} />
+          <ConfigEntryComponent
+            key={e.name}
+            entry={e}
+            onEditEntry={p.onEditEntry}
+            hasEditPermissions={p.hasEditPermissions}
+          />
         ))}
       </>
     );
   },
 );
 
-const ConfigEntry = observer(
+const ConfigEntryComponent = observer(
   (p: {
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
     entry: ConfigEntryExtended;
