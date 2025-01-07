@@ -1,5 +1,5 @@
-import { Link as ChakraLink } from '@chakra-ui/react';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
+import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
   Box,
   Button,

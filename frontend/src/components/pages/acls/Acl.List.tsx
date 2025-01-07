@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link as ChakraLink } from '@chakra-ui/react';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
+import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
   Alert,
   AlertDialog,

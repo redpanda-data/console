@@ -19,7 +19,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 
-import { Link as ChakraLink } from '@chakra-ui/react';
+import { Link as ChakraLink } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { Features } from '../../../state/supportedFeatures';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
