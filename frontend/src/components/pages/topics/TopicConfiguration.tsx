@@ -26,7 +26,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
-import type { ConfigEntry, ConfigEntryExtended } from '../../../state/restInterfaces';
+import type { ConfigEntryExtended } from '../../../state/restInterfaces';
 import {
   entryHasInfiniteValue,
   formatConfigValue,
