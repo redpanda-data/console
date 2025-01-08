@@ -142,15 +142,13 @@ func updateServers(doc3 *openapi3.T) {
 	doc3.Servers = []*openapi3.Server{
 		{
 			URL:         "{dataplane_api_url}",
-			Description: "Dataplane API",
+			Description: "Data Plane API",
 			Variables: map[string]*openapi3.ServerVariable{
 				"dataplane_api_url": {
-					Default: "https://api-a4cb21.ck09ma3c4vs12cng3cig.fmc.prd.cloud.redpanda.com",
-					Description: `Dataplane API.<br>
-					The Dataplane API allows management of Topics,ACLs,Service accounts. It is exposed by each individual cluster.
-					Retrieve the Dataplane API URL of a cluster by using the dataplane_api.url field returned by the Get Cluster endpoint.<br><br>
-					Example (Dedicated): https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com<br>
-					Example (BYOC): https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com`,
+					Default: "https://{dataplane_api_url}",
+					Description: `Find the Data Plane API base URL of a cluster by calling the Get Cluster endpoint of the Control Plane API. The dataplane_api.url field is returned in the response body.<br><br>
+					Example (Dedicated): "https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com"<br>
+					Example (BYOC): "https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com"`,
 				},
 			},
 		},
