@@ -32,7 +32,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 const CreateSecretButton = () => {
   return (
     <Flex marginBottom={'.5em'}>
-      <Button as={ReactRouterLink} to={'/rp-connect/secrets/create'}>
+      <Button as={ReactRouterLink} to={'/rp-connect/secrets/create'} data-testid="create-rpcn-secret-button">
         Create secret
       </Button>
     </Flex>
@@ -130,7 +130,9 @@ class RpConnectSecretsList extends PageComponent {
               columns={[
                 {
                   header: 'Secret name',
-                  cell: ({ row: { original } }) => <Text>{original.id}</Text>,
+                  cell: ({ row: { original } }) => (
+                    <Text data-testid={`secret-text-${original.id}`}>{original.id}</Text>
+                  ),
                   size: 200,
                 },
                 {
@@ -180,6 +182,7 @@ class RpConnectSecretsList extends PageComponent {
                     <Flex justifyContent={'flex-end'}>
                       <ButtonGroup>
                         <Button
+                          data-testid={`edit-secret-${r.id}`}
                           variant="icon"
                           height="16px"
                           color="gray.500"
@@ -193,7 +196,7 @@ class RpConnectSecretsList extends PageComponent {
                         </Button>
                         <ConfirmItemDeleteModal
                           trigger={
-                            <Button variant="icon" height="16px" color="gray.500">
+                            <Button variant="icon" height="16px" color="gray.500" data-testid={`delete-secret-${r.id}`}>
                               <TrashIcon />
                             </Button>
                           }
