@@ -127,7 +127,19 @@ const ConfigEditorForm: FC<{
 
   const valueType = watch('valueType');
 
-  const defaultConfigSynonym = editedEntry.synonyms?.find((x) => x.source === 'DEFAULT_CONFIG');
+  const SOURCE_PRIORITY_ORDER = [
+    'DYNAMIC_TOPIC_CONFIG',
+    'DYNAMIC_BROKER_CONFIG',
+    'DYNAMIC_DEFAULT_BROKER_CONFIG',
+    'STATIC_BROKER_CONFIG',
+    'DEFAULT_CONFIG',
+  ];
+
+  const defaultConfigSynonym = editedEntry.synonyms
+    ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
+    .sort((a, b) => {
+      return SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source);
+    })[0];
 
   return (
     <Modal isOpen onClose={onClose}>
