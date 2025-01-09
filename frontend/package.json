@@ -36,7 +36,6 @@
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1",
-    "@chakra-ui/react": "^2.8.2",
     "@chakra-ui/react-use-disclosure": "^2.1",
     "@connectrpc/connect": "^1.1.2",
     "@connectrpc/connect-query": "^1.4.2",

@@ -16,9 +16,8 @@ import { api } from '../../../state/backendApi';
 import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { PageComponent, type PageInitHelper } from '../Page';
 import './Schema.List.scss';
-import { RadioGroup } from '@chakra-ui/react';
-import { Radio } from '@redpanda-data/ui';
-import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Stack, Text, VStack, useToast } from '@redpanda-data/ui';
+import { RadioGroup } from '@redpanda-data/ui';
+import { Box, CodeBlock, Empty, Flex, Grid, GridItem, Text, VStack, useToast } from '@redpanda-data/ui';
 import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
@@ -168,72 +167,106 @@ function EditSchemaCompatibility(p: {
       <Grid templateColumns="1fr 1fr" gap="4rem">
         <GridItem mt="4" mb="8">
           <RadioGroup
+            name="configMode"
+            direction="column"
+            isAttached={false}
+            options={[
+              {
+                value: 'DEFAULT',
+                disabled: !subject,
+                label: (
+                  <Box>
+                    <Text>Default</Text>
+                    <Text fontSize="small">Use the globally configured default.</Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'NONE',
+                label: (
+                  <Box>
+                    <Text>None</Text>
+                    <Text fontSize="small">No schema compatibility checks are done.</Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'BACKWARD',
+                label: (
+                  <Box>
+                    <Text>Backward</Text>
+                    <Text fontSize="small">
+                      Consumers using the new schema (for example, version 10) can read data from producers using the
+                      previous schema (for example, version 9).
+                    </Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'BACKWARD_TRANSITIVE',
+                label: (
+                  <Box>
+                    <Text>Transitive Backward</Text>
+                    <Text fontSize="small">
+                      Consumers using the new schema (for example, version 10) can read data from producers using all
+                      previous schemas (for example, versions 1-9).
+                    </Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'FORWARD',
+                label: (
+                  <Box>
+                    <Text>Forward</Text>
+                    <Text fontSize="small">
+                      Consumers using the previous schema (for example, version 9) can read data from producers using
+                      the new schema (for example, version 10).
+                    </Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'FORWARD_TRANSITIVE',
+                label: (
+                  <Box>
+                    <Text>Transitive Forward</Text>
+                    <Text fontSize="small">
+                      Consumers using any previous schema (for example, versions 1-9) can read data from producers using
+                      the new schema (for example, version 10).
+                    </Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'FULL',
+                label: (
+                  <Box>
+                    <Text>Full</Text>
+                    <Text fontSize="small">
+                      A new schema and the previous schema (for example, versions 10 and 9) are both backward and
+                      forward compatible with each other.
+                    </Text>
+                  </Box>
+                ),
+              },
+              {
+                value: 'FULL_TRANSITIVE',
+                label: (
+                  <Box>
+                    <Text>Transitive Full</Text>
+                    <Text fontSize="small">
+                      Each schema is both backward and forward compatible with all registered schemas.
+                    </Text>
+                  </Box>
+                ),
+              },
+            ]}
             value={configMode}
             onChange={(e) => {
               setConfigMode(e);
             }}
-          >
-            <Stack gap="4">
-              {subject && (
-                <Radio value="DEFAULT">
-                  Default
-                  <Text fontSize="small">Use the globally configured default.</Text>
-                </Radio>
-              )}
-
-              <Radio value="NONE">
-                None
-                <Text fontSize="small">No schema compatibility checks are done.</Text>
-              </Radio>
-
-              <Radio value="BACKWARD">
-                Backward
-                <Text fontSize="small">
-                  Consumers using the new schema (for example, version 10) can read data from producers using the
-                  previous schema (for example, version 9).
-                </Text>
-              </Radio>
-
-              <Radio value="BACKWARD_TRANSITIVE">
-                Transitive Backward
-                <Text fontSize="small">
-                  Consumers using the new schema (for example, version 10) can read data from producers using all
-                  previous schemas (for example, versions 1-9).
-                </Text>
-              </Radio>
-
-              <Radio value="FORWARD">
-                Forward
-                <Text fontSize="small">
-                  Consumers using the previous schema (for example, version 9) can read data from producers using the
-                  new schema (for example, version 10).
-                </Text>
-              </Radio>
-
-              <Radio value="FORWARD_TRANSITIVE">
-                Transitive Forward
-                <Text fontSize="small">
-                  Consumers using any previous schema (for example, versions 1-9) can read data from producers using the
-                  new schema (for example, version 10).
-                </Text>
-              </Radio>
-
-              <Radio value="FULL">
-                Full
-                <Text fontSize="small">
-                  A new schema and the previous schema (for example, versions 10 and 9) are both backward and forward
-                  compatible with each other.
-                </Text>
-              </Radio>
-
-              <Radio value="FULL_TRANSITIVE">
-                Transitive Full
-                <Text fontSize="small">
-                  Each schema is both backward and forward compatible with all registered schemas.
-                </Text>
-              </Radio>
-            </Stack>
-          </RadioGroup>
+          />
         </GridItem>
 
         <GridItem>
