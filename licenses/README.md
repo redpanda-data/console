@@ -14,3 +14,13 @@ that you pay for.
 
 We thank MariaDB and CockroachDB for pioneering the use of BSL for storage systems.
 It gave us a path to build an infrastructure company in the age of the hyperclouds.
+
+## How to recreate the third party licenses files
+
+Third party licenses audit files are generated on demand, the steps to do so are documented below.
+
+1. backend run `task backend:licenses:third-party`
+2. frontend:
+    * `cd frontend`
+    * `npx license-checker --csv --production > ../licenses/third_party_js.csv`
+
