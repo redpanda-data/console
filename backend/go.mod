@@ -9,6 +9,7 @@ require (
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.28.6
 	github.com/basgys/goxml2json v1.1.0
+	github.com/bufbuild/protocompile v0.14.1
 	github.com/bufbuild/protovalidate-go v0.8.0
 	github.com/carlmjohnson/requests v0.24.3
 	github.com/cloudhut/common v0.10.0
@@ -21,14 +22,12 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/go-git/go-billy/v5 v5.6.1
 	github.com/go-git/go-git/v5 v5.13.1
-	github.com/go-resty/resty/v2 v2.16.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/schema v1.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.24.0
 	github.com/hamba/avro/v2 v2.27.0
-	github.com/jarcoal/httpmock v1.3.1
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jhump/protoreflect v1.16.0
 	github.com/knadh/koanf v1.5.0
@@ -94,7 +93,6 @@ require (
 	github.com/aws/smithy-go v1.22.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
@@ -120,6 +118,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
+	github.com/go-resty/resty/v2 v2.16.2 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -134,6 +133,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
+	github.com/jarcoal/httpmock v1.3.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -186,6 +186,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tilinna/z85 v1.0.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.9.0 // indirect
