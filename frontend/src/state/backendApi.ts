@@ -135,6 +135,7 @@ import type {
   PublishMessageRequest,
   PublishMessageResponse,
 } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
 import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequest,
@@ -2158,7 +2159,12 @@ export const transformsApi = observable({
     const transforms: TransformMetadata[] = [];
     let nextPageToken = '';
     while (true) {
-      const res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+      let res: ListTransformsResponse;
+      try {
+        res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+      } catch (err) {
+        break;
+      }
       const r = res.response;
       if (!r) break;
 
