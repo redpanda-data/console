@@ -9,8 +9,16 @@ export function formatPipelineError(err: any): any {
     genDesc = err.message;
     for (const detail of err.details) {
       if (isLintHint(detail)) {
-        const hint = LintHint.fromJsonString(JSON.stringify(detail.debug));
-        details.push(`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`);
+        const hint = detail.debug;
+        if (hint.line > 0) {
+          details.push(`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`);
+        } else {
+          details.push(hint.hint);
+        }
+      } else if (isBadRequest(detail)) {
+        for (const v of detail.debug.fieldViolations) {
+          details.push(`${v.field}: ${v.description}`);
+        }
       }
     }
   }
@@ -32,6 +40,19 @@ export function formatPipelineError(err: any): any {
   return desc;
 }
 
-function isLintHint(obj: any): obj is { type: string; debug: any } {
+type BadRequest = {
+  fieldViolations: FieldViolation[];
+};
+
+type FieldViolation = {
+  field: string;
+  description: string;
+};
+
+function isLintHint(obj: any): obj is { type: string; debug: LintHint } {
   return obj && obj.type === LintHint.typeName;
+}
+
+function isBadRequest(obj: any): obj is { type: string; debug: BadRequest } {
+  return obj && obj.type === 'google.rpc.BadRequest';
 }
