@@ -21,7 +21,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { principalGroupsView } from './Models';
 import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 
-import { Box, Link as ChakraLink } from '@chakra-ui/react';
+import { Box, Link as ChakraLink } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link as ChakraLink, Tag } from '@chakra-ui/react';
+import { Link as ChakraLink, Tag } from '@redpanda-data/ui';
 import { Box, Flex, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import React from 'react';
