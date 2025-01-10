@@ -65,7 +65,7 @@ func NewSingleClientProvider(cfg *config.Config) (*SingleClientProvider, error) 
 	}, nil
 }
 
-// GetRedpandaAPIClient returns a schema registry client for the given context.
+// GetRedpandaAPIClient returns a redpanda admin api for the given context.
 func (p *SingleClientProvider) GetRedpandaAPIClient(_ context.Context) (AdminAPIClient, error) {
 	if !p.cfg.Enabled {
 		return nil, fmt.Errorf("redpanda admin api is not configured")
