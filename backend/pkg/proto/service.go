@@ -13,12 +13,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
-	//nolint:staticcheck // Switching to the google golang protojson comes with a few breaking changes.
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/reporter"
@@ -29,13 +29,13 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/dynamicpb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/schema/embed"
-	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 // RecordPropertyType determines whether the to be recorded payload is either a
@@ -518,38 +518,9 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 	s.registry = registry
 
 	// Let's compare the registry items against the mapping and let the user know if there are missing/mismatched proto types
-	foundTypes := 0
-	missingTypes := 0
-	for _, mapping := range s.cfg.Mappings {
-		if mapping.ValueProtoType != "" {
-			_, err := s.registry.FindMessageByURL(mapping.ValueProtoType)
-			if err != nil {
-				if err == protoregistry.NotFound {
-					s.logger.Warn("protobuf type from configured topic mapping does not exist",
-						zap.String("topic_name", mapping.TopicName.String()),
-						zap.String("value_proto_type", mapping.ValueProtoType))
-					missingTypes++
-				}
-				return fmt.Errorf("failed to get proto type from registry: %w", err)
-			}
-
-			foundTypes++
-
-		}
-		if mapping.KeyProtoType != "" {
-			_, err := s.registry.FindMessageByURL(mapping.ValueProtoType)
-			if err != nil {
-				if err == protoregistry.NotFound {
-					s.logger.Info("protobuf type from configured topic mapping does not exist",
-						zap.String("topic_name", mapping.TopicName.String()),
-						zap.String("key_proto_type", mapping.KeyProtoType))
-					missingTypes++
-				}
-				return fmt.Errorf("failed to get proto type from registry: %w", err)
-			}
-
-			foundTypes++
-		}
+	foundTypes, missingTypes, err := s.validateMappingProtoTypes()
+	if err != nil {
+		return err
 	}
 
 	totalDuration := time.Since(startTime)
@@ -561,6 +532,45 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 		zap.Duration("operation_duration", totalDuration))
 
 	return nil
+}
+
+func (s *Service) validateMappingProtoTypes() (foundTypes int, missingTypes int, err error) {
+	for _, mapping := range s.cfg.Mappings {
+		if mapping.ValueProtoType != "" {
+			_, err = s.registry.FindMessageByURL(mapping.ValueProtoType)
+			if err != nil {
+				if errors.Is(err, protoregistry.NotFound) {
+					s.logger.Warn("protobuf type from configured topic mapping does not exist",
+						zap.String("topic_name", mapping.TopicName.String()),
+						zap.String("value_proto_type", mapping.ValueProtoType))
+
+					missingTypes++
+					err = nil // continue on not found
+				}
+				return foundTypes, missingTypes, fmt.Errorf("failed to get proto type from registry: %w", err)
+			}
+
+			foundTypes++
+		}
+		if mapping.KeyProtoType != "" {
+			_, err = s.registry.FindMessageByURL(mapping.ValueProtoType)
+			if err != nil {
+				if errors.Is(err, protoregistry.NotFound) {
+					s.logger.Warn("protobuf type from configured topic mapping does not exist",
+						zap.String("topic_name", mapping.TopicName.String()),
+						zap.String("key_proto_type", mapping.KeyProtoType))
+
+					missingTypes++
+					err = nil // continue on not found
+				}
+				return foundTypes, missingTypes, fmt.Errorf("failed to get proto type from registry: %w", err)
+			}
+
+			foundTypes++
+		}
+	}
+
+	return foundTypes, missingTypes, nil
 }
 
 // protoFileToDescriptorWithBinary parses a .proto file and compiles it to a descriptor using the protoc binary. Protoc must
@@ -587,7 +597,6 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]lin
 		}
 		filesStr[trimmedFilepath] = string(file.Payload)
 		filePaths = append(filePaths, trimmedFilepath)
-
 	}
 
 	// Add common proto types
