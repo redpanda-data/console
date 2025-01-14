@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -200,7 +201,9 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				assert.Equal(t, uint32(1000), *payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(payload.NormalizedPayload))
+				assert.Equal(t,
+					`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`,
+					strings.ReplaceAll(string(payload.NormalizedPayload), `, "`, `,"`))
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")

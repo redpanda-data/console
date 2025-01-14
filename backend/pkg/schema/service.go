@@ -263,9 +263,10 @@ func (s *Service) compileProtoSchemas(ctx context.Context, schema *SchemaVersion
 	}
 
 	compiler := protocompile.Compiler{
-		Resolver: &protocompile.SourceResolver{
-			Accessor: protocompile.SourceAccessorFromMap(schemasByPath),
-		},
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor:    protocompile.SourceAccessorFromMap(schemasByPath),
+			ImportPaths: []string{"."},
+		}),
 		Reporter: reporter.NewReporter(errorReporter, nil),
 	}
 
@@ -497,9 +498,10 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 	}
 
 	compiler := protocompile.Compiler{
-		Resolver: &protocompile.SourceResolver{
-			Accessor: protocompile.SourceAccessorFromMap(schemasByPath),
-		},
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor:    protocompile.SourceAccessorFromMap(schemasByPath),
+			ImportPaths: []string{"."},
+		}),
 	}
 
 	_, err = compiler.Compile(ctx, name)

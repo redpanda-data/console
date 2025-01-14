@@ -13,6 +13,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,29 +54,25 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	topic1 := config.RegexpOrLiteral{}
 	topic1.UnmarshalText([]byte("protobuf_serde_test_orders_2"))
 
-	protoSvc, err := protopkg.NewService(config.Proto{
-		Enabled: true,
-		SchemaRegistry: config.ProtoSchemaRegistry{
-			Enabled:         false,
-			RefreshInterval: 5 * time.Minute,
+	protoConfig := config.Proto{}
+	protoConfig.SetDefaults()
+	protoConfig.Enabled = true
+	protoConfig.SchemaRegistry.Enabled = false
+	protoConfig.FileSystem.Enabled = true
+	protoConfig.FileSystem.Paths = []string{"testdata/proto"}
+	protoConfig.Mappings = []config.ProtoTopicMapping{
+		{
+			TopicName:      topic0,
+			ValueProtoType: "shop.v1.Order",
 		},
-		FileSystem: config.Filesystem{
-			Enabled:         true,
-			Paths:           []string{"testdata/proto"},
-			RefreshInterval: 5 * time.Minute,
+		{
+			TopicName:      topic1,
+			KeyProtoType:   "shop.v1.Order",
+			ValueProtoType: "shop.v1.Order",
 		},
-		Mappings: []config.ProtoTopicMapping{
-			{
-				TopicName:      topic0,
-				ValueProtoType: "shop.v1.Order",
-			},
-			{
-				TopicName:      topic1,
-				KeyProtoType:   "shop.v1.Order",
-				ValueProtoType: "shop.v1.Order",
-			},
-		},
-	}, logger, schemaSvc)
+	}
+
+	protoSvc, err := protopkg.NewService(protoConfig, logger, schemaSvc)
 	require.NoError(t, err)
 
 	err = protoSvc.Start()
@@ -122,7 +119,9 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(payload.NormalizedPayload))
+				assert.Equal(t,
+					`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`,
+					strings.ReplaceAll(string(payload.NormalizedPayload), `, "`, `,"`))
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -144,7 +143,9 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`, string(payload.NormalizedPayload))
+				assert.Equal(t,
+					`{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`,
+					strings.ReplaceAll(string(payload.NormalizedPayload), `, "`, `,"`))
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -184,29 +185,25 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 	topic1 := config.RegexpOrLiteral{}
 	topic1.UnmarshalText([]byte("protobuf_serde_test_orders_2"))
 
-	testProtoSvc, err := protopkg.NewService(config.Proto{
-		Enabled: true,
-		SchemaRegistry: config.ProtoSchemaRegistry{
-			Enabled:         false,
-			RefreshInterval: 5 * time.Minute,
+	protoConfig := config.Proto{}
+	protoConfig.SetDefaults()
+	protoConfig.Enabled = true
+	protoConfig.SchemaRegistry.Enabled = false
+	protoConfig.FileSystem.Enabled = true
+	protoConfig.FileSystem.Paths = []string{"testdata/proto"}
+	protoConfig.Mappings = []config.ProtoTopicMapping{
+		{
+			TopicName:      topic0,
+			ValueProtoType: "shop.v1.Order",
 		},
-		FileSystem: config.Filesystem{
-			Enabled:         true,
-			Paths:           []string{"testdata/proto"},
-			RefreshInterval: 5 * time.Minute,
+		{
+			TopicName:      topic1,
+			KeyProtoType:   "shop.v1.Order",
+			ValueProtoType: "shop.v1.Order",
 		},
-		Mappings: []config.ProtoTopicMapping{
-			{
-				TopicName:      topic0,
-				ValueProtoType: "shop.v1.Order",
-			},
-			{
-				TopicName:      topic1,
-				KeyProtoType:   "shop.v1.Order",
-				ValueProtoType: "shop.v1.Order",
-			},
-		},
-	}, logger, nil)
+	}
+
+	testProtoSvc, err := protopkg.NewService(protoConfig, logger, nil)
 	require.NoError(t, err)
 
 	err = testProtoSvc.Start()

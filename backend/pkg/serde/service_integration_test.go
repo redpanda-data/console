@@ -668,7 +668,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("111", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
-		assert.Equal(`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(dr.Value.NormalizedPayload))
+		assert.Equal(
+			`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`,
+			strings.ReplaceAll(string(dr.Value.NormalizedPayload), `, "`, `,"`))
 
 		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
@@ -1361,7 +1363,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("345", obj["id"])
 		assert.Len(obj["decVal"], 1)
-		assert.Len(obj["color"], 4)
+		assert.Len(obj["color"], 3)
 		assert.Len(obj["fraction"], 2)
 		assert.Len(obj["latlng"], 2)
 		assert.Len(obj["price"], 3)

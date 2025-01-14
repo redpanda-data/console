@@ -244,7 +244,7 @@ func (s *Service) SerializeJSONToProtobufMessage(json []byte, md protoreflect.Me
 		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
 	}
 
-	return protojson.Marshal(msg)
+	return proto.Marshal(msg)
 }
 
 // GetMessageDescriptorForSchema gets the Protobuf message descriptor for the schema ID and message index.
@@ -299,7 +299,7 @@ func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID 
 		schemaID,
 		&dynamicpb.Message{},
 		sr.EncodeFn(func(v any) ([]byte, error) {
-			return protojson.Marshal(v.(*dynamicpb.Message))
+			return proto.Marshal(v.(*dynamicpb.Message))
 		}),
 		sr.Index(index...),
 	)
@@ -539,34 +539,34 @@ func (s *Service) validateMappingProtoTypes() (foundTypes int, missingTypes int,
 		if mapping.ValueProtoType != "" {
 			_, err = s.registry.FindMessageByURL(mapping.ValueProtoType)
 			if err != nil {
-				if errors.Is(err, protoregistry.NotFound) {
-					s.logger.Warn("protobuf type from configured topic mapping does not exist",
-						zap.String("topic_name", mapping.TopicName.String()),
-						zap.String("value_proto_type", mapping.ValueProtoType))
-
-					missingTypes++
-					err = nil // continue on not found
+				if !errors.Is(err, protoregistry.NotFound) {
+					return foundTypes, missingTypes, fmt.Errorf("failed to get proto type from registry: %w", err)
 				}
-				return foundTypes, missingTypes, fmt.Errorf("failed to get proto type from registry: %w", err)
-			}
 
-			foundTypes++
+				s.logger.Warn("protobuf type from configured topic mapping does not exist",
+					zap.String("topic_name", mapping.TopicName.String()),
+					zap.String("value_proto_type", mapping.ValueProtoType))
+
+				missingTypes++
+			} else {
+				foundTypes++
+			}
 		}
 		if mapping.KeyProtoType != "" {
 			_, err = s.registry.FindMessageByURL(mapping.ValueProtoType)
 			if err != nil {
-				if errors.Is(err, protoregistry.NotFound) {
-					s.logger.Warn("protobuf type from configured topic mapping does not exist",
-						zap.String("topic_name", mapping.TopicName.String()),
-						zap.String("key_proto_type", mapping.KeyProtoType))
-
-					missingTypes++
-					err = nil // continue on not found
+				if !errors.Is(err, protoregistry.NotFound) {
+					return foundTypes, missingTypes, fmt.Errorf("failed to get proto type from registry: %w", err)
 				}
-				return foundTypes, missingTypes, fmt.Errorf("failed to get proto type from registry: %w", err)
-			}
 
-			foundTypes++
+				s.logger.Warn("protobuf type from configured topic mapping does not exist",
+					zap.String("topic_name", mapping.TopicName.String()),
+					zap.String("key_proto_type", mapping.KeyProtoType))
+
+				missingTypes++
+			} else {
+				foundTypes++
+			}
 		}
 	}
 
@@ -592,11 +592,14 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]lin
 				if strings.HasPrefix(trimmedFilepath, prefix) {
 					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, prefix)
 					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, "/")
+					filesStr[trimmedFilepath] = string(file.Payload)
+					filePaths = append(filePaths, trimmedFilepath)
 				}
 			}
+		} else {
+			filesStr[trimmedFilepath] = string(file.Payload)
+			filePaths = append(filePaths, trimmedFilepath)
 		}
-		filesStr[trimmedFilepath] = string(file.Payload)
-		filePaths = append(filePaths, trimmedFilepath)
 	}
 
 	// Add common proto types
@@ -624,9 +627,10 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]lin
 	}
 
 	compiler := protocompile.Compiler{
-		Resolver: &protocompile.SourceResolver{
-			Accessor: protocompile.SourceAccessorFromMap(filesStr),
-		},
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor:    protocompile.SourceAccessorFromMap(filesStr),
+			ImportPaths: []string{"."},
+		}),
 		Reporter: reporter.NewReporter(errorReporter, nil),
 	}
 
