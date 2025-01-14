@@ -22,9 +22,8 @@ import memoizeOne from 'memoize-one';
  */
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
-import { configureMonacoYaml } from 'monaco-yaml';
+
 import { DEFAULT_API_BASE } from './components/constants';
-import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import { APP_ROUTES } from './components/routes';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
@@ -278,7 +277,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   });
 
   // Ensure yaml workers are being loaded locally as well
-  loader.init().then(async (monaco) => {
+  loader.init().then(async () => {
     window.MonacoEnvironment = {
       baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
 
@@ -287,17 +286,15 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
         switch (label) {
           case 'editorWorkerService':
             return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
-          case 'yaml':
-            // return new yamlWorker();
-            return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
-
+          case 'yaml': {
+            const uri = new URL(`${window.location.origin}/static/js/yaml.worker.js`);
+            return new Worker(uri);
+          }
           default:
             throw new Error(`Unknown label ${label}`);
         }
       },
     };
-
-    configureMonacoYaml(monaco, monacoYamlOptions);
   });
 
   // Configure MobX
