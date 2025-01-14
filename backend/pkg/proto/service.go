@@ -222,6 +222,7 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md protorefle
 	marshaller := protojson.MarshalOptions{
 		EmitDefaultValues: true,
 		Resolver:          s.registry,
+		EmitUnpopulated:   true,
 	}
 
 	jsonBytes, err := marshaller.Marshal(msg)
