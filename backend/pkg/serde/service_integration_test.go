@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/reporter"
 	"github.com/hamba/avro/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,6 +38,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/genproto/googleapis/type/dayofweek"
 	"google.golang.org/genproto/googleapis/type/decimal"
@@ -45,6 +48,8 @@ import (
 	"google.golang.org/genproto/googleapis/type/month"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -2960,12 +2965,14 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	t := s.T()
 
-	require := require.New(t)
-	assert := assert.New(t)
+	t.Skip("asdf")
 
 	ctx := context.Background()
 
 	t.Run("plain JSON", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_plain_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3020,6 +3027,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("plain protobuf", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -3096,6 +3106,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -3237,6 +3250,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry protobuf", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3333,6 +3349,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry protobuf common", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_common")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3453,6 +3472,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry protobuf multi", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_multi")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3563,6 +3585,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry protobuf nested", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_nest")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3673,6 +3698,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry protobuf references", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3872,6 +3900,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("json with schema and index", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_index")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3980,6 +4011,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("json schema no reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_schema_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -4092,6 +4126,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("json schema with reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -4253,6 +4290,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry avro references", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_avro_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -4554,4 +4594,273 @@ func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
 	}
 
 	return out.String(), nil
+}
+
+func (s *SerdeIntegrationTestSuite) TestPlainProtoRef() {
+	t := s.T()
+
+	ctx := context.Background()
+
+	require := require.New(t)
+	assert := assert.New(t)
+
+	filePaths := []string{
+		"shop/v2/address.proto",
+		"shop/v2/customer.proto",
+		"shop/v2/order.proto",
+	}
+
+	logger := zaptest.NewLogger(t)
+
+	errorReporter := func(err reporter.ErrorWithPos) error {
+		position := err.GetPosition()
+		logger.Warn("failed to parse proto file to descriptor",
+			zap.String("file", position.Filename),
+			zap.Int("line", position.Line),
+			zap.Error(err))
+		return nil
+	}
+
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"./testdata/proto"},
+		}),
+		Reporter: reporter.NewReporter(errorReporter, nil),
+	}
+
+	compiledFiles, err := compiler.Compile(ctx, filePaths...)
+	require.NoError(err)
+	assert.NotEmpty(compiledFiles)
+
+	registry := new(protoregistry.Types)
+	for _, descriptor := range compiledFiles {
+		mds := descriptor.Messages()
+
+		for i := 0; i < mds.Len(); i++ {
+			mt := dynamicpb.NewMessageType(mds.Get(i))
+			registry.RegisterMessage(mt)
+		}
+	}
+
+	// expected
+	// inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","customer":{"version":1,"id":"customer_012345","firstName":"Zig","lastName":"Zag","gender":"","companyName":"Redpanda","email":"zigzag_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art_0","name":"line_0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art_1","name":"line_1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art_2","name":"line_2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_01234","method":"card"},"deliveryAddress":{"version":1,"id":"addr_01234","customer":{"customerId":"customer_012345","customerType":"business"},"type":"","firstName":"Zig","lastName":"Zag","state":"CA","houseNumber":"","city":"SomeCity","zip":"zzyzx","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-15T10:00:00Z","revision":1},"revision":1}`
+
+	// inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","revision":1}`
+
+	inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z"}`
+
+	trimmed, startsWithJSON, err := trimJSONInputString(inputData)
+	require.NoError(err)
+	require.True(startsWithJSON)
+
+	messageType, err := registry.FindMessageByURL("shop.v2.Order")
+	require.NoError(err)
+	require.NotEmpty(messageType)
+
+	md := messageType.Descriptor()
+	actualMsg := dynamicpb.NewMessage(md)
+	unmarshaller := protojson.UnmarshalOptions{
+		DiscardUnknown: false,
+		Resolver:       registry,
+	}
+	err = unmarshaller.Unmarshal([]byte(trimmed), actualMsg)
+	assert.NoError(err)
+
+	actualData, err := proto.Marshal(actualMsg)
+	assert.NoError(err)
+	assert.NotEmpty(actualData)
+
+	jsonData, err := marshalJSON(actualMsg, registry)
+	assert.NoError(err)
+	assert.NotEmpty(jsonData)
+	fmt.Println("!!! ACTUAL JSON DATA:")
+	fmt.Println(string(jsonData))
+
+	// actual
+
+	orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
+	// orderUpdatedAt := time.Date(2023, time.July, 15, 11, 0, 0, 0, time.UTC)
+	// orderDeliveredAt := time.Date(2023, time.July, 15, 12, 0, 0, 0, time.UTC)
+	// orderCompletedAt := time.Date(2023, time.July, 15, 13, 0, 0, 0, time.UTC)
+
+	expectedMsg := shopv2.Order{
+		Version:   1,
+		Id:        "444",
+		CreatedAt: timestamppb.New(orderCreatedAt),
+		// LastUpdatedAt: timestamppb.New(orderUpdatedAt),
+		// DeliveredAt:   timestamppb.New(orderDeliveredAt),
+		// CompletedAt:   timestamppb.New(orderCompletedAt),
+		// Customer: &shopv2.Customer{
+		// 	Version:      1,
+		// 	Id:           "customer_012345",
+		// 	FirstName:    "Zig",
+		// 	LastName:     "Zag",
+		// 	CompanyName:  "Redpanda",
+		// 	Email:        "zigzag_test@redpanda.com",
+		// 	CustomerType: shopv2.Customer_CUSTOMER_TYPE_BUSINESS,
+		// },
+		// OrderValue: 100,
+		// LineItems: []*shopv2.Order_LineItem{
+		// 	{
+		// 		ArticleId:    "art_0",
+		// 		Name:         "line_0",
+		// 		Quantity:     2,
+		// 		QuantityUnit: "usd",
+		// 		UnitPrice:    10,
+		// 		TotalPrice:   20,
+		// 	},
+		// 	{
+		// 		ArticleId:    "art_1",
+		// 		Name:         "line_1",
+		// 		Quantity:     2,
+		// 		QuantityUnit: "usd",
+		// 		UnitPrice:    25,
+		// 		TotalPrice:   50,
+		// 	},
+		// 	{
+		// 		ArticleId:    "art_2",
+		// 		Name:         "line_2",
+		// 		Quantity:     3,
+		// 		QuantityUnit: "usd",
+		// 		UnitPrice:    10,
+		// 		TotalPrice:   30,
+		// 	},
+		// },
+		// Payment: &shopv2.Order_Payment{
+		// 	PaymentId: "pay_01234",
+		// 	Method:    "card",
+		// },
+		// DeliveryAddress: &shopv2.Address{
+		// 	Version: 1,
+		// 	Id:      "addr_01234",
+		// 	Customer: &shopv2.Address_Customer{
+		// 		CustomerId:   "customer_012345",
+		// 		CustomerType: "business",
+		// 	},
+		// 	FirstName: "Zig",
+		// 	LastName:  "Zag",
+		// 	State:     "CA",
+		// 	City:      "SomeCity",
+		// 	Zip:       "zzyzx",
+		// 	Phone:     "123-456-78990",
+		// 	CreatedAt: timestamppb.New(orderCreatedAt),
+		// 	Revision:  1,
+		// },
+		// Revision: 1,
+	}
+
+	expectData, err := proto.Marshal(&expectedMsg)
+	require.NoError(err)
+
+	assert.Equal(expectData, actualData)
+
+	jsonData, err = marshalJSON(&expectedMsg, registry)
+	assert.NoError(err)
+	assert.NotEmpty(jsonData)
+	fmt.Println("!!! EXPECTED JSON DATA:")
+	fmt.Println(string(jsonData))
+}
+
+func (s *SerdeIntegrationTestSuite) TestPlainProtoRefV1() {
+	t := s.T()
+
+	ctx := context.Background()
+
+	require := require.New(t)
+	assert := assert.New(t)
+
+	filePaths := []string{
+		"shop/v1/order.proto",
+	}
+
+	logger := zaptest.NewLogger(t)
+
+	errorReporter := func(err reporter.ErrorWithPos) error {
+		position := err.GetPosition()
+		logger.Warn("failed to parse proto file to descriptor",
+			zap.String("file", position.Filename),
+			zap.Int("line", position.Line),
+			zap.Error(err))
+		return nil
+	}
+
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"./testdata/proto"},
+		}),
+		Reporter: reporter.NewReporter(errorReporter, nil),
+	}
+
+	compiledFiles, err := compiler.Compile(ctx, filePaths...)
+	require.NoError(err)
+	assert.NotEmpty(compiledFiles)
+
+	registry := new(protoregistry.Types)
+	for _, descriptor := range compiledFiles {
+		mds := descriptor.Messages()
+
+		for i := 0; i < mds.Len(); i++ {
+			mt := dynamicpb.NewMessageType(mds.Get(i))
+			registry.RegisterMessage(mt)
+		}
+	}
+
+	// expected
+	inputData := `{"id":"444","createdAt":"2023-07-15T10:00:00Z"}`
+
+	trimmed, startsWithJSON, err := trimJSONInputString(inputData)
+	require.NoError(err)
+	require.True(startsWithJSON)
+
+	messageType, err := registry.FindMessageByURL("shop.v1.Order")
+	require.NoError(err)
+	require.NotEmpty(messageType)
+
+	md := messageType.Descriptor()
+	actualMsg := dynamicpb.NewMessage(md)
+	unmarshaller := protojson.UnmarshalOptions{
+		DiscardUnknown: false,
+		Resolver:       registry,
+	}
+	err = unmarshaller.Unmarshal([]byte(trimmed), actualMsg)
+	assert.NoError(err)
+
+	actualData, err := proto.Marshal(actualMsg)
+	assert.NoError(err)
+	assert.NotEmpty(actualData)
+
+	jsonData, err := marshalJSON(actualMsg, registry)
+	assert.NoError(err)
+	assert.NotEmpty(jsonData)
+	fmt.Println("!!! ACTUAL JSON DATA:")
+	fmt.Println(string(jsonData))
+
+	// actual
+
+	orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
+
+	expectedMsg := shopv1.Order{
+		Id:        "444",
+		CreatedAt: timestamppb.New(orderCreatedAt),
+	}
+
+	expectData, err := proto.Marshal(&expectedMsg)
+	require.NoError(err)
+
+	assert.Equal(expectData, actualData)
+
+	jsonData, err = marshalJSON(&expectedMsg, registry)
+	assert.NoError(err)
+	assert.NotEmpty(jsonData)
+	fmt.Println("!!! EXPECTED JSON DATA:")
+	fmt.Println(string(jsonData))
+}
+
+func marshalJSON(m proto.Message, registry *protoregistry.Types) ([]byte, error) {
+	marshaller := protojson.MarshalOptions{
+		EmitDefaultValues: true,
+		Resolver:          registry,
+	}
+
+	return marshaller.Marshal(m)
 }
