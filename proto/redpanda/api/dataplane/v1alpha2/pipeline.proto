@@ -102,7 +102,10 @@ message Pipeline {
 // PipelineService is the service for Redpanda Connect.
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 service PipelineService {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations."};
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda Connect Pipeline"
+    description: "Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations."
+  };
 
   // CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
