@@ -2966,8 +2966,6 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	t := s.T()
 
-	t.Skip("asdf")
-
 	ctx := context.Background()
 
 	t.Run("plain JSON", func(t *testing.T) {
@@ -4600,8 +4598,6 @@ func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
 func (s *SerdeIntegrationTestSuite) TestPlainProtoRef() {
 	t := s.T()
 
-	t.Skip("asdf")
-
 	ctx := context.Background()
 
 	require := require.New(t)
@@ -4628,7 +4624,8 @@ func (s *SerdeIntegrationTestSuite) TestPlainProtoRef() {
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{"./testdata/proto"},
 		}),
-		Reporter: reporter.NewReporter(errorReporter, nil),
+		Reporter:       reporter.NewReporter(errorReporter, nil),
+		SourceInfoMode: protocompile.SourceInfoExtraComments | protocompile.SourceInfoExtraOptionLocations,
 	}
 
 	compiledFiles, err := compiler.Compile(ctx, filePaths...)
@@ -4791,7 +4788,8 @@ func (s *SerdeIntegrationTestSuite) TestPlainProtoRefV1() {
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{"./testdata/proto"},
 		}),
-		Reporter: reporter.NewReporter(errorReporter, nil),
+		Reporter:       reporter.NewReporter(errorReporter, nil),
+		SourceInfoMode: protocompile.SourceInfoExtraComments | protocompile.SourceInfoExtraOptionLocations,
 	}
 
 	compiledFiles, err := compiler.Compile(ctx, filePaths...)
@@ -4850,7 +4848,7 @@ func (s *SerdeIntegrationTestSuite) TestPlainProtoRefV1() {
 	expectData, err := proto.Marshal(&expectedMsg)
 	require.NoError(err)
 
-	// assert.Equal(expectData, actualData)
+	assert.Equal(expectData, actualData)
 
 	expectedJSONData, err := marshalJSON(&expectedMsg, registry)
 	assert.NoError(err)
