@@ -555,7 +555,7 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 		zap.Int("registered_types", len(fileDescriptors)),
 		zap.Duration("operation_duration", totalDuration))
 
-	fend, err := os.Create("protomemprofile")
+	fend, err := os.Create("protomemprofile-noextra")
 	if err != nil {
 		log.Fatal("could not create memory profile: ", err) //nolint:gocritic,revive // testing
 	}
