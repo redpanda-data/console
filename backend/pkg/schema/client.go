@@ -9,16 +9,19 @@
 
 package schema
 
+//nolint:goimports // goimports and gofumpt conflict
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
+	"time" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/sync/errgroup"
+	"unique" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -82,8 +85,39 @@ func newClient(cfg config.Schema) (*Client, error) {
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaResponse struct {
-	Schema     string            `json:"schema"`
-	References []SchemaReference `json:"references,omitempty"`
+	Schema     unique.Handle[string] `json:"schema"`
+	References []SchemaReference     `json:"references,omitempty"`
+}
+
+// UnmarshalJSON for SchemaVersionedResponse
+func (d *SchemaResponse) UnmarshalJSON(data []byte) error {
+	type Alias SchemaResponse
+	aux := &struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	d.Schema = unique.Make(aux.Schema)
+
+	return nil
+}
+
+// MarshalJSON is custom marshal
+func (d SchemaResponse) MarshalJSON() ([]byte, error) {
+	type Alias SchemaResponse
+	return json.Marshal(&struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Schema: d.Schema.Value(),
+		Alias:  (*Alias)(&d),
+	})
 }
 
 // GetSchemaByID returns the schema string identified by the input ID.
@@ -120,12 +154,43 @@ func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse,
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaVersionedResponse struct {
-	Subject    string            `json:"subject"`
-	SchemaID   int               `json:"id"`
-	Version    int               `json:"version"`
-	Schema     string            `json:"schema"`
-	Type       SchemaType        `json:"schemaType"`
-	References []SchemaReference `json:"references"`
+	Subject    string                `json:"subject"`
+	SchemaID   int                   `json:"id"`
+	Version    int                   `json:"version"`
+	Schema     unique.Handle[string] `json:"schema"`
+	Type       SchemaType            `json:"schemaType"`
+	References []SchemaReference     `json:"references"`
+}
+
+// UnmarshalJSON for SchemaVersionedResponse
+func (d *SchemaVersionedResponse) UnmarshalJSON(data []byte) error {
+	type Alias SchemaVersionedResponse
+	aux := &struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	d.Schema = unique.Make(aux.Schema)
+
+	return nil
+}
+
+// MarshalJSON is custom marshal
+func (d SchemaVersionedResponse) MarshalJSON() ([]byte, error) {
+	type Alias SchemaVersionedResponse
+	return json.Marshal(&struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Schema: d.Schema.Value(),
+		Alias:  (*Alias)(&d),
+	})
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
@@ -587,7 +652,7 @@ func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]*Schem
 // Schema is the object form of a schema for the HTTP API.
 type Schema struct {
 	// Schema is the actual unescaped text of a schema.
-	Schema string `json:"schema"`
+	Schema unique.Handle[string] `json:"schema"`
 
 	// Type is the type of a schema. The default type is avro.
 	Type SchemaType `json:"schemaType,omitempty"`
@@ -595,6 +660,37 @@ type Schema struct {
 	// References declares other schemas this schema references. See the
 	// docs on SchemaReference for more details.
 	References []SchemaReference `json:"references,omitempty"`
+}
+
+// UnmarshalJSON for SchemaVersionedResponse
+func (d *Schema) UnmarshalJSON(data []byte) error {
+	type Alias Schema
+	aux := &struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	d.Schema = unique.Make(aux.Schema)
+
+	return nil
+}
+
+// MarshalJSON is custom marshal
+func (d Schema) MarshalJSON() ([]byte, error) {
+	type Alias Schema
+	return json.Marshal(&struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Schema: d.Schema.Value(),
+		Alias:  (*Alias)(&d),
+	})
 }
 
 // SchemaReference is a way for a one schema to reference another. The details

@@ -9,16 +9,18 @@
 
 package console
 
+//nolint:goimports // goimports and gofumpt conflict
 import (
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
+	"strings" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
+	"unique" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
@@ -335,12 +337,12 @@ func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, subjectNa
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
 type SchemaRegistryVersionedSchema struct {
-	ID            int               `json:"id"`
-	Version       int               `json:"version"`
-	IsSoftDeleted bool              `json:"isSoftDeleted"`
-	Type          schema.SchemaType `json:"type"`
-	Schema        string            `json:"schema"`
-	References    []Reference       `json:"references"`
+	ID            int                   `json:"id"`
+	Version       int                   `json:"version"`
+	IsSoftDeleted bool                  `json:"isSoftDeleted"`
+	Type          schema.SchemaType     `json:"type"`
+	Schema        unique.Handle[string] `json:"schema"`
+	References    []Reference           `json:"references"`
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
