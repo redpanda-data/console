@@ -14,6 +14,10 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"log"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -461,6 +465,8 @@ func (s *Service) tryCreateProtoRegistry() {
 }
 
 func (s *Service) createProtoRegistry(ctx context.Context) error {
+	runtime.GC() // get up-to-date statistics
+
 	startTime := time.Now()
 
 	files := make(map[string]filesystem.File)
@@ -547,6 +553,16 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 		zap.Int("types_missing", missingTypes),
 		zap.Int("registered_types", len(fileDescriptors)),
 		zap.Duration("operation_duration", totalDuration))
+
+	fend, err := os.Create("protomemprofile")
+	if err != nil {
+		log.Fatal("could not create memory profile: ", err)
+	}
+	defer fend.Close() // error handling omitted for example
+	runtime.GC()       // get up-to-date statistics
+	if err := pprof.WriteHeapProfile(fend); err != nil {
+		log.Fatal("could not write memory profile: ", err)
+	}
 
 	return nil
 }
