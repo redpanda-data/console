@@ -371,7 +371,7 @@ func (s *Service) GetSchemaRegistrySchema(ctx context.Context, subjectName, vers
 		ID:         latestSchema.SchemaID,
 		Version:    latestSchema.Version,
 		Type:       latestSchema.Type,
-		Schema:     latestSchema.Schema,
+		Schema:     latestSchema.Schema.Value(),
 		References: references,
 	}, nil
 }

@@ -28,7 +28,7 @@ tasks:
   install-goimports:
     desc: install goimports
     vars:
-      GOIMPORTS_VERSION: v0.18.0
+      GOIMPORTS_VERSION: v0.29.0
     deps:
       - install-go
     cmds:

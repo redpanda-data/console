@@ -126,7 +126,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 			}
 			schemasBySubjectAndVersion[schema.Subject][schema.Version] = schema
 
-			if existing, ok := s.protoSchemasByID[schema.SchemaID]; !ok || !strings.EqualFold(existing.Schema, schema.Schema) {
+			if existing, ok := s.protoSchemasByID[schema.SchemaID]; !ok || !strings.EqualFold(existing.Schema.Value(), schema.Schema.Value()) {
 				schemasToCompile = append(schemasToCompile, schema)
 			}
 
@@ -216,7 +216,7 @@ func (s *Service) addReferences(schema *SchemaVersionedResponse, schemaRepositor
 			return fmt.Errorf("failed to resolve reference. Reference with subject '%s', version '%d' does not exist", ref.Subject, ref.Version)
 		}
 		// The reference name is the name that has been used for the import in the proto schema (e.g. 'customer.proto')
-		schemasByPath[ref.Name] = refSchema.Schema
+		schemasByPath[ref.Name] = refSchema.Schema.Value()
 
 		err := s.addReferences(refSchema, schemaRepository, schemasByPath)
 		if err != nil {
@@ -230,7 +230,7 @@ func (s *Service) addReferences(schema *SchemaVersionedResponse, schemaRepositor
 func (s *Service) compileProtoSchemas(schema *SchemaVersionedResponse, schemaRepository map[string]map[int]*SchemaVersionedResponse) (*desc.FileDescriptor, error) {
 	// 1. Let's find the references for each schema and put the references' schemas into our in memory filesystem.
 	schemasByPath := make(map[string]string)
-	schemasByPath[schema.Subject] = schema.Schema
+	schemasByPath[schema.Subject] = schema.Schema.Value()
 	err := s.addReferences(schema, schemaRepository, schemasByPath)
 	if err != nil {
 		return nil, err
@@ -398,7 +398,7 @@ func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *Sch
 		if _, err := s.ParseAvroSchemaWithReferences(
 			ctx,
 			&SchemaResponse{
-				Schema:     schemaRef.Schema,
+				Schema:     schemaRef.Schema.Value(),
 				References: schemaRef.References,
 			},
 			schemaCache,
@@ -436,7 +436,7 @@ func (s *Service) ValidateJSONSchema(ctx context.Context, name string, sch Schem
 			return fmt.Errorf("failed to retrieve reference %q: %w", ref.Subject, err)
 		}
 		schemaRef := Schema{
-			Schema:     schemaRefRes.Schema,
+			Schema:     schemaRefRes.Schema.Value(),
 			Type:       schemaRefRes.Type,
 			References: nil,
 		}
@@ -472,7 +472,7 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 		if err != nil {
 			return fmt.Errorf("failed to retrieve reference %q: %w", ref.Subject, err)
 		}
-		schemasByPath[ref.Name] = schemaRefRes.Schema
+		schemasByPath[ref.Name] = schemaRefRes.Schema.Value()
 	}
 
 	// Add common proto types
@@ -563,11 +563,11 @@ func (s *Service) buildJSONSchemaWithReferences(ctx context.Context, compiler *j
 		if err != nil {
 			return err
 		}
-		if err := compiler.AddResource(reference.Name, strings.NewReader(schemaRef.Schema)); err != nil {
+		if err := compiler.AddResource(reference.Name, strings.NewReader(schemaRef.Schema.Value())); err != nil {
 			return err
 		}
 		if err := s.buildJSONSchemaWithReferences(ctx, compiler, reference.Name, &SchemaResponse{
-			Schema:     schemaRef.Schema,
+			Schema:     schemaRef.Schema.Value(),
 			References: schemaRef.References,
 		}); err != nil {
 			return err

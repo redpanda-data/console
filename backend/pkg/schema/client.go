@@ -9,16 +9,19 @@
 
 package schema
 
+//nolint:goimports // goimports and gofumpt conflict
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
+	"time" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/sync/errgroup"
+	"unique" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -120,12 +123,31 @@ func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse,
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaVersionedResponse struct {
-	Subject    string            `json:"subject"`
-	SchemaID   int               `json:"id"`
-	Version    int               `json:"version"`
-	Schema     string            `json:"schema"`
-	Type       SchemaType        `json:"schemaType"`
-	References []SchemaReference `json:"references"`
+	Subject    string                `json:"subject"`
+	SchemaID   int                   `json:"id"`
+	Version    int                   `json:"version"`
+	Schema     unique.Handle[string] `json:"schema"`
+	Type       SchemaType            `json:"schemaType"`
+	References []SchemaReference     `json:"references"`
+}
+
+// UnmarshalJSON for SchemaVersionedResponse
+func (d *SchemaVersionedResponse) UnmarshalJSON(data []byte) error {
+	type Alias SchemaVersionedResponse
+	aux := &struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	d.Schema = unique.Make(aux.Schema)
+
+	return nil
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
