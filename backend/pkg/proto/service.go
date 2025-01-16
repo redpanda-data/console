@@ -15,6 +15,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -468,6 +472,8 @@ func (s *Service) tryCreateProtoRegistry() {
 }
 
 func (s *Service) createProtoRegistry(ctx context.Context) error {
+	runtime.GC() //nolint:revive // testing get up-to-date statistics
+
 	startTime := time.Now()
 
 	files := make(map[string]filesystem.File)
@@ -531,6 +537,16 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 		zap.Int("types_missing", missingTypes),
 		zap.Int("registered_types", len(fileDescriptors)),
 		zap.Duration("operation_duration", totalDuration))
+
+	fend, err := os.Create("chesscom-protomemprofile-protocompile-optimized")
+	if err != nil {
+		log.Fatal("could not create memory profile: ", err) //nolint:gocritic,revive // testing
+	}
+	defer fend.Close() // error handling omitted for example
+	runtime.GC()       //nolint:revive // testing get up-to-date statistics
+	if err := pprof.WriteHeapProfile(fend); err != nil {
+		log.Fatal("could not write memory profile: ", err) // //nolint:revive // testing
+	}
 
 	return nil
 }
@@ -632,7 +648,9 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]lin
 			Accessor:    protocompile.SourceAccessorFromMap(filesStr),
 			ImportPaths: []string{"."},
 		}),
-		Reporter: reporter.NewReporter(errorReporter, nil),
+		Reporter:       reporter.NewReporter(errorReporter, nil),
+		SourceInfoMode: protocompile.SourceInfoNone,
+		RetainASTs:     false,
 	}
 
 	compiledFiles, err := compiler.Compile(context.Background(), filePaths...)
