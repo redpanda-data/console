@@ -384,7 +384,7 @@ func (s *Service) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse
 // error will be returned.
 func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *SchemaResponse, schemaCache *avro.SchemaCache) (avro.Schema, error) {
 	if len(schema.References) == 0 {
-		return avro.Parse(schema.Schema)
+		return avro.Parse(schema.Schema.Value())
 	}
 
 	// Fetch and parse all schema references recursively. All schemas that have
@@ -398,7 +398,7 @@ func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *Sch
 		if _, err := s.ParseAvroSchemaWithReferences(
 			ctx,
 			&SchemaResponse{
-				Schema:     schemaRef.Schema.Value(),
+				Schema:     schemaRef.Schema,
 				References: schemaRef.References,
 			},
 			schemaCache,
@@ -411,7 +411,7 @@ func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *Sch
 	}
 
 	// Parse the main schema in the end after solving all references
-	return avro.Parse(schema.Schema)
+	return avro.Parse(schema.Schema.Value())
 }
 
 // ValidateAvroSchema tries to parse the given avro schema with the avro library.
@@ -436,7 +436,7 @@ func (s *Service) ValidateJSONSchema(ctx context.Context, name string, sch Schem
 			return fmt.Errorf("failed to retrieve reference %q: %w", ref.Subject, err)
 		}
 		schemaRef := Schema{
-			Schema:     schemaRefRes.Schema.Value(),
+			Schema:     schemaRefRes.Schema,
 			Type:       schemaRefRes.Type,
 			References: nil,
 		}
@@ -449,12 +449,12 @@ func (s *Service) ValidateJSONSchema(ctx context.Context, name string, sch Schem
 	if strings.IndexByte(name, '#') != -1 {
 		return fmt.Errorf("hashtags are not allowed as part of the schema name")
 	}
-	err := schemaCompiler.AddResource(name, strings.NewReader(sch.Schema))
+	err := schemaCompiler.AddResource(name, strings.NewReader(sch.Schema.Value()))
 	if err != nil {
 		return fmt.Errorf("failed to add resource for %q", name)
 	}
 
-	_, err = jsonschema.CompileString(name, sch.Schema)
+	_, err = jsonschema.CompileString(name, sch.Schema.Value())
 	if err != nil {
 		return fmt.Errorf("failed to validate schema %q: %w", name, err)
 	}
@@ -465,7 +465,7 @@ func (s *Service) ValidateJSONSchema(ctx context.Context, name string, sch Schem
 // along with all its references.
 func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch Schema) error {
 	schemasByPath := make(map[string]string)
-	schemasByPath[name] = sch.Schema
+	schemasByPath[name] = sch.Schema.Value()
 
 	for _, ref := range sch.References {
 		schemaRefRes, err := s.GetSchemaBySubjectAndVersion(ctx, ref.Subject, strconv.Itoa(ref.Version))
@@ -554,7 +554,7 @@ func (s *Service) GetJSONSchemaByID(ctx context.Context, schemaID uint32) (*json
 }
 
 func (s *Service) buildJSONSchemaWithReferences(ctx context.Context, compiler *jsonschema.Compiler, name string, schemaRes *SchemaResponse) error {
-	if err := compiler.AddResource(name, strings.NewReader(schemaRes.Schema)); err != nil {
+	if err := compiler.AddResource(name, strings.NewReader(schemaRes.Schema.Value())); err != nil {
 		return err
 	}
 
@@ -567,7 +567,7 @@ func (s *Service) buildJSONSchemaWithReferences(ctx context.Context, compiler *j
 			return err
 		}
 		if err := s.buildJSONSchemaWithReferences(ctx, compiler, reference.Name, &SchemaResponse{
-			Schema:     schemaRef.Schema.Value(),
+			Schema:     schemaRef.Schema,
 			References: schemaRef.References,
 		}); err != nil {
 			return err

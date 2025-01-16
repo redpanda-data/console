@@ -726,7 +726,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
-		if payload.Schema == "" {
+		if payload.Schema.Value() == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:          fmt.Errorf("payload validation failed for creating schema"),
 				Status:       http.StatusBadRequest,
@@ -803,7 +803,7 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
-		if payload.Schema == "" {
+		if payload.Schema.Value() == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:          fmt.Errorf("payload validation failed for validating schema"),
 				Status:       http.StatusBadRequest,

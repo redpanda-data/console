@@ -85,8 +85,27 @@ func newClient(cfg config.Schema) (*Client, error) {
 //
 //nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaResponse struct {
-	Schema     string            `json:"schema"`
-	References []SchemaReference `json:"references,omitempty"`
+	Schema     unique.Handle[string] `json:"schema"`
+	References []SchemaReference     `json:"references,omitempty"`
+}
+
+// UnmarshalJSON for SchemaVersionedResponse
+func (d *SchemaResponse) UnmarshalJSON(data []byte) error {
+	type Alias SchemaResponse
+	aux := &struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	d.Schema = unique.Make(aux.Schema)
+
+	return nil
 }
 
 // GetSchemaByID returns the schema string identified by the input ID.
@@ -609,7 +628,7 @@ func (c *Client) GetSchemas(ctx context.Context, showSoftDeleted bool) ([]*Schem
 // Schema is the object form of a schema for the HTTP API.
 type Schema struct {
 	// Schema is the actual unescaped text of a schema.
-	Schema string `json:"schema"`
+	Schema unique.Handle[string] `json:"schema"`
 
 	// Type is the type of a schema. The default type is avro.
 	Type SchemaType `json:"schemaType,omitempty"`
@@ -617,6 +636,25 @@ type Schema struct {
 	// References declares other schemas this schema references. See the
 	// docs on SchemaReference for more details.
 	References []SchemaReference `json:"references,omitempty"`
+}
+
+// UnmarshalJSON for SchemaVersionedResponse
+func (d *Schema) UnmarshalJSON(data []byte) error {
+	type Alias Schema
+	aux := &struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	d.Schema = unique.Make(aux.Schema)
+
+	return nil
 }
 
 // SchemaReference is a way for a one schema to reference another. The details

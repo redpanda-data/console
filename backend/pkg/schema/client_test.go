@@ -9,13 +9,15 @@
 
 package schema
 
+//nolint:goimports // goimports and gofumpt conflict
 import (
 	"context"
 	"net/http"
-	"testing"
+	"testing" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
+	"unique" //nolint:nolintlint,gofumpt // goimports and gofumpt conflict
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -43,7 +45,7 @@ func TestClient_GetSchemaByID(t *testing.T) {
 			})
 		})
 
-	expected := &SchemaResponse{Schema: schemaStr}
+	expected := &SchemaResponse{Schema: unique.Make(schemaStr)}
 	actual, err := c.GetSchemaByID(context.Background(), 1000)
 	assert.NoError(t, err, "expected no error when fetching schema by id")
 	assert.Equal(t, expected, actual)
