@@ -108,6 +108,18 @@ func (d *SchemaResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON is custom marshal
+func (d SchemaResponse) MarshalJSON() ([]byte, error) {
+	type Alias SchemaResponse
+	return json.Marshal(&struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Schema: d.Schema.Value(),
+		Alias:  (*Alias)(&d),
+	})
+}
+
 // GetSchemaByID returns the schema string identified by the input ID.
 // id (int) – the globally unique identifier of the schema
 func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse, error) {
@@ -167,6 +179,18 @@ func (d *SchemaVersionedResponse) UnmarshalJSON(data []byte) error {
 	d.Schema = unique.Make(aux.Schema)
 
 	return nil
+}
+
+// MarshalJSON is custom marshal
+func (d SchemaVersionedResponse) MarshalJSON() ([]byte, error) {
+	type Alias SchemaVersionedResponse
+	return json.Marshal(&struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Schema: d.Schema.Value(),
+		Alias:  (*Alias)(&d),
+	})
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
@@ -655,6 +679,18 @@ func (d *Schema) UnmarshalJSON(data []byte) error {
 	d.Schema = unique.Make(aux.Schema)
 
 	return nil
+}
+
+// MarshalJSON is custom marshal
+func (d Schema) MarshalJSON() ([]byte, error) {
+	type Alias Schema
+	return json.Marshal(&struct {
+		Schema string `json:"schema"`
+		*Alias
+	}{
+		Schema: d.Schema.Value(),
+		Alias:  (*Alias)(&d),
+	})
 }
 
 // SchemaReference is a way for a one schema to reference another. The details
