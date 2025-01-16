@@ -632,7 +632,8 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]lin
 			Accessor:    protocompile.SourceAccessorFromMap(filesStr),
 			ImportPaths: []string{"."},
 		}),
-		Reporter: reporter.NewReporter(errorReporter, nil),
+		Reporter:       reporter.NewReporter(errorReporter, nil),
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
 
 	compiledFiles, err := compiler.Compile(context.Background(), filePaths...)

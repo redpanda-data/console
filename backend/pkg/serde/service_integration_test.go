@@ -50,6 +50,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	ms "github.com/redpanda-data/console/backend/pkg/msgpack"
 	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/protocmp"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/common"
 	indexv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/index/v1"
@@ -142,12 +143,12 @@ func (s *SerdeIntegrationTestSuite) TearDownSuite() {
 func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	t := s.T()
 
-	require := require.New(t)
-	assert := assert.New(t)
-
 	ctx := context.Background()
 
 	t.Run("plain JSON", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -288,6 +289,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("plain JSON deserializer option", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_json_deserializer_option")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -430,6 +434,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("plain JSON incorrect value deserializer option", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_json_bad_value_deser")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -567,6 +574,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("plain protobuf", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -739,6 +749,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -1031,6 +1044,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("schema registry protobuf", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -1225,6 +1241,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("schema registry protobuf common", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_common")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -1405,6 +1424,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("schema registry protobuf multi", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_multi")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -1627,6 +1649,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("schema registry protobuf nested", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_nest")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -1806,6 +1831,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("schema registry protobuf references", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -2155,6 +2183,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("schema registry protobuf update", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("deserializer_schema_protobuf_update")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -2423,6 +2454,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("numeric key", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_numeric_key")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -2528,6 +2562,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("ambiguous numeric key as text", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_numeric_key_text")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -2633,6 +2670,9 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	})
 
 	t.Run("avro schema references", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_avro_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -2960,12 +3000,12 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	t := s.T()
 
-	require := require.New(t)
-	assert := assert.New(t)
-
 	ctx := context.Background()
 
 	t.Run("plain JSON", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_plain_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3020,6 +3060,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("plain protobuf", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -3091,11 +3134,21 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte("111"), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
-		assert.Equal(expectData, serRes.Value.Payload)
 		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+
+		assert.Equal(len(expectData), len(serRes.Value.Payload))
+
+		actualMsgFromPayload := shopv1.Order{}
+		err = proto.Unmarshal(serRes.Value.Payload, &actualMsgFromPayload)
+		assert.NoError(err)
+
+		protocmp.AssertProtoEqual(t, &msg, &actualMsgFromPayload)
 	})
 
 	t.Run("plain protobuf reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_plain_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -3232,11 +3285,21 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte("444"), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
-		assert.Equal(expectData, serRes.Value.Payload)
 		assert.Equal(PayloadEncodingProtobuf, serRes.Value.Encoding)
+
+		assert.Equal(len(expectData), len(serRes.Value.Payload))
+
+		actualMsgFromPayload := shopv2.Order{}
+		err = proto.Unmarshal(serRes.Value.Payload, &actualMsgFromPayload)
+		assert.NoError(err)
+
+		protocmp.AssertProtoEqual(t, &msg, &actualMsgFromPayload)
 	})
 
 	t.Run("schema registry protobuf", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3333,6 +3396,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry protobuf common", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_common")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3445,14 +3511,18 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		actualMsg := common.CommonMessage{}
 		err = serde.Decode(serRes.Value.Payload, &actualMsg)
 		assert.NoError(err)
+		protocmp.AssertProtoEqual(t, &msg, &actualMsg)
 
 		assert.Equal([]byte("432"), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
-		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(len(expectData), len(serRes.Value.Payload))
 		assert.Equal(PayloadEncodingProtobufSchema, serRes.Value.Encoding)
 	})
 
 	t.Run("schema registry protobuf multi", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_multi")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3558,11 +3628,19 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte("gadget_0"), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingText, serRes.Key.Encoding)
-		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(len(expectData), len(serRes.Value.Payload))
 		assert.Equal(PayloadEncodingProtobufSchema, serRes.Value.Encoding)
+
+		actualMsg := indexv1.Gadget{}
+		err = serde.Decode(serRes.Value.Payload, &actualMsg)
+		assert.NoError(err)
+		protocmp.AssertProtoEqual(t, &msg, &actualMsg)
 	})
 
 	t.Run("schema registry protobuf nested", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_nest")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3668,11 +3746,20 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte(nil), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingNull, serRes.Key.Encoding)
-		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(len(expectData), len(serRes.Value.Payload))
 		assert.Equal(PayloadEncodingProtobufSchema, serRes.Value.Encoding)
+
+		actualMsg := indexv1.Gadget_Gizmo{}
+		err = serde.Decode(serRes.Value.Payload, &actualMsg)
+		assert.NoError(err)
+		expectedMsg := msg.GetGizmo()
+		protocmp.AssertProtoEqual(t, expectedMsg, &actualMsg)
 	})
 
 	t.Run("schema registry protobuf references", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3867,11 +3954,19 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		assert.Equal([]byte(`{"id":"123456789"}`), serRes.Key.Payload)
 		assert.Equal(PayloadEncodingJSON, serRes.Key.Encoding)
-		assert.Equal(expectData, serRes.Value.Payload)
+		assert.Equal(len(expectData), len(serRes.Value.Payload))
 		assert.Equal(PayloadEncodingProtobufSchema, serRes.Value.Encoding)
+
+		actualMsg := shopv2.Order{}
+		err = serde.Decode(serRes.Value.Payload, &actualMsg)
+		assert.NoError(err)
+		protocmp.AssertProtoEqual(t, &msg, &actualMsg)
 	})
 
 	t.Run("json with schema and index", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_index")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -3976,10 +4071,18 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NotNil(serRes)
 
 		assert.Equal([]byte("gadget_0"), serRes.Key.Payload)
-		assert.Equal(expectedData, serRes.Value.Payload)
+		assert.Equal(len(expectedData), len(serRes.Value.Payload))
+
+		actualMsgFromPayload := indexv1.Gadget_Gizmo{}
+		err = serde.Decode(serRes.Value.Payload, &actualMsgFromPayload)
+		assert.NoError(err)
+		protocmp.AssertProtoEqual(t, msg.GetGizmo(), &actualMsgFromPayload)
 	})
 
 	t.Run("json schema no reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_schema_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -4092,6 +4195,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("json schema with reference", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		testTopicName := testutil.TopicNameForTest("serde_schema_json_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 		require.NoError(err)
@@ -4253,6 +4359,9 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	})
 
 	t.Run("schema registry avro references", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
 		// create the topic
 		testTopicName := testutil.TopicNameForTest("serde_schema_avro_ref")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)

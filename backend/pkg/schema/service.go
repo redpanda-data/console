@@ -267,7 +267,8 @@ func (s *Service) compileProtoSchemas(ctx context.Context, schema *SchemaVersion
 			Accessor:    protocompile.SourceAccessorFromMap(schemasByPath),
 			ImportPaths: []string{"."},
 		}),
-		Reporter: reporter.NewReporter(errorReporter, nil),
+		Reporter:       reporter.NewReporter(errorReporter, nil),
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
 
 	compiledFiles, err := compiler.Compile(ctx, schema.Subject)
@@ -502,6 +503,7 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 			Accessor:    protocompile.SourceAccessorFromMap(schemasByPath),
 			ImportPaths: []string{"."},
 		}),
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
 
 	_, err = compiler.Compile(ctx, name)
