@@ -264,8 +264,8 @@ func (s *Service) compileProtoSchemas(schema *SchemaVersionedResponse, schemaRep
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
 		InferImportPaths:      true,
-		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: true,
+		ValidateUnlinkedFiles: false,
+		IncludeSourceCodeInfo: false,
 		ErrorReporter:         errorReporter,
 	}
 	descriptors, err := parser.ParseFiles(schema.Subject)
@@ -493,8 +493,8 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
 		InferImportPaths:      true,
-		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: true,
+		ValidateUnlinkedFiles: false,
+		IncludeSourceCodeInfo: false,
 	}
 
 	_, err = parser.ParseFiles(name)

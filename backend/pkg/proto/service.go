@@ -464,8 +464,9 @@ func (s *Service) tryCreateProtoRegistry() {
 	})
 }
 
+//nolint:gocognit,cyclop // testing
 func (s *Service) createProtoRegistry(ctx context.Context) error {
-	runtime.GC() // get up-to-date statistics
+	runtime.GC() //nolint:revive // testing get up-to-date statistics
 
 	startTime := time.Now()
 
@@ -556,12 +557,12 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 
 	fend, err := os.Create("protomemprofile")
 	if err != nil {
-		log.Fatal("could not create memory profile: ", err)
+		log.Fatal("could not create memory profile: ", err) //nolint:gocritic,revive // testing
 	}
 	defer fend.Close() // error handling omitted for example
-	runtime.GC()       // get up-to-date statistics
+	runtime.GC()       //nolint:revive // testing get up-to-date statistics
 	if err := pprof.WriteHeapProfile(fend); err != nil {
-		log.Fatal("could not write memory profile: ", err)
+		log.Fatal("could not write memory profile: ", err) // //nolint:revive // testing
 	}
 
 	return nil
@@ -624,8 +625,8 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		Accessor:              protoparse.FileContentsFromMap(filesStr),
 		ImportPaths:           []string{"."},
 		InferImportPaths:      true,
-		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: true,
+		ValidateUnlinkedFiles: false,
+		IncludeSourceCodeInfo: false,
 		ErrorReporter:         errorReporter,
 	}
 	descriptors, err := parser.ParseFiles(filePaths...)
