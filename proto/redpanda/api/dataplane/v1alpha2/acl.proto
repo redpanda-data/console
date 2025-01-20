@@ -271,7 +271,10 @@ message DeleteACLsResponse {
 }
 
 service ACLService {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage Redpanda [access-control lists](https://docs.redpanda.com/beta/manage/security/authorization/acl/) (ACLs)."};
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda ACLs"
+    description: "Manage Redpanda [access-control lists](https://docs.redpanda.com/current/manage/security/authorization/acl/) (ACLs)."
+  };
 
   rpc ListACLs(ListACLsRequest) returns (ListACLsResponse) {
     option (google.api.http) = {get: "/v1alpha2/acls"};

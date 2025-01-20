@@ -228,7 +228,10 @@ message SetTopicConfigurationsResponse {
 }
 
 service TopicService {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage Redpanda Cloud topics."};
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Topics"
+    description: "Manage Redpanda topics."
+  };
 
   rpc CreateTopic(CreateTopicRequest) returns (CreateTopicResponse) {
     option (google.api.http) = {
