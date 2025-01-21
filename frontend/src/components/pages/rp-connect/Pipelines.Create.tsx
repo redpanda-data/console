@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Monaco } from '@monaco-editor/react';
 import {
   Alert,
   AlertIcon,
@@ -26,8 +27,8 @@ import {
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import type { editor } from 'monaco-editor';
-import React, { useState } from 'react';
+import { IDisposable, editor, type languages } from 'monaco-editor';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -206,9 +207,10 @@ export default RpConnectPipelinesCreate;
 
 interface QuickActions {
   editorInstance: editor.IStandaloneCodeEditor | null;
+  resetAutocompleteSecrets: VoidFunction;
 }
 
-const QuickActions = ({ editorInstance }: QuickActions) => {
+const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions) => {
   const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
 
   if (editorInstance === null) {
@@ -221,6 +223,7 @@ const QuickActions = ({ editorInstance }: QuickActions) => {
     const id = { major: 1, minor: 1 };
     const op = { identifier: id, range: selection, text: secretNotation, forceMoveMarkers: true };
     editorInstance.executeEdits('my-source', [op]);
+    resetAutocompleteSecrets();
     closeAddSecret();
   };
 
@@ -236,6 +239,36 @@ const QuickActions = ({ editorInstance }: QuickActions) => {
   );
 };
 
+const registerSecretsAutocomplete = async (
+  monaco: Monaco,
+  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>,
+) => {
+  await rpcnSecretManagerApi.refreshSecrets(true);
+  const secrets = rpcnSecretManagerApi.secrets || [];
+  const autocomplete = monaco.languages.registerCompletionItemProvider('yaml', {
+    triggerCharacters: ['$'],
+    provideCompletionItems: (model, position) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+      const completeItems = secrets.map<languages.CompletionItem>((secret) => ({
+        label: `{secrets.${secret.id}}`,
+        kind: monaco.languages.CompletionItemKind.Variable,
+        insertText: `{secrets.${secret.id}}`,
+        range: range,
+      }));
+      return {
+        suggestions: completeItems,
+      };
+    },
+  });
+  setSecretAutocomplete(autocomplete);
+};
+
 export const PipelineEditor = observer(
   (p: {
     yaml: string;
@@ -244,6 +277,24 @@ export const PipelineEditor = observer(
     quickActions?: React.FunctionComponent;
   }) => {
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
+    const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
+    const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
+
+    const resetEditor = async () => {
+      if (monaco) {
+        await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+      }
+    };
+
+    useEffect(() => {
+      return () => {
+        if (secretAutocomplete) {
+          // avoid duplicate secret autocomplete registration
+          secretAutocomplete.dispose();
+        }
+      };
+    }, [secretAutocomplete]);
+
     return (
       <Tabs
         tabs={[
@@ -262,11 +313,13 @@ export const PipelineEditor = observer(
                       if (e) p.onChange(e);
                     }}
                     language="yaml"
-                    onMount={(editor, _) => {
+                    onMount={async (editor, monaco) => {
+                      setMonaco(monaco);
                       setEditorInstance(editor);
+                      await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                     }}
                   />
-                  <QuickActions editorInstance={editorInstance} />
+                  <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
                 </Flex>
                 {isKafkaConnectPipeline(p.yaml) && (
                   <Alert status="error" my={2}>
