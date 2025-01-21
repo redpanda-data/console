@@ -345,7 +345,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         value: PartitionOffsetOrigin.End,
         label: (
           <Flex gap={2} alignItems="center">
-            <MdOutlinePlayCircle /> Latest / Live
+            <MdOutlinePlayCircle />
+            <span data-testid="start-offset-latest-live">Latest / Live</span>
           </Flex>
         ),
       },
@@ -354,7 +355,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         label: (
           <Flex gap={2} alignItems="center">
             <MdOutlineQuickreply />
-            {`Newest - ${String(searchParams.maxResults)}`}
+            <span data-testid="start-offset-newest">{`Newest - ${String(searchParams.maxResults)}`}</span>
           </Flex>
         ),
       },
@@ -363,7 +364,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         label: (
           <Flex gap={2} alignItems="center">
             <MdOutlineSkipPrevious />
-            Beginning
+            <span data-testid="start-offset-beginning">Beginning</span>
           </Flex>
         ),
       },
@@ -372,7 +373,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         label: (
           <Flex gap={2} alignItems="center">
             <MdKeyboardTab />
-            Offset
+            <span data-testid="start-offset-custom">Offset</span>
           </Flex>
         ),
       },
@@ -381,7 +382,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         label: (
           <Flex gap={2} alignItems="center">
             <MdCalendarToday />
-            Timestamp
+            <span data-testid="start-offset-timestamp">Timestamp</span>
           </Flex>
         ),
       },
@@ -395,6 +396,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
               <Flex gap={3}>
                 <SingleSelect<PartitionOffsetOrigin>
                   value={searchParams.offsetOrigin}
+                  data-testid="start-offset-dropdown"
                   onChange={(e) => {
                     searchParams.offsetOrigin = e;
                     if (searchParams.offsetOrigin === PartitionOffsetOrigin.Custom) {
