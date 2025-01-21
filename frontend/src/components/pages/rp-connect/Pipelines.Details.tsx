@@ -430,7 +430,7 @@ export const PipelineResources = observer((p: { resources?: Pipeline_Resources }
   const tasks = cpuToTasks(r.cpuShares);
   return (
     <Flex gap="4">
-      {tasks || '-'} Tasks ({r.cpuShares} CPU / {r.memoryShares} Memory)
+      {tasks || '-'} Compute Units ({r.cpuShares} CPU / {r.memoryShares} Memory)
     </Flex>
   );
 });

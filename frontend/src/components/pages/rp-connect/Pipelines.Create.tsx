@@ -127,8 +127,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             />
           </FormField>
           <FormField
-            label="Tasks"
-            description="One task is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines. For pipelines that include the AI Ollama components, one task is equivalent to 1 GPU. This can have cost implications."
+            label="Compute Units"
+            description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines. For pipelines that include the AI Ollama components, one AI compute unit is equivalent to 1 GPU. This can have cost implications."
             w={500}
           >
             <NumberInput
