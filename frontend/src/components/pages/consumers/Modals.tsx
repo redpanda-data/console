@@ -15,6 +15,7 @@ import {
   Accordion,
   Box,
   Button,
+  ConfirmItemDeleteModal,
   DataTable,
   Flex,
   FormLabel,
@@ -49,7 +50,7 @@ import type {
   TopicOffset,
 } from '../../../state/restInterfaces';
 import { toJson } from '../../../utils/jsonUtils';
-import { InfoText, numberToThousandsString } from '../../../utils/tsxUtils';
+import { InfoText, Button as RPButton, numberToThousandsString } from '../../../utils/tsxUtils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { SingleSelect } from '../../misc/Select';
@@ -731,6 +732,8 @@ export class DeleteOffsetsModal extends Component<{
   mode: GroupDeletingMode;
   offsets: GroupOffset[] | null;
   onClose: () => void;
+  onInit: () => void;
+  disabledReason?: string;
 }> {
   lastOffsets: GroupOffset[];
 
@@ -741,11 +744,133 @@ export class DeleteOffsetsModal extends Component<{
     const visible = Boolean(offsets);
     if (offsets) this.lastOffsets = offsets;
     offsets = offsets ?? this.lastOffsets;
-    if (!offsets) return null;
 
-    const offsetsByTopic = offsets.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
-    const singleTopic = offsetsByTopic.length === 1;
-    const singlePartition = offsets.length === 1;
+    const offsetsByTopic = offsets?.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
+    const singleTopic = offsetsByTopic?.length === 1;
+    const singlePartition = offsets?.length === 1;
+
+    return (
+      <ConfirmItemDeleteModal
+        heading="Delete consumer group"
+        trigger={
+          <RPButton variant="outline" onClick={this.props.onInit} disabledReason={this.props.disabledReason}>
+            Delete group
+          </RPButton>
+        }
+        itemType="consumer-group"
+        onConfirm={async (dismiss: (value?: unknown) => void, onError: (msg: string) => void): void => {
+          const group = this.props.group;
+          // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+          const offsets = this.props.offsets!;
+
+          const toastMsg = 'Deleting offsets';
+          const toastRef = toast({
+            status: 'loading',
+            description: `${toastMsg}...`,
+            duration: null,
+          });
+          try {
+            if (this.props.mode === 'group') {
+              await api.deleteConsumerGroup(group.groupId);
+            } else {
+              const deleteRequest = createDeleteRequest(offsets);
+              const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
+              const errors = deleteResponse
+                .map((t) => ({
+                  ...t,
+                  partitions: t.partitions.filter((x) => x.error),
+                }))
+                .filter((t) => t.partitions.length > 0);
+              if (errors.length > 0) {
+                console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
+                throw { request: deleteRequest, errors: errors };
+              }
+            }
+
+            toast.update(toastRef, {
+              status: 'success',
+              duration: 2000,
+              description: `${toastMsg} - done`,
+            });
+
+            const remainingOffsets = group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length;
+            if (remainingOffsets === 0) {
+              // Group is fully deleted, go back to list
+              this.props.onClose();
+              appGlobal.history.replace('/groups');
+            } else {
+              this.props.onClose();
+              dismiss();
+            }
+          } catch (err) {
+            toast.close(toastRef);
+            console.error(err);
+            onError(`Could not delete selected offsets in consumer group ${group.groupId} - ${toJson(err, 4)}`);
+          } finally {
+            api.refreshConsumerGroups(true);
+          }
+        }}
+      >
+        <Box>
+          {visible && (
+            <Box>
+              {mode === 'group' && (
+                <Box>
+                  <Text>Group offsets will be deleted for all topics and partitions:</Text>
+                  <UnorderedList fontWeight="600" my={2}>
+                    {singleTopic ? (
+                      <>
+                        <ListItem>
+                          Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
+                        </ListItem>
+                        <ListItem>
+                          {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
+                        </ListItem>
+                      </>
+                    ) : (
+                      <>
+                        <ListItem>
+                          {offsetsByTopic.length} Topics / {offsets.length}{' '}
+                          {singlePartition ? 'partition' : 'partitions'}
+                        </ListItem>
+                      </>
+                    )}
+                  </UnorderedList>
+                </Box>
+              )}
+
+              {mode === 'topic' && (
+                <Box>
+                  <Text>Group offsets will be deleted for topic:</Text>
+                  <List fontWeight="600" my={2}>
+                    <ListItem>
+                      Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
+                    </ListItem>
+                    <ListItem>
+                      {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
+                    </ListItem>
+                  </List>
+                </Box>
+              )}
+
+              {mode === 'partition' && (
+                <Box>
+                  <Text>Group offsets will be deleted for partition:</Text>
+                  <UnorderedList fontWeight="600" my={2}>
+                    <ListItem>
+                      Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
+                    </ListItem>
+                    <ListItem>
+                      Partition: <span className="codeBox">{offsetsByTopic[0].items[0].partitionId}</span>
+                    </ListItem>
+                  </UnorderedList>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
+      </ConfirmItemDeleteModal>
+    );
 
     return (
       <Modal isOpen={visible} onClose={this.props.onClose}>
@@ -843,68 +968,6 @@ export class DeleteOffsetsModal extends Component<{
         </ModalContent>
       </Modal>
     );
-  }
-
-  @action
-  async onDeleteOffsets() {
-    const group = this.props.group;
-    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-    const offsets = this.props.offsets!;
-
-    const toastMsg = 'Deleting offsets';
-    const toastRef = toast({
-      status: 'loading',
-      description: `${toastMsg}...`,
-      duration: null,
-    });
-    try {
-      if (this.props.mode === 'group') {
-        await api.deleteConsumerGroup(group.groupId);
-      } else {
-        const deleteRequest = createDeleteRequest(offsets);
-        const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
-        const errors = deleteResponse
-          .map((t) => ({
-            ...t,
-            partitions: t.partitions.filter((x) => x.error),
-          }))
-          .filter((t) => t.partitions.length > 0);
-        if (errors.length > 0) {
-          console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
-          throw { request: deleteRequest, errors: errors };
-        }
-      }
-
-      toast.update(toastRef, {
-        status: 'success',
-        duration: 2000,
-        description: `${toastMsg} - done`,
-      });
-    } catch (err) {
-      console.error(err);
-      toast.update(toastRef, {
-        status: 'error',
-        duration: 2000,
-        description: `${toastMsg} - failed`,
-      });
-      showErrorModal(
-        'Delete offsets',
-        <span>
-          Could not delete selected offsets in consumer group <span className="codeBox">{group.groupId}</span>.
-        </span>,
-        toJson(err, 4),
-      );
-    } finally {
-      api.refreshConsumerGroups(true);
-
-      const remainingOffsets = group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length;
-      if (remainingOffsets === 0) {
-        // Group is fully deleted, go back to list
-        appGlobal.history.replace('/groups');
-      } else {
-        this.props.onClose();
-      }
-    }
   }
 }
 

@@ -17,6 +17,7 @@ import { SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
   Checkbox,
+  ConfirmItemDeleteModal,
   CopyButton,
   DataTable,
   Empty,
@@ -151,17 +152,18 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     return (
       <PageContent className="groupDetails">
         <Flex gap={2}>
-          <Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
+          {/*<Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>*/}
+          <Button variant="outline" onClick={() => this.editGroup()}>
             Edit Group
           </Button>
-          <Button
-            variant="outline"
-            colorScheme="red"
-            onClick={() => this.deleteGroup()}
+          <DeleteOffsetsModal
+            group={group}
+            mode={this.deletingMode}
+            offsets={this.deletingOffsets}
+            onClose={() => (this.deletingOffsets = null)}
+            onInit={() => this.deleteGroup()}
             disabledReason={cannotDeleteGroupReason(group)}
-          >
-            Delete Group
-          </Button>
+          />
         </Flex>
         {/* Statistics Card */}
         {uiSettings.consumerGroupDetails.showStatisticsBar && (
@@ -208,20 +210,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         </Section>
 
         {/* Modals */}
-        <>
-          <EditOffsetsModal
-            group={group}
-            offsets={this.edittingOffsets}
-            onClose={() => (this.edittingOffsets = null)}
-          />
-
-          <DeleteOffsetsModal
-            group={group}
-            mode={this.deletingMode}
-            offsets={this.deletingOffsets}
-            onClose={() => (this.deletingOffsets = null)}
-          />
-        </>
+        <EditOffsetsModal group={group} offsets={this.edittingOffsets} onClose={() => (this.edittingOffsets = null)} />
       </PageContent>
     );
   }
