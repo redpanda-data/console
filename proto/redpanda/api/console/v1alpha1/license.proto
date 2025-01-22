@@ -3,6 +3,7 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 message License {
   enum Source {
@@ -73,13 +74,28 @@ message ListEnterpriseFeaturesResponse {
 
 service LicenseService {
   // ListLicenses lists all the roles based on optional filter.
-  rpc ListLicenses(ListLicensesRequest) returns (ListLicensesResponse) {}
+  rpc ListLicenses(ListLicensesRequest) returns (ListLicensesResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
   // SetLicense installs a new license on the Redpanda cluster.
   // This endpoint only works if the Redpanda Admin API is configured.
-  rpc SetLicense(SetLicenseRequest) returns (SetLicenseResponse) {}
+  rpc SetLicense(SetLicenseRequest) returns (SetLicenseResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
   // ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
   // This can only be reported if the Redpanda Admin API is configured and supports this request.
-  rpc ListEnterpriseFeatures(ListEnterpriseFeaturesRequest) returns (ListEnterpriseFeaturesResponse) {}
+  rpc ListEnterpriseFeatures(ListEnterpriseFeaturesRequest) returns (ListEnterpriseFeaturesResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
 }

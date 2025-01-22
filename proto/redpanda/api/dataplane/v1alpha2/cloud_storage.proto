@@ -6,6 +6,7 @@ import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 message MountTopicsRequest {
   // TopicMount defines the migration of a topic from the cloud storage into this cluster,
@@ -220,6 +221,10 @@ service CloudStorageService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
   }
 
   rpc UnmountTopics(UnmountTopicsRequest) returns (UnmountTopicsResponse) {
@@ -253,6 +258,10 @@ service CloudStorageService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
   }
 
   rpc ListMountableTopics(ListMountableTopicsRequest) returns (ListMountableTopicsResponse) {
@@ -281,6 +290,10 @@ service CloudStorageService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
     };
   }
 
@@ -312,6 +325,10 @@ service CloudStorageService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
     };
   }
 
@@ -346,6 +363,10 @@ service CloudStorageService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
   }
 
   rpc DeleteMountTask(DeleteMountTaskRequest) returns (DeleteMountTaskResponse) {
@@ -374,6 +395,10 @@ service CloudStorageService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
     };
   }
 
@@ -404,6 +429,10 @@ service CloudStorageService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
     };
   }
 }

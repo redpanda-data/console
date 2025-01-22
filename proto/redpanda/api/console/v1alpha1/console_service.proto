@@ -2,14 +2,25 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
+import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/console/v1alpha1/list_messages.proto";
 import "redpanda/api/console/v1alpha1/publish_messages.proto";
 
 // ConsoleService represents the Console API service.
 service ConsoleService {
   // ListMessages lists the messages according to the requested query.
-  rpc ListMessages(ListMessagesRequest) returns (stream ListMessagesResponse) {}
+  rpc ListMessages(ListMessagesRequest) returns (stream ListMessagesResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
 
   // PublishMessage publishes message.
-  rpc PublishMessage(PublishMessageRequest) returns (PublishMessageResponse) {}
+  rpc PublishMessage(PublishMessageRequest) returns (PublishMessageResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
 }

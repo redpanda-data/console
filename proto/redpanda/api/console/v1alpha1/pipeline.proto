@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
+import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/dataplane/v1alpha2/pipeline.proto";
 
 message CreatePipelineRequest {
@@ -69,19 +70,59 @@ message GetPipelineServiceConfigSchemaResponse {
 }
 
 service PipelineService {
-  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {}
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse) {}
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {}
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse) {}
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
+  rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {}
+  rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
 
-  rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {}
+  rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 }

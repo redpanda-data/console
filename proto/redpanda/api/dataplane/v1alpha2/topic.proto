@@ -5,6 +5,7 @@ package redpanda.api.dataplane.v1alpha2;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/dataplane/v1alpha2/common.proto";
 
 message Topic {
@@ -248,6 +249,10 @@ service TopicService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
   }
   rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
     option (google.api.http) = {get: "/v1alpha2/topics"};
@@ -263,6 +268,10 @@ service TopicService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
     };
   }
   rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
@@ -286,6 +295,10 @@ service TopicService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
     };
   }
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
@@ -314,6 +327,10 @@ service TopicService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
     };
   }
   rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
@@ -344,6 +361,10 @@ service TopicService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
   }
   rpc SetTopicConfigurations(SetTopicConfigurationsRequest) returns (SetTopicConfigurationsResponse) {
     option (google.api.http) = {
@@ -372,6 +393,10 @@ service TopicService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA
     };
   }
 }
