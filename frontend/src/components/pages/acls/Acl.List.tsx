@@ -125,12 +125,13 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         </Alert>
       ) : null;
 
-    const noAclAuthorizer = !api.ACLs?.isAuthorizerEnabled ? (
-      <Alert status="warning" style={{ marginBottom: '1em' }}>
-        <AlertIcon />
-        There's no authorizer configured in your Kafka cluster
-      </Alert>
-    ) : null;
+    const noAclAuthorizer =
+      api.ACLs?.isAuthorizerEnabled === false ? (
+        <Alert status="warning" style={{ marginBottom: '1em' }}>
+          <AlertIcon />
+          There's no authorizer configured in your Kafka cluster
+        </Alert>
+      ) : null;
 
     const tabs = [
       { key: 'users' as AclListTab, name: 'Users', component: <UsersTab data-testid="users-tab" /> },
