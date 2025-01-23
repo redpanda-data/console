@@ -332,7 +332,7 @@ service DebugBundleService {
   }
   rpc GetDebugBundleStatus(GetDebugBundleStatusRequest) returns (GetDebugBundleStatusResponse) {
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
+      required_permission: PERMISSION_ADMIN
       api: API_REDPANDA_ADMIN
     };
   }
