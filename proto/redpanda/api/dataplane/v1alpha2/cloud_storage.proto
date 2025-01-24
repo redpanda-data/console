@@ -237,7 +237,7 @@ service CloudStorageService {
       description:
         "Unmount topics to object storage, freeing up all local cluster resources. "
         "Once you unmount a topic, it can no longer be consumed or produced to. It detaches from "
-        "the active cluster while its data remains safely stored in the external Object Storage."
+        "the active cluster while its data remains safely stored in the external object storage."
       responses: {
         key: "200"
         value: {
@@ -327,7 +327,7 @@ service CloudStorageService {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get the status of a mount or unmount by ID"
       description:
-        "Retrieves the status of a mount or unmount by ID."
+        "Retrieves the status of a mount or unmount by ID. "
         "The response provides details on the operation type (mount or unmount), its current "
         "state, and the topics involved. Use the ID returned when you start the mount or unmount, "
         "or use the ListMountTasks endpoint to retrieve a list of IDs."

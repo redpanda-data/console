@@ -2013,7 +2013,7 @@ paths:
       tags:
         - Cloud Storage
     get:
-      description: Retrieves the status of a mount or unmount by ID.The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs.
+      description: Retrieves the status of a mount or unmount by ID. The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs.
       operationId: CloudStorageService_GetMountTask
       parameters:
         - description: Unique identifier of the mount or unmount task to retrieve.
@@ -2198,7 +2198,7 @@ paths:
         - Cloud Storage
   /v1alpha2/cloud-storage/topics/unmount:
     post:
-      description: Unmount topics to object storage, freeing up all local cluster resources. Once you unmount a topic, it can no longer be consumed or produced to. It detaches from the active cluster while its data remains safely stored in the external Object Storage.
+      description: Unmount topics to object storage, freeing up all local cluster resources. Once you unmount a topic, it can no longer be consumed or produced to. It detaches from the active cluster while its data remains safely stored in the external object storage.
       operationId: CloudStorageService_UnmountTopics
       requestBody:
         content:
@@ -4261,7 +4261,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -4655,7 +4655,7 @@ servers:
     url: '{dataplane_api_url}'
     variables:
       dataplane_api_url:
-        default: https://api-a4cb21.ck09ma3c4vs12cng3cig.fmc.prd.cloud.redpanda.com
+        default: https://{dataplane_api_url}
         description: |-
           Find the Data Plane API base URL of a cluster by calling the Get Cluster endpoint of the Control Plane API. The dataplane_api.url field is returned in the response body.<br><br>
           					Example (Dedicated): "https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com"<br>
