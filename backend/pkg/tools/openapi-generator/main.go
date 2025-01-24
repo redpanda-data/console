@@ -184,9 +184,8 @@ func updateSecurity(doc3 *openapi3.T) {
 
 func updateInfo(doc3 *openapi3.T) {
 	doc3.Info = &openapi3.Info{
-		Title:       "Redpanda Cloud",
-		Description: "Welcome to Redpanda Cloud's Dataplane API documentation.",
-		Version:     "v1alpha2",
+		Title:   "Redpanda Cloud Data Plane API",
+		Version: "v1alpha2",
 	}
 }
 

@@ -1667,8 +1667,7 @@ components:
           x-client-id: dQjapNIAHhF7EQqQToRla3yEII9sUSap
       type: oauth2
 info:
-  description: Welcome to Redpanda Cloud's Dataplane API documentation.
-  title: Redpanda Cloud
+  title: Redpanda Cloud Data Plane API
   version: v1alpha2
 openapi: 3.0.3
 paths:
@@ -4262,7 +4261,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -4666,7 +4665,7 @@ servers:
 tags:
   - description: Manage Redpanda [access-control lists](https://docs.redpanda.com/current/manage/security/authorization/acl/) (ACLs).
     name: Redpanda ACLs
-  - description: Cloud Storage operations allow you to mange Redpanda topics that are stored in object storage.
+  - description: 'Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)'
     name: Cloud Storage
   - description: Manage Wasm transforms in Redpanda.
     name: WASM Transforms
