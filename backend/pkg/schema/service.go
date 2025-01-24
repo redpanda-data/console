@@ -83,7 +83,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 	// duplicate requests against the schema registry
 	key := "get-proto-descriptors"
 	_, err, _ := s.requestGroup.Do(key, func() (any, error) {
-		schemasRes, errs := s.registryClient.GetSchemas(ctx, false)
+		schemasRes, errs := s.registryClient.GetSchemas(ctx, true)
 		if len(errs) > 0 {
 			for _, err := range errs {
 				s.logger.Error("failed to get schema from registry", zap.Error(err))
@@ -507,7 +507,7 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 func (s *Service) GetSchemaBySubjectAndVersion(ctx context.Context, subject string, version string) (*SchemaVersionedResponse, error) {
 	cacheKey := subject + "v" + version
 	cachedSchema, err, _ := s.schemaBySubjectVersion.Get(cacheKey, func() (*SchemaVersionedResponse, error) {
-		schema, err := s.registryClient.GetSchemaBySubject(ctx, subject, version, false)
+		schema, err := s.registryClient.GetSchemaBySubject(ctx, subject, version, true)
 		if err != nil {
 			return nil, fmt.Errorf("get schema by subject failed: %w", err)
 		}
