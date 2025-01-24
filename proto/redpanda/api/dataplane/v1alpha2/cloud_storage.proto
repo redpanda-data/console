@@ -191,7 +191,7 @@ message UpdateMountTaskResponse {}
 service CloudStorageService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Cloud Storage"
-    description: "Cloud Storage operations allow you to mange Redpanda topics that are stored in object storage."
+    description: "Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)"
   };
   rpc MountTopics(MountTopicsRequest) returns (MountTopicsResponse) {
     option (google.api.http) = {
