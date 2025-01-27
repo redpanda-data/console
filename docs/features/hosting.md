@@ -33,7 +33,7 @@ As you can see in [docs/config/console.yaml](../config/console.yaml) the config 
 
     **Long Version**  
     Some proxies (like Traefik with its "StripPrefix" middleware) can remove a prefix from the URL path of an request before forwarding it. This can lead to a situation where both the proxy and Console will try to remove a prefix which *could* lead to issues.  
-    If a prefix is set/used it **must** be removed at some point before reaching Console's internal routing. We reccommend that only **one** part of the stack removes the prefix (even though a scenario where this is a problem is unlikely).
+    If a prefix is set/used it **must** be removed at some point before reaching Console's internal routing. We recommend that only **one** part of the stack removes the prefix (even though a scenario where this is a problem is unlikely).
     So if you're using Traefik (or any other proxy that modifies the request path / URL) you should either set `stripPrefix: false` in Console, or configure the proxy so it doesn't modify the path of a request.
 
     See the example below for a setup where the double remocal is a problem.
@@ -42,7 +42,7 @@ As you can see in [docs/config/console.yaml](../config/console.yaml) the config 
     Default: `true`
 
 ## Example
-For the curious, here is an example scenario that, albeit pretty contreived, should illustrate nicely how double removal could be a problem:
+For the curious, here is an example scenario that, albeit pretty contrived, should illustrate nicely how double removal could be a problem:
 
 > - Traefik configured to route `/topics` to Console and enabled "StripPrefix" middleware
 > - Console configured with the default settings
