@@ -2596,15 +2596,6 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
   for (const e of configEntries) {
     if (e.synonyms === undefined) continue;
 
-    // remove redundant entry
-    if (e.synonyms.length > 0) if (e.synonyms[0].source === e.source) e.synonyms.splice(0, 1);
-
-    if (e.synonyms.length === 0) {
-      // delete empty arrays, otherwise Tables will show this entry as 'expandable' even though it has no children
-      e.synonyms = undefined;
-      continue;
-    }
-
     // add 'type' from root object
     for (const s of e.synonyms) s.type = e.type;
   }
