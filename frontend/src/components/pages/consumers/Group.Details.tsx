@@ -45,14 +45,7 @@ import type { GroupDescription, GroupMemberDescription } from '../../../state/re
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { editQuery, queryToObj } from '../../../utils/queryHelper';
-import {
-  Button,
-  DefaultSkeleton,
-  IconButton,
-  Label,
-  OptionGroup,
-  numberToThousandsString,
-} from '../../../utils/tsxUtils';
+import { Button, DefaultSkeleton, IconButton, numberToThousandsString } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { ShortNum } from '../../misc/ShortNum';
 import { Statistic } from '../../misc/Statistic';
@@ -152,7 +145,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     return (
       <PageContent className="groupDetails">
         <Flex gap={2}>
-          {/*<Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>*/}
           <Button variant="outline" onClick={() => this.editGroup()}>
             Edit Group
           </Button>
@@ -291,7 +283,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
   );
 
   const lagGroupsByTopic = lagsFlat
-    .filter((x) => x.assignedMember?.id.match(quickSearchRegExp))
+    .filter((x) => !x.assignedMember || x.assignedMember?.id.match(quickSearchRegExp))
     .groupInto((e) => e.topicName)
     .sort((a, b) => a.key.localeCompare(b.key))
     .map((x) => ({ topicName: x.key, partitions: x.items }));
@@ -555,7 +547,7 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 function cannotEditGroupReason(group: GroupDescription): string | undefined {
   if (group.noEditPerms) return "You don't have 'editConsumerGroup' permissions for this group";
   if (group.isInUse) return 'Consumer groups with active members cannot be edited';
-  if (!Features.patchGroup) return 'This cluster does not support editting group offsets';
+  if (!Features.patchGroup) return 'This cluster does not support editing group offsets';
 }
 
 function cannotDeleteGroupReason(group: GroupDescription): string | undefined {
