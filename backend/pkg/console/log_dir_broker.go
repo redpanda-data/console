@@ -134,7 +134,7 @@ type logDirResponse struct {
 // included in Kafka 1.1.0+ releases.
 //
 // Use nil for topicPartitions to describe all topics and partitions.
-func (s *Service) describeLogDirs(ctx context.Context, cl *kgo.Client, topicPartitions []kmsg.DescribeLogDirsRequestTopic) []logDirResponse {
+func (*Service) describeLogDirs(ctx context.Context, cl *kgo.Client, topicPartitions []kmsg.DescribeLogDirsRequestTopic) []logDirResponse {
 	req := kmsg.NewDescribeLogDirsRequest()
 	req.Topics = topicPartitions
 	shardedResp := cl.RequestSharded(ctx, &req)

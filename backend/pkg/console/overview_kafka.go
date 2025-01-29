@@ -86,7 +86,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 	})
 
 	// Fetch Kafka API version
-	clusterVersion := "unknown"
+	clusterVersion := unknownVersion
 	grp.Go(func() error {
 		var err error
 
@@ -307,18 +307,18 @@ func (s *Service) GetKafkaVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	brokerApiVersions, err := adminCl.ApiVersions(ctx)
+	brokerAPIVersions, err := adminCl.ApiVersions(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to request api versions: %w", err)
 	}
 
 	var lastErr error
-	for _, brokerApiVersion := range brokerApiVersions {
-		if brokerApiVersion.Err != nil {
-			lastErr = brokerApiVersion.Err
+	for _, brokerAPIVersion := range brokerAPIVersions {
+		if brokerAPIVersion.Err != nil {
+			lastErr = brokerAPIVersion.Err
 			continue
 		}
-		return brokerApiVersion.VersionGuess(), nil
+		return brokerAPIVersion.VersionGuess(), nil
 	}
 
 	return "", lastErr

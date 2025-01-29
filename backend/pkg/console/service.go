@@ -130,6 +130,6 @@ func (s *Service) Start() error {
 }
 
 // Stop stops running go routines and releases allocated resources.
-func (s *Service) Stop() {
+func (*Service) Stop() {
 	// Nothing to stop, the gitSvc listens for OS signals itself and stops its goroutines then.
 }

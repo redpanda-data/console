@@ -39,7 +39,7 @@ type BrokerWithLogDirs struct {
 // their metadata, storage and configs. If we fail to get metadata from the cluster
 // this function will return an error.
 //
-//nolint:gocognit // Breaking it up would make it harder to comprehend; currently seems still okayish.
+//nolint:gocognit,cyclop // Breaking it up would make it harder to comprehend; currently seems still okayish.
 func (s *Service) GetBrokersWithLogDirs(ctx context.Context) ([]BrokerWithLogDirs, error) {
 	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {

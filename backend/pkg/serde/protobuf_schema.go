@@ -133,6 +133,8 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:cyclop // complex logic
 func (d ProtobufSchemaSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {
@@ -187,7 +189,7 @@ func (d ProtobufSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Pay
 			index = []int{0}
 		}
 
-		return d.jsonToProtobufWire(ctx, v, int(so.schemaID), so.index)
+		return d.jsonToProtobufWire(ctx, v, int(so.schemaID), index)
 	default:
 		return nil, fmt.Errorf("unsupported type %+T for protobuf serialization", obj)
 	}

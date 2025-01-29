@@ -171,9 +171,9 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			// If we have an actual feature defined that we can check explicitly
 			// lets check that specific feature.
 			if endpointReq.RedpandaFeature != "" {
-				adminApiCl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+				adminAPICl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
 				if err == nil {
-					endpointSupported = s.checkRedpandaFeature(ctx, adminApiCl, endpointReq.RedpandaFeature)
+					endpointSupported = s.checkRedpandaFeature(ctx, adminAPICl, endpointReq.RedpandaFeature)
 				} else {
 					endpointSupported = false
 					s.logger.Warn("failed to retrieve a redpanda api client to check endpoint compatibility", zap.Error(err))

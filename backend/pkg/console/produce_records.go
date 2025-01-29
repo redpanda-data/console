@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -54,7 +55,7 @@ func (s *Service) ProduceRecord(
 
 	producedRecordsResponse := s.ProducePlainRecords(ctx, []*kgo.Record{record}, useTransactions, compressionOpts)
 	if producedRecordsResponse.Error != "" {
-		return nil, fmt.Errorf(producedRecordsResponse.Error)
+		return nil, errors.New(producedRecordsResponse.Error)
 	}
 
 	if len(producedRecordsResponse.Records) != 1 {

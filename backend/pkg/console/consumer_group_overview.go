@@ -143,7 +143,7 @@ func (s *Service) convertKgoGroupDescriptions(describedGroups kadm.DescribedGrou
 	return result
 }
 
-func (s *Service) convertGroupMembers(members []kadm.DescribedGroupMember) []GroupMemberDescription {
+func (*Service) convertGroupMembers(members []kadm.DescribedGroupMember) []GroupMemberDescription {
 	response := make([]GroupMemberDescription, 0)
 
 	for _, m := range members {
