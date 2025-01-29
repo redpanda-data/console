@@ -130,8 +130,8 @@ message DeleteUserResponse {}
 
 service UserService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Redpanda Users"
-    description: "Manage Redpanda users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#get-/v1alpha2/acls)."
+    name: "Data Plane Users"
+    description: "Manage data plane users."
   };
 
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {

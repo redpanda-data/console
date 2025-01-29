@@ -4261,7 +4261,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -4448,7 +4448,7 @@ paths:
           description: An unexpected error response.
       summary: List Users
       tags:
-        - Redpanda Users
+        - Data Plane Users
     post:
       description: Create a new user.
       operationId: UserService_CreateUser
@@ -4514,7 +4514,7 @@ paths:
           description: An unexpected error response.
       summary: Create User
       tags:
-        - Redpanda Users
+        - Data Plane Users
   /v1alpha2/users/{name}:
     delete:
       description: Delete the specified user
@@ -4567,7 +4567,7 @@ paths:
           description: An unexpected error response.
       summary: Delete User
       tags:
-        - Redpanda Users
+        - Data Plane Users
   /v1alpha2/users/{user.name}:
     put:
       description: Update a user's credentials.
@@ -4647,7 +4647,7 @@ paths:
           description: An unexpected error response.
       summary: Update User
       tags:
-        - Redpanda Users
+        - Data Plane Users
 security:
   - auth0: []
 servers:
@@ -4675,5 +4675,5 @@ tags:
     name: Secrets
   - description: Manage Redpanda topics.
     name: Topics
-  - description: Manage Redpanda users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#get-/v1alpha2/acls).
-    name: Redpanda Users
+  - description: Manage data plane users.
+    name: Data Plane Users
