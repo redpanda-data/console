@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link as ChakraLink } from '@chakra-ui/react';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
+import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
   Alert,
   AlertDialog,
@@ -115,12 +115,13 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         </Alert>
       ) : null;
 
-    const noAclAuthorizer = !api.ACLs?.isAuthorizerEnabled ? (
-      <Alert status="warning" style={{ marginBottom: '1em' }}>
-        <AlertIcon />
-        There's no authorizer configured in your Kafka cluster
-      </Alert>
-    ) : null;
+    const noAclAuthorizer =
+      api.ACLs?.isAuthorizerEnabled === false ? (
+        <Alert status="warning" style={{ marginBottom: '1em' }}>
+          <AlertIcon />
+          There's no authorizer configured in your Kafka cluster
+        </Alert>
+      ) : null;
 
     const tabs = [
       { key: 'users' as AclListTab, name: 'Users', component: <UsersTab data-testid="users-tab" /> },

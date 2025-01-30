@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { StepSeparator } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
+import { StepSeparator } from '@redpanda-data/ui';
 import {
   Box,
   Button,

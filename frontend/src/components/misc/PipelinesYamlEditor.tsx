@@ -12,7 +12,8 @@
 import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
 import 'monaco-editor';
 import type { editor } from 'monaco-editor';
-import type { MonacoYamlOptions } from 'monaco-yaml';
+import { type MonacoYaml, type MonacoYamlOptions, configureMonacoYaml } from 'monaco-yaml';
+import { useCallback, useEffect, useState } from 'react';
 import benthosSchema from '../../assets/rp-connect-schema.json';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
@@ -71,60 +72,29 @@ export const monacoYamlOptions = {
       },
 
       // And the URI will be linked to as the source.
-      uri: 'http://example.com/schema-name.json', // '../../benthos-schema.json',
+      uri: 'http://example.com/redpanda-connect-schema.json', // '../../benthos-schema.json',
     },
   ],
 } as MonacoYamlOptions;
 
-// const linter = {
-//     editor: undefined as undefined | IStandaloneCodeEditor,
-//     monaco: undefined as undefined | Monaco,
-//
-//     isLinting: false,
-//     text: '',
-//
-//     async refreshLint() {
-//         if (!this.editor) return;
-//         const monaco = this.monaco;
-//         if (!monaco) return;
-//         if (this.isLinting) return;
-//
-//         const model = this.editor.getModel();
-//         if (!model) return;
-//
-//         // Save the text into a local variable, so we can compare/know if we need to lint again
-//         const lintedText = this.text;
-//
-//         this.isLinting = true;
-//         const r = await pipelinesApi.lintConfig(lintedText).catch(() => null);
-//         this.isLinting = false;
-//         if (!r) return;  // do nothing, don't care about fetching errors here
-//
-//         // Update the results
-//         const markers = r.lints.map(l => {
-//             return {
-//                 message: l.reason,
-//                 startLineNumber: l.line,
-//                 endLineNumber: l.line,
-//                 startColumn: l.column,
-//                 endColumn: l.column + 4,
-//                 severity: MarkerSeverity.Error,
-//             } as editor.IMarkerData;
-//         });
-//
-//         monaco.editor.setModelMarkers(model, 'owner', markers);
-//
-//         // Maybe, while we were linting, the user has modified the text?
-//         // If so, this function didn't run (because of the isLinting check at the start)
-//         // So we need to lint the new config
-//         if (this.text != lintedText)
-//             this.refreshLint();
-//     }
-// };
-
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, ...rest } = props;
   const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+
+  useEffect(() => {
+    return () => {
+      if (yaml) {
+        // avoid duplicate yaml option registration
+        yaml.dispose();
+      }
+    };
+  }, [yaml]);
+
+  const setMonacoOptions = useCallback(async (monaco: Monaco) => {
+    const yaml = configureMonacoYaml(monaco, monacoYamlOptions);
+    setYaml(yaml);
+  }, []);
 
   return (
     <Editor
@@ -134,22 +104,11 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
         style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
       }}
       defaultValue={''}
+      path={'new-connector.yaml'}
       defaultLanguage="yaml"
       options={options}
+      beforeMount={(monaco) => setMonacoOptions(monaco)}
       {...rest}
-
-      // onChange={(v, ev) => {
-      //     if (v) {
-      //         linter.text = v;
-      //         linter.refreshLint();
-      //     }
-      //     rest.onChange?.(v, ev);
-      // }}
-
-      // onMount={(editor, monaco) => {
-      //     linter.editor = editor;
-      //     linter.monaco = monaco;
-      // }}
     />
   );
 }

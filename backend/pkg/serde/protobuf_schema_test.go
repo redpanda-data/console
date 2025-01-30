@@ -12,6 +12,7 @@ package serde
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,6 +48,8 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			return
 		}
 
+		fmt.Println("!!! r.URL.String():", r.URL.String())
+
 		switch r.URL.String() {
 		case "/schemas/ids/1000":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
@@ -74,7 +77,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				return
 			}
 			return
-		case srListSchemasPath:
+		case srListSchemasPath, srListSchemasPath + "?deleted=true":
 			type SchemaVersionedResponse struct {
 				Subject  string `json:"subject"`
 				SchemaID int    `json:"id"`
@@ -101,7 +104,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				return
 			}
 			return
-		case srListSubjectsPath:
+		case srListSubjectsPath, srListSubjectsPath + "?deleted=true":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-shop-order-v1"}
 			enc := json.NewEncoder(w)
@@ -303,7 +306,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				return
 			}
 			return
-		case "/schemas":
+		case srListSchemasPath, srListSchemasPath + "?deleted=true":
 			type SchemaVersionedResponse struct {
 				Subject  string `json:"subject"`
 				SchemaID int    `json:"id"`
@@ -337,7 +340,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				return
 			}
 			return
-		case srListSubjectsPath:
+		case srListSubjectsPath, srListSubjectsPath + "?deleted=true":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-shop-order-v1", "test-subject-shop-data-v1"}
 			enc := json.NewEncoder(w)

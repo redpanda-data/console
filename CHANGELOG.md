@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.8.2 / 2025-01-10
+
+- [SECURITY] Update `github.com/go-git/go-git/v5` to fix security issue [CVE-2025-21614](https://nvd.nist.gov/vuln/detail/CVE-2025-21614).
+
 ## v2.8.1 / 2024-12-18
 
 - [SECURITY] Built with Go 1.23.4 to fix [CVE-2024-45337](https://nvd.nist.gov/vuln/detail/CVE-2024-45337).
