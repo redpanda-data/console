@@ -18,11 +18,11 @@ import (
 	"fmt"
 
 	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // intentional import of old module
-	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	v2proto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/redpanda-data/console/backend/pkg/proto"
 )
@@ -90,14 +90,14 @@ func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.R
 		return &RecordPayload{}, fmt.Errorf("schema ID %+v not found", schemaID)
 	}
 
-	messageTypes := fd.GetMessageTypes()
-	var messageDescriptor *desc.MessageDescriptor
+	messageTypes := fd.Messages()
+	var messageDescriptor protoreflect.MessageDescriptor
 	for _, idx := range index {
-		if idx > len(messageTypes) {
+		if idx > messageTypes.Len() {
 			return &RecordPayload{}, fmt.Errorf("failed to decode message type: message index is larger than the message types array length")
 		}
-		messageDescriptor = messageTypes[idx]
-		messageTypes = messageDescriptor.GetNestedMessageTypes()
+		messageDescriptor = messageTypes.Get(idx)
+		messageTypes = messageDescriptor.Messages()
 	}
 
 	jsonBytes, err := d.ProtoSvc.DeserializeProtobufMessageToJSON(remainingData, messageDescriptor)

@@ -20,6 +20,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	v2proto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/dynamicpb"
 
 	"github.com/redpanda-data/console/backend/pkg/proto"
 )
@@ -54,8 +55,8 @@ func (d ProtobufSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 
 	payload := payloadFromRecord(record, payloadType)
 
-	msg := dynamic.NewMessage(messageDescriptor)
-	err = msg.Unmarshal(payload)
+	msg := dynamicpb.NewMessage(messageDescriptor)
+	err = v2proto.Unmarshal(payload, msg)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}

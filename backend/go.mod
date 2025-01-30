@@ -9,6 +9,7 @@ require (
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.28.6
 	github.com/basgys/goxml2json v1.1.0
+	github.com/bufbuild/protocompile v0.14.1
 	github.com/bufbuild/protovalidate-go v0.8.0
 	github.com/carlmjohnson/requests v0.24.3
 	github.com/cloudhut/common v0.10.0
@@ -94,7 +95,6 @@ require (
 	github.com/aws/smithy-go v1.22.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect

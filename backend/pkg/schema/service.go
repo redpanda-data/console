@@ -18,9 +18,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/reporter"
 	"github.com/hamba/avro/v2"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
@@ -48,7 +49,7 @@ type Service struct {
 	// for protobuf schema refreshing and compiling
 	srRefreshMutex   sync.RWMutex
 	protoSchemasByID map[int]*SchemaVersionedResponse
-	protoFDByID      map[int]*desc.FileDescriptor
+	protoFDByID      map[int]linker.File
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
@@ -78,7 +79,7 @@ func (s *Service) CheckConnectivity(ctx context.Context) error {
 // The value is a set of file descriptors because each schema may references / imported proto schemas.
 //
 //nolint:gocognit,cyclop // complicated refresh logic
-func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDescriptor, error) {
+func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]linker.File, error) {
 	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
 	// duplicate requests against the schema registry
 	key := "get-proto-descriptors"
@@ -139,7 +140,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 
 		// 2. Compile each subject with each of it's references into one or more file descriptors so that they can be
 		// registered in their own proto registry.
-		newFDBySchemaID := make(map[int]*desc.FileDescriptor, len(schemasToCompile))
+		newFDBySchemaID := make(map[int]linker.File, len(schemasToCompile))
 		for _, schema := range schemasToCompile {
 			schema := schema
 
@@ -147,7 +148,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 				continue
 			}
 
-			fd, err := s.compileProtoSchemas(schema, schemasBySubjectAndVersion)
+			fd, err := s.compileProtoSchemas(ctx, schema, schemasBySubjectAndVersion)
 			if err != nil {
 				s.logger.Warn("failed to compile proto schema",
 					zap.String("subject", schema.Subject),
@@ -162,7 +163,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 
 		// merge
 		if s.protoFDByID == nil {
-			s.protoFDByID = make(map[int]*desc.FileDescriptor, len(newFDBySchemaID))
+			s.protoFDByID = make(map[int]linker.File, len(newFDBySchemaID))
 		}
 
 		maps.Copy(s.protoFDByID, newFDBySchemaID)
@@ -227,7 +228,7 @@ func (s *Service) addReferences(schema *SchemaVersionedResponse, schemaRepositor
 	return nil
 }
 
-func (s *Service) compileProtoSchemas(schema *SchemaVersionedResponse, schemaRepository map[string]map[int]*SchemaVersionedResponse) (*desc.FileDescriptor, error) {
+func (s *Service) compileProtoSchemas(ctx context.Context, schema *SchemaVersionedResponse, schemaRepository map[string]map[int]*SchemaVersionedResponse) (linker.File, error) {
 	// 1. Let's find the references for each schema and put the references' schemas into our in memory filesystem.
 	schemasByPath := make(map[string]string)
 	schemasByPath[schema.Subject] = schema.Schema
@@ -252,7 +253,7 @@ func (s *Service) compileProtoSchemas(schema *SchemaVersionedResponse, schemaRep
 	}
 
 	// 3. Parse schema to descriptor file
-	errorReporter := func(err protoparse.ErrorWithPos) error {
+	errorReporter := func(err reporter.ErrorWithPos) error {
 		position := err.GetPosition()
 		s.logger.Warn("failed to parse proto schema to descriptor",
 			zap.String("file", position.Filename),
@@ -261,18 +262,25 @@ func (s *Service) compileProtoSchemas(schema *SchemaVersionedResponse, schemaRep
 		return nil
 	}
 
-	parser := protoparse.Parser{
-		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
-		InferImportPaths:      true,
-		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: false,
-		ErrorReporter:         errorReporter,
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor:    protocompile.SourceAccessorFromMap(schemasByPath),
+			ImportPaths: []string{"."},
+		}),
+		Reporter:       reporter.NewReporter(errorReporter, nil),
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
-	descriptors, err := parser.ParseFiles(schema.Subject)
+
+	compiledFiles, err := compiler.Compile(ctx, schema.Subject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse proto files to descriptors: %w", err)
 	}
-	return descriptors[0], nil
+	schemaFD := compiledFiles.FindFileByPath(schema.Subject)
+	if err != nil {
+		return nil, fmt.Errorf("no proto file by path: %s", schema.Subject)
+	}
+
+	return schemaFD, nil
 }
 
 // IsEnabled returns whether the schema registry is enabled in configuration.
@@ -490,14 +498,15 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 		}
 	}
 
-	parser := protoparse.Parser{
-		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
-		InferImportPaths:      true,
-		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: false,
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor:    protocompile.SourceAccessorFromMap(schemasByPath),
+			ImportPaths: []string{"."},
+		}),
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
 
-	_, err = parser.ParseFiles(name)
+	_, err = compiler.Compile(ctx, name)
 
 	return err
 }
