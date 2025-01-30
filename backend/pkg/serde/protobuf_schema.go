@@ -102,7 +102,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 
 	// Marshal proto message into JSON
 	o := protojson.MarshalOptions{
-		UseProtoNames: false, // use loweCamelCase
+		UseProtoNames: false, // use lowerCamelCase
 		// Do not use EmitUnpopulated, so we don't emit nulls (they are ugly, and provide no benefit. they transport no information, even in "normal" json).
 		EmitUnpopulated: true,
 		// Instead, use EmitDefaultValues, which is new and like EmitUnpopulated, but
