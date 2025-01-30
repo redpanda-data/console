@@ -130,7 +130,10 @@ message DeleteUserRequest {
 message DeleteUserResponse {}
 
 service UserService {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage Redpanda Cloud users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#tag--ACLService)."};
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda Users"
+    description: "Manage Redpanda users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#get-/v1alpha2/acls)."
+  };
 
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
     option (google.api.http) = {

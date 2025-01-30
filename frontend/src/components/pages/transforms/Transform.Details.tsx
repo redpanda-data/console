@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { createStandaloneToast } from '@chakra-ui/react';
+import { createStandaloneToast } from '@redpanda-data/ui';
 import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';

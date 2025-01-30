@@ -127,6 +127,20 @@ const ConfigEditorForm: FC<{
 
   const valueType = watch('valueType');
 
+  const SOURCE_PRIORITY_ORDER = [
+    'DYNAMIC_TOPIC_CONFIG',
+    'DYNAMIC_BROKER_CONFIG',
+    'DYNAMIC_DEFAULT_BROKER_CONFIG',
+    'STATIC_BROKER_CONFIG',
+    'DEFAULT_CONFIG',
+  ];
+
+  const defaultConfigSynonym = editedEntry.synonyms
+    ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
+    .sort((a, b) => {
+      return SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source);
+    })[0];
+
   return (
     <Modal isOpen onClose={onClose}>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -161,15 +175,16 @@ const ConfigEditorForm: FC<{
               )}
               {/*It's not possible to show default value until we get it always from the BE.*/}
               {/*Currently we only retrieve the current value and not default if it's set to custom/infinite*/}
-              {/*{valueType === 'default' && (*/}
-              {/*  <Box>*/}
-              {/*    The default value is{' '}*/}
-              {/*    <Text fontWeight="bold" display="inline">*/}
-              {/*      {formatConfigValue(editedEntry.name, editedEntry.value, 'friendly')}*/}
-              {/*    </Text>*/}
-              {/*    . This is inherited from {editedEntry.source}.*/}
-              {/*  </Box>*/}
-              {/*)}*/}
+              {valueType === 'default' && defaultConfigSynonym && (
+                <Box>
+                  The default value is{' '}
+                  <Text fontWeight="bold" display="inline">
+                    {/*{JSON.stringify(editedEntry)}*/}
+                    {formatConfigValue(editedEntry.name, defaultConfigSynonym.value, 'friendly')}
+                  </Text>
+                  . This is inherited from {defaultConfigSynonym.source}.
+                </Box>
+              )}
             </Flex>
             {globalError && (
               <Alert status="error" my={2}>

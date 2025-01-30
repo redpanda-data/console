@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Skeleton } from '@chakra-ui/react';
 import { InfoIcon } from '@primer/octicons-react';
+import { Skeleton } from '@redpanda-data/ui';
 import {
   Box,
   Flex,

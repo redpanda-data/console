@@ -533,7 +533,7 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		ImportPaths:           []string{"."},
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: true,
+		IncludeSourceCodeInfo: false,
 		ErrorReporter:         errorReporter,
 	}
 	descriptors, err := parser.ParseFiles(filePaths...)
