@@ -1655,8 +1655,6 @@ components:
           description: Detailed error message. No compatibility guarantees are given for the text contained in this message.
           type: string
       type: object
-    v1alpha2.Topic:
-      type: object
   securitySchemes:
     auth0:
       description: RedpandaCloud
@@ -3960,7 +3958,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1alpha2.Topic'
+                $ref: '#/components/schemas/CreateTopicResponse'
           description: Topic created
         "401":
           content:
@@ -4261,7 +4259,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

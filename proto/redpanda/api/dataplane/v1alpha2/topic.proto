@@ -246,7 +246,7 @@ service TopicService {
         value: {
           description: "Topic created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Topic"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.CreateTopicResponse"}
           }
         }
       }
