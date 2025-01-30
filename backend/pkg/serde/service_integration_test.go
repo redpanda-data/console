@@ -1258,8 +1258,8 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("345", obj["id"])
-		assert.Len(obj["dec_val"], 1)
-		assert.Len(obj["color"], 3)
+		assert.Len(obj["decVal"], 1)
+		assert.Len(obj["color"], 4)
 		assert.Len(obj["fraction"], 2)
 		assert.Len(obj["latlng"], 2)
 		assert.Len(obj["price"], 3)
@@ -1456,7 +1456,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
+		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: avro: unknown type:")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1643,7 +1643,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: avro: unknown type:")
+		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: avro: unknown type:")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_nest'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -1940,7 +1940,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingXML), dr.Value.Troubleshooting[3].SerdeName)
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 		assert.Equal(string(PayloadEncodingAvro), dr.Value.Troubleshooting[4].SerdeName)
-		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse schema: failed to parse schema reference")
+		assert.Contains(dr.Value.Troubleshooting[4].Message, "getting avro schema from registry: failed to parse avro schema: failed to parse schema reference")
 		assert.Equal(string(PayloadEncodingProtobuf), dr.Value.Troubleshooting[5].SerdeName)
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_ref'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
@@ -2159,11 +2159,31 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotEmpty(records)
 		require.Len(records, 2)
 
+		// proto schema rediscovery is on a timer... this forces a new refresh
+
+		protoSvc2, err := protopkg.NewService(cfg.Kafka.Protobuf, logger)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		schemaClientFactory2, err := schemafactory.NewSingleClientProvider(&cfg)
+		require.NoError(err)
+
+		cacheNamespaceFn := func(context.Context) (string, error) {
+			return "single/", nil
+		}
+		cachedSchemaClient2, err := schemacache.NewCachedClient(schemaClientFactory2, cacheNamespaceFn)
+		require.NoError(err)
+
+		serdeSvc2, err := NewService(protoSvc2, mspPackSvc, cachedSchemaClient2, cborConfig)
+		require.NoError(err)
+
 		for _, cr := range records {
 			cr := cr
 
 			if string(cr.Key) == msg.Id {
-				dr := serdeSvc.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				// check value
@@ -2177,21 +2197,21 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("222", obj["id"])
 			} else if string(cr.Key) == msg2ID {
-				dr := serdeSvc.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("333", obj["id"])
-				assert.Equal(float64(3456), obj["order_value"])
+				assert.Equal(float64(3456), obj["orderValue"])
 				assert.Equal(float64(22), obj["version"])
 
 				// the JSON tags have to match shopv_1 Order protojson tags
 				type v1_2Order struct {
 					Version    int32     `json:"version,omitempty"`
 					Id         string    `json:"id,omitempty"`
-					CreatedAt  time.Time `json:"created_at,omitempty"`
-					OrderValue int32     `json:"order_value,omitempty"`
+					CreatedAt  time.Time `json:"createdAt,omitempty"`
+					OrderValue int32     `json:"orderValue,omitempty"`
 				}
 
 				ov12 := v1_2Order{}
@@ -2402,25 +2422,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 
 		eventDataSchemaStr := `
-			{
-				"namespace": "io.test.event.schema",
-				"type": "record",
-				"name": "EventData",
-				"fields":[
-					{
-						"name":"id",
-						"type": "string"
-					},
-					{
-						"name":"event_type",
-						"type":"string"
-					},
-					{
-						"name":"version",
-						"type":"string"
-					}
-				]
-			}`
+		{
+			"namespace": "io.test.event.schema",
+			"type": "record",
+			"name": "EventData",
+			"fields":[
+				{
+					"name":"id",
+					"type": "string"
+				},
+				{
+					"name":"event_type",
+					"type":"string"
+				},
+				{
+					"name":"version",
+					"type":"string"
+				}
+			]
+		}`
 
 		eventDataSchema, err := avro.Parse(eventDataSchemaStr)
 		require.NoError(err)
@@ -2434,25 +2454,25 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ssEventData)
 
 		userSchemaStr := `
-			{
-				"namespace": "io.test.user.schema",
-				"type": "record",
-				"name": "User",
-				"fields": [
-					{
-						"name": "name",
-						"type": "string"
-					},
-					{
-						"name": "email",
-						"type": "string"
-					},
-					{
-						"name": "metadata",
-						"type": "io.test.event.schema.EventData"
-					}
-				]
-			}`
+		{
+			"namespace": "io.test.user.schema",
+			"type": "record",
+			"name": "User",
+			"fields": [
+				{
+					"name": "name",
+					"type": "string"
+				},
+				{
+					"name": "email",
+					"type": "string"
+				},
+				{
+					"name": "metadata",
+					"type": "io.test.event.schema.EventData"
+				}
+			]
+		}`
 
 		userSchema, err := avro.Parse(userSchemaStr)
 		require.NoError(err)
@@ -2473,33 +2493,33 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(ssUser)
 
 		orderSchemaStr := `
-			{
-				"namespace": "io.test.order.schema",
-				"type": "record",
-				"name": "Order",
-				"fields": [
-					{
-						"name": "id",
-						"type": "string"
-					},
-					{
-						"name": "price",
-						"type": "double"
-					},
-					{
-						"name": "quantity",
-						"type": "long"
-					},
-					{
-						"name": "customer",
-						"type": "io.test.user.schema.User"
-					},
-					{
-						"name": "metadata",
-						"type": "io.test.event.schema.EventData"
-					}
-				]
-			}`
+		{
+			"namespace": "io.test.order.schema",
+			"type": "record",
+			"name": "Order",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string"
+				},
+				{
+					"name": "price",
+					"type": "double"
+				},
+				{
+					"name": "quantity",
+					"type": "long"
+				},
+				{
+					"name": "customer",
+					"type": "io.test.user.schema.User"
+				},
+				{
+					"name": "metadata",
+					"type": "io.test.event.schema.EventData"
+				}
+			]
+		}`
 
 		orderSchema, err := avro.Parse(orderSchemaStr)
 		require.NoError(err)
@@ -2543,6 +2563,32 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			User     UserRecord      `avro:"customer" json:"customer"`
 			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
 		}
+
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		protoSvc, err := protopkg.NewService(cfg.Kafka.Protobuf, logger)
+		require.NoError(err)
+
+		err = protoSvc.Start()
+		require.NoError(err)
+
+		mspPackSvc, err := ms.NewService(cfg.Kafka.MessagePack)
+		require.NoError(err)
+
+		schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg)
+		require.NoError(err)
+
+		cacheNamespaceFn := func(context.Context) (string, error) {
+			return "single-avro-ref/", nil
+		}
+		cachedSchemaClient, err := schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+		require.NoError(err)
+
+		cborConfig := config.Cbor{}
+
+		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, cborConfig)
+		require.NoError(err)
 
 		var serde sr.Serde
 		serde.Register(

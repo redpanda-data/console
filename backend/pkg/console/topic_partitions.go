@@ -235,10 +235,10 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, adminCl *kadm.C
 			TopicName: topic.Topic,
 		}
 		if topic.Err != nil {
-			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topic.Topic), zap.Error(err))
+			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topic.Topic), zap.Error(topic.Err))
 
 			// Propagate the failed response and do not even try any further requests for that topic.
-			topicOverview.Error = fmt.Sprintf("Failed to get metadata for topic: %v", err.Error())
+			topicOverview.Error = fmt.Sprintf("Failed to get metadata for topic: %v", topic.Err.Error())
 			overviewByTopic[topic.Topic] = topicOverview
 			continue
 		}

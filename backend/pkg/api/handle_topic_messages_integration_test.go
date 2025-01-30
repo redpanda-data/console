@@ -730,13 +730,13 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 	// This test depends on configs configured
 
 	topicName := testutil.TopicNameForTest("publish_messages_0")
-	topicNameProtoPain := testutil.TopicNameForTest("publish_messages_proto_plain")
+	topicNameProtoPlain := testutil.TopicNameForTest("publish_messages_proto_plain")
 	topicNameProtoSR := testutil.TopicNameForTest("publish_messages_proto_sr")
 
 	_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
 	assert.NoError(err)
 
-	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicNameProtoPain)
+	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicNameProtoPlain)
 	assert.NoError(err)
 
 	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicNameProtoSR)
@@ -744,7 +744,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 
 	defer func() {
 		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
-		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoPain)
+		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoPlain)
 		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoSR)
 	}()
 
@@ -808,7 +808,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 
 	t.Run("protobuf message", func(t *testing.T) {
 		res, err := client.PublishMessage(ctx, connect.NewRequest(&v1pb.PublishMessageRequest{
-			Topic:       topicNameProtoPain,
+			Topic:       topicNameProtoPlain,
 			PartitionId: -1,
 			Headers: []*v1pb.KafkaRecordHeader{
 				{
@@ -828,14 +828,14 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		require.NoError(err)
 
 		require.NotNil(res)
-		assert.Equal(topicNameProtoPain, res.Msg.GetTopic())
+		assert.Equal(topicNameProtoPlain, res.Msg.GetTopic())
 		assert.Equal(int32(0), res.Msg.GetPartitionId())
 		assert.Equal(int64(0), res.Msg.GetOffset())
 
 		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer consumeCancel()
 
-		cl := s.consumerClientForTopic(topicNameProtoPain)
+		cl := s.consumerClientForTopic(topicNameProtoPlain)
 
 		var record *kgo.Record
 		for {
@@ -885,7 +885,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 
 	t.Run("protobuf message - fail", func(t *testing.T) {
 		res, err := client.PublishMessage(ctx, connect.NewRequest(&v1pb.PublishMessageRequest{
-			Topic:       topicNameProtoPain,
+			Topic:       topicNameProtoPlain,
 			PartitionId: -1,
 			Headers: []*v1pb.KafkaRecordHeader{
 				{

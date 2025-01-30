@@ -153,7 +153,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		return fmt.Errorf("metadata response did not contain requested topic")
 	}
 	if topicMetadata.Err != nil {
-		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, err)
+		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, topicMetadata.Err)
 	}
 
 	partitionByID := make(map[int32]kadm.PartitionDetail)
