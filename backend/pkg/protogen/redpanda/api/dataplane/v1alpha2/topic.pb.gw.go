@@ -461,7 +461,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_GetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_GetTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TopicService_GetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -486,7 +486,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_UpdateTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_UpdateTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TopicService_UpdateTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -511,7 +511,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_SetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_SetTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TopicService_SetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -640,7 +640,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_GetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_GetTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TopicService_GetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -662,7 +662,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_UpdateTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_UpdateTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TopicService_UpdateTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -684,38 +684,11 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_TopicService_SetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, response_TopicService_SetTopicConfigurations_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TopicService_SetTopicConfigurations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
-}
-
-type response_TopicService_GetTopicConfigurations_0 struct {
-	proto.Message
-}
-
-func (m response_TopicService_GetTopicConfigurations_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetTopicConfigurationsResponse)
-	return response.Configurations
-}
-
-type response_TopicService_UpdateTopicConfigurations_0 struct {
-	proto.Message
-}
-
-func (m response_TopicService_UpdateTopicConfigurations_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpdateTopicConfigurationsResponse)
-	return response.Configurations
-}
-
-type response_TopicService_SetTopicConfigurations_0 struct {
-	proto.Message
-}
-
-func (m response_TopicService_SetTopicConfigurations_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*SetTopicConfigurationsResponse)
-	return response.Configurations
 }
 
 var (
