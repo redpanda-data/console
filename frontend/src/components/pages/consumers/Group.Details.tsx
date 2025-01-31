@@ -17,7 +17,6 @@ import { SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
   Checkbox,
-  ConfirmItemDeleteModal,
   CopyButton,
   DataTable,
   Empty,
@@ -57,6 +56,7 @@ import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
   @observable edittingOffsets: GroupOffset[] | null = null;
+  @observable editedTopic: string | null = null;
 
   @observable deletingMode: GroupDeletingMode = 'group';
   @observable deletingOffsets: GroupOffset[] | null = null;
@@ -122,7 +122,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         <GroupByTopics
           group={group}
           onlyShowPartitionsWithLag={this.showWithLagOnly}
-          onEditOffsets={(g) => (this.edittingOffsets = g)}
+          onEditOffsets={(g) => {
+            this.editGroup();
+            this.editedTopic = g[0].topicName;
+          }}
           quickSearch={this.quickSearch}
           onDeleteOffsets={(offsets, mode) => {
             this.deletingMode = mode;
@@ -202,7 +205,13 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         </Section>
 
         {/* Modals */}
-        <EditOffsetsModal group={group} offsets={this.edittingOffsets} onClose={() => (this.edittingOffsets = null)} />
+        <EditOffsetsModal
+          key={this.editedTopic}
+          group={group}
+          offsets={this.edittingOffsets}
+          onClose={() => (this.edittingOffsets = null)}
+          initialTopic={this.editedTopic}
+        />
       </PageContent>
     );
   }
@@ -221,6 +230,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
     if (!groupOffsets) return;
 
+    this.editedTopic = null;
     this.edittingOffsets = groupOffsets;
   }
 
@@ -456,7 +466,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
     );
   }
 
-  return <Accordion items={topicEntries.filterNull()} defaultIndex={defaultExpand} />;
+  return <Accordion allowToggle items={topicEntries.filterNull()} defaultIndex={defaultExpand} />;
 });
 
 const renderMergedID = (id?: string, clientId?: string) => {

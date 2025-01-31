@@ -20,6 +20,7 @@ import {
   Flex,
   FormLabel,
   HStack,
+  Input,
   List,
   ListItem,
   Modal,
@@ -28,6 +29,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  NumberInput,
   Radio,
   Text,
   Tooltip,
@@ -36,7 +38,16 @@ import {
   redpandaTheme,
   redpandaToastOptions,
 } from '@redpanda-data/ui';
-import { type IReactionDisposer, action, autorun, makeObservable, observable, transaction } from 'mobx';
+import {
+  type IReactionDisposer,
+  action,
+  autorun,
+  makeObservable,
+  observable,
+  runInAction,
+  toJS,
+  transaction,
+} from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { MdOutlineWarningAmber } from 'react-icons/md';
@@ -55,7 +66,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { SingleSelect } from '../../misc/Select';
 
-type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
+type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup' | 'shiftBy';
 
 // props:
 // - consumer group
@@ -93,6 +104,7 @@ export class EditOffsetsModal extends Component<{
   group: GroupDescription;
   offsets: GroupOffset[] | null;
   onClose: () => void;
+  initialTopic: string | null;
 }> {
   lastOffsets: GroupOffset[];
   lastVisible = false;
@@ -104,7 +116,10 @@ export class EditOffsetsModal extends Component<{
 
   @observable page: 0 | 1 = 0;
   @observable selectedOption: EditOptions = 'startOffset';
+  @observable selectedTopic: string | null = null;
   @observable timestampUtcMs: number = new Date().valueOf();
+  @observable customOffsetValue = 0;
+
   @observable otherConsumerGroups: GroupDescription[] = [];
   @observable selectedGroup: string | undefined = undefined;
   @observable otherGroupCopyMode: 'all' | 'onlyExisting' = 'onlyExisting';
@@ -115,6 +130,10 @@ export class EditOffsetsModal extends Component<{
   constructor(p: any) {
     super(p);
     makeObservable(this);
+  }
+
+  componentDidMount() {
+    this.selectedTopic = this.props.initialTopic;
   }
 
   render() {
@@ -182,34 +201,61 @@ export class EditOffsetsModal extends Component<{
   }
 
   page1() {
+    const topicChoices = this.props.offsets?.groupInto((x) => x.topicName).map((x) => x.key) ?? [];
+
     return (
-      <Flex flexDirection="column" gap={4} mt={16}>
-        <Box maxW={300}>
-          <FormLabel>Start consuming at</FormLabel>
-          <SingleSelect
-            isDisabled={this.isLoadingTimestamps}
-            value={this.selectedOption}
-            onChange={(v) => (this.selectedOption = v as EditOptions)}
-            options={[
-              {
-                value: 'startOffset',
-                label: 'Start Offset',
-              },
-              {
-                value: 'endOffset',
-                label: 'End Offset',
-              },
-              {
-                value: 'time',
-                label: 'Specific Time',
-              },
-              {
-                value: 'otherGroup',
-                label: 'Other Consumer Group',
-              },
-            ]}
-          />
-        </Box>
+      <Flex flexDirection="column" gap={4}>
+        <Flex maxW={300} gap={2} flexDirection="column">
+          <Box>
+            <FormLabel>Topic</FormLabel>
+            <SingleSelect<string | null>
+              value={this.selectedTopic}
+              onChange={action((v) => {
+                this.selectedTopic = v;
+              })}
+              options={[
+                {
+                  value: null,
+                  label: 'All Topics',
+                },
+                ...topicChoices.map((x) => ({
+                  value: x,
+                  label: x,
+                })),
+              ]}
+            />
+          </Box>
+          <Box>
+            <FormLabel>Strategy</FormLabel>
+            <SingleSelect
+              isDisabled={this.isLoadingTimestamps}
+              value={this.selectedOption}
+              onChange={(v) => (this.selectedOption = v as EditOptions)}
+              options={[
+                {
+                  value: 'startOffset',
+                  label: 'Earliest',
+                },
+                {
+                  value: 'endOffset',
+                  label: 'Latest',
+                },
+                {
+                  value: 'shiftBy',
+                  label: 'Shift By',
+                },
+                {
+                  value: 'time',
+                  label: 'Specific Time',
+                },
+                {
+                  value: 'otherGroup',
+                  label: 'Other Consumer Group',
+                },
+              ]}
+            />
+          </Box>
+        </Flex>
 
         <Text>
           {
@@ -219,6 +265,7 @@ export class EditOffsetsModal extends Component<{
                 endOffset: "Set all offsets to the newest partition's offset.",
                 time: "Choose a timestamp to which all partition's offsets will be set.",
                 otherGroup: 'Copy offsets from another (inactive) consumer group',
+                shiftBy: 'Adjust offsets by a specified positive or negative value.',
               } as Record<EditOptions, string>
             )[this.selectedOption]
           }
@@ -231,6 +278,16 @@ export class EditOffsetsModal extends Component<{
               valueUtcMs={this.timestampUtcMs}
               onChange={(t) => (this.timestampUtcMs = t)}
               disabled={this.isLoadingTimestamps}
+            />
+          </Box>
+        )}
+
+        {this.selectedOption === 'shiftBy' && (
+          <Box mt={2}>
+            <FormLabel>Custom offset value</FormLabel>
+            <NumberInput
+              value={this.customOffsetValue}
+              onChange={(_, valueAsNumber) => (this.customOffsetValue = valueAsNumber)}
             />
           </Box>
         )}
@@ -294,65 +351,69 @@ export class EditOffsetsModal extends Component<{
       <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
         <Accordion
           defaultIndex={0}
-          items={this.offsetsByTopic.map(({ topicName, items }) => ({
-            heading: (
-              <Flex alignItems="center" gap={1} fontWeight={600} whiteSpace="nowrap">
-                {/* Title */}
-                <Text textOverflow="ellipsis" overflow="hidden" pr={8}>
-                  {topicName}
-                </Text>
-                <Text display="inline-block" ml="auto" padding="0 1rem">
-                  {items.length} Partitions
-                </Text>
-              </Flex>
-            ),
-            description: (
-              <DataTable<GroupOffset>
-                size="sm"
-                pagination
-                defaultPageSize={100}
-                sorting
-                data={items}
-                columns={[
-                  {
-                    size: 130,
-                    header: 'Partition',
-                    accessorKey: 'partitionId',
-                  },
-                  {
-                    size: 150,
-                    header: 'Offset Before',
-                    accessorKey: 'offset',
-                    cell: ({
-                      row: {
-                        original: { offset },
-                      },
-                    }) =>
-                      offset == null ? (
-                        <Tooltip
-                          label="The group does not have an offset for this partition yet"
-                          openDelay={1}
-                          placement="top"
-                          hasArrow
-                        >
-                          <span style={{ opacity: 0.66, marginLeft: '2px' }}>
-                            <SkipIcon />
-                          </span>
-                        </Tooltip>
-                      ) : (
-                        numberToThousandsString(offset)
+          items={this.offsetsByTopic
+            .filter(({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic)
+            .map(({ topicName, items }) => ({
+              heading: (
+                <Flex alignItems="center" gap={1} fontWeight={600} whiteSpace="nowrap">
+                  {/* Title */}
+                  <Text textOverflow="ellipsis" overflow="hidden" pr={8}>
+                    {topicName}
+                  </Text>
+                  <Text display="inline-block" ml="auto" padding="0 1rem">
+                    {items.length} Partitions
+                  </Text>
+                </Flex>
+              ),
+              description: (
+                <DataTable<GroupOffset>
+                  size="sm"
+                  pagination
+                  defaultPageSize={100}
+                  sorting
+                  data={items}
+                  columns={[
+                    {
+                      size: 130,
+                      header: 'Partition',
+                      accessorKey: 'partitionId',
+                    },
+                    {
+                      size: 150,
+                      header: 'Offset Before',
+                      accessorKey: 'offset',
+                      cell: ({
+                        row: {
+                          original: { offset },
+                        },
+                      }) =>
+                        offset == null ? (
+                          <Tooltip
+                            label="The group does not have an offset for this partition yet"
+                            openDelay={1}
+                            placement="top"
+                            hasArrow
+                          >
+                            <span style={{ opacity: 0.66, marginLeft: '2px' }}>
+                              <SkipIcon />
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          numberToThousandsString(offset)
+                        ),
+                    },
+                    {
+                      header: 'Offset After',
+                      id: 'offsetAfter',
+                      size: Number.POSITIVE_INFINITY,
+                      cell: ({ row: { original } }) => (
+                        <ColAfter selectedTime={this.timestampUtcMs} record={original} />
                       ),
-                  },
-                  {
-                    header: 'Offset After',
-                    id: 'offsetAfter',
-                    size: Number.POSITIVE_INFINITY,
-                    cell: ({ row: { original } }) => <ColAfter selectedTime={this.timestampUtcMs} record={original} />,
-                  },
-                ]}
-              />
-            ),
-          }))}
+                    },
+                  ]}
+                />
+              ),
+            }))}
         />
       </div>
     );
@@ -374,6 +435,12 @@ export class EditOffsetsModal extends Component<{
         // Latest
         for (const x of this.props.offsets) {
           x.newOffset = -1;
+        }
+      } else if (op === 'shiftBy') {
+        for (const x of this.props.offsets) {
+          if (x.offset) {
+            x.newOffset = x.offset + this.customOffsetValue;
+          }
         }
       } else if (op === 'time') {
         // Time
@@ -569,7 +636,9 @@ export class EditOffsetsModal extends Component<{
   async onApplyEdit() {
     const group = this.props.group;
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-    const offsets = this.props.offsets!;
+    const offsets = this.props.offsets!.filter(
+      ({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic,
+    );
 
     this.isApplyingEdit = true;
     const toastMsg = 'Applying offsets';
