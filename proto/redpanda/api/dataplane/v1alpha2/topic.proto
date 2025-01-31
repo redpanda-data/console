@@ -292,10 +292,7 @@ service TopicService {
     };
   }
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
-    option (google.api.http) = {
-      get: "/v1alpha2/topics/{topic_name}/configurations"
-      response_body: "configurations"
-    };
+    option (google.api.http) = {get: "/v1alpha2/topics/{topic_name}/configurations"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Topic Configurations"
       description: "Get key-value configs for a topic."
@@ -323,7 +320,6 @@ service TopicService {
     option (google.api.http) = {
       patch: "/v1alpha2/topics/{topic_name}/configurations"
       body: "configurations"
-      response_body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update Topic Configuration"
@@ -352,7 +348,6 @@ service TopicService {
     option (google.api.http) = {
       put: "/v1alpha2/topics/{topic_name}/configurations"
       body: "configurations"
-      response_body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Set Topic Configurations"
