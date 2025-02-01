@@ -84,7 +84,7 @@ func TestConsoleErrorWriter(t *testing.T) {
 
 			// Construct a request & recorder
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, tc.requestURL, nil)
+			r := httptest.NewRequest(http.MethodGet, tc.requestURL, http.NoBody)
 
 			// Create a sample connect error
 			connectErr := connect.NewError(connect.CodeUnauthenticated, errors.New("unauthenticated"))

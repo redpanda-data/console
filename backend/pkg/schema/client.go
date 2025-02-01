@@ -184,7 +184,7 @@ func (c *CachedClient) AvroSchemaByID(ctx context.Context, id int) (avro.Schema,
 			return nil, fmt.Errorf("failed to fetch schema from schema registry: %w", err)
 		}
 
-		avroSch, err := c.ParseAvroSchemaWithReferences(ctx, sch, &avro.SchemaCache{})
+		avroSch, err := c.ParseAvroSchemaWithReferences(ctx, sch, avro.DefaultSchemaCache)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse avro schema: %w", err)
 		}

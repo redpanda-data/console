@@ -153,7 +153,7 @@ func deserialize(base64input string, schemaID, index int) {
 		os.Exit(1)
 	}
 
-	b, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&msg)
+	b, err := protojson.MarshalOptions{}.Marshal(&msg)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

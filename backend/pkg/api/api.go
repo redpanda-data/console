@@ -72,7 +72,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 	// Set default options and then apply all the provided options that will
 	// override these defaults.
 	opts := &options{
-		cacheNamespaceFn: func(ctx context.Context) (string, error) {
+		cacheNamespaceFn: func(_ context.Context) (string, error) {
 			return "single/", nil
 		},
 	}

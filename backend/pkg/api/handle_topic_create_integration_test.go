@@ -233,8 +233,10 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
 
+		newConfig.MetricsNamespace = "create_topic_fail"
+
 		// new console service
-		newApi := New(s.cfg)
+		newApi := New(newConfig)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc

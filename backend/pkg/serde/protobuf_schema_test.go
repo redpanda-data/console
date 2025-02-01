@@ -12,7 +12,6 @@ package serde
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,8 +46,6 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-
-		fmt.Println("!!! r.URL.String():", r.URL.String())
 
 		switch r.URL.String() {
 		case "/schemas/ids/1000":
@@ -200,8 +197,8 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 
 				// Remove whitespaces from result because of randomization in protojson output, see:
 				// https://github.com/golang/protobuf/issues/1082
-				resultWithoutWhitespace := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
-				assert.Equal(t, `{"id":"111","created_at":"2023-06-10T13:00:00Z"}`, resultWithoutWhitespace)
+				resultWithoutWhitespace := strings.ReplaceAll(string(payload.NormalizedPayload), `, "`, `,"`)
+				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, resultWithoutWhitespace)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")

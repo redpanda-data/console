@@ -63,6 +63,8 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:cyclop // complex logic
 func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	if d.schemaClient == nil {
 		return nil, fmt.Errorf("schema registry client is not configured")

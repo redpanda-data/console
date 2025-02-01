@@ -79,6 +79,7 @@ type Servicer interface {
 	AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error)
 }
 
+// SchemaRegistryServicer is the interface for schema registry servicer
 type SchemaRegistryServicer interface {
 	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
 	GetSchemaRegistryConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error)

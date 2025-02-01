@@ -132,6 +132,8 @@ type TopicConsumeRequest struct {
 // 4. Constructing a TopicConsumeRequest that is used by the Kafka Service to consume the right Kafka messages
 // 5. Start consume request via the Kafka Service
 // 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
+//
+//nolint:cyclop // complex logic
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
@@ -151,7 +153,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		return fmt.Errorf("metadata response did not contain requested topic")
 	}
 	if topicMetadata.Err != nil {
-		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, err)
+		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, topicMetadata.Err)
 	}
 
 	partitionByID := make(map[int32]kadm.PartitionDetail)
@@ -507,7 +509,7 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 
 // requestOffsetsByTimestamp returns the offset that has been resolved for the given timestamp in a map which is indexed
 // by partitionID.
-func (s *Service) requestOffsetsByTimestamp(ctx context.Context, cl *kgo.Client, topicName string, partitionIDs []int32, timestamp int64) (map[int32]int64, error) {
+func (*Service) requestOffsetsByTimestamp(ctx context.Context, cl *kgo.Client, topicName string, partitionIDs []int32, timestamp int64) (map[int32]int64, error) {
 	req := kmsg.NewListOffsetsRequest()
 	topicReq := kmsg.NewListOffsetsRequestTopic()
 	topicReq.Topic = topicName

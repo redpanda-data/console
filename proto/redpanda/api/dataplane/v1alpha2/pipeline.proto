@@ -130,7 +130,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -164,7 +164,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -187,7 +187,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -213,7 +213,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -242,7 +242,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -276,7 +276,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -310,7 +310,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -335,7 +335,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -358,7 +358,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -381,7 +381,7 @@ service PipelineService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_UNSPECIFIED
+      api: API_REDPANDA_CONNECT
     };
   }
 }

@@ -308,7 +308,7 @@ type SchemaRegistrySubjectDetailsVersion struct {
 // This will submit two versions requests where one includes softDeletedVersions.
 // This is done to retrieve a list with all versions including a flag whether it's
 // a soft-deleted or active version.
-func (s *Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *sr.Client, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
+func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *sr.Client, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
 	type chResponse struct {
 		Res             []int
 		WithSoftDeleted bool

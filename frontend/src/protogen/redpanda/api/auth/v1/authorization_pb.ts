@@ -45,6 +45,11 @@ export enum API {
    * @generated from enum value: API_KAFKA_CONNECT = 5;
    */
   API_KAFKA_CONNECT = 5,
+
+  /**
+   * @generated from enum value: API_CONSOLE = 6;
+   */
+  API_CONSOLE = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(API)
 proto3.util.setEnumType(API, "redpanda.api.auth.v1.API", [
@@ -54,6 +59,7 @@ proto3.util.setEnumType(API, "redpanda.api.auth.v1.API", [
   { no: 3, name: "API_REDPANDA_ADMIN" },
   { no: 4, name: "API_REDPANDA_CONNECT" },
   { no: 5, name: "API_KAFKA_CONNECT" },
+  { no: 6, name: "API_CONSOLE" },
 ]);
 
 /**

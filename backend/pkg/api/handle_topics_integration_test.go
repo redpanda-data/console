@@ -107,8 +107,10 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
 
+		newConfig.MetricsNamespace = "get_metadata_fail"
+
 		// new console service
-		newApi := New(s.cfg)
+		newApi := New(newConfig)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
@@ -204,9 +206,10 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
 
+		newConfig.MetricsNamespace = "describe_configs_fail"
+
 		// new console service
-		newApi := New(s.cfg)
-		// newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
+		newApi := New(newConfig)
 		require.NoError(err)
 
 		// save old

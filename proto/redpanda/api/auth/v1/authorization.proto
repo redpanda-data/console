@@ -21,6 +21,7 @@ enum API {
   API_REDPANDA_ADMIN = 3;
   API_REDPANDA_CONNECT = 4;
   API_KAFKA_CONNECT = 5;
+  API_CONSOLE = 6;
 }
 
 // AuthorizationRole defines the primitive pre-defined roles a user can have.

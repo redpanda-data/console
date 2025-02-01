@@ -36,7 +36,7 @@ const (
 // checkRedpandaFeature checks whether redpanda has the specified feature in the specified state.
 // Multiple states can be passed to check if feature state is any one of the given states.
 // For example if "active" OR "available".
-func (s *Service) checkRedpandaFeature(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient, feature redpandaFeature) bool {
+func (*Service) checkRedpandaFeature(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient, feature redpandaFeature) bool {
 	switch feature {
 	case redpandaFeatureRBAC:
 		_, err := redpandaCl.Roles(ctx, "", "", "")
