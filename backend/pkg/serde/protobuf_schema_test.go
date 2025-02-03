@@ -12,7 +12,6 @@ package serde
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -46,8 +45,6 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-
-		fmt.Println("!!! r.URL.String():", r.URL.String())
 
 		switch r.URL.String() {
 		case "/schemas/ids/1000":
