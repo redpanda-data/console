@@ -22,15 +22,16 @@ import { type Monaco, loader } from '@monaco-editor/react';
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
-import { DEFAULT_API_BASE } from './components/constants';
+import memoizeOne from 'memoize-one';
+import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
 import { APP_ROUTES } from './components/routes';
+import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
-import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
 import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/dataplane/v1alpha2/pipeline_connect';
 import { SecretService as RPCNSecretService } from './protogen/redpanda/api/dataplane/v1alpha2/secret_connect';
 import { appGlobal } from './state/appGlobal';
@@ -116,12 +117,12 @@ export interface Breadcrumb {
 interface Config {
   restBasePath: string;
   apiBasePath: string;
-    authenticationClient?: PromiseClient<typeof AuthenticationService>;
-    licenseClient?: PromiseClient<typeof LicenseService>;
-    consoleClient?: PromiseClient<typeof ConsoleService>;
-    debugBundleClient?: PromiseClient<typeof DebugBundleService>;
-    securityClient?: PromiseClient<typeof SecurityService>;
-    pipelinesClient?: PromiseClient<typeof PipelineService>;
+  authenticationClient?: PromiseClient<typeof AuthenticationService>;
+  licenseClient?: PromiseClient<typeof LicenseService>;
+  consoleClient?: PromiseClient<typeof ConsoleService>;
+  debugBundleClient?: PromiseClient<typeof DebugBundleService>;
+  securityClient?: PromiseClient<typeof SecurityService>;
+  pipelinesClient?: PromiseClient<typeof PipelineService>;
   pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
@@ -140,12 +141,12 @@ interface Config {
 export const config: Config = observable({
   restBasePath: getRestBasePath(),
   apiBasePath: getApiBasePath(),
-    fetch: window.fetch,
-    assetsPath: getBasePath(),
-    clusterId: 'default',
-    setSidebarItems: () => { },
-    setBreadcrumbs: () => { },
-    isServerless: false,
+  fetch: window.fetch,
+  assetsPath: getBasePath(),
+  clusterId: 'default',
+  setSidebarItems: () => {},
+  setBreadcrumbs: () => {},
+  isServerless: false,
 });
 
 const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfigArguments) => {
@@ -158,34 +159,34 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   });
 
-    const licenseGrpcClient = createPromiseClient(LicenseService, transport);
-    const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
-    const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
-    const securityGrpcClient = createPromiseClient(SecurityService, transport);
-    const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
-    const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
+  const licenseGrpcClient = createPromiseClient(LicenseService, transport);
+  const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
+  const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
+  const securityGrpcClient = createPromiseClient(SecurityService, transport);
+  const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
+  const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
   const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
-    const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
-    const transformClient = createPromiseClient(TransformService, transport);
-    Object.assign(config, {
-        jwt,
-        isServerless,
-        restBasePath: getRestBasePath(urlOverride?.rest),
-        apiBasePath: getApiBasePath(urlOverride?.grpc),
-        fetch: fetch ?? window.fetch.bind(window),
-        assetsPath: assetsUrl ?? getBasePath(),
-        authenticationClient: authenticationGrpcClient,
-        licenseClient: licenseGrpcClient,
-        consoleClient: consoleGrpcClient,
-        debugBundleClient: debugBundleGrpcClient,
-        securityClient: securityGrpcClient,
-        pipelinesClient: pipelinesGrpcClient,
+  const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
+  const transformClient = createPromiseClient(TransformService, transport);
+  Object.assign(config, {
+    jwt,
+    isServerless,
+    restBasePath: getRestBasePath(urlOverride?.rest),
+    apiBasePath: getApiBasePath(urlOverride?.grpc),
+    fetch: fetch ?? window.fetch.bind(window),
+    assetsPath: assetsUrl ?? getBasePath(),
+    authenticationClient: authenticationGrpcClient,
+    licenseClient: licenseGrpcClient,
+    consoleClient: consoleGrpcClient,
+    debugBundleClient: debugBundleGrpcClient,
+    securityClient: securityGrpcClient,
+    pipelinesClient: pipelinesGrpcClient,
     pipelinesClientV2: pipelinesV2GrpcClient,
-        transformsClient: transformClient,
-        rpcnSecretsClient: secretGrpcClient,
-        ...args,
-    });
-    return config;
+    transformsClient: transformClient,
+    rpcnSecretsClient: secretGrpcClient,
+    ...args,
+  });
+  return config;
 };
 
 export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
