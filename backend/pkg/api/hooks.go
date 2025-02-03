@@ -11,6 +11,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net/http"
 
@@ -23,6 +24,8 @@ import (
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/license"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
@@ -177,4 +180,36 @@ func (*defaultHooks) CanCreateRedpandaRoles(_ context.Context) (bool, *rest.Erro
 
 func (*defaultHooks) CanDeleteRedpandaRoles(_ context.Context) (bool, *rest.Error) {
 	return true, nil
+}
+
+var _ consolev1alpha1connect.AuthenticationServiceHandler = (*AuthenticationDefaultHandler)(nil)
+
+// AuthenticationDefaultHandler implements important methods for authentication, which is
+// a Console enterprise feature. Because we only have one frontend for OSS and Enterprise
+// we need to provide some default implementation and API responses, which we'll do with
+// this handler.
+type AuthenticationDefaultHandler struct{}
+
+// ListAuthenticationMethods provides a valid response and informs the frontend, that no
+// authentication is active. Based on that information the login page is hidden.
+func (a AuthenticationDefaultHandler) ListAuthenticationMethods(ctx context.Context, c *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error) {
+	res := &v1alpha1.ListAuthenticationMethodsResponse{
+		Methods: []v1alpha1.AuthenticationMethod{v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE},
+	}
+	return connect.NewResponse(res), nil
+}
+
+// LoginSaslScram is implemented in the enterprise code base only.
+func (a AuthenticationDefaultHandler) LoginSaslScram(ctx context.Context, c *connect.Request[v1alpha1.LoginSaslScramRequest]) (*connect.Response[v1alpha1.LoginSaslScramResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
+}
+
+// GetIdentity is implemented in the enterprise code base only.
+func (a AuthenticationDefaultHandler) GetIdentity(ctx context.Context, c *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
+}
+
+// ListConsoleUsers is implemented in the enterprise code base only.
+func (a AuthenticationDefaultHandler) ListConsoleUsers(ctx context.Context, c *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
 }

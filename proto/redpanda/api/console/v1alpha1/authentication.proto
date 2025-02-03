@@ -57,12 +57,14 @@ message UserIdentity {
 enum AuthenticationMethod {
   // The authentication method is unspecified.
   AUTHENTICATION_METHOD_UNSPECIFIED = 0;
+  // None is returned if authentication is disabled.
+  AUTHENTICATION_METHOD_NONE = 1;
   // The authentication method using OpenID Connect.
-  AUTHENTICATION_METHOD_OIDC = 1;
+  AUTHENTICATION_METHOD_OIDC = 2;
   // The authentication method using plain username/password.
-  AUTHENTICATION_METHOD_BASIC = 2;
+  AUTHENTICATION_METHOD_BASIC = 3;
   // The authentication method for Redpanda Cloud.
-  AUTHENTICATION_METHOD_REDPANDA_CLOUD = 3;
+  AUTHENTICATION_METHOD_REDPANDA_CLOUD = 4;
 }
 
 message ListAuthenticationMethodsRequest {}

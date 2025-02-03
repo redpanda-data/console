@@ -144,6 +144,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.LicenseServiceName:         licenseSvc,
 			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
 			consolev1alpha1connect.TransformServiceName:       consoleTransformSvc,
+			consolev1alpha1connect.AuthenticationServiceName:  AuthenticationDefaultHandler{},
 			dataplanev1alpha2connect.ACLServiceName:           aclSvc,
 			dataplanev1alpha2connect.TopicServiceName:         topicSvc,
 			dataplanev1alpha2connect.UserServiceName:          userSvc,
@@ -199,6 +200,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
+	authenticationSvcPath, authenticationSvcHandler := consolev1alpha1connect.NewAuthenticationServiceHandler(hookOutput.Services[consolev1alpha1connect.AuthenticationServiceName].(consolev1alpha1connect.AuthenticationServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	// v1alpha2
 
@@ -236,6 +239,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.ConsoleServiceName,
 			MountPath:   consoleServicePath,
 			Handler:     consoleServiceHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.AuthenticationServiceName,
+			MountPath:   authenticationSvcPath,
+			Handler:     authenticationSvcHandler,
 		},
 		{
 			ServiceName: dataplanev1alpha1connect.KafkaConnectServiceName,

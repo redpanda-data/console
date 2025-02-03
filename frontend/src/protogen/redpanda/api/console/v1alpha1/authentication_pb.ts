@@ -50,32 +50,40 @@ export enum AuthenticationMethod {
   UNSPECIFIED = 0,
 
   /**
+   * None is returned if authentication is disabled.
+   *
+   * @generated from enum value: AUTHENTICATION_METHOD_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
    * The authentication method using OpenID Connect.
    *
-   * @generated from enum value: AUTHENTICATION_METHOD_OIDC = 1;
+   * @generated from enum value: AUTHENTICATION_METHOD_OIDC = 2;
    */
-  OIDC = 1,
+  OIDC = 2,
 
   /**
    * The authentication method using plain username/password.
    *
-   * @generated from enum value: AUTHENTICATION_METHOD_BASIC = 2;
+   * @generated from enum value: AUTHENTICATION_METHOD_BASIC = 3;
    */
-  BASIC = 2,
+  BASIC = 3,
 
   /**
    * The authentication method for Redpanda Cloud.
    *
-   * @generated from enum value: AUTHENTICATION_METHOD_REDPANDA_CLOUD = 3;
+   * @generated from enum value: AUTHENTICATION_METHOD_REDPANDA_CLOUD = 4;
    */
-  REDPANDA_CLOUD = 3,
+  REDPANDA_CLOUD = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(AuthenticationMethod)
 proto3.util.setEnumType(AuthenticationMethod, "redpanda.api.console.v1alpha1.AuthenticationMethod", [
   { no: 0, name: "AUTHENTICATION_METHOD_UNSPECIFIED" },
-  { no: 1, name: "AUTHENTICATION_METHOD_OIDC" },
-  { no: 2, name: "AUTHENTICATION_METHOD_BASIC" },
-  { no: 3, name: "AUTHENTICATION_METHOD_REDPANDA_CLOUD" },
+  { no: 1, name: "AUTHENTICATION_METHOD_NONE" },
+  { no: 2, name: "AUTHENTICATION_METHOD_OIDC" },
+  { no: 3, name: "AUTHENTICATION_METHOD_BASIC" },
+  { no: 4, name: "AUTHENTICATION_METHOD_REDPANDA_CLOUD" },
 ]);
 
 /**
