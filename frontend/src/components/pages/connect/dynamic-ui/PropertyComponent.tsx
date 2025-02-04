@@ -74,6 +74,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             onChange={(e) => (p.value = e.target.value)}
             defaultValue={def.default_value ?? undefined}
             spellCheck={false}
+            isDisabled={props.property.isDisabled}
           />
         );
       }
