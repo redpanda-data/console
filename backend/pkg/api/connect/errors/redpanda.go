@@ -19,7 +19,7 @@ import (
 	"connectrpc.com/connect"
 	adminapi "github.com/redpanda-data/common-go/rpadmin"
 
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 // NewConnectErrorFromRedpandaAdminAPIError enhances error handling by providing
@@ -39,7 +39,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 				connectCode,
 				errors.New(prefixErrMsg+httpErr.Error()),
 				NewErrorInfo(
-					v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
+					v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
 						Key:   "adminapi_status_code",
 						Value: strconv.Itoa(httpErr.Response.StatusCode),
 					},
@@ -59,7 +59,7 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 			connectCode,
 			errors.New(prefixErrMsg+adminAPIErr.Message),
 			NewErrorInfo(
-				v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
+				v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(), KeyVal{
 					Key:   "adminapi_status_code",
 					Value: strconv.Itoa(httpErr.Response.StatusCode),
 				},
@@ -72,14 +72,14 @@ func NewConnectErrorFromRedpandaAdminAPIError(err error, prefixErrMsg string) *c
 		return NewConnectError(
 			connect.CodeCanceled,
 			errors.New(prefixErrMsg+"the request to the Redpanda admin API timed out"),
-			NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
+			NewErrorInfo(v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 		)
 	}
 
 	return NewConnectError(
 		connect.CodeInternal,
 		fmt.Errorf("%v%w", prefixErrMsg, err),
-		NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
+		NewErrorInfo(v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 	)
 }
 

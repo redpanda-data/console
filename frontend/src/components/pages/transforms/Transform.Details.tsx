@@ -21,7 +21,7 @@ import {
   type PartitionTransformStatus,
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import {
   type MessageSearch,

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Monaco } from '@monaco-editor/react';
+import type { Monaco } from '@monaco-editor/react';
 import {
   Alert,
   AlertIcon,
@@ -27,8 +27,8 @@ import {
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { IDisposable, editor, type languages } from 'monaco-editor';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import type { IDisposable, editor, languages } from 'monaco-editor';
+import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
