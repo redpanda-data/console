@@ -20,7 +20,7 @@ import (
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 // EndpointCheckInterceptor checks whether incoming requests on the given endpoint
@@ -62,7 +62,7 @@ func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.Un
 				return nil, apierrors.NewConnectError(
 					connect.CodeInternal,
 					errors.New("failed to extract procedure name"),
-					apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()))
+					apierrors.NewErrorInfo(v1alpha2.Reason_REASON_CONSOLE_ERROR.String()))
 			}
 			procedure = path
 		}
@@ -71,7 +71,7 @@ func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.Un
 			return nil, apierrors.NewConnectError(
 				connect.CodeInternal,
 				errors.New("failed to retrieve procedure name"),
-				apierrors.NewErrorInfo(v1alpha1.Reason_REASON_CONSOLE_ERROR.String()))
+				apierrors.NewErrorInfo(v1alpha2.Reason_REASON_CONSOLE_ERROR.String()))
 		}
 
 		// Check if this procedure is always enabled. If so we want to let it pass, even
@@ -84,7 +84,7 @@ func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.Un
 			connect.CodeUnimplemented,
 			errors.New("this endpoint has not been enabled"),
 			apierrors.NewErrorInfo(
-				v1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String(),
+				v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String(),
 				apierrors.KeyVal{
 					Key:   "requested_procedure",
 					Value: procedure,

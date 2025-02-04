@@ -21,7 +21,7 @@ import { Link } from 'react-router-dom';
 import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { transformsApi } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
