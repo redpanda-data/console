@@ -153,11 +153,11 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
             }}
             options={[
               {
-                label: 'SHA 256',
+                label: 'SCRAM-SHA-256',
                 value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
               },
               {
-                label: 'SHA 512',
+                label: 'SCRAM-SHA-512',
                 value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
               },
             ]}
@@ -173,7 +173,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
         )}
         <Button variant="brand" onClick={formState.handleSubmit}>
           {formState.isLoading && <Spinner size="sm" mr="1" />}
-          Login
+          Log in
         </Button>
       </Flex>
     );
@@ -181,7 +181,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
   [AuthenticationMethod.OIDC]: () => (
     <div>
       <Button variant="brand" as="a" href={`${appConfig.apiBasePath}/auth/login/oidc`} width="full">
-        Login with SSO
+        Log in with OIDC
       </Button>
     </div>
   ),
