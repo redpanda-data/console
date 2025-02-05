@@ -33,11 +33,13 @@ export class AdminLicenses extends Component<{}> {
               <Text>Failed to load license info</Text>
             </AlertDescription>
           </Alert>
-          <Box mt={4}>
-            <Button as={ReactRouterLink} to="/admin/upload-license">
-              Upload new license
-            </Button>
-          </Box>
+          {api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense && (
+            <Box mt={4}>
+              <Button as={ReactRouterLink} to="/admin/upload-license">
+                Upload new license
+              </Button>
+            </Box>
+          )}
         </Box>
       );
     }
@@ -63,9 +65,11 @@ export class AdminLicenses extends Component<{}> {
           ))}
         </List>
 
-        <Button as={ReactRouterLink} to="/admin/upload-license">
-          Upload new license
-        </Button>
+        {api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense && (
+          <Button as={ReactRouterLink} to="/admin/upload-license">
+            Upload new license
+          </Button>
+        )}
       </Box>
     );
   }

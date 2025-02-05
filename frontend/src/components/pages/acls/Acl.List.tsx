@@ -30,7 +30,6 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
-  Result,
   SearchField,
   Tabs,
   Text,
@@ -95,11 +94,11 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
     p.title = 'Access control';
     p.addBreadcrumb('Access control', '/security');
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    void this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
-  async refreshData(force: boolean) {
+  async refreshData() {
     await Promise.allSettled([api.refreshServiceAccounts(true), rolesApi.refreshRoles()]);
     await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
   }
@@ -135,7 +134,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         key: 'acls' as AclListTab,
         name: 'ACLs',
         component: <AclsTab data-testid="acls-tab" principalGroups={principalGroupsView.principalGroups} />,
-        isDisabled: api.userData.canListAcls ? false : 'You do not have the necessary permissions to view ACLs.',
+        isDisabled: api.userData?.canListAcls ? false : 'You do not have the necessary permissions to view ACLs.',
       },
       { key: 'permissions-list' as AclListTab, name: 'Permissions list', component: <PermissionsListTab /> },
     ] as TabsItemProps[];
@@ -323,7 +322,15 @@ const UsersTab = observer(() => {
             emptyAction={
               <Button
                 variant="outline"
-                isDisabled={!Features.createUser}
+                isDisabled={!Features.createUser || api.userData?.canCreateUsers === false || !api.isAdminApiConfigured}
+                tooltip={[
+                  !Features.createUser && "Your cluster doesn't support this feature.",
+                  api.userData?.canCreateUsers === false &&
+                    'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+                  !api.isAdminApiConfigured && 'You need to enable Admin API.',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 onClick={() => appGlobal.history.push('/security/users/create')}
               >
                 Create user
@@ -451,7 +458,7 @@ const RolesTab = observer(() => {
           data-testid="create-role-button"
           variant="outline"
           onClick={() => appGlobal.history.push('/security/roles/create')}
-          isDisabled={api.userData.canCreateRoles === false || !api.isAdminApiConfigured}
+          isDisabled={api.userData?.canCreateRoles === false || !api.isAdminApiConfigured}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
@@ -787,27 +794,27 @@ const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null; onClose: () =>
   );
 };
 
-const PermissionDenied = (
-  <>
-    <PageContent key="aclNoPerms">
-      <Section>
-        <Result
-          title="Permission Denied"
-          status={403}
-          userMessage={
-            <Text>
-              You are not allowed to view this page.
-              <br />
-              Contact the administrator if you think this is an error.
-            </Text>
-          }
-          extra={
-            <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-              <Button>Redpanda Console documentation</Button>
-            </a>
-          }
-        />
-      </Section>
-    </PageContent>
-  </>
-);
+// const PermissionDenied = (
+//   <>
+//     <PageContent key="aclNoPerms">
+//       <Section>
+//         <Result
+//           title="Permission Denied"
+//           status={403}
+//           userMessage={
+//             <Text>
+//               You are not allowed to view this page.
+//               <br />
+//               Contact the administrator if you think this is an error.
+//             </Text>
+//           }
+//           extra={
+//             <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+//               <Button>Redpanda Console documentation</Button>
+//             </a>
+//           }
+//         />
+//       </Section>
+//     </PageContent>
+//   </>
+// );

@@ -112,9 +112,9 @@ import {
 import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
-import type { GetIdentityResponse } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import {
   AuthenticationMethod,
+  type GetIdentityResponse,
   KafkaAclOperation,
   RedpandaCapability,
   SchemaRegistryCapability,
@@ -345,6 +345,7 @@ export async function handleExpiredLicenseError(r: Response) {
       canCreateSchemas: true,
       canDeleteSchemas: true,
       canManageSchemaRegistry: true,
+      canCreateUsers: true,
       canViewSchemas: true,
       canListTransforms: true,
       canCreateTransforms: true,
@@ -447,6 +448,9 @@ const apiStore = {
           canCreateRoles:
             r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER) &&
             r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+
+          canManageLicense: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_LICENSE),
+          canCreateUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
           canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
           canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
           canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),

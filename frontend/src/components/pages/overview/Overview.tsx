@@ -435,7 +435,7 @@ function ClusterDetails() {
         </>
       )}
 
-      {api.isRedpanda && api.isAdminApiConfigured && (
+      {api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>

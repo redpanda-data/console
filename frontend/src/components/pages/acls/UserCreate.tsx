@@ -105,9 +105,9 @@ class UserCreatePage extends PageComponent<{}> {
   }
 
   render() {
-    if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
-    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+    // if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
+    // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+    // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
     this.isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(this.username);
     this.isValidPassword = Boolean(this.password) && this.password.length >= 4 && this.password.length <= 64;

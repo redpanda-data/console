@@ -85,6 +85,12 @@ const authenticationApi = observable({
 });
 
 const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
+  [AuthenticationMethod.NONE]: observer(() => {
+    useEffect(() => {
+      appGlobal.history.push('/overview');
+    }, []);
+    return null;
+  }),
   [AuthenticationMethod.BASIC]: observer(() => {
     const formState = useLocalObservable(() => ({
       username: '',
