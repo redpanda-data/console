@@ -209,7 +209,7 @@ func (a AuthenticationDefaultHandler) LoginSaslScram(context.Context, *connect.R
 func (a AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
 	res := &v1alpha1.GetIdentityResponse{
 		DisplayName:          "",
-		AuthenticationMethod: 0,
+		AuthenticationMethod: v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE,
 		AvatarUrl:            "",
 		Permissions: &v1alpha1.GetIdentityResponse_Permissions{
 			KafkaClusterOperations: []v1alpha1.KafkaAclOperation{
