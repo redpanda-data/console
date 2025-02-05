@@ -2,6 +2,7 @@ package errors
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -47,17 +48,29 @@ func (c *ConsoleErrorWriter) WriteError(
 	w http.ResponseWriter,
 	r *http.Request,
 	connectErr *connect.Error,
+	loggingFields ...zap.Field,
 ) {
+	fields := []zap.Field{
+		zap.String("route", r.URL.Path),
+		zap.String("method", r.Method),
+		zap.Int64("request_size_bytes", r.ContentLength),
+		zap.String("remote_address", r.RemoteAddr),
+	}
+	logger := c.logger.With(slices.Concat(fields, loggingFields)...)
+
 	isConnectRPCOrGrpc := c.connectRPCErrorWriter.IsSupported(r)
 	isProgrammaticAPI := strings.HasPrefix(r.URL.Path, "/v1")
 
 	switch {
 	case isConnectRPCOrGrpc:
 		// Log error and delegate to Connect/GRPC error writer.
-		c.logger.Error("ConnectRPC/GRPC error encountered", zap.Error(connectErr))
+		logger.Error("ConnectRPC/GRPC error encountered",
+
+			zap.Error(connectErr),
+		)
 		if err := c.connectRPCErrorWriter.Write(w, r, connectErr); err != nil {
 			// Optionally log if the writer itself fails.
-			c.logger.Error("Failed to write ConnectRPC/GRPC error", zap.Error(err))
+			logger.Error("Failed to write ConnectRPC/GRPC error", zap.Error(err))
 		}
 
 	case isProgrammaticAPI:
@@ -67,7 +80,7 @@ func (c *ConsoleErrorWriter) WriteError(
 
 	default:
 		// Skip logging here; let rest.SendRESTError handle this error quietly.
-		rest.SendRESTError(w, r, c.logger, &rest.Error{
+		rest.SendRESTError(w, r, logger, &rest.Error{
 			Err:      connectErr.Unwrap(),
 			Status:   http.StatusUnauthorized,
 			Message:  connectErr.Message(),
