@@ -192,7 +192,7 @@ type AuthenticationDefaultHandler struct{}
 
 // ListAuthenticationMethods provides a valid response and informs the frontend, that no
 // authentication is active. Based on that information the login page is hidden.
-func (a AuthenticationDefaultHandler) ListAuthenticationMethods(ctx context.Context, c *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error) {
+func (a AuthenticationDefaultHandler) ListAuthenticationMethods(context.Context, *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error) {
 	res := &v1alpha1.ListAuthenticationMethodsResponse{
 		Methods: []v1alpha1.AuthenticationMethod{v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE},
 	}
@@ -200,16 +200,49 @@ func (a AuthenticationDefaultHandler) ListAuthenticationMethods(ctx context.Cont
 }
 
 // LoginSaslScram is implemented in the enterprise code base only.
-func (a AuthenticationDefaultHandler) LoginSaslScram(ctx context.Context, c *connect.Request[v1alpha1.LoginSaslScramRequest]) (*connect.Response[v1alpha1.LoginSaslScramResponse], error) {
+func (a AuthenticationDefaultHandler) LoginSaslScram(context.Context, *connect.Request[v1alpha1.LoginSaslScramRequest]) (*connect.Response[v1alpha1.LoginSaslScramResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
 }
 
-// GetIdentity is implemented in the enterprise code base only.
-func (a AuthenticationDefaultHandler) GetIdentity(ctx context.Context, c *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
+// GetIdentity defaults all permissions by default. That informs the frontend to unlock
+// all buttons etc. The actual permission check happens inside the enterprise code base.
+func (a AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
+	res := &v1alpha1.GetIdentityResponse{
+		DisplayName:          "",
+		AuthenticationMethod: 0,
+		AvatarUrl:            "",
+		Permissions: &v1alpha1.GetIdentityResponse_Permissions{
+			KafkaClusterOperations: []v1alpha1.KafkaAclOperation{
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_READ,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_WRITE,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_CREATE,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DELETE,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_ALTER,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DESCRIBE,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_CLUSTER_ACTION,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DESCRIBE_CONFIGS,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_ALTER_CONFIGS,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_IDEMPOTENT_WRITE,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_CREATE_TOKENS,
+				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DESCRIBE_TOKENS,
+			},
+			SchemaRegistry: []v1alpha1.SchemaRegistryCapability{
+				v1alpha1.SchemaRegistryCapability_SCHEMA_REGISTRY_CAPABILITY_READ,
+				v1alpha1.SchemaRegistryCapability_SCHEMA_REGISTRY_CAPABILITY_WRITE,
+				v1alpha1.SchemaRegistryCapability_SCHEMA_REGISTRY_CAPABILITY_DELETE,
+			},
+			Redpanda: []v1alpha1.RedpandaCapability{
+				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_TRANSFORMS,
+				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_DEBUG_BUNDLE,
+				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_REDPANDA_USERS,
+				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_RBAC,
+			},
+		},
+	}
+	return connect.NewResponse(res), nil
 }
 
 // ListConsoleUsers is implemented in the enterprise code base only.
-func (a AuthenticationDefaultHandler) ListConsoleUsers(ctx context.Context, c *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
+func (a AuthenticationDefaultHandler) ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
 }
