@@ -124,7 +124,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
     return (
       <Flex flexDirection="column" gap={3}>
         <FormControl>
-          <FormLabel>Email</FormLabel>
+          <FormLabel>Username</FormLabel>
           <Input
             value={formState.username}
             data-testid="auth-username-input"
