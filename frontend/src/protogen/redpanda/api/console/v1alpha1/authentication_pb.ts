@@ -239,6 +239,11 @@ export enum RedpandaCapability {
    * @generated from enum value: REDPANDA_CAPABILITY_MANAGE_RBAC = 4;
    */
   MANAGE_RBAC = 4,
+
+  /**
+   * @generated from enum value: REDPANDA_CAPABILITY_MANAGE_LICENSE = 5;
+   */
+  MANAGE_LICENSE = 5,
 }
 // Retrieve enum metadata with: proto3.getEnumType(RedpandaCapability)
 proto3.util.setEnumType(RedpandaCapability, "redpanda.api.console.v1alpha1.RedpandaCapability", [
@@ -247,6 +252,7 @@ proto3.util.setEnumType(RedpandaCapability, "redpanda.api.console.v1alpha1.Redpa
   { no: 2, name: "REDPANDA_CAPABILITY_MANAGE_DEBUG_BUNDLE" },
   { no: 3, name: "REDPANDA_CAPABILITY_MANAGE_REDPANDA_USERS" },
   { no: 4, name: "REDPANDA_CAPABILITY_MANAGE_RBAC" },
+  { no: 5, name: "REDPANDA_CAPABILITY_MANAGE_LICENSE" },
 ]);
 
 /**

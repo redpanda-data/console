@@ -236,6 +236,7 @@ func (a AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Requ
 				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_DEBUG_BUNDLE,
 				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_REDPANDA_USERS,
 				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_RBAC,
+				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_LICENSE,
 			},
 		},
 	}
