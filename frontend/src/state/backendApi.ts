@@ -345,6 +345,7 @@ export async function handleExpiredLicenseError(r: Response) {
       canCreateSchemas: true,
       canDeleteSchemas: true,
       canManageSchemaRegistry: true,
+      canManageLicense: true,
       canCreateUsers: true,
       canViewSchemas: true,
       canListTransforms: true,

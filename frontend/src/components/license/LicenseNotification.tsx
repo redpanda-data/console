@@ -34,7 +34,7 @@ export const LicenseNotification = observer(() => {
   }
 
   // For these paths, we don't need to show a notification banner because the pages themselves handle license management
-  if (location.pathname === '/admin/upload-license' || location.pathname === '/trial-expired') {
+  if (location.pathname === '/upload-license' || location.pathname === '/trial-expired') {
     return null;
   }
 
@@ -112,7 +112,7 @@ export const LicenseNotification = observer(() => {
 
           <Flex gap={2} my={2}>
             {api.isAdminApiConfigured && (
-              <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">
+              <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
                 Upload license
               </Button>
             )}

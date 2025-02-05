@@ -439,7 +439,7 @@ function ClusterDetails() {
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
-            <Link as={ReactRouterLink} to="/admin/upload-license">
+            <Link as={ReactRouterLink} to="/upload-license">
               Upload new license
             </Link>
           </GridItem>

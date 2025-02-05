@@ -10,7 +10,7 @@
  */
 
 import { observer, useLocalObservable } from 'mobx-react';
-import { Component, type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { Timestamp } from '@bufbuild/protobuf';
@@ -44,9 +44,9 @@ import {
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import type { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { SingleSelect } from '../../misc/Select';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const Header = () => (
   <Text>
@@ -82,12 +82,24 @@ type FieldViolationsMap = {
 };
 
 @observer
-export class AdminDebugBundle extends Component<{}> {
+export class AdminDebugBundle extends PageComponent<{}> {
   @observable quickSearch = '';
   @observable submitInProgress = false;
   @observable confirmModalIsOpen = false;
   @observable createBundleError: ErrorResponse | undefined = undefined;
   @observable jobId: string | undefined = undefined;
+
+  initPage(p: PageInitHelper): void {
+    p.title = 'Debug bundle';
+    p.addBreadcrumb('Debug bundle', '/debug-bundle');
+
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
+  }
+
+  refreshData() {
+    void api.refreshDebugBundleStatuses();
+  }
 
   constructor(p: any) {
     super(p);
@@ -95,8 +107,6 @@ export class AdminDebugBundle extends Component<{}> {
   }
 
   render() {
-    if (!api.adminInfo) return DefaultSkeleton;
-
     if (api.isDebugBundleInProgress) {
       return (
         <Box>
@@ -106,7 +116,7 @@ export class AdminDebugBundle extends Component<{}> {
             mt={4}
             as={ReactRouterLink}
             variant="link"
-            to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
+            to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
           >
             Bundle generation in progress...
           </Button>
@@ -140,7 +150,7 @@ export class AdminDebugBundle extends Component<{}> {
                 .createDebugBundle(data)
                 .then(async (result) => {
                   await api.refreshDebugBundleStatuses();
-                  appGlobal.history.push(`/admin/debug-bundle/progress/${result.jobId}`);
+                  appGlobal.history.push(`/debug-bundle/progress/${result.jobId}`);
                 })
                 .catch((err: ErrorResponse) => {
                   this.createBundleError = err;

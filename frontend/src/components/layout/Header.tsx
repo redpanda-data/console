@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Breadcrumbs, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { useRouteMatch } from 'react-router-dom';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { isEmbedded } from '../../config';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
 import { IsDev } from '../../utils/env';
@@ -82,6 +83,9 @@ const AppPageHeader = observer(() => {
           {showRefresh && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={1}>
+          <Button as={ReactRouterLink} to="/debug-bundle" variant="outline" size="sm" mr={2}>
+            Debug bundle
+          </Button>
           <UserPreferencesButton />
           {IsDev && !isEmbedded() && <ColorModeSwitch />}
         </Flex>

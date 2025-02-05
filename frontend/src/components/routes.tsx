@@ -41,8 +41,8 @@ import RoleEditPage from './pages/acls/RoleEditPage';
 import UserCreatePage from './pages/acls/UserCreate';
 import UserDetailsPage from './pages/acls/UserDetails';
 import UserEditPage from './pages/acls/UserEdit';
+import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
-import AdminPage from './pages/admin/AdminPage';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
@@ -403,25 +403,30 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
 
   MakeRoute<{}>(
-    '/admin/upload-license',
-    UploadLicensePage,
-    'Upload License',
-    CogIcon,
-    false,
-    routeVisibility(() => false),
+    '/debug-bundle',
+    AdminDebugBundle,
+    'Debug Bundle',
+    undefined,
+    true,
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
   ),
-
-  MakeRoute<{}>('/admin/debug-bundle/progress/:jobId', AdminPageDebugBundleProgress, 'Debug Bundle Progress'),
+  MakeRoute<{}>(
+    '/debug-bundle/progress/:jobId',
+    AdminPageDebugBundleProgress,
+    'Debug Bundle Progress',
+    undefined,
+    true,
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+  ),
 
   MakeRoute<{}>(
-    '/admin',
-    AdminPage,
-    'Admin',
-    CogIcon,
-    true,
-    routeVisibility(() => api.userData?.canViewConsoleUsers ?? false),
+    '/upload-license',
+    UploadLicensePage,
+    'Upload License',
+    undefined,
+    false,
+    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ['canManageLicense']),
   ),
-  MakeRoute<{}>('/admin/:tab?', AdminPage, 'Admin'),
 
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 ].filterNull();

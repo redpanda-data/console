@@ -335,7 +335,7 @@ export const ENTERPRISE_FEATURES_DOCS_LINK =
 
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
-    <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">
+    <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
       Upload license
     </Button>
   ) : null;
