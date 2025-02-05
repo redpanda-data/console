@@ -192,7 +192,7 @@ type AuthenticationDefaultHandler struct{}
 
 // ListAuthenticationMethods provides a valid response and informs the frontend, that no
 // authentication is active. Based on that information the login page is hidden.
-func (a AuthenticationDefaultHandler) ListAuthenticationMethods(context.Context, *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error) {
+func (a *AuthenticationDefaultHandler) ListAuthenticationMethods(context.Context, *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error) {
 	res := &v1alpha1.ListAuthenticationMethodsResponse{
 		Methods: []v1alpha1.AuthenticationMethod{v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE},
 	}
@@ -200,13 +200,13 @@ func (a AuthenticationDefaultHandler) ListAuthenticationMethods(context.Context,
 }
 
 // LoginSaslScram is implemented in the enterprise code base only.
-func (a AuthenticationDefaultHandler) LoginSaslScram(context.Context, *connect.Request[v1alpha1.LoginSaslScramRequest]) (*connect.Response[v1alpha1.LoginSaslScramResponse], error) {
+func (a *AuthenticationDefaultHandler) LoginSaslScram(context.Context, *connect.Request[v1alpha1.LoginSaslScramRequest]) (*connect.Response[v1alpha1.LoginSaslScramResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
 }
 
 // GetIdentity defaults all permissions by default. That informs the frontend to unlock
 // all buttons etc. The actual permission check happens inside the enterprise code base.
-func (a AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
+func (a *AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
 	res := &v1alpha1.GetIdentityResponse{
 		DisplayName:          "",
 		AuthenticationMethod: v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE,
@@ -244,6 +244,6 @@ func (a AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Requ
 }
 
 // ListConsoleUsers is implemented in the enterprise code base only.
-func (a AuthenticationDefaultHandler) ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
+func (a *AuthenticationDefaultHandler) ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
 }

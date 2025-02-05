@@ -144,7 +144,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.LicenseServiceName:         licenseSvc,
 			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
 			consolev1alpha1connect.TransformServiceName:       consoleTransformSvc,
-			consolev1alpha1connect.AuthenticationServiceName:  AuthenticationDefaultHandler{},
+			consolev1alpha1connect.AuthenticationServiceName:  &AuthenticationDefaultHandler{},
 			dataplanev1alpha2connect.ACLServiceName:           aclSvc,
 			dataplanev1alpha2connect.TopicServiceName:         topicSvc,
 			dataplanev1alpha2connect.UserServiceName:          userSvc,
