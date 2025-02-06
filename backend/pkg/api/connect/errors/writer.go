@@ -7,7 +7,9 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
 )
 
 // ConnectRPCErrorWriter is an interface (or struct) that encapsulates the logic
@@ -79,10 +81,11 @@ func (c *ConsoleErrorWriter) WriteError(
 		HandleHTTPError(r.Context(), w, r, connectErr)
 
 	default:
+		code := codes.Code(connect.CodeOf(connectErr))
 		// Skip logging here; let rest.SendRESTError handle this error quietly.
 		rest.SendRESTError(w, r, logger, &rest.Error{
 			Err:      connectErr.Unwrap(),
-			Status:   http.StatusUnauthorized,
+			Status:   runtime.HTTPStatusFromCode(code),
 			Message:  connectErr.Message(),
 			IsSilent: false,
 		})
