@@ -83,7 +83,7 @@ const AppPageHeader = observer(() => {
           {showRefresh && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={1}>
-          <Button as={ReactRouterLink} to="/debug-bundle" variant="outline" size="sm" mr={2}>
+          <Button as={ReactRouterLink} to="/debug-bundle" variant="outline" mr={2}>
             Debug bundle
           </Button>
           <UserPreferencesButton />
