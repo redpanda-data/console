@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { ToolsIcon } from '@primer/octicons-react';
+import { FaWrench } from 'react-icons/fa';
+
 import {
   Button,
   Checkbox,
@@ -50,10 +51,9 @@ export const UserPreferencesButton: FC = () => {
     <>
       <UserPreferencesDialog isOpen={isOpen} onClose={() => setOpen(false)} />
       <IconButton
-        className="hoverButton userPreferencesButton"
         variant="outline"
         aria-label="user preferences"
-        icon={<ToolsIcon size={17} />}
+        icon={<FaWrench size={17} />}
         onClick={() => setOpen(true)}
       />
     </>

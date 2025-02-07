@@ -82,12 +82,12 @@ const AppPageHeader = observer(() => {
           )}
           {showRefresh && <DataRefreshButton />}
         </Flex>
-        <Flex alignItems="center" gap={1}>
-          <Button as={ReactRouterLink} to="/debug-bundle" variant="outline" mr={2}>
+        <Flex alignItems="center" gap={2}>
+          <Button as={ReactRouterLink} to="/debug-bundle" variant="outline">
             Debug bundle
           </Button>
           <UserPreferencesButton />
-          {IsDev && !isEmbedded() && <ColorModeSwitch />}
+          {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="outline" />}
         </Flex>
       </Flex>
     </Box>

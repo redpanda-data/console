@@ -151,26 +151,6 @@
   place-content: center;
   place-items: center;
   white-space: nowrap;
-
-  .hoverButton {
-    color: currentColor;
-    background: transparent;
-
-    &:hover {
-      border-color: currentColor;
-    }
-  }
-}
-
-.hoverButton {
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.hoverButton:hover {
-  border-radius: 4px;
-  border-top-left-radius: 0px;
-  border-bottom-left-radius: 0px;
 }
 
 .showOnHover {
@@ -717,15 +697,6 @@ svg {
   transition-timing-function: ease-out;
   color: #888;
   background-color: hsla(216, 20%, 92%, 1);
-}
-
-.userPreferencesButton:hover {
-  opacity: 1;
-  background-color: #fff;
-}
-
-.userPreferencesButton .octicon {
-  transform: rotateZ(45deg);
 }
 
 .preferencesDialog {
