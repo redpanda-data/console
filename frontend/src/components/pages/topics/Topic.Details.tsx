@@ -150,8 +150,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     // there is no single endpoint to refresh a single topic
     api.refreshTopics(force);
 
-    // api.refreshTopicPermissions(this.props.topicName, force);
-
     // consumers are lazy loaded because they're (relatively) expensive
     if (uiSettings.topicDetailsActiveTabKey === 'consumers') api.refreshTopicConsumers(this.props.topicName, force);
 

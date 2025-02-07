@@ -15,7 +15,7 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { config as appConfig, isEmbedded } from '../config';
 import { LazyMap } from '../utils/LazyMap';
-import { AppFeatures, getBasePath } from '../utils/env';
+import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { ObjToKv } from '../utils/tsxUtils';
@@ -579,15 +579,6 @@ const apiStore = {
       v.documentation.text = text;
       this.topicDocumentation.set(topicName, v.documentation);
     }, addError);
-  },
-
-  refreshTopicPermissions(topicName: string, force?: boolean) {
-    if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
-    if (this.userData?.authenticationMethod === AuthenticationMethod.UNSPECIFIED) return; // debug user
-    cachedApiRequest<TopicPermissions | null>(
-      `${appConfig.restBasePath}/permissions/topics/${encodeURIComponent(topicName)}`,
-      force,
-    ).then((x) => this.topicPermissions.set(topicName, x), addError);
   },
 
   async deleteTopic(topicName: string) {
