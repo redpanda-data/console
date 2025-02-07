@@ -51,7 +51,7 @@ export const UserPreferencesButton: FC = () => {
     <>
       <UserPreferencesDialog isOpen={isOpen} onClose={() => setOpen(false)} />
       <IconButton
-        variant="outline"
+        variant="ghost"
         aria-label="user preferences"
         icon={<FaWrench size={17} />}
         onClick={() => setOpen(true)}
