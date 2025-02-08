@@ -398,6 +398,8 @@ const apiStore = {
   topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
   serviceAccounts: undefined as GetUsersResponse | undefined | null,
+  serviceAccountsLoading: false,
+
   ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
   Quotas: undefined as QuotaResponse | undefined | null,
@@ -1702,10 +1704,10 @@ const apiStore = {
   },
 
   async refreshServiceAccounts(force?: boolean): Promise<void> {
-    await cachedApiRequest<GetUsersResponse | null>(`${appConfig.restBasePath}/users`, force).then(
-      (v) => (this.serviceAccounts = v ?? null),
-      addError,
-    );
+    this.serviceAccountsLoading = true;
+    await cachedApiRequest<GetUsersResponse | null>(`${appConfig.restBasePath}/users`, force)
+      .then((v) => (this.serviceAccounts = v ?? null), addError)
+      .finally(() => (this.serviceAccountsLoading = false));
   },
 
   async createServiceAccount(request: CreateUserRequest): Promise<void> {

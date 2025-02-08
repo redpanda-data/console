@@ -11,7 +11,6 @@
 
 import {
   BeakerIcon,
-  CogIcon,
   CollectionIcon,
   CubeTransparentIcon,
   FilterIcon,

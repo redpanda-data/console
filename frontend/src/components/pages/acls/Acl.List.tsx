@@ -104,7 +104,9 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   render() {
-    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+    if (api.serviceAccountsLoading && !api.serviceAccounts) {
+      return DefaultSkeleton;
+    }
 
     const warning =
       api.ACLs === null ? (
