@@ -497,8 +497,8 @@ const apiStore = {
         // }
       })
       .catch((err) => {
+        this.userData = null;
         if (err.code === 7) {
-          this.userData = null;
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
           appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}`);
