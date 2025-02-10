@@ -12,9 +12,8 @@ package mocks
 import (
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	kafka "github.com/redpanda-data/console/backend/pkg/kafka"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockIListMessagesProgress is a mock of IListMessagesProgress interface.
