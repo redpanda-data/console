@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+enum Reason {
+  REASON_UNSPECIFIED = 0;
+
+  // The feature is not configured.
+  REASON_FEATURE_NOT_CONFIGURED = 1;
+
+  // Internal Redpanda Console or data plane error.
+  REASON_CONSOLE_ERROR = 2;
+
+  // Redpanda Admin API returned an error.
+  REASON_REDPANDA_ADMIN_API_ERROR = 3;
+
+  // Redpanda or Kafka protocol error.
+  REASON_KAFKA_API_ERROR = 4;
+
+  // Kafka Connect API error.
+  REASON_KAFKA_CONNECT_API_ERROR = 5;
+
+  // Type mapping error translating internal or external types to API types.
+  REASON_TYPE_MAPPING_ERROR = 6;
+
+  // Cloud provider's secret store manager error.
+  REASON_SECRET_STORE_ERROR = 7;
+
+  // Invalid pipeline configuration.
+  REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION = 8;
+
+  // The Redpanda enterprise license has expired and is no longer valid.
+  REASON_ENTERPRISE_LICENSE_EXPIRED = 9;
+}

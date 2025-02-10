@@ -1,0 +1,233 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message ListUsersRequest {
+  message Filter {
+    // Username.
+    string name = 1;
+    // Substring match on username. Case-sensitive.
+    string name_contains = 2;
+  }
+  Filter filter = 1;
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+}
+
+// SASL mechanism to use for authentication.
+enum SASLMechanism {
+  SASL_MECHANISM_UNSPECIFIED = 0;
+  SASL_MECHANISM_SCRAM_SHA_256 = 1;
+  SASL_MECHANISM_SCRAM_SHA_512 = 2;
+}
+
+message ListUsersResponse {
+  message User {
+    // Username.
+    string name = 1;
+    optional SASLMechanism mechanism = 2;
+  }
+  repeated User users = 1;
+
+  // Token to retrieve the next page.
+  string next_page_token = 2;
+}
+
+message CreateUserRequest {
+  message User {
+    // Username.
+    string name = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128
+    ];
+    // Password.
+    string password = 2 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 128
+    ];
+    SASLMechanism mechanism = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0]
+      }
+    ];
+  }
+  User user = 1;
+}
+
+message CreateUserResponse {
+  message User {
+    // Name of newly-created user
+    string name = 1;
+    optional SASLMechanism mechanism = 2;
+  }
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  message User {
+    // Username.
+    string name = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128
+    ];
+    // Password.
+    string password = 2 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 3,
+      (buf.validate.field).string.max_len = 128
+    ];
+    SASLMechanism mechanism = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0]
+      }
+    ];
+  }
+  User user = 1;
+}
+
+message UpdateUserResponse {
+  // Updated user's name and SASL mechanism.
+  message User {
+    string name = 1;
+    optional SASLMechanism mechanism = 2;
+  }
+  User user = 1;
+}
+
+message DeleteUserRequest {
+  // Username
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128
+  ];
+}
+
+message DeleteUserResponse {}
+
+service UserService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda Users"
+    description: "Manage Redpanda users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#get-/v1/acls)."
+  };
+
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create User"
+      description: "Create a new user."
+      responses: {
+        key: "201"
+        value: {
+          description: "User created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateUserRequest.User"}
+          }
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "Bad request. Check API documentation and update request."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/{user.name}"
+      body: "user"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update User"
+      description: "Update a user's credentials."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateUserResponse.User"}
+          }
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "Bad request. Check API documentation and update request."
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Users"
+      description: "List users. Optional: filter based on username."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListUsersResponse"}
+          }
+        }
+      }
+    };
+  }
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete User"
+      description: "Delete the specified user"
+      responses: {
+        key: "204"
+        value: {
+          description: "User deleted successfully"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}

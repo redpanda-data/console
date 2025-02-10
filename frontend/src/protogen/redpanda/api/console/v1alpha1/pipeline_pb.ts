@@ -5,14 +5,14 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1alpha2/pipeline_pb";
+import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1/pipeline_pb";
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.CreatePipelineRequest
  */
 export class CreatePipelineRequest extends Message<CreatePipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.CreatePipelineRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.CreatePipelineRequest request = 1;
    */
   request?: CreatePipelineRequest$1;
 
@@ -49,7 +49,7 @@ export class CreatePipelineRequest extends Message<CreatePipelineRequest> {
  */
 export class CreatePipelineResponse extends Message<CreatePipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.CreatePipelineResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.CreatePipelineResponse response = 1;
    */
   response?: CreatePipelineResponse$1;
 
@@ -86,7 +86,7 @@ export class CreatePipelineResponse extends Message<CreatePipelineResponse> {
  */
 export class GetPipelineRequest extends Message<GetPipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelineRequest request = 1;
    */
   request?: GetPipelineRequest$1;
 
@@ -123,7 +123,7 @@ export class GetPipelineRequest extends Message<GetPipelineRequest> {
  */
 export class GetPipelineResponse extends Message<GetPipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelineResponse response = 1;
    */
   response?: GetPipelineResponse$1;
 
@@ -160,7 +160,7 @@ export class GetPipelineResponse extends Message<GetPipelineResponse> {
  */
 export class DeletePipelineRequest extends Message<DeletePipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.DeletePipelineRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.DeletePipelineRequest request = 1;
    */
   request?: DeletePipelineRequest$1;
 
@@ -197,7 +197,7 @@ export class DeletePipelineRequest extends Message<DeletePipelineRequest> {
  */
 export class DeletePipelineResponse extends Message<DeletePipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.DeletePipelineResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.DeletePipelineResponse response = 1;
    */
   response?: DeletePipelineResponse$1;
 
@@ -234,7 +234,7 @@ export class DeletePipelineResponse extends Message<DeletePipelineResponse> {
  */
 export class ListPipelinesRequest extends Message<ListPipelinesRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListPipelinesRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListPipelinesRequest request = 1;
    */
   request?: ListPipelinesRequest$1;
 
@@ -271,7 +271,7 @@ export class ListPipelinesRequest extends Message<ListPipelinesRequest> {
  */
 export class ListPipelinesResponse extends Message<ListPipelinesResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListPipelinesResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListPipelinesResponse response = 1;
    */
   response?: ListPipelinesResponse$1;
 
@@ -308,7 +308,7 @@ export class ListPipelinesResponse extends Message<ListPipelinesResponse> {
  */
 export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.UpdatePipelineRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.UpdatePipelineRequest request = 1;
    */
   request?: UpdatePipelineRequest$1;
 
@@ -345,7 +345,7 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
  */
 export class UpdatePipelineResponse extends Message<UpdatePipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.UpdatePipelineResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.UpdatePipelineResponse response = 1;
    */
   response?: UpdatePipelineResponse$1;
 
@@ -382,7 +382,7 @@ export class UpdatePipelineResponse extends Message<UpdatePipelineResponse> {
  */
 export class StopPipelineRequest extends Message<StopPipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.StopPipelineRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.StopPipelineRequest request = 1;
    */
   request?: StopPipelineRequest$1;
 
@@ -419,7 +419,7 @@ export class StopPipelineRequest extends Message<StopPipelineRequest> {
  */
 export class StopPipelineResponse extends Message<StopPipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.StopPipelineResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.StopPipelineResponse response = 1;
    */
   response?: StopPipelineResponse$1;
 
@@ -456,7 +456,7 @@ export class StopPipelineResponse extends Message<StopPipelineResponse> {
  */
 export class StartPipelineRequest extends Message<StartPipelineRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.StartPipelineRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.StartPipelineRequest request = 1;
    */
   request?: StartPipelineRequest$1;
 
@@ -493,7 +493,7 @@ export class StartPipelineRequest extends Message<StartPipelineRequest> {
  */
 export class StartPipelineResponse extends Message<StartPipelineResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.StartPipelineResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.StartPipelineResponse response = 1;
    */
   response?: StartPipelineResponse$1;
 
@@ -530,7 +530,7 @@ export class StartPipelineResponse extends Message<StartPipelineResponse> {
  */
 export class GetPipelineServiceConfigSchemaRequest extends Message<GetPipelineServiceConfigSchemaRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaRequest request = 1;
    */
   request?: GetPipelineServiceConfigSchemaRequest$1;
 
@@ -567,7 +567,7 @@ export class GetPipelineServiceConfigSchemaRequest extends Message<GetPipelineSe
  */
 export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineServiceConfigSchemaResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaResponse response = 1;
    */
   response?: GetPipelineServiceConfigSchemaResponse$1;
 
