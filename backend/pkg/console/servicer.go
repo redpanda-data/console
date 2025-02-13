@@ -37,7 +37,6 @@ type Servicer interface {
 	ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest) (*ACLOverview, error)
 	ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error
 	ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error)
-	GetOverview(ctx context.Context) Overview
 	GetKafkaVersion(ctx context.Context) (string, error)
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)

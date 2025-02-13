@@ -19,6 +19,31 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
+// GetKafkaVersion extracts the guessed Apache Kafka version based on the reported
+// API versions for each API key.
+func (s *Service) GetKafkaVersion(ctx context.Context) (string, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	brokerAPIVersions, err := adminCl.ApiVersions(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to request api versions: %w", err)
+	}
+
+	var lastErr error
+	for _, brokerAPIVersion := range brokerAPIVersions {
+		if brokerAPIVersion.Err != nil {
+			lastErr = brokerAPIVersion.Err
+			continue
+		}
+		return brokerAPIVersion.VersionGuess(), nil
+	}
+
+	return "", lastErr
+}
+
 // APIVersion represents the supported broker versions of a specific Kafka API request (e.g. CreateTopic).
 type APIVersion struct {
 	KeyID      int16  `json:"keyId"`
