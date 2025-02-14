@@ -117,7 +117,7 @@ func (k *kafkaStatusChecker) statusFromMetadata(metadata kadm.Metadata) *console
 
 // getExpectedBrokers returns a set of broker IDs that are expected to be online,
 // either because they are directly in the brokers list or host at least one replica.
-func (k *kafkaStatusChecker) getExpectedBrokers(metadata kadm.Metadata) map[int32]struct{} {
+func (*kafkaStatusChecker) getExpectedBrokers(metadata kadm.Metadata) map[int32]struct{} {
 	brokers := make(map[int32]struct{}, len(metadata.Brokers))
 	for _, broker := range metadata.Brokers {
 		brokers[broker.NodeID] = struct{}{}
@@ -137,7 +137,7 @@ func (k *kafkaStatusChecker) getExpectedBrokers(metadata kadm.Metadata) map[int3
 
 // distributionFromMetadata tries to derive the Kafka distribution based on the
 // cluster id we retrieve via the metadata.
-func (k *kafkaStatusChecker) distributionFromMetadata(metadata kadm.Metadata) consolev1alpha1.KafkaDistribution {
+func (*kafkaStatusChecker) distributionFromMetadata(metadata kadm.Metadata) consolev1alpha1.KafkaDistribution {
 	if metadata.Cluster == "" {
 		return consolev1alpha1.KafkaDistribution_KAFKA_DISTRIBUTION_UNKNOWN
 	}
@@ -149,7 +149,7 @@ func (k *kafkaStatusChecker) distributionFromMetadata(metadata kadm.Metadata) co
 	return consolev1alpha1.KafkaDistribution_KAFKA_DISTRIBUTION_APACHE_KAFKA
 }
 
-func (k *kafkaStatusChecker) brokersFromMetadata(metadata kadm.Metadata) []*consolev1alpha1.KafkaBroker {
+func (*kafkaStatusChecker) brokersFromMetadata(metadata kadm.Metadata) []*consolev1alpha1.KafkaBroker {
 	brokersProto := make([]*consolev1alpha1.KafkaBroker, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
 		brokersProto[i] = &consolev1alpha1.KafkaBroker{

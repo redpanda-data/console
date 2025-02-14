@@ -7,6 +7,9 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package clusterstatus implements RPCs that retrieve high level information
+// providing insights about the health and deployed resources on all connected
+// clusters and APIs.
 package clusterstatus
 
 import (
@@ -75,7 +78,7 @@ func NewService(
 // GetKafkaInfo retrieves Kafka cluster metadata and API version concurrently,
 // aggregates details (such as broker counts, topics, partitions, and replicas),
 // and returns a comprehensive Kafka status response.
-func (s *Service) GetKafkaInfo(ctx context.Context, req *connect.Request[v1alpha1.GetKafkaInfoRequest]) (*connect.Response[v1alpha1.GetKafkaInfoResponse], error) {
+func (s *Service) GetKafkaInfo(ctx context.Context, _ *connect.Request[v1alpha1.GetKafkaInfoRequest]) (*connect.Response[v1alpha1.GetKafkaInfoResponse], error) {
 	_, adminCl, err := s.kafkaClientProvider.GetKafkaClient(ctx)
 	if err != nil {
 		return nil, err
@@ -154,7 +157,7 @@ func (s *Service) GetKafkaInfo(ctx context.Context, req *connect.Request[v1alpha
 // GetKafkaAuthorizerInfo fetches Kafka ACLs using a describe request and
 // returns the total count of ACL resources, converting any Kafka API errors
 // into ConnectRPC errors.
-func (s *Service) GetKafkaAuthorizerInfo(ctx context.Context, req *connect.Request[v1alpha1.GetKafkaAuthorizerInfoRequest]) (*connect.Response[v1alpha1.GetKafkaAuthorizerInfoResponse], error) {
+func (s *Service) GetKafkaAuthorizerInfo(ctx context.Context, _ *connect.Request[v1alpha1.GetKafkaAuthorizerInfoRequest]) (*connect.Response[v1alpha1.GetKafkaAuthorizerInfoResponse], error) {
 	kafkaCl, _, err := s.kafkaClientProvider.GetKafkaClient(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
@@ -260,7 +263,7 @@ func (s *Service) GetRedpandaPartitionBalancerStatus(ctx context.Context, _ *con
 }
 
 // GetConsoleInfo returns version and build timestamp information for Console.
-func (s *Service) GetConsoleInfo(context.Context, *connect.Request[v1alpha1.GetConsoleInfoRequest]) (*connect.Response[v1alpha1.GetConsoleInfoResponse], error) {
+func (*Service) GetConsoleInfo(context.Context, *connect.Request[v1alpha1.GetConsoleInfoRequest]) (*connect.Response[v1alpha1.GetConsoleInfoResponse], error) {
 	return connect.NewResponse(&v1alpha1.GetConsoleInfoResponse{
 		Version: version.Version,
 		BuiltAt: version.BuiltAt,

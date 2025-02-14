@@ -22,7 +22,8 @@ type redpandaStatusChecker struct{}
 // clusterVersionFromBrokerList returns the version of the Redpanda cluster. Since each broker
 // reports the version individually, we iterate through the list of brokers and
 // return the first reported version that contains a semVer.
-func (r *redpandaStatusChecker) clusterVersionFromBrokerList(brokers []rpadmin.Broker) string {
+func (*redpandaStatusChecker) clusterVersionFromBrokerList(brokers []rpadmin.Broker) string {
+	//nolint:goconst // Other occurrences are unrelated
 	version := "unknown"
 	for _, broker := range brokers {
 		if broker.Version != "" {
@@ -38,7 +39,7 @@ func (r *redpandaStatusChecker) clusterVersionFromBrokerList(brokers []rpadmin.B
 }
 
 // ToPartitionBalancerViolationsProto maps a PartitionBalancerViolations Go type to its proto representation.
-func (r *redpandaStatusChecker) partitionBalancerViolationsToProto(in rpadmin.PartitionBalancerViolations) *consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Violations {
+func (*redpandaStatusChecker) partitionBalancerViolationsToProto(in rpadmin.PartitionBalancerViolations) *consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Violations {
 	return &consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Violations{
 		UnavailableNodes:   intSliceToInt32Slice(in.UnavailableNodes),
 		OverDiskLimitNodes: intSliceToInt32Slice(in.OverDiskLimitNodes),
@@ -68,7 +69,7 @@ func (r *redpandaStatusChecker) partitionBalancerStatusToProto(in *rpadmin.Parti
 }
 
 // mapBalancerStatus converts the status string from the Go type to the proto enum.
-func (r *redpandaStatusChecker) balancerStatusStringToProtoEnum(status string) consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Status {
+func (*redpandaStatusChecker) balancerStatusStringToProtoEnum(status string) consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Status {
 	switch status {
 	case "off":
 		return consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_OFF
