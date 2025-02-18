@@ -123,7 +123,7 @@ const KafkaConnectorMain = observer(
           {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
             <Tooltip
               placement="top"
-              isDisabled={canEdit !== true}
+              isDisabled={canEdit === true}
               label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
               hasArrow={true}
             >
@@ -141,7 +141,7 @@ const KafkaConnectorMain = observer(
           {/* [Restart] */}
           <Tooltip
             placement="top"
-            isDisabled={canEdit !== true}
+            isDisabled={canEdit === true}
             label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
             hasArrow={true}
           >
@@ -158,7 +158,7 @@ const KafkaConnectorMain = observer(
           {/* [Delete] */}
           <Tooltip
             placement="top"
-            isDisabled={canEdit !== true}
+            isDisabled={canEdit === true}
             label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
             hasArrow={true}
           >
@@ -204,7 +204,7 @@ const KafkaConnectorMain = observer(
                   <Flex m={4} mb={6}>
                     <Tooltip
                       placement="top"
-                      isDisabled={canEdit !== true}
+                      isDisabled={canEdit === true}
                       label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
                       hasArrow={true}
                     >
