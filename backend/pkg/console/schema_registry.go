@@ -78,12 +78,9 @@ func (s *Service) PutSchemaRegistrySubjectConfig(ctx context.Context, subject st
 }
 
 // DeleteSchemaRegistrySubjectConfig deletes the subject's compatibility level.
-func (s *Service) DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error) {
-	config, err := s.kafkaSvc.SchemaService.DeleteSubjectConfig(ctx, subject)
-	if err != nil {
-		return nil, err
-	}
-	return &SchemaRegistryConfig{Compatibility: config.Compatibility}, nil
+func (s *Service) DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error {
+	_, err := s.kafkaSvc.SchemaService.DeleteSubjectConfig(ctx, subject)
+	return err
 }
 
 // GetSchemaRegistrySubjects returns a list of all register subjects. The list includes

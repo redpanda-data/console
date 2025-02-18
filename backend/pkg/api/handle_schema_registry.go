@@ -328,7 +328,7 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 		subjectName := getSubjectFromRequestPath(r)
 
 		// 2. Set subject compatibility level
-		res, err := api.ConsoleSvc.DeleteSchemaRegistrySubjectConfig(r.Context(), subjectName)
+		err := api.ConsoleSvc.DeleteSchemaRegistrySubjectConfig(r.Context(), subjectName)
 		if err != nil {
 			var schemaError *schema.RestError
 			if errors.As(err, &schemaError) && schemaError.ErrorCode == schema.CodeSubjectNotFound {
@@ -349,7 +349,7 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 			})
 			return
 		}
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, nil)
 	}
 }
 
