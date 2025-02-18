@@ -464,7 +464,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.Error(err)
-		assert.Equal("failed to get partitions: LEADER_NOT_AVAILABLE: There is no leader for this topic-partition as we are in the middle of a leadership election.", err.Error())
+		assert.Equal("failed to get metadata for topic test.redpanda.console.list_messages: LEADER_NOT_AVAILABLE: There is no leader for this topic-partition as we are in the middle of a leadership election.", err.Error())
 	})
 
 	t.Run("list offset error", func(t *testing.T) {
