@@ -34,7 +34,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
 	"github.com/redpanda-data/console/backend/pkg/factory/schema"
-	"github.com/redpanda-data/console/backend/pkg/kafka/mocks"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -730,7 +729,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 		orderMatcher := MatchesJSON(map[string]map[string]any{

@@ -78,7 +78,7 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 
 		// 4. If no error there's nothing to log here
 		if err == nil {
-			return response, err
+			return response, nil
 		}
 
 		// 5. Skip error response we aren't interested in
