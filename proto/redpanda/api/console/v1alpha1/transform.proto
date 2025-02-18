@@ -2,30 +2,30 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
-import "redpanda/api/dataplane/v1/transform.proto";
+import "redpanda/api/dataplane/v1alpha2/transform.proto";
 
 message ListTransformsRequest {
-  redpanda.api.dataplane.v1.ListTransformsRequest request = 1;
+  redpanda.api.dataplane.v1alpha2.ListTransformsRequest request = 1;
 }
 
 message ListTransformsResponse {
-  redpanda.api.dataplane.v1.ListTransformsResponse response = 1;
+  redpanda.api.dataplane.v1alpha2.ListTransformsResponse response = 1;
 }
 
 message GetTransformRequest {
-  redpanda.api.dataplane.v1.GetTransformRequest request = 1;
+  redpanda.api.dataplane.v1alpha2.GetTransformRequest request = 1;
 }
 
 message GetTransformResponse {
-  redpanda.api.dataplane.v1.GetTransformResponse response = 1;
+  redpanda.api.dataplane.v1alpha2.GetTransformResponse response = 1;
 }
 
 message DeleteTransformRequest {
-  redpanda.api.dataplane.v1.DeleteTransformRequest request = 1;
+  redpanda.api.dataplane.v1alpha2.DeleteTransformRequest request = 1;
 }
 
 message DeleteTransformResponse {
-  redpanda.api.dataplane.v1.DeleteTransformResponse response = 1;
+  redpanda.api.dataplane.v1alpha2.DeleteTransformResponse response = 1;
 }
 
 service TransformService {
