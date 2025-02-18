@@ -295,7 +295,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.Error(err)
-		assert.Equal("failed to get partitions: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.",
+		assert.Equal("failed to get metadata for topic console_list_messages_topic_test_unknown_topic: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.",
 			err.Error())
 	})
 
