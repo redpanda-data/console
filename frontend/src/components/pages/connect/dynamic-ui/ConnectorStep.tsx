@@ -14,6 +14,7 @@ import { observer } from 'mobx-react';
 import type { PropertyGroup } from '../../../../state/connect/state';
 import type { ConnectorStep } from '../../../../state/restInterfaces';
 import { PropertyGroupComponent } from './PropertyGroup';
+import { ConfigPageProps } from './components';
 
 export const ConnectorStepComponent = observer(
   (props: {
@@ -22,6 +23,7 @@ export const ConnectorStepComponent = observer(
     allGroups: PropertyGroup[];
     showAdvancedOptions: boolean;
     connectorType: 'sink' | 'source';
+    context: ConfigPageProps['context'];
   }) => {
     const step = props.step;
     const groups = props.groups;
@@ -48,6 +50,7 @@ export const ConnectorStepComponent = observer(
             allGroups={props.allGroups}
             showAdvancedOptions={props.showAdvancedOptions}
             connectorType={props.connectorType}
+            context={props.context}
           />
         ))}
       </Box>

@@ -34,6 +34,12 @@ import (
 	v1alpha2connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
 )
 
+// The identity transform produces messages from the input topic to the
+// configured output topic at least once.
+//
+//go:embed wasm-binary/integration-test.wasm
+var identityTransform []byte
+
 // DirectDeployAndTestTransform encapsulates the logic for creating a transform and asserting its successful creation.
 func (s *APISuite) TestDeployTransform_v1alpha2() {
 	t := s.T()
@@ -773,4 +779,28 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
 	})
+}
+
+func findExactTransformByName(ts []adminapi.TransformMetadata, name string) (*adminapi.TransformMetadata, error) {
+	for _, t := range ts {
+		if t.Name == name {
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("transform not found")
+}
+
+func createTransform(ctx context.Context, svc *adminapi.AdminAPI, meta adminapi.TransformMetadata, b []byte) (*adminapi.TransformMetadata, error) {
+	if err := svc.DeployWasmTransform(ctx, meta, bytes.NewReader(b)); err != nil {
+		return nil, err
+	}
+	transforms, err := svc.ListWasmTransforms(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return findExactTransformByName(transforms, meta.Name)
+}
+
+func deleteTransform(ctx context.Context, svc *adminapi.AdminAPI, name string) error {
+	return svc.DeleteWasmTransform(ctx, name)
 }

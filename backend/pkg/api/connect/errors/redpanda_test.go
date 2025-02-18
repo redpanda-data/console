@@ -26,7 +26,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 // Define the test cases
@@ -65,7 +65,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 					Body: []byte("mock error message"),
 				},
 				NewErrorInfo(
-					v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(),
+					v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(),
 					KeyVal{
 						Key:   "adminapi_status_code",
 						Value: strconv.Itoa(http.StatusInternalServerError),
@@ -97,7 +97,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 				connect.CodeNotFound,
 				errors.New("decoded message"),
 				NewErrorInfo(
-					v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(),
+					v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String(),
 					KeyVal{
 						Key:   "adminapi_status_code",
 						Value: strconv.Itoa(http.StatusNotFound),
@@ -114,7 +114,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 			expectedResult: NewConnectError(
 				connect.CodeCanceled,
 				errors.New("listing transforms failed: the request to the Redpanda admin API timed out"),
-				NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
+				NewErrorInfo(v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 			),
 		},
 		{
@@ -126,7 +126,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 			expectedResult: NewConnectError(
 				connect.CodeInternal,
 				errors.New("listing transforms failed: some random error message"),
-				NewErrorInfo(v1alpha1.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
+				NewErrorInfo(v1alpha2.Reason_REASON_REDPANDA_ADMIN_API_ERROR.String()),
 			),
 		},
 	}
