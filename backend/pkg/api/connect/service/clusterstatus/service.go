@@ -309,7 +309,7 @@ func (s *Service) GetKafkaConnectInfo(ctx context.Context, _ *connect.Request[v1
 // fetched, ensuring that errors are properly reflected in the response.
 func (s *Service) GetSchemaRegistryInfo(ctx context.Context, _ *connect.Request[v1alpha1.GetSchemaRegistryInfoRequest]) (*connect.Response[v1alpha1.GetSchemaRegistryInfoResponse], error) {
 	if !s.cfg.SchemaRegistry.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+		return nil, apierrors.NewSchemaRegistryNotConfiguredError()
 	}
 
 	status := &v1alpha1.ComponentStatus{
