@@ -119,6 +119,7 @@ import {
   RedpandaCapability,
   SchemaRegistryCapability,
 } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import {
   PayloadEncoding,
   CompressionType as ProtoCompressionType,
@@ -838,27 +839,63 @@ const apiStore = {
     return r;
   },
 
-  refreshClusterOverview(force?: boolean) {
-    cachedApiRequest<ClusterOverview>(`${appConfig.restBasePath}/cluster/overview`, force).then((v) => {
-      this.clusterOverview = v;
-    }, addError);
+  async refreshClusterOverview() {
+    const client = appConfig.clusterStatusClient;
+
+    if (!client) {
+      throw new Error('Cluster status client is not initialized');
+    }
+
+    const [
+      kafkaAuthorizerInfoResponse,
+      consoleInfoResponse,
+      kafkaResponse,
+      redpandaResponse,
+      kafkaConnectResponse,
+      schemaRegistryResponse,
+    ] = await Promise.all([
+      client.getKafkaAuthorizerInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getConsoleInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getKafkaInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getRedpandaInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getKafkaConnectInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getSchemaRegistryInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+    ]);
+
+    this.clusterOverview = {
+      kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse,
+      console: consoleInfoResponse,
+      kafka: kafkaResponse,
+      redpanda: redpandaResponse,
+      schemaRegistry: schemaRegistryResponse,
+      kafkaConnect: kafkaConnectResponse,
+    };
   },
 
   get isRedpanda() {
-    const overview = this.clusterOverview;
-    if (!overview) return false;
-    if (overview.kafka.distribution === 'REDPANDA') return true;
-
-    return false;
+    return this.clusterOverview?.kafka?.distribution === KafkaDistribution.REDPANDA;
   },
 
   get isAdminApiConfigured() {
-    const overview = this.clusterOverview;
-    if (!overview) {
-      return false;
-    }
-
-    return overview.redpanda.isAdminApiConfigured;
+    return this.clusterOverview?.redpanda !== null;
   },
 
   refreshBrokers(force?: boolean) {

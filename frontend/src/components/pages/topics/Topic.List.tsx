@@ -108,7 +108,7 @@ class TopicList extends PageComponent {
 
   refreshData(force: boolean) {
     api.refreshTopics(force);
-    api.refreshClusterOverview(force);
+    api.refreshClusterOverview();
     void api.refreshClusterHealth();
   }
 

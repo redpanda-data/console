@@ -10,6 +10,14 @@
  */
 
 import type { AuthenticationMethod } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import type {
+  GetConsoleInfoResponse,
+  GetKafkaAuthorizerInfoResponse,
+  GetKafkaConnectInfoResponse,
+  GetKafkaInfoResponse,
+  GetRedpandaInfoResponse,
+  GetSchemaRegistryInfoResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 export interface ApiError {
@@ -1376,88 +1384,20 @@ export interface CreateSecretResponse {
   labels: Record<string, string>;
 }
 
-// GET api/cluster/overview
+// TODO - it's not REST interface anymore
 export interface ClusterOverview {
-  kafka: OverviewKafka;
-  redpanda: OverviewRedpanda;
-  console: OverviewConsole;
-  kafkaConnect?: OverviewKafkaConnect;
-  schemaRegistry: OverviewSchemaRegistry;
+  kafkaAuthorizerInfo: GetKafkaAuthorizerInfoResponse | null;
+  kafka: GetKafkaInfoResponse | null;
+  redpanda: GetRedpandaInfoResponse | null;
+  console: GetConsoleInfoResponse | null;
+  kafkaConnect: GetKafkaConnectInfoResponse | null;
+  schemaRegistry: GetSchemaRegistryInfoResponse | null;
 }
 
 export interface OverviewStatus {
   status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
   statusReason?: string;
 }
-
-export type OverviewKafka = OverviewStatus & {
-  version?: string;
-
-  distribution?: 'REDPANDA' | 'APACHE_KAFKA';
-
-  brokersOnline: number;
-  brokersExpected: number;
-  topicsCount: number;
-  partitionsCount: number;
-  replicasCount: number;
-
-  controllerId: number;
-  clusterId: string;
-
-  brokers: OverviewKafkaBroker[];
-
-  authorizer?: OverviewKafkaAuthorizer;
-};
-export interface OverviewKafkaBroker {
-  brokerId: number;
-  address: string;
-  rack?: string;
-}
-export interface OverviewKafkaAuthorizer {
-  requestError?: string;
-  isAuthorizerEnabled?: boolean;
-  aclCount?: number;
-}
-
-export interface OverviewRedpanda {
-  isAdminApiConfigured: boolean;
-  license?: RedpandaLicense;
-  version?: string;
-  userCount?: number;
-  partitionBalancerStatus?: OverviewRedpandaPartitionBalancer;
-}
-export interface OverviewRedpandaPartitionBalancer {
-  // When ready, should show some green checkmark
-  // When in_progress, some loading spinner
-  // When stalled some error
-  status: 'off' | 'ready' | 'starting' | 'in_progress' | 'stalled';
-  violations: {
-    unavailable_nodes: number[];
-    over_disk_limit_nodes: number[];
-  };
-  seconds_since_last_tick: number;
-  current_reassignments_count: number;
-}
-export interface OverviewConsole {
-  license: RedpandaLicense;
-  version: string;
-  builtAt: string;
-}
-export interface OverviewKafkaConnect {
-  isConfigured: boolean;
-  clusters: OverviewKafkaConnectCluster[];
-}
-export type OverviewKafkaConnectCluster = OverviewStatus & {
-  // Name is the Kafka connect cluster name that is used in Console's configuration.
-  name: string;
-  host: string;
-  version: string;
-  installedPlugins: number;
-};
-export type OverviewSchemaRegistry = OverviewStatus & {
-  isConfigured: boolean;
-  registeredSubjects: number;
-};
 
 // GET /api/brokers
 // from pkg/console/brokers.go

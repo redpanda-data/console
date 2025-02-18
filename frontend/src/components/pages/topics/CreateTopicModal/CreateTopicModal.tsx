@@ -68,7 +68,7 @@ export class CreateTopicModalContent extends Component<Props> {
     let replicationFactorError = '';
     if (api.clusterOverview)
       if (state.replicationFactor != null)
-        if (api.clusterOverview.kafka.distribution === 'REDPANDA') {
+        if (api.isRedpanda) {
           // enforce odd numbers
           const isOdd = state.replicationFactor % 2 === 1;
           if (!isOdd) {

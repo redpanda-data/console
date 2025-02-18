@@ -26,6 +26,7 @@ import memoizeOne from 'memoize-one';
 import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
+import { ClusterStatusService } from './protogen/redpanda/api/console/v1alpha1/cluster_status_connect';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
@@ -126,6 +127,7 @@ interface Config {
   pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
+  clusterStatusClient?: PromiseClient<typeof ClusterStatusService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -168,6 +170,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
   const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
   const transformClient = createPromiseClient(TransformService, transport);
+  const clusterStatusGrpcClient = createPromiseClient(ClusterStatusService, transport);
   Object.assign(config, {
     jwt,
     isServerless,
@@ -184,6 +187,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
+    clusterStatusClient: clusterStatusGrpcClient,
     ...args,
   });
   return config;

@@ -23,7 +23,6 @@ import {
   IconButton,
   Input,
   PasswordInput,
-  Result,
   Select,
   Tag,
   TagCloseButton,
@@ -44,9 +43,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
 
@@ -417,31 +414,6 @@ export const RoleSelector = observer((p: { state: string[] }) => {
     </Flex>
   );
 });
-
-const PermissionDenied = (
-  <>
-    <PageContent key="aclNoPerms">
-      <Section>
-        <Result
-          title="Permission Denied"
-          status={403}
-          userMessage={
-            <Text>
-              You are not allowed to view this page.
-              <br />
-              Contact the administrator if you think this is an error.
-            </Text>
-          }
-          extra={
-            <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-              <Button>Redpanda Console documentation</Button>
-            </a>
-          }
-        />
-      </Section>
-    </PageContent>
-  </>
-);
 
 export function generatePassword(length: number, allowSpecialChars: boolean): string {
   if (length <= 0) return '';
