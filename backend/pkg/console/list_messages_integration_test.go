@@ -34,6 +34,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
 	"github.com/redpanda-data/console/backend/pkg/factory/schema"
+	"github.com/redpanda-data/console/backend/pkg/kafka/mocks"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
