@@ -1384,7 +1384,6 @@ export interface CreateSecretResponse {
   labels: Record<string, string>;
 }
 
-// TODO - it's not REST interface anymore
 export interface ClusterOverview {
   kafkaAuthorizerInfo: GetKafkaAuthorizerInfoResponse | null;
   kafka: GetKafkaInfoResponse | null;

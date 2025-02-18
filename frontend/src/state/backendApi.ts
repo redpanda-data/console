@@ -846,14 +846,7 @@ const apiStore = {
       throw new Error('Cluster status client is not initialized');
     }
 
-    const [
-      kafkaAuthorizerInfoResponse,
-      consoleInfoResponse,
-      kafkaResponse,
-      redpandaResponse,
-      kafkaConnectResponse,
-      schemaRegistryResponse,
-    ] = await Promise.all([
+    const requests: Array<Promise<any>> = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
         console.error(e);
         return null;
@@ -874,11 +867,28 @@ const apiStore = {
         console.error(e);
         return null;
       }),
-      client.getSchemaRegistryInfo({}).catch((e) => {
-        console.error(e);
-        return null;
-      }),
-    ]);
+    ];
+
+    // Conditionally add schema registry request
+    if (api.userData?.canViewSchemas) {
+      requests.push(
+        client.getSchemaRegistryInfo({}).catch((e) => {
+          console.error(e);
+          return null;
+        }),
+      );
+    }
+
+    const responses = await Promise.all(requests);
+
+    const [
+      kafkaAuthorizerInfoResponse,
+      consoleInfoResponse,
+      kafkaResponse,
+      redpandaResponse,
+      kafkaConnectResponse,
+      schemaRegistryResponse = null, // Default to null in case it wasn't requested
+    ] = responses;
 
     this.clusterOverview = {
       kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse,
