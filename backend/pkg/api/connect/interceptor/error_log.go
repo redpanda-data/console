@@ -76,18 +76,26 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 		requestDuration := time.Since(start)
 		statusCodeStr := in.statusCode(protocol, err)
 
-		if err != nil {
-			in.logger.Warn("",
-				zap.String("timestamp", start.Format(time.RFC3339)),
-				zap.String("procedure", procedure),
-				zap.String("request_duration", requestDuration.String()),
-				zap.String("status_code", statusCodeStr),
-				zap.Int("request_size_bytes", requestSize),
-				zap.String("peer_address", req.Peer().Addr), // Will be empty for requests made through gRPC GW
-				zap.Error(err),
-			)
+		// 4. If no error there's nothing to log here
+		if err == nil {
+			return response, err
 		}
 
+		// 5. Skip error response we aren't interested in
+		if connect.CodeOf(err) == connect.CodeUnimplemented {
+			return response, err
+		}
+
+		// 6. Log error details
+		in.logger.Warn("",
+			zap.String("timestamp", start.Format(time.RFC3339)),
+			zap.String("procedure", procedure),
+			zap.String("request_duration", requestDuration.String()),
+			zap.String("status_code", statusCodeStr),
+			zap.Int("request_size_bytes", requestSize),
+			zap.String("peer_address", req.Peer().Addr), // Will be empty for requests made through gRPC GW
+			zap.Error(err),
+		)
 		return response, err
 	}
 }
