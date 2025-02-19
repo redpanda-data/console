@@ -92,18 +92,14 @@ func (s *Service) PutSchemaRegistryConfig(ctx context.Context, subject string, c
 // DeleteSchemaRegistrySubjectConfig deletes the subject's compatibility level.
 // The global compatibility can be reset by either using an empty subject or by
 // specifying no subjects.
-func (s *Service) DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error) {
+func (s *Service) DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	compatibilityResult := srClient.ResetCompatibility(ctx, subject)
 	compatibility := compatibilityResult[0]
-	if err := compatibility.Err; err != nil {
-		return nil, fmt.Errorf("failed to set compatibility: %w", err)
-	}
-
-	return &SchemaRegistryConfig{Compatibility: compatibility.Level}, nil
+	return compatibility.Err
 }
 
 // GetSchemaRegistrySubjects returns a list of all register subjects. The list includes
