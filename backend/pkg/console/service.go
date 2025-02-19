@@ -39,6 +39,7 @@ type Service struct {
 	connectSvc            *connect.Service
 	cachedSchemaClient    *schemacache.CachedClient
 	serdeSvc              *serde.Service
+	protoSvc              *proto.Service
 	logger                *zap.Logger
 	cfg                   *config.Config
 
@@ -109,6 +110,7 @@ func NewService(
 		connectSvc:            connectSvc,
 		cachedSchemaClient:    cachedSchemaClient,
 		serdeSvc:              serdeSvc,
+		protoSvc:              protoSvc,
 		logger:                logger,
 		cfg:                   cfg,
 
@@ -123,6 +125,12 @@ func (s *Service) Start() error {
 		err := s.gitSvc.Start()
 		if err != nil {
 			return fmt.Errorf("failed to start git service: %w", err)
+		}
+	}
+	if s.protoSvc != nil {
+		err := s.protoSvc.Start()
+		if err != nil {
+			return fmt.Errorf("failed to start proto service: %w", err)
 		}
 	}
 

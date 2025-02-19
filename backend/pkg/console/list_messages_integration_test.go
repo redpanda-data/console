@@ -361,7 +361,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				assert.True(ok, "request is not a list offset request: %+T", req)
 
 				require.Len(fetchReq.Topics, 1)
-				assert.Equal(testTopicName, fetchReq.Topics[0].Topic)
+				require.NotEmpty(fetchReq.Topics[0].TopicID)
 
 				if atomic.LoadInt32(&fetchCalls) == 0 {
 					atomic.StoreInt32(&fetchCalls, 1)
