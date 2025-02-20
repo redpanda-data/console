@@ -149,7 +149,12 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 		opts.kafkaClientProvider = kafkafactory.NewCachedClientProvider(cfg, logger)
 	}
 
-	if opts.schemaClientProvider == nil && cfg.SchemaRegistry.Enabled {
+	// We can always create a factory if we don't already have one.
+	// If the respective API is not configured, a special client provider will
+	// be returned. If we attempt to retrieve a client from that factory
+	// it will return a NotConfigured connect.Error.
+
+	if opts.schemaClientProvider == nil {
 		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
 		if err != nil {
 			logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
@@ -157,7 +162,7 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 		opts.schemaClientProvider = schemaClientProvider
 	}
 
-	if opts.redpandaClientProvider == nil && cfg.Redpanda.AdminAPI.Enabled {
+	if opts.redpandaClientProvider == nil {
 		redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg)
 		if err != nil {
 			logger.Fatal("failed to create the Redpanda client provider", zap.Error(err))

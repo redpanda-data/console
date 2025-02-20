@@ -61,20 +61,12 @@ func NewService(cfg *config.Config,
 
 // ListUsers returns a list of all existing users.
 func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.ListUsersRequest]) (*connect.Response[v1alpha2.ListUsersResponse], error) {
-	// 1. Check if we can list users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to list users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
 	s.defaulter.applyListUsersRequest(req.Msg)
 
+	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	// 2. List users
@@ -141,19 +133,10 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 
 // CreateUser creates a new Redpanda/Kafka user.
 func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.CreateUserRequest]) (*connect.Response[v1alpha2.CreateUserResponse], error) {
-	// 1. Check if we can create users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to create users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
-
+	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	// 3. Map inputs from proto to admin api
@@ -183,19 +166,10 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 
 // UpdateUser upserts a new Redpanda/Kafka user. This equals a PUT operation.
 func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.UpdateUserRequest]) (*connect.Response[v1alpha2.UpdateUserResponse], error) {
-	// 1. Check if we can update users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to update users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
-
+	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	// 3. Map inputs from proto to admin api
@@ -224,19 +198,10 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 
 // DeleteUser deletes an existing Redpanda/Kafka user.
 func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.DeleteUserRequest]) (*connect.Response[v1alpha2.DeleteUserResponse], error) {
-	// 1. Check if we can delete users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to delete users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
-
+	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	// 3. List users to check if the requested user exists. The Redpanda admin API

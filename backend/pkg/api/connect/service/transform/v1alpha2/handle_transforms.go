@@ -39,18 +39,9 @@ const (
 // not use gRPC/protobuf for this.
 func (s *Service) HandleDeployTransform() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !s.cfg.Redpanda.AdminAPI.Enabled {
-			s.writeError(w, r, apierrors.NewRedpandaAdminAPINotConfiguredError())
-			return
-		}
-
 		redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(r.Context())
 		if err != nil {
-			s.writeError(w, r, apierrors.NewConnectError(
-				connect.CodeInternal,
-				err,
-				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()),
-			))
+			s.writeError(w, r, err)
 			return
 		}
 

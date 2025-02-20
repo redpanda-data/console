@@ -31,12 +31,14 @@ type SingleClientProvider struct {
 
 // NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
 // It initializes the Redpanda admin API client using the provided configuration.
-// Returns an instance of SingleClientProvider or an error if client creation fails.
-func NewSingleClientProvider(cfg *config.Config) (*SingleClientProvider, error) {
+//
+// If schema registry is not configured an instance of DisabledClientProvider is returned.
+// Otherwise, returns an instance of SingleClientProvider or an error if client creation fails.
+func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
 	redpandaCfg := cfg.Redpanda.AdminAPI
 
 	if !redpandaCfg.Enabled {
-		return &SingleClientProvider{}, nil
+		return &DisabledClientProvider{}, nil
 	}
 
 	// Build admin client with provided credentials
@@ -67,9 +69,5 @@ func NewSingleClientProvider(cfg *config.Config) (*SingleClientProvider, error) 
 
 // GetRedpandaAPIClient returns a redpanda admin api for the given context.
 func (p *SingleClientProvider) GetRedpandaAPIClient(_ context.Context) (AdminAPIClient, error) {
-	if !p.cfg.Enabled {
-		return nil, fmt.Errorf("redpanda admin api is not configured")
-	}
-
 	return p.redpandaCl, nil
 }

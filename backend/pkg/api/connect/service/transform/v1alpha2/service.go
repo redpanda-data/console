@@ -73,16 +73,12 @@ func (s *Service) writeError(w http.ResponseWriter, r *http.Request, err error) 
 
 // ListTransforms lists all the transforms matching the filter deployed to Redpanda
 func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha2.ListTransformsRequest]) (*connect.Response[v1alpha2.ListTransformsResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
-	s.defaulter.applyListTransformsRequest(c.Msg)
-
+	// Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
+
 	transforms, err := redpandaCl.ListWasmTransforms(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
@@ -132,13 +128,10 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 
 // GetTransform gets a transform by name
 func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha2.GetTransformRequest]) (*connect.Response[v1alpha2.GetTransformResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
+	// Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	transforms, err := redpandaCl.ListWasmTransforms(ctx)
@@ -172,13 +165,10 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha2.
 
 // DeleteTransform deletes a transform by name
 func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alpha2.DeleteTransformRequest]) (*connect.Response[v1alpha2.DeleteTransformResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
+	// Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	transforms, err := redpandaCl.ListWasmTransforms(ctx)

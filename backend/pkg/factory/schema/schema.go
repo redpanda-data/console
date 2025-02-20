@@ -39,9 +39,15 @@ type SingleClientProvider struct {
 
 // NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
 // It initializes the schema registry client using the provided configuration.
-// Returns an instance of SingleClientProvider or an error if client creation fails.
-func NewSingleClientProvider(cfg *config.Config) (*SingleClientProvider, error) {
+//
+// If schema registry is not configured an instance of DisabledClientProvider is returned.
+// Otherwise, returns an instance of SingleClientProvider or an error if client creation fails.
+func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
 	schemaCfg := cfg.SchemaRegistry
+
+	if !schemaCfg.Enabled {
+		return &DisabledClientProvider{}, nil
+	}
 
 	// If TLS is not enabled this will return the default TLS config.
 	tlsCfg, err := schemaCfg.TLS.TLSConfig()

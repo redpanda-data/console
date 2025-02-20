@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"time"
 
-	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -160,7 +159,7 @@ func (s *Service) GetKafkaInfo(ctx context.Context, _ *connect.Request[v1alpha1.
 func (s *Service) GetKafkaAuthorizerInfo(ctx context.Context, _ *connect.Request[v1alpha1.GetKafkaAuthorizerInfoRequest]) (*connect.Response[v1alpha1.GetKafkaAuthorizerInfoResponse], error) {
 	kafkaCl, _, err := s.kafkaClientProvider.GetKafkaClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	listAllReq := kmsg.NewDescribeACLsRequest()
@@ -190,13 +189,10 @@ func (s *Service) GetKafkaAuthorizerInfo(ctx context.Context, _ *connect.Request
 // including cluster version (determined via brokers) and user count, while
 // enforcing a short timeout to mitigate long delays.
 func (s *Service) GetRedpandaInfo(ctx context.Context, _ *connect.Request[v1alpha1.GetRedpandaInfoRequest]) (*connect.Response[v1alpha1.GetRedpandaInfoResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
+	// Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
@@ -243,13 +239,10 @@ func (s *Service) GetRedpandaInfo(ctx context.Context, _ *connect.Request[v1alph
 // from the Redpanda Admin API, converts it to the corresponding protobuf
 // response, and handles any associated errors.
 func (s *Service) GetRedpandaPartitionBalancerStatus(ctx context.Context, _ *connect.Request[v1alpha1.GetRedpandaPartitionBalancerStatusRequest]) (*connect.Response[v1alpha1.GetRedpandaPartitionBalancerStatusResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
-	}
-
+	// Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, apierrors.NewConnectError(connect.CodeInternal, err, apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()))
+		return nil, err
 	}
 
 	pbs, err := redpandaCl.GetPartitionStatus(ctx)
