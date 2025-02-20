@@ -543,7 +543,7 @@ service KafkaConnectService {
       }
     };
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_EDIT
+      required_permission: PERMISSION_VIEW
       api: API_KAFKA_CONNECT
     };
   }
