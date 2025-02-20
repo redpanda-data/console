@@ -766,6 +766,7 @@ export class ConnectorPropertiesStore {
           lastErrorValue: undefined as any,
           propertyGroup: undefined as any,
           crud: this.crud,
+          isDisabled: undefined,
         });
 
         if (this.appliedConfig?.[name]) property.value = sanitizeValue(this.appliedConfig[name], definitionType);
@@ -820,4 +821,5 @@ export interface Property {
 
   propertyGroup: PropertyGroup;
   crud: 'create' | 'update';
+  isDisabled: boolean | undefined;
 }

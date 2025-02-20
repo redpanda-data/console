@@ -85,6 +85,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
                 allGroups={connectorStore.allGroups}
                 showAdvancedOptions={connectorStore.showAdvancedOptions}
                 connectorType={connectorStore.connectorType}
+                context={context}
               />
             );
           })}

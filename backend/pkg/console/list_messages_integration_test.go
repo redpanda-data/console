@@ -724,6 +724,52 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.NoError(err)
 	})
+
+	t.Run("filter with timestamp", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+
+		var int64Type int64
+		orderMatcher := MatchesJSON(map[string]map[string]any{
+			"10": {"ID": "10"},
+			"11": {"ID": "11"},
+			"12": {"ID": "12"},
+			"13": {"ID": "13"},
+			"14": {"ID": "14"},
+			"15": {"ID": "15"},
+			"16": {"ID": "16"},
+			"17": {"ID": "17"},
+			"18": {"ID": "18"},
+			"19": {"ID": "19"},
+		})
+
+		mockProgress.EXPECT().OnPhase("Get Partitions")
+		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
+		mockProgress.EXPECT().OnPhase("Consuming messages")
+		mockProgress.EXPECT().OnMessage(orderMatcher).Times(10)
+		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).AnyTimes()
+		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
+
+		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker, s.registryAddr)
+
+		code := `return timestamp.getMinutes() >= 10`
+
+		input := ListMessageRequest{
+			TopicName:             testTopicName,
+			PartitionID:           -1,
+			StartOffset:           -2,
+			MessageCount:          100,
+			FilterInterpreterCode: code,
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+
+		err = svc.ListMessages(ctx, input, mockProgress)
+		assert.NoError(err)
+	})
 }
 
 func createNewTestService(t *testing.T, log *zap.Logger,

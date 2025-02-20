@@ -246,7 +246,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   currentSearchRun: string | null = null;
 
-  @observable downloadMessages: TopicMessage[] | null;
+  @observable downloadMessages: TopicMessage[] | null = null;
   @observable expandedKeys: React.Key[] = [];
 
   constructor(props: TopicMessageViewProps) {
@@ -961,7 +961,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 >
                   Copy Epoch Timestamp
                 </MenuItem>
-                <MenuItem onClick={() => (this.downloadMessages = [original])}>Save to File</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    this.downloadMessages = [original];
+                  }}
+                >
+                  Save to File
+                </MenuItem>
               </MenuList>
             </Menu>
           );
@@ -998,7 +1004,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
               loadLargeMessage={() =>
                 this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
               }
-              onDownloadRecord={() => (this.downloadMessages = [original])}
+              onDownloadRecord={() => {
+                this.downloadMessages = [original];
+              }}
               onCopyKey={onCopyKey}
               onCopyValue={onCopyValue}
             />

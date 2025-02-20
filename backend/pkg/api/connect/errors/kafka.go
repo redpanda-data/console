@@ -18,7 +18,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/twmb/franz-go/pkg/kerr"
 
-	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
+	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 )
 
 // NewConnectErrorFromKafkaErrorCode creates a new connect.Error for a given Kafka error code.
@@ -45,7 +45,7 @@ func NewConnectErrorFromKafkaErrorCode(code int16, msg *string) *connect.Error {
 	return NewConnectError(
 		connect.CodeInternal,
 		errors.New(errMsg),
-		NewErrorInfo(v1alpha1.Reason_REASON_KAFKA_API_ERROR.String(), KeyValsFromKafkaError(kafkaErr)...),
+		NewErrorInfo(v1alpha2.Reason_REASON_KAFKA_API_ERROR.String(), KeyValsFromKafkaError(kafkaErr)...),
 	)
 }
 
