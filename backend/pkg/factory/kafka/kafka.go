@@ -18,6 +18,8 @@ import (
 	"net"
 	"time"
 
+	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
+	"connectrpc.com/connect"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
@@ -34,6 +36,7 @@ import (
 	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
@@ -96,7 +99,11 @@ func (f *CachedClientProvider) GetKafkaClient(context.Context) (*kgo.Client, *ka
 func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 	kgoOpts, err := NewKgoConfig(f.cfg.Kafka, f.logger, f.cfg.MetricsNamespace)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to build Kafka config: %w", err),
+			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_SERVER_ERROR.String()),
+		)
 	}
 
 	return kgo.NewClient(kgoOpts...)
