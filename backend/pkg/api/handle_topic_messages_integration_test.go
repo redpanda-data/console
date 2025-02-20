@@ -34,6 +34,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/redpanda-data/console/backend/pkg/protocmp"
 	v1pb "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	v1ac "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	dataplane "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1"
@@ -1019,15 +1020,16 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 			sr.Index(0),
 		)
 
-		expectedData, err := serde.Encode(&things.Item{
+		originalObject := &things.Item{
 			Id:        "543",
 			Name:      "item_sr_0",
 			Version:   2,
 			CreatedAt: timestamppb.New(objTime),
-		})
+		}
+		expectedData, err := serde.Encode(originalObject)
 		require.NoError(err)
 
-		assert.Equal(expectedData, record.Value)
+		assert.Equal(len(expectedData), len(record.Value))
 
 		obj2 := things.Item{}
 		err = serde.Decode(record.Value, &obj2)
@@ -1036,6 +1038,8 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Equal("543", obj2.Id)
 		assert.Equal("item_sr_0", obj2.Name)
 		assert.Equal(timestamppb.New(objTime), obj2.CreatedAt)
+
+		protocmp.AssertProtoEqual(t, originalObject, &obj2)
 	})
 }
 

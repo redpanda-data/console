@@ -45,7 +45,7 @@ func (s *APISuite) TestClusterStatus() {
 
 		authorizerInfo, err := client.GetKafkaAuthorizerInfo(ctx, connect.NewRequest(&v1alpha1.GetKafkaAuthorizerInfoRequest{}))
 		require.NoError(t, err)
-		assert.Greater(t, 0, authorizerInfo.Msg.AclCount)
+		assert.Greater(t, int32(0), authorizerInfo.Msg.AclCount)
 	})
 
 	t.Run("get cluster status for Redpanda admin api (connect-go)", func(t *testing.T) {
@@ -54,7 +54,7 @@ func (s *APISuite) TestClusterStatus() {
 
 		redpandaInfo, err := client.GetRedpandaInfo(ctx, connect.NewRequest(&v1alpha1.GetRedpandaInfoRequest{}))
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, 0, redpandaInfo.Msg.GetUserCount())
+		assert.GreaterOrEqual(t, int32(0), redpandaInfo.Msg.GetUserCount())
 	})
 
 	t.Run("get cluster status for partition balancer status api (connect-go)", func(t *testing.T) {
@@ -73,7 +73,7 @@ func (s *APISuite) TestClusterStatus() {
 		kcInfo, err := client.GetKafkaConnectInfo(ctx, connect.NewRequest(&v1alpha1.GetKafkaConnectInfoRequest{}))
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, 1, len(kcInfo.Msg.Clusters))
-		assert.Equal(t, v1alpha1.StatusType_STATUS_TYPE_HEALTHY, kcInfo.Msg.GetClusters()[0].Status)
+		assert.Equal(t, v1alpha1.StatusType_STATUS_TYPE_HEALTHY, kcInfo.Msg.GetClusters()[0].Status.Status)
 	})
 
 	t.Run("get cluster status for schema registry api (connect-go)", func(t *testing.T) {
@@ -82,6 +82,6 @@ func (s *APISuite) TestClusterStatus() {
 
 		schemaInfo, err := client.GetSchemaRegistryInfo(ctx, connect.NewRequest(&v1alpha1.GetSchemaRegistryInfoRequest{}))
 		require.NoError(t, err)
-		assert.Equal(t, v1alpha1.StatusType_STATUS_TYPE_HEALTHY.String(), schemaInfo.Msg.GetStatus().String())
+		assert.Equal(t, v1alpha1.StatusType_STATUS_TYPE_HEALTHY.String(), schemaInfo.Msg.GetStatus().GetStatus().String())
 	})
 }

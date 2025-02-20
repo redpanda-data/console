@@ -79,7 +79,12 @@ func (*Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, error
 		// Call Javascript function and check if it could be evaluated and whether it returned true or false
 		vm.Set("partitionID", args.PartitionID)
 		vm.Set("offset", args.Offset)
-		vm.Set("timestamp", args.Timestamp)
+		tsVal, err := vm.New(vm.Get("Date").ToObject(vm), vm.ToValue(args.Timestamp.UnixNano()/1e6))
+		if err != nil {
+			vm.Set("timestamp", args.Timestamp)
+		} else {
+			vm.Set("timestamp", tsVal)
+		}
 		vm.Set("key", args.Key)
 		vm.Set("value", args.Value)
 		vm.Set("headers", args.HeadersByKey)

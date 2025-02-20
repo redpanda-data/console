@@ -295,7 +295,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.Error(err)
-		assert.Equal("failed to get partitions: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.",
+		assert.Equal("failed to get metadata for topic console_list_messages_topic_test_unknown_topic: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.",
 			err.Error())
 	})
 
@@ -361,7 +361,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				assert.True(ok, "request is not a list offset request: %+T", req)
 
 				require.Len(fetchReq.Topics, 1)
-				assert.Equal(testTopicName, fetchReq.Topics[0].Topic)
+				require.NotEmpty(fetchReq.Topics[0].TopicID)
 
 				if atomic.LoadInt32(&fetchCalls) == 0 {
 					atomic.StoreInt32(&fetchCalls, 1)
@@ -464,7 +464,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		err = svc.ListMessages(ctx, input, mockProgress)
 		assert.Error(err)
-		assert.Equal("failed to get partitions: LEADER_NOT_AVAILABLE: There is no leader for this topic-partition as we are in the middle of a leadership election.", err.Error())
+		assert.Equal("failed to get metadata for topic test.redpanda.console.list_messages: LEADER_NOT_AVAILABLE: There is no leader for this topic-partition as we are in the middle of a leadership election.", err.Error())
 	})
 
 	t.Run("list offset error", func(t *testing.T) {
@@ -729,7 +729,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockProgress := mocks.NewMockIListMessagesProgress(mockCtrl)
+		mockProgress := NewMockIListMessagesProgress(mockCtrl)
 
 		var int64Type int64
 		orderMatcher := MatchesJSON(map[string]map[string]any{

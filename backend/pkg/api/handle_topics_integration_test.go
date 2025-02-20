@@ -148,6 +148,10 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				ctRes.Topics[2].Topic = kmsg.StringPtr(testutil.TopicNameForTest("get_topics_2"))
 
 				return ctRes, nil, true
+			case *kmsg.DescribeConfigsRequest:
+				return nil, fmt.Errorf("DescribeConfigsRequest not mocked"), false
+			case *kmsg.DescribeLogDirsRequest:
+				return nil, fmt.Errorf("DescribeLogDirsRequest not mocked"), false
 
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))

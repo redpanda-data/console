@@ -51,6 +51,8 @@ type TopicSummary struct {
 }
 
 // GetTopicsOverview returns a TopicSummary for all Kafka Topics
+//
+//nolint:gocognit // This function is complex by nature as it has to fetch multiple information from Kafka
 func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error) {
 	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
@@ -63,7 +65,19 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		return nil, err
 	}
 
-	topicNames := metadata.Topics.Names()
+	// 2. Extract all topicNames from metadata
+	topicNames := make([]string, 0, len(metadata.Topics))
+	for _, topic := range metadata.Topics {
+		topicName := topic.Topic
+		if topic.Err != nil {
+			s.logger.Error("failed to get topic metadata while listing topics",
+				zap.String("topic_name", topicName),
+				zap.Error(topic.Err))
+			return nil, topic.Err
+		}
+
+		topicNames = append(topicNames, topicName)
+	}
 
 	// 3. Get log dir sizes & configs for each topic concurrently
 	// Use a shorter ctx timeout so that we don't wait for too long if one broker is currently down.
