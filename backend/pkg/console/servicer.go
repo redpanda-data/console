@@ -83,7 +83,7 @@ type SchemaRegistryServicer interface {
 	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
 	GetSchemaRegistryConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error)
 	PutSchemaRegistryConfig(ctx context.Context, subject string, compatibility sr.SetCompatibility) (*SchemaRegistryConfig, error)
-	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error)
+	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error
 	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
 	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
 	GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName string, version int) ([]SchemaReference, error)
