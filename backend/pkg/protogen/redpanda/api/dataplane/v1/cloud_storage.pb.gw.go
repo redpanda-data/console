@@ -384,7 +384,7 @@ func RegisterCloudStorageServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_CloudStorageService_ListMountableTopics_0(annotatedContext, mux, outboundMarshaler, w, req, response_CloudStorageService_ListMountableTopics_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_CloudStorageService_ListMountableTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -409,7 +409,7 @@ func RegisterCloudStorageServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_CloudStorageService_ListMountTasks_0(annotatedContext, mux, outboundMarshaler, w, req, response_CloudStorageService_ListMountTasks_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_CloudStorageService_ListMountTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -434,7 +434,7 @@ func RegisterCloudStorageServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_CloudStorageService_GetMountTask_0(annotatedContext, mux, outboundMarshaler, w, req, response_CloudStorageService_GetMountTask_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_CloudStorageService_GetMountTask_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -591,7 +591,7 @@ func RegisterCloudStorageServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_CloudStorageService_ListMountableTopics_0(annotatedContext, mux, outboundMarshaler, w, req, response_CloudStorageService_ListMountableTopics_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_CloudStorageService_ListMountableTopics_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -613,7 +613,7 @@ func RegisterCloudStorageServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_CloudStorageService_ListMountTasks_0(annotatedContext, mux, outboundMarshaler, w, req, response_CloudStorageService_ListMountTasks_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_CloudStorageService_ListMountTasks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -635,7 +635,7 @@ func RegisterCloudStorageServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_CloudStorageService_GetMountTask_0(annotatedContext, mux, outboundMarshaler, w, req, response_CloudStorageService_GetMountTask_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_CloudStorageService_GetMountTask_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -684,33 +684,6 @@ func RegisterCloudStorageServiceHandlerClient(ctx context.Context, mux *runtime.
 	})
 
 	return nil
-}
-
-type response_CloudStorageService_ListMountableTopics_0 struct {
-	proto.Message
-}
-
-func (m response_CloudStorageService_ListMountableTopics_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*ListMountableTopicsResponse)
-	return response.Topics
-}
-
-type response_CloudStorageService_ListMountTasks_0 struct {
-	proto.Message
-}
-
-func (m response_CloudStorageService_ListMountTasks_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*ListMountTasksResponse)
-	return response.Tasks
-}
-
-type response_CloudStorageService_GetMountTask_0 struct {
-	proto.Message
-}
-
-func (m response_CloudStorageService_GetMountTask_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetMountTaskResponse)
-	return response.Task
 }
 
 var (

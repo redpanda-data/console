@@ -200,10 +200,7 @@ service TransformService {
   }
 
   rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
-    option (google.api.http) = {
-      get: "/v1/transforms/{name}"
-      response_body: "transform"
-    };
+    option (google.api.http) = {get: "/v1/transforms/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Transform"
       description: "Get a specific Wasm transform."
