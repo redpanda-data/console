@@ -65,7 +65,7 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
   }
 
   refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig(force);
+    api.refreshSchemaCompatibilityConfig();
     api.refreshSchemaMode();
     const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
 
@@ -129,7 +129,7 @@ function EditSchemaCompatibility(p: {
         });
 
         if (subjectName) await api.refreshSchemaDetails(subjectName, true);
-        else await api.refreshSchemaCompatibilityConfig(true);
+        else await api.refreshSchemaCompatibilityConfig();
 
         p.onClose();
       })

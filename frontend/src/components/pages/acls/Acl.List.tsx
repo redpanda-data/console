@@ -81,6 +81,17 @@ const { ToastContainer, toast } = createStandaloneToast({
 
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
+const getCreateUserButtonProps = () => ({
+  isDisabled: !Features.createUser || api.userData?.canCreateUsers === false || !api.isAdminApiConfigured,
+  tooltip: [
+    !Features.createUser && "Your cluster doesn't support this feature.",
+    api.userData?.canCreateUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+    !api.isAdminApiConfigured && 'You need to enable Admin API.',
+  ]
+    .filter(Boolean)
+    .join(' '),
+});
+
 @observer
 class AclList extends PageComponent<{ tab: AclListTab }> {
   @observable edittingPrincipalGroup?: AclPrincipalGroup;
@@ -227,7 +238,7 @@ const PermissionsListTab = observer(() => {
             emptyAction={
               <Button
                 variant="outline"
-                isDisabled={!Features.createUser}
+                {...getCreateUserButtonProps()}
                 onClick={() => appGlobal.history.push('/security/users/create')}
               >
                 Create user
@@ -308,7 +319,7 @@ const UsersTab = observer(() => {
           <Button
             variant="outline"
             data-testid="create-user-button"
-            isDisabled={!Features.createUser}
+            {...getCreateUserButtonProps()}
             onClick={() => appGlobal.history.push('/security/users/create')}
           >
             Create user
@@ -324,15 +335,7 @@ const UsersTab = observer(() => {
             emptyAction={
               <Button
                 variant="outline"
-                isDisabled={!Features.createUser || api.userData?.canCreateUsers === false || !api.isAdminApiConfigured}
-                tooltip={[
-                  !Features.createUser && "Your cluster doesn't support this feature.",
-                  api.userData?.canCreateUsers === false &&
-                    'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-                  !api.isAdminApiConfigured && 'You need to enable Admin API.',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
+                {...getCreateUserButtonProps()}
                 onClick={() => appGlobal.history.push('/security/users/create')}
               >
                 Create user
@@ -460,6 +463,7 @@ const RolesTab = observer(() => {
           data-testid="create-role-button"
           variant="outline"
           onClick={() => appGlobal.history.push('/security/roles/create')}
+          {...getCreateUserButtonProps()}
           isDisabled={api.userData?.canCreateRoles === false || !api.isAdminApiConfigured}
           tooltip={[
             api.userData?.canCreateRoles === false &&
