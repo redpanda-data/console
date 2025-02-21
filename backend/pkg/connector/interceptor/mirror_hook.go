@@ -82,7 +82,7 @@ func KafkaConnectValidateToConsoleMirrorSourceHook(response model.ValidationResp
 				Definition: model.ConfigDefinitionKey{
 					Name:          "topics.exclude",
 					Type:          "LIST",
-					DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
+					DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda.audit_log,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 					Importance:    "MEDIUM",
 					Required:      false,
 					DisplayName:   "Topics exclude",
@@ -90,7 +90,7 @@ func KafkaConnectValidateToConsoleMirrorSourceHook(response model.ValidationResp
 				},
 				Value: model.ConfigDefinitionValue{
 					Name:              "topics.exclude",
-					Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
+					Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda.audit_log,_redpanda_e2e_probe,__redpanda.*,_internal_connectors.*,_schemas",
 					RecommendedValues: []string{},
 					Visible:           true,
 					Errors:            []string{},

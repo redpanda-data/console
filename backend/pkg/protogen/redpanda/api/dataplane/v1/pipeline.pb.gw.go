@@ -476,7 +476,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_CreatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_CreatePipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_CreatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -501,7 +501,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_GetPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_GetPipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_GetPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -551,7 +551,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_UpdatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_UpdatePipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_UpdatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -601,7 +601,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_StopPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_StopPipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_StopPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -626,7 +626,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_StartPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_StartPipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_StartPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -764,7 +764,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_CreatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_CreatePipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_CreatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -786,7 +786,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_GetPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_GetPipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_GetPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -830,7 +830,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_UpdatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_UpdatePipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_UpdatePipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -874,7 +874,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_StopPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_StopPipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_StopPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -896,7 +896,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_PipelineService_StartPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, response_PipelineService_StartPipeline_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_PipelineService_StartPipeline_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -967,51 +967,6 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 	})
 
 	return nil
-}
-
-type response_PipelineService_CreatePipeline_0 struct {
-	proto.Message
-}
-
-func (m response_PipelineService_CreatePipeline_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*CreatePipelineResponse)
-	return response.Pipeline
-}
-
-type response_PipelineService_GetPipeline_0 struct {
-	proto.Message
-}
-
-func (m response_PipelineService_GetPipeline_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetPipelineResponse)
-	return response.Pipeline
-}
-
-type response_PipelineService_UpdatePipeline_0 struct {
-	proto.Message
-}
-
-func (m response_PipelineService_UpdatePipeline_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpdatePipelineResponse)
-	return response.Pipeline
-}
-
-type response_PipelineService_StopPipeline_0 struct {
-	proto.Message
-}
-
-func (m response_PipelineService_StopPipeline_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*StopPipelineResponse)
-	return response.Pipeline
-}
-
-type response_PipelineService_StartPipeline_0 struct {
-	proto.Message
-}
-
-func (m response_PipelineService_StartPipeline_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*StartPipelineResponse)
-	return response.Pipeline
 }
 
 var (

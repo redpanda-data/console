@@ -113,7 +113,6 @@ service PipelineService {
     option (google.api.http) = {
       post: "/v1/redpanda-connect/pipelines"
       body: "pipeline"
-      response_body: "pipeline"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create Redpanda Connect pipeline"
@@ -136,10 +135,7 @@ service PipelineService {
 
   // GetPipeline gets a specific Redpanda Connect pipeline.
   rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {
-    option (google.api.http) = {
-      get: "/v1/redpanda-connect/pipelines/{id}"
-      response_body: "pipeline"
-    };
+    option (google.api.http) = {get: "/v1/redpanda-connect/pipelines/{id}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Redpanda Connect pipeline"
       description: "Get a specific Redpanda Connect pipeline."
@@ -196,7 +192,6 @@ service PipelineService {
     option (google.api.http) = {
       put: "/v1/redpanda-connect/pipelines/{id}"
       body: "pipeline"
-      response_body: "pipeline"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update a Redpanda Connect pipeline"
@@ -248,10 +243,7 @@ service PipelineService {
 
   // StopPipeline stops a specific Redpanda Connect pipeline.
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {
-    option (google.api.http) = {
-      put: "/v1/redpanda-connect/pipelines/{id}/stop"
-      response_body: "pipeline"
-    };
+    option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Stops a Redpanda Connect pipeline"
       description: "Stop a running Redpanda Connect pipeline."
@@ -282,10 +274,7 @@ service PipelineService {
 
   // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
   rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {
-    option (google.api.http) = {
-      put: "/v1/redpanda-connect/pipelines/{id}/start"
-      response_body: "pipeline"
-    };
+    option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/start"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Start a Redpanda Connect pipeline"
       description: "Start a stopped Redpanda Connect pipeline."
@@ -316,10 +305,7 @@ service PipelineService {
 
   // The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
   rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
-    option (google.api.http) = {
-      get: "/v1/redpanda-connect/config-schema"
-      response_body: "*"
-    };
+    option (google.api.http) = {get: "/v1/redpanda-connect/config-schema"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Retrieve the schema for Redpanda Connect pipeline configurations."
       description: "The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance."

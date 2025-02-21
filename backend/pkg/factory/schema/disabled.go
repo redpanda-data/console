@@ -25,6 +25,6 @@ var _ ClientFactory = (*DisabledClientProvider)(nil)
 type DisabledClientProvider struct{}
 
 // GetSchemaRegistryClient returns a standard error for an unconfigured schema registry when invoked.
-func (d *DisabledClientProvider) GetSchemaRegistryClient(context.Context) (*sr.Client, error) {
+func (*DisabledClientProvider) GetSchemaRegistryClient(context.Context) (*sr.Client, error) {
 	return nil, apierrors.NewSchemaRegistryNotConfiguredError()
 }

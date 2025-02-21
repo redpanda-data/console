@@ -198,7 +198,6 @@ service CloudStorageService {
     option (google.api.http) = {
       post: "/v1/cloud-storage/topics/mount"
       body: "topics"
-      response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Mount topics from object storage"
@@ -235,7 +234,6 @@ service CloudStorageService {
     option (google.api.http) = {
       post: "/v1/cloud-storage/topics/unmount"
       body: "topics"
-      response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Unmount topics to object storage"
@@ -269,10 +267,7 @@ service CloudStorageService {
   }
 
   rpc ListMountableTopics(ListMountableTopicsRequest) returns (ListMountableTopicsResponse) {
-    option (google.api.http) = {
-      get: "/v1/cloud-storage/topics/mountable"
-      response_body: "topics"
-    };
+    option (google.api.http) = {get: "/v1/cloud-storage/topics/mountable"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List mountable topics"
       description: "Retrieve all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in object storage and can be mounted for consumption or production within the cluster."
@@ -302,10 +297,7 @@ service CloudStorageService {
   }
 
   rpc ListMountTasks(ListMountTasksRequest) returns (ListMountTasksResponse) {
-    option (google.api.http) = {
-      get: "/v1/cloud-storage/mount-tasks"
-      response_body: "tasks"
-    };
+    option (google.api.http) = {get: "/v1/cloud-storage/mount-tasks"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Retrieve the mount task status"
       description:
@@ -337,10 +329,7 @@ service CloudStorageService {
   }
 
   rpc GetMountTask(GetMountTaskRequest) returns (GetMountTaskResponse) {
-    option (google.api.http) = {
-      get: "/v1/cloud-storage/mount-tasks/{id}"
-      response_body: "task"
-    };
+    option (google.api.http) = {get: "/v1/cloud-storage/mount-tasks/{id}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get the status of a mount or unmount by ID"
       description:
@@ -374,10 +363,7 @@ service CloudStorageService {
   }
 
   rpc DeleteMountTask(DeleteMountTaskRequest) returns (DeleteMountTaskResponse) {
-    option (google.api.http) = {
-      delete: "/v1/cloud-storage/mount-tasks/{id}"
-      response_body: "*"
-    };
+    option (google.api.http) = {delete: "/v1/cloud-storage/mount-tasks/{id}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete a mount or unmount"
       description: "Delete a mount or unmount by ID."
@@ -410,7 +396,6 @@ service CloudStorageService {
     option (google.api.http) = {
       post: "/v1/cloud-storage/mount-tasks/{id}"
       body: "*"
-      response_body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Update a mount or unmount"

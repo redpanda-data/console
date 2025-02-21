@@ -79,6 +79,8 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 		return nil, err
 	}
 
+	s.defaulter.applyListTransformsRequest(c.Msg)
+
 	transforms, err := redpandaCl.ListWasmTransforms(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
