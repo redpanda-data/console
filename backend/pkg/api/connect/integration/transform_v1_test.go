@@ -436,11 +436,13 @@ func (s *APISuite) TestGetTransform_v1() {
 			Value string `json:"value"`
 		}
 		type getTransformResponse struct {
-			Name                 string                     `json:"name"`
-			InputTopicName       string                     `json:"input_topic_name"`
-			OutputTopicNames     []string                   `json:"output_topic_names"`
-			Statuses             []partitionTransformStatus `json:"statuses"`
-			EnvironmentVariables []envVar                   `json:"environment_variables"`
+			Transform struct {
+				Name                 string                     `json:"name"`
+				InputTopicName       string                     `json:"input_topic_name"`
+				OutputTopicNames     []string                   `json:"output_topic_names"`
+				Statuses             []partitionTransformStatus `json:"statuses"`
+				EnvironmentVariables []envVar                   `json:"environment_variables"`
+			} `json:"transform"`
 		}
 		var httpRes getTransformResponse
 		var errResponse string
@@ -455,11 +457,11 @@ func (s *APISuite) TestGetTransform_v1() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 
-		assert.Equal(tfName, httpRes.Name)
-		assert.Equal(inputTopicName, httpRes.InputTopicName)
-		assert.Equal([]string{outputTopicName}, httpRes.OutputTopicNames)
-		require.Len(httpRes.EnvironmentVariables, 1)
-		keyVal := httpRes.EnvironmentVariables[0]
+		assert.Equal(tfName, httpRes.Transform.Name)
+		assert.Equal(inputTopicName, httpRes.Transform.InputTopicName)
+		assert.Equal([]string{outputTopicName}, httpRes.Transform.OutputTopicNames)
+		require.Len(httpRes.Transform.EnvironmentVariables, 1)
+		keyVal := httpRes.Transform.EnvironmentVariables[0]
 		assert.Equal("foo", keyVal.Key)
 		assert.Equal("bar", keyVal.Value)
 	})

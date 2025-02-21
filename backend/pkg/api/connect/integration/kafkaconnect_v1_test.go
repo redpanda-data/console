@@ -203,9 +203,11 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		defer cancel()
 
 		type getConnectorResponse struct {
-			Name   string            `json:"name"`
-			Config map[string]string `json:"config"`
-			Type   string            `json:"type"`
+			ConnectorSpec struct {
+				Name   string            `json:"name"`
+				Config map[string]string `json:"config"`
+				Type   string            `json:"type"`
+			} `json:"connector"`
 		}
 
 		var response getConnectorResponse
@@ -221,9 +223,9 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
-		assert.Equal(input.Connector.Name, response.Name)
-		assert.Equal(input.Connector.Config, response.Config)
-		assert.Equal("source", response.Type)
+		assert.Equal(input.Connector.Name, response.ConnectorSpec.Name)
+		assert.Equal(input.Connector.Config, response.ConnectorSpec.Config)
+		assert.Equal("source", response.ConnectorSpec.Type)
 	})
 
 	t.Run("Get connector status (connect-go)", func(t *testing.T) {
@@ -251,8 +253,10 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		defer cancel()
 
 		type getConnectorStatusResponse struct {
-			Name string `json:"name"`
-			Type string `json:"type"`
+			Status struct {
+				Name string `json:"name"`
+				Type string `json:"type"`
+			} `json:"status"`
 		}
 
 		var response getConnectorStatusResponse
@@ -268,7 +272,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
-		assert.Equal(input.Connector.Name, response.Name)
-		assert.Equal("source", response.Type)
+		assert.Equal(input.Connector.Name, response.Status.Name)
+		assert.Equal("source", response.Status.Type)
 	})
 }

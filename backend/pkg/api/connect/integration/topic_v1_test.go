@@ -757,7 +757,9 @@ func (s *APISuite) TestGetTopicConfiguration_v1() {
 			Name  string  `json:"name"`
 			Value *string `json:"value"`
 		}
-		var httpRes []topicConfig
+		var httpRes struct {
+			Configurations []topicConfig `json:"configurations"`
+		}
 
 		var errResponse string
 		urlPath := fmt.Sprintf("/v1/topics/%v/configurations", topicName)
@@ -771,7 +773,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
-		assert.GreaterOrEqual(len(httpRes), 2)
+		assert.GreaterOrEqual(len(httpRes.Configurations), 2)
 	})
 
 	t.Run("get topic configuration of a non-existent topic (http)", func(t *testing.T) {
@@ -912,7 +914,10 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1() {
 			Value          *string `json:"value"`
 		}
 
-		var httpRes []updateTopicConfigResponse
+		var httpRes struct {
+			Configurations []updateTopicConfigResponse `json:"configurations"`
+		}
+
 		httpReq := []updateTopicConfigRequest{
 			{
 				Name:      "cleanup.policy",
@@ -939,13 +944,13 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 		require.NotNil(httpRes)
-		assert.GreaterOrEqual(len(httpRes), 10) // We expect at least 10 config props to be returned
+		assert.GreaterOrEqual(len(httpRes.Configurations), 10) // We expect at least 10 config props to be returned
 
 		// 3. Compare the returned config values against our expectations
 		var cleanupPolicyConfig *updateTopicConfigResponse
 		var compressionTypeConfig *updateTopicConfigResponse
 		var retentionBytesConfig *updateTopicConfigResponse
-		for _, config := range httpRes {
+		for _, config := range httpRes.Configurations {
 			copiedConfig := config
 			switch config.Name {
 			case "cleanup.policy":
@@ -1206,7 +1211,10 @@ func (s *APISuite) TestSetTopicConfiguration_v1() {
 			Value          *string `json:"value"`
 		}
 
-		var httpRes []setTopicConfigResponse
+		var httpRes struct {
+			Configurations []setTopicConfigResponse `json:"configurations"`
+		}
+
 		httpReq := []setTopicConfigRequest{
 			{
 				Name:  "cleanup.policy",
@@ -1232,13 +1240,13 @@ func (s *APISuite) TestSetTopicConfiguration_v1() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 		require.NotNil(httpRes)
-		assert.GreaterOrEqual(len(httpRes), 10) // We expect at least 10 config props to be returned
+		assert.GreaterOrEqual(len(httpRes.Configurations), 10) // We expect at least 10 config props to be returned
 
 		// 3. Compare the returned config values against our expectations
 		var cleanupPolicyConfig *setTopicConfigResponse
 		var compressionTypeConfig *setTopicConfigResponse
 		var retentionBytesConfig *setTopicConfigResponse
-		for _, config := range httpRes {
+		for _, config := range httpRes.Configurations {
 			copiedConfig := config
 			switch config.Name {
 			case "cleanup.policy":
