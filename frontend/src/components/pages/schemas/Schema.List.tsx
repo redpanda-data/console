@@ -121,7 +121,7 @@ class SchemaList extends PageComponent<{}> {
 
   refreshData(force?: boolean) {
     api.refreshSchemaCompatibilityConfig(force);
-    api.refreshSchemaMode(force);
+    api.refreshSchemaMode();
     api.refreshSchemaSubjects(force);
     api.refreshSchemaTypes(force);
 

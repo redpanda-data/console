@@ -1080,11 +1080,13 @@ const apiStore = {
     }, addError);
   },
 
-  refreshSchemaMode(force?: boolean) {
-    const rq = cachedApiRequest(
-      `${appConfig.restBasePath}/schema-registry/mode`,
-      force,
-    ) as Promise<SchemaRegistryModeResponse>;
+  async refreshSchemaMode() {
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/mode`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+    const rq = parseOrUnwrap<SchemaRegistryModeResponse>(response, null);
+
     return rq
       .then((r) => {
         if (r.isConfigured === false) {
@@ -1101,11 +1103,13 @@ const apiStore = {
       });
   },
 
-  refreshSchemaCompatibilityConfig(force?: boolean) {
-    const rq = cachedApiRequest(
-      `${appConfig.restBasePath}/schema-registry/config`,
-      force,
-    ) as Promise<SchemaRegistryConfigResponse>;
+  async refreshSchemaCompatibilityConfig() {
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+    const rq = parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+
     return rq
       .then((r) => {
         if (r.isConfigured === false) {

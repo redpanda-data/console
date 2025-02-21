@@ -104,7 +104,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
 
   refreshData(force?: boolean) {
     api.refreshSchemaCompatibilityConfig(force);
-    api.refreshSchemaMode(force);
+    api.refreshSchemaMode();
     api.refreshSchemaSubjects(force);
     api.refreshSchemaTypes(force);
 
