@@ -1115,7 +1115,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectCluster_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1165,7 +1165,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_CreateConnector_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1215,7 +1215,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnector_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1240,7 +1240,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorStatus_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1365,7 +1365,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_UpsertConnector_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1390,7 +1390,7 @@ func RegisterKafkaConnectServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorConfig_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1525,7 +1525,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectCluster_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnectCluster_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1569,7 +1569,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_CreateConnector_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_CreateConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1613,7 +1613,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnector_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1635,7 +1635,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorStatus_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnectorStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1745,7 +1745,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_UpsertConnector_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_UpsertConnector_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1767,7 +1767,7 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, response_KafkaConnectService_GetConnectorConfig_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_KafkaConnectService_GetConnectorConfig_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1816,60 +1816,6 @@ func RegisterKafkaConnectServiceHandlerClient(ctx context.Context, mux *runtime.
 	})
 
 	return nil
-}
-
-type response_KafkaConnectService_GetConnectCluster_0 struct {
-	proto.Message
-}
-
-func (m response_KafkaConnectService_GetConnectCluster_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectClusterResponse)
-	return response.Cluster
-}
-
-type response_KafkaConnectService_CreateConnector_0 struct {
-	proto.Message
-}
-
-func (m response_KafkaConnectService_CreateConnector_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*CreateConnectorResponse)
-	return response.Connector
-}
-
-type response_KafkaConnectService_GetConnector_0 struct {
-	proto.Message
-}
-
-func (m response_KafkaConnectService_GetConnector_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorResponse)
-	return response.Connector
-}
-
-type response_KafkaConnectService_GetConnectorStatus_0 struct {
-	proto.Message
-}
-
-func (m response_KafkaConnectService_GetConnectorStatus_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorStatusResponse)
-	return response.Status
-}
-
-type response_KafkaConnectService_UpsertConnector_0 struct {
-	proto.Message
-}
-
-func (m response_KafkaConnectService_UpsertConnector_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpsertConnectorResponse)
-	return response.Connector
-}
-
-type response_KafkaConnectService_GetConnectorConfig_0 struct {
-	proto.Message
-}
-
-func (m response_KafkaConnectService_GetConnectorConfig_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectorConfigResponse)
-	return response.Config
 }
 
 var (

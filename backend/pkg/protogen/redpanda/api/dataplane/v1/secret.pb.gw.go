@@ -688,7 +688,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -738,7 +738,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_CreateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_CreateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -763,7 +763,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_UpdateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_UpdateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -838,7 +838,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -888,7 +888,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_CreateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_CreateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -913,7 +913,7 @@ func RegisterSecretServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_UpdateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_UpdateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1001,7 +1001,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1045,7 +1045,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_CreateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_CreateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1067,7 +1067,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_UpdateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_UpdateSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1133,7 +1133,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_GetConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_GetConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_GetConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1177,7 +1177,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_CreateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_CreateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_CreateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1199,7 +1199,7 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_SecretService_UpdateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, response_SecretService_UpdateConnectSecret_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_SecretService_UpdateConnectSecret_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1226,60 +1226,6 @@ func RegisterSecretServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 	})
 
 	return nil
-}
-
-type response_SecretService_GetSecret_0 struct {
-	proto.Message
-}
-
-func (m response_SecretService_GetSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetSecretResponse)
-	return response.Secret
-}
-
-type response_SecretService_CreateSecret_0 struct {
-	proto.Message
-}
-
-func (m response_SecretService_CreateSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*CreateSecretResponse)
-	return response.Secret
-}
-
-type response_SecretService_UpdateSecret_0 struct {
-	proto.Message
-}
-
-func (m response_SecretService_UpdateSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpdateSecretResponse)
-	return response.Secret
-}
-
-type response_SecretService_GetConnectSecret_0 struct {
-	proto.Message
-}
-
-func (m response_SecretService_GetConnectSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetConnectSecretResponse)
-	return response.Secret
-}
-
-type response_SecretService_CreateConnectSecret_0 struct {
-	proto.Message
-}
-
-func (m response_SecretService_CreateConnectSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*CreateConnectSecretResponse)
-	return response.Secret
-}
-
-type response_SecretService_UpdateConnectSecret_0 struct {
-	proto.Message
-}
-
-func (m response_SecretService_UpdateConnectSecret_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*UpdateConnectSecretResponse)
-	return response.Secret
 }
 
 var (

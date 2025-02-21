@@ -223,7 +223,7 @@ func RegisterTransformServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 			return
 		}
 
-		forward_TransformService_GetTransform_0(annotatedContext, mux, outboundMarshaler, w, req, response_TransformService_GetTransform_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TransformService_GetTransform_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -333,7 +333,7 @@ func RegisterTransformServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 			return
 		}
 
-		forward_TransformService_GetTransform_0(annotatedContext, mux, outboundMarshaler, w, req, response_TransformService_GetTransform_0{resp}, mux.GetForwardResponseOptions()...)
+		forward_TransformService_GetTransform_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -360,15 +360,6 @@ func RegisterTransformServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 	})
 
 	return nil
-}
-
-type response_TransformService_GetTransform_0 struct {
-	proto.Message
-}
-
-func (m response_TransformService_GetTransform_0) XXX_ResponseBody() interface{} {
-	response := m.Message.(*GetTransformResponse)
-	return response.Transform
 }
 
 var (

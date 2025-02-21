@@ -546,10 +546,7 @@ service KafkaConnectService {
   // GetConnectCluster implements the get cluster info method, exposes a Kafka
   // Connect equivalent REST endpoint
   rpc GetConnectCluster(GetConnectClusterRequest) returns (GetConnectClusterResponse) {
-    option (google.api.http) = {
-      get: "/v1/kafka-connect/clusters/{cluster_name}"
-      response_body: "cluster"
-    };
+    option (google.api.http) = {get: "/v1/kafka-connect/clusters/{cluster_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connect cluster"
       description: "Get information about an available Kafka Connect cluster."
@@ -599,7 +596,6 @@ service KafkaConnectService {
     option (google.api.http) = {
       post: "/v1/kafka-connect/clusters/{cluster_name}/connectors"
       body: "connector"
-      response_body: "connector"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Create connector"
@@ -639,10 +635,7 @@ service KafkaConnectService {
   // GetConnector implements the get connector method, exposes a Kafka
   // Connect equivalent REST endpoint
   rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse) {
-    option (google.api.http) = {
-      get: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}"
-      response_body: "connector"
-    };
+    option (google.api.http) = {get: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connector"
       description: "Get information about a connector in a specific cluster."
@@ -664,10 +657,7 @@ service KafkaConnectService {
   // Error information if it has failed
   // The state of all its tasks
   rpc GetConnectorStatus(GetConnectorStatusRequest) returns (GetConnectorStatusResponse) {
-    option (google.api.http) = {
-      get: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/status"
-      response_body: "status"
-    };
+    option (google.api.http) = {get: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/status"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connector status"
       description: "Gets the current status of the connector, including the state for each of its tasks, error information, etc."
@@ -758,7 +748,6 @@ service KafkaConnectService {
     option (google.api.http) = {
       put: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"
       body: "config"
-      response_body: "connector"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Upsert connector configuration"
@@ -786,10 +775,7 @@ service KafkaConnectService {
 
   // GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
   rpc GetConnectorConfig(GetConnectorConfigRequest) returns (GetConnectorConfigResponse) {
-    option (google.api.http) = {
-      get: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"
-      response_body: "config"
-    };
+    option (google.api.http) = {get: "/v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connector configuration"
       description: "Get the configuration for the connector."
