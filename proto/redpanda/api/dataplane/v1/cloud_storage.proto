@@ -74,7 +74,7 @@ message ListMountableTopicsRequest {}
 message ListMountableTopicsResponse {
   message TopicLocation {
     // Topic name.
-    string name = 1;
+    string topic_name = 1;
     // Full reference for the unmounted topic in this format: `topic-name/cluster-uuid/revision`.
     // Use this as unique identifier for mounting a topic if there are multiple topics available
     // with the same name.
