@@ -227,6 +227,28 @@ message SetTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
+message AddTopicPartitionsResponse {}
+
+message AddTopicPartitionsRequest {
+  // The topic name.
+  string topic_name = 1;
+  // The number of partitions to add to the topic.
+  int32 partition_count = 2;
+  // Validate the request only, do not execute it.
+  bool validate_only = 3;
+}
+
+message SetTopicPartitionsRequest {
+  // The topic name.
+  string topic_name = 1;
+  // The number of partitions to set for the topic.
+  int32 partition_count = 2;
+  // Validate the request only, do not execute it.
+  bool validate_only = 3;
+}
+
+message SetTopicPartitionsResponse {}
+
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Topics"
@@ -252,6 +274,7 @@ service TopicService {
       }
     };
   }
+
   rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
     option (google.api.http) = {get: "/v1/topics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -268,6 +291,7 @@ service TopicService {
       }
     };
   }
+
   rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
     option (google.api.http) = {delete: "/v1/topics/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -291,6 +315,7 @@ service TopicService {
       }
     };
   }
+
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
     option (google.api.http) = {get: "/v1/topics/{topic_name}/configurations"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -316,6 +341,7 @@ service TopicService {
       }
     };
   }
+
   rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
     option (google.api.http) = {
       patch: "/v1/topics/{topic_name}/configurations"
@@ -344,6 +370,7 @@ service TopicService {
       }
     };
   }
+
   rpc SetTopicConfigurations(SetTopicConfigurationsRequest) returns (SetTopicConfigurationsResponse) {
     option (google.api.http) = {
       put: "/v1/topics/{topic_name}/configurations"
@@ -358,6 +385,58 @@ service TopicService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1.SetTopicConfigurationsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc AddTopicPartitions(AddTopicPartitionsRequest) returns (AddTopicPartitionsResponse) {
+    option (google.api.http) = {put: "/v1/topics/{topic_name}/partitions"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add Topic Partitions"
+      description: "Add partitions to existing topics."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.AddTopicPartitionsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc SetTopicPartitions(SetTopicPartitionsRequest) returns (SetTopicPartitionsResponse) {
+    option (google.api.http) = {post: "/v1/topics/{topic_name}/partitions"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add Topic Partitions"
+      description: "Set partitions to existing topics."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.SetTopicPartitionsResponse"}
           }
         }
       }

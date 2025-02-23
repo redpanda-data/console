@@ -1028,3 +1028,175 @@ export class SetTopicConfigurationsResponse extends Message<SetTopicConfiguratio
   }
 }
 
+/**
+ * @generated from message redpanda.api.dataplane.v1.AddTopicPartitionsResponse
+ */
+export class AddTopicPartitionsResponse extends Message<AddTopicPartitionsResponse> {
+  constructor(data?: PartialMessage<AddTopicPartitionsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1.AddTopicPartitionsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddTopicPartitionsResponse {
+    return new AddTopicPartitionsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddTopicPartitionsResponse {
+    return new AddTopicPartitionsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddTopicPartitionsResponse {
+    return new AddTopicPartitionsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AddTopicPartitionsResponse | PlainMessage<AddTopicPartitionsResponse> | undefined, b: AddTopicPartitionsResponse | PlainMessage<AddTopicPartitionsResponse> | undefined): boolean {
+    return proto3.util.equals(AddTopicPartitionsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.AddTopicPartitionsRequest
+ */
+export class AddTopicPartitionsRequest extends Message<AddTopicPartitionsRequest> {
+  /**
+   * The topic name.
+   *
+   * @generated from field: string topic_name = 1;
+   */
+  topicName = "";
+
+  /**
+   * The number of partitions to add to the topic.
+   *
+   * @generated from field: int32 partition_count = 2;
+   */
+  partitionCount = 0;
+
+  /**
+   * Validate the request only, do not execute it.
+   *
+   * @generated from field: bool validate_only = 3;
+   */
+  validateOnly = false;
+
+  constructor(data?: PartialMessage<AddTopicPartitionsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1.AddTopicPartitionsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "validate_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddTopicPartitionsRequest {
+    return new AddTopicPartitionsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddTopicPartitionsRequest {
+    return new AddTopicPartitionsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddTopicPartitionsRequest {
+    return new AddTopicPartitionsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AddTopicPartitionsRequest | PlainMessage<AddTopicPartitionsRequest> | undefined, b: AddTopicPartitionsRequest | PlainMessage<AddTopicPartitionsRequest> | undefined): boolean {
+    return proto3.util.equals(AddTopicPartitionsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.SetTopicPartitionsRequest
+ */
+export class SetTopicPartitionsRequest extends Message<SetTopicPartitionsRequest> {
+  /**
+   * The topic name.
+   *
+   * @generated from field: string topic_name = 1;
+   */
+  topicName = "";
+
+  /**
+   * The number of partitions to set for the topic.
+   *
+   * @generated from field: int32 partition_count = 2;
+   */
+  partitionCount = 0;
+
+  /**
+   * Validate the request only, do not execute it.
+   *
+   * @generated from field: bool validate_only = 3;
+   */
+  validateOnly = false;
+
+  constructor(data?: PartialMessage<SetTopicPartitionsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1.SetTopicPartitionsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "validate_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicPartitionsRequest {
+    return new SetTopicPartitionsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicPartitionsRequest {
+    return new SetTopicPartitionsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicPartitionsRequest {
+    return new SetTopicPartitionsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetTopicPartitionsRequest | PlainMessage<SetTopicPartitionsRequest> | undefined, b: SetTopicPartitionsRequest | PlainMessage<SetTopicPartitionsRequest> | undefined): boolean {
+    return proto3.util.equals(SetTopicPartitionsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.SetTopicPartitionsResponse
+ */
+export class SetTopicPartitionsResponse extends Message<SetTopicPartitionsResponse> {
+  constructor(data?: PartialMessage<SetTopicPartitionsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.dataplane.v1.SetTopicPartitionsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetTopicPartitionsResponse {
+    return new SetTopicPartitionsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetTopicPartitionsResponse {
+    return new SetTopicPartitionsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetTopicPartitionsResponse {
+    return new SetTopicPartitionsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetTopicPartitionsResponse | PlainMessage<SetTopicPartitionsResponse> | undefined, b: SetTopicPartitionsResponse | PlainMessage<SetTopicPartitionsResponse> | undefined): boolean {
+    return proto3.util.equals(SetTopicPartitionsResponse, a, b);
+  }
+}
+
