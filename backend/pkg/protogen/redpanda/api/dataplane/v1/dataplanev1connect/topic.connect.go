@@ -58,6 +58,12 @@ const (
 	// TopicServiceSetTopicPartitionsProcedure is the fully-qualified name of the TopicService's
 	// SetTopicPartitions RPC.
 	TopicServiceSetTopicPartitionsProcedure = "/redpanda.api.dataplane.v1.TopicService/SetTopicPartitions"
+	// TopicServiceAddPartitionsToTopicsProcedure is the fully-qualified name of the TopicService's
+	// AddPartitionsToTopics RPC.
+	TopicServiceAddPartitionsToTopicsProcedure = "/redpanda.api.dataplane.v1.TopicService/AddPartitionsToTopics"
+	// TopicServiceSetPartitionsToTopicsProcedure is the fully-qualified name of the TopicService's
+	// SetPartitionsToTopics RPC.
+	TopicServiceSetPartitionsToTopicsProcedure = "/redpanda.api.dataplane.v1.TopicService/SetPartitionsToTopics"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -71,6 +77,8 @@ var (
 	topicServiceSetTopicConfigurationsMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("SetTopicConfigurations")
 	topicServiceAddTopicPartitionsMethodDescriptor        = topicServiceServiceDescriptor.Methods().ByName("AddTopicPartitions")
 	topicServiceSetTopicPartitionsMethodDescriptor        = topicServiceServiceDescriptor.Methods().ByName("SetTopicPartitions")
+	topicServiceAddPartitionsToTopicsMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("AddPartitionsToTopics")
+	topicServiceSetPartitionsToTopicsMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("SetPartitionsToTopics")
 )
 
 // TopicServiceClient is a client for the redpanda.api.dataplane.v1.TopicService service.
@@ -83,6 +91,8 @@ type TopicServiceClient interface {
 	SetTopicConfigurations(context.Context, *connect.Request[v1.SetTopicConfigurationsRequest]) (*connect.Response[v1.SetTopicConfigurationsResponse], error)
 	AddTopicPartitions(context.Context, *connect.Request[v1.AddTopicPartitionsRequest]) (*connect.Response[v1.AddTopicPartitionsResponse], error)
 	SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error)
+	AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error)
+	SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error)
 }
 
 // NewTopicServiceClient constructs a client for the redpanda.api.dataplane.v1.TopicService service.
@@ -143,6 +153,18 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(topicServiceSetTopicPartitionsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		addPartitionsToTopics: connect.NewClient[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse](
+			httpClient,
+			baseURL+TopicServiceAddPartitionsToTopicsProcedure,
+			connect.WithSchema(topicServiceAddPartitionsToTopicsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		setPartitionsToTopics: connect.NewClient[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse](
+			httpClient,
+			baseURL+TopicServiceSetPartitionsToTopicsProcedure,
+			connect.WithSchema(topicServiceSetPartitionsToTopicsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -156,6 +178,8 @@ type topicServiceClient struct {
 	setTopicConfigurations    *connect.Client[v1.SetTopicConfigurationsRequest, v1.SetTopicConfigurationsResponse]
 	addTopicPartitions        *connect.Client[v1.AddTopicPartitionsRequest, v1.AddTopicPartitionsResponse]
 	setTopicPartitions        *connect.Client[v1.SetTopicPartitionsRequest, v1.SetTopicPartitionsResponse]
+	addPartitionsToTopics     *connect.Client[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse]
+	setPartitionsToTopics     *connect.Client[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse]
 }
 
 // CreateTopic calls redpanda.api.dataplane.v1.TopicService.CreateTopic.
@@ -198,6 +222,16 @@ func (c *topicServiceClient) SetTopicPartitions(ctx context.Context, req *connec
 	return c.setTopicPartitions.CallUnary(ctx, req)
 }
 
+// AddPartitionsToTopics calls redpanda.api.dataplane.v1.TopicService.AddPartitionsToTopics.
+func (c *topicServiceClient) AddPartitionsToTopics(ctx context.Context, req *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error) {
+	return c.addPartitionsToTopics.CallUnary(ctx, req)
+}
+
+// SetPartitionsToTopics calls redpanda.api.dataplane.v1.TopicService.SetPartitionsToTopics.
+func (c *topicServiceClient) SetPartitionsToTopics(ctx context.Context, req *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error) {
+	return c.setPartitionsToTopics.CallUnary(ctx, req)
+}
+
 // TopicServiceHandler is an implementation of the redpanda.api.dataplane.v1.TopicService service.
 type TopicServiceHandler interface {
 	CreateTopic(context.Context, *connect.Request[v1.CreateTopicRequest]) (*connect.Response[v1.CreateTopicResponse], error)
@@ -208,6 +242,8 @@ type TopicServiceHandler interface {
 	SetTopicConfigurations(context.Context, *connect.Request[v1.SetTopicConfigurationsRequest]) (*connect.Response[v1.SetTopicConfigurationsResponse], error)
 	AddTopicPartitions(context.Context, *connect.Request[v1.AddTopicPartitionsRequest]) (*connect.Response[v1.AddTopicPartitionsResponse], error)
 	SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error)
+	AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error)
+	SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error)
 }
 
 // NewTopicServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -264,6 +300,18 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(topicServiceSetTopicPartitionsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	topicServiceAddPartitionsToTopicsHandler := connect.NewUnaryHandler(
+		TopicServiceAddPartitionsToTopicsProcedure,
+		svc.AddPartitionsToTopics,
+		connect.WithSchema(topicServiceAddPartitionsToTopicsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	topicServiceSetPartitionsToTopicsHandler := connect.NewUnaryHandler(
+		TopicServiceSetPartitionsToTopicsProcedure,
+		svc.SetPartitionsToTopics,
+		connect.WithSchema(topicServiceSetPartitionsToTopicsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1.TopicService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TopicServiceCreateTopicProcedure:
@@ -282,6 +330,10 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 			topicServiceAddTopicPartitionsHandler.ServeHTTP(w, r)
 		case TopicServiceSetTopicPartitionsProcedure:
 			topicServiceSetTopicPartitionsHandler.ServeHTTP(w, r)
+		case TopicServiceAddPartitionsToTopicsProcedure:
+			topicServiceAddPartitionsToTopicsHandler.ServeHTTP(w, r)
+		case TopicServiceSetPartitionsToTopicsProcedure:
+			topicServiceSetPartitionsToTopicsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -321,4 +373,12 @@ func (UnimplementedTopicServiceHandler) AddTopicPartitions(context.Context, *con
 
 func (UnimplementedTopicServiceHandler) SetTopicPartitions(context.Context, *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.SetTopicPartitions is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) AddPartitionsToTopics(context.Context, *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.AddPartitionsToTopics is not implemented"))
+}
+
+func (UnimplementedTopicServiceHandler) SetPartitionsToTopics(context.Context, *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.SetPartitionsToTopics is not implemented"))
 }
