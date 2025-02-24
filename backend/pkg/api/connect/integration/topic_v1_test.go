@@ -1522,4 +1522,242 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		require.NoError(topicMetadata.Topics[topicName].Err)
 		assert.Equal(1, len(topicMetadata.Topics[topicName].Partitions))
 	})
+
+	t.Run("add topic partition to invalid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		topicName := "console-integration-test-invalid-topic-name-partitions-http-123"
+
+		// 1. Do not create topic
+
+		// 2. Attempt to add partitions
+		type addTopicPartitionRequest struct {
+			PartitionCount int32 `json:"partition_count"`
+			ValidateOnly   bool  `json:"validate_only"`
+		}
+
+		httpReq := addTopicPartitionRequest{
+			PartitionCount: 2,
+			ValidateOnly:   false,
+		}
+
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
+			BodyJSON(&httpReq).
+			Put().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+
+		require.Error(err)
+		assert.NotEmpty(errResponse)
+
+		assert.Contains(errResponse, "NOT_FOUND")
+		assert.Contains(errResponse, "INVALID_TOPIC_EXCEPTION")
+		assert.Contains(errResponse, "Topic does not exist")
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Status code should be 404")
+	})
+}
+
+func (s *APISuite) TestSetTopicPartitions_v1() {
+	t := s.T()
+
+	t.Run("set topic partition to a valid topic (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-set-topic-partitions-valid-connect-go"
+
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Set partitions
+		client := v1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
+
+		setTopicPartitionReq := &v1.SetTopicPartitionsRequest{
+			TopicName:      topicName,
+			PartitionCount: int32(2),
+		}
+
+		response, err := client.SetTopicPartitions(ctx, connect.NewRequest(setTopicPartitionReq))
+
+		require.NoError(err)
+		require.NotNil(response.Msg)
+
+		// 3. Verify results
+		topicMetadata, err := s.kafkaAdminClient.Metadata(ctx, topicName)
+		require.NoError(err)
+		require.Equal(1, len(topicMetadata.Topics))
+		require.NoError(topicMetadata.Topics[topicName].Err)
+		assert.Equal(2, len(topicMetadata.Topics[topicName].Partitions))
+	})
+
+	t.Run("set topic partition to a valid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-set-topic-partitions-valid-http"
+
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Set partitions
+		type setTopicPartitionRequest struct {
+			PartitionCount int32 `json:"partition_count"`
+			ValidateOnly   bool  `json:"validate_only"`
+		}
+
+		httpReq := setTopicPartitionRequest{
+			PartitionCount: 2,
+			ValidateOnly:   false,
+		}
+
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
+			BodyJSON(&httpReq).
+			Post().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+
+		require.NoError(err)
+		assert.Empty(errResponse)
+
+		// 3. Verify results
+		topicMetadata, err := s.kafkaAdminClient.Metadata(ctx, topicName)
+		require.NoError(err)
+		require.Equal(1, len(topicMetadata.Topics))
+		require.NoError(topicMetadata.Topics[topicName].Err)
+		assert.Equal(2, len(topicMetadata.Topics[topicName].Partitions))
+	})
+
+	t.Run("set invalid topic partition to a valid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// 1. Create new topic
+		topicName := "console-integration-test-invalid-set-topic-partitions-http"
+
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+		require.NoError(err)
+
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+			assert.NoError(err)
+		}()
+
+		// 2. Set partitions
+		type setTopicPartitionRequest struct {
+			PartitionCount int32 `json:"partition_count"`
+			ValidateOnly   bool  `json:"validate_only"`
+		}
+
+		httpReq := setTopicPartitionRequest{
+			PartitionCount: 0,
+			ValidateOnly:   false,
+		}
+
+		var errResponse string
+		err = requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
+			BodyJSON(&httpReq).
+			Post().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+
+		require.Error(err)
+		assert.NotEmpty(errResponse)
+
+		assert.Contains(errResponse, "Partition count must be greater then current number of partitions")
+		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status code should be 400")
+
+		// 3. Verify results
+		topicMetadata, err := s.kafkaAdminClient.Metadata(ctx, topicName)
+		require.NoError(err)
+		require.Equal(1, len(topicMetadata.Topics))
+		require.NoError(topicMetadata.Topics[topicName].Err)
+		assert.Equal(1, len(topicMetadata.Topics[topicName].Partitions))
+	})
+
+	t.Run("set topic partition to invalid topic (http)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		topicName := "console-integration-test-invalid-topic-name-partitions-http-321"
+
+		// 1. Do not create topic
+
+		// 2. Attempt to set partitions
+		type setTopicPartitionRequest struct {
+			PartitionCount int32 `json:"partition_count"`
+			ValidateOnly   bool  `json:"validate_only"`
+		}
+
+		httpReq := setTopicPartitionRequest{
+			PartitionCount: 2,
+			ValidateOnly:   false,
+		}
+
+		var errResponse string
+		err := requests.
+			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
+			BodyJSON(&httpReq).
+			Post().
+			AddValidator(requests.ValidatorHandler(
+				requests.CheckStatus(http.StatusOK),
+				requests.ToString(&errResponse),
+			)).
+			Fetch(ctx)
+
+		require.Error(err)
+		assert.NotEmpty(errResponse)
+
+		assert.Contains(errResponse, "NOT_FOUND")
+		assert.Contains(errResponse, "INVALID_TOPIC_EXCEPTION")
+		assert.Contains(errResponse, "Topic does not exist")
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Status code should be 404")
+	})
 }

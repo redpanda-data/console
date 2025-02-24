@@ -49,6 +49,8 @@ func (*Service) handleKafkaTopicPartitionError(kafkaErr error, errorMessage stri
 	switch {
 	case errors.Is(kafkaErr, kerr.UnknownTopicOrPartition):
 		code = connect.CodeNotFound
+	case errors.Is(kafkaErr, kerr.InvalidTopicException):
+		code = connect.CodeNotFound
 	case errors.Is(kafkaErr, kerr.InvalidPartitions):
 		code = connect.CodeInvalidArgument
 	case errors.Is(kafkaErr, kerr.InvalidRequest):
