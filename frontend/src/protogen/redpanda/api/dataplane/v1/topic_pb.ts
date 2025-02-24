@@ -362,9 +362,9 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
   /**
    * Name of topic.
    *
-   * @generated from field: string name = 1;
+   * @generated from field: string topic_name = 1;
    */
-  name = "";
+  topicName = "";
 
   /**
    * The number of partitions created for the topic.
@@ -394,7 +394,7 @@ export class CreateTopicResponse extends Message<CreateTopicResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1.CreateTopicResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "partition_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "replication_factor", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
@@ -619,9 +619,9 @@ export class DeleteTopicRequest extends Message<DeleteTopicRequest> {
   /**
    * Topic name.
    *
-   * @generated from field: string name = 1;
+   * @generated from field: string topic_name = 1;
    */
-  name = "";
+  topicName = "";
 
   constructor(data?: PartialMessage<DeleteTopicRequest>) {
     super();
@@ -631,7 +631,7 @@ export class DeleteTopicRequest extends Message<DeleteTopicRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1.DeleteTopicRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteTopicRequest {

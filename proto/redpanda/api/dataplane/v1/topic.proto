@@ -93,7 +93,7 @@ message CreateTopicRequest {
 
 message CreateTopicResponse {
   // Name of topic.
-  string name = 1;
+  string topic_name = 1;
 
   // The number of partitions created for the topic.
   // This field has a default value of -1, which may be returned if the broker
@@ -149,7 +149,7 @@ message ListTopicsResponse {
 
 message DeleteTopicRequest {
   // Topic name.
-  string name = 1 [
+  string topic_name = 1 [
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 249,
@@ -269,7 +269,7 @@ service TopicService {
     };
   }
   rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
-    option (google.api.http) = {delete: "/v1/topics/{name}"};
+    option (google.api.http) = {delete: "/v1/topics/{topic_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete Topic"
       description: "Delete the Kafka topic with the requested name."
