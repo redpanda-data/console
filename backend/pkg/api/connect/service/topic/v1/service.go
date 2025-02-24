@@ -409,16 +409,7 @@ func (s *Service) AddTopicPartitions(ctx context.Context, req *connect.Request[v
 	}
 
 	if res[topicName].Err != nil {
-		err := res[topicName].Err
-		if res[topicName].ErrMessage != "" {
-			err = fmt.Errorf(res[topicName].ErrMessage+": %w", err)
-		}
-
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(res[topicName].Err)...),
-		)
+		return nil, s.handleKafkaTopicPartitionError(res[topicName].Err, res[topicName].ErrMessage)
 	}
 
 	return connect.NewResponse(&v1.AddTopicPartitionsResponse{}), nil
@@ -441,16 +432,7 @@ func (s *Service) SetTopicPartitions(ctx context.Context, req *connect.Request[v
 	}
 
 	if res[topicName].Err != nil {
-		err := res[topicName].Err
-		if res[topicName].ErrMessage != "" {
-			err = fmt.Errorf(res[topicName].ErrMessage+": %w", err)
-		}
-
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			err,
-			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(res[topicName].Err)...),
-		)
+		return nil, s.handleKafkaTopicPartitionError(res[topicName].Err, res[topicName].ErrMessage)
 	}
 
 	return connect.NewResponse(&v1.SetTopicPartitionsResponse{}), nil
