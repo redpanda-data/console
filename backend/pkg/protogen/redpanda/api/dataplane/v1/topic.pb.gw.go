@@ -130,14 +130,14 @@ func request_TopicService_DeleteTopic_0(ctx context.Context, marshaler runtime.M
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["topic_name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "topic_name")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.TopicName, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "topic_name", err)
 	}
 
 	msg, err := client.DeleteTopic(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -156,14 +156,14 @@ func local_request_TopicService_DeleteTopic_0(ctx context.Context, marshaler run
 		_   = err
 	)
 
-	val, ok = pathParams["name"]
+	val, ok = pathParams["topic_name"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "topic_name")
 	}
 
-	protoReq.Name, err = runtime.String(val)
+	protoReq.TopicName, err = runtime.String(val)
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "topic_name", err)
 	}
 
 	msg, err := server.DeleteTopic(ctx, &protoReq)
@@ -423,7 +423,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1/topics/{name}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1/topics/{topic_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -606,7 +606,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1/topics/{name}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/DeleteTopic", runtime.WithHTTPPathPattern("/v1/topics/{topic_name}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -696,7 +696,7 @@ var (
 
 	pattern_TopicService_ListTopics_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "topics"}, ""))
 
-	pattern_TopicService_DeleteTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "topics", "name"}, ""))
+	pattern_TopicService_DeleteTopic_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "topics", "topic_name"}, ""))
 
 	pattern_TopicService_GetTopicConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "topics", "topic_name", "configurations"}, ""))
 
