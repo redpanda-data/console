@@ -384,7 +384,7 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1.Creat
 	response := s.mapper.createTopicResponseTopicToProto(result)
 
 	connectResponse := connect.NewResponse(&v1.CreateTopicResponse{
-		Name:              response.Name,
+		TopicName:         response.TopicName,
 		PartitionCount:    response.PartitionCount,
 		ReplicationFactor: response.ReplicationFactor,
 	})

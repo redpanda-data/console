@@ -28,7 +28,7 @@ func TestDeleteTopicRequestToKafka(t *testing.T) {
 		{
 			name: "Test case 1",
 			input: &v1.DeleteTopicRequest{
-				Name: "test",
+				TopicName: "test",
 			},
 			validateFn: func(t *testing.T, mappingResult kmsg.DeleteTopicsRequest) {
 				require.Len(t, mappingResult.TopicNames, 1)

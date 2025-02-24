@@ -70,7 +70,7 @@ func (*mapper) createTopicRequestTopicToKafka(topicReq *v1.CreateTopicRequest_To
 
 func (*mapper) createTopicResponseTopicToProto(topic kmsg.CreateTopicsResponseTopic) *v1.CreateTopicResponse {
 	return &v1.CreateTopicResponse{
-		Name:              topic.Topic,
+		TopicName:         topic.Topic,
 		PartitionCount:    topic.NumPartitions,
 		ReplicationFactor: int32(topic.ReplicationFactor),
 	}
@@ -129,10 +129,10 @@ func (k *mapper) describeTopicConfigsToProto(resources []kmsg.DescribeConfigsRes
 
 func (*mapper) deleteTopicToKmsg(req *v1.DeleteTopicRequest) kmsg.DeleteTopicsRequest {
 	kafkaReq := kmsg.NewDeleteTopicsRequest()
-	kafkaReq.TopicNames = []string{req.Name}
+	kafkaReq.TopicNames = []string{req.TopicName}
 	kafkaReq.Topics = []kmsg.DeleteTopicsRequestTopic{
 		{
-			Topic: kmsg.StringPtr(req.Name),
+			Topic: kmsg.StringPtr(req.TopicName),
 		},
 	}
 

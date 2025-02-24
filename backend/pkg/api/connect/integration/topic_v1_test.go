@@ -233,7 +233,7 @@ func (s *APISuite) TestCreateTopic_v1() {
 		createTopicRes, err := client.CreateTopic(ctx, connect.NewRequest(createReq))
 		require.NoError(err)
 
-		assert.Equal(topicName, createTopicRes.Msg.Name)
+		assert.Equal(topicName, createTopicRes.Msg.TopicName)
 		assert.EqualValues(partitionCount, createTopicRes.Msg.PartitionCount)
 		assert.EqualValues(1, createTopicRes.Msg.ReplicationFactor)
 
@@ -365,7 +365,7 @@ func (s *APISuite) TestCreateTopic_v1() {
 		}
 
 		type createTopicsResponse struct {
-			Name              string `json:"name"`
+			TopicName         string `json:"topic_name"`
 			PartitionCount    int    `json:"partition_count"`
 			ReplicationFactor int    `json:"replication_factor"`
 		}
@@ -383,7 +383,7 @@ func (s *APISuite) TestCreateTopic_v1() {
 			Fetch(ctx)
 		assert.Empty(errResponse)
 		require.NoError(err)
-		assert.Equal(topicName, httpRes.Name)
+		assert.Equal(topicName, httpRes.TopicName)
 		assert.Equal(partitionCount, httpRes.PartitionCount)
 
 		defer func() {
@@ -521,7 +521,7 @@ func (s *APISuite) TestDeleteTopic_v1() {
 
 		// 3. Delete topic via Connect API
 		client := v1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := v1.DeleteTopicRequest{Name: topicName}
+		req := v1.DeleteTopicRequest{TopicName: topicName}
 		_, err = client.DeleteTopic(ctx, connect.NewRequest(&req))
 		require.NoError(err)
 
@@ -583,7 +583,7 @@ func (s *APISuite) TestDeleteTopic_v1() {
 		defer cancel()
 
 		client := v1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := v1.DeleteTopicRequest{Name: "some-random-topic-name-that-does-not-exist"}
+		req := v1.DeleteTopicRequest{TopicName: "some-random-topic-name-that-does-not-exist"}
 		_, err := client.DeleteTopic(ctx, connect.NewRequest(&req))
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
@@ -619,7 +619,7 @@ func (s *APISuite) TestDeleteTopic_v1() {
 		defer cancel()
 
 		client := v1connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
-		req := v1.DeleteTopicRequest{Name: "some-chars-are-not!$-allowed"}
+		req := v1.DeleteTopicRequest{TopicName: "some-chars-are-not!$-allowed"}
 		_, err := client.DeleteTopic(ctx, connect.NewRequest(&req))
 		assert.Error(err)
 		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
