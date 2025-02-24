@@ -290,9 +290,9 @@ export class ListMountableTopicsResponse_TopicLocation extends Message<ListMount
   /**
    * Topic name.
    *
-   * @generated from field: string name = 1;
+   * @generated from field: string topic_name = 1;
    */
-  name = "";
+  topicName = "";
 
   /**
    * Full reference for the unmounted topic in this format: `topic-name/cluster-uuid/revision`.
@@ -311,7 +311,7 @@ export class ListMountableTopicsResponse_TopicLocation extends Message<ListMount
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "redpanda.api.dataplane.v1.ListMountableTopicsResponse.TopicLocation";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "topic_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "topic_location", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
