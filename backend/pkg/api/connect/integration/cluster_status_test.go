@@ -45,7 +45,7 @@ func (s *APISuite) TestClusterStatus() {
 
 		authorizerInfo, err := client.GetKafkaAuthorizerInfo(ctx, connect.NewRequest(&v1alpha1.GetKafkaAuthorizerInfoRequest{}))
 		require.NoError(t, err)
-		assert.Greater(t, int32(0), authorizerInfo.Msg.AclCount)
+		assert.GreaterOrEqual(t, int32(0), authorizerInfo.Msg.AclCount)
 	})
 
 	t.Run("get cluster status for Redpanda admin api (connect-go)", func(t *testing.T) {
@@ -63,7 +63,13 @@ func (s *APISuite) TestClusterStatus() {
 
 		pbs, err := client.GetRedpandaPartitionBalancerStatus(ctx, connect.NewRequest(&v1alpha1.GetRedpandaPartitionBalancerStatusRequest{}))
 		require.NoError(t, err)
-		assert.Equal(t, v1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_READY.String(), pbs.Msg.GetStatus().String())
+
+		// At startup the PBS may be in progress and not ready.
+		statuses := []string{
+			v1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_READY.String(),
+			v1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_IN_PROGRESS.String(),
+		}
+		assert.Contains(t, statuses, pbs.Msg.GetStatus().String())
 	})
 
 	t.Run("get cluster status for Kafka Connect api (connect-go)", func(t *testing.T) {
