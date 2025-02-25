@@ -412,6 +412,7 @@ const apiStore = {
   partitionReassignments: undefined as PartitionReassignments[] | null | undefined,
 
   connectConnectors: undefined as KafkaConnectors | undefined,
+  connectConnectorsError: null as WrappedApiError | null,
   connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
   licenses: [] as License[],
@@ -1463,8 +1464,14 @@ const apiStore = {
     return await parseOrUnwrap<PatchConfigsResponse>(response, null);
   },
 
-  async refreshConnectClusters(force?: boolean): Promise<void> {
-    return cachedApiRequest<KafkaConnectors | null>(`${appConfig.restBasePath}/kafka-connect/connectors`, force).then(
+  async refreshConnectClusters(): Promise<void> {
+    this.connectConnectorsError = null;
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/connectors`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+
+    return await parseOrUnwrap<KafkaConnectors | null>(response, null).then(
       (v) => {
         // backend error
         if (!v) {
@@ -1484,7 +1491,7 @@ const apiStore = {
         this.connectConnectors = v;
       },
       (error: ConnectError) => {
-        console.log(error);
+        this.connectConnectorsError = error;
       },
     );
   },
@@ -2110,6 +2117,7 @@ export const rolesApi = observable({
 
 export const pipelinesApi = observable({
   pipelines: undefined as undefined | Pipeline[],
+  pipelinesError: null as ConnectError | null,
 
   // async lintConfig(config: string): Promise<LintConfigResponse> {
   //     const client = appConfig.pipelinesClient;
@@ -2124,11 +2132,16 @@ export const pipelinesApi = observable({
     if (!client) throw new Error('pipelines client is not initialized');
 
     const pipelines = [];
+    this.pipelinesError = null;
 
     let nextPageToken = '';
     while (true) {
-      const res = await client.listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } });
-      const response = res.response;
+      const res = await client
+        .listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } })
+        .catch((error: ConnectError) => {
+          this.pipelinesError = error;
+        });
+      const response = res?.response;
       if (!response) break;
 
       pipelines.push(...response.pipelines);
