@@ -44,6 +44,7 @@ import (
 	transformsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/transform/v1alpha2"
 	apiusersvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1alpha1"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1alpha2"
+	consolev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
@@ -144,6 +145,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.LicenseServiceName:         licenseSvc,
 			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
 			consolev1alpha1connect.TransformServiceName:       consoleTransformSvc,
+			consolev1alpha1connect.SecretServiceName:          consolev1alpha1.UnimplementedSecretServiceServer{},
 			dataplanev1alpha2connect.ACLServiceName:           aclSvc,
 			dataplanev1alpha2connect.TopicServiceName:         topicSvc,
 			dataplanev1alpha2connect.UserServiceName:          userSvc,
