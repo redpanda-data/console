@@ -19,7 +19,7 @@ import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { ObjToKv } from '../utils/tsxUtils';
-import { TimeSince, decodeBase64, getOidcSubject } from '../utils/utils';
+import { TimeSince, capitalizeFirst, decodeBase64, getOidcSubject } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -112,6 +112,7 @@ import {
 import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
+import { Code, type ConnectError } from '@connectrpc/connect';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -1482,7 +1483,9 @@ const apiStore = {
 
         this.connectConnectors = v;
       },
-      addError,
+      (error: ConnectError) => {
+        console.log(error);
+      },
     );
   },
 
@@ -1754,10 +1757,17 @@ const apiStore = {
     return parseOrUnwrap<void>(response, null);
   },
 
-  async refreshServiceAccounts(force?: boolean): Promise<void> {
+  async refreshServiceAccounts(): Promise<void> {
     this.serviceAccountsLoading = true;
-    await cachedApiRequest<GetUsersResponse | null>(`${appConfig.restBasePath}/users`, force)
-      .then((v) => (this.serviceAccounts = v ?? null), addError)
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/users`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+    return parseOrUnwrap<void>(response, null)
+      .then((v) => {
+        this.serviceAccounts = v ?? null;
+      })
+      .catch((err: ConnectError) => addError(err))
       .finally(() => (this.serviceAccountsLoading = false));
   },
 
@@ -1996,8 +2006,10 @@ export type RolePrincipal = { name: string; principalType: 'User' };
 export const rolesApi = observable({
   roles: [] as string[],
   roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
+  rolesError: null as ConnectError | null,
 
   async refreshRoles(): Promise<void> {
+    this.rolesError = null;
     const client = appConfig.securityClient;
     if (!client) throw new Error('security client is not initialized');
 
@@ -2006,7 +2018,9 @@ export const rolesApi = observable({
     if (Features.rolesApi) {
       let nextPageToken = '';
       while (true) {
-        const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken });
+        const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken }).catch((error) => {
+          this.rolesError = error;
+        });
 
         const newRoles = res.roles.map((x) => x.name);
         roles.push(...newRoles);

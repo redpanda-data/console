@@ -10,7 +10,7 @@
  */
 
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
-import { Link as ChakraLink } from '@redpanda-data/ui';
+import { Link as ChakraLink, Result } from '@redpanda-data/ui';
 import {
   Alert,
   AlertDialog,
@@ -49,7 +49,7 @@ import { AclRequestDefault } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { clone, toJson } from '../../../utils/jsonUtils';
-import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -65,6 +65,7 @@ import {
 import type { AclPrincipalGroup } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
+import { Code, type ConnectError } from '@connectrpc/connect';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { UserRoleTags } from './UserPermissionAssignments';
@@ -136,12 +137,21 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
       ) : null;
 
     const tabs = [
-      { key: 'users' as AclListTab, name: 'Users', component: <UsersTab data-testid="users-tab" /> },
+      {
+        key: 'users' as AclListTab,
+        name: 'Users',
+        component: <UsersTab data-testid="users-tab" />,
+        isDisabled:
+          (!Features.createUser && "Your cluster doesn't support this feature.") ||
+          (api.userData?.canCreateUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+      },
       {
         key: 'roles' as AclListTab,
         name: 'Roles',
         component: <RolesTab data-testid="roles-tab" />,
-        isDisabled: Features.rolesApi ? false : 'Not supported in this cluster',
+        isDisabled:
+          (!Features.createUser && "Your cluster doesn't support this feature.") ||
+          (api.userData?.canCreateUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
       {
         key: 'acls' as AclListTab,
@@ -443,6 +453,10 @@ const RolesTab = observer(() => {
     return { name: r, members };
   });
 
+  if (rolesApi.rolesError) {
+    return <RolesErrorComponent error={rolesApi.rolesError} />;
+  }
+
   return (
     <Flex flexDirection="column" gap="4">
       <Box>Roles are groups of ACLs abstracted under a single name. Roles can be assigned to principals.</Box>
@@ -699,7 +713,7 @@ const AclsTab = observer(
                             status: 'success',
                             description: (
                               <Text as="span">
-                                Deleted ACLs for <Code>{record.principalName}</Code>
+                                Deleted ACLs for <CodeEl>{record.principalName}</CodeEl>
                               </Text>
                             ),
                           });
@@ -716,7 +730,7 @@ const AclsTab = observer(
                             status: 'success',
                             description: (
                               <Text as="span">
-                                Deleted user <Code>{record.principalName}</Code>
+                                Deleted user <CodeEl>{record.principalName}</CodeEl>
                               </Text>
                             ),
                           });
@@ -800,27 +814,27 @@ const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null; onClose: () =>
   );
 };
 
-// const PermissionDenied = (
-//   <>
-//     <PageContent key="aclNoPerms">
-//       <Section>
-//         <Result
-//           title="Permission Denied"
-//           status={403}
-//           userMessage={
-//             <Text>
-//               You are not allowed to view this page.
-//               <br />
-//               Contact the administrator if you think this is an error.
-//             </Text>
-//           }
-//           extra={
-//             <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-//               <Button>Redpanda Console documentation</Button>
-//             </a>
-//           }
-//         />
-//       </Section>
-//     </PageContent>
-//   </>
-// );
+const RolesErrorComponent: FC<{ error: ConnectError }> = ({ error }) => {
+  if (error.code === Code.PermissionDenied) {
+    return (
+      <Section>
+        <Result
+          title="Permission Denied"
+          status={403}
+          userMessage={
+            <Text>
+              You are not allowed to view this page.
+              <br />
+              Contact the administrator if you think this is an error.
+            </Text>
+          }
+          extra={
+            <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+              <Button>Redpanda Console documentation</Button>
+            </a>
+          }
+        />
+      </Section>
+    );
+  }
+};

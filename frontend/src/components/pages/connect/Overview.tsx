@@ -84,8 +84,8 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.addBreadcrumb('Connect', '/connect-clusters');
 
     this.checkRPCNSecretEnable();
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
   async checkRPCNSecretEnable() {
@@ -94,8 +94,8 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     }
   }
 
-  async refreshData(force: boolean) {
-    await api.refreshConnectClusters(force);
+  async refreshData() {
+    await api.refreshConnectClusters();
     // if (api.connectConnectors?.isConfigured) {
     //     const clusters = api.connectConnectors.clusters;
     //     if (clusters?.length == 1) {

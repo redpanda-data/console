@@ -208,7 +208,7 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
   }
 
   refreshData(force: boolean) {
-    api.refreshConnectClusters(force);
+    api.refreshConnectClusters();
   }
 
   render() {

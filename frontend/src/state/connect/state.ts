@@ -163,7 +163,7 @@ export class ConnectClusterStore {
   }
 
   async refreshData(force: boolean) {
-    await api.refreshConnectClusters(force);
+    await api.refreshConnectClusters();
     await api.refreshClusterAdditionalInfo(this.clusterName, force);
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
