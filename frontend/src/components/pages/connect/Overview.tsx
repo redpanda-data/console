@@ -409,6 +409,7 @@ const TabKafkaConnect = observer((_p: {}) => {
   if (api.connectConnectorsError) {
     return (
       <Result
+        title="Error"
         status={api.connectConnectorsError.statusCode}
         userMessage={capitalizeFirst(api.connectConnectorsError.message)}
       />
