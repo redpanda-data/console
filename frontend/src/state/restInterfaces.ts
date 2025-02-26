@@ -544,6 +544,7 @@ export interface UserData {
   canPatchConfigs: boolean;
   canCreateRoles: boolean;
   canCreateUsers: boolean;
+  canViewPermissionsList: boolean;
 
   canManageLicense: boolean;
   canViewSchemas: boolean;

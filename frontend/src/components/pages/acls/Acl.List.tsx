@@ -66,6 +66,7 @@ import type { AclPrincipalGroup } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
 import { Code, type ConnectError } from '@connectrpc/connect';
+import { capitalizeFirst } from '../../../utils/utils';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { UserRoleTags } from './UserPermissionAssignments';
@@ -111,7 +112,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   async refreshData() {
-    await Promise.allSettled([api.refreshServiceAccounts(true), rolesApi.refreshRoles()]);
+    await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles()]);
     await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
   }
 
@@ -159,7 +160,14 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         component: <AclsTab data-testid="acls-tab" principalGroups={principalGroupsView.principalGroups} />,
         isDisabled: api.userData?.canListAcls ? false : 'You do not have the necessary permissions to view ACLs.',
       },
-      { key: 'permissions-list' as AclListTab, name: 'Permissions list', component: <PermissionsListTab /> },
+      {
+        key: 'permissions-list' as AclListTab,
+        name: 'Permissions list',
+        component: <PermissionsListTab />,
+        isDisabled: api.userData?.canViewPermissionsList
+          ? false
+          : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
+      },
     ] as TabsItemProps[];
 
     // todo: maybe there is a better way to sync the tab control to the path
@@ -304,6 +312,16 @@ const UsersTab = observer(() => {
       return false;
     }
   });
+
+  if (api.serviceAccountsError) {
+    return (
+      <Result
+        title="Error"
+        status={api.serviceAccountsError.statusCode}
+        userMessage={capitalizeFirst(api.serviceAccountsError.message)}
+      />
+    );
+  }
 
   return (
     <Flex flexDirection="column" gap="4">

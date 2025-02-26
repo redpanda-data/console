@@ -19,7 +19,7 @@ import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { ObjToKv } from '../utils/tsxUtils';
-import { TimeSince, capitalizeFirst, decodeBase64, getOidcSubject } from '../utils/utils';
+import { TimeSince, decodeBase64, getOidcSubject } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -112,7 +112,7 @@ import {
 import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
-import { Code, type ConnectError } from '@connectrpc/connect';
+import type { ConnectError } from '@connectrpc/connect';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -401,6 +401,7 @@ const apiStore = {
 
   serviceAccounts: undefined as GetUsersResponse | undefined | null,
   serviceAccountsLoading: false,
+  serviceAccountsError: null as WrappedApiError | null,
 
   ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
@@ -454,6 +455,9 @@ const apiStore = {
           canCreateRoles:
             r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER) &&
             r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+          canViewPermissionsList:
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE) &&
+            r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
 
           canManageLicense: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_LICENSE),
           canCreateUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
@@ -1774,7 +1778,9 @@ const apiStore = {
       .then((v) => {
         this.serviceAccounts = v ?? null;
       })
-      .catch((err: ConnectError) => addError(err))
+      .catch((err: WrappedApiError) => {
+        this.serviceAccountsError = err;
+      })
       .finally(() => (this.serviceAccountsLoading = false));
   },
 

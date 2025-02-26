@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code } from '@connectrpc/connect';
 import { Badge, Box, DataTable, Link, Result, Stack, Text, Tooltip } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
@@ -21,7 +20,7 @@ import { api, rpcnSecretManagerApi } from '../../../state/backendApi';
 import type { ClusterConnectorInfo, ClusterConnectorTaskInfo, ClusterConnectors } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
-import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { capitalizeFirst } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import SearchBar from '../../misc/SearchBar';
@@ -395,7 +394,7 @@ class TabTasks extends Component {
           },
           {
             header: 'Cluster',
-            cell: ({ row: { original } }) => <CodeEl nowrap>{original.cluster.clusterName}</CodeEl>,
+            cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },
         ]}
       />
@@ -415,7 +414,6 @@ const TabKafkaConnect = observer((_p: {}) => {
       />
     );
   }
-  // if (api.connectConnectorsError?.code === Code.PermissionDenied) {
   if (!api.connectConnectors) return DefaultSkeleton;
   if (api.connectConnectors.isConfigured === false) return <NotConfigured />;
 
