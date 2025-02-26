@@ -44,7 +44,6 @@ import (
 	transformsvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/transform/v1alpha2"
 	apiusersvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1alpha1"
 	apiusersvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1alpha2"
-	consolev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
@@ -120,7 +119,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	topicSvcV1alpha1 := topicsvcv1alpha1.NewService(topicSvc)
 	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvc)
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc, api.Hooks.Authorization)
-	securitySvc := consolev1alpha1connect.UnimplementedSecurityServiceHandler{}
 	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.Cfg, api.License, api.Hooks.Authorization)
 	if err != nil {
 		api.Logger.Fatal("failed to create license service", zap.Error(err))
@@ -141,11 +139,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1alpha1connect.TopicServiceName:         topicSvcV1alpha1,
 			dataplanev1alpha1connect.TransformServiceName:     transformSvcV1alpha1,
 			consolev1alpha1connect.ConsoleServiceName:         consoleSvc,
-			consolev1alpha1connect.SecurityServiceName:        securitySvc,
+			consolev1alpha1connect.SecurityServiceName:        consolev1alpha1connect.UnimplementedSecurityServiceHandler{},
 			consolev1alpha1connect.LicenseServiceName:         licenseSvc,
 			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
 			consolev1alpha1connect.TransformServiceName:       consoleTransformSvc,
-			consolev1alpha1connect.SecretServiceName:          consolev1alpha1.UnimplementedSecretServiceServer{},
+			consolev1alpha1connect.SecretServiceName:          consolev1alpha1connect.UnimplementedSecretServiceHandler{},
 			dataplanev1alpha2connect.ACLServiceName:           aclSvc,
 			dataplanev1alpha2connect.TopicServiceName:         topicSvc,
 			dataplanev1alpha2connect.UserServiceName:          userSvc,
@@ -208,6 +206,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	consoleSecretsServicePath, consoleSecretsServiceHandler := consolev1alpha1connect.NewSecretServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.SecretServiceName].(consolev1alpha1connect.SecretServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	// v1alpha2
@@ -311,6 +312,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: dataplanev1alpha2connect.CloudStorageServiceName,
 			MountPath:   cloudStorageSvcPath,
 			Handler:     cloudStorageSvcHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.SecretServiceName,
+			MountPath:   consoleSecretsServicePath,
+			Handler:     consoleSecretsServiceHandler,
 		},
 	}
 
