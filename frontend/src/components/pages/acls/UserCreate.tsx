@@ -98,7 +98,7 @@ class UserCreatePage extends PageComponent<{}> {
   async refreshData(force: boolean) {
     if (api.userData != null && !api.userData.canListAcls) return;
 
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts(true)]);
+    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
   }
 
   render() {
@@ -139,7 +139,7 @@ class UserCreatePage extends PageComponent<{}> {
 
       // Refresh user list
       if (api.userData != null && !api.userData.canListAcls) return false;
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts(true)]);
+      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
 
       // Add the user to the selected roles
       const roleAddPromises = [];

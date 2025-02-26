@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -109,7 +109,9 @@ function EditSchemaCompatibility(p: {
   const schema = subject?.schemas.first((x) => x.version === subject.latestActiveVersion);
 
   // type should be just "SchemaRegistryCompatibilityMode"
-  const [configMode, setConfigMode] = useState(subjectName ? subject?.compatibility : api.schemaCompatibility);
+  const [configMode, setConfigMode] = useState<string>(
+    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT',
+  );
 
   if (subjectName && !schema) return DefaultSkeleton;
 

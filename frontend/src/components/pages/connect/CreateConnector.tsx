@@ -203,12 +203,12 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
     p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`);
     p.addBreadcrumb('Create Connector', `/connect-clusters/${encodeURIComponent(clusterName)}/create-connector`);
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
-  refreshData(force: boolean) {
-    api.refreshConnectClusters();
+  refreshData() {
+    void api.refreshConnectClusters();
   }
 
   render() {

@@ -431,7 +431,7 @@ const UsersTab = observer(() => {
 
                           await Promise.allSettled(promises);
                           await rolesApi.refreshRoleMembers();
-                          await api.refreshServiceAccounts(true);
+                          await api.refreshServiceAccounts();
                         }}
                         buttonEl={
                           <button type="button">
@@ -636,7 +636,7 @@ const AclsTab = observer(
               onClose={() => {
                 setEdittingPrincipalGroup(null);
                 api.refreshAcls(AclRequestDefault, true);
-                api.refreshServiceAccounts(true);
+                api.refreshServiceAccounts();
               }}
             />
           )}
@@ -760,7 +760,7 @@ const AclsTab = observer(
 
                       await Promise.allSettled([
                         api.refreshAcls(AclRequestDefault, true),
-                        api.refreshServiceAccounts(true),
+                        api.refreshServiceAccounts(),
                       ]);
                     };
 

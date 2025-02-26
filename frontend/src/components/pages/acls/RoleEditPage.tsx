@@ -47,7 +47,7 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
   async refreshData(force: boolean) {
     if (api.userData != null && !api.userData.canListAcls) return;
 
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts(true)]);
+    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
 
     await rolesApi.refreshRoles();
     await rolesApi.refreshRoleMembers();

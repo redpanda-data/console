@@ -348,6 +348,7 @@ export async function handleExpiredLicenseError(r: Response) {
       canDeleteSchemas: true,
       canManageSchemaRegistry: true,
       canManageLicense: true,
+      canViewPermissionsList: true,
       canCreateUsers: true,
       canViewSchemas: true,
       canListTransforms: true,
@@ -1494,7 +1495,7 @@ const apiStore = {
 
         this.connectConnectors = v;
       },
-      (error: ConnectError) => {
+      (error: WrappedApiError) => {
         this.connectConnectorsError = error;
       },
     );
@@ -2033,7 +2034,12 @@ export const rolesApi = observable({
       while (true) {
         const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken }).catch((error) => {
           this.rolesError = error;
+          return null;
         });
+
+        if (res === null) {
+          break;
+        }
 
         const newRoles = res.roles.map((x) => x.name);
         roles.push(...newRoles);

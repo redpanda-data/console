@@ -31,7 +31,7 @@ class RoleCreatePage extends PageComponent {
   }
 
   async refreshData() {
-    await Promise.allSettled([api.refreshServiceAccounts(true), rolesApi.refreshRoles()]);
+    await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles()]);
   }
 
   render() {

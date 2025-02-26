@@ -66,7 +66,7 @@ class UserEditPage extends PageComponent<{ userName: string }> {
 
     await Promise.allSettled([
       api.refreshAcls(AclRequestDefault, force),
-      api.refreshServiceAccounts(true),
+      api.refreshServiceAccounts(),
       rolesApi.refreshRoles(),
     ]);
 
