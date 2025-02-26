@@ -198,7 +198,7 @@ service SecurityService {
   // ListRoles lists all the roles based on optional filter.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
+      required_permission: PERMISSION_ADMIN
       api: API_REDPANDA_ADMIN
     };
   }
@@ -213,7 +213,7 @@ service SecurityService {
   // GetRole retrieves the specific role.
   rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
+      required_permission: PERMISSION_ADMIN
       api: API_REDPANDA_ADMIN
     };
   }
@@ -229,7 +229,7 @@ service SecurityService {
   // ListRoleMembership lists all the members assigned to a role based on optional filter.
   rpc ListRoleMembers(ListRoleMembersRequest) returns (ListRoleMembersResponse) {
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_VIEW
+      required_permission: PERMISSION_ADMIN
       api: API_REDPANDA_ADMIN
     };
   }
