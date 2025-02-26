@@ -15,6 +15,7 @@ import { observer } from 'mobx-react';
 import { useRouteMatch } from 'react-router-dom';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { isEmbedded } from '../../config';
+import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
 import { IsDev } from '../../utils/env';
 import { UserPreferencesButton } from '../misc/UserPreferences';
@@ -83,7 +84,15 @@ const AppPageHeader = observer(() => {
           {showRefresh && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>
-          <Button as={ReactRouterLink} to="/debug-bundle" variant="ghost">
+          <Button
+            as={ReactRouterLink}
+            to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
+            variant="ghost"
+            isDisabled={!api.userData?.canViewDebugBundle}
+            tooltip={
+              !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
+            }
+          >
             Debug bundle
           </Button>
           <UserPreferencesButton />
