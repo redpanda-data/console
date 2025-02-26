@@ -32,7 +32,7 @@ import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeli
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/dataplane/v1alpha2/pipeline_connect';
-import { SecretService as RPCNSecretService } from './protogen/redpanda/api/dataplane/v1alpha2/secret_connect';
+import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
 import { appGlobal } from './state/appGlobal';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';

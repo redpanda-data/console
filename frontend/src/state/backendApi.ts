@@ -2089,20 +2089,20 @@ export const rpcnSecretManagerApi = observable({
 
     let nextPageToken = '';
     while (true) {
-      const res = await client.listSecrets(
-        new ListSecretsRequest({
+      const res = await client.listSecrets({
+        request: new ListSecretsRequest({
           pageToken: nextPageToken,
           pageSize: 100,
         }),
-      );
+      });
 
-      const response = res.secrets;
+      const response = res.response;
       if (!response) break;
 
-      secrets.push(...response);
+      secrets.push(...response.secrets);
 
-      if (!res || res.nextPageToken.length === 0) break;
-      nextPageToken = res.nextPageToken;
+      if (!res || response.nextPageToken.length === 0) break;
+      nextPageToken = response.nextPageToken;
     }
 
     this.secrets = secrets;
@@ -2112,26 +2112,32 @@ export const rpcnSecretManagerApi = observable({
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    await client.deleteSecret(secret);
+    await client.deleteSecret({ request: secret });
   },
   async create(secret: CreateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    await client.createSecret(secret);
+    await client.createSecret({ request: secret });
   },
   async update(_id: string, updateSecretRequest: UpdateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    await client.updateSecret(updateSecretRequest);
+    await client.updateSecret({ request: updateSecretRequest });
   },
   async checkScope(listSecretScopesRequest: ListSecretScopesRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    const scopes = await client.listSecretScopes(listSecretScopesRequest);
-    const isEnable = scopes.scopes.some((scope) => scope === Scope.REDPANDA_CONNECT);
+    const res = await client.listSecretScopes({ request: listSecretScopesRequest });
+
+    if (!res.response) {
+      this.isEnable = false;
+      return;
+    }
+
+    const isEnable = res.response?.scopes.some((scope) => scope === Scope.REDPANDA_CONNECT);
     this.isEnable = isEnable;
     return isEnable;
   },
