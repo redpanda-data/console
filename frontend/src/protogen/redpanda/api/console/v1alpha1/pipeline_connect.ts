@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest, GetPipelineResponse, GetPipelineServiceConfigSchemaRequest, GetPipelineServiceConfigSchemaResponse, ListPipelinesRequest, ListPipelinesResponse, StartPipelineRequest, StartPipelineResponse, StopPipelineRequest, StopPipelineResponse, UpdatePipelineRequest, UpdatePipelineResponse } from "./pipeline_pb";
+import { CreatePipelineRequest, CreatePipelineResponse, DeletePipelineRequest, DeletePipelineResponse, GetPipelineRequest, GetPipelineResponse, GetPipelinesBySecretsRequest, GetPipelinesBySecretsResponse, GetPipelineServiceConfigSchemaRequest, GetPipelineServiceConfigSchemaResponse, GetPipelinesForSecretRequest, GetPipelinesForSecretResponse, ListPipelinesRequest, ListPipelinesResponse, StartPipelineRequest, StartPipelineResponse, StopPipelineRequest, StopPipelineResponse, UpdatePipelineRequest, UpdatePipelineResponse } from "./pipeline_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -82,6 +82,24 @@ export const PipelineService = {
       name: "GetPipelineServiceConfigSchema",
       I: GetPipelineServiceConfigSchemaRequest,
       O: GetPipelineServiceConfigSchemaResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc redpanda.api.console.v1alpha1.PipelineService.GetPipelinesForSecret
+     */
+    getPipelinesForSecret: {
+      name: "GetPipelinesForSecret",
+      I: GetPipelinesForSecretRequest,
+      O: GetPipelinesForSecretResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc redpanda.api.console.v1alpha1.PipelineService.GetPipelinesBySecrets
+     */
+    getPipelinesBySecrets: {
+      name: "GetPipelinesBySecrets",
+      I: GetPipelinesBySecretsRequest,
+      O: GetPipelinesBySecretsResponse,
       kind: MethodKind.Unary,
     },
   }

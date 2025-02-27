@@ -599,3 +599,151 @@ export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineS
   }
 }
 
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetPipelinesForSecretRequest
+ */
+export class GetPipelinesForSecretRequest extends Message<GetPipelinesForSecretRequest> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest request = 1;
+   */
+  request?: GetPipelinesForSecretRequest$1;
+
+  constructor(data?: PartialMessage<GetPipelinesForSecretRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelinesForSecretRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "request", kind: "message", T: GetPipelinesForSecretRequest$1 },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesForSecretRequest {
+    return new GetPipelinesForSecretRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesForSecretRequest {
+    return new GetPipelinesForSecretRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesForSecretRequest {
+    return new GetPipelinesForSecretRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesForSecretRequest | PlainMessage<GetPipelinesForSecretRequest> | undefined, b: GetPipelinesForSecretRequest | PlainMessage<GetPipelinesForSecretRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesForSecretRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetPipelinesForSecretResponse
+ */
+export class GetPipelinesForSecretResponse extends Message<GetPipelinesForSecretResponse> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse response = 1;
+   */
+  response?: GetPipelinesForSecretResponse$1;
+
+  constructor(data?: PartialMessage<GetPipelinesForSecretResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelinesForSecretResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "message", T: GetPipelinesForSecretResponse$1 },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesForSecretResponse {
+    return new GetPipelinesForSecretResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesForSecretResponse {
+    return new GetPipelinesForSecretResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesForSecretResponse {
+    return new GetPipelinesForSecretResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesForSecretResponse | PlainMessage<GetPipelinesForSecretResponse> | undefined, b: GetPipelinesForSecretResponse | PlainMessage<GetPipelinesForSecretResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesForSecretResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetPipelinesBySecretsRequest
+ */
+export class GetPipelinesBySecretsRequest extends Message<GetPipelinesBySecretsRequest> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest request = 1;
+   */
+  request?: GetPipelinesBySecretsRequest$1;
+
+  constructor(data?: PartialMessage<GetPipelinesBySecretsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelinesBySecretsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "request", kind: "message", T: GetPipelinesBySecretsRequest$1 },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesBySecretsRequest {
+    return new GetPipelinesBySecretsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsRequest {
+    return new GetPipelinesBySecretsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsRequest {
+    return new GetPipelinesBySecretsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesBySecretsRequest | PlainMessage<GetPipelinesBySecretsRequest> | undefined, b: GetPipelinesBySecretsRequest | PlainMessage<GetPipelinesBySecretsRequest> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesBySecretsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.GetPipelinesBySecretsResponse
+ */
+export class GetPipelinesBySecretsResponse extends Message<GetPipelinesBySecretsResponse> {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse response = 1;
+   */
+  response?: GetPipelinesBySecretsResponse$1;
+
+  constructor(data?: PartialMessage<GetPipelinesBySecretsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "redpanda.api.console.v1alpha1.GetPipelinesBySecretsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "response", kind: "message", T: GetPipelinesBySecretsResponse$1 },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPipelinesBySecretsResponse {
+    return new GetPipelinesBySecretsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsResponse {
+    return new GetPipelinesBySecretsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPipelinesBySecretsResponse {
+    return new GetPipelinesBySecretsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPipelinesBySecretsResponse | PlainMessage<GetPipelinesBySecretsResponse> | undefined, b: GetPipelinesBySecretsResponse | PlainMessage<GetPipelinesBySecretsResponse> | undefined): boolean {
+    return proto3.util.equals(GetPipelinesBySecretsResponse, a, b);
+  }
+}
+

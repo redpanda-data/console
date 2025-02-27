@@ -59,6 +59,12 @@ const (
 	// PipelineServiceGetPipelineServiceConfigSchemaProcedure is the fully-qualified name of the
 	// PipelineService's GetPipelineServiceConfigSchema RPC.
 	PipelineServiceGetPipelineServiceConfigSchemaProcedure = "/redpanda.api.console.v1alpha1.PipelineService/GetPipelineServiceConfigSchema"
+	// PipelineServiceGetPipelinesForSecretProcedure is the fully-qualified name of the
+	// PipelineService's GetPipelinesForSecret RPC.
+	PipelineServiceGetPipelinesForSecretProcedure = "/redpanda.api.console.v1alpha1.PipelineService/GetPipelinesForSecret"
+	// PipelineServiceGetPipelinesBySecretsProcedure is the fully-qualified name of the
+	// PipelineService's GetPipelinesBySecrets RPC.
+	PipelineServiceGetPipelinesBySecretsProcedure = "/redpanda.api.console.v1alpha1.PipelineService/GetPipelinesBySecrets"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -72,6 +78,8 @@ var (
 	pipelineServiceStopPipelineMethodDescriptor                   = pipelineServiceServiceDescriptor.Methods().ByName("StopPipeline")
 	pipelineServiceStartPipelineMethodDescriptor                  = pipelineServiceServiceDescriptor.Methods().ByName("StartPipeline")
 	pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelineServiceConfigSchema")
+	pipelineServiceGetPipelinesForSecretMethodDescriptor          = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelinesForSecret")
+	pipelineServiceGetPipelinesBySecretsMethodDescriptor          = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelinesBySecrets")
 )
 
 // PipelineServiceClient is a client for the redpanda.api.console.v1alpha1.PipelineService service.
@@ -84,6 +92,8 @@ type PipelineServiceClient interface {
 	StopPipeline(context.Context, *connect.Request[v1alpha1.StopPipelineRequest]) (*connect.Response[v1alpha1.StopPipelineResponse], error)
 	StartPipeline(context.Context, *connect.Request[v1alpha1.StartPipelineRequest]) (*connect.Response[v1alpha1.StartPipelineResponse], error)
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha1.GetPipelineServiceConfigSchemaResponse], error)
+	GetPipelinesForSecret(context.Context, *connect.Request[v1alpha1.GetPipelinesForSecretRequest]) (*connect.Response[v1alpha1.GetPipelinesForSecretResponse], error)
+	GetPipelinesBySecrets(context.Context, *connect.Request[v1alpha1.GetPipelinesBySecretsRequest]) (*connect.Response[v1alpha1.GetPipelinesBySecretsResponse], error)
 }
 
 // NewPipelineServiceClient constructs a client for the
@@ -145,6 +155,18 @@ func NewPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getPipelinesForSecret: connect.NewClient[v1alpha1.GetPipelinesForSecretRequest, v1alpha1.GetPipelinesForSecretResponse](
+			httpClient,
+			baseURL+PipelineServiceGetPipelinesForSecretProcedure,
+			connect.WithSchema(pipelineServiceGetPipelinesForSecretMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getPipelinesBySecrets: connect.NewClient[v1alpha1.GetPipelinesBySecretsRequest, v1alpha1.GetPipelinesBySecretsResponse](
+			httpClient,
+			baseURL+PipelineServiceGetPipelinesBySecretsProcedure,
+			connect.WithSchema(pipelineServiceGetPipelinesBySecretsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -158,6 +180,8 @@ type pipelineServiceClient struct {
 	stopPipeline                   *connect.Client[v1alpha1.StopPipelineRequest, v1alpha1.StopPipelineResponse]
 	startPipeline                  *connect.Client[v1alpha1.StartPipelineRequest, v1alpha1.StartPipelineResponse]
 	getPipelineServiceConfigSchema *connect.Client[v1alpha1.GetPipelineServiceConfigSchemaRequest, v1alpha1.GetPipelineServiceConfigSchemaResponse]
+	getPipelinesForSecret          *connect.Client[v1alpha1.GetPipelinesForSecretRequest, v1alpha1.GetPipelinesForSecretResponse]
+	getPipelinesBySecrets          *connect.Client[v1alpha1.GetPipelinesBySecretsRequest, v1alpha1.GetPipelinesBySecretsResponse]
 }
 
 // CreatePipeline calls redpanda.api.console.v1alpha1.PipelineService.CreatePipeline.
@@ -201,6 +225,16 @@ func (c *pipelineServiceClient) GetPipelineServiceConfigSchema(ctx context.Conte
 	return c.getPipelineServiceConfigSchema.CallUnary(ctx, req)
 }
 
+// GetPipelinesForSecret calls redpanda.api.console.v1alpha1.PipelineService.GetPipelinesForSecret.
+func (c *pipelineServiceClient) GetPipelinesForSecret(ctx context.Context, req *connect.Request[v1alpha1.GetPipelinesForSecretRequest]) (*connect.Response[v1alpha1.GetPipelinesForSecretResponse], error) {
+	return c.getPipelinesForSecret.CallUnary(ctx, req)
+}
+
+// GetPipelinesBySecrets calls redpanda.api.console.v1alpha1.PipelineService.GetPipelinesBySecrets.
+func (c *pipelineServiceClient) GetPipelinesBySecrets(ctx context.Context, req *connect.Request[v1alpha1.GetPipelinesBySecretsRequest]) (*connect.Response[v1alpha1.GetPipelinesBySecretsResponse], error) {
+	return c.getPipelinesBySecrets.CallUnary(ctx, req)
+}
+
 // PipelineServiceHandler is an implementation of the redpanda.api.console.v1alpha1.PipelineService
 // service.
 type PipelineServiceHandler interface {
@@ -212,6 +246,8 @@ type PipelineServiceHandler interface {
 	StopPipeline(context.Context, *connect.Request[v1alpha1.StopPipelineRequest]) (*connect.Response[v1alpha1.StopPipelineResponse], error)
 	StartPipeline(context.Context, *connect.Request[v1alpha1.StartPipelineRequest]) (*connect.Response[v1alpha1.StartPipelineResponse], error)
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha1.GetPipelineServiceConfigSchemaResponse], error)
+	GetPipelinesForSecret(context.Context, *connect.Request[v1alpha1.GetPipelinesForSecretRequest]) (*connect.Response[v1alpha1.GetPipelinesForSecretResponse], error)
+	GetPipelinesBySecrets(context.Context, *connect.Request[v1alpha1.GetPipelinesBySecretsRequest]) (*connect.Response[v1alpha1.GetPipelinesBySecretsResponse], error)
 }
 
 // NewPipelineServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -268,6 +304,18 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 		connect.WithSchema(pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	pipelineServiceGetPipelinesForSecretHandler := connect.NewUnaryHandler(
+		PipelineServiceGetPipelinesForSecretProcedure,
+		svc.GetPipelinesForSecret,
+		connect.WithSchema(pipelineServiceGetPipelinesForSecretMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	pipelineServiceGetPipelinesBySecretsHandler := connect.NewUnaryHandler(
+		PipelineServiceGetPipelinesBySecretsProcedure,
+		svc.GetPipelinesBySecrets,
+		connect.WithSchema(pipelineServiceGetPipelinesBySecretsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.PipelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PipelineServiceCreatePipelineProcedure:
@@ -286,6 +334,10 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 			pipelineServiceStartPipelineHandler.ServeHTTP(w, r)
 		case PipelineServiceGetPipelineServiceConfigSchemaProcedure:
 			pipelineServiceGetPipelineServiceConfigSchemaHandler.ServeHTTP(w, r)
+		case PipelineServiceGetPipelinesForSecretProcedure:
+			pipelineServiceGetPipelinesForSecretHandler.ServeHTTP(w, r)
+		case PipelineServiceGetPipelinesBySecretsProcedure:
+			pipelineServiceGetPipelinesBySecretsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -325,4 +377,12 @@ func (UnimplementedPipelineServiceHandler) StartPipeline(context.Context, *conne
 
 func (UnimplementedPipelineServiceHandler) GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1alpha1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1alpha1.GetPipelineServiceConfigSchemaResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.PipelineService.GetPipelineServiceConfigSchema is not implemented"))
+}
+
+func (UnimplementedPipelineServiceHandler) GetPipelinesForSecret(context.Context, *connect.Request[v1alpha1.GetPipelinesForSecretRequest]) (*connect.Response[v1alpha1.GetPipelinesForSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.PipelineService.GetPipelinesForSecret is not implemented"))
+}
+
+func (UnimplementedPipelineServiceHandler) GetPipelinesBySecrets(context.Context, *connect.Request[v1alpha1.GetPipelinesBySecretsRequest]) (*connect.Response[v1alpha1.GetPipelinesBySecretsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.PipelineService.GetPipelinesBySecrets is not implemented"))
 }
