@@ -3,9 +3,6 @@ kafka:
   brokers: ["localhost:19092"]
   protobuf:
     enabled: true
-    schemaRegistry:
-      enabled: true
-      refreshInterval: 5m
 
 schemaRegistry:
   enabled: true
