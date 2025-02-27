@@ -14,7 +14,7 @@ import { observer } from 'mobx-react';
 import type { PropertyGroup } from '../../../../state/connect/state';
 import type { ConnectorStep } from '../../../../state/restInterfaces';
 import { PropertyGroupComponent } from './PropertyGroup';
-import { ConfigPageProps } from './components';
+import type { ConfigPageProps } from './components';
 
 export const ConnectorStepComponent = observer(
   (props: {

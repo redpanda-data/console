@@ -13,7 +13,7 @@ import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-da
 import { observer } from 'mobx-react';
 import type { PropertyGroup } from '../../../../state/connect/state';
 import { PropertyComponent } from './PropertyComponent';
-import { ConfigPageProps } from './components';
+import type { ConfigPageProps } from './components';
 import { TopicInput } from './forms/TopicInput';
 
 const topicsFields = ['topics', 'topics.regex'];

@@ -2145,8 +2145,8 @@ export const rpcnSecretManagerApi = observable({
     const client = appConfig.pipelinesClientV2;
     if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
 
-    const pipelinesBySecrets = await client.getPipelinesBySecrets(new GetPipelinesBySecretsRequest());
-    return pipelinesBySecrets.pipelinesForSecret.map(({ secretId, pipelines }) => {
+    const pipelinesBySecrets = await client.getPipelinesBySecrets({ request: new GetPipelinesBySecretsRequest() });
+    return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => {
       return {
         secretId: secretId,
         pipelines: pipelines,
