@@ -58,6 +58,7 @@ func (l *Logging) Set(logLevel string) error {
 	return nil
 }
 
+// SetDefaults for logging config.
 func (l *Logging) SetDefaults() {
 	l.LogLevelInput = "info"
 	l.LogLevel = zap.NewAtomicLevelAt(zap.InfoLevel)

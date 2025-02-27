@@ -28,8 +28,7 @@ var _ connect.Interceptor = &ErrorLogInterceptor{}
 // are written before the interceptors would be called, such as:
 // - Authentication errors (enterprise HTTP middleware)
 // - JSON Unmarshalling errors of request body (happens prior calling interceptors)
-type ErrorLogInterceptor struct {
-}
+type ErrorLogInterceptor struct{}
 
 // NewErrorLogInterceptor creates a new ErrorLogInterceptor.
 func NewErrorLogInterceptor() *ErrorLogInterceptor {
