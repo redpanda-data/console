@@ -1,0 +1,332 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/rpc/status.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message ACL {
+  // The type of resource (topic, consumer group, etc.) this
+  // ACL targets.
+  enum ResourceType {
+    RESOURCE_TYPE_UNSPECIFIED = 0;
+    RESOURCE_TYPE_ANY = 1;
+    RESOURCE_TYPE_TOPIC = 2;
+    RESOURCE_TYPE_GROUP = 3;
+    RESOURCE_TYPE_CLUSTER = 4;
+    RESOURCE_TYPE_TRANSACTIONAL_ID = 5;
+    RESOURCE_TYPE_DELEGATION_TOKEN = 6;
+    RESOURCE_TYPE_USER = 7;
+  }
+
+  // The pattern to use for matching the specified resource_name
+  // (any, exact match, literal, or prefixed).
+  enum ResourcePatternType {
+    RESOURCE_PATTERN_TYPE_UNSPECIFIED = 0;
+    RESOURCE_PATTERN_TYPE_ANY = 1;
+    RESOURCE_PATTERN_TYPE_MATCH = 2;
+    RESOURCE_PATTERN_TYPE_LITERAL = 3;
+    RESOURCE_PATTERN_TYPE_PREFIXED = 4;
+  }
+
+  // The operation that is allowed or denied (e.g. READ).
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_ANY = 1;
+    OPERATION_ALL = 2;
+    OPERATION_READ = 3;
+    OPERATION_WRITE = 4;
+    OPERATION_CREATE = 5;
+    OPERATION_DELETE = 6;
+    OPERATION_ALTER = 7;
+    OPERATION_DESCRIBE = 8;
+    OPERATION_CLUSTER_ACTION = 9;
+    OPERATION_DESCRIBE_CONFIGS = 10;
+    OPERATION_ALTER_CONFIGS = 11;
+    OPERATION_IDEMPOTENT_WRITE = 12;
+    OPERATION_CREATE_TOKENS = 13;
+    OPERATION_DESCRIBE_TOKENS = 14;
+  }
+  // Whether the operation should be allowed or denied.
+  enum PermissionType {
+    PERMISSION_TYPE_UNSPECIFIED = 0;
+    PERMISSION_TYPE_ANY = 1;
+    PERMISSION_TYPE_DENY = 2;
+    PERMISSION_TYPE_ALLOW = 3;
+  }
+}
+
+message ListACLsRequest {
+  message Filter {
+    // The type of resource (topic, consumer group, etc.) this
+    // ACL targets.
+    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum = {defined_only: true}];
+    // The name of the resource this ACL targets.
+    optional string resource_name = 2;
+    // The pattern to use for matching the specified resource_name
+    // (any, exact match, literal, or prefixed).
+    ACL.ResourcePatternType resource_pattern_type = 3 [(buf.validate.field).enum.defined_only = true];
+    // The user for whom this ACL applies. With the Kafka simple
+    // authorizer, you must include the prefix "User:" with the user name.
+    optional string principal = 4;
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
+    optional string host = 5;
+    // The operation that is allowed or denied (e.g. READ).
+    ACL.Operation operation = 6 [(buf.validate.field).enum.defined_only = true];
+    // Whether the operation should be allowed or denied.
+    ACL.PermissionType permission_type = 7 [(buf.validate.field).enum.defined_only = true];
+  }
+
+  Filter filter = 1;
+}
+
+message ListACLsResponse {
+  message Policy {
+    // The user for whom this ACL applies.
+    string principal = 1;
+    // The host address for this ACL.
+    string host = 2;
+    ACL.Operation operation = 3;
+    ACL.PermissionType permission_type = 4;
+  }
+
+  message Resource {
+    ACL.ResourceType resource_type = 1;
+    // The name of the resource this ACL targets.
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    repeated Policy acls = 4;
+  }
+
+  repeated Resource resources = 1;
+}
+
+message CreateACLRequest {
+  option (buf.validate.message).cel = {
+    id: "resource_name_must_be_set_except_for_cluster_resource_type"
+    expression:
+      "this.resource_type == 4 && size(this.resource_name) == 0 ? ''"
+      ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
+      ": this.resource_type != 4 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
+      ": ''"
+  };
+
+  ACL.ResourceType resource_type = 1 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0,
+        1
+      ] /* Disallow: Unspecified and ANY */
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The name of the resource this ACL targets.
+  // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+  string resource_name = 2;
+
+  ACL.ResourcePatternType resource_pattern_type = 3 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      in: [
+        3,
+        4
+      ]
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The user for whom this ACL applies. With the Kafka simple
+  // authorizer, you must include the prefix "User:" with the user name.
+  string principal = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "User:"
+  ];
+
+  // The host address to use for this ACL. To allow a principal
+  // access from multiple hosts, you must create an ACL for each host.
+  string host = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "wildcard_or_ip_address"
+      message: "Field host must be either wildcard (*) or a valid IP address."
+      expression: "this == '*' ? true : this.isIp()"
+    }
+  ];
+
+  ACL.Operation operation = 6 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0,
+        1
+      ] /* Disallow: Unspecified and ANY */
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  ACL.PermissionType permission_type = 7 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      in: [
+        2,
+        3
+      ] /* Allow or Deny */
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message CreateACLResponse {}
+
+message DeleteACLsRequest {
+  message Filter {
+    // The type of resource (topic, consumer group, etc.) this
+    // ACL targets.
+    ACL.ResourceType resource_type = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    // The name of the resource this ACL targets.
+    optional string resource_name = 2;
+
+    // The pattern to use for matching the specified resource_name
+    // (any, exact match, literal, or prefixed).
+    ACL.ResourcePatternType resource_pattern_type = 3 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    // The user for whom this ACL applies. With the Kafka simple
+    // authorizer, you must include the prefix "User:" with the user name.
+    optional string principal = 4;
+
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
+    optional string host = 5;
+
+    // The operation that is allowed or denied (e.g. READ).
+    ACL.Operation operation = 6 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    // Whether the operation should be allowed or denied.
+    ACL.PermissionType permission_type = 7 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+  }
+
+  Filter filter = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message DeleteACLsResponse {
+  message MatchingACL {
+    ACL.ResourceType resource_type = 1;
+    // The name of the resource this ACL targets.
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    // The user for whom this ACL applies.
+    string principal = 4;
+    // The host address to use for this ACL.
+    string host = 5;
+    ACL.Operation operation = 6;
+    ACL.PermissionType permission_type = 7;
+    google.rpc.Status error = 8;
+  }
+
+  repeated MatchingACL matching_acls = 1;
+}
+
+service ACLService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda ACLs"
+    description: "Manage Redpanda [access-control lists](https://docs.redpanda.com/current/manage/security/authorization/acl/) (ACLs)."
+  };
+
+  rpc ListACLs(ListACLsRequest) returns (ListACLsResponse) {
+    option (google.api.http) = {get: "/v1/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List ACLs"
+      description: "List all ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListACLsResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc CreateACL(CreateACLRequest) returns (CreateACLResponse) {
+    option (google.api.http) = {
+      post: "/v1/acls"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create ACL"
+      description: "Create a new ACL."
+      responses: {
+        key: "201"
+        value: {
+          description: "Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateACLResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc DeleteACLs(DeleteACLsRequest) returns (DeleteACLsResponse) {
+    option (google.api.http) = {delete: "/v1/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete ACLs"
+      description: "Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteACLsResponse"}
+          }
+        }
+      }
+    };
+  }
+}

@@ -426,12 +426,20 @@ const TabRedpandaConnect = observer((_p: { defaultView: ConnectView }) => {
   const tabs = [
     {
       key: 'pipelines',
-      title: <Box minWidth="180px">Pipelines</Box>,
+      title: (
+        <Box minWidth="180px" data-testid={'tab-rpcn-connect'}>
+          Pipelines
+        </Box>
+      ),
       content: <RpConnectPipelinesList matchedPath="/rp-connect" />,
     },
     {
       key: 'secrets',
-      title: <Box minWidth="180px">Secrets</Box>,
+      title: (
+        <Box minWidth="180px" data-testid={'tab-rpcn-secret'}>
+          Secrets
+        </Box>
+      ),
       content: <RpConnectSecretsList matchedPath="/rp-connect/secrets" />,
     },
   ] as Tab[];

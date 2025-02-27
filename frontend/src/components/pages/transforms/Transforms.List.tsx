@@ -10,9 +10,9 @@
  */
 
 import { CheckIcon } from '@chakra-ui/icons';
-import { Link as ChakraLink, createStandaloneToast } from '@chakra-ui/react';
 import { TrashIcon } from '@heroicons/react/outline';
 import { XIcon } from '@heroicons/react/solid';
+import { Link as ChakraLink, createStandaloneToast } from '@redpanda-data/ui';
 import { Box, Button, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -21,7 +21,7 @@ import { Link } from 'react-router-dom';
 import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { transformsApi } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -110,7 +110,7 @@ class TransformsList extends PageComponent<{}> {
           Redpanda.{' '}
           <ChakraLink
             isExternal
-            href="https://docs.redpanda.com/beta/develop/data-transforms/"
+            href="https://docs.redpanda.com/current/develop/data-transforms/how-transforms-work/"
             style={{ textDecoration: 'underline solid 1px' }}
           >
             Learn more

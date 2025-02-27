@@ -244,7 +244,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 				return
 			}
 			return
-		case srListSchemasPath:
+		case srListSchemasPath, srListSchemasPath + "?deleted=true":
 			type SchemaVersionedResponse struct {
 				Subject  string `json:"subject"`
 				SchemaID int    `json:"id"`
@@ -271,7 +271,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 				return
 			}
 			return
-		case srListSubjectsPath:
+		case srListSubjectsPath, srListSubjectsPath + "?deleted=true":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 			resp := []string{"test-subject-avro-v1"}
 			enc := json.NewEncoder(w)

@@ -1,0 +1,529 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// Defines the pipeline resource.
+message Pipeline {
+  reserved 5, 6;
+  reserved "request", "limit";
+
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+
+  // User-friendly pipeline name.
+  string display_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Optional pipeline description.
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+
+  // The pipeline configuration in YAML.
+  // See https://docs.redpanda.com/redpanda-connect/configuration/about/
+  string config_yaml = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details."}
+  ];
+
+  // The number of resources that are guaranteed to be assigned to the pipeline.
+  Resources resources = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The requested amount of resources for the pipeline. Depending on the backend, the resources might be guaranteed, or might be tweaked based on the utilization of the pipeline."}];
+
+  // The current pipeline state.
+  State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  Status status = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  message Resources {
+    // `memory_shares` is a string specifying the amount of memory to allocate for
+    // the pipeline.
+    //
+    // This follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable units
+    // include:
+    // - Decimal SI units: "K", "M", "G", "T", "P", "E" (e.g., "128M" for 128
+    //   megabytes)
+    // - Binary SI units: "Ki", "Mi", "Gi", "Ti", "Pi", "Ei" (e.g., "512Mi" for
+    // 512 mebibytes) If you don't specify a unit, the value is interpreted as
+    // bytes.
+    string memory_shares = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    // `cpu_shares` is a string specifying the amount of CPU to allocate for the
+    // pipeline.
+    //
+    // This follows the [Kubernetes quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/) format. Acceptable
+    // units include:
+    // - Decimal SI units: "m" (e.g., "500m" for 500 millicores, "2" for 2 cores)
+    // CPU shares can be specified in millicores (1 core = 1000 millicores).
+    // If you don't specify a unit, the value is interpreted as the number of cores.
+    string cpu_shares = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  // State of the pipeline.
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    // The pipeline is starting.
+    STATE_STARTING = 1;
+    // The pipeline is running.
+    STATE_RUNNING = 2;
+    // The pipeline is in the process of stopping.
+    STATE_STOPPING = 3;
+    // The pipeline is stopped and in paused state.
+    STATE_STOPPED = 4;
+    // The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
+    STATE_ERROR = 5;
+    // The pipeline has completed the job successfully.
+    STATE_COMPLETED = 6;
+  }
+
+  // Pipeline status may contain an error message.
+  message Status {
+    string error = 2;
+  }
+}
+
+// PipelineService is the service for Redpanda Connect.
+// It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
+service PipelineService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda Connect Pipeline"
+    description: "Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations."
+  };
+
+  // CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
+    option (google.api.http) = {
+      post: "/v1/redpanda-connect/pipelines"
+      body: "pipeline"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Redpanda Connect pipeline"
+      description: "Create a new Redpanda Connect pipeline."
+      responses: {
+        key: "201"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+          }
+        }
+      }
+    };
+  }
+
+  // GetPipeline gets a specific Redpanda Connect pipeline.
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {
+    option (google.api.http) = {get: "/v1/redpanda-connect/pipelines/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Redpanda Connect pipeline"
+      description: "Get a specific Redpanda Connect pipeline."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // ListPipelines implements the list pipelines method which lists the pipelines
+  // in the Redpanda cluster.
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {
+    option (google.api.http) = {get: "/v1/redpanda-connect/pipelines"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Redpanda Connect pipelines"
+      description: "List Redpanda Connect pipelines. Optional: filter based on pipeline name."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListPipelinesResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  // UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse) {
+    option (google.api.http) = {
+      put: "/v1/redpanda-connect/pipelines/{id}"
+      body: "pipeline"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update a Redpanda Connect pipeline"
+      description: "Update the [configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) of a Redpanda Connect pipeline."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+          }
+        }
+      }
+    };
+  }
+
+  // DeletePipeline deletes a specific Redpanda Connect pipeline.
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse) {
+    option (google.api.http) = {delete: "/v1/redpanda-connect/pipelines/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete a Redpanda Connect pipeline"
+      description: "Delete a Redpanda Connect pipeline."
+      responses: {
+        key: "204"
+        value: {
+          description: "Deleted"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // StopPipeline stops a specific Redpanda Connect pipeline.
+  rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {
+    option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/stop"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Stops a Redpanda Connect pipeline"
+      description: "Stop a running Redpanda Connect pipeline."
+      responses: {
+        key: "200"
+        value: {
+          description: "Stopped"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
+  rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {
+    option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/start"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Start a Redpanda Connect pipeline"
+      description: "Start a stopped Redpanda Connect pipeline."
+      responses: {
+        key: "200"
+        value: {
+          description: "Started"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  // The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
+  rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
+    option (google.api.http) = {get: "/v1/redpanda-connect/config-schema"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Retrieve the schema for Redpanda Connect pipeline configurations."
+      description: "The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  // GetPipelinesForSecret implements the get pipelines for secret method which lists the pipelines
+  // in the Redpanda cluster for the given secret.
+  rpc GetPipelinesForSecret(GetPipelinesForSecretRequest) returns (GetPipelinesForSecretResponse) {
+    option (google.api.http) = {get: "/v1/redpanda-connect/pipelines-for-secret"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Redpanda Connect pipelines for secret"
+      description: "Get Redpanda Connect pipelines for a given secret."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetPipelinesForSecretResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  // GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
+  // in the Redpanda cluster for all secrets.
+  rpc GetPipelinesBySecrets(GetPipelinesBySecretsRequest) returns (GetPipelinesBySecretsResponse) {
+    option (google.api.http) = {get: "/v1/redpanda-connect/pipelines-by-secrets"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Redpanda Connect pipelines by secrets"
+      description: "Get Redpanda Connect pipelines by secrets."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse"}
+          }
+        }
+      }
+    };
+  }
+}
+
+// PipelineCreate contains the details for the pipeline creation request.
+message PipelineCreate {
+  reserved 4, 5;
+  reserved "request", "limit";
+
+  // User-friendly pipeline name.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Pipeline description.
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+
+  // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+  string config_yaml = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The number of resources that are guaranteed to be assigned to the pipeline.
+  Pipeline.Resources resources = 6;
+}
+
+// CreatePipelineRequest is the request of CreatePipeline.
+message CreatePipelineRequest {
+  PipelineCreate pipeline = 1;
+}
+
+message CreatePipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message GetPipelineRequest {
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message GetPipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message ListPipelinesRequest {
+  // List filter.
+  Filter filter = 1;
+
+  // Limit the paginated response to a number of items.
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+
+  message Filter {
+    // Substring match on pipeline name. Case-sensitive.
+    string name_contains = 1 [
+      (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+      (buf.validate.field).string.max_len = 128
+    ];
+  }
+}
+
+message ListPipelinesResponse {
+  repeated Pipeline pipelines = 1;
+  string next_page_token = 2;
+}
+
+message PipelineUpdate {
+  reserved 4, 5;
+  reserved "request", "limit";
+  // User-friendly pipeline name.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Pipeline description.
+  string description = 2 [
+    (buf.validate.field).ignore_empty = true,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+  string config_yaml = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The number of resources that are guaranteed to be assigned to the pipeline.
+  Pipeline.Resources resources = 6;
+}
+
+message UpdatePipelineRequest {
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+  PipelineUpdate pipeline = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message UpdatePipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message DeletePipelineRequest {
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message DeletePipelineResponse {}
+
+message StopPipelineRequest {
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message StopPipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message StartPipelineRequest {
+  // Pipeline ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message StartPipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message GetPipelineServiceConfigSchemaRequest {}
+
+message GetPipelineServiceConfigSchemaResponse {
+  // JSON schema of the configuration components that are allowed for Connect pipelines.
+  string config_schema = 1;
+}
+
+message PipelinesForSecret {
+  string secret_id = 1;
+  repeated Pipeline pipelines = 2;
+}
+
+message GetPipelinesForSecretRequest {
+  // Secret ID.
+  string secret_id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Z][A-Z0-9_]*$"
+  ];
+}
+
+message GetPipelinesForSecretResponse {
+  PipelinesForSecret pipelines_for_secret = 1;
+}
+
+message GetPipelinesBySecretsRequest {}
+
+message GetPipelinesBySecretsResponse {
+  repeated PipelinesForSecret pipelines_for_secret = 1;
+}

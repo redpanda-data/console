@@ -1,0 +1,251 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message TransformMetadata {
+  message EnvironmentVariable {
+    string key = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).cel = {
+        id: "transforms_env_key_does_not_use_redpanda_prefix"
+        expression: "!this.startsWith('REDPANDA_')"
+        message: "Environment variable keys that start with 'REDPANDA_' are reserved."
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The key of your environment variable."
+        example: "\"LOG_LEVEL\""
+      }
+    ];
+    string value = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 2048,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The value of your environment variable."
+        example: "\"DEBUG\""
+      }
+    ];
+  }
+  // Name of transform.
+  string name = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
+  // Input topic to apply the transform to.
+  string input_topic_name = 2;
+  // Output topics to write the transform results to.
+  repeated string output_topic_names = 3;
+  repeated PartitionTransformStatus statuses = 4;
+  repeated TransformMetadata.EnvironmentVariable environment_variables = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The environment variables you want to apply to your transform's environment"}];
+}
+
+message PartitionTransformStatus {
+  int32 broker_id = 1;
+  int32 partition_id = 2;
+  enum PartitionStatus {
+    PARTITION_STATUS_UNSPECIFIED = 0;
+    PARTITION_STATUS_RUNNING = 1;
+    PARTITION_STATUS_INACTIVE = 2;
+    PARTITION_STATUS_ERRORED = 3;
+    PARTITION_STATUS_UNKNOWN = 4;
+  }
+  PartitionStatus status = 3;
+  int32 lag = 4;
+}
+
+// Metadata required to deploy a new Wasm
+// transform in a Redpanda cluster.
+message DeployTransformRequest {
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Name of the transform."
+      example: "\"redact-payment-details-in-orders\""
+    }
+  ];
+  string input_topic_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The input topic to apply the transform to."
+      example: "\"orders\""
+    }
+  ];
+  repeated string output_topic_names = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 1
+      unique: true
+      items: {
+        string: {
+          min_len: 1
+          max_len: 249
+          pattern: "^[a-zA-Z0-9._\\-]*$"
+        }
+      }
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Output topic to write the transform results to."
+      example: "\"orders-redacted\""
+    }
+  ];
+  repeated TransformMetadata.EnvironmentVariable environment_variables = 4 [
+    (buf.validate.field).repeated = {
+      min_items: 0
+      max_items: 128
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The environment variables you want to apply to your transform's environment"}
+  ];
+}
+
+message ListTransformsRequest {
+  message Filter {
+    // Substring match on transform name. Case-sensitive.
+    string name_contains = 1 [
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128,
+      (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+    ];
+  }
+  Filter filter = 1;
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 2;
+  int32 page_size = 3 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+}
+
+message ListTransformsResponse {
+  // Token to retrieve the next page.
+  string next_page_token = 1;
+  repeated TransformMetadata transforms = 2;
+}
+
+message GetTransformRequest {
+  // Name of transform.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[\\P{Cc}\\P{Cf}]+$"
+  ];
+}
+
+message GetTransformResponse {
+  TransformMetadata transform = 1;
+}
+
+message DeleteTransformRequest {
+  // Name of transform.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 128,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+}
+
+message DeleteTransformResponse {}
+
+service TransformService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "WASM Transforms"
+    description: "Manage Wasm transforms in Redpanda."
+  };
+  rpc ListTransforms(ListTransformsRequest) returns (ListTransformsResponse) {
+    option (google.api.http) = {get: "/v1/transforms"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Transforms"
+      description: "Retrieve a list of Wasm transforms. Optional: filter based on transform name."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListTransformsResponse"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
+    option (google.api.http) = {get: "/v1/transforms/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Transform"
+      description: "Get a specific Wasm transform."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTransformResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc DeleteTransform(DeleteTransformRequest) returns (DeleteTransformResponse) {
+    option (google.api.http) = {delete: "/v1/transforms/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Transform"
+      description: "Delete a Wasm transform with the requested name."
+      responses: {
+        key: "204"
+        value: {
+          description: "Transform deleted successfully"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}

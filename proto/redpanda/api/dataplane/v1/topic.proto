@@ -1,0 +1,375 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/dataplane/v1/common.proto";
+
+message Topic {
+  message Configuration {
+    // A topic-level config key (e.g. `segment.bytes`).
+    string name = 1;
+    // Config data type.
+    ConfigType type = 2;
+    // A topic-level config value (e.g. 1073741824).
+    optional string value = 3;
+    // Where the config entry is from.
+    ConfigSource source = 4;
+    // Whether the config is read-only, or is dynamic and can be altered.
+    bool read_only = 5;
+    // Whether this is a sensitive config key and value.
+    bool sensitive = 6;
+    // If no config value is set at the topic level, it will inherit the value
+    // set at the broker or cluster level. `name` is the corresponding config
+    // key whose value is inherited. `source` indicates whether the inherited
+    // config is default, broker, etc.
+    repeated ConfigSynonym config_synonyms = 7;
+    // Config documentation.
+    optional string documentation = 8;
+  }
+}
+
+message CreateTopicRequest {
+  message Topic {
+    message Config {
+      // A topic-level config key (e.g. `segment.bytes`).
+      string name = 1 [
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 255,
+        (buf.validate.field).string.pattern = "^[a-z0-9.]+$"
+      ];
+
+      // A topic-level config value (e.g. 1073741824).
+      optional string value = 2;
+    }
+
+    message ReplicaAssignment {
+      // A partition to create.
+      int32 partition_id = 1;
+
+      // The broker IDs the partition replicas are assigned to.
+      repeated int32 replica_ids = 2;
+    }
+
+    // Name of topic.
+    string name = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 249,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    ];
+
+    // The number of partitions to give the topic. If specifying
+    // partitions manually (see `replica_assignments`), set to -1.
+    // Or, to use the cluster default partition count, set to null.
+    optional int32 partition_count = 2 [(buf.validate.field).int32.gte = -1];
+
+    // The number of replicas every partition must have.
+    // If specifying partitions manually (see `replica_assignments`), set to -1.
+    // Or, to use the cluster default replication factor, set to null.
+    optional int32 replication_factor = 3 [
+      (buf.validate.field).int32.gte = -1,
+      (buf.validate.field).int32.lte = 5
+    ];
+
+    // Manually specify broker ID assignments for partition replicas. If manually assigning replicas, both `replication_factor` and
+    // `partition_count` must be -1.
+    repeated ReplicaAssignment replica_assignments = 4;
+
+    // An array of key-value config pairs for a topic.
+    // These correspond to Kafka topic-level configs.
+    repeated Config configs = 5;
+  }
+
+  // The topic to create.
+  Topic topic = 1 [(buf.validate.field).required = true];
+
+  // If true, makes this request a dry run; everything is validated but
+  // no topics are actually created.
+  bool validate_only = 2;
+}
+
+message CreateTopicResponse {
+  // Name of topic.
+  string topic_name = 1;
+
+  // The number of partitions created for the topic.
+  // This field has a default value of -1, which may be returned if the broker
+  // does not support v5+ of this request which added support for returning
+  // this information.
+  int32 partition_count = 2;
+
+  // The number of replicas per topic partition.
+  // This field has a default of -1, which may be returned if the broker
+  // does not support v5+ of this request which added support for returning
+  // this information.
+  int32 replication_factor = 3;
+}
+
+message ListTopicsRequest {
+  message Filter {
+    // Substring match on topic name. Case-sensitive.
+    string name_contains = 1 [
+      (buf.validate.field).string.max_len = 249,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    ];
+  }
+  Filter filter = 1;
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+  // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+}
+
+message ListTopicsResponse {
+  message Topic {
+    // Topic name.
+    string name = 1;
+    // Whether topic is internal only.
+    bool internal = 2;
+    // Topic partition count.
+    int32 partition_count = 3;
+    // Topic replication factor.
+    int32 replication_factor = 4;
+  }
+  repeated ListTopicsResponse.Topic topics = 1;
+  string next_page_token = 2;
+}
+
+message DeleteTopicRequest {
+  // Topic name.
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+}
+
+message DeleteTopicResponse {}
+
+message GetTopicConfigurationsRequest {
+  // Topic name
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+}
+
+message GetTopicConfigurationsResponse {
+  repeated Topic.Configuration configurations = 1;
+}
+
+message UpdateTopicConfigurationsRequest {
+  message UpdateConfiguration {
+    // A topic-level config key (e.g. `segment.bytes`).
+    string name = 1 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 249
+    ];
+    // A topic-level config value (e.g. 1073741824).
+    optional string value = 2;
+    // The update operation to apply to the topic config.
+    ConfigAlterOperation operation = 3 [
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0]
+      }
+    ];
+  }
+  // Topic name
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+  repeated UpdateConfiguration configurations = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+}
+
+message UpdateTopicConfigurationsResponse {
+  // Topic's complete set of configurations after applying this partial patch.
+  repeated Topic.Configuration configurations = 1;
+}
+
+message SetTopicConfigurationsRequest {
+  message SetConfiguration {
+    // A topic-level config key (e.g. `segment.bytes`).
+    string name = 1;
+    // A topic-level config value (e.g. 1073741824).
+    optional string value = 2;
+  }
+  // Name of topic.
+  string topic_name = 1;
+  repeated SetConfiguration configurations = 2;
+}
+
+message SetTopicConfigurationsResponse {
+  // Topic's complete set of configurations after this update.
+  repeated Topic.Configuration configurations = 1;
+}
+
+service TopicService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Topics"
+    description: "Manage Redpanda topics."
+  };
+
+  rpc CreateTopic(CreateTopicRequest) returns (CreateTopicResponse) {
+    option (google.api.http) = {
+      post: "/v1/topics"
+      body: "topic"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Topic"
+      description: "Create a [topic](https://docs.redpanda.com/current/deploy/deployment-option/cloud/create-topic/)."
+      responses: {
+        key: "201"
+        value: {
+          description: "Topic created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateTopicResponse"}
+          }
+        }
+      }
+    };
+  }
+  rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
+    option (google.api.http) = {get: "/v1/topics"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Topics"
+      description: "List topics, with partition count and replication factor. Optional: filter based on topic name."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListTopicsResponse"}
+          }
+        }
+      }
+    };
+  }
+  rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
+    option (google.api.http) = {delete: "/v1/topics/{topic_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Topic"
+      description: "Delete the Kafka topic with the requested name."
+      responses: {
+        key: "204"
+        value: {
+          description: "Topic deleted successfully"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Requested topic does not exist"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
+    option (google.api.http) = {get: "/v1/topics/{topic_name}/configurations"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Topic Configurations"
+      description: "Get key-value configs for a topic."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTopicConfigurationsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/topics/{topic_name}/configurations"
+      body: "configurations"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update Topic Configuration"
+      description: "Update a subset of the topic configurations."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateTopicConfigurationsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+  rpc SetTopicConfigurations(SetTopicConfigurationsRequest) returns (SetTopicConfigurationsResponse) {
+    option (google.api.http) = {
+      put: "/v1/topics/{topic_name}/configurations"
+      body: "configurations"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Set Topic Configurations"
+      description: "Update the entire set of key-value configurations for a topic. Config entries that are not provided in the request are removed and will fall back to their default values."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.SetTopicConfigurationsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+}

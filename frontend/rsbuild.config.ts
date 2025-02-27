@@ -4,6 +4,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
 import moduleFederationConfig from './module-federation';
@@ -72,6 +73,20 @@ export default defineConfig({
       const plugins = [
         new NodePolyfillPlugin({
           additionalAliases: ['process'],
+        }),
+        new MonacoWebpackPlugin({
+          languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf'],
+          customLanguages: [
+            {
+              label: 'yaml',
+              entry: 'monaco-yaml',
+              worker: {
+                id: 'monaco-yaml/yamlWorker',
+                entry: 'monaco-yaml/yaml.worker',
+              },
+            },
+          ],
+          filename: 'static/js/[name].worker.js',
         }),
       ];
 

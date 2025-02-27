@@ -116,7 +116,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             width={500}
           />
         </FormField>
-        <FormField label="Tasks">
+        <FormField label="Compute Units">
           <NumberInput
             value={this.tasks}
             onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}

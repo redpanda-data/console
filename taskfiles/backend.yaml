@@ -62,6 +62,18 @@ tasks:
     status:
       - '[[ $({{ .BUILD_ROOT }}/bin/go/gci --version) == v{{.GCI_VERSION}} ]]'
 
+  install-go-licenses:
+    vars:
+      GO_LICENSES_VERSION: 1.6.0
+    desc: install go licenses
+    deps:
+      - install-go
+    cmds:
+      - |
+        {{.PATH_PREFIX}} go install github.com/google/go-licenses@v{{.GO_LICENSES_VERSION}}
+    status:
+      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/go-licenses >/dev/null 2>&1'
+
   install-tparse:
     vars:
       TPARSE_VERSION: 0.13.2
@@ -175,3 +187,13 @@ tasks:
       - task: 'lint'
       - task: 'generate'
       - task: 'test-integration'
+  licenses:third-party:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: generate third party licenses csv
+    deps:
+      - install-go-licenses
+    cmds:
+      - 'echo "Dependency,License URL,License Type" > ../licenses/third_party_go.csv'
+      - |
+        {{ .PATH_PREFIX }} go-licenses report ./... --ignore github.com/redpanda-data --ignore buf.build/gen >> ../licenses/third_party_go.csv
+

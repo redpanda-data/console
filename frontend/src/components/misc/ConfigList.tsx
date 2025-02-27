@@ -122,16 +122,18 @@ export function ConfigList({
       data={configEntries}
       pagination={false}
       sorting={false}
-      getRowCanExpand={(row) => (row.original.synonyms?.length ?? 0) > 0}
+      getRowCanExpand={(row) =>
+        (row.original.synonyms?.filter((x) => x.source !== row.original.source).length ?? 0) > 0
+      }
       subComponent={({ row }) => {
-        if (!row.original.synonyms?.length) {
+        if (!row.original.synonyms?.filter((x) => x.source !== row.original.source).length) {
           return null;
         }
         return (
           <Box py={6} px={10}>
             <DataTable<ConfigEntry>
               // @ts-ignore TODO - we need to fix types here and find a shared interface
-              data={row.original.synonyms}
+              data={row.original.synonyms.filter((x) => x.source !== row.original.source)}
               columns={tableColumns}
             />
           </Box>

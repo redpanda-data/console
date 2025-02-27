@@ -13,6 +13,7 @@ import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-da
 import { observer } from 'mobx-react';
 import type { PropertyGroup } from '../../../../state/connect/state';
 import { PropertyComponent } from './PropertyComponent';
+import type { ConfigPageProps } from './components';
 import { TopicInput } from './forms/TopicInput';
 
 const topicsFields = ['topics', 'topics.regex'];
@@ -23,6 +24,7 @@ export const PropertyGroupComponent = observer(
     allGroups: PropertyGroup[];
     showAdvancedOptions: boolean;
     connectorType: 'sink' | 'source';
+    context: ConfigPageProps['context'];
   }) => {
     const g = props.group;
 
@@ -62,6 +64,7 @@ export const PropertyGroupComponent = observer(
                     allGroups={props.allGroups}
                     showAdvancedOptions={props.showAdvancedOptions}
                     connectorType={props.connectorType}
+                    context={props.context}
                   />
                 ),
               }))}
@@ -101,9 +104,12 @@ export const PropertyGroupComponent = observer(
             }
             {filteredProperties
               .filter((p) => topicsFields.every((v) => v !== p.name))
-              .map((p) => (
-                <PropertyComponent key={p.name} property={p} />
-              ))}
+              .map((p) => {
+                if (p.name === 'name' && props.context === 'EDIT') {
+                  p.isDisabled = true;
+                }
+                return <PropertyComponent key={p.name} property={p} />;
+              })}
           </div>
           <Divider my={10} />
         </Box>

@@ -149,10 +149,16 @@ class RpConnectSecretCreate extends PageComponent {
               isLoading={this.isCreating}
               isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)}
               onClick={action(() => this.createSecret())}
+              data-testid={'submit-create-rpcn-secret'}
             >
               Create secret
             </Button>
-            <Button variant="link" disabled={this.isCreating} onClick={action(() => this.cancel())}>
+            <Button
+              variant="link"
+              disabled={this.isCreating}
+              onClick={action(() => this.cancel())}
+              data-testid={'cancel-create-rpcn-secret'}
+            >
               Cancel
             </Button>
           </ButtonGroup>

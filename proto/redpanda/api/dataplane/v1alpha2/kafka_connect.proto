@@ -519,7 +519,10 @@ message ResetConnectorTopicsRequest {
 // proxied but also enriched with better error handling and custom
 // documentation and configuration
 service KafkaConnectService {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {description: "Manage [connectors](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/) and interact with the Kafka Connect API."};
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Kafka Connect"
+    description: "Manage [connectors](https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/) and interact with the Kafka Connect API."
+  };
 
   // ListConnectClusters implements the list clusters method, list connect
   // clusters available in the console configuration

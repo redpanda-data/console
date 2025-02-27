@@ -51,7 +51,7 @@ import {
   Heading,
   Spinner,
   createStandaloneToast,
-} from '@chakra-ui/react';
+} from '@redpanda-data/ui';
 import { Link } from 'react-router-dom';
 import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { encodeURIComponentPercents } from '../../../utils/utils';

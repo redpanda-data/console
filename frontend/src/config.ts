@@ -22,17 +22,17 @@ import memoizeOne from 'memoize-one';
  */
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
-import { configureMonacoYaml } from 'monaco-yaml';
+
 import { DEFAULT_API_BASE } from './components/constants';
-import { monacoYamlOptions } from './components/misc/PipelinesYamlEditor';
 import { APP_ROUTES } from './components/routes';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
+import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
+import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
-import { SecretService as RPCNSecretService } from './protogen/redpanda/api/dataplane/v1alpha2/secret_connect';
 import { appGlobal } from './state/appGlobal';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
@@ -118,6 +118,7 @@ interface Config {
   debugBundleClient?: PromiseClient<typeof DebugBundleService>;
   securityClient?: PromiseClient<typeof SecurityService>;
   pipelinesClient?: PromiseClient<typeof PipelineService>;
+  pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
@@ -157,6 +158,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
   const securityGrpcClient = createPromiseClient(SecurityService, transport);
   const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
+  const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
   const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
   const transformClient = createPromiseClient(TransformService, transport);
   Object.assign(config, {
@@ -170,6 +172,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     debugBundleClient: debugBundleGrpcClient,
     securityClient: securityGrpcClient,
     pipelinesClient: pipelinesGrpcClient,
+    pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     ...args,
@@ -264,36 +267,28 @@ export const embeddedAvailableRoutesObservable = observable({
 });
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
-  const config = setConfig(setupArgs);
+  setConfig(setupArgs);
 
   // Tell monaco editor where to load dependencies from
-  loader.config({
-    paths: {
-      vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs`,
-    },
-  });
+  loader.config({ monaco });
 
   // Ensure yaml workers are being loaded locally as well
-  loader.init().then(async (monaco) => {
+  loader.init().then(async () => {
     window.MonacoEnvironment = {
-      baseUrl: `${config.assetsPath}/static/js/vendor/monaco/package/min`,
-
-      getWorker(moduleId, label) {
-        console.debug(`window.MonacoEnvironment.getWorker looking for moduleId ${moduleId} label ${label}`);
+      getWorkerUrl(_, label: string): string {
         switch (label) {
-          case 'editorWorkerService':
-            return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
-          case 'yaml':
-            // return new yamlWorker();
-            return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
-
-          default:
-            throw new Error(`Unknown label ${label}`);
+          case 'editorWorkerService': {
+            return `${window.location.origin}/static/js/editor.worker.js`;
+          }
+          case 'typescript': {
+            return `${window.location.origin}/static/js/ts.worker.js`;
+          }
+          default: {
+            return `${window.location.origin}/static/js/${label}.worker.js`;
+          }
         }
       },
     };
-
-    configureMonacoYaml(monaco, monacoYamlOptions);
   });
 
   // Configure MobX

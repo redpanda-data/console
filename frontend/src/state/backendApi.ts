@@ -135,8 +135,13 @@ import type {
   PublishMessageRequest,
   PublishMessageResponse,
 } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
-import type { Pipeline, PipelineCreate, PipelineUpdate } from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
+import {
+  GetPipelinesBySecretsRequest,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
+} from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
 import {
   type CreateSecretRequest,
   type DeleteSecretRequest,
@@ -146,6 +151,7 @@ import {
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 
@@ -2069,30 +2075,34 @@ export const pipelinesApi = observable({
 
 export const rpcnSecretManagerApi = observable({
   secrets: undefined as undefined | Secret[],
+  secretsByPipeline: undefined as { secretId: string; pipelines: Pipeline[] }[] | undefined,
   isEnable: true,
 
   async refreshSecrets(_force: boolean): Promise<void> {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
+    // handle error in order to avoid crash app for this request
+    this.secretsByPipeline = await this.getPipelinesBySecret().catch(() => []);
+
     const secrets = [];
 
     let nextPageToken = '';
     while (true) {
-      const res = await client.listSecrets(
-        new ListSecretsRequest({
+      const res = await client.listSecrets({
+        request: new ListSecretsRequest({
           pageToken: nextPageToken,
           pageSize: 100,
         }),
-      );
+      });
 
-      const response = res.secrets;
+      const response = res.response;
       if (!response) break;
 
-      secrets.push(...response);
+      secrets.push(...response.secrets);
 
-      if (!res || res.nextPageToken.length === 0) break;
-      nextPageToken = res.nextPageToken;
+      if (!res || response.nextPageToken.length === 0) break;
+      nextPageToken = response.nextPageToken;
     }
 
     this.secrets = secrets;
@@ -2102,28 +2112,46 @@ export const rpcnSecretManagerApi = observable({
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    await client.deleteSecret(secret);
+    await client.deleteSecret({ request: secret });
   },
   async create(secret: CreateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    await client.createSecret(secret);
+    await client.createSecret({ request: secret });
   },
   async update(_id: string, updateSecretRequest: UpdateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    await client.updateSecret(updateSecretRequest);
+    await client.updateSecret({ request: updateSecretRequest });
   },
   async checkScope(listSecretScopesRequest: ListSecretScopesRequest) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    const scopes = await client.listSecretScopes(listSecretScopesRequest);
-    const isEnable = scopes.scopes.some((scope) => scope === Scope.REDPANDA_CONNECT);
+    const res = await client.listSecretScopes({ request: listSecretScopesRequest });
+
+    if (!res.response) {
+      this.isEnable = false;
+      return;
+    }
+
+    const isEnable = res.response?.scopes.some((scope) => scope === Scope.REDPANDA_CONNECT);
     this.isEnable = isEnable;
     return isEnable;
+  },
+  async getPipelinesBySecret() {
+    const client = appConfig.pipelinesClientV2;
+    if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
+
+    const pipelinesBySecrets = await client.getPipelinesBySecrets({ request: new GetPipelinesBySecretsRequest() });
+    return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => {
+      return {
+        secretId: secretId,
+        pipelines: pipelines,
+      };
+    });
   },
 });
 
@@ -2137,7 +2165,12 @@ export const transformsApi = observable({
     const transforms: TransformMetadata[] = [];
     let nextPageToken = '';
     while (true) {
-      const res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+      let res: ListTransformsResponse;
+      try {
+        res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+      } catch (err) {
+        break;
+      }
       const r = res.response;
       if (!r) break;
 
@@ -2568,15 +2601,6 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
 
   for (const e of configEntries) {
     if (e.synonyms === undefined) continue;
-
-    // remove redundant entry
-    if (e.synonyms.length > 0) if (e.synonyms[0].source === e.source) e.synonyms.splice(0, 1);
-
-    if (e.synonyms.length === 0) {
-      // delete empty arrays, otherwise Tables will show this entry as 'expandable' even though it has no children
-      e.synonyms = undefined;
-      continue;
-    }
 
     // add 'type' from root object
     for (const s of e.synonyms) s.type = e.type;

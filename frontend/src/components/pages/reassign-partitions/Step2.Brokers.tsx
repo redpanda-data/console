@@ -45,8 +45,8 @@ export class StepSelectBrokers extends Component<{
         <div style={{ margin: '2em 1em' }}>
           <h2>Target Brokers</h2>
           <p>
-            Choose the target brokers to move the selected partitions to. Kowl will consider them as desired targets and
-            distribute partitions across the available racks of the selected target brokers.
+            Choose the target brokers to move the selected partitions to. Redpanda Console will distribute partitions
+            across the available racks of the selected target brokers.
           </p>
         </div>
 

@@ -1,4 +1,5 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
+import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
   Box,
   Button,
@@ -31,7 +32,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 const CreateSecretButton = () => {
   return (
     <Flex marginBottom={'.5em'}>
-      <Button as={ReactRouterLink} to={'/rp-connect/secrets/create'}>
+      <Button as={ReactRouterLink} to={'/rp-connect/secrets/create'} data-testid="create-rpcn-secret-button">
         Create secret
       </Button>
     </Flex>
@@ -129,7 +130,9 @@ class RpConnectSecretsList extends PageComponent {
               columns={[
                 {
                   header: 'Secret name',
-                  cell: ({ row: { original } }) => <Text>{original.id}</Text>,
+                  cell: ({ row: { original } }) => (
+                    <Text data-testid={`secret-text-${original.id}`}>{original.id}</Text>
+                  ),
                   size: 200,
                 },
                 {
@@ -151,14 +154,27 @@ class RpConnectSecretsList extends PageComponent {
                   ),
                   size: 400,
                 },
-                // let use this on next phase
-                // {
-                //     header: 'Pipelines',
-                //     cell: (_) => (
-                //         <Text wordBreak="break-word" whiteSpace="break-spaces">TODO</Text>
-                //     ),
-                //     size: 400,
-                // },
+                {
+                  header: 'Pipelines',
+                  cell: ({ row: { original } }) => (
+                    <Flex whiteSpace="break-spaces" flexWrap={'wrap'} alignContent={'stretch'}>
+                      {rpcnSecretManagerApi.secretsByPipeline
+                        ?.find((x) => x.secretId === original.id)
+                        ?.pipelines?.map(({ id, displayName }, index, array) => (
+                          <ChakraLink
+                            as={ReactRouterLink}
+                            wordBreak="break-word"
+                            key={`pipeline-${id}`}
+                            to={`/rp-connect/${id}`}
+                            textDecoration={'initial'}
+                          >
+                            {displayName} {index !== array.length - 1 ? ', ' : ''}
+                          </ChakraLink>
+                        ))}
+                    </Flex>
+                  ),
+                  size: 400,
+                },
                 {
                   header: '',
                   id: 'actions',
@@ -166,6 +182,7 @@ class RpConnectSecretsList extends PageComponent {
                     <Flex justifyContent={'flex-end'}>
                       <ButtonGroup>
                         <Button
+                          data-testid={`edit-secret-${r.id}`}
                           variant="icon"
                           height="16px"
                           color="gray.500"
@@ -179,7 +196,7 @@ class RpConnectSecretsList extends PageComponent {
                         </Button>
                         <ConfirmItemDeleteModal
                           trigger={
-                            <Button variant="icon" height="16px" color="gray.500">
+                            <Button variant="icon" height="16px" color="gray.500" data-testid={`delete-secret-${r.id}`}>
                               <TrashIcon />
                             </Button>
                           }

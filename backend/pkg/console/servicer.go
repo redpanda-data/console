@@ -58,7 +58,7 @@ type Servicer interface {
 	GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error)
 	PutSchemaRegistryConfig(ctx context.Context, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
 	PutSchemaRegistrySubjectConfig(ctx context.Context, subject string, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
-	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error)
+	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error
 	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
 	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
 	GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName, version string) ([]SchemaReference, error)

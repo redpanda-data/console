@@ -68,6 +68,22 @@ message GetPipelineServiceConfigSchemaResponse {
   redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse response = 1;
 }
 
+message GetPipelinesForSecretRequest {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest request = 1;
+}
+
+message GetPipelinesForSecretResponse {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse response = 1;
+}
+
+message GetPipelinesBySecretsRequest {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest request = 1;
+}
+
+message GetPipelinesBySecretsResponse {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse response = 1;
+}
+
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
 
@@ -84,4 +100,8 @@ service PipelineService {
   rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {}
 
   rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {}
+
+  rpc GetPipelinesForSecret(GetPipelinesForSecretRequest) returns (GetPipelinesForSecretResponse) {}
+
+  rpc GetPipelinesBySecrets(GetPipelinesBySecretsRequest) returns (GetPipelinesBySecretsResponse) {}
 }
