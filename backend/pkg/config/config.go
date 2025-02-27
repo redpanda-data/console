@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/flagext"
-	"github.com/cloudhut/common/logging"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -34,13 +33,13 @@ type Config struct {
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 
-	Console        Console        `yaml:"console"`
-	Redpanda       Redpanda       `yaml:"redpanda"`
-	Connect        Connect        `yaml:"connect"`
-	REST           Server         `yaml:"server"`
-	Kafka          Kafka          `yaml:"kafka"`
-	SchemaRegistry Schema         `yaml:"schemaRegistry"`
-	Logger         logging.Config `yaml:"logger"`
+	Console        Console  `yaml:"console"`
+	Redpanda       Redpanda `yaml:"redpanda"`
+	Connect        Connect  `yaml:"connect"`
+	REST           Server   `yaml:"server"`
+	Kafka          Kafka    `yaml:"kafka"`
+	SchemaRegistry Schema   `yaml:"schemaRegistry"`
+	Logger         Logging  `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
