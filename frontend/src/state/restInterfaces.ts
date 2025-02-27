@@ -543,7 +543,7 @@ export interface UserData {
   canReassignPartitions: boolean;
   canPatchConfigs: boolean;
   canCreateRoles: boolean;
-  canCreateUsers: boolean;
+  canManageUsers: boolean;
   canViewPermissionsList: boolean;
 
   canManageLicense: boolean;

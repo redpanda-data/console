@@ -349,7 +349,7 @@ export async function handleExpiredLicenseError(r: Response) {
       canManageSchemaRegistry: true,
       canManageLicense: true,
       canViewPermissionsList: true,
-      canCreateUsers: true,
+      canManageUsers: true,
       canViewSchemas: true,
       canListTransforms: true,
       canCreateTransforms: true,
@@ -461,7 +461,7 @@ const apiStore = {
             r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
 
           canManageLicense: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_LICENSE),
-          canCreateUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
+          canManageUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
           canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
           canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
           canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),

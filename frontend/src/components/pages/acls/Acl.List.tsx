@@ -84,10 +84,10 @@ const { ToastContainer, toast } = createStandaloneToast({
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 const getCreateUserButtonProps = () => ({
-  isDisabled: !Features.createUser || api.userData?.canCreateUsers === false || !api.isAdminApiConfigured,
+  isDisabled: !Features.createUser || api.userData?.canManageUsers === false || !api.isAdminApiConfigured,
   tooltip: [
     !Features.createUser && "Your cluster doesn't support this feature.",
-    api.userData?.canCreateUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+    api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
     !api.isAdminApiConfigured && 'You need to enable Admin API.',
   ]
     .filter(Boolean)
@@ -144,7 +144,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         component: <UsersTab data-testid="users-tab" />,
         isDisabled:
           (!Features.createUser && "Your cluster doesn't support this feature.") ||
-          (api.userData?.canCreateUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+          (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
       {
         key: 'roles' as AclListTab,
@@ -152,7 +152,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         component: <RolesTab data-testid="roles-tab" />,
         isDisabled:
           (!Features.createUser && "Your cluster doesn't support this feature.") ||
-          (api.userData?.canCreateUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+          (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
       {
         key: 'acls' as AclListTab,
