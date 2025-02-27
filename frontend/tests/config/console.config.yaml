@@ -1,14 +1,16 @@
 serveFrontend: false
 kafka:
   brokers: ["localhost:19092"]
-  schemaRegistry:
-    enabled: true
-    urls: ["http://localhost:18081"]
   protobuf:
     enabled: true
     schemaRegistry:
       enabled: true
       refreshInterval: 5m
+
+schemaRegistry:
+  enabled: true
+  urls: ["http://localhost:18081"]
+
 redpanda:
   adminApi:
     enabled: true
