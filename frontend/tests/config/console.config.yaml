@@ -1,8 +1,6 @@
 serveFrontend: false
 kafka:
   brokers: ["localhost:19092"]
-  protobuf:
-    enabled: true
 
 schemaRegistry:
   enabled: true
