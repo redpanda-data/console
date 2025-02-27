@@ -69,6 +69,22 @@ message GetPipelineServiceConfigSchemaResponse {
   redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse response = 1;
 }
 
+message GetPipelinesForSecretRequest {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest request = 1;
+}
+
+message GetPipelinesForSecretResponse {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse response = 1;
+}
+
+message GetPipelinesBySecretsRequest {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest request = 1;
+}
+
+message GetPipelinesBySecretsResponse {
+  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse response = 1;
+}
+
 service PipelineService {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
     option (redpanda.api.auth.v1.authorization) = {
@@ -120,6 +136,20 @@ service PipelineService {
   }
 
   rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
+
+  rpc GetPipelinesForSecret(GetPipelinesForSecretRequest) returns (GetPipelinesForSecretResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
+
+  rpc GetPipelinesBySecrets(GetPipelinesBySecretsRequest) returns (GetPipelinesBySecretsResponse) {
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT

@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.8.3 / 2025-02-27
+
+- [IMPROVEMENT] Improvements to memory consumption and performance of Protocol Buffer parsing.
+- [IMPROVEMENT] Add capability to deserialize records that use deleted schemas.
+- [IMPROVEMENT] Show default config for topic configurations.
+- [IMPROVEMENT] For push down filters, pass JavaScript Date for record timestamp to filter function.
+- [BUFGIX] Fix UX bug that prevented records from being downloaded.
+- [BUFGIX] Fix a bug that prevented Console from starting up with an expired license when no enterprise features were enabled.
+
 ## v2.8.2 / 2025-01-10
 
 - [SECURITY] Update `github.com/go-git/go-git/v5` to fix security issue [CVE-2025-21614](https://nvd.nist.gov/vuln/detail/CVE-2025-21614).
