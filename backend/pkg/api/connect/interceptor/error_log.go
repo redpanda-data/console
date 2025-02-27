@@ -17,6 +17,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/redpanda-data/console/backend/pkg/logging"
 )
 
 var _ connect.Interceptor = &ErrorLogInterceptor{}
@@ -26,15 +28,11 @@ var _ connect.Interceptor = &ErrorLogInterceptor{}
 // are written before the interceptors would be called, such as:
 // - Authentication errors (enterprise HTTP middleware)
 // - JSON Unmarshalling errors of request body (happens prior calling interceptors)
-type ErrorLogInterceptor struct {
-	logger *zap.Logger
-}
+type ErrorLogInterceptor struct{}
 
 // NewErrorLogInterceptor creates a new ErrorLogInterceptor.
-func NewErrorLogInterceptor(logger *zap.Logger) *ErrorLogInterceptor {
-	return &ErrorLogInterceptor{
-		logger: logger,
-	}
+func NewErrorLogInterceptor() *ErrorLogInterceptor {
+	return &ErrorLogInterceptor{}
 }
 
 // WrapUnary creates an interceptor to validate Connect requests.
@@ -86,8 +84,9 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 			return response, err
 		}
 
-		// 6. Log error details
-		in.logger.Warn("",
+		// 6. Log error details with decorated logger
+		logger := logging.FromContext(ctx)
+		logger.Warn("",
 			zap.String("timestamp", start.Format(time.RFC3339)),
 			zap.String("procedure", procedure),
 			zap.String("request_duration", requestDuration.String()),

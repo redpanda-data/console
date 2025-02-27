@@ -19,7 +19,6 @@ import (
 	"io/fs"
 	"time"
 
-	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
@@ -34,6 +33,7 @@ import (
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/license"
+	"github.com/redpanda-data/console/backend/pkg/logging"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
