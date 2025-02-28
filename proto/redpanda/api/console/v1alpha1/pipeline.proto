@@ -69,19 +69,19 @@ message GetPipelineServiceConfigSchemaResponse {
 }
 
 message GetPipelinesForSecretRequest {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest request = 1;
+  redpanda.api.dataplane.v1.GetPipelinesForSecretRequest request = 1;
 }
 
 message GetPipelinesForSecretResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse response = 1;
+  redpanda.api.dataplane.v1.GetPipelinesForSecretResponse response = 1;
 }
 
 message GetPipelinesBySecretsRequest {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest request = 1;
+  redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest request = 1;
 }
 
 message GetPipelinesBySecretsResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse response = 1;
+  redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse response = 1;
 }
 
 service PipelineService {

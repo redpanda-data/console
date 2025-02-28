@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1/pipeline_pb";
+import { CreatePipelineRequest as CreatePipelineRequest$1, CreatePipelineResponse as CreatePipelineResponse$1, DeletePipelineRequest as DeletePipelineRequest$1, DeletePipelineResponse as DeletePipelineResponse$1, GetPipelineRequest as GetPipelineRequest$1, GetPipelineResponse as GetPipelineResponse$1, GetPipelinesBySecretsRequest as GetPipelinesBySecretsRequest$1, GetPipelinesBySecretsResponse as GetPipelinesBySecretsResponse$1, GetPipelineServiceConfigSchemaRequest as GetPipelineServiceConfigSchemaRequest$1, GetPipelineServiceConfigSchemaResponse as GetPipelineServiceConfigSchemaResponse$1, GetPipelinesForSecretRequest as GetPipelinesForSecretRequest$1, GetPipelinesForSecretResponse as GetPipelinesForSecretResponse$1, ListPipelinesRequest as ListPipelinesRequest$1, ListPipelinesResponse as ListPipelinesResponse$1, StartPipelineRequest as StartPipelineRequest$1, StartPipelineResponse as StartPipelineResponse$1, StopPipelineRequest as StopPipelineRequest$1, StopPipelineResponse as StopPipelineResponse$1, UpdatePipelineRequest as UpdatePipelineRequest$1, UpdatePipelineResponse as UpdatePipelineResponse$1 } from "../../dataplane/v1/pipeline_pb";
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.CreatePipelineRequest
@@ -604,7 +604,7 @@ export class GetPipelineServiceConfigSchemaResponse extends Message<GetPipelineS
  */
 export class GetPipelinesForSecretRequest extends Message<GetPipelinesForSecretRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelinesForSecretRequest request = 1;
    */
   request?: GetPipelinesForSecretRequest$1;
 
@@ -641,7 +641,7 @@ export class GetPipelinesForSecretRequest extends Message<GetPipelinesForSecretR
  */
 export class GetPipelinesForSecretResponse extends Message<GetPipelinesForSecretResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelinesForSecretResponse response = 1;
    */
   response?: GetPipelinesForSecretResponse$1;
 
@@ -678,7 +678,7 @@ export class GetPipelinesForSecretResponse extends Message<GetPipelinesForSecret
  */
 export class GetPipelinesBySecretsRequest extends Message<GetPipelinesBySecretsRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest request = 1;
    */
   request?: GetPipelinesBySecretsRequest$1;
 
@@ -715,7 +715,7 @@ export class GetPipelinesBySecretsRequest extends Message<GetPipelinesBySecretsR
  */
 export class GetPipelinesBySecretsResponse extends Message<GetPipelinesBySecretsResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse response = 1;
    */
   response?: GetPipelinesBySecretsResponse$1;
 
