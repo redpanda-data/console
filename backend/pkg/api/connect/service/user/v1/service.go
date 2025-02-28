@@ -28,11 +28,11 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
-	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
-	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
+	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
 
-var _ dataplanev1alpha2connect.UserServiceHandler = (*Service)(nil)
+var _ dataplanev1connect.UserServiceHandler = (*Service)(nil)
 
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
@@ -40,27 +40,27 @@ type Service struct {
 	cfg                    *config.Config
 	logger                 *zap.Logger
 	consoleSvc             console.Servicer
-	redpandaClientProvider redpandafactory.ClientFactory
 	defaulter              defaulter
+	redpandaClientProvider redpandafactory.ClientFactory
 }
 
 // NewService creates a new user service handler.
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
-	redpandaClientProvider redpandafactory.ClientFactory,
 	consoleSvc console.Servicer,
+	redpandaClientProvider redpandafactory.ClientFactory,
 ) *Service {
 	return &Service{
 		cfg:                    cfg,
 		logger:                 logger,
 		consoleSvc:             consoleSvc,
-		redpandaClientProvider: redpandaClientProvider,
 		defaulter:              defaulter{},
+		redpandaClientProvider: redpandaClientProvider,
 	}
 }
 
 // ListUsers returns a list of all existing users.
-func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.ListUsersRequest]) (*connect.Response[v1alpha2.ListUsersResponse], error) {
+func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
 	s.defaulter.applyListUsersRequest(req.Msg)
 
 	// 1. Try to retrieve a Redpanda Admin API client.
@@ -93,14 +93,14 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 		return false
 	}
 
-	filteredUsers := make([]*v1alpha2.ListUsersResponse_User, 0)
+	filteredUsers := make([]*v1.ListUsersResponse_User, 0)
 	for _, user := range users {
 		// Remove users that do not pass the filter criteria
 		if !doesUserPassFilter(user) {
 			continue
 		}
 
-		filteredUsers = append(filteredUsers, &v1alpha2.ListUsersResponse_User{
+		filteredUsers = append(filteredUsers, &v1.ListUsersResponse_User{
 			Name: user,
 		})
 	}
@@ -111,28 +111,28 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 		sort.SliceStable(filteredUsers, func(i, j int) bool {
 			return filteredUsers[i].Name < filteredUsers[j].Name
 		})
-		page, token, err := pagination.SliceToPaginatedWithToken(filteredUsers, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1alpha2.ListUsersResponse_User) string {
+		page, token, err := pagination.SliceToPaginatedWithToken(filteredUsers, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListUsersResponse_User) string {
 			return x.GetName()
 		})
 		if err != nil {
 			return nil, apierrors.NewConnectError(
 				connect.CodeInternal,
 				fmt.Errorf("failed to apply pagination: %w", err),
-				apierrors.NewErrorInfo(v1alpha2.Reason_REASON_CONSOLE_ERROR.String()),
+				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
 			)
 		}
 		filteredUsers = page
 		nextPageToken = token
 	}
 
-	return connect.NewResponse(&v1alpha2.ListUsersResponse{
+	return connect.NewResponse(&v1.ListUsersResponse{
 		Users:         filteredUsers,
 		NextPageToken: nextPageToken,
 	}), nil
 }
 
 // CreateUser creates a new Redpanda/Kafka user.
-func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.CreateUserRequest]) (*connect.Response[v1alpha2.CreateUserResponse], error) {
+func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
 	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
@@ -155,8 +155,8 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
-	res := &v1alpha2.CreateUserResponse{
-		User: &v1alpha2.CreateUserResponse_User{
+	res := &v1.CreateUserResponse{
+		User: &v1.CreateUserResponse_User{
 			Name:      req.Msg.User.Name,
 			Mechanism: &req.Msg.User.Mechanism,
 		},
@@ -165,7 +165,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 }
 
 // UpdateUser upserts a new Redpanda/Kafka user. This equals a PUT operation.
-func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.UpdateUserRequest]) (*connect.Response[v1alpha2.UpdateUserResponse], error) {
+func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.UpdateUserResponse], error) {
 	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
@@ -188,8 +188,8 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
 
-	return connect.NewResponse(&v1alpha2.UpdateUserResponse{
-		User: &v1alpha2.UpdateUserResponse_User{
+	return connect.NewResponse(&v1.UpdateUserResponse{
+		User: &v1.UpdateUserResponse_User{
 			Name:      req.Msg.User.Name,
 			Mechanism: &req.Msg.User.Mechanism,
 		},
@@ -197,7 +197,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 }
 
 // DeleteUser deletes an existing Redpanda/Kafka user.
-func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.DeleteUserRequest]) (*connect.Response[v1alpha2.DeleteUserResponse], error) {
+func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
 	// 1. Try to retrieve a Redpanda Admin API client.
 	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
@@ -231,7 +231,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to delete user: ")
 	}
 
-	connectResponse := connect.NewResponse(&v1alpha2.DeleteUserResponse{})
+	connectResponse := connect.NewResponse(&v1.DeleteUserResponse{})
 	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusNoContent))
 
 	return connectResponse, nil

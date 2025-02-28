@@ -5,14 +5,14 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
-import { CreateSecretRequest as CreateSecretRequest$1, CreateSecretResponse as CreateSecretResponse$1, DeleteSecretRequest as DeleteSecretRequest$1, DeleteSecretResponse as DeleteSecretResponse$1, GetSecretRequest as GetSecretRequest$1, GetSecretResponse as GetSecretResponse$1, ListSecretScopesRequest as ListSecretScopesRequest$1, ListSecretScopesResponse as ListSecretScopesResponse$1, ListSecretsRequest as ListSecretsRequest$1, ListSecretsResponse as ListSecretsResponse$1, UpdateSecretRequest as UpdateSecretRequest$1, UpdateSecretResponse as UpdateSecretResponse$1 } from "../../dataplane/v1alpha2/secret_pb";
+import { CreateSecretRequest as CreateSecretRequest$1, CreateSecretResponse as CreateSecretResponse$1, DeleteSecretRequest as DeleteSecretRequest$1, DeleteSecretResponse as DeleteSecretResponse$1, GetSecretRequest as GetSecretRequest$1, GetSecretResponse as GetSecretResponse$1, ListSecretScopesRequest as ListSecretScopesRequest$1, ListSecretScopesResponse as ListSecretScopesResponse$1, ListSecretsRequest as ListSecretsRequest$1, ListSecretsResponse as ListSecretsResponse$1, UpdateSecretRequest as UpdateSecretRequest$1, UpdateSecretResponse as UpdateSecretResponse$1 } from "../../dataplane/v1/secret_pb";
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.GetSecretRequest
  */
 export class GetSecretRequest extends Message<GetSecretRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetSecretRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetSecretRequest request = 1;
    */
   request?: GetSecretRequest$1;
 
@@ -49,7 +49,7 @@ export class GetSecretRequest extends Message<GetSecretRequest> {
  */
 export class GetSecretResponse extends Message<GetSecretResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.GetSecretResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetSecretResponse response = 1;
    */
   response?: GetSecretResponse$1;
 
@@ -86,7 +86,7 @@ export class GetSecretResponse extends Message<GetSecretResponse> {
  */
 export class ListSecretsRequest extends Message<ListSecretsRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListSecretsRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListSecretsRequest request = 1;
    */
   request?: ListSecretsRequest$1;
 
@@ -123,7 +123,7 @@ export class ListSecretsRequest extends Message<ListSecretsRequest> {
  */
 export class ListSecretsResponse extends Message<ListSecretsResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListSecretsResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListSecretsResponse response = 1;
    */
   response?: ListSecretsResponse$1;
 
@@ -160,7 +160,7 @@ export class ListSecretsResponse extends Message<ListSecretsResponse> {
  */
 export class CreateSecretRequest extends Message<CreateSecretRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.CreateSecretRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.CreateSecretRequest request = 1;
    */
   request?: CreateSecretRequest$1;
 
@@ -197,7 +197,7 @@ export class CreateSecretRequest extends Message<CreateSecretRequest> {
  */
 export class CreateSecretResponse extends Message<CreateSecretResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.CreateSecretResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.CreateSecretResponse response = 1;
    */
   response?: CreateSecretResponse$1;
 
@@ -234,7 +234,7 @@ export class CreateSecretResponse extends Message<CreateSecretResponse> {
  */
 export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.UpdateSecretRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.UpdateSecretRequest request = 1;
    */
   request?: UpdateSecretRequest$1;
 
@@ -271,7 +271,7 @@ export class UpdateSecretRequest extends Message<UpdateSecretRequest> {
  */
 export class UpdateSecretResponse extends Message<UpdateSecretResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.UpdateSecretResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.UpdateSecretResponse response = 1;
    */
   response?: UpdateSecretResponse$1;
 
@@ -308,7 +308,7 @@ export class UpdateSecretResponse extends Message<UpdateSecretResponse> {
  */
 export class DeleteSecretRequest extends Message<DeleteSecretRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.DeleteSecretRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.DeleteSecretRequest request = 1;
    */
   request?: DeleteSecretRequest$1;
 
@@ -345,7 +345,7 @@ export class DeleteSecretRequest extends Message<DeleteSecretRequest> {
  */
 export class DeleteSecretResponse extends Message<DeleteSecretResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.DeleteSecretResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.DeleteSecretResponse response = 1;
    */
   response?: DeleteSecretResponse$1;
 
@@ -382,7 +382,7 @@ export class DeleteSecretResponse extends Message<DeleteSecretResponse> {
  */
 export class ListSecretScopesRequest extends Message<ListSecretScopesRequest> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListSecretScopesRequest request = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListSecretScopesRequest request = 1;
    */
   request?: ListSecretScopesRequest$1;
 
@@ -419,7 +419,7 @@ export class ListSecretScopesRequest extends Message<ListSecretScopesRequest> {
  */
 export class ListSecretScopesResponse extends Message<ListSecretScopesResponse> {
   /**
-   * @generated from field: redpanda.api.dataplane.v1alpha2.ListSecretScopesResponse response = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListSecretScopesResponse response = 1;
    */
   response?: ListSecretScopesResponse$1;
 

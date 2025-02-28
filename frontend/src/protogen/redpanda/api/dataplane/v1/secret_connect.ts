@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateConnectSecretRequest, CreateConnectSecretResponse, CreateSecretRequest, CreateSecretResponse, DeleteConnectSecretRequest, DeleteConnectSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetConnectSecretRequest, GetConnectSecretResponse, GetSecretRequest, GetSecretResponse, ListConnectSecretsRequest, ListConnectSecretsResponse, ListSecretScopesRequest, ListSecretScopesResponse, ListSecretsRequest, ListSecretsResponse, UpdateConnectSecretRequest, UpdateConnectSecretResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
+import { CreateKafkaConnectSecretRequest, CreateKafkaConnectSecretResponse, CreateSecretRequest, CreateSecretResponse, DeleteKafkaConnectSecretRequest, DeleteKafkaConnectSecretResponse, DeleteSecretRequest, DeleteSecretResponse, GetKafkaConnectSecretRequest, GetKafkaConnectSecretResponse, GetSecretRequest, GetSecretResponse, ListKafkaConnectSecretsRequest, ListKafkaConnectSecretsResponse, ListSecretScopesRequest, ListSecretScopesResponse, ListSecretsRequest, ListSecretsResponse, UpdateKafkaConnectSecretRequest, UpdateKafkaConnectSecretResponse, UpdateSecretRequest, UpdateSecretResponse } from "./secret_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -79,58 +79,58 @@ export const SecretService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetConnectSecret retrieves the specific secret for a specific Connect.
+     * GetKafkaConnectSecret retrieves the specific secret for a specific Connect.
      *
-     * @generated from rpc redpanda.api.dataplane.v1.SecretService.GetConnectSecret
+     * @generated from rpc redpanda.api.dataplane.v1.SecretService.GetKafkaConnectSecret
      */
-    getConnectSecret: {
-      name: "GetConnectSecret",
-      I: GetConnectSecretRequest,
-      O: GetConnectSecretResponse,
+    getKafkaConnectSecret: {
+      name: "GetKafkaConnectSecret",
+      I: GetKafkaConnectSecretRequest,
+      O: GetKafkaConnectSecretResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * ListConnectSecrets lists the Connect secrets based on optional filter.
+     * ListKafkaConnectSecrets lists the Connect secrets based on optional filter.
      *
-     * @generated from rpc redpanda.api.dataplane.v1.SecretService.ListConnectSecrets
+     * @generated from rpc redpanda.api.dataplane.v1.SecretService.ListKafkaConnectSecrets
      */
-    listConnectSecrets: {
-      name: "ListConnectSecrets",
-      I: ListConnectSecretsRequest,
-      O: ListConnectSecretsResponse,
+    listKafkaConnectSecrets: {
+      name: "ListKafkaConnectSecrets",
+      I: ListKafkaConnectSecretsRequest,
+      O: ListKafkaConnectSecretsResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * CreateConnectSecret creates the secret for a Connect.
+     * CreateKafkaConnectSecret creates the secret for a Connect.
      *
-     * @generated from rpc redpanda.api.dataplane.v1.SecretService.CreateConnectSecret
+     * @generated from rpc redpanda.api.dataplane.v1.SecretService.CreateKafkaConnectSecret
      */
-    createConnectSecret: {
-      name: "CreateConnectSecret",
-      I: CreateConnectSecretRequest,
-      O: CreateConnectSecretResponse,
+    createKafkaConnectSecret: {
+      name: "CreateKafkaConnectSecret",
+      I: CreateKafkaConnectSecretRequest,
+      O: CreateKafkaConnectSecretResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * UpdateConnectSecret updates the Connect secret.
+     * UpdateKafkaConnectSecret updates the Connect secret.
      *
-     * @generated from rpc redpanda.api.dataplane.v1.SecretService.UpdateConnectSecret
+     * @generated from rpc redpanda.api.dataplane.v1.SecretService.UpdateKafkaConnectSecret
      */
-    updateConnectSecret: {
-      name: "UpdateConnectSecret",
-      I: UpdateConnectSecretRequest,
-      O: UpdateConnectSecretResponse,
+    updateKafkaConnectSecret: {
+      name: "UpdateKafkaConnectSecret",
+      I: UpdateKafkaConnectSecretRequest,
+      O: UpdateKafkaConnectSecretResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * DeleteSecret deletes the secret.
+     * DeleteKafkaConnectSecret deletes the secret.
      *
-     * @generated from rpc redpanda.api.dataplane.v1.SecretService.DeleteConnectSecret
+     * @generated from rpc redpanda.api.dataplane.v1.SecretService.DeleteKafkaConnectSecret
      */
-    deleteConnectSecret: {
-      name: "DeleteConnectSecret",
-      I: DeleteConnectSecretRequest,
-      O: DeleteConnectSecretResponse,
+    deleteKafkaConnectSecret: {
+      name: "DeleteKafkaConnectSecret",
+      I: DeleteKafkaConnectSecretRequest,
+      O: DeleteKafkaConnectSecretResponse,
       kind: MethodKind.Unary,
     },
   }
