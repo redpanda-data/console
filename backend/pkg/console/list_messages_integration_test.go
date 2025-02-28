@@ -783,7 +783,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	cfg.Kafka.Brokers = []string{seedBrokers}
 
 	if registryAddr != "" {
-		cfg.Kafka.Protobuf.Enabled = true
+		cfg.Serde.Protobuf.Enabled = true
 		cfg.SchemaRegistry.Enabled = true
 		cfg.SchemaRegistry.URLs = []string{registryAddr}
 	}
