@@ -38,6 +38,7 @@ type Config struct {
 	Connect        Connect  `yaml:"connect"`
 	REST           Server   `yaml:"server"`
 	Kafka          Kafka    `yaml:"kafka"`
+	Serde          Serde    `yaml:"serde"`
 	SchemaRegistry Schema   `yaml:"schemaRegistry"`
 	Logger         Logging  `yaml:"logger"`
 }
@@ -48,6 +49,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
+	c.Serde.RegisterFlags(f)
 	c.Console.RegisterFlags(f)
 	c.Connect.RegisterFlags(f)
 	c.SchemaRegistry.RegisterFlags(f)
@@ -63,6 +65,11 @@ func (c *Config) Validate() error {
 	err = c.Kafka.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate Kafka config: %w", err)
+	}
+
+	err = c.Serde.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate serde: %w", err)
 	}
 
 	err = c.Console.Validate()
@@ -96,6 +103,7 @@ func (c *Config) SetDefaults() {
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
+	c.Serde.SetDefaults()
 	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
 	c.Connect.SetDefaults()

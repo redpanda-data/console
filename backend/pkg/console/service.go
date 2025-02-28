@@ -75,16 +75,16 @@ func NewService(
 	}
 
 	var protoSvc *proto.Service
-	if cfg.Kafka.Protobuf.Enabled {
-		protoSvc, err = proto.NewService(cfg.Kafka.Protobuf, logger.Named("proto_service"))
+	if cfg.Serde.Protobuf.Enabled {
+		protoSvc, err = proto.NewService(cfg.Serde.Protobuf, logger.Named("proto_service"))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
 		}
 	}
 
 	var msgPackSvc *msgpack.Service
-	if cfg.Kafka.MessagePack.Enabled {
-		msgPackSvc, err = msgpack.NewService(cfg.Kafka.MessagePack)
+	if cfg.Serde.MessagePack.Enabled {
+		msgPackSvc, err = msgpack.NewService(cfg.Serde.MessagePack)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create msgpack service: %w", err)
 		}
@@ -97,7 +97,7 @@ func NewService(
 			return nil, fmt.Errorf("failed to create schema client: %w", err)
 		}
 	}
-	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, cfg.Kafka.Cbor)
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, cfg.Serde.Cbor)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating serde service: %w", err)
 	}
