@@ -47,7 +47,7 @@ func (c *ConnectCluster) Validate() error {
 	}
 
 	if c.URL == "" {
-		return fmt.Errorf("url to access the Connect cluster API must be set")
+		return fmt.Errorf("url to access the KafkaConnect cluster API must be set")
 	}
 
 	err := c.TLS.Validate()

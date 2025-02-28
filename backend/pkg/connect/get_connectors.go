@@ -148,7 +148,7 @@ type aggregatedConnectorTasksStatus struct {
 	Errors     []ClusterConnectorInfoError
 }
 
-// GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
+// GetAllClusterConnectors returns the merged GET /connectors responses across all configured KafkaConnect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
 func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnectors, error) {

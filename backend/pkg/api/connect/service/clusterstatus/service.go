@@ -263,9 +263,9 @@ func (*Service) GetConsoleInfo(context.Context, *connect.Request[v1alpha1.GetCon
 	}), nil
 }
 
-// GetKafkaConnectInfo retrieves information from all configured Kafka Connect
+// GetKafkaConnectInfo retrieves information from all configured Kafka KafkaConnect
 // clusters, including cluster name, host, version, health status, and the count
-// of installed plugins, while ensuring that Kafka Connect is enabled.
+// of installed plugins, while ensuring that Kafka KafkaConnect is enabled.
 func (s *Service) GetKafkaConnectInfo(ctx context.Context, _ *connect.Request[v1alpha1.GetKafkaConnectInfoRequest]) (*connect.Response[v1alpha1.GetKafkaConnectInfoResponse], error) {
 	// Currently the connectSvc is always configured, even if it's not enabled.
 	// The connectSvc itself will then return errors if you request resources in

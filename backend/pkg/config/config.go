@@ -33,14 +33,14 @@ type Config struct {
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 
-	Console        Console  `yaml:"console"`
-	Redpanda       Redpanda `yaml:"redpanda"`
-	Connect        Connect  `yaml:"connect"`
-	REST           Server   `yaml:"server"`
-	Kafka          Kafka    `yaml:"kafka"`
-	Serde          Serde    `yaml:"serde"`
-	SchemaRegistry Schema   `yaml:"schemaRegistry"`
-	Logger         Logging  `yaml:"logger"`
+	Console        Console      `yaml:"console"`
+	Redpanda       Redpanda     `yaml:"redpanda"`
+	Connect        KafkaConnect `yaml:"kafkaConnect"`
+	REST           Server       `yaml:"server"`
+	Kafka          Kafka        `yaml:"kafka"`
+	Serde          Serde        `yaml:"serde"`
+	SchemaRegistry Schema       `yaml:"schemaRegistry"`
+	Logger         Logging      `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -84,7 +84,7 @@ func (c *Config) Validate() error {
 
 	err = c.Connect.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate Connect config: %w", err)
+		return fmt.Errorf("failed to validate KafkaConnect config: %w", err)
 	}
 
 	err = c.SchemaRegistry.Validate()

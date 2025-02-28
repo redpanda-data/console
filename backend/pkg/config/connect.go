@@ -15,18 +15,18 @@ import (
 	"time"
 )
 
-// Connect defines all configuration options for connecting to one or more
-// Kafka Connect clusters.
-type Connect struct {
+// KafkaConnect defines all configuration options for connecting to one or more
+// Kafka KafkaConnect clusters.
+type KafkaConnect struct {
 	Enabled        bool             `yaml:"enabled"`
 	Clusters       []ConnectCluster `yaml:"clusters"`
 	ConnectTimeout time.Duration    `yaml:"connectTimeout"` // used for connectivity test
 	ReadTimeout    time.Duration    `yaml:"readTimeout"`    // overall REST/HTTP read timeout
-	RequestTimeout time.Duration    `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
+	RequestTimeout time.Duration    `yaml:"requestTimeout"` // timeout for REST requests to Kafka KafkaConnect
 }
 
 // SetDefaults for Kafka connect configuration.
-func (c *Connect) SetDefaults() {
+func (c *KafkaConnect) SetDefaults() {
 	for _, cluster := range c.Clusters {
 		cluster.SetDefaults()
 	}
@@ -36,7 +36,7 @@ func (c *Connect) SetDefaults() {
 }
 
 // RegisterFlags registers all nested config flags.
-func (c *Connect) RegisterFlags(f *flag.FlagSet) {
+func (c *KafkaConnect) RegisterFlags(f *flag.FlagSet) {
 	for i, cluster := range c.Clusters {
 		flagNamePrefix := fmt.Sprintf("connect.clusters.%d.", i)
 		cluster.RegisterFlagsWithPrefix(f, flagNamePrefix)
@@ -44,7 +44,7 @@ func (c *Connect) RegisterFlags(f *flag.FlagSet) {
 }
 
 // Validate provided configurations for Kafka connect clusters.
-func (c *Connect) Validate() error {
+func (c *KafkaConnect) Validate() error {
 	for i, cluster := range c.Clusters {
 		err := cluster.Validate()
 		if err != nil {
