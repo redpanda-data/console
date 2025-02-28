@@ -20,17 +20,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SecretService_GetSecret_FullMethodName           = "/redpanda.api.dataplane.v1.SecretService/GetSecret"
-	SecretService_ListSecrets_FullMethodName         = "/redpanda.api.dataplane.v1.SecretService/ListSecrets"
-	SecretService_CreateSecret_FullMethodName        = "/redpanda.api.dataplane.v1.SecretService/CreateSecret"
-	SecretService_UpdateSecret_FullMethodName        = "/redpanda.api.dataplane.v1.SecretService/UpdateSecret"
-	SecretService_DeleteSecret_FullMethodName        = "/redpanda.api.dataplane.v1.SecretService/DeleteSecret"
-	SecretService_ListSecretScopes_FullMethodName    = "/redpanda.api.dataplane.v1.SecretService/ListSecretScopes"
-	SecretService_GetConnectSecret_FullMethodName    = "/redpanda.api.dataplane.v1.SecretService/GetConnectSecret"
-	SecretService_ListConnectSecrets_FullMethodName  = "/redpanda.api.dataplane.v1.SecretService/ListConnectSecrets"
-	SecretService_CreateConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/CreateConnectSecret"
-	SecretService_UpdateConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/UpdateConnectSecret"
-	SecretService_DeleteConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/DeleteConnectSecret"
+	SecretService_GetSecret_FullMethodName                = "/redpanda.api.dataplane.v1.SecretService/GetSecret"
+	SecretService_ListSecrets_FullMethodName              = "/redpanda.api.dataplane.v1.SecretService/ListSecrets"
+	SecretService_CreateSecret_FullMethodName             = "/redpanda.api.dataplane.v1.SecretService/CreateSecret"
+	SecretService_UpdateSecret_FullMethodName             = "/redpanda.api.dataplane.v1.SecretService/UpdateSecret"
+	SecretService_DeleteSecret_FullMethodName             = "/redpanda.api.dataplane.v1.SecretService/DeleteSecret"
+	SecretService_ListSecretScopes_FullMethodName         = "/redpanda.api.dataplane.v1.SecretService/ListSecretScopes"
+	SecretService_GetKafkaConnectSecret_FullMethodName    = "/redpanda.api.dataplane.v1.SecretService/GetKafkaConnectSecret"
+	SecretService_ListKafkaConnectSecrets_FullMethodName  = "/redpanda.api.dataplane.v1.SecretService/ListKafkaConnectSecrets"
+	SecretService_CreateKafkaConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/CreateKafkaConnectSecret"
+	SecretService_UpdateKafkaConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/UpdateKafkaConnectSecret"
+	SecretService_DeleteKafkaConnectSecret_FullMethodName = "/redpanda.api.dataplane.v1.SecretService/DeleteKafkaConnectSecret"
 )
 
 // SecretServiceClient is the client API for SecretService service.
@@ -49,16 +49,16 @@ type SecretServiceClient interface {
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error)
 	// ListSecretScopes lists the supported secret scopes.
 	ListSecretScopes(ctx context.Context, in *ListSecretScopesRequest, opts ...grpc.CallOption) (*ListSecretScopesResponse, error)
-	// GetConnectSecret retrieves the specific secret for a specific Connect.
-	GetConnectSecret(ctx context.Context, in *GetConnectSecretRequest, opts ...grpc.CallOption) (*GetConnectSecretResponse, error)
-	// ListConnectSecrets lists the Connect secrets based on optional filter.
-	ListConnectSecrets(ctx context.Context, in *ListConnectSecretsRequest, opts ...grpc.CallOption) (*ListConnectSecretsResponse, error)
-	// CreateConnectSecret creates the secret for a Connect.
-	CreateConnectSecret(ctx context.Context, in *CreateConnectSecretRequest, opts ...grpc.CallOption) (*CreateConnectSecretResponse, error)
-	// UpdateConnectSecret updates the Connect secret.
-	UpdateConnectSecret(ctx context.Context, in *UpdateConnectSecretRequest, opts ...grpc.CallOption) (*UpdateConnectSecretResponse, error)
-	// DeleteSecret deletes the secret.
-	DeleteConnectSecret(ctx context.Context, in *DeleteConnectSecretRequest, opts ...grpc.CallOption) (*DeleteConnectSecretResponse, error)
+	// GetKafkaConnectSecret retrieves the specific secret for a specific Connect.
+	GetKafkaConnectSecret(ctx context.Context, in *GetKafkaConnectSecretRequest, opts ...grpc.CallOption) (*GetKafkaConnectSecretResponse, error)
+	// ListKafkaConnectSecrets lists the Connect secrets based on optional filter.
+	ListKafkaConnectSecrets(ctx context.Context, in *ListKafkaConnectSecretsRequest, opts ...grpc.CallOption) (*ListKafkaConnectSecretsResponse, error)
+	// CreateKafkaConnectSecret creates the secret for a Connect.
+	CreateKafkaConnectSecret(ctx context.Context, in *CreateKafkaConnectSecretRequest, opts ...grpc.CallOption) (*CreateKafkaConnectSecretResponse, error)
+	// UpdateKafkaConnectSecret updates the Connect secret.
+	UpdateKafkaConnectSecret(ctx context.Context, in *UpdateKafkaConnectSecretRequest, opts ...grpc.CallOption) (*UpdateKafkaConnectSecretResponse, error)
+	// DeleteKafkaConnectSecret deletes the secret.
+	DeleteKafkaConnectSecret(ctx context.Context, in *DeleteKafkaConnectSecretRequest, opts ...grpc.CallOption) (*DeleteKafkaConnectSecretResponse, error)
 }
 
 type secretServiceClient struct {
@@ -129,50 +129,50 @@ func (c *secretServiceClient) ListSecretScopes(ctx context.Context, in *ListSecr
 	return out, nil
 }
 
-func (c *secretServiceClient) GetConnectSecret(ctx context.Context, in *GetConnectSecretRequest, opts ...grpc.CallOption) (*GetConnectSecretResponse, error) {
+func (c *secretServiceClient) GetKafkaConnectSecret(ctx context.Context, in *GetKafkaConnectSecretRequest, opts ...grpc.CallOption) (*GetKafkaConnectSecretResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetConnectSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_GetConnectSecret_FullMethodName, in, out, cOpts...)
+	out := new(GetKafkaConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_GetKafkaConnectSecret_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) ListConnectSecrets(ctx context.Context, in *ListConnectSecretsRequest, opts ...grpc.CallOption) (*ListConnectSecretsResponse, error) {
+func (c *secretServiceClient) ListKafkaConnectSecrets(ctx context.Context, in *ListKafkaConnectSecretsRequest, opts ...grpc.CallOption) (*ListKafkaConnectSecretsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListConnectSecretsResponse)
-	err := c.cc.Invoke(ctx, SecretService_ListConnectSecrets_FullMethodName, in, out, cOpts...)
+	out := new(ListKafkaConnectSecretsResponse)
+	err := c.cc.Invoke(ctx, SecretService_ListKafkaConnectSecrets_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) CreateConnectSecret(ctx context.Context, in *CreateConnectSecretRequest, opts ...grpc.CallOption) (*CreateConnectSecretResponse, error) {
+func (c *secretServiceClient) CreateKafkaConnectSecret(ctx context.Context, in *CreateKafkaConnectSecretRequest, opts ...grpc.CallOption) (*CreateKafkaConnectSecretResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateConnectSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_CreateConnectSecret_FullMethodName, in, out, cOpts...)
+	out := new(CreateKafkaConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_CreateKafkaConnectSecret_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) UpdateConnectSecret(ctx context.Context, in *UpdateConnectSecretRequest, opts ...grpc.CallOption) (*UpdateConnectSecretResponse, error) {
+func (c *secretServiceClient) UpdateKafkaConnectSecret(ctx context.Context, in *UpdateKafkaConnectSecretRequest, opts ...grpc.CallOption) (*UpdateKafkaConnectSecretResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateConnectSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_UpdateConnectSecret_FullMethodName, in, out, cOpts...)
+	out := new(UpdateKafkaConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_UpdateKafkaConnectSecret_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *secretServiceClient) DeleteConnectSecret(ctx context.Context, in *DeleteConnectSecretRequest, opts ...grpc.CallOption) (*DeleteConnectSecretResponse, error) {
+func (c *secretServiceClient) DeleteKafkaConnectSecret(ctx context.Context, in *DeleteKafkaConnectSecretRequest, opts ...grpc.CallOption) (*DeleteKafkaConnectSecretResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteConnectSecretResponse)
-	err := c.cc.Invoke(ctx, SecretService_DeleteConnectSecret_FullMethodName, in, out, cOpts...)
+	out := new(DeleteKafkaConnectSecretResponse)
+	err := c.cc.Invoke(ctx, SecretService_DeleteKafkaConnectSecret_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -195,16 +195,16 @@ type SecretServiceServer interface {
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error)
 	// ListSecretScopes lists the supported secret scopes.
 	ListSecretScopes(context.Context, *ListSecretScopesRequest) (*ListSecretScopesResponse, error)
-	// GetConnectSecret retrieves the specific secret for a specific Connect.
-	GetConnectSecret(context.Context, *GetConnectSecretRequest) (*GetConnectSecretResponse, error)
-	// ListConnectSecrets lists the Connect secrets based on optional filter.
-	ListConnectSecrets(context.Context, *ListConnectSecretsRequest) (*ListConnectSecretsResponse, error)
-	// CreateConnectSecret creates the secret for a Connect.
-	CreateConnectSecret(context.Context, *CreateConnectSecretRequest) (*CreateConnectSecretResponse, error)
-	// UpdateConnectSecret updates the Connect secret.
-	UpdateConnectSecret(context.Context, *UpdateConnectSecretRequest) (*UpdateConnectSecretResponse, error)
-	// DeleteSecret deletes the secret.
-	DeleteConnectSecret(context.Context, *DeleteConnectSecretRequest) (*DeleteConnectSecretResponse, error)
+	// GetKafkaConnectSecret retrieves the specific secret for a specific Connect.
+	GetKafkaConnectSecret(context.Context, *GetKafkaConnectSecretRequest) (*GetKafkaConnectSecretResponse, error)
+	// ListKafkaConnectSecrets lists the Connect secrets based on optional filter.
+	ListKafkaConnectSecrets(context.Context, *ListKafkaConnectSecretsRequest) (*ListKafkaConnectSecretsResponse, error)
+	// CreateKafkaConnectSecret creates the secret for a Connect.
+	CreateKafkaConnectSecret(context.Context, *CreateKafkaConnectSecretRequest) (*CreateKafkaConnectSecretResponse, error)
+	// UpdateKafkaConnectSecret updates the Connect secret.
+	UpdateKafkaConnectSecret(context.Context, *UpdateKafkaConnectSecretRequest) (*UpdateKafkaConnectSecretResponse, error)
+	// DeleteKafkaConnectSecret deletes the secret.
+	DeleteKafkaConnectSecret(context.Context, *DeleteKafkaConnectSecretRequest) (*DeleteKafkaConnectSecretResponse, error)
 	mustEmbedUnimplementedSecretServiceServer()
 }
 
@@ -233,20 +233,20 @@ func (UnimplementedSecretServiceServer) DeleteSecret(context.Context, *DeleteSec
 func (UnimplementedSecretServiceServer) ListSecretScopes(context.Context, *ListSecretScopesRequest) (*ListSecretScopesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSecretScopes not implemented")
 }
-func (UnimplementedSecretServiceServer) GetConnectSecret(context.Context, *GetConnectSecretRequest) (*GetConnectSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConnectSecret not implemented")
+func (UnimplementedSecretServiceServer) GetKafkaConnectSecret(context.Context, *GetKafkaConnectSecretRequest) (*GetKafkaConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetKafkaConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) ListConnectSecrets(context.Context, *ListConnectSecretsRequest) (*ListConnectSecretsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListConnectSecrets not implemented")
+func (UnimplementedSecretServiceServer) ListKafkaConnectSecrets(context.Context, *ListKafkaConnectSecretsRequest) (*ListKafkaConnectSecretsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListKafkaConnectSecrets not implemented")
 }
-func (UnimplementedSecretServiceServer) CreateConnectSecret(context.Context, *CreateConnectSecretRequest) (*CreateConnectSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateConnectSecret not implemented")
+func (UnimplementedSecretServiceServer) CreateKafkaConnectSecret(context.Context, *CreateKafkaConnectSecretRequest) (*CreateKafkaConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateKafkaConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) UpdateConnectSecret(context.Context, *UpdateConnectSecretRequest) (*UpdateConnectSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateConnectSecret not implemented")
+func (UnimplementedSecretServiceServer) UpdateKafkaConnectSecret(context.Context, *UpdateKafkaConnectSecretRequest) (*UpdateKafkaConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateKafkaConnectSecret not implemented")
 }
-func (UnimplementedSecretServiceServer) DeleteConnectSecret(context.Context, *DeleteConnectSecretRequest) (*DeleteConnectSecretResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnectSecret not implemented")
+func (UnimplementedSecretServiceServer) DeleteKafkaConnectSecret(context.Context, *DeleteKafkaConnectSecretRequest) (*DeleteKafkaConnectSecretResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteKafkaConnectSecret not implemented")
 }
 func (UnimplementedSecretServiceServer) mustEmbedUnimplementedSecretServiceServer() {}
 func (UnimplementedSecretServiceServer) testEmbeddedByValue()                       {}
@@ -377,92 +377,92 @@ func _SecretService_ListSecretScopes_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_GetConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConnectSecretRequest)
+func _SecretService_GetKafkaConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetKafkaConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).GetConnectSecret(ctx, in)
+		return srv.(SecretServiceServer).GetKafkaConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_GetConnectSecret_FullMethodName,
+		FullMethod: SecretService_GetKafkaConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).GetConnectSecret(ctx, req.(*GetConnectSecretRequest))
+		return srv.(SecretServiceServer).GetKafkaConnectSecret(ctx, req.(*GetKafkaConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_ListConnectSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConnectSecretsRequest)
+func _SecretService_ListKafkaConnectSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListKafkaConnectSecretsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).ListConnectSecrets(ctx, in)
+		return srv.(SecretServiceServer).ListKafkaConnectSecrets(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_ListConnectSecrets_FullMethodName,
+		FullMethod: SecretService_ListKafkaConnectSecrets_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).ListConnectSecrets(ctx, req.(*ListConnectSecretsRequest))
+		return srv.(SecretServiceServer).ListKafkaConnectSecrets(ctx, req.(*ListKafkaConnectSecretsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_CreateConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateConnectSecretRequest)
+func _SecretService_CreateKafkaConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateKafkaConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).CreateConnectSecret(ctx, in)
+		return srv.(SecretServiceServer).CreateKafkaConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_CreateConnectSecret_FullMethodName,
+		FullMethod: SecretService_CreateKafkaConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).CreateConnectSecret(ctx, req.(*CreateConnectSecretRequest))
+		return srv.(SecretServiceServer).CreateKafkaConnectSecret(ctx, req.(*CreateKafkaConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_UpdateConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateConnectSecretRequest)
+func _SecretService_UpdateKafkaConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateKafkaConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).UpdateConnectSecret(ctx, in)
+		return srv.(SecretServiceServer).UpdateKafkaConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_UpdateConnectSecret_FullMethodName,
+		FullMethod: SecretService_UpdateKafkaConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).UpdateConnectSecret(ctx, req.(*UpdateConnectSecretRequest))
+		return srv.(SecretServiceServer).UpdateKafkaConnectSecret(ctx, req.(*UpdateKafkaConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SecretService_DeleteConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteConnectSecretRequest)
+func _SecretService_DeleteKafkaConnectSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteKafkaConnectSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SecretServiceServer).DeleteConnectSecret(ctx, in)
+		return srv.(SecretServiceServer).DeleteKafkaConnectSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SecretService_DeleteConnectSecret_FullMethodName,
+		FullMethod: SecretService_DeleteKafkaConnectSecret_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SecretServiceServer).DeleteConnectSecret(ctx, req.(*DeleteConnectSecretRequest))
+		return srv.(SecretServiceServer).DeleteKafkaConnectSecret(ctx, req.(*DeleteKafkaConnectSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -499,24 +499,24 @@ var SecretService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SecretService_ListSecretScopes_Handler,
 		},
 		{
-			MethodName: "GetConnectSecret",
-			Handler:    _SecretService_GetConnectSecret_Handler,
+			MethodName: "GetKafkaConnectSecret",
+			Handler:    _SecretService_GetKafkaConnectSecret_Handler,
 		},
 		{
-			MethodName: "ListConnectSecrets",
-			Handler:    _SecretService_ListConnectSecrets_Handler,
+			MethodName: "ListKafkaConnectSecrets",
+			Handler:    _SecretService_ListKafkaConnectSecrets_Handler,
 		},
 		{
-			MethodName: "CreateConnectSecret",
-			Handler:    _SecretService_CreateConnectSecret_Handler,
+			MethodName: "CreateKafkaConnectSecret",
+			Handler:    _SecretService_CreateKafkaConnectSecret_Handler,
 		},
 		{
-			MethodName: "UpdateConnectSecret",
-			Handler:    _SecretService_UpdateConnectSecret_Handler,
+			MethodName: "UpdateKafkaConnectSecret",
+			Handler:    _SecretService_UpdateKafkaConnectSecret_Handler,
 		},
 		{
-			MethodName: "DeleteConnectSecret",
-			Handler:    _SecretService_DeleteConnectSecret_Handler,
+			MethodName: "DeleteKafkaConnectSecret",
+			Handler:    _SecretService_DeleteKafkaConnectSecret_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
