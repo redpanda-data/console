@@ -17,34 +17,34 @@ import (
 // SecretServiceGatewayServer implements the gRPC server API for the SecretService service.
 type SecretServiceGatewayServer struct {
 	v1.UnimplementedSecretServiceServer
-	getSecret           connect_gateway.UnaryHandler[v1.GetSecretRequest, v1.GetSecretResponse]
-	listSecrets         connect_gateway.UnaryHandler[v1.ListSecretsRequest, v1.ListSecretsResponse]
-	createSecret        connect_gateway.UnaryHandler[v1.CreateSecretRequest, v1.CreateSecretResponse]
-	updateSecret        connect_gateway.UnaryHandler[v1.UpdateSecretRequest, v1.UpdateSecretResponse]
-	deleteSecret        connect_gateway.UnaryHandler[v1.DeleteSecretRequest, v1.DeleteSecretResponse]
-	listSecretScopes    connect_gateway.UnaryHandler[v1.ListSecretScopesRequest, v1.ListSecretScopesResponse]
-	getConnectSecret    connect_gateway.UnaryHandler[v1.GetConnectSecretRequest, v1.GetConnectSecretResponse]
-	listConnectSecrets  connect_gateway.UnaryHandler[v1.ListConnectSecretsRequest, v1.ListConnectSecretsResponse]
-	createConnectSecret connect_gateway.UnaryHandler[v1.CreateConnectSecretRequest, v1.CreateConnectSecretResponse]
-	updateConnectSecret connect_gateway.UnaryHandler[v1.UpdateConnectSecretRequest, v1.UpdateConnectSecretResponse]
-	deleteConnectSecret connect_gateway.UnaryHandler[v1.DeleteConnectSecretRequest, v1.DeleteConnectSecretResponse]
+	getSecret                connect_gateway.UnaryHandler[v1.GetSecretRequest, v1.GetSecretResponse]
+	listSecrets              connect_gateway.UnaryHandler[v1.ListSecretsRequest, v1.ListSecretsResponse]
+	createSecret             connect_gateway.UnaryHandler[v1.CreateSecretRequest, v1.CreateSecretResponse]
+	updateSecret             connect_gateway.UnaryHandler[v1.UpdateSecretRequest, v1.UpdateSecretResponse]
+	deleteSecret             connect_gateway.UnaryHandler[v1.DeleteSecretRequest, v1.DeleteSecretResponse]
+	listSecretScopes         connect_gateway.UnaryHandler[v1.ListSecretScopesRequest, v1.ListSecretScopesResponse]
+	getKafkaConnectSecret    connect_gateway.UnaryHandler[v1.GetKafkaConnectSecretRequest, v1.GetKafkaConnectSecretResponse]
+	listKafkaConnectSecrets  connect_gateway.UnaryHandler[v1.ListKafkaConnectSecretsRequest, v1.ListKafkaConnectSecretsResponse]
+	createKafkaConnectSecret connect_gateway.UnaryHandler[v1.CreateKafkaConnectSecretRequest, v1.CreateKafkaConnectSecretResponse]
+	updateKafkaConnectSecret connect_gateway.UnaryHandler[v1.UpdateKafkaConnectSecretRequest, v1.UpdateKafkaConnectSecretResponse]
+	deleteKafkaConnectSecret connect_gateway.UnaryHandler[v1.DeleteKafkaConnectSecretRequest, v1.DeleteKafkaConnectSecretResponse]
 }
 
 // NewSecretServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecretService
 // service.
 func NewSecretServiceGatewayServer(svc SecretServiceHandler, opts ...connect_gateway.HandlerOption) *SecretServiceGatewayServer {
 	return &SecretServiceGatewayServer{
-		getSecret:           connect_gateway.NewUnaryHandler(SecretServiceGetSecretProcedure, svc.GetSecret, opts...),
-		listSecrets:         connect_gateway.NewUnaryHandler(SecretServiceListSecretsProcedure, svc.ListSecrets, opts...),
-		createSecret:        connect_gateway.NewUnaryHandler(SecretServiceCreateSecretProcedure, svc.CreateSecret, opts...),
-		updateSecret:        connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
-		deleteSecret:        connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
-		listSecretScopes:    connect_gateway.NewUnaryHandler(SecretServiceListSecretScopesProcedure, svc.ListSecretScopes, opts...),
-		getConnectSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetConnectSecretProcedure, svc.GetConnectSecret, opts...),
-		listConnectSecrets:  connect_gateway.NewUnaryHandler(SecretServiceListConnectSecretsProcedure, svc.ListConnectSecrets, opts...),
-		createConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateConnectSecretProcedure, svc.CreateConnectSecret, opts...),
-		updateConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateConnectSecretProcedure, svc.UpdateConnectSecret, opts...),
-		deleteConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteConnectSecretProcedure, svc.DeleteConnectSecret, opts...),
+		getSecret:                connect_gateway.NewUnaryHandler(SecretServiceGetSecretProcedure, svc.GetSecret, opts...),
+		listSecrets:              connect_gateway.NewUnaryHandler(SecretServiceListSecretsProcedure, svc.ListSecrets, opts...),
+		createSecret:             connect_gateway.NewUnaryHandler(SecretServiceCreateSecretProcedure, svc.CreateSecret, opts...),
+		updateSecret:             connect_gateway.NewUnaryHandler(SecretServiceUpdateSecretProcedure, svc.UpdateSecret, opts...),
+		deleteSecret:             connect_gateway.NewUnaryHandler(SecretServiceDeleteSecretProcedure, svc.DeleteSecret, opts...),
+		listSecretScopes:         connect_gateway.NewUnaryHandler(SecretServiceListSecretScopesProcedure, svc.ListSecretScopes, opts...),
+		getKafkaConnectSecret:    connect_gateway.NewUnaryHandler(SecretServiceGetKafkaConnectSecretProcedure, svc.GetKafkaConnectSecret, opts...),
+		listKafkaConnectSecrets:  connect_gateway.NewUnaryHandler(SecretServiceListKafkaConnectSecretsProcedure, svc.ListKafkaConnectSecrets, opts...),
+		createKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceCreateKafkaConnectSecretProcedure, svc.CreateKafkaConnectSecret, opts...),
+		updateKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceUpdateKafkaConnectSecretProcedure, svc.UpdateKafkaConnectSecret, opts...),
+		deleteKafkaConnectSecret: connect_gateway.NewUnaryHandler(SecretServiceDeleteKafkaConnectSecretProcedure, svc.DeleteKafkaConnectSecret, opts...),
 	}
 }
 
@@ -72,24 +72,24 @@ func (s *SecretServiceGatewayServer) ListSecretScopes(ctx context.Context, req *
 	return s.listSecretScopes(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) GetConnectSecret(ctx context.Context, req *v1.GetConnectSecretRequest) (*v1.GetConnectSecretResponse, error) {
-	return s.getConnectSecret(ctx, req)
+func (s *SecretServiceGatewayServer) GetKafkaConnectSecret(ctx context.Context, req *v1.GetKafkaConnectSecretRequest) (*v1.GetKafkaConnectSecretResponse, error) {
+	return s.getKafkaConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) ListConnectSecrets(ctx context.Context, req *v1.ListConnectSecretsRequest) (*v1.ListConnectSecretsResponse, error) {
-	return s.listConnectSecrets(ctx, req)
+func (s *SecretServiceGatewayServer) ListKafkaConnectSecrets(ctx context.Context, req *v1.ListKafkaConnectSecretsRequest) (*v1.ListKafkaConnectSecretsResponse, error) {
+	return s.listKafkaConnectSecrets(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) CreateConnectSecret(ctx context.Context, req *v1.CreateConnectSecretRequest) (*v1.CreateConnectSecretResponse, error) {
-	return s.createConnectSecret(ctx, req)
+func (s *SecretServiceGatewayServer) CreateKafkaConnectSecret(ctx context.Context, req *v1.CreateKafkaConnectSecretRequest) (*v1.CreateKafkaConnectSecretResponse, error) {
+	return s.createKafkaConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) UpdateConnectSecret(ctx context.Context, req *v1.UpdateConnectSecretRequest) (*v1.UpdateConnectSecretResponse, error) {
-	return s.updateConnectSecret(ctx, req)
+func (s *SecretServiceGatewayServer) UpdateKafkaConnectSecret(ctx context.Context, req *v1.UpdateKafkaConnectSecretRequest) (*v1.UpdateKafkaConnectSecretResponse, error) {
+	return s.updateKafkaConnectSecret(ctx, req)
 }
 
-func (s *SecretServiceGatewayServer) DeleteConnectSecret(ctx context.Context, req *v1.DeleteConnectSecretRequest) (*v1.DeleteConnectSecretResponse, error) {
-	return s.deleteConnectSecret(ctx, req)
+func (s *SecretServiceGatewayServer) DeleteKafkaConnectSecret(ctx context.Context, req *v1.DeleteKafkaConnectSecretRequest) (*v1.DeleteKafkaConnectSecretResponse, error) {
+	return s.deleteKafkaConnectSecret(ctx, req)
 }
 
 // RegisterSecretServiceHandlerGatewayServer registers the Connect handlers for the SecretService
