@@ -20,15 +20,13 @@ const DefaultMaxDeserializationPayloadSize = 20_480 // 20 KB
 // Console contains all configuration options for features that are generic,
 // such as documentation plumbing.
 type Console struct {
-	TopicDocumentation            ConsoleTopicDocumentation `yaml:"topicDocumentation"`
-	MaxDeserializationPayloadSize int                       `yaml:"maxDeserializationPayloadSize"`
-	API                           ConsoleAPI                `yaml:"api"`
+	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
+	API                ConsoleAPI                `yaml:"api"`
 }
 
 // SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
 	c.TopicDocumentation.SetDefaults()
-	c.MaxDeserializationPayloadSize = DefaultMaxDeserializationPayloadSize
 	c.API.SetDefaults()
 }
 

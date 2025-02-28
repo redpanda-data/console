@@ -17,9 +17,17 @@ import (
 // Serde configures all serializers / deserializers that require extra
 // configuration.
 type Serde struct {
-	Protobuf    Proto   `yaml:"protobuf"`
-	MessagePack Msgpack `yaml:"messagePack"`
-	Cbor        Cbor    `yaml:"cbor"`
+	MaxDeserializationPayloadSize int     `yaml:"maxDeserializationPayloadSize"`
+	Protobuf                      Proto   `yaml:"protobuf"`
+	MessagePack                   Msgpack `yaml:"messagePack"`
+	Cbor                          Cbor    `yaml:"cbor"`
+}
+
+// SetDefaults for Serde config
+func (c *Serde) SetDefaults() {
+	c.MaxDeserializationPayloadSize = DefaultMaxDeserializationPayloadSize
+	c.Protobuf.SetDefaults()
+	c.MessagePack.SetDefaults()
 }
 
 // RegisterFlags registers all nested config flags.
@@ -27,7 +35,7 @@ func (c *Serde) RegisterFlags(f *flag.FlagSet) {
 	c.Protobuf.RegisterFlags(f)
 }
 
-// Validate the Protobuf config
+// Validate the Serde config
 func (c *Serde) Validate() error {
 	if err := c.Protobuf.Validate(); err != nil {
 		return fmt.Errorf("failed to validate protobuf config: %w", err)
@@ -42,10 +50,4 @@ func (c *Serde) Validate() error {
 	}
 
 	return nil
-}
-
-// SetDefaults for Kafka config
-func (c *Serde) SetDefaults() {
-	c.Protobuf.SetDefaults()
-	c.MessagePack.SetDefaults()
 }

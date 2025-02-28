@@ -582,7 +582,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 			ctx,
 			record,
 			serde.DeserializationOptions{
-				MaxPayloadSize:     s.cfg.Console.MaxDeserializationPayloadSize,
+				MaxPayloadSize:     s.cfg.Serde.MaxDeserializationPayloadSize,
 				Troubleshoot:       consumeReq.Troubleshoot,
 				IncludeRawData:     consumeReq.IncludeRawPayload,
 				IgnoreMaxSizeLimit: consumeReq.IgnoreMaxSizeLimit,
