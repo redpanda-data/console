@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: redpanda/api/console/v1alpha1/secrets.proto
+// source: redpanda/api/console/v1alpha1/secret.proto
 
 package consolev1alpha1
 
@@ -308,5 +308,5 @@ var SecretService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "redpanda/api/console/v1alpha1/secrets.proto",
+	Metadata: "redpanda/api/console/v1alpha1/secret.proto",
 }
