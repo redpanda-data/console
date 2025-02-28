@@ -17,7 +17,7 @@ import (
 
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
-	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
 
 var _ consolev1alpha1connect.TransformServiceHandler = (*ConsoleService)(nil)
@@ -25,7 +25,7 @@ var _ consolev1alpha1connect.TransformServiceHandler = (*ConsoleService)(nil)
 // ConsoleService is the implementation of the transform service.
 // This is mainly a wrapper of dataplane API to be used for consumption by the Console frontend.
 type ConsoleService struct {
-	Impl dataplanev1alpha2connect.TransformServiceHandler
+	Impl dataplanev1connect.TransformServiceHandler
 }
 
 // ListTransforms lists the transforms.

@@ -30,12 +30,18 @@ import (
 	requirepkg "github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
-	v1alpha2connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
+	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
+	v1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
 
+// The identity transform produces messages from the input topic to the
+// configured output topic at least once.
+//
+//go:embed wasm-binary/integration-test.wasm
+var identityTransform []byte
+
 // DirectDeployAndTestTransform encapsulates the logic for creating a transform and asserting its successful creation.
-func (s *APISuite) TestDeployTransform_v1alpha2() {
+func (s *APISuite) TestDeployTransform_v1() {
 	t := s.T()
 
 	type KeyVal struct {
@@ -114,7 +120,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 		var httpRes deployTransformResponse
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			BodyBytes(body.Bytes()).
 			ContentType(writer.FormDataContentType()).
 			ToJSON(&httpRes).
@@ -195,7 +201,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			Put().
 			BodyBytes(body.Bytes()).
 			ContentType(writer.FormDataContentType()).
@@ -246,7 +252,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			Put().
 			BodyBytes(body.Bytes()).
 			ContentType(writer.FormDataContentType()).
@@ -287,7 +293,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			Put().
 			BodyBytes(body.Bytes()).
 			ContentType(writer.FormDataContentType()).
@@ -312,7 +318,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusCreated), // Allows 2xx otherwise
@@ -337,7 +343,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusCreated), // Allows 2xx otherwise
@@ -350,7 +356,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 	})
 }
 
-func (s *APISuite) TestGetTransform_v1alpha2() {
+func (s *APISuite) TestGetTransform_v1() {
 	t := s.T()
 
 	assert := assertpkg.New(t)
@@ -364,7 +370,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 	t.Cleanup(cancel)
 
 	// Create pre-requisites for getting the transform
-	transformClient := v1alpha2connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
+	transformClient := v1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 	require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
 	require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
@@ -399,7 +405,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
 
-		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
+		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1.GetTransformRequest{
 			Name: tfName,
 		}))
 		assert.NoError(err)
@@ -430,16 +436,18 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 			Value string `json:"value"`
 		}
 		type getTransformResponse struct {
-			Name                 string                     `json:"name"`
-			InputTopicName       string                     `json:"input_topic_name"`
-			OutputTopicNames     []string                   `json:"output_topic_names"`
-			Statuses             []partitionTransformStatus `json:"statuses"`
-			EnvironmentVariables []envVar                   `json:"environment_variables"`
+			Transform struct {
+				Name                 string                     `json:"name"`
+				InputTopicName       string                     `json:"input_topic_name"`
+				OutputTopicNames     []string                   `json:"output_topic_names"`
+				Statuses             []partitionTransformStatus `json:"statuses"`
+				EnvironmentVariables []envVar                   `json:"environment_variables"`
+			} `json:"transform"`
 		}
 		var httpRes getTransformResponse
 		var errResponse string
 		err := requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms/" + tfName).
+			URL(s.httpAddress() + "/v1/transforms/" + tfName).
 			ToJSON(&httpRes).
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
@@ -449,11 +457,11 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 
-		assert.Equal(tfName, httpRes.Name)
-		assert.Equal(inputTopicName, httpRes.InputTopicName)
-		assert.Equal([]string{outputTopicName}, httpRes.OutputTopicNames)
-		require.Len(httpRes.EnvironmentVariables, 1)
-		keyVal := httpRes.EnvironmentVariables[0]
+		assert.Equal(tfName, httpRes.Transform.Name)
+		assert.Equal(inputTopicName, httpRes.Transform.InputTopicName)
+		assert.Equal([]string{outputTopicName}, httpRes.Transform.OutputTopicNames)
+		require.Len(httpRes.Transform.EnvironmentVariables, 1)
+		keyVal := httpRes.Transform.EnvironmentVariables[0]
 		assert.Equal("foo", keyVal.Key)
 		assert.Equal("bar", keyVal.Value)
 	})
@@ -487,7 +495,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		var httpRes getTransformResponse
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms/" + url.PathEscape(transformNameWithSpecialChars)).
+			URL(s.httpAddress() + "/v1/transforms/" + url.PathEscape(transformNameWithSpecialChars)).
 			ToJSON(&httpRes).
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
@@ -505,7 +513,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
 
-		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
+		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1.GetTransformRequest{
 			Name: "does-not-exist",
 		}))
 		assert.Nil(msg)
@@ -523,7 +531,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		var httpRes string
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms/" + "does-not-exist").
+			URL(s.httpAddress() + "/v1/transforms/" + "does-not-exist").
 			ToJSON(&httpRes).
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
@@ -542,14 +550,14 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 		t.Cleanup(cancel)
 
-		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{}))
+		msg, err := transformClient.GetTransform(ctx, connect.NewRequest(&v1.GetTransformRequest{}))
 		assert.Nil(msg)
 		assert.Error(err)
 		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
 	})
 }
 
-func (s *APISuite) TestListTransforms_v1alpha2() {
+func (s *APISuite) TestListTransforms_v1() {
 	t := s.T()
 
 	require := requirepkg.New(t)
@@ -561,7 +569,7 @@ func (s *APISuite) TestListTransforms_v1alpha2() {
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 
-	transformClient := v1alpha2connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
+	transformClient := v1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 	require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, inputTopicName, 2))
 	require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
@@ -600,7 +608,7 @@ func (s *APISuite) TestListTransforms_v1alpha2() {
 		require := requirepkg.New(t)
 		assert := assertpkg.New(t)
 
-		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha2.ListTransformsRequest{}))
+		transforms, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1.ListTransformsRequest{}))
 		assert.NoError(err)
 
 		assert.Len(transforms.Msg.Transforms, 2)
@@ -637,7 +645,7 @@ func (s *APISuite) TestListTransforms_v1alpha2() {
 		var httpRes listTransformsResponse
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms").
+			URL(s.httpAddress() + "/v1/transforms").
 			ToJSON(&httpRes).
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK), // Allows 2xx otherwise
@@ -660,8 +668,8 @@ func (s *APISuite) TestListTransforms_v1alpha2() {
 		require := requirepkg.New(t)
 		assert := assertpkg.New(t)
 
-		listTransformsRes, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1alpha2.ListTransformsRequest{
-			Filter: &v1alpha2.ListTransformsRequest_Filter{NameContains: tfNameTwo},
+		listTransformsRes, err := transformClient.ListTransforms(ctx, connect.NewRequest(&v1.ListTransformsRequest{
+			Filter: &v1.ListTransformsRequest_Filter{NameContains: tfNameTwo},
 		}))
 		assert.NoError(err)
 
@@ -676,7 +684,7 @@ func (s *APISuite) TestListTransforms_v1alpha2() {
 	})
 }
 
-func (s *APISuite) TestDeleteTransforms_v1alpha2() {
+func (s *APISuite) TestDeleteTransforms_v1() {
 	t := s.T()
 
 	require := requirepkg.New(t)
@@ -698,7 +706,7 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 		assert.NoError(deleteKafkaTopic(cleanupCtx, s.kafkaAdminClient, outputTopicName))
 	})
 
-	transformClient := v1alpha2connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
+	transformClient := v1connect.NewTransformServiceClient(http.DefaultClient, s.httpAddress())
 
 	t.Run("delete transform with valid request (connect-go)", func(t *testing.T) {
 		require := requirepkg.New(t)
@@ -716,13 +724,13 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 			_ = deleteTransform(ctx, s.redpandaAdminClient, tfName)
 		})
 
-		_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha2.DeleteTransformRequest{
+		_, err = transformClient.DeleteTransform(ctx, connect.NewRequest(&v1.DeleteTransformRequest{
 			Name: tfName,
 		}))
 		assert.NoError(err)
 
 		// Ensure the transform no longer exists
-		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
+		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1.GetTransformRequest{
 			Name: tfName,
 		}))
 		assert.Error(err)
@@ -747,7 +755,7 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1alpha2/transforms/" + tfName).
+			URL(s.httpAddress() + "/v1/transforms/" + tfName).
 			Delete().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusNoContent), // Allows 2xx otherwise
@@ -757,7 +765,7 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 		assert.NoError(err)
 
 		// Ensure the transform no longer exists
-		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
+		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1.GetTransformRequest{
 			Name: tfName,
 		}))
 		assert.Error(err)
@@ -767,10 +775,34 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 	t.Run("try to delete non-existent transform (connect-go)", func(t *testing.T) {
 		assert := assertpkg.New(t)
 
-		_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1alpha2.DeleteTransformRequest{
+		_, err := transformClient.DeleteTransform(ctx, connect.NewRequest(&v1.DeleteTransformRequest{
 			Name: "some-transform-name-that-does-not-exist",
 		}))
 		assert.Error(err)
 		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
 	})
+}
+
+func findExactTransformByName(ts []adminapi.TransformMetadata, name string) (*adminapi.TransformMetadata, error) {
+	for _, t := range ts {
+		if t.Name == name {
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("transform not found")
+}
+
+func createTransform(ctx context.Context, svc *adminapi.AdminAPI, meta adminapi.TransformMetadata, b []byte) (*adminapi.TransformMetadata, error) {
+	if err := svc.DeployWasmTransform(ctx, meta, bytes.NewReader(b)); err != nil {
+		return nil, err
+	}
+	transforms, err := svc.ListWasmTransforms(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return findExactTransformByName(transforms, meta.Name)
+}
+
+func deleteTransform(ctx context.Context, svc *adminapi.AdminAPI, name string) error {
+	return svc.DeleteWasmTransform(ctx, name)
 }
