@@ -140,11 +140,11 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 	input := &v1.CreateConnectorRequest{
 		ClusterName: "connect-cluster",
 		Connector: &v1.ConnectorSpec{
-			Name: "mm2_connect_input",
+			Name: "mm2_connect_input_v1",
 			Config: map[string]string{
 				"connector.class":                    "org.apache.kafka.connect.mirror.MirrorSourceConnector",
 				"header.converter":                   "org.apache.kafka.connect.converters.ByteArrayConverter",
-				"name":                               "mm2_connect_input",
+				"name":                               "mm2_connect_input_v1",
 				"topics":                             "input-topic",
 				"replication.factor":                 "1",
 				"source.cluster.alias":               "source",
@@ -191,7 +191,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("mm2_connect_input", res.Msg.Connector.Name)
+		assert.Equal("mm2_connect_input_v1", res.Msg.Connector.Name)
 		assert.Equal(input.Connector.Config, res.Msg.Connector.Config)
 	})
 
@@ -214,7 +214,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1/").
-			Path("kafka-connect/clusters/connect-cluster/connectors/mm2_connect_input").
+			Path("kafka-connect/clusters/connect-cluster/connectors/mm2_connect_input_v1").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -242,7 +242,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 			}))
 		require.NoError(err)
 		assert.NotNil(res.Msg, "response message must not be nil")
-		assert.Equal("mm2_connect_input", res.Msg.Status.Name)
+		assert.Equal("mm2_connect_input_v1", res.Msg.Status.Name)
 	})
 
 	t.Run("Get connector status request (http)", func(t *testing.T) {
@@ -263,7 +263,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		var errResponse string
 		err := requests.
 			URL(s.httpAddress() + "/v1/").
-			Path("kafka-connect/clusters/connect-cluster/connectors/mm2_connect_input/status").
+			Path("kafka-connect/clusters/connect-cluster/connectors/mm2_connect_input_v1/status").
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
