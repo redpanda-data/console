@@ -32,7 +32,7 @@ import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/deb
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
+import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secret_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { appGlobal } from './state/appGlobal';
