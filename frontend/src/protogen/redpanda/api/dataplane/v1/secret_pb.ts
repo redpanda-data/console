@@ -690,11 +690,11 @@ export class ListSecretScopesResponse extends Message<ListSecretScopesResponse> 
 }
 
 /**
- * GetConnectSecretRequest is the request of GetSecret.
+ * GetKafkaConnectSecretRequest is the request of GetKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.GetConnectSecretRequest
+ * @generated from message redpanda.api.dataplane.v1.GetKafkaConnectSecretRequest
  */
-export class GetConnectSecretRequest extends Message<GetConnectSecretRequest> {
+export class GetKafkaConnectSecretRequest extends Message<GetKafkaConnectSecretRequest> {
   /**
    * Unique name of the target connect cluster.
    *
@@ -709,41 +709,41 @@ export class GetConnectSecretRequest extends Message<GetConnectSecretRequest> {
    */
   id = "";
 
-  constructor(data?: PartialMessage<GetConnectSecretRequest>) {
+  constructor(data?: PartialMessage<GetKafkaConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.GetConnectSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1.GetKafkaConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectSecretRequest {
-    return new GetConnectSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetKafkaConnectSecretRequest {
+    return new GetKafkaConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectSecretRequest {
-    return new GetConnectSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetKafkaConnectSecretRequest {
+    return new GetKafkaConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectSecretRequest {
-    return new GetConnectSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetKafkaConnectSecretRequest {
+    return new GetKafkaConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetConnectSecretRequest | PlainMessage<GetConnectSecretRequest> | undefined, b: GetConnectSecretRequest | PlainMessage<GetConnectSecretRequest> | undefined): boolean {
-    return proto3.util.equals(GetConnectSecretRequest, a, b);
+  static equals(a: GetKafkaConnectSecretRequest | PlainMessage<GetKafkaConnectSecretRequest> | undefined, b: GetKafkaConnectSecretRequest | PlainMessage<GetKafkaConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(GetKafkaConnectSecretRequest, a, b);
   }
 }
 
 /**
- * GetConnectSecretResponse is the response of GetConnectSecret.
+ * GetKafkaConnectSecretResponse is the response of GetKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.GetConnectSecretResponse
+ * @generated from message redpanda.api.dataplane.v1.GetKafkaConnectSecretResponse
  */
-export class GetConnectSecretResponse extends Message<GetConnectSecretResponse> {
+export class GetKafkaConnectSecretResponse extends Message<GetKafkaConnectSecretResponse> {
   /**
    * The retrieved secret.
    *
@@ -751,40 +751,40 @@ export class GetConnectSecretResponse extends Message<GetConnectSecretResponse> 
    */
   secret?: Secret;
 
-  constructor(data?: PartialMessage<GetConnectSecretResponse>) {
+  constructor(data?: PartialMessage<GetKafkaConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.GetConnectSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1.GetKafkaConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectSecretResponse {
-    return new GetConnectSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetKafkaConnectSecretResponse {
+    return new GetKafkaConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectSecretResponse {
-    return new GetConnectSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetKafkaConnectSecretResponse {
+    return new GetKafkaConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectSecretResponse {
-    return new GetConnectSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetKafkaConnectSecretResponse {
+    return new GetKafkaConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetConnectSecretResponse | PlainMessage<GetConnectSecretResponse> | undefined, b: GetConnectSecretResponse | PlainMessage<GetConnectSecretResponse> | undefined): boolean {
-    return proto3.util.equals(GetConnectSecretResponse, a, b);
+  static equals(a: GetKafkaConnectSecretResponse | PlainMessage<GetKafkaConnectSecretResponse> | undefined, b: GetKafkaConnectSecretResponse | PlainMessage<GetKafkaConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(GetKafkaConnectSecretResponse, a, b);
   }
 }
 
 /**
- * CreateConnectSecretRequest is the request of CreateConnectSecret.
+ * CreateKafkaConnectSecretRequest is the request of CreateKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.CreateConnectSecretRequest
+ * @generated from message redpanda.api.dataplane.v1.CreateKafkaConnectSecretRequest
  */
-export class CreateConnectSecretRequest extends Message<CreateConnectSecretRequest> {
+export class CreateKafkaConnectSecretRequest extends Message<CreateKafkaConnectSecretRequest> {
   /**
    * Unique name of the target connect cluster.
    *
@@ -813,13 +813,13 @@ export class CreateConnectSecretRequest extends Message<CreateConnectSecretReque
    */
   secretData = new Uint8Array(0);
 
-  constructor(data?: PartialMessage<CreateConnectSecretRequest>) {
+  constructor(data?: PartialMessage<CreateKafkaConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.CreateConnectSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1.CreateKafkaConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -827,29 +827,29 @@ export class CreateConnectSecretRequest extends Message<CreateConnectSecretReque
     { no: 4, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectSecretRequest {
-    return new CreateConnectSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateKafkaConnectSecretRequest {
+    return new CreateKafkaConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateConnectSecretRequest {
-    return new CreateConnectSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateKafkaConnectSecretRequest {
+    return new CreateKafkaConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateConnectSecretRequest {
-    return new CreateConnectSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateKafkaConnectSecretRequest {
+    return new CreateKafkaConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateConnectSecretRequest | PlainMessage<CreateConnectSecretRequest> | undefined, b: CreateConnectSecretRequest | PlainMessage<CreateConnectSecretRequest> | undefined): boolean {
-    return proto3.util.equals(CreateConnectSecretRequest, a, b);
+  static equals(a: CreateKafkaConnectSecretRequest | PlainMessage<CreateKafkaConnectSecretRequest> | undefined, b: CreateKafkaConnectSecretRequest | PlainMessage<CreateKafkaConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(CreateKafkaConnectSecretRequest, a, b);
   }
 }
 
 /**
- * CreateConnectSecretResponse is the response of CreateConnectSecret.
+ * CreateKafkaConnectSecretResponse is the response of CreateKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.CreateConnectSecretResponse
+ * @generated from message redpanda.api.dataplane.v1.CreateKafkaConnectSecretResponse
  */
-export class CreateConnectSecretResponse extends Message<CreateConnectSecretResponse> {
+export class CreateKafkaConnectSecretResponse extends Message<CreateKafkaConnectSecretResponse> {
   /**
    * The created secret.
    *
@@ -857,40 +857,40 @@ export class CreateConnectSecretResponse extends Message<CreateConnectSecretResp
    */
   secret?: Secret;
 
-  constructor(data?: PartialMessage<CreateConnectSecretResponse>) {
+  constructor(data?: PartialMessage<CreateKafkaConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.CreateConnectSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1.CreateKafkaConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateConnectSecretResponse {
-    return new CreateConnectSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateKafkaConnectSecretResponse {
+    return new CreateKafkaConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateConnectSecretResponse {
-    return new CreateConnectSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateKafkaConnectSecretResponse {
+    return new CreateKafkaConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateConnectSecretResponse {
-    return new CreateConnectSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateKafkaConnectSecretResponse {
+    return new CreateKafkaConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateConnectSecretResponse | PlainMessage<CreateConnectSecretResponse> | undefined, b: CreateConnectSecretResponse | PlainMessage<CreateConnectSecretResponse> | undefined): boolean {
-    return proto3.util.equals(CreateConnectSecretResponse, a, b);
+  static equals(a: CreateKafkaConnectSecretResponse | PlainMessage<CreateKafkaConnectSecretResponse> | undefined, b: CreateKafkaConnectSecretResponse | PlainMessage<CreateKafkaConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(CreateKafkaConnectSecretResponse, a, b);
   }
 }
 
 /**
- * ListConnectSecretRequest is the request of ListConnectSecrets.
+ * ListKafkaConnectSecretRequest is the request of ListKafkaConnectSecrets.
  *
- * @generated from message redpanda.api.dataplane.v1.ListConnectSecretsRequest
+ * @generated from message redpanda.api.dataplane.v1.ListKafkaConnectSecretsRequest
  */
-export class ListConnectSecretsRequest extends Message<ListConnectSecretsRequest> {
+export class ListKafkaConnectSecretsRequest extends Message<ListKafkaConnectSecretsRequest> {
   /**
    * Unique name of the target connect cluster.
    *
@@ -920,13 +920,13 @@ export class ListConnectSecretsRequest extends Message<ListConnectSecretsRequest
    */
   pageSize = 0;
 
-  constructor(data?: PartialMessage<ListConnectSecretsRequest>) {
+  constructor(data?: PartialMessage<ListKafkaConnectSecretsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.ListConnectSecretsRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1.ListKafkaConnectSecretsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "filter", kind: "message", T: ListSecretsFilter },
@@ -934,29 +934,29 @@ export class ListConnectSecretsRequest extends Message<ListConnectSecretsRequest
     { no: 4, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectSecretsRequest {
-    return new ListConnectSecretsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListKafkaConnectSecretsRequest {
+    return new ListKafkaConnectSecretsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectSecretsRequest {
-    return new ListConnectSecretsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListKafkaConnectSecretsRequest {
+    return new ListKafkaConnectSecretsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectSecretsRequest {
-    return new ListConnectSecretsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListKafkaConnectSecretsRequest {
+    return new ListKafkaConnectSecretsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListConnectSecretsRequest | PlainMessage<ListConnectSecretsRequest> | undefined, b: ListConnectSecretsRequest | PlainMessage<ListConnectSecretsRequest> | undefined): boolean {
-    return proto3.util.equals(ListConnectSecretsRequest, a, b);
+  static equals(a: ListKafkaConnectSecretsRequest | PlainMessage<ListKafkaConnectSecretsRequest> | undefined, b: ListKafkaConnectSecretsRequest | PlainMessage<ListKafkaConnectSecretsRequest> | undefined): boolean {
+    return proto3.util.equals(ListKafkaConnectSecretsRequest, a, b);
   }
 }
 
 /**
- * ListConnectSecretsResponse is the response of ListConnectSecrets.
+ * ListKafkaConnectSecretsResponse is the response of ListKafkaConnectSecrets.
  *
- * @generated from message redpanda.api.dataplane.v1.ListConnectSecretsResponse
+ * @generated from message redpanda.api.dataplane.v1.ListKafkaConnectSecretsResponse
  */
-export class ListConnectSecretsResponse extends Message<ListConnectSecretsResponse> {
+export class ListKafkaConnectSecretsResponse extends Message<ListKafkaConnectSecretsResponse> {
   /**
    * Secrets retrieved.
    *
@@ -971,41 +971,41 @@ export class ListConnectSecretsResponse extends Message<ListConnectSecretsRespon
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListConnectSecretsResponse>) {
+  constructor(data?: PartialMessage<ListKafkaConnectSecretsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.ListConnectSecretsResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1.ListKafkaConnectSecretsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secrets", kind: "message", T: Secret, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectSecretsResponse {
-    return new ListConnectSecretsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListKafkaConnectSecretsResponse {
+    return new ListKafkaConnectSecretsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListConnectSecretsResponse {
-    return new ListConnectSecretsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListKafkaConnectSecretsResponse {
+    return new ListKafkaConnectSecretsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListConnectSecretsResponse {
-    return new ListConnectSecretsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListKafkaConnectSecretsResponse {
+    return new ListKafkaConnectSecretsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListConnectSecretsResponse | PlainMessage<ListConnectSecretsResponse> | undefined, b: ListConnectSecretsResponse | PlainMessage<ListConnectSecretsResponse> | undefined): boolean {
-    return proto3.util.equals(ListConnectSecretsResponse, a, b);
+  static equals(a: ListKafkaConnectSecretsResponse | PlainMessage<ListKafkaConnectSecretsResponse> | undefined, b: ListKafkaConnectSecretsResponse | PlainMessage<ListKafkaConnectSecretsResponse> | undefined): boolean {
+    return proto3.util.equals(ListKafkaConnectSecretsResponse, a, b);
   }
 }
 
 /**
- * UpdateConnectSecretRequest is the request of UpdateConnectSecret.
+ * UpdateKafkaConnectSecretRequest is the request of UpdateKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.UpdateConnectSecretRequest
+ * @generated from message redpanda.api.dataplane.v1.UpdateKafkaConnectSecretRequest
  */
-export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretRequest> {
+export class UpdateKafkaConnectSecretRequest extends Message<UpdateKafkaConnectSecretRequest> {
   /**
    * Unique name of the target connect cluster.
    *
@@ -1034,13 +1034,13 @@ export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretReque
    */
   secretData = new Uint8Array(0);
 
-  constructor(data?: PartialMessage<UpdateConnectSecretRequest>) {
+  constructor(data?: PartialMessage<UpdateKafkaConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.UpdateConnectSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1.UpdateKafkaConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1048,29 +1048,29 @@ export class UpdateConnectSecretRequest extends Message<UpdateConnectSecretReque
     { no: 4, name: "secret_data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectSecretRequest {
-    return new UpdateConnectSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateKafkaConnectSecretRequest {
+    return new UpdateKafkaConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConnectSecretRequest {
-    return new UpdateConnectSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateKafkaConnectSecretRequest {
+    return new UpdateKafkaConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConnectSecretRequest {
-    return new UpdateConnectSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateKafkaConnectSecretRequest {
+    return new UpdateKafkaConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateConnectSecretRequest | PlainMessage<UpdateConnectSecretRequest> | undefined, b: UpdateConnectSecretRequest | PlainMessage<UpdateConnectSecretRequest> | undefined): boolean {
-    return proto3.util.equals(UpdateConnectSecretRequest, a, b);
+  static equals(a: UpdateKafkaConnectSecretRequest | PlainMessage<UpdateKafkaConnectSecretRequest> | undefined, b: UpdateKafkaConnectSecretRequest | PlainMessage<UpdateKafkaConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateKafkaConnectSecretRequest, a, b);
   }
 }
 
 /**
- * UpdateConnectSecretResponse is the response of UpdateConnectSecret.
+ * UpdateKafkaConnectSecretResponse is the response of UpdateKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.UpdateConnectSecretResponse
+ * @generated from message redpanda.api.dataplane.v1.UpdateKafkaConnectSecretResponse
  */
-export class UpdateConnectSecretResponse extends Message<UpdateConnectSecretResponse> {
+export class UpdateKafkaConnectSecretResponse extends Message<UpdateKafkaConnectSecretResponse> {
   /**
    * The updated secret.
    *
@@ -1078,40 +1078,40 @@ export class UpdateConnectSecretResponse extends Message<UpdateConnectSecretResp
    */
   secret?: Secret;
 
-  constructor(data?: PartialMessage<UpdateConnectSecretResponse>) {
+  constructor(data?: PartialMessage<UpdateKafkaConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.UpdateConnectSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1.UpdateKafkaConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "secret", kind: "message", T: Secret },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConnectSecretResponse {
-    return new UpdateConnectSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateKafkaConnectSecretResponse {
+    return new UpdateKafkaConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConnectSecretResponse {
-    return new UpdateConnectSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateKafkaConnectSecretResponse {
+    return new UpdateKafkaConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConnectSecretResponse {
-    return new UpdateConnectSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateKafkaConnectSecretResponse {
+    return new UpdateKafkaConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UpdateConnectSecretResponse | PlainMessage<UpdateConnectSecretResponse> | undefined, b: UpdateConnectSecretResponse | PlainMessage<UpdateConnectSecretResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateConnectSecretResponse, a, b);
+  static equals(a: UpdateKafkaConnectSecretResponse | PlainMessage<UpdateKafkaConnectSecretResponse> | undefined, b: UpdateKafkaConnectSecretResponse | PlainMessage<UpdateKafkaConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateKafkaConnectSecretResponse, a, b);
   }
 }
 
 /**
- * DeleteConnectSecretRequest is the request of DeleteConnectSecret.
+ * DeleteKafkaConnectSecretRequest is the request of DeleteKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.DeleteConnectSecretRequest
+ * @generated from message redpanda.api.dataplane.v1.DeleteKafkaConnectSecretRequest
  */
-export class DeleteConnectSecretRequest extends Message<DeleteConnectSecretRequest> {
+export class DeleteKafkaConnectSecretRequest extends Message<DeleteKafkaConnectSecretRequest> {
   /**
    * Unique name of the target connect cluster.
    *
@@ -1126,65 +1126,65 @@ export class DeleteConnectSecretRequest extends Message<DeleteConnectSecretReque
    */
   id = "";
 
-  constructor(data?: PartialMessage<DeleteConnectSecretRequest>) {
+  constructor(data?: PartialMessage<DeleteKafkaConnectSecretRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.DeleteConnectSecretRequest";
+  static readonly typeName = "redpanda.api.dataplane.v1.DeleteKafkaConnectSecretRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectSecretRequest {
-    return new DeleteConnectSecretRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteKafkaConnectSecretRequest {
+    return new DeleteKafkaConnectSecretRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectSecretRequest {
-    return new DeleteConnectSecretRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteKafkaConnectSecretRequest {
+    return new DeleteKafkaConnectSecretRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectSecretRequest {
-    return new DeleteConnectSecretRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteKafkaConnectSecretRequest {
+    return new DeleteKafkaConnectSecretRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeleteConnectSecretRequest | PlainMessage<DeleteConnectSecretRequest> | undefined, b: DeleteConnectSecretRequest | PlainMessage<DeleteConnectSecretRequest> | undefined): boolean {
-    return proto3.util.equals(DeleteConnectSecretRequest, a, b);
+  static equals(a: DeleteKafkaConnectSecretRequest | PlainMessage<DeleteKafkaConnectSecretRequest> | undefined, b: DeleteKafkaConnectSecretRequest | PlainMessage<DeleteKafkaConnectSecretRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteKafkaConnectSecretRequest, a, b);
   }
 }
 
 /**
- * DeleteConnectSecretResponse is the response of DeleteConnectSecret.
+ * DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
  *
- * @generated from message redpanda.api.dataplane.v1.DeleteConnectSecretResponse
+ * @generated from message redpanda.api.dataplane.v1.DeleteKafkaConnectSecretResponse
  */
-export class DeleteConnectSecretResponse extends Message<DeleteConnectSecretResponse> {
-  constructor(data?: PartialMessage<DeleteConnectSecretResponse>) {
+export class DeleteKafkaConnectSecretResponse extends Message<DeleteKafkaConnectSecretResponse> {
+  constructor(data?: PartialMessage<DeleteKafkaConnectSecretResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "redpanda.api.dataplane.v1.DeleteConnectSecretResponse";
+  static readonly typeName = "redpanda.api.dataplane.v1.DeleteKafkaConnectSecretResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectSecretResponse {
-    return new DeleteConnectSecretResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteKafkaConnectSecretResponse {
+    return new DeleteKafkaConnectSecretResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectSecretResponse {
-    return new DeleteConnectSecretResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteKafkaConnectSecretResponse {
+    return new DeleteKafkaConnectSecretResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectSecretResponse {
-    return new DeleteConnectSecretResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteKafkaConnectSecretResponse {
+    return new DeleteKafkaConnectSecretResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeleteConnectSecretResponse | PlainMessage<DeleteConnectSecretResponse> | undefined, b: DeleteConnectSecretResponse | PlainMessage<DeleteConnectSecretResponse> | undefined): boolean {
-    return proto3.util.equals(DeleteConnectSecretResponse, a, b);
+  static equals(a: DeleteKafkaConnectSecretResponse | PlainMessage<DeleteKafkaConnectSecretResponse> | undefined, b: DeleteKafkaConnectSecretResponse | PlainMessage<DeleteKafkaConnectSecretResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteKafkaConnectSecretResponse, a, b);
   }
 }
 
