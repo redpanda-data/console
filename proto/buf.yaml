@@ -11,6 +11,7 @@ breaking:
     - WIRE_JSON
   ignore:
     - redpanda/api/dataplane/v1alpha1
+    - redpanda/api/console/v1alpha1
 lint:
   use:
     - DEFAULT
