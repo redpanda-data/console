@@ -41,6 +41,7 @@ import (
 func CreateClients(t *testing.T, brokers []string, additionalOpts ...kgo.Opt) (*kgo.Client, *kadm.Client) {
 	t.Helper()
 
+	//nolint:gocritic // Sometimes handy to use, but should be off by default
 	// zl, _ := zap.NewDevelopment()
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
