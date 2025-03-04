@@ -14,24 +14,35 @@ import { Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-dat
 import { observer } from 'mobx-react';
 import type { FC, ReactElement } from 'react';
 import { api } from '../../state/backendApi';
+import type { WrappedApiError } from '../../state/restInterfaces';
+
+function isWrappedApiError(error: any): error is WrappedApiError {
+  return error && typeof error === 'object' && 'statusCode' in error;
+}
 
 export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children }) => {
   if (api.errors.length === 0) {
     return children;
   }
 
+  const error: WrappedApiError = api.errors[0];
+
   return (
     <>
-      <Result
-        status={500}
-        title="Backend API Error"
-        userMessage="Something went wrong while pulling data from the backend server"
-        extra={
-          <Button alignSelf="center" onClick={clearErrors}>
-            Retry
-          </Button>
-        }
-      />
+      {isWrappedApiError(error) ? (
+        <Result status={error.statusCode} title={error.message} />
+      ) : (
+        <Result
+          status={500}
+          title="Backend API Error"
+          userMessage="Something went wrong while pulling data from the backend server"
+          extra={
+            <Button alignSelf="center" onClick={clearErrors}>
+              Retry
+            </Button>
+          }
+        />
+      )}
 
       <Section>
         <List spacing={3}>
