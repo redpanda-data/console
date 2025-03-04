@@ -1,0 +1,23 @@
+kafka:
+  brokers:
+    - b-1.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-2.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-3.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-4.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-5.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-6.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-7.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-8.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+    - b-9.dev-rep1.xqjb5v.c2.kafka.us-east-1.amazonaws.com
+  schemaRegistry:
+    enabled: true
+    urls: ["https://dev-schemaregistry.co.clearstreet.io:443","https://clst.buf.team:443"]
+    tls:
+      enabled: true
+  protobuf:
+    enabled: true
+    # Instructs the console to use the Schema Registry 
+    # rather than the local filesystem for deserialization
+    schemaRegistry:
+      enabled: true
+      refreshInterval: 5m

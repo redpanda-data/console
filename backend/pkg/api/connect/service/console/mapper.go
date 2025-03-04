@@ -50,6 +50,8 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 		encoding = serde.PayloadEncodingBinary
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR:
 		encoding = serde.PayloadEncodingCbor
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CLST_HEADERS_SCHEMA:
+		encoding = serde.PayloadEncodingCLSTHeaderSchema
 	}
 
 	input := &serde.RecordPayloadInput{
@@ -121,6 +123,8 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_UNSPECIFIED
 	case serde.PayloadEncodingCbor:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR
+	case serde.PayloadEncodingCLSTHeaderSchema:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CLST_HEADERS_SCHEMA
 	}
 
 	return encoding
@@ -162,6 +166,8 @@ func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncod
 		encoding = serde.PayloadEncodingUnspecified
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR:
 		encoding = serde.PayloadEncodingCbor
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CLST_HEADERS_SCHEMA:
+		encoding = serde.PayloadEncodingCLSTHeaderSchema
 	}
 
 	return encoding

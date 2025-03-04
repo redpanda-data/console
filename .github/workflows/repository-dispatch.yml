@@ -1,5 +1,6 @@
 ---
 name: Repository dispatch on push or release
+if: ${{ false }}
 on:
   push:
     paths:

@@ -146,6 +146,7 @@ const payloadEncodingPairs = [
   { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
   { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
   { value: PayloadEncoding.CBOR, label: 'CBOR' },
+  { value: PayloadEncoding.CLST_HEADERS_SCHEMA, label: 'CLST Header Schema' },
 ];
 
 const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
