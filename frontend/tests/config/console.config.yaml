@@ -1,6 +1,12 @@
 serveFrontend: false
 kafka:
   brokers: ["localhost:19092"]
+  sasl:
+    enabled: true
+    mechanism: SCRAM-SHA-256
+    username: e2euser
+    password: very-secret
+    impersonateUser: true
 
 schemaRegistry:
   enabled: true
@@ -10,13 +16,15 @@ redpanda:
   adminApi:
     enabled: true
     urls: ["http://localhost:19644"]
-connect:
+
+kafkaConnect:
   enabled: true
   clusters:
     - name: local-connect-cluster
       url: http://localhost:18083
     - name: local-connect-cluster2
       url: http://localhost:18083
+
 server:
   listenPort: 9090
   allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
