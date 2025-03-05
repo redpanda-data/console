@@ -34,6 +34,7 @@ services:
       - 19644:9644
     volumes:
       - redpanda:/var/lib/redpanda/data
+      - ./conf/.bootstrap.yaml:/etc/redpanda/.bootstrap.yaml
     networks:
       - redpanda_network
     healthcheck:
@@ -42,6 +43,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+    environment:
+      RP_BOOTSTRAP_USER: "e2euser:very-secret"
 
   owlshop:
     container_name: owlshop

@@ -171,7 +171,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
             <AlertDescription>{formState.error}</AlertDescription>
           </Alert>
         )}
-        <Button variant="brand" onClick={formState.handleSubmit}>
+        <Button variant="brand" onClick={formState.handleSubmit} data-testid="auth-submit">
           {formState.isLoading && <Spinner size="sm" mr="1" />}
           Log in
         </Button>

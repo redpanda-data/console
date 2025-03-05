@@ -42,4 +42,4 @@ authorization:
     - roleName: admin
       users:
         - loginType: basic
-          name: admin
+          name: e2euser
