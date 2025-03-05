@@ -64,6 +64,11 @@ services:
           topicPartitionCount: 1
         kafka:
           brokers: "redpanda:9092"
+          sasl:
+            enabled: true
+            mechanism: SCRAM-SHA-256
+            username: e2euser
+            password: very-secret
         schemaRegistry:
           address: "http://redpanda:8081"
     restart: unless-stopped

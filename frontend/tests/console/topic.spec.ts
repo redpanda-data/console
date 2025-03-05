@@ -6,7 +6,7 @@ test.use({
 });
 
 test.describe('Topic', () => {
-  test.skip('should create a message that exceeds the display limit, checks that the exceed limit message appears', async ({
+  test('should create a message that exceeds the display limit, checks that the exceed limit message appears', async ({
     page,
   }) => {
     const topicName = `too-big-message-test-${randomUUID()}`;

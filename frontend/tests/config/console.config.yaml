@@ -11,12 +11,6 @@ kafka:
 schemaRegistry:
   enabled: true
   urls: ["http://localhost:18081"]
-  authentication:
-    basic:
-      username: e2euser
-      password: very-secret
-
-
 
 redpanda:
   adminApi:
