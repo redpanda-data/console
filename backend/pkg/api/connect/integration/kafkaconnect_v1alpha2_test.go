@@ -159,6 +159,9 @@ func (s *APISuite) TestGetConnectorAndStatus_v1alpha2() {
 
 	requireT.NoError(err)
 
+	// Kafka Connect is eventual consistent, so it may take some time until it will be returned
+	time.Sleep(2 * time.Second)
+
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()

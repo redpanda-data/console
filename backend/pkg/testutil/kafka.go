@@ -41,6 +41,8 @@ import (
 func CreateClients(t *testing.T, brokers []string, additionalOpts ...kgo.Opt) (*kgo.Client, *kadm.Client) {
 	t.Helper()
 
+	//nolint:gocritic // Sometimes handy to use, but should be off by default
+	// zl, _ := zap.NewDevelopment()
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
 		kgo.MaxVersions(kversion.V2_6_0()),
@@ -54,6 +56,7 @@ func CreateClients(t *testing.T, brokers []string, additionalOpts ...kgo.Opt) (*
 		// caused the client to wait for several seconds before re-fetching
 		// new metadata.
 		kgo.MetadataMinAge(250 * time.Millisecond),
+		// kgo.WithLogger(kzap.New(zl)),
 	}
 
 	kClient, err := kgo.NewClient(slices.Concat(opts, additionalOpts)...)
