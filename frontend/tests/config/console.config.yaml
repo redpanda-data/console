@@ -6,11 +6,17 @@ kafka:
     mechanism: SCRAM-SHA-256
     username: e2euser
     password: very-secret
-    impersonateUser: true
+    impersonateUser: false
 
 schemaRegistry:
   enabled: true
   urls: ["http://localhost:18081"]
+  authentication:
+    basic:
+      username: e2euser
+      password: very-secret
+
+
 
 redpanda:
   adminApi:

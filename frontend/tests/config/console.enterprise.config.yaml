@@ -24,7 +24,7 @@ schemaRegistry:
   enabled: true
   urls: ["http://localhost:18081"]
 
-connect:
+kafkaConnect:
   enabled: true
   clusters:
     - name: local-connect-cluster
