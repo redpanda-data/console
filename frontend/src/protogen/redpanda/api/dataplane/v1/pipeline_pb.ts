@@ -60,6 +60,14 @@ export class Pipeline extends Message<Pipeline> {
    */
   status?: Pipeline_Status;
 
+  /**
+   * URL to connect to the pipeline, e.g. via http_server.
+   * May be empty if no http_server is used.
+   *
+   * @generated from field: string url = 10;
+   */
+  url = "";
+
   constructor(data?: PartialMessage<Pipeline>) {
     super();
     proto3.util.initPartial(data, this);
@@ -75,6 +83,7 @@ export class Pipeline extends Message<Pipeline> {
     { no: 9, name: "resources", kind: "message", T: Pipeline_Resources },
     { no: 7, name: "state", kind: "enum", T: proto3.getEnumType(Pipeline_State) },
     { no: 8, name: "status", kind: "message", T: Pipeline_Status },
+    { no: 10, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Pipeline {
