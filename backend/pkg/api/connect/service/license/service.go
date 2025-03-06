@@ -65,6 +65,7 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 
 	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
+		//nolint:nilerr // We actually don't want to return an error hee, but a default response.
 		return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: false}), nil
 	}
 

@@ -212,7 +212,7 @@ func (*AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Reque
 		AuthenticationMethod: v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE,
 		AvatarUrl:            "",
 		Permissions: &v1alpha1.GetIdentityResponse_Permissions{
-			KafkaClusterOperations: GetAllKafkaAclOperations(),
+			KafkaClusterOperations: GetAllKafkaACLOperations(),
 			SchemaRegistry:         GetAllSchemaRegistryCapabilities(),
 			Redpanda:               GetAllRedpandaCapabilities(),
 		},
@@ -241,12 +241,12 @@ func GetAllRedpandaCapabilities() []v1alpha1.RedpandaCapability {
 	return capabilities
 }
 
-// GetAllKafkaAclOperations returns a slice containing all defined
+// GetAllKafkaACLOperations returns a slice containing all defined
 // KafkaAclOperation enum values, except for the unspecified value (0).
 // It leverages the protobuf reflection API to dynamically iterate over
 // the enum descriptors, ensuring that any new values added in the proto
 // file are automatically included.
-func GetAllKafkaAclOperations() []v1alpha1.KafkaAclOperation {
+func GetAllKafkaACLOperations() []v1alpha1.KafkaAclOperation {
 	enumDesc := v1alpha1.KafkaAclOperation(0).Descriptor()
 	values := enumDesc.Values()
 	operations := make([]v1alpha1.KafkaAclOperation, 0, values.Len())
