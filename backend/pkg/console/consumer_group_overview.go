@@ -31,9 +31,6 @@ type ConsumerGroupOverview struct {
 	Members       []GroupMemberDescription `json:"members"`
 	CoordinatorID int32                    `json:"coordinatorId"`
 	TopicOffsets  []GroupTopicOffsets      `json:"topicOffsets"`
-
-	// AllowedActions define the Console Enterprise permissions on this specific group
-	AllowedActions []string `json:"allowedActions"`
 }
 
 // GroupMemberDescription is a member (e. g. connected host) of a Consumer Group
