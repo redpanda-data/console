@@ -42,7 +42,7 @@ import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { type Topic, type TopicAction, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
+import { type Topic, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
@@ -476,7 +476,7 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
 
   return (
     <>
-      {hasDeletePrivilege(topic.allowedActions)
+      {hasDeletePrivilege()
         ? deleteButton
         : wrap(deleteButton, "You don't have 'deleteTopic' permission for this topic.")}
     </>
