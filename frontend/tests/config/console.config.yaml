@@ -1,4 +1,5 @@
 serveFrontend: false
+
 kafka:
   brokers: ["localhost:19092"]
   sasl:

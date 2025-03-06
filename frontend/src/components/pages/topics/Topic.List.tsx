@@ -483,8 +483,9 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
   );
 }
 
-function hasDeletePrivilege(allowedActions?: Array<TopicAction>) {
-  return Boolean(allowedActions?.includes('all') || allowedActions?.includes('deleteTopic'));
+function hasDeletePrivilege() {
+  // TODO - we will provide ACL for this
+  return true;
 }
 
 function makeCreateTopicModal(parent: TopicList) {

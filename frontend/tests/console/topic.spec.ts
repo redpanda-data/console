@@ -57,11 +57,11 @@ test.describe('Topic', () => {
   test('should show internal topics if the corresponding checkbox is checked', async ({ page }) => {
     await page.goto('/topics');
     await page.getByTestId('show-internal-topics-checkbox').check();
-    await expect(page.getByTestId('data-table-cell').getByText('_internal_connectors_status')).toBeVisible();
+    await expect(page.getByTestId('data-table-cell').getByText('_schemas')).toBeVisible();
   });
   test('should hide internal topics if the corresponding checkbox is unchecked', async ({ page }) => {
     await page.goto('/topics');
     await page.getByTestId('show-internal-topics-checkbox').uncheck();
-    await expect(page.getByTestId('data-table-cell').getByText('_internal_connectors_status')).not.toBeVisible();
+    await expect(page.getByTestId('data-table-cell').getByText('_schemas')).not.toBeVisible();
   });
 });
