@@ -212,35 +212,73 @@ func (*AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Reque
 		AuthenticationMethod: v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE,
 		AvatarUrl:            "",
 		Permissions: &v1alpha1.GetIdentityResponse_Permissions{
-			KafkaClusterOperations: []v1alpha1.KafkaAclOperation{
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_READ,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_WRITE,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_CREATE,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DELETE,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_ALTER,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DESCRIBE,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_CLUSTER_ACTION,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DESCRIBE_CONFIGS,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_ALTER_CONFIGS,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_IDEMPOTENT_WRITE,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_CREATE_TOKENS,
-				v1alpha1.KafkaAclOperation_KAFKA_ACL_OPERATION_DESCRIBE_TOKENS,
-			},
-			SchemaRegistry: []v1alpha1.SchemaRegistryCapability{
-				v1alpha1.SchemaRegistryCapability_SCHEMA_REGISTRY_CAPABILITY_READ,
-				v1alpha1.SchemaRegistryCapability_SCHEMA_REGISTRY_CAPABILITY_WRITE,
-				v1alpha1.SchemaRegistryCapability_SCHEMA_REGISTRY_CAPABILITY_DELETE,
-			},
-			Redpanda: []v1alpha1.RedpandaCapability{
-				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_TRANSFORMS,
-				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_DEBUG_BUNDLE,
-				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_REDPANDA_USERS,
-				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_RBAC,
-				v1alpha1.RedpandaCapability_REDPANDA_CAPABILITY_MANAGE_LICENSE,
-			},
+			KafkaClusterOperations: GetAllKafkaACLOperations(),
+			SchemaRegistry:         GetAllSchemaRegistryCapabilities(),
+			Redpanda:               GetAllRedpandaCapabilities(),
 		},
 	}
 	return connect.NewResponse(res), nil
+}
+
+// GetAllRedpandaCapabilities returns a slice containing all defined
+// RedpandaCapability enum values, except for the unspecified value (0).
+// It leverages the protobuf reflection API to dynamically iterate over
+// the enum descriptors, ensuring that any new values added in the proto
+// file are automatically included.
+func GetAllRedpandaCapabilities() []v1alpha1.RedpandaCapability {
+	enumDesc := v1alpha1.RedpandaCapability(0).Descriptor()
+	values := enumDesc.Values()
+	capabilities := make([]v1alpha1.RedpandaCapability, 0, values.Len())
+
+	for i := 0; i < values.Len(); i++ {
+		capNum := values.Get(i).Number()
+		// Skip the unspecified value (0).
+		if capNum == 0 {
+			continue
+		}
+		capabilities = append(capabilities, v1alpha1.RedpandaCapability(capNum))
+	}
+	return capabilities
+}
+
+// GetAllKafkaACLOperations returns a slice containing all defined
+// KafkaAclOperation enum values, except for the unspecified value (0).
+// It leverages the protobuf reflection API to dynamically iterate over
+// the enum descriptors, ensuring that any new values added in the proto
+// file are automatically included.
+func GetAllKafkaACLOperations() []v1alpha1.KafkaAclOperation {
+	enumDesc := v1alpha1.KafkaAclOperation(0).Descriptor()
+	values := enumDesc.Values()
+	operations := make([]v1alpha1.KafkaAclOperation, 0, values.Len())
+
+	for i := 0; i < values.Len(); i++ {
+		num := values.Get(i).Number()
+		if num == 0 {
+			continue
+		}
+		operations = append(operations, v1alpha1.KafkaAclOperation(num))
+	}
+	return operations
+}
+
+// GetAllSchemaRegistryCapabilities returns a slice containing all defined
+// SchemaRegistryCapability enum values, except for the unspecified value (0).
+// It leverages the protobuf reflection API to dynamically iterate over
+// the enum descriptors, ensuring that any new values added in the proto
+// file are automatically included.
+func GetAllSchemaRegistryCapabilities() []v1alpha1.SchemaRegistryCapability {
+	enumDesc := v1alpha1.SchemaRegistryCapability(0).Descriptor()
+	values := enumDesc.Values()
+	capabilities := make([]v1alpha1.SchemaRegistryCapability, 0, values.Len())
+
+	for i := 0; i < values.Len(); i++ {
+		num := values.Get(i).Number()
+		if num == 0 {
+			continue
+		}
+		capabilities = append(capabilities, v1alpha1.SchemaRegistryCapability(num))
+	}
+	return capabilities
 }
 
 // ListConsoleUsers is implemented in the enterprise code base only.

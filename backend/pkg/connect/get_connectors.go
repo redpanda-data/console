@@ -78,9 +78,6 @@ type ClusterConnectors struct {
 	RunningConnectors int                    `json:"runningConnectors"`
 	Connectors        []ClusterConnectorInfo `json:"connectors"`
 	Error             string                 `json:"error,omitempty"`
-
-	// This is set at the HTTP handler level as this will be returned by the Hooks.
-	AllowedActions []string `json:"allowedActions"`
 }
 
 // ClusterConnectorInfo contains all information we can retrieve about a single
