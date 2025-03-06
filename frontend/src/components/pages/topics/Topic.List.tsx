@@ -461,7 +461,6 @@ function ConfirmDeletionModal({
 }
 
 function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): JSX.Element {
-  const { topic } = props;
   const deleteButton = props.children;
 
   const wrap = (button: JSX.Element, message: string) => (
