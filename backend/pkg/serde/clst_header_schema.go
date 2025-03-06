@@ -32,6 +32,40 @@ func (CLSTHeaderSchemaSerde) Name() PayloadEncoding {
 
 // DeserializePayload maps relevant headers into SchemaInfo
 func (headerSchemaSerde CLSTHeaderSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
-	fmt.Println("CLSTHeaderSchemaSerde Starting DeserializePayload...")
-	return &RecordPayload{}, fmt.Errorf("CLST Deserializer	not implemented")
+
+	schemaInfo, err := getSchemaInfoFromHeaders(record)
+	if err != nil {
+		fmt.Println("Error extracting schema info:", err)
+		return nil, fmt.Errorf("failed to extract schema info from headers: %w", err)
+	}
+	fmt.Printf("Key: %s and Value: %v\n", schemaInfo.ProtobufTypeKey, schemaInfo.ProtobufTypeValue)
+
+	// Buf schema example: https://clst.buf.team/fleet/bk/docs/main:apollo.bk.v1#apollo.bk.v1.Transaction
+
+	// fd, exists := headerSchemaSerde.ProtoSvc.GetFileDescriptorBySchemaID(schemaInfo.ProtobufTypeValue)
+	// if !exists {
+	// 	return &RecordPayload{}, fmt.Errorf("schema ID %+v not found", schemaID)
+	// }
+
+	// Now handle the record value payload
+	// msgPayload := payloadFromRecord(record, payloadType)
+	// var jsonData map[string]interface{}
+	// if err := json.Unmarshal(msgPayload, &jsonData); err != nil {
+	// 	fmt.Println("Error deserializing JSON payload:", err)
+	// 	return nil, fmt.Errorf("failed to deserialize JSON payload: %w", err)
+	// }
+
+	// fmt.Println("Successfully deserialized JSON payload")
+	// return &RecordPayload{
+	// 	DeserializedPayload: jsonData,
+	// 	NormalizedPayload:   msgPayload,
+	// 	Encoding:            PayloadEncoding("header-schema"),
+	// }, nil
+	// return &RecordPayload{}, fmt.Errorf("CLST Deserializer	not implemented")
+	return &RecordPayload{
+		DeserializedPayload: schemaInfo,
+		NormalizedPayload:   nil,
+		Encoding:            PayloadEncodingCLSTHeaderSchema,
+		SchemaID:            nil,
+	}, nil
 }
