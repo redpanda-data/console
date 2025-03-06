@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
@@ -93,4 +94,8 @@ type Servicer interface {
 	IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error)
 	// AlterConfigs proxies the request/response to set configs (not incrementally) via the Kafka API.
 	AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error)
+	// Adds partitions to existing topics.
+	AddPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error)
+	// Sets partition counts to existing topics.
+	SetPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error)
 }

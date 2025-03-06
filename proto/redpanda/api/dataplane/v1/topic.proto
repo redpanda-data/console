@@ -227,6 +227,100 @@ message SetTopicConfigurationsResponse {
   repeated Topic.Configuration configurations = 1;
 }
 
+message AddTopicPartitionsResponse {}
+
+message AddTopicPartitionsRequest {
+  // The topic name.
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+
+  // The number of partitions to add to the topic.
+  int32 partition_count = 2 [(buf.validate.field).int32.gte = 0];
+
+  // Validate the request only, do not execute it.
+  bool validate_only = 3;
+}
+
+message SetTopicPartitionsRequest {
+  // The topic name.
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+
+  // The number of partitions to set for the topic.
+  int32 partition_count = 2 [(buf.validate.field).int32.gte = 0];
+
+  // Validate the request only, do not execute it.
+  bool validate_only = 3;
+}
+
+message SetTopicPartitionsResponse {}
+
+message AlterTopicPartitionStatus {
+  // The topic name.
+  string topic_name = 1;
+  // Whether the operation was successful.
+  bool success = 2;
+  // The error if any.
+  string error = 3;
+}
+
+message SetPartitionsToTopicsRequest {
+  // The topic names.
+  repeated string topic_names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {min_items: 1},
+    (buf.validate.field).repeated.items = {
+      string: {
+        min_len: 1
+        max_len: 249
+        pattern: "^[a-zA-Z0-9._\\-]*$"
+      }
+    }
+  ];
+
+  // The number of partitions to set for the topics.
+  int32 partition_count = 2 [(buf.validate.field).int32.gte = 0];
+  // Validate the request only, do not execute it.
+  bool validate_only = 3;
+}
+
+message SetPartitionsToTopicsResponse {
+  // The status of the operation for each topic.
+  repeated AlterTopicPartitionStatus statuses = 1;
+}
+
+message AddPartitionsToTopicsRequest {
+  // The topic names.
+  repeated string topic_names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {min_items: 1},
+    (buf.validate.field).repeated.items = {
+      string: {
+        min_len: 1
+        max_len: 249
+        pattern: "^[a-zA-Z0-9._\\-]*$"
+      }
+    }
+  ];
+  // The number of partitions to add for the topics.
+  int32 partition_count = 2 [(buf.validate.field).int32.gte = 0];
+  // Validate the request only, do not execute it.
+  bool validate_only = 3;
+}
+
+message AddPartitionsToTopicsResponse {
+  // The status of the operation for each topic.
+  repeated AlterTopicPartitionStatus statuses = 1;
+}
+
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Topics"
@@ -252,6 +346,7 @@ service TopicService {
       }
     };
   }
+
   rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
     option (google.api.http) = {get: "/v1/topics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -268,6 +363,7 @@ service TopicService {
       }
     };
   }
+
   rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
     option (google.api.http) = {delete: "/v1/topics/{topic_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -291,6 +387,7 @@ service TopicService {
       }
     };
   }
+
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
     option (google.api.http) = {get: "/v1/topics/{topic_name}/configurations"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -316,6 +413,7 @@ service TopicService {
       }
     };
   }
+
   rpc UpdateTopicConfigurations(UpdateTopicConfigurationsRequest) returns (UpdateTopicConfigurationsResponse) {
     option (google.api.http) = {
       patch: "/v1/topics/{topic_name}/configurations"
@@ -344,6 +442,7 @@ service TopicService {
       }
     };
   }
+
   rpc SetTopicConfigurations(SetTopicConfigurationsRequest) returns (SetTopicConfigurationsResponse) {
     option (google.api.http) = {
       put: "/v1/topics/{topic_name}/configurations"
@@ -358,6 +457,122 @@ service TopicService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1.SetTopicConfigurationsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc AddTopicPartitions(AddTopicPartitionsRequest) returns (AddTopicPartitionsResponse) {
+    option (google.api.http) = {
+      put: "/v1/topics/{topic_name}/partitions"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add Topic Partitions"
+      description: "Add partitions to existing topic."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.AddTopicPartitionsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc SetTopicPartitions(SetTopicPartitionsRequest) returns (SetTopicPartitionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/topics/{topic_name}/partitions"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add Topic Partitions"
+      description: "Set partitions to existing topic."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.SetTopicPartitionsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc AddPartitionsToTopics(AddPartitionsToTopicsRequest) returns (AddPartitionsToTopicsResponse) {
+    option (google.api.http) = {
+      put: "/v1/topics-partitions"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add Topic Partitions"
+      description: "Add partitions to existing topics."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.AddPartitionsToTopicsResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+  }
+
+  rpc SetPartitionsToTopics(SetPartitionsToTopicsRequest) returns (SetPartitionsToTopicsResponse) {
+    option (google.api.http) = {
+      post: "/v1/topics-partitions"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Add Topic Partitions"
+      description: "Set partition counts for existing topics."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.SetPartitionsToTopicsResponse"}
           }
         }
       }

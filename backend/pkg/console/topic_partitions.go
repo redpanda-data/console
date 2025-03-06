@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
@@ -376,4 +377,22 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata ma
 	}
 
 	return partitionLogDirs
+}
+
+// AddPartitionsToTopics adds partition counts to existing topics.
+func (s *Service) AddPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error) {
+	if validateOnly {
+		return s.kafkaSvc.ValidateAddPartitionsToTopics(ctx, add, topicNames)
+	}
+
+	return s.kafkaSvc.AddPartitionsToTopics(ctx, add, topicNames)
+}
+
+// SetPartitionsToTopics sets partition counts to existing topics.
+func (s *Service) SetPartitionsToTopics(ctx context.Context, count int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error) {
+	if validateOnly {
+		return s.kafkaSvc.ValidateSetPartitionsToTopics(ctx, count, topicNames)
+	}
+
+	return s.kafkaSvc.SetPartitionsToTopics(ctx, count, topicNames)
 }
