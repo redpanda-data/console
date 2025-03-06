@@ -134,7 +134,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	topicSvcV1alpha1 := topicsvcv1alpha1.NewService(topicSvcV1alpha2)
 	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvcV1alpha2)
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
-	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.Cfg, api.License)
+	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.RedpandaClientProvider, api.License)
 	if err != nil {
 		api.Logger.Fatal("failed to create license service", zap.Error(err))
 	}

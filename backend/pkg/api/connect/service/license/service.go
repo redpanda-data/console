@@ -15,16 +15,14 @@ package license
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/redpanda-data/common-go/net"
 	"github.com/redpanda-data/common-go/rpadmin"
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	"github.com/redpanda-data/console/backend/pkg/config"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/license"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
@@ -36,10 +34,10 @@ var _ consolev1alpha1connect.LicenseServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	logger         *zap.Logger
-	adminapiCl     *rpadmin.AdminAPI
-	consoleLicense license.License
-	mapper         mapper
+	logger                 *zap.Logger
+	redpandaClientProvider redpandafactory.ClientFactory
+	consoleLicense         license.License
+	mapper                 mapper
 }
 
 // NewService creates a new instance of Service, initializing it with the
@@ -47,39 +45,14 @@ type Service struct {
 // client setup fails.
 func NewService(
 	logger *zap.Logger,
-	cfg *config.Config,
+	redpandaClientProvider redpandafactory.ClientFactory,
 	consoleLicense license.License,
 ) (*Service, error) {
-	var adminClient *rpadmin.AdminAPI
-
-	if cfg.Redpanda.AdminAPI.Enabled {
-		// Build admin client with provided credentials
-		adminAPICfg := cfg.Redpanda.AdminAPI
-		tlsCfg, err := adminAPICfg.TLS.TLSConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to build TLS config: %w", err)
-		}
-
-		// Explicitly set the tlsCfg to nil in case an HTTP target url has been provided
-		scheme, _, err := net.ParseHostMaybeScheme(adminAPICfg.URLs[0])
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse admin api url scheme: %w", err)
-		}
-		if scheme == "http" {
-			tlsCfg = nil
-		}
-
-		adminClient, err = rpadmin.NewAdminAPI(adminAPICfg.URLs, cfg.Redpanda.AdminAPI.RPAdminAuth(), tlsCfg)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create admin client: %w", err)
-		}
-	}
-
 	return &Service{
-		logger:         logger,
-		adminapiCl:     adminClient,
-		consoleLicense: consoleLicense,
-		mapper:         mapper{},
+		logger:                 logger,
+		redpandaClientProvider: redpandaClientProvider,
+		consoleLicense:         consoleLicense,
+		mapper:                 mapper{},
 	}, nil
 }
 
@@ -87,16 +60,15 @@ func NewService(
 // cluster. It requires the requester to be authenticated and have the necessary
 // permissions.
 func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.ListLicensesRequest]) (*connect.Response[v1alpha1.ListLicensesResponse], error) {
-	// TODO: Ensure endpoint is authorized
-
 	consoleLicenseProto := s.mapper.consoleLicenseToProto(s.consoleLicense)
 	licenses := []*v1alpha1.License{consoleLicenseProto}
 
-	if s.adminapiCl == nil {
+	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
 		return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: false}), nil
 	}
 
-	coreLicense, err := s.adminapiCl.GetLicenseInfo(ctx)
+	coreLicense, err := adminCl.GetLicenseInfo(ctx)
 	if err != nil {
 		var httpErr *rpadmin.HTTPResponseError
 		if errors.As(err, &httpErr) {
@@ -115,7 +87,7 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 	}
 
 	isViolation := false
-	enterpriseFeatures, err := s.adminapiCl.GetEnterpriseFeatures(ctx)
+	enterpriseFeatures, err := adminCl.GetEnterpriseFeatures(ctx)
 	if err == nil {
 		isViolation = enterpriseFeatures.Violation
 	}
@@ -131,18 +103,17 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 // SetLicense installs a new license into the Redpanda cluster.
 // The requester must be authenticated and have the necessary permissions.
 func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.SetLicenseRequest]) (*connect.Response[v1alpha1.SetLicenseResponse], error) {
-	// TODO: Ensure endpoint is authorized
-
-	if s.adminapiCl == nil {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	licenseInput := strings.NewReader(req.Msg.GetLicense())
-	if err := s.adminapiCl.SetLicense(ctx, licenseInput); err != nil {
+	if err := adminCl.SetLicense(ctx, licenseInput); err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to install license: ")
 	}
 
-	licenseInfo, err := s.adminapiCl.GetLicenseInfo(ctx)
+	licenseInfo, err := adminCl.GetLicenseInfo(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to retrieve installed license: ")
 	}
@@ -154,13 +125,12 @@ func (s Service) SetLicense(ctx context.Context, req *connect.Request[v1alpha1.S
 // ListEnterpriseFeatures reports the license status and Redpanda enterprise features in use.
 // This can only be reported if the Redpanda Admin API is configured and supports this request.
 func (s Service) ListEnterpriseFeatures(ctx context.Context, _ *connect.Request[v1alpha1.ListEnterpriseFeaturesRequest]) (*connect.Response[v1alpha1.ListEnterpriseFeaturesResponse], error) {
-	// TODO: Ensure endpoint is authorized
-
-	if s.adminapiCl == nil {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	features, err := s.adminapiCl.GetEnterpriseFeatures(ctx)
+	features, err := adminCl.GetEnterpriseFeatures(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to retrieve enterprise features: ")
 	}
