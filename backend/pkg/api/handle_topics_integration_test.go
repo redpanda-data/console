@@ -25,6 +25,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -179,9 +181,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 	})
 
 	t.Run("describe configs fail", func(t *testing.T) {
-		// Disabled test because the console service creation has to be updated after refactoring
-		t.Skip()
-
 		// fake cluster
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
 		require.NoError(err)
@@ -204,8 +203,8 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		newConfig := s.copyConfig()
 
-		// core, obs := observer.New(zap.WarnLevel)
-		// log := zap.New(core)
+		core, obs := observer.New(zap.WarnLevel)
+		log := zap.New(core)
 
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
@@ -213,7 +212,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		newConfig.MetricsNamespace = "describe_configs_fail"
 
 		// new console service
-		newApi := New(newConfig)
+		newApi := New(newConfig, WithLogger(log))
 		require.NoError(err)
 
 		// save old
@@ -297,18 +296,16 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)
 
 		// verify warning logs
-		/*
-			allLogs := obs.All()
+		allLogs := obs.All()
 
-			require.Len(allLogs, 1)
-			assert.Equal("config resource response has an error", allLogs[0].Message)
-			assert.Equal(zap.WarnLevel, allLogs[0].Level)
-			contextMap := allLogs[0].ContextMap()
-			logObj, ok := contextMap["error"]
-			assert.True(ok)
-			fieldValue, ok := logObj.(string)
-			assert.True(ok)
-			assert.Equal("INVALID_TOPIC_EXCEPTION: The request attempted to perform an operation on an invalid topic.", fieldValue)
-		*/
+		require.Len(allLogs, 1)
+		assert.Equal("config resource response has an error", allLogs[0].Message)
+		assert.Equal(zap.WarnLevel, allLogs[0].Level)
+		contextMap := allLogs[0].ContextMap()
+		logObj, ok := contextMap["error"]
+		assert.True(ok)
+		fieldValue, ok := logObj.(string)
+		assert.True(ok)
+		assert.Equal("INVALID_TOPIC_EXCEPTION: The request attempted to perform an operation on an invalid topic.", fieldValue)
 	})
 }
