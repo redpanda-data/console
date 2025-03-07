@@ -40,7 +40,6 @@ import (
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
-	"github.com/redpanda-data/console/backend/pkg/api/connect/service/rpconnect"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
 	topicsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha2"
@@ -138,10 +137,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	if err != nil {
 		api.Logger.Fatal("failed to create license service", zap.Error(err))
 	}
-	rpConnectSvc, err := rpconnect.NewService(api.Logger.Named("redpanda_connect_service"))
-	if err != nil {
-		api.Logger.Fatal("failed to create redpanda connect service", zap.Error(err))
-	}
 	clusterStatusSvc := clusterstatus.NewService(
 		api.Cfg,
 		api.Logger.Named("redpanda_cluster_status_service"),
@@ -156,31 +151,30 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		BaseInterceptors: baseInterceptors,
 		GRPCGatewayMux:   gwMux,
 		Services: map[string]any{
-			dataplanev1alpha1connect.UserServiceName:          userSvcV1alpha1,
-			dataplanev1alpha1connect.ACLServiceName:           aclSvcV1alpha1,
-			dataplanev1alpha1connect.KafkaConnectServiceName:  kafkaConnectSvcV1alpha1,
-			dataplanev1alpha1connect.TopicServiceName:         topicSvcV1alpha1,
-			dataplanev1alpha1connect.TransformServiceName:     transformSvcV1alpha1,
-			consolev1alpha1connect.ConsoleServiceName:         consoleSvc,
-			consolev1alpha1connect.SecurityServiceName:        consolev1alpha1connect.UnimplementedSecurityServiceHandler{},
-			consolev1alpha1connect.LicenseServiceName:         licenseSvc,
-			consolev1alpha1connect.RedpandaConnectServiceName: rpConnectSvc,
-			consolev1alpha1connect.TransformServiceName:       consoleTransformSvcV1,
-			consolev1alpha1connect.AuthenticationServiceName:  &AuthenticationDefaultHandler{},
-			consolev1alpha1connect.ClusterStatusServiceName:   clusterStatusSvc,
-			consolev1alpha1connect.SecretServiceName:          consolev1alpha1connect.UnimplementedSecretServiceHandler{},
-			dataplanev1alpha2connect.ACLServiceName:           aclSvcV1alpha2,
-			dataplanev1alpha2connect.TopicServiceName:         topicSvcV1alpha2,
-			dataplanev1alpha2connect.UserServiceName:          userSvcV1alpha2,
-			dataplanev1alpha2connect.TransformServiceName:     transformSvcV1alpha2,
-			dataplanev1alpha2connect.KafkaConnectServiceName:  kafkaConnectSvcV1alpha2,
-			dataplanev1alpha2connect.CloudStorageServiceName:  dataplanev1alpha2connect.UnimplementedCloudStorageServiceHandler{},
-			dataplanev1connect.ACLServiceName:                 aclSvcV1,
-			dataplanev1connect.TopicServiceName:               topicSvcV1,
-			dataplanev1connect.UserServiceName:                userSvcV1,
-			dataplanev1connect.TransformServiceName:           transformSvcV1,
-			dataplanev1connect.KafkaConnectServiceName:        kafkaConnectSvcV1,
-			dataplanev1connect.CloudStorageServiceName:        dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
+			dataplanev1alpha1connect.UserServiceName:         userSvcV1alpha1,
+			dataplanev1alpha1connect.ACLServiceName:          aclSvcV1alpha1,
+			dataplanev1alpha1connect.KafkaConnectServiceName: kafkaConnectSvcV1alpha1,
+			dataplanev1alpha1connect.TopicServiceName:        topicSvcV1alpha1,
+			dataplanev1alpha1connect.TransformServiceName:    transformSvcV1alpha1,
+			consolev1alpha1connect.ConsoleServiceName:        consoleSvc,
+			consolev1alpha1connect.SecurityServiceName:       consolev1alpha1connect.UnimplementedSecurityServiceHandler{},
+			consolev1alpha1connect.LicenseServiceName:        licenseSvc,
+			consolev1alpha1connect.TransformServiceName:      consoleTransformSvcV1,
+			consolev1alpha1connect.AuthenticationServiceName: &AuthenticationDefaultHandler{},
+			consolev1alpha1connect.ClusterStatusServiceName:  clusterStatusSvc,
+			consolev1alpha1connect.SecretServiceName:         consolev1alpha1connect.UnimplementedSecretServiceHandler{},
+			dataplanev1alpha2connect.ACLServiceName:          aclSvcV1alpha2,
+			dataplanev1alpha2connect.TopicServiceName:        topicSvcV1alpha2,
+			dataplanev1alpha2connect.UserServiceName:         userSvcV1alpha2,
+			dataplanev1alpha2connect.TransformServiceName:    transformSvcV1alpha2,
+			dataplanev1alpha2connect.KafkaConnectServiceName: kafkaConnectSvcV1alpha2,
+			dataplanev1alpha2connect.CloudStorageServiceName: dataplanev1alpha2connect.UnimplementedCloudStorageServiceHandler{},
+			dataplanev1connect.ACLServiceName:                aclSvcV1,
+			dataplanev1connect.TopicServiceName:              topicSvcV1,
+			dataplanev1connect.UserServiceName:               userSvcV1,
+			dataplanev1connect.TransformServiceName:          transformSvcV1,
+			dataplanev1connect.KafkaConnectServiceName:       kafkaConnectSvcV1,
+			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
 		},
 	})
 
@@ -235,9 +229,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	securityServicePath, securityServiceHandler := consolev1alpha1connect.NewSecurityServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.SecurityServiceName].(consolev1alpha1connect.SecurityServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
-	rpconnectServicePath, rpconnectServiceHandler := consolev1alpha1connect.NewRedpandaConnectServiceHandler(
-		hookOutput.Services[consolev1alpha1connect.RedpandaConnectServiceName].(consolev1alpha1connect.RedpandaConnectServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	consoleTransformSvcPath, consoleTransformSvcHandler := consolev1alpha1connect.NewTransformServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
@@ -334,11 +325,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.SecurityServiceName,
 			MountPath:   securityServicePath,
 			Handler:     securityServiceHandler,
-		},
-		{
-			ServiceName: consolev1alpha1connect.RedpandaConnectServiceName,
-			MountPath:   rpconnectServicePath,
-			Handler:     rpconnectServiceHandler,
 		},
 		{
 			ServiceName: consolev1alpha1connect.TransformServiceName,
