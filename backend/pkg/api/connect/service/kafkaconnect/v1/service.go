@@ -7,7 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-// Package kafkaconnect implements the KafkaConnect interface for the KafkaConnect API.
+// Package kafkaconnect implements the KafkaConnect interface for the ConnectRPC API.
 package kafkaconnect
 
 import (

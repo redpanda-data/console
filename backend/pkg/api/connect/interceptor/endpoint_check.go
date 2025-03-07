@@ -47,7 +47,7 @@ func NewEndpointCheckInterceptor(cfg *config.ConsoleAPI, logger *zap.Logger) *En
 	}
 }
 
-// WrapUnary creates an interceptor to validate KafkaConnect requests.
+// WrapUnary creates an interceptor to validate ConnectRPC requests.
 func (in *EndpointCheckInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	enabledProcedures, isAllProceduresAllowed := in.cfg.GetEnabledProcedures()
 

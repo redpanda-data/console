@@ -37,7 +37,7 @@ import (
 
 var _ consolev1alpha1connect.ClusterStatusServiceHandler = (*Service)(nil)
 
-// Service that implements the UserServiceHandler interface. This includes all
+// Service that implements the ClusterStatusServiceHandler interface. This includes all
 // RPCs to retrieve cluster information about all connected APIs.
 type Service struct {
 	cfg    *config.Config
