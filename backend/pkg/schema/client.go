@@ -133,7 +133,7 @@ func createCustomProtoResolver(ctx context.Context) (func(protocompile.Resolver)
 	})
 	compiler := protocompile.Compiler{
 		Resolver:       protocompile.WithStandardImports(resolveFromEmbeddedProtosFn),
-		SourceInfoMode: protocompile.SourceInfoStandard,
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
 
 	// Compile proto files and store them by filepath so that we can refer to them
@@ -261,7 +261,7 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 	}
 	compiler := protocompile.Compiler{
 		Resolver:       protocompile.WithStandardImports(c.standardImportsResolver(sourceResolver)),
-		SourceInfoMode: protocompile.SourceInfoStandard,
+		SourceInfoMode: protocompile.SourceInfoNone,
 	}
 
 	compiled, err := compiler.Compile(ctx, mainProtoFilename)
