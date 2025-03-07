@@ -14,8 +14,8 @@ import (
 	"fmt"
 )
 
-// ConnectCluster is the configuration of a single Kafka connect cluster.
-type ConnectCluster struct {
+// KafkaConnectCluster is the configuration of a single Kafka connect cluster.
+type KafkaConnectCluster struct {
 	// Name will be shown in the Frontend to identify a connect cluster
 	Name string `yaml:"name"`
 	// URL is the HTTP address that will be set as base url for all requests
@@ -30,18 +30,18 @@ type ConnectCluster struct {
 }
 
 // RegisterFlagsWithPrefix registers all nested config flags.
-func (c *ConnectCluster) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
+func (c *KafkaConnectCluster) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
 	f.StringVar(&c.Password, prefix+"password", "", "Basic auth password for connect cluster authentication")
 	f.StringVar(&c.Token, prefix+"token", "", "Bearer token for connect cluster authentication")
 }
 
 // SetDefaults for a target Kafka connect cluster.
-func (c *ConnectCluster) SetDefaults() {
+func (c *KafkaConnectCluster) SetDefaults() {
 	c.TLS.SetDefaults()
 }
 
 // Validate Kafka connect cluster configurations provided by the user.
-func (c *ConnectCluster) Validate() error {
+func (c *KafkaConnectCluster) Validate() error {
 	if c.Name == "" {
 		return fmt.Errorf("a cluster name must be set to identify the connect cluster")
 	}

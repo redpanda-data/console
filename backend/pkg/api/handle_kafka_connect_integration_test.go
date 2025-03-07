@@ -80,7 +80,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	connectCfg := config.KafkaConnect{}
 	connectCfg.SetDefaults()
 	connectCfg.Enabled = true
-	connectCfg.Clusters = []config.ConnectCluster{
+	connectCfg.Clusters = []config.KafkaConnectCluster{
 		{
 			Name: "redpanda_connect",
 			URL:  "http://" + connectHost + ":" + connectPort.Port(),

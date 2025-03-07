@@ -35,7 +35,7 @@ type Config struct {
 
 	Console        Console      `yaml:"console"`
 	Redpanda       Redpanda     `yaml:"redpanda"`
-	Connect        KafkaConnect `yaml:"kafkaConnect"`
+	KafkaConnect   KafkaConnect `yaml:"kafkaConnect"`
 	REST           Server       `yaml:"server"`
 	Kafka          Kafka        `yaml:"kafka"`
 	Serde          Serde        `yaml:"serde"`
@@ -51,7 +51,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.Kafka.RegisterFlags(f)
 	c.Serde.RegisterFlags(f)
 	c.Console.RegisterFlags(f)
-	c.Connect.RegisterFlags(f)
+	c.KafkaConnect.RegisterFlags(f)
 	c.SchemaRegistry.RegisterFlags(f)
 }
 
@@ -82,7 +82,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Redpanda config: %w", err)
 	}
 
-	err = c.Connect.Validate()
+	err = c.KafkaConnect.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate KafkaConnect config: %w", err)
 	}
@@ -106,7 +106,7 @@ func (c *Config) SetDefaults() {
 	c.Serde.SetDefaults()
 	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
-	c.Connect.SetDefaults()
+	c.KafkaConnect.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.

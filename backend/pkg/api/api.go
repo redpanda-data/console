@@ -106,7 +106,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		opts.frontendResources = fsys
 	}
 
-	connectSvc, err := connect.NewService(cfg.Connect, logger)
+	connectSvc, err := connect.NewService(cfg.KafkaConnect, logger)
 	if err != nil {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}

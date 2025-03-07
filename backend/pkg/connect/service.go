@@ -35,7 +35,7 @@ type Service struct {
 // for a single configured Kafka connect cluster.
 type ClientWithConfig struct {
 	Client *con.Client
-	Cfg    config.ConnectCluster
+	Cfg    config.KafkaConnectCluster
 }
 
 // NewService creates a new connect.Service. It tests the connectivity for each configured
@@ -117,7 +117,7 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 	wg := sync.WaitGroup{}
 	for _, clientInfo := range s.ClientsByCluster {
 		wg.Add(1)
-		go func(cfg config.ConnectCluster, c *con.Client) {
+		go func(cfg config.KafkaConnectCluster, c *con.Client) {
 			defer wg.Done()
 			_, err := c.GetRoot(ctx)
 			if err != nil {

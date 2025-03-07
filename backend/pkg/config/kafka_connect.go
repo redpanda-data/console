@@ -18,11 +18,11 @@ import (
 // KafkaConnect defines all configuration options for connecting to one or more
 // Kafka KafkaConnect clusters.
 type KafkaConnect struct {
-	Enabled        bool             `yaml:"enabled"`
-	Clusters       []ConnectCluster `yaml:"clusters"`
-	ConnectTimeout time.Duration    `yaml:"connectTimeout"` // used for connectivity test
-	ReadTimeout    time.Duration    `yaml:"readTimeout"`    // overall REST/HTTP read timeout
-	RequestTimeout time.Duration    `yaml:"requestTimeout"` // timeout for REST requests to Kafka KafkaConnect
+	Enabled        bool                  `yaml:"enabled"`
+	Clusters       []KafkaConnectCluster `yaml:"clusters"`
+	ConnectTimeout time.Duration         `yaml:"connectTimeout"` // used for connectivity test
+	ReadTimeout    time.Duration         `yaml:"readTimeout"`    // overall REST/HTTP read timeout
+	RequestTimeout time.Duration         `yaml:"requestTimeout"` // timeout for REST requests to Kafka KafkaConnect
 }
 
 // SetDefaults for Kafka connect configuration.
