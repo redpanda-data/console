@@ -230,10 +230,6 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 	schema sr.Schema,
 	accessorMap map[string]string,
 ) (linker.Files, error) {
-	if schema.Type != sr.TypeProtobuf {
-		return nil, fmt.Errorf("invalid schema type: %q", schema.Type.String())
-	}
-
 	// Helper function to recursively fetch and parse all schema references.
 	var loadReferencesFn func(s sr.Schema) error
 	loadReferencesFn = func(s sr.Schema) error {
@@ -281,10 +277,6 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 // recursively. If any of the referenced schemas can't be fetched or parsed an
 // error will be returned.
 func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema, schemaCache *avro.SchemaCache) (avro.Schema, error) {
-	if schema.Type != sr.TypeAvro {
-		return nil, fmt.Errorf("invalid schema type: %q", schema.Type.String())
-	}
-
 	if len(schema.References) == 0 {
 		return avro.Parse(schema.Schema)
 	}
@@ -318,10 +310,6 @@ func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema
 // and compiles it into a jsonschema.Schema instance.
 // Returns the compiled JSON schema or an error if the schema compilation fails.
 func (c *CachedClient) ParseJSONSchema(ctx context.Context, sch sr.Schema) (*jsonschema.Schema, error) {
-	if sch.Type != sr.TypeJSON {
-		return nil, fmt.Errorf("invalid schema type: %q", sch.Type.String())
-	}
-
 	compiler := jsonschema.NewCompiler()
 	schemaName := "redpanda_jsonschema.json"
 
