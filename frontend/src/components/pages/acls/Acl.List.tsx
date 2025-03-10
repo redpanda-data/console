@@ -12,11 +12,14 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
-  AlertDescription, AlertIcon,
+  AlertDescription,
+  AlertIcon,
   AlertTitle,
   Badge,
   Box,
-  Button, Link as ChakraLink, CloseButton,
+  Button,
+  Link as ChakraLink,
+  CloseButton,
   DataTable,
   Flex,
   Icon,
@@ -30,7 +33,7 @@ import {
   Tooltip,
   createStandaloneToast,
   redpandaTheme,
-  redpandaToastOptions
+  redpandaToastOptions,
 } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { makeObservable, observable } from 'mobx';

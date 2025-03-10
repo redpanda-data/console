@@ -1,9 +1,9 @@
-import React from 'react';
-import { CodeBlock, Grid, Text, Stack, Heading, Button, HStack, Image, Avatars, Box } from '@redpanda-data/ui';
 import { Code } from '@connectrpc/connect';
 import type { ConnectError } from '@connectrpc/connect';
-import type { WrappedApiError } from '../../state/restInterfaces';
+import { Avatars, Box, CodeBlock, Grid, HStack, Heading, Image, Stack, Text } from '@redpanda-data/ui';
+import React from 'react';
 import { capitalizeFirst } from 'utils/utils';
+import type { WrappedApiError } from '../../state/restInterfaces';
 
 interface ErrorResultProps {
   error?: ConnectError | WrappedApiError;

@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge, Box, DataTable, Link, Result, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import ErrorResult from 'components/misc/ErrorResult';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -21,7 +22,6 @@ import type { ClusterConnectorInfo, ClusterConnectorTaskInfo, ClusterConnectors 
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { capitalizeFirst } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
@@ -40,7 +40,6 @@ import {
   errIcon,
   mr05,
 } from './helper';
-import ErrorResult from 'components/misc/ErrorResult';
 
 enum ConnectView {
   KafkaConnect = 'kafka-connect',
