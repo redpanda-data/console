@@ -72,7 +72,7 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
     statusCode = 500;
   }
 
-  const errorTitle = title || 'Error';
+  const errorTitle = title || `Error ${statusCode}`;
   const errorMessage = message || error.message;
 
   return (
@@ -93,20 +93,6 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
         {errorDetails && (
           <CodeBlock codeString={errorDetails} language="json" theme="light" showCopyButton maxW="50vw" />
         )}
-        <Grid
-          alignItems="center"
-          columnGap={4}
-          templateColumns="0.025fr auto 0.2fr"
-          lineHeight="short"
-          textTransform="uppercase"
-          color="red.500"
-          fontSize="lg"
-          fontWeight="medium"
-          fontFamily="monospace"
-        >
-          <Text>{statusCode}</Text>
-          <Text>{isConnectError(error) ? Code[error.code] : ''}</Text>
-        </Grid>
       </Stack>
       <Box display="flex" alignItems="center" justifyContent="center" minW="300px">
         <Image
