@@ -379,7 +379,7 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata ma
 	return partitionLogDirs
 }
 
-// AddPartitionsToTopics adds partition counts to existing topics.
+// AddPartitionsToTopics adds new partitions to an existing topics.
 func (s *Service) AddPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error) {
 	if validateOnly {
 		return s.kafkaSvc.ValidateAddPartitionsToTopics(ctx, add, topicNames)
