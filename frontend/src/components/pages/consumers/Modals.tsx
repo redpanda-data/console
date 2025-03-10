@@ -38,16 +38,7 @@ import {
   redpandaTheme,
   redpandaToastOptions,
 } from '@redpanda-data/ui';
-import {
-  type IReactionDisposer,
-  action,
-  autorun,
-  makeObservable,
-  observable,
-  runInAction,
-  toJS,
-  transaction,
-} from 'mobx';
+import { type IReactionDisposer, action, autorun, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { MdOutlineWarningAmber } from 'react-icons/md';
@@ -827,7 +818,7 @@ export class DeleteOffsetsModal extends Component<{
           </RPButton>
         }
         itemType="consumer-group"
-        onConfirm={async (dismiss: (value?: unknown) => void, onError: (msg: string) => void): void => {
+        onConfirm={async (dismiss: (value?: unknown) => void, onError: (msg: string) => void) => {
           const group = this.props.group;
           // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
           const offsets = this.props.offsets!;
@@ -940,106 +931,10 @@ export class DeleteOffsetsModal extends Component<{
         </Box>
       </ConfirmItemDeleteModal>
     );
-
-    return (
-      <Modal isOpen={visible} onClose={this.props.onClose}>
-        <ModalOverlay />
-        <ModalContent minW="5xl">
-          <ModalHeader>{mode === 'group' ? 'Delete consumer group' : 'Delete consumer group offsets'}</ModalHeader>
-          <ModalBody>
-            <Flex flexDirection="row" gap={6}>
-              <div>
-                <div
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    padding: '12px',
-                    marginTop: '4px',
-                    background: '#F53649',
-                    borderRadius: '1000px',
-                  }}
-                >
-                  <TrashIconOutline color="white" />
-                </div>
-              </div>
-              <Box>
-                <Box>
-                  <Text>Are you sure you want to delete offsets from this consumer group?</Text>
-                  <Box fontWeight="600" mt={1} mb={6}>
-                    <Text>
-                      Group: <span className="codeBox">{group.groupId}</span>
-                    </Text>
-                  </Box>
-                </Box>
-
-                <Box>
-                  {mode === 'group' && (
-                    <Box>
-                      <Text>Group offsets will be deleted for all topics and partitions:</Text>
-                      <UnorderedList fontWeight="600" my={2}>
-                        {singleTopic ? (
-                          <>
-                            <ListItem>
-                              Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                            </ListItem>
-                            <ListItem>
-                              {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
-                            </ListItem>
-                          </>
-                        ) : (
-                          <>
-                            <ListItem>
-                              {offsetsByTopic.length} Topics / {offsets.length}{' '}
-                              {singlePartition ? 'partition' : 'partitions'}
-                            </ListItem>
-                          </>
-                        )}
-                      </UnorderedList>
-                    </Box>
-                  )}
-
-                  {mode === 'topic' && (
-                    <Box>
-                      <Text>Group offsets will be deleted for topic:</Text>
-                      <List fontWeight="600" my={2}>
-                        <ListItem>
-                          Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                        </ListItem>
-                        <ListItem>
-                          {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
-                        </ListItem>
-                      </List>
-                    </Box>
-                  )}
-
-                  {mode === 'partition' && (
-                    <Box>
-                      <Text>Group offsets will be deleted for partition:</Text>
-                      <UnorderedList fontWeight="600" my={2}>
-                        <ListItem>
-                          Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                        </ListItem>
-                        <ListItem>
-                          Partition: <span className="codeBox">{offsetsByTopic[0].items[0].partitionId}</span>
-                        </ListItem>
-                      </UnorderedList>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            </Flex>
-          </ModalBody>
-          <ModalFooter gap={2}>
-            <Button onClick={() => this.onDeleteOffsets()} colorScheme="red">
-              Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
   }
 }
 
+// Utility functions
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
