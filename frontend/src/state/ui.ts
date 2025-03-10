@@ -18,6 +18,7 @@ import { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/commo
 import { clone } from '../utils/jsonUtils';
 import { assignDeep, randomId } from '../utils/utils';
 import { AclRequestDefault, type GetAclsRequest } from './restInterfaces';
+import { CompressionType } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 
 const settingsName = 'uiSettings-v3';
 
@@ -147,6 +148,7 @@ export class TopicDetailsSettings {
   @observable aclPageSize = 20;
 
   @observable produceRecordEncoding = PayloadEncoding.TEXT as PayloadEncoding | 'base64';
+  @observable produceRecordCompression = CompressionType.SNAPPY;
 
   @observable quickSearch = '';
 }
