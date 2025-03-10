@@ -40,6 +40,7 @@ import {
   errIcon,
   mr05,
 } from './helper';
+import ErrorResult from 'components/misc/ErrorResult';
 
 enum ConnectView {
   KafkaConnect = 'kafka-connect',
@@ -406,13 +407,7 @@ const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
   if (api.connectConnectorsError) {
-    return (
-      <Result
-        title="Error"
-        status={api.connectConnectorsError.statusCode}
-        userMessage={capitalizeFirst(api.connectConnectorsError.message)}
-      />
-    );
+    return <ErrorResult error={api.connectConnectorsError} />;
   }
   if (!api.connectConnectors) return DefaultSkeleton;
   if (api.connectConnectors.isConfigured === false) return <NotConfigured />;
