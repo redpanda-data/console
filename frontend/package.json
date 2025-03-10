@@ -26,9 +26,7 @@
     "lint:check": "biome ci src/*",
     "format:check": "biome format src/*",
     "format": "biome format src/* --write",
-    "fetch-monaco": "node scripts/fetch-monaco.mjs",
     "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
-    "prepare": "npm run fetch-monaco",
     "analyze": "RSDOCTOR=true npm run build"
   },
   "overrides": {
