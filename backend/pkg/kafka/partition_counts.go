@@ -15,7 +15,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 )
 
-// AddPartitionsToTopics adds partition counts to topics.
+// AddPartitionsToTopics adds partitions to topics.
 func (s *Service) AddPartitionsToTopics(ctx context.Context, add int, topicNames []string) (kadm.CreatePartitionsResponses, error) {
 	return s.KafkaAdmClient.CreatePartitions(ctx, add, topicNames...)
 }
@@ -25,7 +25,9 @@ func (s *Service) ValidateAddPartitionsToTopics(ctx context.Context, add int, to
 	return s.KafkaAdmClient.ValidateCreatePartitions(ctx, add, topicNames...)
 }
 
-// SetPartitionsToTopics sets partition counts to topics.
+// SetPartitionsToTopics sets partitions to topics.
+// The count value must be equal to or larger than the current count of partitions in the topic.
+// All topics will have the same final count of partitions.
 func (s *Service) SetPartitionsToTopics(ctx context.Context, count int, topicNames []string) (kadm.CreatePartitionsResponses, error) {
 	return s.KafkaAdmClient.UpdatePartitions(ctx, count, topicNames...)
 }

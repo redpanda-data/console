@@ -1449,7 +1449,7 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		err = requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1502,7 +1502,7 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		err = requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1549,7 +1549,7 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		err := requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1684,7 +1684,7 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		err = requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1780,7 +1780,7 @@ func (s *APISuite) TestSetTopicPartitions_v1() {
 		err = requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Post().
+			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1833,7 +1833,7 @@ func (s *APISuite) TestSetTopicPartitions_v1() {
 		err = requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Post().
+			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1880,7 +1880,7 @@ func (s *APISuite) TestSetTopicPartitions_v1() {
 		err := requests.
 			URL(s.httpAddress() + fmt.Sprintf("/v1/topics/%v/partitions", topicName)).
 			BodyJSON(&httpReq).
-			Post().
+			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -1995,7 +1995,7 @@ func (s *APISuite) TestAddPartitionsToTopics_v1() {
 		err = requests.
 			URL(s.httpAddress() + "/v1/topics-partitions").
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -2073,7 +2073,7 @@ func (s *APISuite) TestAddPartitionsToTopics_v1() {
 		err = requests.
 			URL(s.httpAddress() + "/v1/topics-partitions").
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -2156,7 +2156,7 @@ func (s *APISuite) TestAddPartitionsToTopics_v1() {
 		err = requests.
 			URL(s.httpAddress() + "/v1/topics-partitions").
 			BodyJSON(&httpReq).
-			Put().
+			Patch().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -2290,7 +2290,7 @@ func (s *APISuite) TestSetPartitionsToTopics_v1() {
 		err = requests.
 			URL(s.httpAddress() + "/v1/topics-partitions").
 			BodyJSON(&httpReq).
-			Post().
+			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
@@ -2368,7 +2368,7 @@ func (s *APISuite) TestSetPartitionsToTopics_v1() {
 		err = requests.
 			URL(s.httpAddress() + "/v1/topics-partitions").
 			BodyJSON(&httpReq).
-			Post().
+			Put().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
