@@ -14,6 +14,7 @@ import (
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 // QuotaResponse is a helper type that carries the sum of all quota responses
@@ -38,9 +39,16 @@ type QuotaResponseSetting struct {
 
 // DescribeQuotas fetches the configured quota settings in the target cluster.
 func (s *Service) DescribeQuotas(ctx context.Context) QuotaResponse {
-	items := make([]QuotaResponseItem, 0)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return QuotaResponse{
+			Error: err.Error(),
+		}
+	}
 
-	quotas, err := s.kafkaSvc.DescribeQuotas(ctx)
+	items := make([]QuotaResponseItem, 0)
+	req := kmsg.NewDescribeClientQuotasRequest()
+	quotas, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return QuotaResponse{
 			Error: fmt.Errorf("kafka request has failed: %w", err).Error(),

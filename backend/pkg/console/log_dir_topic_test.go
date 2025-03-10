@@ -21,7 +21,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/config"
+	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -131,6 +132,12 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(fakeCluster.Close)
 
+		kafkaCfg := config.Config{
+			Kafka: config.Kafka{
+				Brokers: fakeCluster.ListenAddrs(),
+			},
+		}
+
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
 			fakeCluster.KeepControl()
 			brokerID := fakeCluster.CurrentNode()
@@ -205,10 +212,8 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, fakeCluster.MoveTopicPartition(topicName, 2, 2))
 
 		consoleSvc := Service{
-			kafkaSvc: &kafka.Service{
-				KafkaAdmClient: fakeAdminClient,
-			},
-			logger: zap.NewNop(),
+			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, zap.NewNop()),
+			logger:             zap.NewNop(),
 		}
 
 		logDirsByTopic, err := consoleSvc.logDirsByTopic(context.Background())
@@ -226,6 +231,12 @@ func TestLogDirsByTopic(t *testing.T) {
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(3))
 		require.NoError(t, err)
 		t.Cleanup(fakeCluster.Close)
+
+		kafkaCfg := config.Config{
+			Kafka: config.Kafka{
+				Brokers: fakeCluster.ListenAddrs(),
+			},
+		}
 
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
 			fakeCluster.KeepControl()
@@ -277,10 +288,8 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, fakeCluster.MoveTopicPartition(topicName, 2, 2))
 
 		consoleSvc := Service{
-			kafkaSvc: &kafka.Service{
-				KafkaAdmClient: fakeAdminClient,
-			},
-			logger: zap.NewNop(),
+			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, zap.NewNop()),
+			logger:             zap.NewNop(),
 		}
 
 		logDirsByTopic, err := consoleSvc.logDirsByTopic(context.Background())

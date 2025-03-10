@@ -23,7 +23,6 @@ import {
   IconButton,
   Input,
   PasswordInput,
-  Result,
   Select,
   Tag,
   TagCloseButton,
@@ -44,9 +43,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
 
@@ -101,13 +98,13 @@ class UserCreatePage extends PageComponent<{}> {
   async refreshData(force: boolean) {
     if (api.userData != null && !api.userData.canListAcls) return;
 
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts(true)]);
+    await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
   }
 
   render() {
-    if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
-    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
-    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+    // if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
+    // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+    // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
     this.isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(this.username);
     this.isValidPassword = Boolean(this.password) && this.password.length >= 4 && this.password.length <= 64;
@@ -142,7 +139,7 @@ class UserCreatePage extends PageComponent<{}> {
 
       // Refresh user list
       if (api.userData != null && !api.userData.canListAcls) return false;
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts(true)]);
+      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
 
       // Add the user to the selected roles
       const roleAddPromises = [];
@@ -417,31 +414,6 @@ export const RoleSelector = observer((p: { state: string[] }) => {
     </Flex>
   );
 });
-
-const PermissionDenied = (
-  <>
-    <PageContent key="aclNoPerms">
-      <Section>
-        <Result
-          title="Permission Denied"
-          status={403}
-          userMessage={
-            <Text>
-              You are not allowed to view this page.
-              <br />
-              Contact the administrator if you think this is an error.
-            </Text>
-          }
-          extra={
-            <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-              <Button>Redpanda Console documentation</Button>
-            </a>
-          }
-        />
-      </Section>
-    </PageContent>
-  </>
-);
 
 export function generatePassword(length: number, allowSpecialChars: boolean): string {
   if (length <= 0) return '';

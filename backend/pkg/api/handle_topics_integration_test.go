@@ -20,17 +20,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudhut/common/rest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/redpanda-data/console/backend/pkg/api/mocks"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
@@ -39,11 +36,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 	t := s.T()
 	require := require.New(t)
 	assert := assert.New(t)
-
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
 
 	// create some test topics
 	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
@@ -91,85 +83,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		assert.Contains(topicNames, testutil.TopicNameForTest("get_topics_2"))
 	})
 
-	t.Run("no see permission", func(t *testing.T) {
-		topicName := testutil.TopicNameForTest("get_topics_1")
-
-		oldAuthHooks := s.api.Hooks.Authorization
-		mockCtrl := gomock.NewController(t)
-		mockAuthzHooks := mocks.NewMockAuthorizationHooks(mockCtrl)
-		mockAuthzHooks.EXPECT().CanSeeTopic(gomock.Any(), topicName).Times(1).Return(false, nil)
-		mockAuthzHooks.EXPECT().CanSeeTopic(gomock.Any(), gomock.Not(topicName)).AnyTimes().Return(true, nil)
-		mockAuthzHooks.EXPECT().AllowedTopicActions(gomock.Any(), gomock.Any()).AnyTimes().Return([]string{"all"}, nil)
-
-		s.api.Hooks.Authorization = mockAuthzHooks
-
-		defer func() {
-			if oldAuthHooks != nil {
-				s.api.Hooks.Authorization = oldAuthHooks
-			}
-		}()
-
-		ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
-		defer cancel()
-
-		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
-
-		require.Equal(200, res.StatusCode)
-
-		type response struct {
-			Topics []*console.TopicSummary `json:"topics"`
-		}
-
-		getRes := response{}
-
-		err := json.Unmarshal(body, &getRes)
-		require.NoError(err)
-
-		require.Len(getRes.Topics, 3)
-		assert.Equal("_schemas", getRes.Topics[0].TopicName)
-		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[1].TopicName)
-		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)
-	})
-
-	t.Run("allow topic action error", func(t *testing.T) {
-		topicName := testutil.TopicNameForTest("get_topics_1")
-
-		oldAuthHooks := s.api.Hooks.Authorization
-		mockCtrl := gomock.NewController(t)
-		mockAuthzHooks := mocks.NewMockAuthorizationHooks(mockCtrl)
-		mockAuthzHooks.EXPECT().CanSeeTopic(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
-		mockAuthzHooks.EXPECT().AllowedTopicActions(gomock.Any(), gomock.Not(topicName)).AnyTimes().Return([]string{}, nil)
-		mockAuthzHooks.EXPECT().AllowedTopicActions(gomock.Any(), topicName).Times(1).Return(nil, &rest.Error{
-			Err:     fmt.Errorf("error from test"),
-			Status:  http.StatusUnauthorized,
-			Message: "public error from test",
-		})
-
-		s.api.Hooks.Authorization = mockAuthzHooks
-
-		defer func() {
-			if oldAuthHooks != nil {
-				s.api.Hooks.Authorization = oldAuthHooks
-			}
-		}()
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
-
-		assert.Equal(401, res.StatusCode)
-
-		apiErr := restAPIError{}
-
-		err = json.Unmarshal(body, &apiErr)
-		require.NoError(err)
-
-		assert.Equal(`public error from test`, apiErr.Message)
-
-		assert.Equal(401, apiErr.Status)
-	})
-
 	t.Run("get metadata fail", func(t *testing.T) {
 		// fake cluster
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
@@ -196,15 +109,16 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
 
+		newConfig.MetricsNamespace = "get_metadata_fail"
+
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
-		require.NoError(err)
+		newApi := New(newConfig)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
 
 		// switch
-		s.api.ConsoleSvc = newConsoleSvc
+		s.api.ConsoleSvc = newApi.ConsoleSvc
 
 		// undo switch
 		defer func() {
@@ -236,6 +150,10 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				ctRes.Topics[2].Topic = kmsg.StringPtr(testutil.TopicNameForTest("get_topics_2"))
 
 				return ctRes, nil, true
+			case *kmsg.DescribeConfigsRequest:
+				return nil, fmt.Errorf("DescribeConfigsRequest not mocked"), false
+			case *kmsg.DescribeLogDirsRequest:
+				return nil, fmt.Errorf("DescribeLogDirsRequest not mocked"), false
 
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
@@ -291,15 +209,17 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
 
+		newConfig.MetricsNamespace = "describe_configs_fail"
+
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
+		newApi := New(newConfig, WithLogger(log))
 		require.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
 
 		// switch
-		s.api.ConsoleSvc = newConsoleSvc
+		s.api.ConsoleSvc = newApi.ConsoleSvc
 
 		// undo switch
 		defer func() {

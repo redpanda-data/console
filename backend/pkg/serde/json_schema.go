@@ -17,6 +17,7 @@ import (
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
@@ -25,7 +26,7 @@ var _ Serde = (*JSONSchemaSerde)(nil)
 
 // JSONSchemaSerde represents the serde for dealing with JSON types that have a JSON schema.
 type JSONSchemaSerde struct {
-	SchemaSvc *schema.Service
+	schemaClient schema.Client
 }
 
 // Name returns the name of the serde payload encoding.
@@ -62,7 +63,13 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
+//
+//nolint:cyclop // complex logic
 func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
+	if d.schemaClient == nil {
+		return nil, fmt.Errorf("schema registry client is not configured")
+	}
+
 	so := serdeCfg{}
 	for _, o := range opts {
 		o.apply(&so)
@@ -95,9 +102,13 @@ func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Payload
 		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
 	}
 
-	schema, err := d.SchemaSvc.GetJSONSchemaByID(ctx, so.schemaID)
+	schema, err := d.schemaClient.SchemaByID(ctx, int(so.schemaID))
 	if err != nil {
 		return nil, fmt.Errorf("getting JSON schema from registry: %w", err)
+	}
+
+	if schema.Type != sr.TypeJSON {
+		return nil, fmt.Errorf("invalid schema type for given schema id, expected %q, got %q", sr.TypeJSON.String(), schema.Type.String())
 	}
 
 	var vObj any
@@ -105,7 +116,12 @@ func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Payload
 		return nil, fmt.Errorf("error unmarshaling json object: %w", err)
 	}
 
-	if err = schema.Validate(vObj); err != nil {
+	jsonSchema, err := d.schemaClient.ParseJSONSchema(ctx, schema)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing JSON schema: %w", err)
+	}
+
+	if err = jsonSchema.Validate(vObj); err != nil {
 		return nil, fmt.Errorf("error validating json schema: %w", err)
 	}
 

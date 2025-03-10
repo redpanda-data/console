@@ -38,23 +38,8 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 			return
 		}
 
-		// Kowl business hook - only include topics the user is allowed to see
-		visibleTopics := make([]console.TopicDetails, 0, len(topicDetails))
-		for _, topic := range topicDetails {
-			// Check if logged in user is allowed to see this topic, if not - don't add it to the list of returned topics
-			canSee, restErr := api.Hooks.Authorization.CanSeeTopic(r.Context(), topic.TopicName)
-			if restErr != nil {
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
-			if canSee {
-				visibleTopics = append(visibleTopics, topic)
-			}
-		}
-
 		res := response{
-			Topics: visibleTopics,
+			Topics: topicDetails,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
@@ -66,22 +51,6 @@ func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check if logged in user (Console Business) is allowed to list reassignments
-		isAllowed, restErr := api.Hooks.Authorization.CanPatchPartitionReassignments(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !isAllowed {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to patch partition assignments"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to reassign partitions",
-				IsSilent: false,
-			})
-			return
-		}
-
 		// 2. Fetch in progress reassignments (supported by Kafka 2.4.0+)
 		topics, err := api.ConsoleSvc.ListPartitionReassignments(r.Context())
 		if err != nil {
@@ -142,23 +111,6 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// 2. Check if logged in user is allowed to reassign partitions (always true for Console OSS, but not
-		// for RP Console Business)
-		isAllowed, restErr := api.Hooks.Authorization.CanPatchPartitionReassignments(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !isAllowed {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to patch partition assignments"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to reassign partitions",
-				IsSilent: false,
-			})
 			return
 		}
 
@@ -291,22 +243,6 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// 2. Check if logged in user is allowed to alter configs (always true for Kowl, but not for Kowl Business)
-		isAllowed, restErr := api.Hooks.Authorization.CanPatchConfigs(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !isAllowed {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to alter configs"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to alter configs",
-				IsSilent: false,
-			})
 			return
 		}
 

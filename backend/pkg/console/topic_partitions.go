@@ -17,7 +17,9 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 )
@@ -68,12 +70,6 @@ type TopicPartitionMetadata struct {
 
 	// Leader is the broker leader for this partition. This will be -1 on leader / listener error.
 	Leader int32 `json:"leader"`
-
-	// LeaderEpoch, proposed in KIP-320 and introduced in Kafka 2.1.0 is the
-	// epoch of the broker leader.
-	//
-	// This field has a default of -1.
-	LeaderEpoch int32 `json:"leaderEpoch"`
 }
 
 // TopicPartitionMarks contains information about the offsets for a partition.
@@ -109,8 +105,13 @@ type TopicPartitionLogDirRequestError struct {
 // GetTopicDetails returns information about the partitions in the specified topics. Pass nil for topicNames in order
 // to describe partitions from all topics.
 func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]TopicDetails, *rest.Error) {
+	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, errorToRestError(err)
+	}
+
 	// 1. Request metadata for all topics and partitions
-	topicMetadata, restErr := s.getTopicPartitionMetadata(ctx, topicNames)
+	topicMetadata, restErr := s.getTopicPartitionMetadata(ctx, adminCl, topicNames)
 	if restErr != nil {
 		return nil, restErr
 	}
@@ -121,7 +122,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		logDirsByTopicPartition = s.describePartitionLogDirs(ctx, topicMetadata)
+		logDirsByTopicPartition = s.describePartitionLogDirs(ctx, cl, topicMetadata)
 	}()
 
 	// 3. Get partition low & high watermarks
@@ -138,12 +139,22 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		}
 	}
 
-	waterMarks, err := s.kafkaSvc.GetPartitionMarksBulk(ctx, topicWatermarkReqs)
+	startOffsets, err := adminCl.ListStartOffsets(ctx, topicNames...)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:          err,
 			Status:       http.StatusInternalServerError,
-			Message:      fmt.Sprintf("Failed to list topic partitions because partition watermarks couldn't be fetched: %v", err.Error()),
+			Message:      fmt.Sprintf("Failed to list topic start offsets: %v", err.Error()),
+			InternalLogs: nil,
+		}
+	}
+
+	endOffsets, err := adminCl.ListEndOffsets(ctx, topicNames...)
+	if err != nil {
+		return nil, &rest.Error{
+			Err:          err,
+			Status:       http.StatusInternalServerError,
+			Message:      fmt.Sprintf("Failed to list topic start offsets: %v", err.Error()),
 			InternalLogs: nil,
 		}
 	}
@@ -166,10 +177,14 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		}
 
 		// Construct partition details
-		topicMarks := waterMarks[topic.TopicName]
 		partitionsDetails := make([]TopicPartitionDetails, len(topic.Partitions))
 		for i, partition := range topic.Partitions {
-			partitionMarks := topicMarks[partition.ID]
+			startOffset, _ := startOffsets.Lookup(topic.TopicName, partition.PartitionID)
+			endOffset, _ := endOffsets.Lookup(topic.TopicName, partition.PartitionID)
+			offsetErr := errorToString(startOffset.Err)
+			if offsetErr == "" {
+				errorToString(endOffset.Err)
+			}
 
 			// Get log dirs for the current partitions. We can rest assured that the map is fully initialized and we
 			// won't run into nil panics. The describe log dirs function that constructs this nested map is supposed
@@ -184,13 +199,12 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 					OfflineReplicas: partition.OfflineReplicas,
 					InSyncReplicas:  partition.InSyncReplicas,
 					Leader:          partition.Leader,
-					LeaderEpoch:     partition.LeaderEpoch,
 				},
 				TopicPartitionMarks: &TopicPartitionMarks{
-					PartitionID:     partitionMarks.PartitionID,
-					WaterMarksError: errToString(partitionMarks.Error),
-					Low:             partitionMarks.Low,
-					High:            partitionMarks.High,
+					PartitionID:     partition.ID,
+					WaterMarksError: offsetErr,
+					Low:             startOffset.Offset,
+					High:            endOffset.Offset,
 				},
 				PartitionLogDirs: logDirs,
 			}
@@ -203,8 +217,8 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 	return topicsDetails, nil
 }
 
-func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []string) (map[string]TopicDetails, *rest.Error) {
-	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, topicNames)
+func (s *Service) getTopicPartitionMetadata(ctx context.Context, adminCl *kadm.Client, topicNames []string) (map[string]TopicDetails, *rest.Error) {
+	metadata, err := adminCl.Metadata(ctx, topicNames...)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      err,
@@ -215,62 +229,59 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 	}
 
 	overviewByTopic := make(map[string]TopicDetails)
+
 	for _, topic := range metadata.Topics {
-		topicName := *topic.Topic
 		topicOverview := TopicDetails{
-			TopicName: topicName,
+			TopicName: topic.Topic,
 		}
-		err := kerr.TypedErrorForCode(topic.ErrorCode)
-		if err != nil {
-			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topicName), zap.Error(err))
+		if topic.Err != nil {
+			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topic.Topic), zap.Error(topic.Err))
 
 			// Propagate the failed response and do not even try any further requests for that topic.
-			topicOverview.Error = fmt.Sprintf("Failed to get metadata for topic: %v", err.Error())
-			overviewByTopic[topicName] = topicOverview
+			topicOverview.Error = fmt.Sprintf("Failed to get metadata for topic: %v", topic.Err.Error())
+			overviewByTopic[topic.Topic] = topicOverview
 			continue
 		}
 
 		// Iterate all partitions
 		partitionInfo := make([]TopicPartitionDetails, len(topic.Partitions))
 		for i, partition := range topic.Partitions {
-			metadata := TopicPartitionMetadata{
+			partitionMetadata := TopicPartitionMetadata{
 				ID: partition.Partition,
 			}
-			err := kerr.TypedErrorForCode(partition.ErrorCode)
-			if err != nil {
+			if partition.Err != nil {
 				// We don't log the error because in case of offline partitions an error would be expected, but would
 				// still contain all the necessary partition information.
 
 				// Propagate the failed response and do not even try any further requests for that partition.
-				metadata.PartitionError = fmt.Sprintf("Failed to get metadata for partition: %v", err.Error())
+				partitionMetadata.PartitionError = fmt.Sprintf("Failed to get partitionMetadata for partition: %v", partition.Err.Error())
 				partitionInfo[i] = TopicPartitionDetails{
-					&metadata,
+					&partitionMetadata,
 					&TopicPartitionMarks{},
 					nil,
 				}
 				continue
 			}
-			metadata.Replicas = partition.Replicas
-			metadata.InSyncReplicas = partition.ISR
-			metadata.Replicas = partition.Replicas
-			metadata.Leader = partition.Leader
-			metadata.LeaderEpoch = partition.LeaderEpoch
-			metadata.OfflineReplicas = partition.OfflineReplicas
+			partitionMetadata.Replicas = partition.Replicas
+			partitionMetadata.InSyncReplicas = partition.ISR
+			partitionMetadata.Replicas = partition.Replicas
+			partitionMetadata.Leader = partition.Leader
+			partitionMetadata.OfflineReplicas = partition.OfflineReplicas
 			partitionInfo[i] = TopicPartitionDetails{
-				&metadata,
+				&partitionMetadata,
 				&TopicPartitionMarks{},
 				[]TopicPartitionLogDirs{},
 			}
 		}
 		topicOverview.Partitions = partitionInfo
-		overviewByTopic[topicName] = topicOverview
+		overviewByTopic[topic.Topic] = topicOverview
 	}
 
 	return overviewByTopic, nil
 }
 
 //nolint:gocognit,cyclop // Eventually this should be refactored to use the franz-go admin client
-func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata map[string]TopicDetails) map[string]map[int32][]TopicPartitionLogDirs {
+func (s *Service) describePartitionLogDirs(ctx context.Context, cl *kgo.Client, topicMetadata map[string]TopicDetails) map[string]map[int32][]TopicPartitionLogDirs {
 	// 1. Construct log dir requests and collect all replica ids by partition so that we can later check whether we
 	// successfully described all partition replicas.
 	topicLogDirReqs := make([]kmsg.DescribeLogDirsRequestTopic, 0)
@@ -300,7 +311,7 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata ma
 
 	partitionLogDirs := make(map[string]map[int32][]TopicPartitionLogDirs)
 	errorByBrokerID := make(map[int32]error)
-	responseSharded := s.kafkaSvc.DescribeLogDirs(logDirCtx, topicLogDirReqs)
+	responseSharded := s.describeLogDirs(logDirCtx, cl, topicLogDirReqs)
 
 	for _, resShard := range responseSharded {
 		brokerID := resShard.BrokerMetadata.NodeID

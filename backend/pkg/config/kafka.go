@@ -21,12 +21,6 @@ type Kafka struct {
 	ClientID string   `yaml:"clientId"`
 	RackID   string   `yaml:"rackId"`
 
-	// Schema Registry
-	Schema      Schema  `yaml:"schemaRegistry"`
-	Protobuf    Proto   `yaml:"protobuf"`
-	MessagePack Msgpack `yaml:"messagePack"`
-	Cbor        Cbor    `yaml:"cbor"`
-
 	TLS  TLS       `yaml:"tls"`
 	SASL KafkaSASL `yaml:"sasl"`
 
@@ -39,8 +33,6 @@ type Kafka struct {
 func (c *Kafka) RegisterFlags(f *flag.FlagSet) {
 	c.TLS.RegisterFlags(f)
 	c.SASL.RegisterFlags(f)
-	c.Protobuf.RegisterFlags(f)
-	c.Schema.RegisterFlags(f)
 }
 
 // Validate the Kafka config
@@ -49,24 +41,9 @@ func (c *Kafka) Validate() error {
 		return fmt.Errorf("you must specify at least one broker to connect to")
 	}
 
-	err := c.Schema.Validate()
-	if err != nil {
-		return err
-	}
-
-	err = c.Protobuf.Validate()
-	if err != nil {
-		return fmt.Errorf("failed to validate protobuf config: %w", err)
-	}
-
-	err = c.SASL.Validate()
+	err := c.SASL.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate sasl config: %w", err)
-	}
-
-	err = c.MessagePack.Validate()
-	if err != nil {
-		return fmt.Errorf("failed to validate msgpack config: %w", err)
 	}
 
 	err = c.Startup.Validate()
@@ -82,8 +59,6 @@ func (c *Kafka) SetDefaults() {
 	c.ClientID = "redpanda-console"
 
 	c.SASL.SetDefaults()
-	c.Protobuf.SetDefaults()
-	c.MessagePack.SetDefaults()
 	c.Startup.SetDefaults()
 }
 

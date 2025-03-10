@@ -19,7 +19,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 )
 
@@ -115,7 +114,7 @@ func (p *streamProgressReporter) OnMessageConsumed(size int64) {
 	p.bytesConsumed.Add(size)
 }
 
-func (p *streamProgressReporter) OnMessage(message *kafka.TopicMessage) {
+func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 	if message == nil {
 		return
 	}

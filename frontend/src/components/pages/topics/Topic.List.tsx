@@ -42,7 +42,7 @@ import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { type Topic, type TopicAction, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
+import { type Topic, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
@@ -108,7 +108,7 @@ class TopicList extends PageComponent {
 
   refreshData(force: boolean) {
     api.refreshTopics(force);
-    api.refreshClusterOverview(force);
+    api.refreshClusterOverview();
     void api.refreshClusterHealth();
   }
 
@@ -461,7 +461,6 @@ function ConfirmDeletionModal({
 }
 
 function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): JSX.Element {
-  const { topic } = props;
   const deleteButton = props.children;
 
   const wrap = (button: JSX.Element, message: string) => (
@@ -476,15 +475,16 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
 
   return (
     <>
-      {hasDeletePrivilege(topic.allowedActions)
+      {hasDeletePrivilege()
         ? deleteButton
         : wrap(deleteButton, "You don't have 'deleteTopic' permission for this topic.")}
     </>
   );
 }
 
-function hasDeletePrivilege(allowedActions?: Array<TopicAction>) {
-  return Boolean(allowedActions?.includes('all') || allowedActions?.includes('deleteTopic'));
+function hasDeletePrivilege() {
+  // TODO - we will provide ACL for this
+  return true;
 }
 
 function makeCreateTopicModal(parent: TopicList) {

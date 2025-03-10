@@ -48,7 +48,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
   }
 
   refreshData(force: boolean) {
-    api.refreshClusterOverview(force);
+    api.refreshClusterOverview();
     api.refreshBrokers(force);
     api.refreshBrokerConfig(Number(this.props.brokerId));
   }

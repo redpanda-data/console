@@ -11,7 +11,6 @@ package proto
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -32,8 +31,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/schema"
-	"github.com/redpanda-data/console/backend/pkg/schema/embed"
+	"github.com/redpanda-data/console/backend/pkg/proto/embed"
 )
 
 // RecordPropertyType determines whether the to be recorded payload is either a
@@ -57,7 +55,6 @@ type Service struct {
 	mappingsByTopic map[string]config.ProtoTopicMapping
 	gitSvc          *git.Service
 	fsSvc           *filesystem.Service
-	schemaSvc       *schema.Service
 
 	// fileDescriptorsBySchemaID are used to find the right schema type for messages at deserialization time. The type
 	// index is encoded as part of the serialized message.
@@ -71,7 +68,7 @@ type Service struct {
 }
 
 // NewService creates a new proto.Service.
-func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service) (*Service, error) {
+func NewService(cfg config.Proto, logger *zap.Logger) (*Service, error) {
 	var err error
 
 	var gitSvc *git.Service
@@ -90,28 +87,6 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		}
 	}
 
-	if cfg.SchemaRegistry.Enabled {
-		// Check whether schema service is initialized (requires schema registry configuration)
-		if schemaSvc == nil {
-			return nil, fmt.Errorf("schema registry is enabled but schema service is nil. Make sure it is configured")
-		}
-
-		// Ensure that Protobuf is supported
-		supportedTypes, err := schemaSvc.GetSchemaTypes(context.Background())
-		if err != nil {
-			return nil, fmt.Errorf("failed to get supported schema types from registry. Ensure Protobuf is supported: %w", err)
-		}
-		isProtobufSupported := false
-		for _, t := range supportedTypes {
-			if t == "PROTOBUF" {
-				isProtobufSupported = true
-			}
-		}
-		if !isProtobufSupported {
-			return nil, fmt.Errorf("protobuf is a not supported type in your schema registry")
-		}
-	}
-
 	mappingsByTopic := make(map[string]config.ProtoTopicMapping)
 	for _, mapping := range cfg.Mappings {
 		mappingsByTopic[mapping.TopicName.String()] = mapping
@@ -124,7 +99,6 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 		mappingsByTopic: mappingsByTopic,
 		gitSvc:          gitSvc,
 		fsSvc:           fsSvc,
-		schemaSvc:       schemaSvc,
 
 		// registry has to be created afterwards
 		registry: nil,
@@ -174,39 +148,12 @@ func (s *Service) Start() error {
 		s.fsSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
 	}
 
-	if s.schemaSvc != nil {
-		// Setup a refresh trigger that calls create proto registry function periodically
-		go triggerRefresh(s.cfg.SchemaRegistry.RefreshInterval, s.tryCreateProtoRegistry)
-	}
-
-	err := s.createProtoRegistry(context.Background())
+	err := s.createProtoRegistry()
 	if err != nil {
 		return fmt.Errorf("failed to create proto registry: %w", err)
 	}
 
 	return nil
-}
-
-func (s *Service) unmarshalConfluentMessage(payload []byte) ([]byte, int, error) {
-	// 1. If schema registry for protobuf is enabled, let's check if this message has been serialized utilizing
-	// Confluent's KafakProtobuf serialization format.
-	wrapper, err := s.decodeConfluentBinaryWrapper(payload)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to decode confluent wrapper from payload: %w", err)
-	}
-	schemaID := int(wrapper.SchemaID)
-
-	md, err := s.GetMessageDescriptorForSchema(int(wrapper.SchemaID), wrapper.IndexArray)
-	if err != nil {
-		return nil, schemaID, err
-	}
-
-	jsonBytes, err := s.DeserializeProtobufMessageToJSON(wrapper.ProtoPayload, md)
-	if err != nil {
-		return nil, schemaID, err
-	}
-
-	return jsonBytes, schemaID, nil
 }
 
 // DeserializeProtobufMessageToJSON deserializes the protobuf message to JSON.
@@ -304,15 +251,7 @@ func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID 
 // UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
 // so that it's human-readable in the Console frontend.
 func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, int, error) {
-	// 1. First let's try if we can deserialize this message with schema registry (if configured)
-	if s.cfg.SchemaRegistry.Enabled {
-		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload)
-		if err == nil {
-			return jsonBytes, schemaID, nil
-		}
-	}
-
-	// 2. Now let's check if we have static mappings
+	// Check if we have static mappings
 	messageDescriptor, err := s.GetMessageDescriptor(topicName, property)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get message descriptor for payload: %w", err)
@@ -324,11 +263,6 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 	}
 
 	return jsonBytes, 0, nil
-}
-
-// IsProtobufSchemaRegistryEnabled returns whether the schema registry is enabled in the configuration.
-func (s *Service) IsProtobufSchemaRegistryEnabled() bool {
-	return s.cfg.SchemaRegistry.Enabled
 }
 
 // GetMessageDescriptor tries to find the apr
@@ -451,7 +385,7 @@ func (s *Service) tryCreateProtoRegistry() {
 	// lets protect against too aggressive refresh interval
 	// or multiple concurrent triggers
 	s.sfGroup.Do("tryCreateProtoRegistry", func() (any, error) {
-		err := s.createProtoRegistry(context.Background())
+		err := s.createProtoRegistry()
 		if err != nil {
 			s.logger.Error("failed to update proto registry", zap.Error(err))
 		}
@@ -460,7 +394,7 @@ func (s *Service) tryCreateProtoRegistry() {
 	})
 }
 
-func (s *Service) createProtoRegistry(ctx context.Context) error {
+func (s *Service) createProtoRegistry() error {
 	startTime := time.Now()
 
 	files := make(map[string]filesystem.File)
@@ -483,16 +417,6 @@ func (s *Service) createProtoRegistry(ctx context.Context) error {
 	fileDescriptors, err := s.protoFileToDescriptor(files)
 	if err != nil {
 		return fmt.Errorf("failed to compile proto files to descriptors: %w", err)
-	}
-
-	// Merge proto descriptors from schema registry into the existing proto descriptors
-	if s.schemaSvc != nil {
-		descriptors, err := s.schemaSvc.GetProtoDescriptors(ctx)
-		if err != nil {
-			s.logger.Error("failed to get proto descriptors from schema registry", zap.Error(err))
-		}
-		s.setFileDescriptorsBySchemaID(descriptors)
-		s.logger.Info("fetched proto schemas from schema registry", zap.Int("fetched_subjects", len(descriptors)))
 	}
 
 	// Create registry and add types from file descriptors
@@ -618,13 +542,6 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 	}
 
 	return descriptors, nil
-}
-
-func (s *Service) setFileDescriptorsBySchemaID(descriptors map[int]*desc.FileDescriptor) {
-	s.fileDescriptorsBySchemaIDMutex.Lock()
-	defer s.fileDescriptorsBySchemaIDMutex.Unlock()
-
-	s.fileDescriptorsBySchemaID = descriptors
 }
 
 // GetFileDescriptorBySchemaID gets the file descriptor by schema ID.

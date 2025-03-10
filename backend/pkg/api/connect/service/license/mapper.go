@@ -14,8 +14,8 @@ import (
 
 	"github.com/redpanda-data/common-go/rpadmin"
 
+	"github.com/redpanda-data/console/backend/pkg/license"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // license types returned by the admin API, currently only "enterprise" and
@@ -48,14 +48,14 @@ func (mapper) adminAPILicenseInformationToProto(in rpadmin.License) *v1alpha1.Li
 	}
 }
 
-func (mapper) consoleLicenseToProto(in redpanda.License) *v1alpha1.License {
+func (mapper) consoleLicenseToProto(in license.License) *v1alpha1.License {
 	var licenseType v1alpha1.License_Type
 	switch in.Type {
-	case redpanda.LicenseTypeOpenSource:
+	case license.TypeOpenSource:
 		licenseType = v1alpha1.License_TYPE_COMMUNITY
-	case redpanda.LicenseTypeEnterprise:
+	case license.TypeEnterprise:
 		licenseType = v1alpha1.License_TYPE_ENTERPRISE
-	case redpanda.LicenseTypeFreeTrial:
+	case license.TypeFreeTrial:
 		licenseType = v1alpha1.License_TYPE_TRIAL
 	default:
 		licenseType = v1alpha1.License_TYPE_COMMUNITY

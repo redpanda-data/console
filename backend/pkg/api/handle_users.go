@@ -29,25 +29,18 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 		IsComplete bool     `json:"isComplete"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check if logged-in user is allowed to list Kafka users
-		canList, restErr := api.Hooks.Authorization.CanListKafkaUsers(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canList {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to list Kafka users"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to list Kafka users.",
-				IsSilent: false,
+		if api.RedpandaClientProvider != nil {
+			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:     err,
+					Status:  http.StatusServiceUnavailable,
+					Message: fmt.Sprintf("failed to retrieve redpanda client: %v", err.Error()),
+				})
+				return
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
 
-		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			users, err := api.RedpandaSvc.ListUsers(r.Context())
+			users, err := redpandaCl.ListUsers(r.Context())
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,
@@ -56,15 +49,9 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 				})
 				return
 			}
-			filteredUsers := make([]string, 0, len(users))
-			for _, user := range users {
-				if api.Hooks.Authorization.IsProtectedKafkaUser(user) {
-					continue
-				}
-				filteredUsers = append(filteredUsers, user)
-			}
+
 			rest.SendResponse(w, r, api.Logger, http.StatusOK, &response{
-				Users:      filteredUsers,
+				Users:      users,
 				IsComplete: true,
 			})
 			return
@@ -110,38 +97,18 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged-in user is allowed to create Kafka users
-		canCreate, restErr := api.Hooks.Authorization.CanCreateKafkaUsers(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canCreate {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to create Kafka users"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to create Kafka users.",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// 3. Check if targeted user is a protected user
-		if api.Hooks.Authorization.IsProtectedKafkaUser(req.Username) {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester tried to create a protected Kafka user"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to create a Kafka user with this name",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
 		// 4. Create user
-		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			err := api.RedpandaSvc.CreateUser(r.Context(), req.Username, req.Password, req.Mechanism)
+		if api.RedpandaClientProvider != nil {
+			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:     err,
+					Status:  http.StatusServiceUnavailable,
+					Message: fmt.Sprintf("failed to retrieve redpanda client: %v", err.Error()),
+				})
+				return
+			}
+			err = redpandaCl.CreateUser(r.Context(), req.Username, req.Password, req.Mechanism)
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,
@@ -175,38 +142,19 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged-in user is allowed to delete Kafka users
-		canDelete, restErr := api.Hooks.Authorization.CanDeleteKafkaUsers(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !canDelete {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to delete Kafka users"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to delete Kafka users.",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// 3. Check if targeted user is a protected user
-		if api.Hooks.Authorization.IsProtectedKafkaUser(principalID) {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester tried to delete a protected Kafka user"),
-				Status:   http.StatusForbidden,
-				Message:  "You are not allowed to delete this protected Kafka user",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
 		// 4. Delete user
-		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			err := api.RedpandaSvc.DeleteUser(r.Context(), principalID)
+		if api.RedpandaClientProvider != nil {
+			redpandaCl, err := api.RedpandaClientProvider.GetRedpandaAPIClient(r.Context())
+			if err != nil {
+				rest.SendRESTError(w, r, api.Logger, &rest.Error{
+					Err:     err,
+					Status:  http.StatusServiceUnavailable,
+					Message: fmt.Sprintf("failed to retrieve redpanda client: %v", err.Error()),
+				})
+				return
+			}
+
+			err = redpandaCl.DeleteUser(r.Context(), principalID)
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,

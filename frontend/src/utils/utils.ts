@@ -813,3 +813,47 @@ export function decodeURIComponentPercents(encodedStr: string): string {
   const encoded = encodedStr.replace(/﹪/g, '%');
   return decodeURIComponent(encoded);
 }
+
+/**
+ * Extracts the OIDC subject from an error message when retrieving permissions.
+ *
+ * This function parses the error object to find the `subject` associated with the `OIDC` login type.
+ * It iterates through the error details and looks for the `login_type` set to `"OIDC"`,
+ * returning the corresponding `subject` if present.
+ *
+ * @param error - The error object containing details about the permission error.
+ * @returns The OIDC subject as a string if found, otherwise `null`.
+ *
+ * @example
+ * ```typescript
+ * const error: Error = {
+ *   code: "permission_denied",
+ *   message: "you are not authorized to call this endpoint",
+ *   details: [
+ *     {
+ *       type: "google.rpc.ErrorInfo",
+ *       value: "some_encoded_value",
+ *       debug: {
+ *         reason: "REASON_PERMISSION_DENIED",
+ *         domain: "redpanda.com/dataplane",
+ *         metadata: {
+ *           login_type: "OIDC",
+ *           subject: "1231231232131",
+ *         },
+ *       },
+ *     },
+ *   ],
+ * };
+ *
+ * const subject = getOidcSubject(error);
+ * console.log(subject); // Output: "1231231232131"
+ * ```
+ */
+export function getOidcSubject(error: any): string | null {
+  for (const detail of error.details) {
+    if (detail.debug?.metadata?.login_type === 'OIDC' && detail.debug.metadata.subject) {
+      return detail.debug.metadata.subject;
+    }
+  }
+  return null; // Return null if no OIDC subject is found
+}

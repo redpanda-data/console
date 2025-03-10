@@ -12,6 +12,7 @@
 import { Avatar, Button, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
 import { UserPreferencesDialog } from './UserPreferences';
@@ -23,15 +24,21 @@ export const UserProfile = observer(() => {
     void api.refreshUserData();
   }, []);
 
-  const userName = api.userData?.user?.meta?.name ?? 'null';
+  const userName = api.userData?.displayName ?? 'null';
 
   if (!AppFeatures.SINGLE_SIGN_ON) {
     return null;
   }
-  if (!api.userData || !api.userData.user || !api.userData.user.meta.name) {
+
+  if (!api.userData) {
     return null;
   }
-  const user = api.userData.user;
+
+  if (api.userData.authenticationMethod === AuthenticationMethod.NONE) {
+    return null;
+  }
+
+  const user = api.userData;
 
   return (
     <>
@@ -39,10 +46,10 @@ export const UserProfile = observer(() => {
         <PopoverTrigger>
           <div className="profile">
             <div className="avatar">
-              <Avatar name={user.meta.name} src={user.meta.avatarUrl} size="sm" />
+              <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
             </div>
             <div className="text">
-              <div className="userName">{user.meta.name}</div>
+              <div className="userName">{user.displayName}</div>
               <div className="prefText">Preferences</div>
             </div>
           </div>

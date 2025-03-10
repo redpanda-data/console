@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 // State of a connector or one of its tasks, as described in the [Kafka Connect documentation](https://kafka.apache.org/documentation.html#connect_administration). Takes into account not just the state of the connector instance itself, but also the tasks within the connector.
 enum ConnectorHolisticState {
@@ -541,6 +542,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // GetConnectCluster implements the get cluster info method, exposes a Kafka
@@ -573,6 +578,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // ListConnectors implements the list connectors method, exposes a Kafka
@@ -592,6 +601,10 @@ service KafkaConnectService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
     };
   }
 
@@ -617,6 +630,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // RestartConnector implements the restart connector method, exposes a Kafka
@@ -637,6 +654,10 @@ service KafkaConnectService {
           schema: {}
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
     };
   }
 
@@ -660,6 +681,10 @@ service KafkaConnectService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
     };
   }
 
@@ -687,6 +712,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // PauseConnector implements the pause connector method, exposes a Kafka
@@ -705,6 +734,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // ResumeConnector implements the resume connector method, exposes a Kafka
@@ -722,6 +755,10 @@ service KafkaConnectService {
           schema: {}
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
     };
   }
 
@@ -742,6 +779,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // DeleteConnector implements the delete connector method, exposes a Kafka
@@ -758,6 +799,10 @@ service KafkaConnectService {
           schema: {}
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
     };
   }
 
@@ -792,6 +837,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // GetConnectorConfig implements the get connector configuration method, expose a kafka connect equivalent REST endpoint
@@ -804,6 +853,10 @@ service KafkaConnectService {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connector configuration"
       description: "Get the configuration for the connector."
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
     };
   }
 
@@ -824,6 +877,10 @@ service KafkaConnectService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA_CONNECT
+    };
   }
 
   // ResetConnectorTopics implements the reset connector topics method, expose a kafka connect equivalent REST endpoint
@@ -841,6 +898,10 @@ service KafkaConnectService {
           schema: {}
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_KAFKA_CONNECT
     };
   }
 }

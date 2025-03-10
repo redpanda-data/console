@@ -25,38 +25,38 @@ import (
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 var _ dataplanev1alpha2connect.TransformServiceHandler = (*Service)(nil)
 
 // Service is the implementation of the transform service.
 type Service struct {
-	cfg         *config.Config
-	logger      *zap.Logger
-	redpandaSvc *redpanda.Service
-	validator   *protovalidate.Validator
-	mapper      mapper
-	errorWriter *connect.ErrorWriter
-	defaulter   defaulter
+	cfg                    *config.Config
+	logger                 *zap.Logger
+	validator              *protovalidate.Validator
+	redpandaClientProvider redpandafactory.ClientFactory
+	mapper                 mapper
+	errorWriter            *connect.ErrorWriter
+	defaulter              defaulter
 }
 
 // NewService creates a new transform service handler.
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
-	redpandaSvc *redpanda.Service,
 	protoValidator *protovalidate.Validator,
+	redpandaClientProvider redpandafactory.ClientFactory,
 ) *Service {
 	return &Service{
-		cfg:         cfg,
-		logger:      logger,
-		redpandaSvc: redpandaSvc,
-		validator:   protoValidator,
-		mapper:      mapper{},
-		errorWriter: connect.NewErrorWriter(),
-		defaulter:   defaulter{},
+		cfg:                    cfg,
+		logger:                 logger,
+		validator:              protoValidator,
+		redpandaClientProvider: redpandaClientProvider,
+		mapper:                 mapper{},
+		errorWriter:            connect.NewErrorWriter(),
+		defaulter:              defaulter{},
 	}
 }
 
@@ -73,13 +73,15 @@ func (s *Service) writeError(w http.ResponseWriter, r *http.Request, err error) 
 
 // ListTransforms lists all the transforms matching the filter deployed to Redpanda
 func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha2.ListTransformsRequest]) (*connect.Response[v1alpha2.ListTransformsResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	// Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	s.defaulter.applyListTransformsRequest(c.Msg)
 
-	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
+	transforms, err := redpandaCl.ListWasmTransforms(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -128,11 +130,13 @@ func (s *Service) ListTransforms(ctx context.Context, c *connect.Request[v1alpha
 
 // GetTransform gets a transform by name
 func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha2.GetTransformRequest]) (*connect.Response[v1alpha2.GetTransformResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	// Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
+	transforms, err := redpandaCl.ListWasmTransforms(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -163,11 +167,13 @@ func (s *Service) GetTransform(ctx context.Context, c *connect.Request[v1alpha2.
 
 // DeleteTransform deletes a transform by name
 func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alpha2.DeleteTransformRequest]) (*connect.Response[v1alpha2.DeleteTransformResponse], error) {
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
+	// Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	transforms, err := s.redpandaSvc.ListWasmTransforms(ctx)
+	transforms, err := redpandaCl.ListWasmTransforms(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -190,7 +196,7 @@ func (s *Service) DeleteTransform(ctx context.Context, c *connect.Request[v1alph
 		)
 	}
 
-	if err := s.redpandaSvc.DeleteWasmTransform(ctx, transform.Name); err != nil {
+	if err := redpandaCl.DeleteWasmTransform(ctx, transform.Name); err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,

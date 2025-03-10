@@ -19,6 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const unknownVersion = "unknown"
+
 // ClusterInfo describes the brokers in a cluster
 type ClusterInfo struct {
 	ControllerID int32     `json:"controllerId"`
@@ -37,12 +39,17 @@ type Broker struct {
 
 // GetClusterInfo returns generic information about all brokers in a Kafka cluster and returns them
 func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	eg, egCtx := errgroup.WithContext(ctx)
 
 	var logDirsByBroker map[int32]LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
 	var configsByBrokerID map[int32]BrokerConfig
-	kafkaVersion := "unknown"
+	kafkaVersion := unknownVersion
 
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
 	// times in case of a single broker being down.
@@ -50,13 +57,14 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	defer cancel()
 
 	eg.Go(func() error {
-		logDirsByBroker = s.logDirsByBroker(childCtx)
+		logDirsByBroker = s.logDirsByBroker(childCtx, cl)
 		return nil
 	})
 
 	eg.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.GetMetadataTopics(childCtx, nil)
+		req := kmsg.NewMetadataRequest()
+		metadata, err = req.RequestWith(childCtx, cl)
 		if err != nil {
 			return err
 		}
@@ -67,9 +75,17 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		var err error
 
 		// Try to get cluster version via Redpanda Admin API.
-		if s.redpandaSvc != nil {
-			kafkaVersion, err = s.redpandaSvc.GetClusterVersion(childCtx)
-			if err == nil {
+		if s.cfg.Redpanda.AdminAPI.Enabled {
+			adminAPICl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+			if err != nil {
+				s.logger.Warn("failed to retrieve redpanda admin api client to retrieve cluster version", zap.Error(err))
+				return nil
+			}
+
+			kafkaVersion, err = s.redpandaClusterVersion(childCtx, adminAPICl)
+			if err != nil { //nolint:revive // error check first
+				s.logger.Warn("failed to retrieve cluster version via redpanda admin api", zap.Error(err))
+			} else {
 				return nil
 			}
 		}
@@ -77,7 +93,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		// If Redpanda Admin API failed or not available, try to get cluster version via Kafka API.
 		kafkaVersion, err = s.GetKafkaVersion(childCtx)
 		if err != nil {
-			s.logger.Warn("failed to request kafka version", zap.Error(err))
+			s.logger.Warn("failed to request kafka version via Kafka API", zap.Error(err))
 		}
 
 		return nil

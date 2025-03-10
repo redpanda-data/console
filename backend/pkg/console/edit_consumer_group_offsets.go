@@ -18,8 +18,6 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // EditConsumerGroupOffsetsResponse is the sum of all brokers' response shards for
@@ -47,9 +45,14 @@ type EditConsumerGroupOffsetsResponseTopicPartition struct {
 //
 //nolint:cyclop // Eventually this should be refactored to use the franz-go admin client
 func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, *rest.Error) {
+	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, errorToRestError(err)
+	}
+
 	// 0. Check if consumer group is empty, otherwise we can't edit the group offsets and want to provide a proper
 	// error message for the frontend.
-	describedGroup, err := s.kafkaSvc.DescribeConsumerGroup(ctx, groupID)
+	describedGroups, err := adminCl.DescribeGroups(ctx, groupID)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:     fmt.Errorf("failed to check group state: %w", err),
@@ -57,6 +60,15 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
 		}
 	}
+	describedGroup, exists := describedGroups[groupID]
+	if !exists {
+		return nil, &rest.Error{
+			Err:     fmt.Errorf("failed to check group state, group does not exist in response: %w", err),
+			Status:  http.StatusServiceUnavailable,
+			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
+		}
+	}
+
 	if !strings.EqualFold(describedGroup.State, "empty") {
 		return &EditConsumerGroupOffsetsResponse{
 			Error:  fmt.Sprintf("Consumer group is still active and therefore can't be edited. Current Group State is: %v", describedGroup.State),
@@ -67,59 +79,66 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 	// 1. The provided topic partitions might use special offsets (-2, -1) that need to be resolved to the earliest
 	// or oldest offset before sending the edit group request to Kafka.
 	topicPartitions := make(map[string][]int32)
-	for _, topic := range topics {
+	topicNames := make([]string, len(topics))
+	for i, topic := range topics {
+		topicNames[i] = topic.Topic
 		for _, partition := range topic.Partitions {
 			topicPartitions[topic.Topic] = append(topicPartitions[topic.Topic], partition.Partition)
 		}
 	}
-	waterMarks, err := s.kafkaSvc.GetPartitionMarksBulk(ctx, topicPartitions)
+
+	startOffsets, err := adminCl.ListStartOffsets(ctx, topicNames...)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
-			Message:      fmt.Sprintf("Failed to list topic partitions because partition watermarks couldn't be fetched: %v", err.Error()),
+			Message:      fmt.Sprintf("Failed to list partition start offsets: %v", err.Error()),
+			InternalLogs: nil,
+		}
+	}
+	endOffsets, err := adminCl.ListEndOffsets(ctx, topicNames...)
+	if err != nil {
+		return nil, &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Failed to list partition end offsets: %v", err.Error()),
 			InternalLogs: nil,
 		}
 	}
 
-	// Because topics is immutable and we want to replace special offsets (earliest/oldest) with the actual watermarks
-	// we are effectively rebuilding the offset commit request slice.
+	// Because topics is immutable and we want to replace special offsets
+	// (earliest/oldest) with the actual watermarks we are effectively rebuilding
+	// the offset commit request slice.
 	substitutedTopics := make([]kmsg.OffsetCommitRequestTopic, len(topics))
 	for i, topic := range topics {
-		watermark, topicMarkExists := waterMarks[topic.Topic]
-
 		substitutedPartitions := make([]kmsg.OffsetCommitRequestTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
-			if partition.Offset >= 0 {
-				substitutedPartitions[j] = partition
-				continue
-			}
-
-			// Let's replace the special offset (earliest / oldest) with the actual watermark
-			if !topicMarkExists {
-				return nil, &rest.Error{
-					Err:          fmt.Errorf("watermarks for topic '%v' are missing", topic.Topic),
-					Status:       http.StatusServiceUnavailable,
-					Message:      "Can't substitute earliest/oldest offsets due to missing topic watermarks",
-					InternalLogs: nil,
+			switch partition.Partition {
+			case TimestampLatest:
+				offset, exists := endOffsets.Lookup(topic.Topic, partition.Partition)
+				if !exists {
+					return nil, &rest.Error{
+						Err:          fmt.Errorf("end offset for topic '%v' and partition %d is missing", topic.Topic, partition.Partition),
+						Status:       http.StatusServiceUnavailable,
+						Message:      "Can't substitute end offset due to missing partition watermarks",
+						InternalLogs: nil,
+					}
 				}
-			}
-
-			partitionMark, exists := watermark[partition.Partition]
-			if !exists {
-				return nil, &rest.Error{
-					Err:          fmt.Errorf("watermarks for topic '%v', partition '%v' are missing", topic.Topic, partition.Partition),
-					Status:       http.StatusServiceUnavailable,
-					Message:      "Can't substitute earliest/oldest offsets due to missing partition watermarks",
-					InternalLogs: nil,
+				partition.Offset = offset.Offset
+			case TimestampEarliest:
+				offset, exists := startOffsets.Lookup(topic.Topic, partition.Partition)
+				if !exists {
+					return nil, &rest.Error{
+						Err:          fmt.Errorf("start offset for topic '%v' and partition %d is missing", topic.Topic, partition.Partition),
+						Status:       http.StatusServiceUnavailable,
+						Message:      "Can't substitute start offset due to missing partition watermarks",
+						InternalLogs: nil,
+					}
 				}
-			}
-
-			switch partition.Offset {
-			case kafka.TimestampLatest:
-				partition.Offset = partitionMark.High
-			case kafka.TimestampEarliest:
-				partition.Offset = partitionMark.Low
+				partition.Offset = offset.Offset
+			default:
+				// Nothing to edit, the provided offset is an exact match, and we don't need
+				// to edit the oldest or earliest offset into it
 			}
 			substitutedPartitions[j] = partition
 		}
@@ -129,7 +148,10 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 		}
 	}
 
-	commitResponse, err := s.kafkaSvc.EditConsumerGroupOffsets(ctx, groupID, substitutedTopics)
+	req := kmsg.NewOffsetCommitRequest()
+	req.Group = groupID
+	req.Topics = substitutedTopics
+	commitResponse, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:     err,

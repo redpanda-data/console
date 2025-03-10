@@ -11,16 +11,15 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"go.uber.org/zap"
-
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // ConsumerGroupOverview for a Kafka Consumer Group
@@ -32,9 +31,6 @@ type ConsumerGroupOverview struct {
 	Members       []GroupMemberDescription `json:"members"`
 	CoordinatorID int32                    `json:"coordinatorId"`
 	TopicOffsets  []GroupTopicOffsets      `json:"topicOffsets"`
-
-	// AllowedActions define the Kowl Business permissions on this specific group
-	AllowedActions []string `json:"allowedActions"`
 }
 
 // GroupMemberDescription is a member (e. g. connected host) of a Consumer Group
@@ -54,7 +50,11 @@ type GroupMemberAssignment struct {
 // GetConsumerGroupsOverview returns a ConsumerGroupOverview for all available consumer groups
 // Pass nil for groupIDs if you want to fetch all available groups.
 func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []string) ([]ConsumerGroupOverview, *rest.Error) {
-	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, errorToRestError(err)
+	}
+	groups, err := adminCl.ListGroups(ctx)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      fmt.Errorf("failed to list consumer groups: %w", err),
@@ -65,12 +65,12 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 	}
 
 	if groupIDs == nil {
-		groupIDs = groups.GetGroupIDs()
+		groupIDs = groups.Groups()
 	} else {
 		// Not existent consumer groups will be reported as "dead" by Kafka. We would like to report them as 404 instead.
 		// Hence we'll check if the passed group IDs exist in the response
 		for _, id := range groupIDs {
-			_, exists := find(groups.GetGroupIDs(), id)
+			exists := slices.Contains(groupIDs, id)
 			if !exists {
 				return nil, &rest.Error{
 					Err:      fmt.Errorf("requested group id '%v' does not exist in Kafka cluster", id),
@@ -82,17 +82,25 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 		}
 	}
 
-	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groupIDs)
+	describedGroups, err := adminCl.DescribeGroups(ctx, groupIDs...)
 	if err != nil {
-		return nil, &rest.Error{
-			Err:      fmt.Errorf("failed to describe consumer groups: %w", err),
-			Status:   http.StatusNotFound,
-			Message:  fmt.Sprintf("Failed to describe consumer groups: %v", err.Error()),
-			IsSilent: false,
+		var se *kadm.ShardErrors
+		if !errors.As(err, &se) {
+			return nil, errorToRestError(err)
+		}
+
+		if se.AllFailed {
+			return nil, errorToRestError(err)
+		}
+		s.logger.Warn("failed to describe consumer groups from some shards", zap.Int("failed_shards", len(se.Errs)))
+		for _, shardErr := range se.Errs {
+			s.logger.Warn("shard error for describing consumer groups",
+				zap.Int32("broker_id", shardErr.Broker.NodeID),
+				zap.Error(shardErr.Err))
 		}
 	}
 
-	groupLags, err := s.getConsumerGroupOffsets(ctx, describedGroupsSharded.GetGroupIDs())
+	groupLags, err := s.getConsumerGroupOffsets(ctx, adminCl, describedGroups.Names())
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      fmt.Errorf("failed to get consumer group lags: %w", err),
@@ -102,50 +110,37 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 		}
 	}
 
-	res := s.convertKgoGroupDescriptions(describedGroupsSharded, groupLags)
+	res := s.convertKgoGroupDescriptions(describedGroups, groupLags)
 	sort.Slice(res, func(i, j int) bool { return res[i].GroupID < res[j].GroupID })
 
 	return res, nil
 }
 
-func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeConsumerGroupsResponseSharded, offsets map[string][]GroupTopicOffsets) []ConsumerGroupOverview {
+func (s *Service) convertKgoGroupDescriptions(describedGroups kadm.DescribedGroups, offsets map[string][]GroupTopicOffsets) []ConsumerGroupOverview {
 	result := make([]ConsumerGroupOverview, 0)
-	for _, response := range describedGroups.Groups {
-		if response.Error != nil {
-			s.logger.Warn("failed to describe consumer groups from one group coordinator",
-				zap.Error(response.Error),
-				zap.Int32("coordinator_id", response.BrokerMetadata.NodeID),
-			)
+	for _, group := range describedGroups.Sorted() {
+		if group.Err != nil {
+			s.logger.Warn("failed to describe consumer group",
+				zap.String("group_id", group.Group),
+				zap.Int32("coordinator_id", group.Coordinator.NodeID))
 			continue
 		}
-		coordinatorID := response.BrokerMetadata.NodeID
 
-		for _, d := range response.Groups.Groups {
-			err := kerr.ErrorForCode(d.ErrorCode)
-			if err != nil {
-				s.logger.Warn("failed to describe consumer group, inner kafka error",
-					zap.Error(err),
-					zap.String("group_id", d.Group),
-				)
-				continue
-			}
-
-			result = append(result, ConsumerGroupOverview{
-				GroupID:       d.Group,
-				State:         d.State,
-				ProtocolType:  d.ProtocolType,
-				Protocol:      d.Protocol,
-				Members:       s.convertGroupMembers(d.Members),
-				CoordinatorID: coordinatorID,
-				TopicOffsets:  offsets[d.Group],
-			})
-		}
+		result = append(result, ConsumerGroupOverview{
+			GroupID:       group.Group,
+			State:         group.State,
+			ProtocolType:  group.ProtocolType,
+			Protocol:      group.Protocol,
+			Members:       s.convertGroupMembers(group.Members),
+			CoordinatorID: group.Coordinator.NodeID,
+			TopicOffsets:  offsets[group.Group],
+		})
 	}
 
 	return result
 }
 
-func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroupMember) []GroupMemberDescription {
+func (*Service) convertGroupMembers(members []kadm.DescribedGroupMember) []GroupMemberDescription {
 	response := make([]GroupMemberDescription, 0)
 
 	for _, m := range members {
@@ -159,22 +154,14 @@ func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroup
 
 		// Try to decode Group member assignments
 		convertedAssignments := make([]GroupMemberAssignment, 0)
-		memberAssignments := kmsg.ConsumerMemberAssignment{}
-		err := memberAssignments.ReadFrom(m.MemberAssignment)
-		if err != nil {
-			s.logger.Debug("failed to decode member assignments", zap.String("client_id", m.ClientID), zap.Error(err))
-		} else {
-			for _, topic := range memberAssignments.Topics {
-				partitionIDs := topic.Partitions
-				if partitionIDs == nil {
-					partitionIDs = make([]int32, 0)
-				}
-				sort.Slice(partitionIDs, func(i, j int) bool { return partitionIDs[i] < partitionIDs[j] })
-				a := GroupMemberAssignment{
+
+		consumerAssignment, ok := m.Assigned.AsConsumer()
+		if ok {
+			for _, topic := range consumerAssignment.Topics {
+				convertedAssignments = append(convertedAssignments, GroupMemberAssignment{
 					TopicName:    topic.Topic,
-					PartitionIDs: partitionIDs,
-				}
-				convertedAssignments = append(convertedAssignments, a)
+					PartitionIDs: topic.Partitions,
+				})
 			}
 		}
 

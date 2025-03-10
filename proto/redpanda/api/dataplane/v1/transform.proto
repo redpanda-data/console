@@ -6,6 +6,7 @@ import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 message TransformMetadata {
   message EnvironmentVariable {
@@ -197,6 +198,10 @@ service TransformService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
   }
 
   rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
@@ -223,6 +228,10 @@ service TransformService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
   }
 
   rpc DeleteTransform(DeleteTransformRequest) returns (DeleteTransformResponse) {
@@ -246,6 +255,10 @@ service TransformService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_ADMIN
     };
   }
 }

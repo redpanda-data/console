@@ -23,14 +23,17 @@ type TopicConsumerGroup struct {
 // ListTopicConsumers returns all consumer group names along with their accumulated lag across all partitions which
 // have at least one active offset on the given topic.
 func (s *Service) ListTopicConsumers(ctx context.Context, topicName string) ([]*TopicConsumerGroup, error) {
-	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, err := adminCl.ListGroups(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
 	}
 
-	groupIDs := groups.GetGroupIDs()
-
-	offsetsByGroup, err := s.getConsumerGroupOffsets(ctx, groupIDs)
+	offsetsByGroup, err := s.getConsumerGroupOffsets(ctx, adminCl, groups.Groups())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get consumer group offsetsByGroup: %w", err)
 	}

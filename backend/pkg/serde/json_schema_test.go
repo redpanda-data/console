@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
@@ -190,7 +190,8 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
 			resp := map[string]any{
-				"schema": schemaStr,
+				"schema":     schemaStr,
+				"schemaType": "JSON",
 			}
 
 			enc := json.NewEncoder(w)
@@ -203,7 +204,8 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
 			resp := map[string]any{
-				"schema": schemaStr2,
+				"schema":     schemaStr2,
+				"schemaType": "JSON",
 			}
 
 			enc := json.NewEncoder(w)
@@ -264,13 +266,16 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	logger, err := zap.NewProduction()
+	singleClientProvider, err := schemafactory.NewSingleClientProvider(&config.Config{
+		SchemaRegistry: config.Schema{
+			Enabled: true,
+			URLs:    []string{ts.URL},
+		},
+	})
 	require.NoError(t, err)
-
-	schemaSvc, err := schema.NewService(config.Schema{
-		Enabled: true,
-		URLs:    []string{ts.URL},
-	}, logger)
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
+		return "single/", nil
+	})
 	require.NoError(t, err)
 
 	type Dimensions struct {
@@ -288,7 +293,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	}
 
 	t.Run("no schema id", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue)
 		require.Error(t, err)
@@ -297,16 +302,16 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("invalid schema id", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(5567))
 		require.Error(t, err)
-		assert.Equal(t, "getting JSON schema from registry: failed to get schema from registry: get schema by id request failed: Status code 404", err.Error())
+		assert.Contains(t, err.Error(), "getting JSON schema from registry")
 		assert.Nil(t, b)
 	})
 
 	t.Run("dynamic validation error", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		actualData, err := serde.SerializeObject(context.Background(), ProductRecord{ProductID: 11, ProductName: "foo"}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -315,7 +320,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("dynamic", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		var srSerde sr.Serde
 		srSerde.Register(
@@ -339,7 +344,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string json", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		var srSerde sr.Serde
 		srSerde.Register(
@@ -363,7 +368,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string json extra properties invalid", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		actualData, err := serde.SerializeObject(context.Background(), `{"productId":11,"productName":"foo","price":10.25,"another":{"objectId":1234}}`, PayloadTypeValue, WithSchemaID(1000))
 		assert.Error(t, err)
@@ -373,7 +378,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string json extra properties valid", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		type ProductRecordAdd struct {
 			ProductRecord
@@ -414,7 +419,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string invalid json", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), `{"productId":11,"price":10.25}`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -423,7 +428,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string empty", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), ``, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -432,7 +437,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string trim", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), "\r\n", PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -441,7 +446,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("string invalid format", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), `foo`, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -450,7 +455,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte json", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		var srSerde sr.Serde
 		srSerde.Register(
@@ -474,7 +479,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte invalid json", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), []byte(`{"productId":"11","productName":"foo","price":10.25}`), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -483,7 +488,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte empty", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), []byte{}, PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -492,7 +497,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte trim", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), []byte("\r\n"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)
@@ -501,7 +506,7 @@ func TestJsonSchemaSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("byte invalid format", func(t *testing.T) {
-		serde := JSONSchemaSerde{SchemaSvc: schemaSvc}
+		serde := JSONSchemaSerde{schemaClient: schemaCachedClient}
 
 		b, err := serde.SerializeObject(context.Background(), []byte("foo"), PayloadTypeValue, WithSchemaID(1000))
 		require.Error(t, err)

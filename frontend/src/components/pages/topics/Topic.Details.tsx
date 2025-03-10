@@ -145,12 +145,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
   refreshData(force: boolean) {
     // must know what distribution we're working with; redpanda has some differences
-    api.refreshClusterOverview(force);
+    api.refreshClusterOverview();
 
     // there is no single endpoint to refresh a single topic
     api.refreshTopics(force);
-
-    api.refreshTopicPermissions(this.props.topicName, force);
 
     // consumers are lazy loaded because they're (relatively) expensive
     if (uiSettings.topicDetailsActiveTabKey === 'consumers') api.refreshTopicConsumers(this.props.topicName, force);

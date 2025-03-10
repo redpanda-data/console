@@ -11,15 +11,18 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
@@ -55,10 +58,70 @@ type ListMessageRequest struct {
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
 type ListMessageResponse struct {
-	ElapsedMs       float64               `json:"elapsedMs"`
-	FetchedMessages int                   `json:"fetchedMessages"`
-	IsCancelled     bool                  `json:"isCancelled"`
-	Messages        []*kafka.TopicMessage `json:"messages"`
+	ElapsedMs       float64         `json:"elapsedMs"`
+	FetchedMessages int             `json:"fetchedMessages"`
+	IsCancelled     bool            `json:"isCancelled"`
+	Messages        []*TopicMessage `json:"messages"`
+}
+
+//go:generate mockgen -destination=./list_messages_mocks_test.go -package=console github.com/redpanda-data/console/backend/pkg/console IListMessagesProgress
+
+// IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
+type IListMessagesProgress interface {
+	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
+	OnMessage(message *TopicMessage)
+	OnMessageConsumed(size int64)
+	OnComplete(elapsedMs int64, isCancelled bool)
+	OnError(msg string)
+}
+
+// TopicMessage represents a single message from a given Kafka topic/partition
+type TopicMessage struct {
+	PartitionID int32 `json:"partitionID"`
+	Offset      int64 `json:"offset"`
+	Timestamp   int64 `json:"timestamp"`
+
+	Compression     string `json:"compression"`
+	IsTransactional bool   `json:"isTransactional"`
+
+	Headers []MessageHeader      `json:"headers"`
+	Key     *serde.RecordPayload `json:"key"`
+	Value   *serde.RecordPayload `json:"value"`
+
+	// Below properties are used for the internal communication via Go channels
+	IsMessageOk  bool   `json:"-"`
+	ErrorMessage string `json:"-"`
+	MessageSize  int64  `json:"-"`
+}
+
+// MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
+// a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
+type MessageHeader serde.RecordHeader
+
+// PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
+type PartitionConsumeRequest struct {
+	PartitionID   int32
+	IsDrained     bool // True if the partition was not able to return as many messages as desired here
+	LowWaterMark  int64
+	HighWaterMark int64
+
+	StartOffset     int64
+	EndOffset       int64
+	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the Consumer will stop.
+}
+
+// TopicConsumeRequest defines all request parameters that are sent by the Console frontend,
+// for consuming messages from a Kafka topic.
+type TopicConsumeRequest struct {
+	TopicName             string
+	MaxMessageCount       int
+	Partitions            map[int32]*PartitionConsumeRequest
+	FilterInterpreterCode string
+	Troubleshoot          bool
+	IncludeRawPayload     bool
+	IgnoreMaxSizeLimit    bool
+	KeyDeserializer       serde.PayloadEncoding
+	ValueDeserializer     serde.PayloadEncoding
 }
 
 // ListMessages processes a list message request as sent from the Frontend. This function is responsible (mostly
@@ -69,24 +132,37 @@ type ListMessageResponse struct {
 // 4. Constructing a TopicConsumeRequest that is used by the Kafka Service to consume the right Kafka messages
 // 5. Start consume request via the Kafka Service
 // 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
-func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error {
+//
+//nolint:cyclop // complex logic
+func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
+	cl, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return err
+	}
+
 	start := time.Now()
 
 	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the requested topic exists at all)
-	metadata, restErr := s.kafkaSvc.GetSingleTopicMetadata(ctx, listReq.TopicName)
-	if restErr != nil {
-		return fmt.Errorf("failed to get partitions: %w", restErr.Err)
+	metadata, err := adminCl.Metadata(ctx, listReq.TopicName)
+	if err != nil {
+		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, err)
+	}
+	topicMetadata, exist := metadata.Topics[listReq.TopicName]
+	if !exist {
+		return fmt.Errorf("metadata response did not contain requested topic")
+	}
+	if topicMetadata.Err != nil {
+		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, topicMetadata.Err)
 	}
 
-	partitionByID := make(map[int32]kmsg.MetadataResponseTopicPartition)
+	partitionByID := make(map[int32]kadm.PartitionDetail)
 	onlinePartitionIDs := make([]int32, 0)
 	offlinePartitionIDs := make([]int32, 0)
-	for _, partition := range metadata.Partitions {
+	for _, partition := range topicMetadata.Partitions {
 		partitionByID[partition.Partition] = partition
 
-		err := kerr.TypedErrorForCode(partition.ErrorCode)
-		if err != nil {
+		if partition.Err != nil {
 			offlinePartitionIDs = append(offlinePartitionIDs, partition.Partition)
 			continue
 		}
@@ -110,25 +186,31 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		}
 
 		// Check if the requested partitionID is available
-		if err := kerr.ErrorForCode(pInfo.ErrorCode); err != nil {
+		if pInfo.Err != nil {
 			return fmt.Errorf("requested partitionID (%v) is not available: %w", listReq.PartitionID, err)
 		}
 		partitionIDs = []int32{listReq.PartitionID}
 	}
 
 	progress.OnPhase("Get Watermarks and calculate consuming requests")
-	marks, err := s.kafkaSvc.GetPartitionMarks(ctx, listReq.TopicName, partitionIDs)
+	startOffsets, err := adminCl.ListStartOffsets(ctx, listReq.TopicName)
 	if err != nil {
-		return fmt.Errorf("failed to get watermarks: %w", err)
+		return fmt.Errorf("failed to get start offsets: %w", err)
 	}
-	for _, mark := range marks {
-		if mark.Error != nil {
-			return fmt.Errorf("failed to get partition offset for partition %d: %w", mark.PartitionID, mark.Error)
-		}
+	if startOffsets.Error() != nil {
+		return fmt.Errorf("failed to get start offsets: %w", startOffsets.Error())
+	}
+
+	endOffsets, err := adminCl.ListEndOffsets(ctx, listReq.TopicName)
+	if err != nil {
+		return fmt.Errorf("failed to get end offsets: %w", err)
+	}
+	if startOffsets.Error() != nil {
+		return fmt.Errorf("failed to get end offsets: %w", endOffsets.Error())
 	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
-	consumeRequests, err := s.calculateConsumeRequests(ctx, &listReq, marks)
+	consumeRequests, err := s.calculateConsumeRequests(ctx, cl, &listReq, partitionIDs, startOffsets, endOffsets)
 	if err != nil {
 		return fmt.Errorf("failed to calculate consume request: %w", err)
 	}
@@ -137,7 +219,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		progress.OnComplete(time.Since(start).Milliseconds(), false)
 		return nil
 	}
-	topicConsumeRequest := kafka.TopicConsumeRequest{
+	topicConsumeRequest := TopicConsumeRequest{
 		TopicName:             listReq.TopicName,
 		MaxMessageCount:       listReq.MessageCount,
 		Partitions:            consumeRequests,
@@ -150,7 +232,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	progress.OnPhase("Consuming messages")
-	err = s.kafkaSvc.FetchMessages(ctx, progress, topicConsumeRequest)
+	err = s.fetchMessages(ctx, cl, progress, topicConsumeRequest)
 	if err != nil {
 		progress.OnError(err.Error())
 		return nil
@@ -173,8 +255,14 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // makes it harder to understand how the consume request is calculated in total though.
 //
 //nolint:cyclop,gocognit // This is indeed a complex function. Breaking this into multiple smaller functions possibly
-func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMessageRequest, marks map[int32]*kafka.PartitionMarks) (map[int32]*kafka.PartitionConsumeRequest, error) {
-	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
+func (s *Service) calculateConsumeRequests(
+	ctx context.Context,
+	cl *kgo.Client,
+	listReq *ListMessageRequest,
+	partitionIDs []int32,
+	startOffsets, endOffsets kadm.ListedOffsets,
+) (map[int32]*PartitionConsumeRequest, error) {
+	requests := make(map[int32]*PartitionConsumeRequest)
 
 	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""
 
@@ -182,10 +270,10 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 	var startOffsetByPartitionID map[int32]int64
 	if listReq.StartOffset == StartOffsetTimestamp {
 		partitionIDs := make([]int32, 0)
-		for _, mark := range marks {
-			partitionIDs = append(partitionIDs, mark.PartitionID)
-		}
-		offsets, err := s.requestOffsetsByTimestamp(ctx, listReq.TopicName, partitionIDs, listReq.StartTimestamp)
+		startOffsets.Each(func(offset kadm.ListedOffset) {
+			partitionIDs = append(partitionIDs, offset.Partition)
+		})
+		offsets, err := s.requestOffsetsByTimestamp(ctx, cl, listReq.TopicName, partitionIDs, listReq.StartTimestamp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get start offset by timestamp: %w", err)
 		}
@@ -194,49 +282,58 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 
 	// Init result map
 	notInitialized := int64(-100)
-	for _, mark := range marks {
-		p := kafka.PartitionConsumeRequest{
-			PartitionID:   mark.PartitionID,
+	for _, partitionID := range partitionIDs {
+		startOffset, exists := startOffsets.Lookup(listReq.TopicName, partitionID)
+		if !exists {
+			return nil, fmt.Errorf("could not find partition end offset for topic %q and partition %d", listReq.TopicName, partitionID)
+		}
+		endOffset, exists := endOffsets.Lookup(listReq.TopicName, partitionID)
+		if !exists {
+			return nil, fmt.Errorf("could not find partition end offset for topic %q and partition %d", listReq.TopicName, partitionID)
+		}
+
+		p := PartitionConsumeRequest{
+			PartitionID:   startOffset.Partition,
 			IsDrained:     false,
-			LowWaterMark:  mark.Low,
-			HighWaterMark: mark.High,
+			LowWaterMark:  startOffset.Offset,
+			HighWaterMark: endOffset.Offset,
 			StartOffset:   notInitialized,
 
 			// End is limited by high watermark or max message count
 			// -1 is necessary because mark.High - 1 is the last message which can actually be consumed
-			EndOffset:       mark.High - 1,
+			EndOffset:       endOffset.Offset - 1,
 			MaxMessageCount: 0,
 		}
 
 		switch listReq.StartOffset {
 		case StartOffsetRecent:
-			p.StartOffset = mark.High // StartOffset will be recalculated later
+			p.StartOffset = endOffset.Offset // StartOffset will be recalculated later
 		case StartOffsetOldest:
-			p.StartOffset = mark.Low
+			p.StartOffset = startOffset.Offset
 		case StartOffsetNewest:
 			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
 			// and end offset is always MaxInt64.
 			p.StartOffset = -1
 		case StartOffsetTimestamp:
 			// Request start offset by timestamp first and then consider it like a normal forward consuming / custom offset
-			offset, exists := startOffsetByPartitionID[mark.PartitionID]
+			offset, exists := startOffsetByPartitionID[startOffset.Partition]
 			if !exists {
 				s.logger.Warn("resolved start offset (by timestamp) does not exist for this partition",
 					zap.String("topic", listReq.TopicName),
-					zap.Int32("partition_id", mark.PartitionID))
+					zap.Int32("partition_id", startOffset.Partition))
 			}
 			if offset < 0 {
 				// If there's no newer message than the given offset is -1 here, let's replace this with the newest
 				// consumable offset which equals to high water mark - 1.
-				offset = marks[mark.PartitionID].High - 1
+				offset = endOffset.Offset - 1
 			}
 			p.StartOffset = offset
 		default:
 			// Either custom offset or resolved offset by timestamp is given
 			p.StartOffset = listReq.StartOffset
 
-			if p.StartOffset < mark.Low {
-				p.StartOffset = mark.Low
+			if p.StartOffset < startOffset.Offset {
+				p.StartOffset = startOffset.Offset
 				// TODO: Add some note that custom offset was lower than low watermark
 			}
 		}
@@ -257,7 +354,7 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 			}
 		}
 
-		requests[mark.PartitionID] = &p
+		requests[startOffset.Partition] = &p
 	}
 
 	if !predictableResults {
@@ -315,7 +412,7 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 	}
 
 	// Finally clean up results and remove those partition requests which had been initialized but are not needed
-	filteredRequests := make(map[int32]*kafka.PartitionConsumeRequest)
+	filteredRequests := make(map[int32]*PartitionConsumeRequest)
 	for pID, req := range requests {
 		if req.MaxMessageCount == 0 {
 			continue
@@ -327,9 +424,92 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 	return filteredRequests, nil
 }
 
+// FetchMessages is in charge of fulfilling the topic consume request. This is tricky
+// in many cases, often due to the fact that we can't consume backwards, but we offer
+// users to consume the most recent messages.
+func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IListMessagesProgress, consumeReq TopicConsumeRequest) error {
+	// 1. Assign partitions with right start offsets and create client
+	partitionOffsets := make(map[string]map[int32]kgo.Offset)
+	partitionOffsets[consumeReq.TopicName] = make(map[int32]kgo.Offset)
+	for _, req := range consumeReq.Partitions {
+		offset := kgo.NewOffset().At(req.StartOffset)
+		partitionOffsets[consumeReq.TopicName][req.PartitionID] = offset
+	}
+
+	opts := append(cl.Opts(), kgo.ConsumePartitions(partitionOffsets))
+	client, err := kgo.NewClient(opts...)
+	if err != nil {
+		return fmt.Errorf("failed to create new kafka client: %w", err)
+	}
+	defer client.Close()
+
+	// 2. Create consumer workers
+	jobs := make(chan *kgo.Record, 100)
+	resultsCh := make(chan *TopicMessage, 100)
+	workerCtx, cancel := context.WithCancelCause(ctx)
+	defer cancel(errors.New("worker cancel"))
+
+	wg := sync.WaitGroup{}
+
+	// If we use more than one worker the order of messages in each partition gets lost. Hence we only use it where
+	// multiple workers are actually beneficial - for potentially high throughput stream requests.
+	workerCount := 1
+	if consumeReq.FilterInterpreterCode != "" {
+		workerCount = 6
+	}
+	for i := 0; i < workerCount; i++ {
+		// Setup JavaScript interpreter
+		isMessageOK, err := s.setupInterpreter(consumeReq.FilterInterpreterCode)
+		if err != nil {
+			s.logger.Error("failed to setup interpreter", zap.Error(err))
+			progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
+			return err
+		}
+
+		wg.Add(1)
+		go s.startMessageWorker(workerCtx, &wg, isMessageOK, jobs, resultsCh,
+			consumeReq)
+	}
+	// Close the results channel once all workers have finished processing jobs and therefore no senders are left anymore
+	go func() {
+		wg.Wait()
+		close(resultsCh)
+	}()
+
+	// 3. Start go routine that consumes messages from Kafka and produces these records on the jobs channel so that these
+	// can be decoded by our workers.
+	go s.consumeKafkaMessages(workerCtx, client, consumeReq, jobs)
+
+	// 4. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
+	// that propagate to all the launched go routines.
+	messageCount := 0
+	messageCountByPartition := make(map[int32]int64)
+
+	for msg := range resultsCh {
+		// Since a 'kafka message' is likely transmitted in compressed batches this size is not really accurate
+		progress.OnMessageConsumed(msg.MessageSize)
+		partitionReq := consumeReq.Partitions[msg.PartitionID]
+
+		if msg.IsMessageOk && messageCountByPartition[msg.PartitionID] < partitionReq.MaxMessageCount {
+			messageCount++
+			messageCountByPartition[msg.PartitionID]++
+
+			progress.OnMessage(msg)
+		}
+
+		// Do we need more messages to satisfy the user request? Return if request is satisfied
+		isRequestSatisfied := messageCount == consumeReq.MaxMessageCount
+		if isRequestSatisfied {
+			return nil
+		}
+	}
+
+	return nil
+}
+
 // requestOffsetsByTimestamp returns the offset that has been resolved for the given timestamp in a map which is indexed
 // by partitionID.
-func (s *Service) requestOffsetsByTimestamp(ctx context.Context, topicName string, partitionIDs []int32, timestamp int64) (map[int32]int64, error) {
+func (*Service) requestOffsetsByTimestamp(ctx context.Context, cl *kgo.Client, topicName string, partitionIDs []int32, timestamp int64) (map[int32]int64, error) {
 	req := kmsg.NewListOffsetsRequest()
 	topicReq := kmsg.NewListOffsetsRequestTopic()
 	topicReq.Topic = topicName
@@ -345,7 +525,7 @@ func (s *Service) requestOffsetsByTimestamp(ctx context.Context, topicName strin
 	topicReq.Partitions = partitionReqs
 	req.Topics = []kmsg.ListOffsetsRequestTopic{topicReq}
 
-	kres, err := req.RequestWith(ctx, s.kafkaSvc.KafkaClient)
+	kres, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, err
 	}
@@ -362,4 +542,171 @@ func (s *Service) requestOffsetsByTimestamp(ctx context.Context, topicName strin
 	}
 
 	return offsetByPartition, nil
+}
+
+func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
+	isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage,
+	consumeReq TopicConsumeRequest,
+) {
+	defer wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Error("recovered from panic in message worker", zap.Any("error", r))
+		}
+	}()
+
+	for record := range jobs {
+		// We consume control records because the last message in a partition we expect might be a control record.
+		// We need to acknowledge that we received the message but it is ineligible to be sent to the frontend.
+		// Quit early if it is a control record!
+		isControlRecord := record.Attrs.IsControl()
+		if isControlRecord {
+			topicMessage := &TopicMessage{
+				PartitionID: record.Partition,
+				Offset:      record.Offset,
+				Timestamp:   record.Timestamp.UnixNano() / int64(time.Millisecond),
+				IsMessageOk: false,
+				MessageSize: int64(len(record.Key) + len(record.Value)),
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case resultsCh <- topicMessage:
+				continue
+			}
+		}
+
+		// Run Interpreter filter and check if message passes the filter
+		deserializedRec := s.serdeSvc.DeserializeRecord(
+			ctx,
+			record,
+			serde.DeserializationOptions{
+				MaxPayloadSize:     s.cfg.Serde.MaxDeserializationPayloadSize,
+				Troubleshoot:       consumeReq.Troubleshoot,
+				IncludeRawData:     consumeReq.IncludeRawPayload,
+				IgnoreMaxSizeLimit: consumeReq.IgnoreMaxSizeLimit,
+				KeyEncoding:        consumeReq.KeyDeserializer,
+				ValueEncoding:      consumeReq.ValueDeserializer,
+			})
+
+		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))
+		headers := make([]MessageHeader, 0)
+		for _, header := range deserializedRec.Headers {
+			headersByKey[header.Key] = header.Value
+			headers = append(headers, MessageHeader(header))
+		}
+
+		// Check if message passes filter code
+		args := interpreterArguments{
+			PartitionID:   record.Partition,
+			Offset:        record.Offset,
+			Timestamp:     record.Timestamp,
+			Key:           deserializedRec.Key.DeserializedPayload,
+			Value:         deserializedRec.Value.DeserializedPayload,
+			HeadersByKey:  headersByKey,
+			KeySchemaID:   deserializedRec.Key.SchemaID,
+			ValueSchemaID: deserializedRec.Value.SchemaID,
+		}
+
+		isOK, err := isMessageOK(args)
+		var errMessage string
+		if err != nil {
+			s.logger.Debug("failed to check if message is ok", zap.Error(err))
+			errMessage = fmt.Sprintf("Failed to check if message is ok (partition: '%v', offset: '%v'). Err: %v", record.Partition, record.Offset, err)
+		}
+
+		topicMessage := &TopicMessage{
+			PartitionID:     record.Partition,
+			Offset:          record.Offset,
+			Timestamp:       record.Timestamp.UnixNano() / int64(time.Millisecond),
+			Headers:         headers,
+			Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
+			IsTransactional: record.Attrs.IsTransactional(),
+			Key:             deserializedRec.Key,
+			Value:           deserializedRec.Value,
+			IsMessageOk:     isOK,
+			ErrorMessage:    errMessage,
+			MessageSize:     int64(len(record.Key) + len(record.Value)),
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case resultsCh <- topicMessage:
+		}
+	}
+}
+
+// consumeKafkaMessages consumes messages for the consume request and sends responses to the jobs channel.
+// This function will close the channel.
+// The caller is responsible for closing the client if desired.
+//
+//nolint:gocognit // end condition if statements
+func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
+	defer close(jobs)
+
+	remainingPartitionRequests := len(consumeReq.Partitions)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			fetches := client.PollFetches(ctx)
+			fetchErrors := fetches.Errors()
+			for _, err := range fetchErrors {
+				// We cancel the context when we know the search is complete, hence this is expected and
+				// should not be logged as error in this case.
+				if !errors.Is(err.Err, context.Canceled) {
+					s.logger.Error("errors while fetching records",
+						zap.String("topic_name", err.Topic),
+						zap.Int32("partition", err.Partition),
+						zap.Error(err.Err))
+				}
+			}
+			iter := fetches.RecordIter()
+
+			// Iterate on all messages from this poll
+			for !iter.Done() {
+				record := iter.Next()
+
+				// Avoid a deadlock in case the jobs channel is full
+				select {
+				case <-ctx.Done():
+					return
+				case jobs <- record:
+				}
+
+				partitionReq := consumeReq.Partitions[record.Partition]
+
+				if record.Offset >= partitionReq.EndOffset {
+					if remainingPartitionRequests > 0 {
+						remainingPartitionRequests--
+					}
+
+					if remainingPartitionRequests == 0 {
+						return
+					}
+				}
+			}
+		}
+	}
+}
+
+func compressionTypeDisplayname(compressionType uint8) string {
+	switch compressionType {
+	case 0:
+		return "uncompressed"
+	case 1:
+		return "gzip"
+	case 2:
+		return "snappy"
+	case 3:
+		return "lz4"
+	case 4:
+		return "zstd"
+	default:
+		return "unknown"
+	}
 }

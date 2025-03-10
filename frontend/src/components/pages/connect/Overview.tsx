@@ -10,6 +10,7 @@
  */
 
 import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
+import ErrorResult from 'components/misc/ErrorResult';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -84,8 +85,8 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.addBreadcrumb('Connect', '/connect-clusters');
 
     this.checkRPCNSecretEnable();
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
   async checkRPCNSecretEnable() {
@@ -94,8 +95,8 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     }
   }
 
-  async refreshData(force: boolean) {
-    await api.refreshConnectClusters(force);
+  async refreshData() {
+    await api.refreshConnectClusters();
     // if (api.connectConnectors?.isConfigured) {
     //     const clusters = api.connectConnectors.clusters;
     //     if (clusters?.length == 1) {
@@ -404,6 +405,9 @@ class TabTasks extends Component {
 const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
+  if (api.connectConnectorsError) {
+    return <ErrorResult error={api.connectConnectorsError} />;
+  }
   if (!api.connectConnectors) return DefaultSkeleton;
   if (api.connectConnectors.isConfigured === false) return <NotConfigured />;
 

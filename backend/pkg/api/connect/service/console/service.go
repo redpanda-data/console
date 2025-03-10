@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
-	"github.com/redpanda-data/console/backend/pkg/api/hooks"
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
@@ -35,20 +34,16 @@ import (
 type Service struct {
 	logger     *zap.Logger
 	consoleSvc console.Servicer
-
-	authHooks hooks.AuthorizationHooks
 }
 
 // NewService creates a new Console service handler.
 func NewService(
 	logger *zap.Logger,
 	consoleSvc console.Servicer,
-	authHooks hooks.AuthorizationHooks,
 ) *Service {
 	return &Service{
 		logger:     logger,
 		consoleSvc: consoleSvc,
-		authHooks:  authHooks,
 	}
 }
 
@@ -66,25 +61,6 @@ func (api *Service) ListMessages(
 		MaxResults:            int(req.Msg.GetMaxResults()),
 		FilterInterpreterCode: req.Msg.GetFilterInterpreterCode(),
 		Enterprise:            req.Msg.GetEnterprise(),
-	}
-
-	// Check if logged in user is allowed to list messages for the given request
-	canViewMessages, restErr := api.authHooks.CanViewTopicMessages(ctx, &lmq)
-	err := apierrors.NewPermissionDeniedConnectError(canViewMessages, restErr,
-		"you don't have permissions to view Kafka topic messages",
-	)
-	if err != nil {
-		return err
-	}
-
-	if lmq.FilterInterpreterCode != "" {
-		canUseMessageSearchFilters, restErr := api.authHooks.CanUseMessageSearchFilters(ctx, &lmq)
-		err := apierrors.NewPermissionDeniedConnectError(canUseMessageSearchFilters, restErr,
-			"you don't have permissions to use search filters",
-		)
-		if err != nil {
-			return err
-		}
 	}
 
 	interpreterCode, err := lmq.DecodeInterpreterCode()
@@ -122,8 +98,6 @@ func (api *Service) ListMessages(
 		ValueDeserializer:     fromProtoEncoding(req.Msg.GetValueDeserializer()),
 	}
 
-	api.authHooks.PrintListMessagesAuditLog(ctx, req, &listReq)
-
 	timeout := 35 * time.Second
 	if req.Msg.GetFilterInterpreterCode() != "" || req.Msg.GetStartOffset() == console.StartOffsetNewest {
 		// Push-down filters and StartOffset = Newest may be long-running streams.
@@ -149,20 +123,12 @@ func (api *Service) ListMessages(
 
 // PublishMessage serialized and produces the records.
 //
-//nolint:gocognit // complicated response logic
+//nolint:gocognit // Complexity is rather high, but not unreasonable
 func (api *Service) PublishMessage(
 	ctx context.Context,
 	req *connect.Request[v1alpha.PublishMessageRequest],
 ) (*connect.Response[v1alpha.PublishMessageResponse], error) {
 	msg := req.Msg
-
-	canPublish, restErr := api.authHooks.CanPublishTopicRecords(ctx, msg.GetTopic())
-	err := apierrors.NewPermissionDeniedConnectError(canPublish, restErr,
-		"you don't have permissions to publish topic records",
-	)
-	if err != nil {
-		return nil, err
-	}
 
 	recordHeaders := make([]kgo.RecordHeader, 0, len(req.Msg.GetHeaders()))
 	for _, h := range req.Msg.GetHeaders() {
@@ -178,7 +144,7 @@ func (api *Service) PublishMessage(
 	valueInput := rpcPublishMessagePayloadOptionsToSerializeInput(msg.GetValue())
 	compression := rpcCompressionTypeToKgoCodec(msg.GetCompression())
 
-	prRes, prErr := api.consoleSvc.PublishRecord(
+	prRes, prErr := api.consoleSvc.ProduceRecord(
 		ctx, msg.GetTopic(), msg.GetPartitionId(), recordHeaders,
 		keyInput, valueInput, req.Msg.GetUseTransactions(), compression,
 	)

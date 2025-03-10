@@ -78,22 +78,6 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
-		// Check if logged in user is allowed to list ACLs
-		isAllowed, restErr := api.Hooks.Authorization.CanListACLs(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !isAllowed {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to list ACLs"),
-				Status:   http.StatusForbidden,
-				Message:  "You are not allowed to list ACLs",
-				IsSilent: true,
-			})
-			return
-		}
-
 		aclOverview, err := api.ConsoleSvc.ListAllACLs(r.Context(), req.ToKafkaRequest())
 		if err != nil {
 			restErr := &rest.Error{
@@ -105,22 +89,6 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
-
-		filteredACLResources := make([]*console.ACLResource, 0, len(aclOverview.ACLResources))
-		for _, res := range aclOverview.ACLResources {
-			filteredRules := make([]*console.ACLRule, 0, len(res.ACLs))
-			for _, rule := range res.ACLs {
-				if api.Hooks.Authorization.IsProtectedKafkaUser(rule.Principal) {
-					continue
-				}
-				filteredRules = append(filteredRules, rule)
-			}
-			if len(filteredRules) > 0 {
-				res.ACLs = filteredRules
-				filteredACLResources = append(filteredACLResources, res)
-			}
-		}
-		aclOverview.ACLResources = filteredACLResources
 
 		res := response{
 			aclOverview,
@@ -173,33 +141,6 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// Check if logged-in user is allowed to delete ACLs
-		isAllowed, restErr := api.Hooks.Authorization.CanDeleteACL(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !isAllowed {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to delete ACLs"),
-				Status:   http.StatusForbidden,
-				Message:  "You are not allowed to delete ACLs",
-				IsSilent: true,
-			})
-			return
-		}
-
-		// Check if targeted user is a protected Kafka user
-		if req.Principal != nil && api.Hooks.Authorization.IsProtectedKafkaUser(*req.Principal) {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester targets a protected Kafka principal to delete ACLs"),
-				Status:   http.StatusForbidden,
-				Message:  "You are not allowed to delete ACLs for this protected principal",
-				IsSilent: false,
-			})
 			return
 		}
 
@@ -295,33 +236,6 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// Check if logged-in user is allowed to create ACLs
-		isAllowed, restErr := api.Hooks.Authorization.CanCreateACL(r.Context())
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-		if !isAllowed {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to create ACLs for the given principal"),
-				Status:   http.StatusForbidden,
-				Message:  "You are not allowed to create ACLs for the given principal name",
-				IsSilent: true,
-			})
-			return
-		}
-
-		// Check if targeted user is a protected Kafka user
-		if api.Hooks.Authorization.IsProtectedKafkaUser(req.Principal) {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester targets a protected Kafka principal to create ACLs"),
-				Status:   http.StatusForbidden,
-				Message:  "You are not allowed to create ACLs for this protected principal",
-				IsSilent: false,
-			})
 			return
 		}
 

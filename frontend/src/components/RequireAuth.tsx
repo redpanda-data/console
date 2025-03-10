@@ -1,13 +1,12 @@
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
 import { Route, Switch } from 'react-router-dom';
-import { api, handleExpiredLicenseError } from '../state/backendApi';
-import type { UserData } from '../state/restInterfaces';
+import { config as appConfig } from '../config';
+import { api } from '../state/backendApi';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
 import { AppFeatures, IsDev, getBasePath } from '../utils/env';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import Login from './misc/login';
+import LoginPage from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 
 @observer
@@ -20,7 +19,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
       <>
         <Switch>
           {/* Login (and callbacks) */}
-          <Route exact path="/login" component={Login} />
+          <Route exact path="/login" component={LoginPage} />
           <Route
             path="/login/callbacks/:provider"
             render={(p) => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}
@@ -54,47 +53,10 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
     if (api.userData === undefined) {
       devPrint('user is undefined (probably a fresh page load)');
 
-      fetchWithTimeout('./api/users/me', 10 * 1000).then(async (r) => {
-        if (r.ok) {
-          devPrint('user fetched');
-          api.userData = (await r.json()) as UserData;
-        } else if (r.status === 401) {
-          // unauthorized / not logged in
-          devPrint('not logged in');
-          api.userData = null;
-        } else if (r.status === 404) {
-          // not found: server must be non-business version
-          devPrint(
-            'frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging',
-          );
-          uiState.isUsingDebugUserLogin = true;
-          api.userData = {
-            canViewConsoleUsers: false,
-            canListAcls: true,
-            canListQuotas: true,
-            canPatchConfigs: true,
-            canReassignPartitions: true,
-            canCreateSchemas: true,
-            canDeleteSchemas: true,
-            canManageSchemaRegistry: true,
-            canViewSchemas: true,
-            canListTransforms: true,
-            canCreateTransforms: true,
-            canDeleteTransforms: true,
-            canViewDebugBundle: true,
-            seat: null as any,
-            user: {
-              providerID: -1,
-              providerName: 'debug provider',
-              id: 'debug',
-              internalIdentifier: 'debug',
-              meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
-            },
-          };
-        } else if (r.status === 403) {
-          void handleExpiredLicenseError(r);
-        }
-      });
+      const client = appConfig.authenticationClient;
+      if (!client) throw new Error('security client is not initialized');
+
+      void api.refreshUserData();
 
       return preLogin;
     }
