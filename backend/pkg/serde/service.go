@@ -28,16 +28,21 @@ type Service struct {
 }
 
 // NewService creates the new serde service.
-func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackSvc *msgpack.Service, cborConfig config.Cbor) *Service {
+func NewService(
+	protoSvc *proto.Service,
+	msgPackSvc *msgpack.Service,
+	cachedSchemaClient schema.Client,
+	cborConfig config.Cbor,
+) (*Service, error) {
 	return &Service{
 		SerDes: []Serde{
 			NullSerde{},
 			JSONSerde{},
-			JSONSchemaSerde{SchemaSvc: schemaService},
+			JSONSchemaSerde{schemaClient: cachedSchemaClient},
 			XMLSerde{},
-			AvroSerde{SchemaSvc: schemaService},
+			AvroSerde{schemaClient: cachedSchemaClient},
 			ProtobufSerde{ProtoSvc: protoSvc},
-			ProtobufSchemaSerde{ProtoSvc: protoSvc},
+			ProtobufSchemaSerde{schemaClient: cachedSchemaClient},
 			MsgPackSerde{MsgPackService: msgPackSvc},
 			SmileSerde{},
 			CborSerde{Config: cborConfig},
@@ -46,7 +51,7 @@ func NewService(schemaService *schema.Service, protoSvc *proto.Service, msgPackS
 			UintSerde{},
 			BinarySerde{},
 		},
-	}
+	}, nil
 }
 
 // DeserializeRecord tries to deserialize a Kafka record into a struct that

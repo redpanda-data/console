@@ -146,7 +146,27 @@ func (s *Service) GetTopicConfigs(ctx context.Context, topicName string, configN
 // GetTopicsConfigs fetches all topic config options for the given set of topic names and config names and converts
 // that information so that it is handy to use. Provide an empty array for configNames to describe all config entries.
 func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, configNames []string) (map[string]*TopicConfig, error) {
-	response, err := s.kafkaSvc.DescribeTopicsConfigs(ctx, topicNames, configNames)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := make([]kmsg.DescribeConfigsRequestResource, len(topicNames))
+	for i, topicName := range topicNames {
+		r := kmsg.DescribeConfigsRequestResource{
+			ResourceType: kmsg.ConfigResourceTypeTopic,
+			ResourceName: topicName,
+			ConfigNames:  configNames,
+		}
+		resources[i] = r
+	}
+
+	req := kmsg.NewDescribeConfigsRequest()
+	req.Resources = resources
+	req.IncludeDocumentation = true
+	req.IncludeSynonyms = true
+
+	response, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, err
 	}

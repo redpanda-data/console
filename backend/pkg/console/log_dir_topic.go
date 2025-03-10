@@ -137,15 +137,20 @@ func (p partitionInfo) Size() int64 {
 //
 //nolint:gocognit,cyclop // Complexity is indeed high, but ideally this will be solved by changing the API response
 func (s *Service) logDirsByTopic(ctx context.Context) (map[string]TopicLogDirSummary, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// 1. Retrieve metadata to know brokers hosting each replica.
-	metadata, err := s.kafkaSvc.KafkaAdmClient.Metadata(ctx)
+	metadata, err := adminCl.Metadata(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve metadata: %w", err)
 	}
 
 	// 2. Request log dirs from all brokers and deduplicate shared log dirs.
 	shardErrors := make(map[int32]kadm.ShardError)
-	describedLogDirs, err := s.kafkaSvc.KafkaAdmClient.DescribeAllLogDirs(ctx, nil)
+	describedLogDirs, err := adminCl.DescribeAllLogDirs(ctx, nil)
 	if err != nil {
 		var se *kadm.ShardErrors
 		if !errors.As(err, &se) {

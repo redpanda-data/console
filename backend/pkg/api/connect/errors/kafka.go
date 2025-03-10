@@ -11,8 +11,10 @@ package errors
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
+	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/twmb/franz-go/pkg/kerr"
 
@@ -22,17 +24,49 @@ import (
 // NewConnectErrorFromKafkaErrorCode creates a new connect.Error for a given Kafka error code.
 // Kafka error codes are described in the franz-go kerr package.
 func NewConnectErrorFromKafkaErrorCode(code int16, msg *string) *connect.Error {
-	kafkaErr := kerr.ErrorForCode(code)
-
-	errMsg := kafkaErr.Error()
-	if msg != nil {
-		errMsg = *msg
+	if code == 0 {
+		return nil
 	}
+
+	kafkaErr := kerr.ErrorForCode(code)
+	errMsg := resolveKafkaErrorMessage(code, kafkaErr, msg)
+
+	if isKafkaAuthorizationError(kafkaErr) {
+		return NewConnectError(
+			connect.CodePermissionDenied,
+			errors.New("you are not authorized to call this endpoint"),
+			NewErrorInfo(
+				commonv1alpha1.Reason_REASON_PERMISSION_DENIED.String(),
+				KeyValsFromKafkaError(kafkaErr)...,
+			),
+		)
+	}
+
 	return NewConnectError(
 		connect.CodeInternal,
 		errors.New(errMsg),
 		NewErrorInfo(v1alpha2.Reason_REASON_KAFKA_API_ERROR.String(), KeyValsFromKafkaError(kafkaErr)...),
 	)
+}
+
+// isAuthorizationError checks whether the Kafka error is an authorization error.
+func isKafkaAuthorizationError(err error) bool {
+	return errors.Is(err, kerr.TopicAuthorizationFailed) ||
+		errors.Is(err, kerr.ClusterAuthorizationFailed) ||
+		errors.Is(err, kerr.DelegationTokenAuthorizationFailed) ||
+		errors.Is(err, kerr.GroupAuthorizationFailed) ||
+		errors.Is(err, kerr.TransactionalIDAuthorizationFailed)
+}
+
+// resolveKafkaErrorMessage returns the appropriate error message.
+func resolveKafkaErrorMessage(code int16, kafkaErr error, msg *string) string {
+	if msg != nil {
+		return *msg
+	}
+	if kafkaErr != nil {
+		return kafkaErr.Error()
+	}
+	return fmt.Sprintf("unknown kafka error with code %q", code)
 }
 
 // KeyValsFromKafkaError tries to check if a given error is a Kafka error.

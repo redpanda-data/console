@@ -20,9 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 func (s *APIIntegrationTestSuite) TestValidateSchema() {
@@ -40,7 +40,7 @@ func (s *APIIntegrationTestSuite) TestValidateSchema() {
 			Type   string `json:"schemaType"`
 		}{
 			Schema: schemaStr,
-			Type:   schema.TypeProtobuf.String(),
+			Type:   sr.TypeProtobuf.String(),
 		}
 		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/new-schema/versions/latest/validate", req)
 		require.Equal(200, res.StatusCode)
@@ -63,7 +63,7 @@ func (s *APIIntegrationTestSuite) TestValidateSchema() {
 			Type   string `json:"schemaType"`
 		}{
 			Schema: schemaStr,
-			Type:   schema.TypeAvro.String(),
+			Type:   sr.TypeAvro.String(),
 		}
 		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/new-schema/versions/latest/validate", req)
 		require.Equal(200, res.StatusCode)
@@ -87,7 +87,7 @@ func (s *APIIntegrationTestSuite) TestValidateSchema() {
 			Type   string `json:"schemaType"`
 		}{
 			Schema: schemaStr,
-			Type:   schema.TypeProtobuf.String(),
+			Type:   sr.TypeProtobuf.String(),
 		}
 		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/new-schema/versions/latest/validate", req)
 		require.Equal(200, res.StatusCode)
@@ -111,7 +111,7 @@ func (s *APIIntegrationTestSuite) TestValidateSchema() {
 			Type   string `json:"schemaType"`
 		}{
 			Schema: schemaStr,
-			Type:   schema.TypeAvro.String(),
+			Type:   sr.TypeAvro.String(),
 		}
 		res, body := s.apiRequest(ctx, http.MethodPost, "/api/schema-registry/subjects/new-schema/versions/latest/validate", req)
 		require.Equal(200, res.StatusCode)

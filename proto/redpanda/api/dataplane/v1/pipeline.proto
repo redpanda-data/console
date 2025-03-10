@@ -6,6 +6,7 @@ import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
@@ -130,6 +131,10 @@ service PipelineService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
   }
 
   // GetPipeline gets a specific Redpanda Connect pipeline.
@@ -157,6 +162,10 @@ service PipelineService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
   }
 
   // ListPipelines implements the list pipelines method which lists the pipelines
@@ -175,6 +184,10 @@ service PipelineService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -196,6 +209,10 @@ service PipelineService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -221,6 +238,10 @@ service PipelineService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -249,6 +270,10 @@ service PipelineService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
   }
 
   // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
@@ -276,6 +301,10 @@ service PipelineService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
   }
 
   // The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
@@ -293,6 +322,10 @@ service PipelineService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
     };
   }
 
@@ -313,6 +346,10 @@ service PipelineService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
   }
 
   // GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
@@ -331,6 +368,10 @@ service PipelineService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
     };
   }
 }

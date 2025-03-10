@@ -65,8 +65,8 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
   }
 
   refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig(force);
-    api.refreshSchemaMode(force);
+    api.refreshSchemaCompatibilityConfig();
+    api.refreshSchemaMode();
     const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
 
     if (subjectName) api.refreshSchemaDetails(subjectName, force);
@@ -75,6 +75,10 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
   render() {
     if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
     if (!api.schemaMode) return DefaultSkeleton; // request in progress
+
+    if (!api.schemaDetails && !api.schemaCompatibility) {
+      return DefaultSkeleton;
+    }
 
     const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
 
@@ -101,27 +105,13 @@ function EditSchemaCompatibility(p: {
 }) {
   const toast = useToast();
   const { subjectName } = p;
-  const subject = subjectName != null ? api.schemaDetails.get(subjectName) : undefined;
+  const subject = subjectName ? api.schemaDetails.get(subjectName) : undefined;
   const schema = subject?.schemas.first((x) => x.version === subject.latestActiveVersion);
 
   // type should be just "SchemaRegistryCompatibilityMode"
-  const [configMode, setConfigMode] = useState(subjectName ? subject?.compatibility : api.schemaCompatibility);
-
-  if (!configMode && subject) {
-    // configMode is still undefined because earlier we didn't have "subject" ready.
-    // Now subject is ready, so lets update it
-    setConfigMode(subject.compatibility);
-    return null;
-  }
-  const globalDefault = api.schemaCompatibility;
-  if (!configMode && !subjectName && globalDefault) {
-    // configMode is still undefined because we haven't gotten a response to the global default yet.
-    // Now the global default is loaded, so lets set it
-    setConfigMode(globalDefault);
-    return null;
-  }
-
-  if (!configMode) return DefaultSkeleton;
+  const [configMode, setConfigMode] = useState<string>(
+    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT',
+  );
 
   if (subjectName && !schema) return DefaultSkeleton;
 
@@ -141,7 +131,7 @@ function EditSchemaCompatibility(p: {
         });
 
         if (subjectName) await api.refreshSchemaDetails(subjectName, true);
-        else await api.refreshSchemaCompatibilityConfig(true);
+        else await api.refreshSchemaCompatibilityConfig();
 
         p.onClose();
       })

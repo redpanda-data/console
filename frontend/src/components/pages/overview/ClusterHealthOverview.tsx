@@ -91,7 +91,7 @@ const ClusterHealthOverview = () => {
                     px={0}
                     as={ReactRouterLink}
                     variant="link"
-                    to={`/admin/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
+                    to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
                   >
                     Bundle generation in progress...
                   </Button>
@@ -100,7 +100,7 @@ const ClusterHealthOverview = () => {
                   <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
                 )}
                 {!api.isDebugBundleInProgress && (
-                  <Button px={0} as={ReactRouterLink} variant="link" to="/admin/debug-bundle/">
+                  <Button px={0} as={ReactRouterLink} variant="link" to="/debug-bundle/">
                     Generate new
                   </Button>
                 )}

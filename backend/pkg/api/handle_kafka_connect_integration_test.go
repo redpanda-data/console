@@ -57,7 +57,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	seedBroker, err := redpandaContainer.KafkaSeedBroker(ctx)
 	require.NoError(err)
 
-	// Kafka Connect container
+	// Kafka KafkaConnect container
 	connectC, err := testutil.RunRedpandaConnectorsContainer(
 		ctx,
 		[]string{"redpanda:29092"},
@@ -77,10 +77,10 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	log, err := zap.NewProduction()
 	require.NoError(err)
 
-	connectCfg := config.Connect{}
+	connectCfg := config.KafkaConnect{}
 	connectCfg.SetDefaults()
 	connectCfg.Enabled = true
-	connectCfg.Clusters = []config.ConnectCluster{
+	connectCfg.Clusters = []config.KafkaConnectCluster{
 		{
 			Name: "redpanda_connect",
 			URL:  "http://" + connectHost + ":" + connectPort.Port(),

@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/rpc/status.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 message ACL {
   // The type of resource (topic, consumer group, etc.) this
@@ -291,6 +292,10 @@ service ACLService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
   }
 
   rpc CreateACL(CreateACLRequest) returns (CreateACLResponse) {
@@ -312,6 +317,10 @@ service ACLService {
         }
       }
     };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_KAFKA
+    };
   }
 
   rpc DeleteACLs(DeleteACLsRequest) returns (DeleteACLsResponse) {
@@ -329,6 +338,10 @@ service ACLService {
           }
         }
       }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_KAFKA
     };
   }
 }

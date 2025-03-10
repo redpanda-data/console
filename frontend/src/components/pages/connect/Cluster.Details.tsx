@@ -46,7 +46,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   }
 
   refreshData(force: boolean) {
-    api.refreshConnectClusters(force);
+    api.refreshConnectClusters();
 
     const clusterName = decodeURIComponent(this.props.clusterName);
     api.refreshClusterAdditionalInfo(clusterName, force);

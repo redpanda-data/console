@@ -78,9 +78,6 @@ type ClusterConnectors struct {
 	RunningConnectors int                    `json:"runningConnectors"`
 	Connectors        []ClusterConnectorInfo `json:"connectors"`
 	Error             string                 `json:"error,omitempty"`
-
-	// This is set at the HTTP handler level as this will be returned by the Hooks.
-	AllowedActions []string `json:"allowedActions"`
 }
 
 // ClusterConnectorInfo contains all information we can retrieve about a single
@@ -148,7 +145,7 @@ type aggregatedConnectorTasksStatus struct {
 	Errors     []ClusterConnectorInfoError
 }
 
-// GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
+// GetAllClusterConnectors returns the merged GET /connectors responses across all configured KafkaConnect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
 func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnectors, error) {
@@ -158,7 +155,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 
 	ch := make(chan *ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
-		go func(cfg config.ConnectCluster, c *con.Client) {
+		go func(cfg config.KafkaConnectCluster, c *con.Client) {
 			connectors, err := c.ListConnectorsExpanded(ctx)
 			errMsg := ""
 			if err != nil {

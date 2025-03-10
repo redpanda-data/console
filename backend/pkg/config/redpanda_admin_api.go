@@ -13,6 +13,8 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
+
+	"github.com/redpanda-data/common-go/rpadmin"
 )
 
 // RedpandaAdminAPI has the required configurations to make a connection to the
@@ -21,9 +23,7 @@ type RedpandaAdminAPI struct {
 	Enabled bool     `yaml:"enabled"`
 	URLs    []string `yaml:"urls"`
 
-	// Basic Auth Credentials
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Authentication HTTPAuthentication `yaml:"authentication"`
 
 	// TLS Config
 	TLS TLS `yaml:"tls"`
@@ -86,4 +86,24 @@ func (c *RedpandaAdminAPI) Validate() error {
 	}
 
 	return nil
+}
+
+// RPAdminAuth returns the auth option that is required when constructing a new rpadmin.Client.
+func (c *RedpandaAdminAPI) RPAdminAuth() rpadmin.Auth {
+	if !c.Enabled || c.Authentication.ImpersonateUser {
+		return &rpadmin.NopAuth{}
+	}
+
+	if c.Authentication.BasicAuth.Username != "" {
+		return &rpadmin.BasicAuth{
+			Username: c.Authentication.BasicAuth.Username,
+			Password: c.Authentication.BasicAuth.Password,
+		}
+	}
+
+	if c.Authentication.BearerToken != "" {
+		return &rpadmin.BearerToken{Token: c.Authentication.BearerToken}
+	}
+
+	return &rpadmin.NopAuth{}
 }

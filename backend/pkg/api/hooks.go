@@ -11,6 +11,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net/http"
 
@@ -18,21 +19,21 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
 	pkgconnect "github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/license"
+	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
 // additional functionality. In order to run your own Hooks you must construct a Hooks instance and
 // run attach them to your own instance of Api.
 type Hooks struct {
-	Route         RouteHooks
-	Authorization AuthorizationHooks
-	Console       ConsoleHooks
+	Route   RouteHooks
+	Console ConsoleHooks
 }
 
 // ConfigConnectRPCRequest is the config object that is passed into the
@@ -95,66 +96,6 @@ type RouteHooks interface {
 	InitConnectRPCRouter(router chi.Router)
 }
 
-// AuthorizationHooks include all functions which allow you to intercept the requests at various
-// endpoints where RBAC rules may be applied.
-type AuthorizationHooks interface {
-	// Topic Hooks
-	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanEditTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanPublishTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req *httptypes.ListMessagesRequest) (bool, *rest.Error)
-	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
-	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(ctx context.Context, r any, req *console.ListMessageRequest)
-
-	// ACL Hooks
-	CanListACLs(ctx context.Context) (bool, *rest.Error)
-	CanCreateACL(ctx context.Context) (bool, *rest.Error)
-	CanDeleteACL(ctx context.Context) (bool, *rest.Error)
-
-	// Quotas Hookas
-	CanListQuotas(ctx context.Context) (bool, *rest.Error)
-
-	// ConsumerGroup Hooks
-	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	CanEditConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	CanDeleteConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
-	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
-
-	// Operations Hooks
-	CanPatchPartitionReassignments(ctx context.Context) (bool, *rest.Error)
-	CanPatchConfigs(ctx context.Context) (bool, *rest.Error)
-
-	// Kafka Connect Hooks
-	CanViewConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
-	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
-
-	// Kafka User Hooks
-	CanListKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
-	IsProtectedKafkaUser(userName string) bool
-
-	// Schema Registry Hooks
-	CanViewSchemas(ctx context.Context) (bool, *rest.Error)
-	CanCreateSchemas(ctx context.Context) (bool, *rest.Error)
-	CanDeleteSchemas(ctx context.Context) (bool, *rest.Error)
-	CanManageSchemaRegistry(ctx context.Context) (bool, *rest.Error)
-
-	// Kafka Role Hooks
-	CanListRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-	CanCreateRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-	CanDeleteRedpandaRoles(ctx context.Context) (bool, *rest.Error)
-}
-
 // ConsoleHooks are hooks for providing additional context to the Frontend where needed.
 // This could be information about what license is used, what enterprise features are
 // enabled etc.
@@ -162,7 +103,7 @@ type ConsoleHooks interface {
 	// ConsoleLicenseInformation returns the license information for Console.
 	// Based on the returned license the frontend will display the
 	// appropriate UI and also warnings if the license is (about to be) expired.
-	ConsoleLicenseInformation(ctx context.Context) redpanda.License
+	ConsoleLicenseInformation(ctx context.Context) license.License
 
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.
@@ -179,20 +120,7 @@ type ConsoleHooks interface {
 	// version and what features are supported by our upstream systems.
 	// The response of this hook will be merged into the response that was originally
 	// composed by Console.
-	EndpointCompatibility() []console.EndpointCompatibilityEndpoint
-
-	// CheckWebsocketConnection extracts metadata from the websocket request.
-	// Because some metadata is part of the HTTP request and other metadata is part
-	// of the first websocket message sent, a middleware can not be used here.
-	// The returned context must be used for subsequent requests. The Websocket
-	// connection must be closed if an error is returned.
-	CheckWebsocketConnection(r *http.Request, req httptypes.ListMessagesRequest) (context.Context, error)
-
-	// AdditionalLogFields is a func that returns key/value pairs that
-	// will be attached to log messages inside route handlers. This
-	// can be used to get context about the authenticated user that issued
-	// the request.
-	AdditionalLogFields(ctx context.Context) []zapcore.Field
+	EndpointCompatibility(ctx context.Context) []console.EndpointCompatibilityEndpoint
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -201,9 +129,8 @@ type defaultHooks struct{}
 func newDefaultHooks() *Hooks {
 	d := &defaultHooks{}
 	return &Hooks{
-		Authorization: d,
-		Route:         d,
-		Console:       d,
+		Route:   d,
+		Console: d,
 	}
 }
 
@@ -222,168 +149,21 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 	}
 }
 
-// Authorization Hooks
-func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanEditTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanPublishTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *httptypes.ListMessagesRequest) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	// "all" will be considered as wild card - all actions are allowed
-	return []string{"all"}, nil
-}
-
-func (*defaultHooks) PrintListMessagesAuditLog(_ context.Context, _ any, _ *console.ListMessageRequest) {
-}
-
-func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateACL(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteACL(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanEditConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	// "all" will be considered as wild card - all actions are allowed
-	return []string{"all"}, nil
-}
-
-func (*defaultHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanPatchConfigs(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanViewConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanEditConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	// "all" will be considered as wild card - all actions are allowed
-	return []string{"all"}, nil
-}
-
-func (*defaultHooks) CanListKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) IsProtectedKafkaUser(_ string) bool {
-	return false
-}
-
-func (*defaultHooks) CanViewSchemas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanCreateSchemas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanDeleteSchemas(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
-func (*defaultHooks) CanManageSchemaRegistry(_ context.Context) (bool, *rest.Error) {
-	return true, nil
-}
-
 // Console hooks
-func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
-	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
+func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) license.License {
+	return license.License{Source: license.SourceConsole, Type: license.TypeOpenSource, ExpiresAt: math.MaxInt32}
 }
 
 func (*defaultHooks) EnabledFeatures() []string {
 	return []string{}
 }
 
-func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndpoint {
+func (*defaultHooks) EndpointCompatibility(context.Context) []console.EndpointCompatibilityEndpoint {
 	return nil
 }
 
 func (*defaultHooks) CheckWebsocketConnection(r *http.Request, _ httptypes.ListMessagesRequest) (context.Context, error) {
 	return r.Context(), nil
-}
-
-func (*defaultHooks) AdditionalLogFields(_ context.Context) []zapcore.Field {
-	return []zapcore.Field{}
 }
 
 func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []pkgconnect.ClusterFeature {
@@ -400,4 +180,108 @@ func (*defaultHooks) CanCreateRedpandaRoles(_ context.Context) (bool, *rest.Erro
 
 func (*defaultHooks) CanDeleteRedpandaRoles(_ context.Context) (bool, *rest.Error) {
 	return true, nil
+}
+
+var _ consolev1alpha1connect.AuthenticationServiceHandler = (*AuthenticationDefaultHandler)(nil)
+
+// AuthenticationDefaultHandler implements important methods for authentication, which is
+// a Console enterprise feature. Because we only have one frontend for OSS and Enterprise
+// we need to provide some default implementation and API responses, which we'll do with
+// this handler.
+type AuthenticationDefaultHandler struct{}
+
+// ListAuthenticationMethods provides a valid response and informs the frontend, that no
+// authentication is active. Based on that information the login page is hidden.
+func (*AuthenticationDefaultHandler) ListAuthenticationMethods(context.Context, *connect.Request[v1alpha1.ListAuthenticationMethodsRequest]) (*connect.Response[v1alpha1.ListAuthenticationMethodsResponse], error) {
+	res := &v1alpha1.ListAuthenticationMethodsResponse{
+		Methods: []v1alpha1.AuthenticationMethod{v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE},
+	}
+	return connect.NewResponse(res), nil
+}
+
+// LoginSaslScram is implemented in the enterprise code base only.
+func (*AuthenticationDefaultHandler) LoginSaslScram(context.Context, *connect.Request[v1alpha1.LoginSaslScramRequest]) (*connect.Response[v1alpha1.LoginSaslScramResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
+}
+
+// GetIdentity defaults all permissions by default. That informs the frontend to unlock
+// all buttons etc. The actual permission check happens inside the enterprise code base.
+func (*AuthenticationDefaultHandler) GetIdentity(context.Context, *connect.Request[v1alpha1.GetIdentityRequest]) (*connect.Response[v1alpha1.GetIdentityResponse], error) {
+	res := &v1alpha1.GetIdentityResponse{
+		DisplayName:          "",
+		AuthenticationMethod: v1alpha1.AuthenticationMethod_AUTHENTICATION_METHOD_NONE,
+		AvatarUrl:            "",
+		Permissions: &v1alpha1.GetIdentityResponse_Permissions{
+			KafkaClusterOperations: GetAllKafkaACLOperations(),
+			SchemaRegistry:         GetAllSchemaRegistryCapabilities(),
+			Redpanda:               GetAllRedpandaCapabilities(),
+		},
+	}
+	return connect.NewResponse(res), nil
+}
+
+// GetAllRedpandaCapabilities returns a slice containing all defined
+// RedpandaCapability enum values, except for the unspecified value (0).
+// It leverages the protobuf reflection API to dynamically iterate over
+// the enum descriptors, ensuring that any new values added in the proto
+// file are automatically included.
+func GetAllRedpandaCapabilities() []v1alpha1.RedpandaCapability {
+	enumDesc := v1alpha1.RedpandaCapability(0).Descriptor()
+	values := enumDesc.Values()
+	capabilities := make([]v1alpha1.RedpandaCapability, 0, values.Len())
+
+	for i := 0; i < values.Len(); i++ {
+		capNum := values.Get(i).Number()
+		// Skip the unspecified value (0).
+		if capNum == 0 {
+			continue
+		}
+		capabilities = append(capabilities, v1alpha1.RedpandaCapability(capNum))
+	}
+	return capabilities
+}
+
+// GetAllKafkaACLOperations returns a slice containing all defined
+// KafkaAclOperation enum values, except for the unspecified value (0).
+// It leverages the protobuf reflection API to dynamically iterate over
+// the enum descriptors, ensuring that any new values added in the proto
+// file are automatically included.
+func GetAllKafkaACLOperations() []v1alpha1.KafkaAclOperation {
+	enumDesc := v1alpha1.KafkaAclOperation(0).Descriptor()
+	values := enumDesc.Values()
+	operations := make([]v1alpha1.KafkaAclOperation, 0, values.Len())
+
+	for i := 0; i < values.Len(); i++ {
+		num := values.Get(i).Number()
+		if num == 0 {
+			continue
+		}
+		operations = append(operations, v1alpha1.KafkaAclOperation(num))
+	}
+	return operations
+}
+
+// GetAllSchemaRegistryCapabilities returns a slice containing all defined
+// SchemaRegistryCapability enum values, except for the unspecified value (0).
+// It leverages the protobuf reflection API to dynamically iterate over
+// the enum descriptors, ensuring that any new values added in the proto
+// file are automatically included.
+func GetAllSchemaRegistryCapabilities() []v1alpha1.SchemaRegistryCapability {
+	enumDesc := v1alpha1.SchemaRegistryCapability(0).Descriptor()
+	values := enumDesc.Values()
+	capabilities := make([]v1alpha1.SchemaRegistryCapability, 0, values.Len())
+
+	for i := 0; i < values.Len(); i++ {
+		num := values.Get(i).Number()
+		if num == 0 {
+			continue
+		}
+		capabilities = append(capabilities, v1alpha1.SchemaRegistryCapability(num))
+	}
+	return capabilities
+}
+
+// ListConsoleUsers is implemented in the enterprise code base only.
+func (*AuthenticationDefaultHandler) ListConsoleUsers(context.Context, *connect.Request[v1alpha1.ListConsoleUsersRequest]) (*connect.Response[v1alpha1.ListConsoleUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("authentication service requires an enterprise license"))
 }

@@ -32,13 +32,21 @@ type DeleteConsumerGroupOffsetsResponseTopicPartition struct {
 
 // DeleteConsumerGroupOffsets requests to delete some or all consumer group's topic/partition offsets.
 func (s *Service) DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error) {
-	commitResponse, err := s.kafkaSvc.DeleteConsumerGroupOffsets(ctx, groupID, topics)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	req := kmsg.NewOffsetDeleteRequest()
+	req.Group = groupID
+	req.Topics = topics
+
+	offsetDeleteRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]DeleteConsumerGroupOffsetsResponseTopic, len(commitResponse.Topics))
-	for i, topic := range commitResponse.Topics {
+	res := make([]DeleteConsumerGroupOffsetsResponseTopic, len(offsetDeleteRes.Topics))
+	for i, topic := range offsetDeleteRes.Topics {
 		partitions := make([]DeleteConsumerGroupOffsetsResponseTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
 			err := kerr.ErrorForCode(partition.ErrorCode)

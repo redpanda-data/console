@@ -1,3 +1,13 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
 import {
   Code,
   ConnectError,
@@ -9,28 +19,20 @@ import {
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { type Monaco, loader } from '@monaco-editor/react';
-import memoizeOne from 'memoize-one';
-/**
- * Copyright 2022 Redpanda Data, Inc.
- *
- * Use of this software is governed by the Business Source License
- * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
- *
- * As of the Change Date specified in that file, in accordance with
- * the Business Source License, use of this software will be governed
- * by the Apache License, Version 2.0
- */
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
-import { DEFAULT_API_BASE } from './components/constants';
+import memoizeOne from 'memoize-one';
+import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
 import { APP_ROUTES } from './components/routes';
+import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
+import { ClusterStatusService } from './protogen/redpanda/api/console/v1alpha1/cluster_status_connect';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
+import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secret_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { appGlobal } from './state/appGlobal';
@@ -43,6 +45,8 @@ declare const __webpack_public_path__: string;
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
 const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
+
+const getApiBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_HOST;
 
 const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
   if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
@@ -113,6 +117,8 @@ export interface Breadcrumb {
 
 interface Config {
   restBasePath: string;
+  apiBasePath: string;
+  authenticationClient?: PromiseClient<typeof AuthenticationService>;
   licenseClient?: PromiseClient<typeof LicenseService>;
   consoleClient?: PromiseClient<typeof ConsoleService>;
   debugBundleClient?: PromiseClient<typeof DebugBundleService>;
@@ -121,6 +127,7 @@ interface Config {
   pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
+  clusterStatusClient?: PromiseClient<typeof ClusterStatusService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -135,6 +142,7 @@ interface Config {
 // unexpected behaviour
 export const config: Config = observable({
   restBasePath: getRestBasePath(),
+  apiBasePath: getApiBasePath(),
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
@@ -160,13 +168,17 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
   const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
   const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
+  const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
   const transformClient = createPromiseClient(TransformService, transport);
+  const clusterStatusGrpcClient = createPromiseClient(ClusterStatusService, transport);
   Object.assign(config, {
     jwt,
     isServerless,
     restBasePath: getRestBasePath(urlOverride?.rest),
+    apiBasePath: getApiBasePath(urlOverride?.grpc),
     fetch: fetch ?? window.fetch.bind(window),
     assetsPath: assetsUrl ?? getBasePath(),
+    authenticationClient: authenticationGrpcClient,
     licenseClient: licenseGrpcClient,
     consoleClient: consoleGrpcClient,
     debugBundleClient: debugBundleGrpcClient,
@@ -175,6 +187,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
+    clusterStatusClient: clusterStatusGrpcClient,
     ...args,
   });
   return config;

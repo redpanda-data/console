@@ -13,7 +13,6 @@ import { Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -27,22 +26,15 @@ class RoleCreatePage extends PageComponent {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb('Create role', '/security/roles/create');
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
-  async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
-
-    await Promise.allSettled([
-      api.refreshAcls(AclRequestDefault, force),
-      api.refreshServiceAccounts(true),
-      rolesApi.refreshRoles(),
-    ]);
+  async refreshData() {
+    await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles()]);
   }
 
   render() {
-    if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
     if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
     return (

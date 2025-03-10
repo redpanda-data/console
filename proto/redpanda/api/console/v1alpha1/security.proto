@@ -3,6 +3,7 @@ syntax = "proto3";
 package redpanda.api.console.v1alpha1;
 
 import "buf/validate/validate.proto";
+import "redpanda/api/auth/v1/authorization.proto";
 
 // Role defines a role in the system.
 message Role {
@@ -195,23 +196,53 @@ message UpdateRoleMembershipResponse {
 
 service SecurityService {
   // ListRoles lists all the roles based on optional filter.
-  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {}
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
-  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {}
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
   // GetRole retrieves the specific role.
-  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {}
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
   // DeleteRole deletes the role from the system.
-  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {}
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
   // ListRoleMembership lists all the members assigned to a role based on optional filter.
-  rpc ListRoleMembers(ListRoleMembersRequest) returns (ListRoleMembersResponse) {}
+  rpc ListRoleMembers(ListRoleMembersRequest) returns (ListRoleMembersResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 
   // UpdateRoleMembership updates role membership.
   // Partially update role membership, adding or removing from a role
   // ONLY those members listed in the “add” or “remove” fields, respectively.
   // Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
   // and the rest of the members will be added and removed and reported.
-  rpc UpdateRoleMembership(UpdateRoleMembershipRequest) returns (UpdateRoleMembershipResponse) {}
+  rpc UpdateRoleMembership(UpdateRoleMembershipRequest) returns (UpdateRoleMembershipResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
 }

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,12 +26,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
+	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
 )
@@ -51,7 +52,8 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
 
 			resp := map[string]any{
-				"schema": string(protoFile),
+				"schema":     string(protoFile),
+				"schemaType": "PROTOBUF",
 			}
 
 			enc := json.NewEncoder(w)
@@ -59,6 +61,9 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
+			return
+		case "/schemas/ids/1001":
+			http.Error(w, `{"error_code":40403,"message":"Schema 1001 not found"}`, http.StatusNotFound)
 			return
 		case srListSchemaTypesPath:
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
@@ -112,27 +117,6 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	logger, err := zap.NewProduction()
-	require.NoError(t, err)
-
-	schemaSvc, err := schema.NewService(config.Schema{
-		Enabled: true,
-		URLs:    []string{ts.URL},
-	}, logger)
-	require.NoError(t, err)
-
-	protoSvc, err := protopkg.NewService(config.Proto{
-		Enabled: true,
-		SchemaRegistry: config.ProtoSchemaRegistry{
-			Enabled:         true,
-			RefreshInterval: 5 * time.Minute,
-		},
-	}, logger, schemaSvc)
-	require.NoError(t, err)
-
-	err = protoSvc.Start()
-	require.NoError(t, err)
-
 	// Set up Serde
 	var srSerde sr.Serde
 	srSerde.Register(
@@ -178,8 +162,19 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	require.NoError(t, err)
 
 	// serde
+	singleClientProvider, err := schemafactory.NewSingleClientProvider(&config.Config{
+		SchemaRegistry: config.Schema{
+			Enabled: true,
+			URLs:    []string{ts.URL},
+		},
+	})
+	require.NoError(t, err)
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
+		return "single/", nil
+	})
+	require.NoError(t, err)
 	serde := ProtobufSchemaSerde{
-		ProtoSvc: protoSvc,
+		schemaClient: schemaCachedClient,
 	}
 
 	tests := []struct {
@@ -200,7 +195,10 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 				assert.Equal(t, uint32(1000), *payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(payload.NormalizedPayload))
+				// Remove whitespaces from result because of randomization in protojson output, see:
+				// https://github.com/golang/protobuf/issues/1082
+				resultWithoutWhitespace := strings.ReplaceAll(string(payload.NormalizedPayload), `, "`, `,"`)
+				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, resultWithoutWhitespace)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -238,7 +236,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), "schema ID 1001 not found")
+				assert.Contains(t, err.Error(), "Schema 1001 not found")
 			},
 		},
 	}
@@ -292,6 +290,9 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
+			return
+		case "/schemas/ids/1001":
+			http.Error(w, `{"error_code":40403,"message":"Schema 1001 not found"}`, http.StatusNotFound)
 			return
 		case "/schemas/types":
 			w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
@@ -352,25 +353,17 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	logger, err := zap.NewProduction()
-	require.NoError(t, err)
-
-	schemaSvc, err := schema.NewService(config.Schema{
-		Enabled: true,
-		URLs:    []string{ts.URL},
-	}, logger)
-	require.NoError(t, err)
-
-	testProtoSvc, err := protopkg.NewService(config.Proto{
-		Enabled: true,
-		SchemaRegistry: config.ProtoSchemaRegistry{
-			Enabled:         true,
-			RefreshInterval: 5 * time.Minute,
+	// serde dependencies
+	singleClientProvider, err := schemafactory.NewSingleClientProvider(&config.Config{
+		SchemaRegistry: config.Schema{
+			Enabled: true,
+			URLs:    []string{ts.URL},
 		},
-	}, logger, schemaSvc)
+	})
 	require.NoError(t, err)
-
-	err = testProtoSvc.Start()
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
+		return "single/", nil
+	})
 	require.NoError(t, err)
 
 	t.Run("v2proto", func(t *testing.T) {
@@ -458,7 +451,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				"id": "333",
 			}
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
 			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
@@ -471,11 +464,11 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				"id": "333",
 			}
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1124))
-			assert.Error(t, err)
-			assert.Equal(t, "failed to serialize native protobuf payload: schema ID 1124 not found", err.Error())
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
 		})
 	})
@@ -504,7 +497,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			data := `{"id":"333"}`
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
 			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
@@ -515,17 +508,17 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		t.Run("invalid schema id", func(t *testing.T) {
 			data := `{"id":"3333"}`
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1124))
-			assert.Error(t, err)
-			assert.Equal(t, "failed to serialize string protobuf payload: schema ID 1124 not found", err.Error())
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
 		})
 
 		t.Run("invalid input", func(t *testing.T) {
 			data := `notjson`
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
 			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.Error(t, err)
@@ -558,7 +551,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			data := []byte(`{"id":"444"}`)
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
 			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
@@ -569,11 +562,11 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		t.Run("invalid schema id", func(t *testing.T) {
 			data := []byte(`{"id":"3333"}`)
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1124))
-			assert.Error(t, err)
-			assert.Equal(t, "failed to serialize json protobuf payload: schema ID 1124 not found", err.Error())
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
 		})
 	})
@@ -600,9 +593,9 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			expectData, err := srSerde.Encode(msg)
 			require.NoError(t, err)
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			data, err := proto.Marshal(msg)
+			data, err := protojson.Marshal(msg)
 			require.NoError(t, err)
 
 			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
@@ -616,7 +609,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				Id: "444",
 			}
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
 			data, err := proto.Marshal(msg)
 			require.NoError(t, err)
@@ -632,14 +625,14 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 				Id: "444",
 			}
 
-			serde := ProtobufSchemaSerde{ProtoSvc: testProtoSvc}
+			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
 			data, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1124))
-			assert.Error(t, err)
-			assert.Equal(t, "failed to serialize binary protobuf payload: schema ID 1124 not found", err.Error())
+			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
 		})
 	})

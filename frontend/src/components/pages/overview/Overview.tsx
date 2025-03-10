@@ -13,7 +13,7 @@ import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import type { BrokerWithConfigAndStorage, OverviewStatus } from '../../../state/restInterfaces';
+import type { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
@@ -40,6 +40,7 @@ import { FaCrown } from 'react-icons/fa';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';
+import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
 import {
   getEnterpriseCTALink,
@@ -71,7 +72,8 @@ class Overview extends PageComponent {
 
   refreshData(force: boolean) {
     api.refreshCluster(force);
-    api.refreshClusterOverview(force);
+    void api.refreshClusterOverview();
+
     api.refreshBrokers(force);
     void api.refreshClusterHealth();
     void api.refreshDebugBundleStatuses();
@@ -84,9 +86,9 @@ class Overview extends PageComponent {
     const brokers = api.brokers ?? [];
 
     const clusterStatus =
-      overview.kafka.status === 'HEALTHY'
+      overview.kafka?.status?.status === StatusType.HEALTHY
         ? { displayText: 'Running', className: 'status-green' }
-        : overview.kafka.status === 'DEGRADED'
+        : overview.kafka?.status?.status === StatusType.DEGRADED
           ? { displayText: 'Degraded', className: 'status-yellow' }
           : { displayText: 'Unhealthy', className: 'status-red' };
 
@@ -106,7 +108,7 @@ class Overview extends PageComponent {
       );
     };
 
-    const version = overview.redpanda.version ?? overview.kafka.version;
+    const version = overview.redpanda?.version ?? overview.kafka?.version;
 
     return (
       <Box>
@@ -126,10 +128,10 @@ class Overview extends PageComponent {
               <Statistic title="Cluster Version" value={version} />
               <Statistic
                 title="Brokers Online"
-                value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`}
+                value={`${overview.kafka?.brokersOnline} of ${overview.kafka?.brokersExpected}`}
               />
-              <Statistic title="Topics" value={overview.kafka.topicsCount} />
-              <Statistic title="Replicas" value={overview.kafka.replicasCount} />
+              <Statistic title="Topics" value={overview.kafka?.topicsCount} />
+              <Statistic title="Replicas" value={overview.kafka?.replicasCount} />
             </Flex>
           </Section>
 
@@ -317,12 +319,15 @@ function ClusterDetails() {
   const totalPrimaryStorageBytes = brokers.sum((x) => x.totalPrimaryLogDirSizeBytes ?? 0);
   const totalReplicatedStorageBytes = totalStorageBytes - totalPrimaryStorageBytes;
 
-  const serviceAccounts = overview.redpanda.userCount ?? 'Admin API not configured';
+  const serviceAccounts = overview.redpanda?.userCount ?? 'Admin API not configured';
 
-  const aclCount = overview.kafka.authorizer?.aclCount ?? 'Authorizer not configured';
+  const aclCount = overview.kafkaAuthorizerInfo?.aclCount ?? 'Authorizer not configured';
 
-  const formatStatus = (overviewStatus: OverviewStatus): React.ReactNode => {
-    let status = <div>{titleCase(overviewStatus.status)}</div>;
+  const formatStatus = (overviewStatus?: ComponentStatus): React.ReactNode => {
+    if (!overviewStatus) {
+      return null;
+    }
+    let status = <div>{titleCase(StatusType[overviewStatus.status])}</div>;
     if (overviewStatus.statusReason)
       status = (
         <Tooltip label={overviewStatus.statusReason} hasArrow>
@@ -333,11 +338,11 @@ function ClusterDetails() {
   };
 
   const clusters = overview.kafkaConnect?.clusters ?? [];
-  const hasConnect = overview.kafkaConnect?.isConfigured === true && clusters.length > 0;
+  const hasConnect = overview.kafkaConnect !== null && clusters.length > 0;
   const clusterLines = clusters.map((c) => {
     return {
       name: c.name,
-      status: formatStatus(c),
+      status: formatStatus(c.status),
     };
   });
 
@@ -351,12 +356,12 @@ function ClusterDetails() {
         <Details
           title="Schema Registry"
           content={
-            overview.schemaRegistry.isConfigured
+            overview.schemaRegistry !== null
               ? [
                   [
-                    formatStatus(overview.schemaRegistry),
-                    overview.schemaRegistry.status === 'HEALTHY' && overview.schemaRegistry.isConfigured
-                      ? `${overview.schemaRegistry.registeredSubjects} schemas`
+                    formatStatus(overview.schemaRegistry.status),
+                    overview.schemaRegistry?.status?.status === StatusType.HEALTHY
+                      ? `${overview.schemaRegistry.registeredSubjectsCount} schemas`
                       : undefined,
                   ],
                 ]
@@ -435,11 +440,11 @@ function ClusterDetails() {
         </>
       )}
 
-      {api.isRedpanda && api.isAdminApiConfigured && (
+      {api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense && (
         <>
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
-            <Link as={ReactRouterLink} to="/admin/upload-license">
+            <Link as={ReactRouterLink} to="/upload-license">
               Upload new license
             </Link>
           </GridItem>

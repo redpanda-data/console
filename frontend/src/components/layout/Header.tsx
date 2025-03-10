@@ -9,11 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Breadcrumbs, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { useRouteMatch } from 'react-router-dom';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { isEmbedded } from '../../config';
+import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
 import { IsDev } from '../../utils/env';
 import { UserPreferencesButton } from '../misc/UserPreferences';
@@ -81,9 +83,20 @@ const AppPageHeader = observer(() => {
           )}
           {showRefresh && <DataRefreshButton />}
         </Flex>
-        <Flex alignItems="center" gap={1}>
+        <Flex alignItems="center" gap={2}>
+          <Button
+            as={ReactRouterLink}
+            to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
+            variant="ghost"
+            isDisabled={!api.userData?.canViewDebugBundle}
+            tooltip={
+              !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
+            }
+          >
+            Debug bundle
+          </Button>
           <UserPreferencesButton />
-          {IsDev && !isEmbedded() && <ColorModeSwitch />}
+          {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
         </Flex>
       </Flex>
     </Box>

@@ -325,7 +325,7 @@ export const resolveEnterpriseCTALink = (
 };
 
 export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
-  return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka.clusterId, api.isRedpanda);
+  return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
 };
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
@@ -335,7 +335,7 @@ export const ENTERPRISE_FEATURES_DOCS_LINK =
 
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
-    <Button variant="outline" size="sm" as={ReactRouterLink} to="/admin/upload-license">
+    <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
       Upload license
     </Button>
   ) : null;

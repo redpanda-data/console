@@ -31,9 +31,15 @@ type IncrementalAlterConfigsResourceResponse struct {
 func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 	alterConfigs []kmsg.IncrementalAlterConfigsRequestResource,
 ) ([]IncrementalAlterConfigsResourceResponse, *rest.Error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, errorToRestError(err)
+	}
+
 	req := kmsg.NewIncrementalAlterConfigsRequest()
 	req.Resources = alterConfigs
-	configRes, err := s.kafkaSvc.IncrementalAlterConfigs(ctx, &req)
+
+	configRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      err,
@@ -65,12 +71,31 @@ func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 // original Kafka client kmsg types and thus is only a proxy function which is used for abstracting
 // and virtualizing the Console service.
 func (s *Service) IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error) {
-	return s.kafkaSvc.IncrementalAlterConfigs(ctx, req)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.RequestWith(ctx, cl)
 }
 
 // AlterConfigs proxies the request/response to set configs (not incrementally) via the Kafka API. The difference
 // between AlterConfigs and IncrementalAlterConfigs is that AlterConfigs sets the entire configuration so that
 // all properties that are not set as part of this request will be reset to their default values.
 func (s *Service) AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error) {
-	return s.kafkaSvc.AlterConfigs(ctx, req)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.RequestWith(ctx, cl)
+}
+
+func errorToRestError(err error) *rest.Error {
+	return &rest.Error{
+		Err:      err,
+		Status:   http.StatusServiceUnavailable,
+		Message:  err.Error(),
+		IsSilent: false,
+	}
 }

@@ -141,8 +141,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Upload Enterprise License';
-    p.addBreadcrumb('Admin', '/admin');
-    p.addBreadcrumb('Upload License', '/admin/upload-license');
+    p.addBreadcrumb('Upload License', '/upload-license');
   }
 
   render() {

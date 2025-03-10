@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/flagext"
-	"github.com/cloudhut/common/logging"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -34,12 +33,14 @@ type Config struct {
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 
-	Console  Console        `yaml:"console"`
-	Redpanda Redpanda       `yaml:"redpanda"`
-	Connect  Connect        `yaml:"connect"`
-	REST     Server         `yaml:"server"`
-	Kafka    Kafka          `yaml:"kafka"`
-	Logger   logging.Config `yaml:"logger"`
+	Console        Console      `yaml:"console"`
+	Redpanda       Redpanda     `yaml:"redpanda"`
+	KafkaConnect   KafkaConnect `yaml:"kafkaConnect"`
+	REST           Server       `yaml:"server"`
+	Kafka          Kafka        `yaml:"kafka"`
+	Serde          Serde        `yaml:"serde"`
+	SchemaRegistry Schema       `yaml:"schemaRegistry"`
+	Logger         Logging      `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -48,8 +49,10 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
+	c.Serde.RegisterFlags(f)
 	c.Console.RegisterFlags(f)
-	c.Connect.RegisterFlags(f)
+	c.KafkaConnect.RegisterFlags(f)
+	c.SchemaRegistry.RegisterFlags(f)
 }
 
 // Validate all root and child config structs
@@ -64,6 +67,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Kafka config: %w", err)
 	}
 
+	err = c.Serde.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate serde: %w", err)
+	}
+
 	err = c.Console.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate Console config: %w", err)
@@ -74,9 +82,14 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Redpanda config: %w", err)
 	}
 
-	err = c.Connect.Validate()
+	err = c.KafkaConnect.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate Connect config: %w", err)
+		return fmt.Errorf("failed to validate KafkaConnect config: %w", err)
+	}
+
+	err = c.SchemaRegistry.Validate()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -90,9 +103,10 @@ func (c *Config) SetDefaults() {
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
+	c.Serde.SetDefaults()
 	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
-	c.Connect.SetDefaults()
+	c.KafkaConnect.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.

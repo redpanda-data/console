@@ -27,6 +27,28 @@ func NewRedpandaAdminAPINotConfiguredError() *connect.Error {
 	)
 }
 
+// NewSchemaRegistryNotConfiguredError is a standard error to return if an endpoint
+// requires the Schema Registry API to be configured, but it isn't.
+func NewSchemaRegistryNotConfiguredError() *connect.Error {
+	return NewConnectError(
+		connect.CodeUnimplemented,
+		errors.New("the schema registry api must be configured to use this endpoint"),
+		NewErrorInfo(commonv1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
+		NewHelp(NewHelpLinkConsoleReferenceConfig()),
+	)
+}
+
+// NewKafkaConnectNotConfiguredError is a standard error to return if an endpoint
+// requires the Kafka Connect API to be configured, but it isn't.
+func NewKafkaConnectNotConfiguredError() *connect.Error {
+	return NewConnectError(
+		connect.CodeUnimplemented,
+		errors.New("the Kafka connect api must be configured to use this endpoint"),
+		NewErrorInfo(commonv1alpha1.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
+		NewHelp(NewHelpLinkConsoleReferenceConfig()),
+	)
+}
+
 // NewRedpandaFeatureNotSupportedError is a standard error to return if an endpoint
 // requires the Redpanda feature that is not supported with current running version and instance.
 func NewRedpandaFeatureNotSupportedError(feature string) *connect.Error {

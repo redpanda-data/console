@@ -15,11 +15,11 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { config as appConfig, isEmbedded } from '../config';
 import { LazyMap } from '../utils/LazyMap';
-import { AppFeatures, getBasePath } from '../utils/env';
+import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { ObjToKv } from '../utils/tsxUtils';
-import { TimeSince, decodeBase64 } from '../utils/utils';
+import { TimeSince, decodeBase64, getOidcSubject } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -112,6 +112,15 @@ import {
 import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
+import {
+  AuthenticationMethod,
+  type GetIdentityResponse,
+  KafkaAclOperation,
+  RedpandaCapability,
+  SchemaRegistryCapability,
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import {
   PayloadEncoding,
   CompressionType as ProtoCompressionType,
@@ -333,23 +342,22 @@ export async function handleExpiredLicenseError(r: Response) {
       canListAcls: true,
       canListQuotas: true,
       canPatchConfigs: true,
+      canCreateRoles: true,
       canReassignPartitions: true,
       canCreateSchemas: true,
       canDeleteSchemas: true,
       canManageSchemaRegistry: true,
+      canManageLicense: true,
+      canViewPermissionsList: true,
+      canManageUsers: true,
       canViewSchemas: true,
       canListTransforms: true,
       canCreateTransforms: true,
       canDeleteTransforms: true,
       canViewDebugBundle: true,
-      seat: null as any,
-      user: {
-        providerID: -1,
-        providerName: '',
-        id: '',
-        internalIdentifier: '',
-        meta: { avatarUrl: '', email: '', name: '' },
-      },
+      displayName: '',
+      avatarUrl: '',
+      authenticationMethod: AuthenticationMethod.UNSPECIFIED,
     };
     appGlobal.history.replace('/trial-expired');
   }
@@ -393,6 +401,9 @@ const apiStore = {
   topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
   serviceAccounts: undefined as GetUsersResponse | undefined | null,
+  serviceAccountsLoading: false,
+  serviceAccountsError: null as WrappedApiError | null,
+
   ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
   Quotas: undefined as QuotaResponse | undefined | null,
@@ -403,6 +414,7 @@ const apiStore = {
   partitionReassignments: undefined as PartitionReassignments[] | null | undefined,
 
   connectConnectors: undefined as KafkaConnectors | undefined,
+  connectConnectorsError: null as WrappedApiError | null,
   connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
   licenses: [] as License[],
@@ -418,48 +430,92 @@ const apiStore = {
   // undefined = we haven't checked yet
   // null = call completed, and we're not logged in
   userData: undefined as UserData | null | undefined,
+
   async logout() {
-    await appConfig.fetch('./logout');
+    await appConfig.fetch('./auth/logout');
     this.userData = null;
   },
   async refreshUserData() {
-    await appConfig.fetch('./api/users/me').then(async (r) => {
-      if (r.ok) {
-        api.userData = (await r.json()) as UserData;
-      } else if (r.status === 401) {
-        // unauthorized / not logged in
-        api.userData = null;
-      } else if (r.status === 404) {
-        // not found: frontend is configured as business-version, but backend is non-business-version
-        // -> create a local fake user for debugging
-        uiState.isUsingDebugUserLogin = true;
+    const client = appConfig.authenticationClient;
+    if (!client) throw new Error('security client is not initialized');
+
+    await client
+      .getIdentity({})
+      .then((r: GetIdentityResponse) => {
         api.userData = {
-          canViewConsoleUsers: false,
-          canListAcls: true,
-          canListQuotas: true,
-          canPatchConfigs: true,
-          canReassignPartitions: true,
-          canCreateSchemas: true,
-          canDeleteSchemas: true,
-          canManageSchemaRegistry: true,
-          canViewSchemas: true,
-          canListTransforms: true,
-          canCreateTransforms: true,
-          canDeleteTransforms: true,
-          canViewDebugBundle: true,
-          seat: null as any,
-          user: {
-            providerID: -1,
-            providerName: 'debug provider',
-            id: 'debug',
-            internalIdentifier: 'debug',
-            meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
-          },
-        };
-      } else if (r.status === 403) {
-        void handleExpiredLicenseError(r);
-      }
-    });
+          displayName: r.displayName,
+          avatarUrl: r.avatarUrl,
+          authenticationMethod: r.authenticationMethod,
+
+          canListAcls: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE),
+          canListQuotas: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+          canPatchConfigs: r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS),
+          canReassignPartitions:
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER_CONFIGS) &&
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE_CONFIGS),
+          canCreateRoles:
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.ALTER) &&
+            r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+          canViewPermissionsList:
+            r.permissions?.kafkaClusterOperations.includes(KafkaAclOperation.DESCRIBE) &&
+            r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
+
+          canManageLicense: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_LICENSE),
+          canManageUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_REDPANDA_USERS),
+          canCreateSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
+          canDeleteSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.DELETE),
+          canManageSchemaRegistry: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.WRITE),
+          canViewSchemas: r.permissions?.schemaRegistry.includes(SchemaRegistryCapability.READ),
+          canListTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+          canCreateTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+          canDeleteTransforms: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_TRANSFORMS),
+          canViewDebugBundle: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_DEBUG_BUNDLE),
+          canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
+        } as UserData;
+        // if (r.status === 401) {
+        //   // unauthorized / not logged in
+        //   api.userData = null;
+        // } else if (r.status === 404) {
+        //   // not found: frontend is configured as business-version, but backend is non-business-version
+        //   // -> create a local fake user for debugging
+        //   uiState.isUsingDebugUserLogin = true;
+        //   api.userData = {
+        //     canViewConsoleUsers: false,
+        //     canListAcls: true,
+        //     canListQuotas: true,
+        //     canPatchConfigs: true,
+        //     canReassignPartitions: true,
+        //     canCreateSchemas: true,
+        //     canDeleteSchemas: true,
+        //     canManageSchemaRegistry: true,
+        //     canViewSchemas: true,
+        //     canListTransforms: true,
+        //     canCreateTransforms: true,
+        //     canDeleteTransforms: true,
+        //     canViewDebugBundle: true,
+        //     seat: null as any,
+        //     user: {
+        //       providerID: -1,
+        //       providerName: 'debug provider',
+        //       id: 'debug',
+        //       internalIdentifier: 'debug',
+        //       meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
+        //     },
+        //   };
+        // } else if (r.status === 403) {
+        //   void handleExpiredLicenseError(r);
+        // }
+      })
+      .catch((err) => {
+        this.userData = null;
+        if (err.code === 7) {
+          // TODO - solve typings, provide corresponding Reason type
+          const subject = getOidcSubject(err);
+          appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}`);
+        } else {
+          appGlobal.history.push('/login');
+        }
+      });
   },
 
   // Make currently running requests observable
@@ -533,15 +589,6 @@ const apiStore = {
       v.documentation.text = text;
       this.topicDocumentation.set(topicName, v.documentation);
     }, addError);
-  },
-
-  refreshTopicPermissions(topicName: string, force?: boolean) {
-    if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
-    if (this.userData?.user?.providerID === -1) return; // debug user
-    cachedApiRequest<TopicPermissions | null>(
-      `${appConfig.restBasePath}/permissions/topics/${encodeURIComponent(topicName)}`,
-      force,
-    ).then((x) => this.topicPermissions.set(topicName, x), addError);
   },
 
   async deleteTopic(topicName: string) {
@@ -799,27 +846,73 @@ const apiStore = {
     return r;
   },
 
-  refreshClusterOverview(force?: boolean) {
-    cachedApiRequest<ClusterOverview>(`${appConfig.restBasePath}/cluster/overview`, force).then((v) => {
-      this.clusterOverview = v;
-    }, addError);
+  async refreshClusterOverview() {
+    const client = appConfig.clusterStatusClient;
+
+    if (!client) {
+      throw new Error('Cluster status client is not initialized');
+    }
+
+    const requests: Array<Promise<any>> = [
+      client.getKafkaAuthorizerInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getConsoleInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getKafkaInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getRedpandaInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+      client.getKafkaConnectInfo({}).catch((e) => {
+        console.error(e);
+        return null;
+      }),
+    ];
+
+    // Conditionally add schema registry request
+    if (api.userData?.canViewSchemas) {
+      requests.push(
+        client.getSchemaRegistryInfo({}).catch((e) => {
+          console.error(e);
+          return null;
+        }),
+      );
+    }
+
+    const responses = await Promise.all(requests);
+
+    const [
+      kafkaAuthorizerInfoResponse,
+      consoleInfoResponse,
+      kafkaResponse,
+      redpandaResponse,
+      kafkaConnectResponse,
+      schemaRegistryResponse = null, // Default to null in case it wasn't requested
+    ] = responses;
+
+    this.clusterOverview = {
+      kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse,
+      console: consoleInfoResponse,
+      kafka: kafkaResponse,
+      redpanda: redpandaResponse,
+      schemaRegistry: schemaRegistryResponse,
+      kafkaConnect: kafkaConnectResponse,
+    };
   },
 
   get isRedpanda() {
-    const overview = this.clusterOverview;
-    if (!overview) return false;
-    if (overview.kafka.distribution === 'REDPANDA') return true;
-
-    return false;
+    return this.clusterOverview?.kafka?.distribution === KafkaDistribution.REDPANDA;
   },
 
   get isAdminApiConfigured() {
-    const overview = this.clusterOverview;
-    if (!overview) {
-      return false;
-    }
-
-    return overview.redpanda.isAdminApiConfigured;
+    return this.clusterOverview?.redpanda !== null;
   },
 
   refreshBrokers(force?: boolean) {
@@ -994,11 +1087,13 @@ const apiStore = {
     }, addError);
   },
 
-  refreshSchemaMode(force?: boolean) {
-    const rq = cachedApiRequest(
-      `${appConfig.restBasePath}/schema-registry/mode`,
-      force,
-    ) as Promise<SchemaRegistryModeResponse>;
+  async refreshSchemaMode() {
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/mode`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+    const rq = parseOrUnwrap<SchemaRegistryModeResponse>(response, null);
+
     return rq
       .then((r) => {
         if (r.isConfigured === false) {
@@ -1015,11 +1110,13 @@ const apiStore = {
       });
   },
 
-  refreshSchemaCompatibilityConfig(force?: boolean) {
-    const rq = cachedApiRequest(
-      `${appConfig.restBasePath}/schema-registry/config`,
-      force,
-    ) as Promise<SchemaRegistryConfigResponse>;
+  async refreshSchemaCompatibilityConfig() {
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+    const rq = parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
+
     return rq
       .then((r) => {
         if (r.isConfigured === false) {
@@ -1372,8 +1469,14 @@ const apiStore = {
     return await parseOrUnwrap<PatchConfigsResponse>(response, null);
   },
 
-  async refreshConnectClusters(force?: boolean): Promise<void> {
-    return cachedApiRequest<KafkaConnectors | null>(`${appConfig.restBasePath}/kafka-connect/connectors`, force).then(
+  async refreshConnectClusters(): Promise<void> {
+    this.connectConnectorsError = null;
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/connectors`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+
+    return await parseOrUnwrap<KafkaConnectors | null>(response, null).then(
       (v) => {
         // backend error
         if (!v) {
@@ -1392,7 +1495,9 @@ const apiStore = {
 
         this.connectConnectors = v;
       },
-      addError,
+      (error: WrappedApiError) => {
+        this.connectConnectorsError = error;
+      },
     );
   },
 
@@ -1664,11 +1769,20 @@ const apiStore = {
     return parseOrUnwrap<void>(response, null);
   },
 
-  async refreshServiceAccounts(force?: boolean): Promise<void> {
-    await cachedApiRequest<GetUsersResponse | null>(`${appConfig.restBasePath}/users`, force).then(
-      (v) => (this.serviceAccounts = v ?? null),
-      addError,
-    );
+  async refreshServiceAccounts(): Promise<void> {
+    this.serviceAccountsLoading = true;
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/users`, {
+      method: 'GET',
+      headers: [['Content-Type', 'application/json']],
+    });
+    return parseOrUnwrap<void>(response, null)
+      .then((v) => {
+        this.serviceAccounts = v ?? null;
+      })
+      .catch((err: WrappedApiError) => {
+        this.serviceAccountsError = err;
+      })
+      .finally(() => (this.serviceAccountsLoading = false));
   },
 
   async createServiceAccount(request: CreateUserRequest): Promise<void> {
@@ -1906,8 +2020,10 @@ export type RolePrincipal = { name: string; principalType: 'User' };
 export const rolesApi = observable({
   roles: [] as string[],
   roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
+  rolesError: null as ConnectError | null,
 
   async refreshRoles(): Promise<void> {
+    this.rolesError = null;
     const client = appConfig.securityClient;
     if (!client) throw new Error('security client is not initialized');
 
@@ -1916,7 +2032,14 @@ export const rolesApi = observable({
     if (Features.rolesApi) {
       let nextPageToken = '';
       while (true) {
-        const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken });
+        const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken }).catch((error) => {
+          this.rolesError = error;
+          return null;
+        });
+
+        if (res === null) {
+          break;
+        }
 
         const newRoles = res.roles.map((x) => x.name);
         roles.push(...newRoles);
@@ -2006,6 +2129,7 @@ export const rolesApi = observable({
 
 export const pipelinesApi = observable({
   pipelines: undefined as undefined | Pipeline[],
+  pipelinesError: null as ConnectError | null,
 
   // async lintConfig(config: string): Promise<LintConfigResponse> {
   //     const client = appConfig.pipelinesClient;
@@ -2020,11 +2144,16 @@ export const pipelinesApi = observable({
     if (!client) throw new Error('pipelines client is not initialized');
 
     const pipelines = [];
+    this.pipelinesError = null;
 
     let nextPageToken = '';
     while (true) {
-      const res = await client.listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } });
-      const response = res.response;
+      const res = await client
+        .listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } })
+        .catch((error: ConnectError) => {
+          this.pipelinesError = error;
+        });
+      const response = res?.response;
       if (!response) break;
 
       pipelines.push(...response.pipelines);

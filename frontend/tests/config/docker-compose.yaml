@@ -34,6 +34,7 @@ services:
       - 19644:9644
     volumes:
       - redpanda:/var/lib/redpanda/data
+      - ./conf/.bootstrap.yaml:/etc/redpanda/.bootstrap.yaml
     networks:
       - redpanda_network
     healthcheck:
@@ -42,6 +43,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+    environment:
+      RP_BOOTSTRAP_USER: "e2euser:very-secret"
 
   owlshop:
     container_name: owlshop
@@ -61,6 +64,11 @@ services:
           topicPartitionCount: 1
         kafka:
           brokers: "redpanda:9092"
+          sasl:
+            enabled: true
+            mechanism: SCRAM-SHA-256
+            username: e2euser
+            password: very-secret
         schemaRegistry:
           address: "http://redpanda:8081"
     restart: unless-stopped
@@ -68,7 +76,7 @@ services:
       - redpanda
 
   connect:
-    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest
+    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-bba8622
     container_name: connect
     networks:
       - redpanda_network
@@ -84,12 +92,17 @@ services:
         offset.storage.topic=_internal_connectors_offsets
         config.storage.topic=_internal_connectors_configs
         status.storage.topic=_internal_connectors_status
-        config.storage.replication.factor=-1
-        offset.storage.replication.factor=-1
-        status.storage.replication.factor=-1
+        config.storage.replication.factor=1
+        offset.storage.replication.factor=1
+        status.storage.replication.factor=1
         offset.flush.interval.ms=1000
         producer.linger.ms=50
         producer.batch.size=131072
+        security.protocol=SASL_PLAINTEXT
+        sasl.mechanism=SCRAM-SHA-256
+        sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
+          username="e2euser" \
+          password="very-secret";
       CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
       CONNECT_GC_LOG_ENABLED: "false"
       CONNECT_HEAP_OPTS: -Xms512M -Xmx512M

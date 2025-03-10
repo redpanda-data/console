@@ -23,10 +23,14 @@ import (
 
 // CreateACL creates an ACL resource in your target Kafka cluster.
 func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsRequestCreation) *rest.Error {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return errorToRestError(err)
+	}
+
 	req := kmsg.NewCreateACLsRequest()
 	req.Creations = []kmsg.CreateACLsRequestCreation{createReq}
-
-	res, err := s.kafkaSvc.CreateACLs(ctx, &req)
+	res, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return &rest.Error{
 			Err:          err,
@@ -64,5 +68,9 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 
 // CreateACLs proxies the request/response to CreateACLs via the Kafka API.
 func (s *Service) CreateACLs(ctx context.Context, req *kmsg.CreateACLsRequest) (*kmsg.CreateACLsResponse, error) {
-	return s.kafkaSvc.CreateACLs(ctx, req)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return req.RequestWith(ctx, cl)
 }

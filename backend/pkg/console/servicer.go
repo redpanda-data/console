@@ -6,15 +6,16 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/sr"
 
-	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 // Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer.
 // It may also be used to virtualize Console to serve many virtual clusters with a single Console deployment.
 type Servicer interface {
+	SchemaRegistryServicer
+
 	GetAPIVersions(ctx context.Context) ([]APIVersion, error)
 	GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConfig, error)
 	GetBrokerConfig(ctx context.Context, brokerID int32) ([]BrokerConfigEntry, *rest.Error)
@@ -23,7 +24,6 @@ type Servicer interface {
 	DeleteConsumerGroup(ctx context.Context, groupID string) error
 	GetConsumerGroupsOverview(ctx context.Context, groupIDs []string) ([]ConsumerGroupOverview, *rest.Error)
 	CreateACL(ctx context.Context, createReq kmsg.CreateACLsRequestCreation) *rest.Error
-	CreateKafkaClient(_ context.Context, additionalOpts ...kgo.Opt) (*kgo.Client, error)
 	CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (CreateTopicResponse, *rest.Error)
 	DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestFilter) (DeleteACLsResponse, *rest.Error)
 	DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error)
@@ -35,39 +35,22 @@ type Servicer interface {
 	GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error)
 	IncrementalAlterConfigs(ctx context.Context, alterConfigs []kmsg.IncrementalAlterConfigsRequestResource) ([]IncrementalAlterConfigsResourceResponse, *rest.Error)
 	ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest) (*ACLOverview, error)
-	ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error
+	ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error
 	ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error)
-	GetOverview(ctx context.Context) Overview
 	GetKafkaVersion(ctx context.Context) (string, error)
 	ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error)
 	AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error)
-	ProduceRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
-	PublishRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
+	ProducePlainRecords(ctx context.Context, records []*kgo.Record, useTransactions bool, compressionOpts []kgo.CompressionCodec) ProduceRecordsResponse
+	ProduceRecord(context.Context, string, int32, []kgo.RecordHeader, *serde.RecordPayloadInput, *serde.RecordPayloadInput, bool, []kgo.CompressionCodec) (*ProduceRecordResponse, error)
 	Start() error
 	Stop()
-	IsHealthy(ctx context.Context) error
 	GetTopicConfigs(ctx context.Context, topicName string, configNames []string) (*TopicConfig, *rest.Error)
 	GetTopicsConfigs(ctx context.Context, topicNames []string, configNames []string) (map[string]*TopicConfig, error)
 	ListTopicConsumers(ctx context.Context, topicName string) ([]*TopicConsumerGroup, error)
 	GetTopicDocumentation(topicName string) *TopicDocumentation
 	GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error)
-	GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataResponse) ([]string, error)
+	GetAllTopicNames(ctx context.Context) ([]string, error)
 	GetTopicDetails(ctx context.Context, topicNames []string) ([]TopicDetails, *rest.Error)
-
-	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
-	GetSchemaRegistryConfig(ctx context.Context) (*SchemaRegistryConfig, error)
-	PutSchemaRegistryConfig(ctx context.Context, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
-	PutSchemaRegistrySubjectConfig(ctx context.Context, subject string, compatLevel schema.CompatibilityLevel) (*SchemaRegistryConfig, error)
-	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error
-	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
-	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
-	GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName, version string) ([]SchemaReference, error)
-	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)
-	DeleteSchemaRegistrySubjectVersion(ctx context.Context, subject, version string, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error)
-	GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegistrySchemaTypes, error)
-	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema schema.Schema) (*CreateSchemaResponse, error)
-	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version string, schema schema.Schema) *SchemaRegistrySchemaValidation
-	GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error)
 
 	// ------------------------------------------------------------------
 	// Plain Kafka requests, used by Connect API.
@@ -93,4 +76,21 @@ type Servicer interface {
 	IncrementalAlterConfigsKafka(ctx context.Context, req *kmsg.IncrementalAlterConfigsRequest) (*kmsg.IncrementalAlterConfigsResponse, error)
 	// AlterConfigs proxies the request/response to set configs (not incrementally) via the Kafka API.
 	AlterConfigs(ctx context.Context, req *kmsg.AlterConfigsRequest) (*kmsg.AlterConfigsResponse, error)
+}
+
+// SchemaRegistryServicer is the interface for schema registry servicer
+type SchemaRegistryServicer interface {
+	GetSchemaRegistryMode(ctx context.Context) (*SchemaRegistryMode, error)
+	GetSchemaRegistryConfig(ctx context.Context, subject string) (*SchemaRegistryConfig, error)
+	PutSchemaRegistryConfig(ctx context.Context, subject string, compatibility sr.SetCompatibility) (*SchemaRegistryConfig, error)
+	DeleteSchemaRegistrySubjectConfig(ctx context.Context, subject string) error
+	GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegistrySubject, error)
+	GetSchemaRegistrySubjectDetails(ctx context.Context, subjectName string, version string) (*SchemaRegistrySubjectDetails, error)
+	GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subjectName string, version int) ([]SchemaReference, error)
+	DeleteSchemaRegistrySubject(ctx context.Context, subjectName string, deletePermanently bool) (*SchemaRegistryDeleteSubjectResponse, error)
+	DeleteSchemaRegistrySubjectVersion(ctx context.Context, subject string, version int, deletePermanently bool) (*SchemaRegistryDeleteSubjectVersionResponse, error)
+	GetSchemaRegistrySchemaTypes(ctx context.Context) (*SchemaRegistrySchemaTypes, error)
+	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema) (*CreateSchemaResponse, error)
+	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version int, schema sr.Schema) (*SchemaRegistrySchemaValidation, error)
+	GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error)
 }

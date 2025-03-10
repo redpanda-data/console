@@ -90,7 +90,7 @@ func (s *APISuite) SetupSuite() {
 
 	s.testSeedBroker = seedBroker
 
-	// 3. Start Kafka Connect Docker container
+	// 3. Start KafkaConnect Docker container
 	kConnectContainer, err := testutil.RunRedpandaConnectorsContainer(
 		ctx,
 		[]string{"redpanda:29092"},
@@ -123,16 +123,16 @@ func (s *APISuite) SetupSuite() {
 		},
 	}
 	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
-	s.cfg.Kafka.Schema.Enabled = true
-	s.cfg.Kafka.Schema.URLs = []string{schemaRegistryAddress}
+	s.cfg.SchemaRegistry.Enabled = true
+	s.cfg.SchemaRegistry.URLs = []string{schemaRegistryAddress}
 
 	s.cfg.Redpanda.AdminAPI.Enabled = true
 	s.cfg.Redpanda.AdminAPI.URLs = []string{adminApiAddr}
 	s.cfg.Redpanda.AdminAPI.TLS.Enabled = false
 
-	s.cfg.Connect = config.Connect{
+	s.cfg.KafkaConnect = config.KafkaConnect{
 		Enabled: true,
-		Clusters: []config.ConnectCluster{
+		Clusters: []config.KafkaConnectCluster{
 			{
 				Name: "connect-cluster",
 				URL:  kConnectClusterURL,
@@ -162,7 +162,7 @@ func (s *APISuite) TearDownSuite() {
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 
-	// 1. Terminate Kafka Connect container
+	// 1. Terminate KafkaConnect container
 	assert.NoError(s.kConnectContainer.Terminate(ctx))
 	// 2. Terminate Redpanda container
 	assert.NoError(s.redpandaContainer.Terminate(ctx))

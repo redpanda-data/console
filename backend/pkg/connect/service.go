@@ -24,23 +24,23 @@ import (
 
 // Service provides the API for interacting with all configured Kafka connect clusters.
 type Service struct {
-	Cfg    config.Connect
+	Cfg    config.KafkaConnect
 	Logger *zap.Logger
 	// ClientsByCluster holds the Client and config. The key is the clusters' name
 	ClientsByCluster map[string]*ClientWithConfig
 	Interceptor      *interceptor.Interceptor
 }
 
-// ClientWithConfig carries the Kafka Connect client, along with the configuration
+// ClientWithConfig carries the Kafka KafkaConnect client, along with the configuration
 // for a single configured Kafka connect cluster.
 type ClientWithConfig struct {
 	Client *con.Client
-	Cfg    config.ConnectCluster
+	Cfg    config.KafkaConnectCluster
 }
 
 // NewService creates a new connect.Service. It tests the connectivity for each configured
 // Kafka connect cluster proactively.
-func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
+func NewService(cfg config.KafkaConnect, logger *zap.Logger) (*Service, error) {
 	clientsByCluster := make(map[string]*ClientWithConfig)
 
 	if len(cfg.Clusters) == 0 {
@@ -52,11 +52,11 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 		}, nil
 	}
 
-	// 1. Create a client for each configured Connect cluster
+	// 1. Create a client for each configured KafkaConnect cluster
 	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
 
 	for _, clusterCfg := range cfg.Clusters {
-		// Create dedicated Connect HTTP Client for each cluster
+		// Create dedicated KafkaConnect HTTP Client for each cluster
 		childLogger := logger.With(
 			zap.String("cluster_name", clusterCfg.Name),
 			zap.String("cluster_address", clusterCfg.URL))
@@ -117,7 +117,7 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 	wg := sync.WaitGroup{}
 	for _, clientInfo := range s.ClientsByCluster {
 		wg.Add(1)
-		go func(cfg config.ConnectCluster, c *con.Client) {
+		go func(cfg config.KafkaConnectCluster, c *con.Client) {
 			defer wg.Done()
 			_, err := c.GetRoot(ctx)
 			if err != nil {

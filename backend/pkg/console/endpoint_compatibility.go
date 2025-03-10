@@ -15,9 +15,10 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
+	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
 // EndpointCompatibility describes what Console endpoints can be offered to the frontend,
@@ -40,7 +41,16 @@ type EndpointCompatibilityEndpoint struct {
 // Console endpoint we can let the frontend know in advance, so that these features will be rendered as
 // disabled.
 func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error) {
-	versionsRes, err := s.kafkaSvc.GetAPIVersions(ctx)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return EndpointCompatibility{}, err
+	}
+
+	req := kmsg.NewApiVersionsRequest()
+	req.ClientSoftwareVersion = version.Version
+	req.ClientSoftwareName = "RPConsole"
+
+	versionsRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return EndpointCompatibility{}, fmt.Errorf("failed to get kafka api version: %w", err)
 	}
@@ -53,7 +63,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		Method          string
 		Requests        []kmsg.Request
 		HasRedpandaAPI  bool
-		RedpandaFeature redpanda.RedpandaFeature
+		RedpandaFeature redpandaFeature
 	}
 	endpointRequirements := []endpoint{
 		{
@@ -123,13 +133,13 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			URL:             consolev1alpha1connect.TransformServiceName,
 			Method:          "POST",
 			HasRedpandaAPI:  true,
-			RedpandaFeature: redpanda.RedpandaFeatureWASMDataTransforms,
+			RedpandaFeature: redpandaFeatureWASMDataTransforms,
 		},
 		{
 			URL:             consolev1alpha1connect.DebugBundleServiceName,
 			Method:          "POST",
 			HasRedpandaAPI:  true,
-			RedpandaFeature: redpanda.RedpandaFeatureDebugBundle,
+			RedpandaFeature: redpandaFeatureDebugBundle,
 		},
 	}
 
@@ -155,13 +165,19 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		// and the Kafka API. If the Kafka API is not supported, but the same
 		// endpoint is exposed via the Redpanda Admin API, we support
 		// this feature anyways.
-		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
+		if endpointReq.HasRedpandaAPI && s.cfg.Redpanda.AdminAPI.Enabled {
 			endpointSupported = true
 
 			// If we have an actual feature defined that we can check explicitly
 			// lets check that specific feature.
 			if endpointReq.RedpandaFeature != "" {
-				endpointSupported = s.redpandaSvc.CheckFeature(ctx, endpointReq.RedpandaFeature)
+				adminAPICl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
+				if err == nil {
+					endpointSupported = s.checkRedpandaFeature(ctx, adminAPICl, endpointReq.RedpandaFeature)
+				} else {
+					endpointSupported = false
+					s.logger.Warn("failed to retrieve a redpanda api client to check endpoint compatibility", zap.Error(err))
+				}
 			}
 		}
 

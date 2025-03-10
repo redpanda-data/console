@@ -17,19 +17,31 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
+	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
+	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/proto"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
+
+var _ Servicer = (*Service)(nil)
 
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
 // several responses from Kafka concurrently and constructing them so, that they are
 type Service struct {
-	kafkaSvc    *kafka.Service
-	redpandaSvc *redpanda.Service
-	gitSvc      *git.Service // Git service can be nil if not configured
-	connectSvc  *connect.Service
-	logger      *zap.Logger
+	kafkaClientFactory    kafkafactory.ClientFactory
+	schemaClientFactory   schemafactory.ClientFactory
+	redpandaClientFactory redpandafactory.ClientFactory
+	gitSvc                *git.Service // Git service can be nil if not configured
+	connectSvc            *connect.Service
+	cachedSchemaClient    *schemacache.CachedClient
+	serdeSvc              *serde.Service
+	protoSvc              *proto.Service
+	logger                *zap.Logger
+	cfg                   *config.Config
 
 	// configExtensionsByName contains additional metadata about Topic or BrokerWithLogDirs configs.
 	// The additional information is used by the frontend to provide a good UX when
@@ -41,7 +53,10 @@ type Service struct {
 func NewService(
 	cfg *config.Config,
 	logger *zap.Logger,
-	redpandaSvc *redpanda.Service,
+	kafkaClientFactory kafkafactory.ClientFactory,
+	schemaClientFactory schemafactory.ClientFactory,
+	redpandaClientFactory redpandafactory.ClientFactory,
+	cacheNamespaceFn func(context.Context) (string, error),
 	connectSvc *connect.Service,
 ) (Servicer, error) {
 	var gitSvc *git.Service
@@ -59,17 +74,45 @@ func NewService(
 		return nil, fmt.Errorf("failed to load config extensions: %w", err)
 	}
 
-	kafkaSvc, err := kafka.NewService(cfg, logger, cfg.MetricsNamespace)
+	var protoSvc *proto.Service
+	if cfg.Serde.Protobuf.Enabled {
+		protoSvc, err = proto.NewService(cfg.Serde.Protobuf, logger.Named("proto_service"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
+		}
+	}
+
+	var msgPackSvc *msgpack.Service
+	if cfg.Serde.MessagePack.Enabled {
+		msgPackSvc, err = msgpack.NewService(cfg.Serde.MessagePack)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create msgpack service: %w", err)
+		}
+	}
+
+	var cachedSchemaClient *schemacache.CachedClient
+	if cfg.SchemaRegistry.Enabled {
+		cachedSchemaClient, err = schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create schema client: %w", err)
+		}
+	}
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, cfg.Serde.Cbor)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create kafka svc: %w", err)
+		return nil, fmt.Errorf("failed creating serde service: %w", err)
 	}
 
 	return &Service{
-		kafkaSvc:    kafkaSvc,
-		redpandaSvc: redpandaSvc,
-		gitSvc:      gitSvc,
-		connectSvc:  connectSvc,
-		logger:      logger,
+		kafkaClientFactory:    kafkaClientFactory,
+		schemaClientFactory:   schemaClientFactory,
+		redpandaClientFactory: redpandaClientFactory,
+		gitSvc:                gitSvc,
+		connectSvc:            connectSvc,
+		cachedSchemaClient:    cachedSchemaClient,
+		serdeSvc:              serdeSvc,
+		protoSvc:              protoSvc,
+		logger:                logger,
+		cfg:                   cfg,
 
 		configExtensionsByName: configExtensionsByName,
 	}, nil
@@ -84,21 +127,17 @@ func (s *Service) Start() error {
 			return fmt.Errorf("failed to start git service: %w", err)
 		}
 	}
-
-	if err := s.kafkaSvc.Start(); err != nil {
-		return fmt.Errorf("failed to start kafka service: %w", err)
+	if s.protoSvc != nil {
+		err := s.protoSvc.Start()
+		if err != nil {
+			return fmt.Errorf("failed to start proto service: %w", err)
+		}
 	}
 
 	return nil
 }
 
 // Stop stops running go routines and releases allocated resources.
-func (s *Service) Stop() {
-	s.kafkaSvc.KafkaClient.Close()
-}
-
-// IsHealthy checks if the Kafka service is reachable and therefore
-// considered healthy.
-func (s *Service) IsHealthy(ctx context.Context) error {
-	return s.kafkaSvc.IsHealthy(ctx)
+func (*Service) Stop() {
+	// Nothing to stop, the gitSvc listens for OS signals itself and stops its goroutines then.
 }

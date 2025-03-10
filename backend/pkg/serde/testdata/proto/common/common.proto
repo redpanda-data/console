@@ -20,7 +20,7 @@ import "google/type/money.proto";
 import "google/type/month.proto";
 import "google/type/phone_number.proto";
 
-option go_package = "github.com/redpanda-data/console/backend/pkg/kafka/testdata/proto/gen/common";
+option go_package = "github.com/redpanda-data/console/backend/pkg/console/testdata/proto/gen/common";
 
 message CommonMessage {
   string id = 1;

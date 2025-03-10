@@ -37,6 +37,11 @@ type CreateTopicResponseConfig struct {
 
 // CreateTopic creates a Kafka topic.
 func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (CreateTopicResponse, *rest.Error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return CreateTopicResponse{}, errorToRestError(err)
+	}
+
 	internalLogs := []zapcore.Field{
 		zap.String("topic_name", createTopicReq.Topic),
 		zap.Int32("partition_count", createTopicReq.NumPartitions),
@@ -47,7 +52,7 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 	req := kmsg.NewCreateTopicsRequest()
 	req.Topics = []kmsg.CreateTopicsRequestTopic{createTopicReq}
 
-	createRes, err := s.kafkaSvc.CreateTopics(ctx, &req)
+	createRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return CreateTopicResponse{}, &rest.Error{
 			Err:          fmt.Errorf("failed to create topic: %w", err),
@@ -98,5 +103,9 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 
 // CreateTopics proxies the create topic request to the Kafka client.
 func (s *Service) CreateTopics(ctx context.Context, createReq *kmsg.CreateTopicsRequest) (*kmsg.CreateTopicsResponse, error) {
-	return s.kafkaSvc.CreateTopics(ctx, createReq)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return createReq.RequestWith(ctx, cl)
 }

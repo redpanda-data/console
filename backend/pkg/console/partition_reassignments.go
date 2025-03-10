@@ -33,7 +33,15 @@ type PartitionReassignmentsPartition struct {
 
 // ListPartitionReassignments returns all partition reassignments that are currently in progress.
 func (s *Service) ListPartitionReassignments(ctx context.Context) ([]PartitionReassignments, error) {
-	reassignments, err := s.kafkaSvc.ListPartitionReassignments(ctx)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := kmsg.NewListPartitionReassignmentsRequest()
+	req.Topics = nil // List for all topics
+
+	reassignments, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list partition reassignments: %w", err)
 	}
@@ -81,7 +89,15 @@ type AlterPartitionReassignmentsPartitionResponse struct {
 
 // AlterPartitionAssignments requests to change what brokers one or more partitions are assigned to.
 func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error) {
-	kRes, err := s.kafkaSvc.AlterPartitionAssignments(ctx, topics)
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := kmsg.NewAlterPartitionAssignmentsRequest()
+	req.Topics = topics
+
+	kRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reassign partitions: %w", err)
 	}

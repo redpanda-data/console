@@ -151,26 +151,6 @@
   place-content: center;
   place-items: center;
   white-space: nowrap;
-
-  .hoverButton {
-    color: currentColor;
-    background: transparent;
-
-    &:hover {
-      border-color: currentColor;
-    }
-  }
-}
-
-.hoverButton {
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.hoverButton:hover {
-  border-radius: 4px;
-  border-top-left-radius: 0px;
-  border-bottom-left-radius: 0px;
 }
 
 .showOnHover {
@@ -446,69 +426,6 @@
   border-bottom: 1px solid #eee;
 }
 
-.login {
-  display: flex;
-  place-content: center;
-  place-items: center;
-  height: 100vh;
-  background: rgb(233, 233, 233);
-  font-family: "Inter", sans-serif;
-}
-
-.loginContainer {
-  width: 970px;
-  height: 600px;
-  background: white;
-  overflow: overlay;
-  box-shadow: 8px 8px 16px 1px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  display: flex;
-  font-size: 22px;
-  line-height: 23px;
-  /* or 107% */
-  display: flex;
-  align-items: center;
-  color: rgba(0, 0, 0, 0.85);
-}
-
-.loginContainerRight {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  font-size: 11px;
-  color: #fafafa;
-  text-align: center;
-  font-weight: 500;
-  padding: 2rem 0;
-}
-
-.loginLeft {
-  height: 100%;
-  flex-direction: column;
-  justify-content: center;
-  padding: 2rem 4rem;
-  width: 360px;
-}
-
-.loginRight {
-  position: relative;
-  height: 100%;
-  background: #131f2f;
-  flex-grow: 1;
-  overflow-y: hidden;
-}
-
-.loginRight::after {
-  content: "";
-  background: url("assets/pattern3.png") repeat-x 330px bottom;
-  background-position-y: 115%;
-  mix-blend-mode: hard-light;
-  opacity: 0.35;
-  zoom: 80%;
-  @include tlrb;
-  z-index: -1;
-}
-
 .menu-permission-tooltip {
   user-select: none;
   box-shadow: 0 0 5px 1px #00000047;
@@ -780,15 +697,6 @@ svg {
   transition-timing-function: ease-out;
   color: #888;
   background-color: hsla(216, 20%, 92%, 1);
-}
-
-.userPreferencesButton:hover {
-  opacity: 1;
-  background-color: #fff;
-}
-
-.userPreferencesButton .octicon {
-  transform: rotateZ(45deg);
 }
 
 .preferencesDialog {

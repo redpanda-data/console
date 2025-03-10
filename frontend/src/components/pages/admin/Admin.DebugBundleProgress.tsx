@@ -16,7 +16,6 @@ import { Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { PageComponent, type PageInitHelper } from '../Page';
 import DebugBundleOverview from './DebugBundleOverview';
@@ -30,16 +29,14 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
 
   initPage(p: PageInitHelper): void {
     p.title = 'Generate debug bundle';
-    p.addBreadcrumb('Admin', '/admin');
-    p.addBreadcrumb('Generate debug bundle', '/admin/debug-bundle/progress');
+    p.addBreadcrumb('Generate debug bundle', '/debug-bundle/progress');
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
-  refreshData(force: boolean) {
-    api.refreshAdminInfo(force);
-    api.refreshDebugBundleStatuses();
+  refreshData() {
+    void api.refreshDebugBundleStatuses();
   }
 
   constructor(p: any) {
@@ -48,8 +45,6 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
   }
 
   render() {
-    if (!api.adminInfo) return DefaultSkeleton;
-
     return (
       <Box>
         <Text>
@@ -92,7 +87,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                   Stop
                 </Button>
               ) : (
-                <Button variant="outline" as={ReactRouterLink} to="/admin/debug-bundle">
+                <Button variant="outline" as={ReactRouterLink} to="/debug-bundle">
                   {api.isDebugBundleError ? 'Try again' : 'Done'}
                 </Button>
               )}

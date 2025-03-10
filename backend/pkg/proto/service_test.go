@@ -61,7 +61,7 @@ func TestService_getMatchingMapping(t *testing.T) {
 				KeyProtoType: "bar",
 			},
 		},
-	}, logger, nil)
+	}, logger)
 
 	assert.NoError(t, err)
 	require.NotNil(t, svc)

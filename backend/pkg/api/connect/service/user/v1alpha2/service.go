@@ -23,14 +23,13 @@ import (
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	v1alpha2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2/dataplanev1alpha2connect"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 var _ dataplanev1alpha2connect.UserServiceHandler = (*Service)(nil)
@@ -38,47 +37,40 @@ var _ dataplanev1alpha2connect.UserServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	cfg         *config.Config
-	logger      *zap.Logger
-	consoleSvc  console.Servicer
-	redpandaSvc *redpanda.Service
-	defaulter   defaulter
-
-	isProtectedUserFn func(userName string) bool
+	cfg                    *config.Config
+	logger                 *zap.Logger
+	consoleSvc             console.Servicer
+	redpandaClientProvider redpandafactory.ClientFactory
+	defaulter              defaulter
 }
 
 // NewService creates a new user service handler.
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
-	redpandaSvc *redpanda.Service,
+	redpandaClientProvider redpandafactory.ClientFactory,
 	consoleSvc console.Servicer,
-	isProtectedUserFn func(userName string) bool,
 ) *Service {
 	return &Service{
-		cfg:               cfg,
-		logger:            logger,
-		consoleSvc:        consoleSvc,
-		redpandaSvc:       redpandaSvc,
-		defaulter:         defaulter{},
-		isProtectedUserFn: isProtectedUserFn,
+		cfg:                    cfg,
+		logger:                 logger,
+		consoleSvc:             consoleSvc,
+		redpandaClientProvider: redpandaClientProvider,
+		defaulter:              defaulter{},
 	}
 }
 
 // ListUsers returns a list of all existing users.
 func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.ListUsersRequest]) (*connect.Response[v1alpha2.ListUsersResponse], error) {
-	// 1. Check if we can list users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to list users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
-	}
 	s.defaulter.applyListUsersRequest(req.Msg)
 
+	// 1. Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// 2. List users
-	users, err := s.redpandaSvc.ListUsers(ctx)
+	users, err := redpandaCl.ListUsers(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -103,10 +95,6 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 
 	filteredUsers := make([]*v1alpha2.ListUsersResponse_User, 0)
 	for _, user := range users {
-		if s.isProtectedUserFn(user) {
-			continue
-		}
-
 		// Remove users that do not pass the filter criteria
 		if !doesUserPassFilter(user) {
 			continue
@@ -145,30 +133,13 @@ func (s *Service) ListUsers(ctx context.Context, req *connect.Request[v1alpha2.L
 
 // CreateUser creates a new Redpanda/Kafka user.
 func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.CreateUserRequest]) (*connect.Response[v1alpha2.CreateUserResponse], error) {
-	// 1. Check if we can create users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to create users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
+	// 1. Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// 2. Check if requested username is a protected user name.
-	if s.isProtectedUserFn(req.Msg.User.Name) {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
-				Field:       "user.name",
-				Description: "User name is a protected user name. Choose a different name.",
-			}),
-		)
-	}
-
-	// 3. Map inputs from proto to admin api
+	// 2. Map inputs from proto to admin api
 	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
@@ -178,8 +149,8 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 		)
 	}
 
-	// 4. Create user
-	err = s.redpandaSvc.CreateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
+	// 3. Create user
+	err = redpandaCl.CreateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -195,30 +166,13 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 
 // UpdateUser upserts a new Redpanda/Kafka user. This equals a PUT operation.
 func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.UpdateUserRequest]) (*connect.Response[v1alpha2.UpdateUserResponse], error) {
-	// 1. Check if we can update users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to update users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
+	// 1. Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// 2. Check if requested username is a protected user name.
-	if s.isProtectedUserFn(req.Msg.User.Name) {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
-				Field:       "user.name",
-				Description: "User name is a protected user name. Choose a different name.",
-			}),
-		)
-	}
-
-	// 3. Map inputs from proto to admin api
+	// 2. Map inputs from proto to admin api
 	mechanism, err := saslMechanismToRedpandaAdminAPIString(req.Msg.User.Mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
@@ -228,8 +182,8 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 		)
 	}
 
-	// 4. Update user
-	err = s.redpandaSvc.UpdateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
+	// 3. Update user
+	err = redpandaCl.UpdateUser(ctx, req.Msg.User.Name, req.Msg.User.Password, mechanism)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "")
 	}
@@ -244,32 +198,15 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 
 // DeleteUser deletes an existing Redpanda/Kafka user.
 func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.DeleteUserRequest]) (*connect.Response[v1alpha2.DeleteUserResponse], error) {
-	// 1. Check if we can delete users
-	if !s.cfg.Redpanda.AdminAPI.Enabled {
-		return nil, apierrors.NewConnectError(
-			connect.CodeUnimplemented,
-			errors.New("the redpanda admin api must be configured to delete users"),
-			apierrors.NewErrorInfo(v1alpha2.Reason_REASON_FEATURE_NOT_CONFIGURED.String()),
-			apierrors.NewHelp(apierrors.NewHelpLinkConsoleReferenceConfig()),
-		)
+	// 1. Try to retrieve a Redpanda Admin API client.
+	redpandaCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// 2. Check if requested username is a protected user name.
-	if s.isProtectedUserFn(req.Msg.Name) {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
-				Field:       "user.name",
-				Description: "User name is a protected user name. Choose a different name.",
-			}),
-		)
-	}
-
-	// 3. List users to check if the requested user exists. The Redpanda admin API
+	// 2. List users to check if the requested user exists. The Redpanda admin API
 	// always returns ok, regardless whether the user exists or not.
-	listedUsers, err := s.redpandaSvc.ListUsers(ctx)
+	listedUsers, err := redpandaCl.ListUsers(ctx)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to list users: ")
 	}
@@ -288,8 +225,8 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 		)
 	}
 
-	// 4. Delete user
-	err = s.redpandaSvc.DeleteUser(ctx, req.Msg.Name)
+	// 3. Delete user
+	err = redpandaCl.DeleteUser(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, apierrors.NewConnectErrorFromRedpandaAdminAPIError(err, "failed to delete user: ")
 	}
