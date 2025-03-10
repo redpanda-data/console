@@ -28,7 +28,7 @@ The basics:
 
 Prerequisites that should be installed before proceeding:
 
-- Latest Node.js v18 & npm v8
+- Latest Node.js v22 & bun 1.2.4 or newer
 - Latest Go version
 - Docker (required to start a local redpanda cluster)
 
@@ -41,12 +41,12 @@ After cloning the repository, we need to start them both separately as follows:
 
 **Frontend:**
 - Open a terminal tab and go to the /frontend directory
-- Run `npm install` to install the required frontend dependencies
-- Run `npm start` to start the React proxy that will serve the frontend
+- Run `bun install` to install the required frontend dependencies
+- Run `bun start` to start the React proxy that will serve the frontend
 
 The frontend should be accessible under http://localhost:3000 now. However,
 it is expected that an error is returned because the frontend has no
-API to talk to yet. If the frontend is started via npm, errors will be rendered
+API to talk to yet. If the frontend is started via bun, errors will be rendered
 differently and provide more options that shall help during development.
 
 **Backend:**
@@ -110,7 +110,7 @@ tests are added to cover the new functionality. Tests can be run from command li
 
 **Frontend:**
 - Open a terminal tab and go to the /frontend directory
-- Run `npm test` to run all tests
+- Run `bun test` to run all tests
 
 **Backend:**
 - Some integration tests require a running Docker instance
