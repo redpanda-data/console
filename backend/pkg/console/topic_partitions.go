@@ -388,7 +388,7 @@ func (s *Service) AddPartitionsToTopics(ctx context.Context, add int, topicNames
 	return s.kafkaSvc.AddPartitionsToTopics(ctx, add, topicNames)
 }
 
-// SetPartitionsToTopics sets partition counts to existing topics.
+// SetPartitionsToTopics sets modifies the number of existing topics.
 func (s *Service) SetPartitionsToTopics(ctx context.Context, count int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error) {
 	if validateOnly {
 		return s.kafkaSvc.ValidateSetPartitionsToTopics(ctx, count, topicNames)
