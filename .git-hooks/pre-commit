@@ -24,7 +24,7 @@ do
 
 pattern="frontend/"
 
-npm run linter --prefix ./frontend -- "${FILE/$pattern/}"
+bun run linter --prefix ./frontend -- "${FILE/$pattern/}"
 
   if [[ "$?" == 0 ]]; then
     echo "\033[32mESLint Passed: $FILE\033[0m"
