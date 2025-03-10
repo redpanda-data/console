@@ -32,7 +32,7 @@ import (
 type Config struct {
 	ConfigFilepath   string
 	MetricsNamespace string `yaml:"metricsNamespace"`
-	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
+	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'bun run start'
 
 	Console  Console        `yaml:"console"`
 	Redpanda Redpanda       `yaml:"redpanda"`

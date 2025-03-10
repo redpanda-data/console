@@ -60,7 +60,7 @@ export default defineConfig({
       timeout: 180 * 1000,
     },
     {
-      command: 'npm run start',
+      command: 'bun run start',
       url: 'http://localhost:3000',
       timeout: 180 * 1000,
       reuseExistingServer: !process.env.CI,

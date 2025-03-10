@@ -22,5 +22,5 @@ Third party licenses audit files are generated on demand, the steps to do so are
 1. backend run `task backend:licenses:third-party`
 2. frontend:
     * `cd frontend`
-    * `npx license-checker --csv --production > ../licenses/third_party_js.csv`
+    * `bunx license-checker --csv --production > ../licenses/third_party_js.csv`
 
