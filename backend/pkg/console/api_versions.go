@@ -66,12 +66,12 @@ func (s *Service) GetAPIVersions(ctx context.Context) ([]APIVersion, error) {
 
 	versionsRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kafka api vers: %w", err)
+		return nil, fmt.Errorf("failed to get kafka api version: %w", err)
 	}
 
 	err = kerr.ErrorForCode(versionsRes.ErrorCode)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get kafka api vers. Inner error: %w", err)
+		return nil, fmt.Errorf("failed to get kafka api version. Inner error: %w", err)
 	}
 
 	versions := make([]APIVersion, len(versionsRes.ApiKeys))

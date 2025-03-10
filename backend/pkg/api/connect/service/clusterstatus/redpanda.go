@@ -38,7 +38,7 @@ func (*redpandaStatusChecker) clusterVersionFromBrokerList(brokers []rpadmin.Bro
 	return version
 }
 
-// ToPartitionBalancerViolationsProto maps a PartitionBalancerViolations Go type to its proto representation.
+// partitionBalancerViolationsToProto maps a PartitionBalancerViolations Go type to its proto representation.
 func (*redpandaStatusChecker) partitionBalancerViolationsToProto(in rpadmin.PartitionBalancerViolations) *consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Violations {
 	return &consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Violations{
 		UnavailableNodes:   intSliceToInt32Slice(in.UnavailableNodes),
@@ -68,7 +68,7 @@ func (r *redpandaStatusChecker) partitionBalancerStatusToProto(in *rpadmin.Parti
 	return out
 }
 
-// mapBalancerStatus converts the status string from the Go type to the proto enum.
+// balancerStatusStringToProtoEnum converts the status string from the Go type to the proto enum.
 func (*redpandaStatusChecker) balancerStatusStringToProtoEnum(status string) consolev1alpha1.GetRedpandaPartitionBalancerStatusResponse_Status {
 	switch status {
 	case "off":

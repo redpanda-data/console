@@ -155,7 +155,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 
 	ch := make(chan *ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
-		go func(cfg config.ConnectCluster, c *con.Client) {
+		go func(cfg config.KafkaConnectCluster, c *con.Client) {
 			connectors, err := c.ListConnectorsExpanded(ctx)
 			errMsg := ""
 			if err != nil {

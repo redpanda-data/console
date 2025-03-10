@@ -48,6 +48,10 @@ message Pipeline {
 
   Status status = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // URL to connect to the pipeline, e.g. via http_server.
+  // May be empty if no http_server is used.
+  string url = 10;
+
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
     // the pipeline.
