@@ -16,7 +16,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         working-directory: frontend
-        run: bun install --frozen-lockfile --production
+        run: bun install --frozen-lockfile
       - name: Run lint
         working-directory: frontend
         run: bun run lint
@@ -41,7 +41,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         working-directory: frontend
-        run: bun install --frozen-lockfile --production
+        run: bun install --frozen-lockfile
       - name: Run integration tests
         working-directory: frontend
         run: bun run test
@@ -63,7 +63,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Install frontend dependencies
         working-directory: frontend
-        run: bun install --frozen-lockfile --production
+        run: bun install --frozen-lockfile
       - name: Install Playwright browsers
         working-directory: frontend
         run: bun run install:chromium
