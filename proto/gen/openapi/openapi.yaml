@@ -3940,7 +3940,7 @@ paths:
       tags:
         - Topics
     post:
-      description: Create a [topic](https://docs.redpanda.com/current/deploy/deployment-option/cloud/create-topic/).
+      description: Create a [topic](https://docs.redpanda.com/redpanda-cloud/get-started/create-topic/).
       operationId: TopicService_CreateTopic
       parameters:
         - description: |-
