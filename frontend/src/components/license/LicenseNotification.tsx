@@ -56,9 +56,10 @@ export const LicenseNotification = observer(() => {
       : visibleExpiredEnterpriseLicenses;
 
   return (
-    <Box>
+    <Box data-testid="license-notification">
       <Alert
         mb={4}
+        data-testid="license-alert"
         status={
           visibleExpiredLicenses.length > 0 ||
           api.licenseViolation ||
