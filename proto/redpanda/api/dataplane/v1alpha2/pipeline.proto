@@ -104,7 +104,7 @@ message Pipeline {
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 service PipelineService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Redpanda Connect Pipeline"
+    name: "Redpanda Connect Pipeline (v1alpha2)"
     description: "Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations."
   };
 
