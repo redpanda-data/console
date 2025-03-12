@@ -29,7 +29,6 @@ import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
@@ -118,7 +117,6 @@ interface Config {
   debugBundleClient?: PromiseClient<typeof DebugBundleService>;
   securityClient?: PromiseClient<typeof SecurityService>;
   pipelinesClient?: PromiseClient<typeof PipelineService>;
-  pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
@@ -158,7 +156,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
   const securityGrpcClient = createPromiseClient(SecurityService, transport);
   const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
-  const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
   const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
   const transformClient = createPromiseClient(TransformService, transport);
   Object.assign(config, {
@@ -172,7 +169,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     debugBundleClient: debugBundleGrpcClient,
     securityClient: securityGrpcClient,
     pipelinesClient: pipelinesGrpcClient,
-    pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     ...args,

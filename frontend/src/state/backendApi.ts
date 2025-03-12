@@ -141,7 +141,7 @@ import {
   type Pipeline,
   type PipelineCreate,
   type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   type CreateSecretRequest,
   type DeleteSecretRequest,
@@ -150,7 +150,7 @@ import {
   Scope,
   type Secret,
   type UpdateSecretRequest,
-} from '../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
@@ -2142,7 +2142,7 @@ export const rpcnSecretManagerApi = observable({
     return isEnable;
   },
   async getPipelinesBySecret() {
-    const client = appConfig.pipelinesClientV2;
+    const client = appConfig.pipelinesClient;
     if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
 
     const pipelinesBySecrets = await client.getPipelinesBySecrets({ request: new GetPipelinesBySecretsRequest() });
