@@ -136,13 +136,12 @@ import type {
   PublishMessageResponse,
 } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
-import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequest,
   type Pipeline,
   type PipelineCreate,
   type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   type CreateSecretRequest,
   type DeleteSecretRequest,
@@ -152,6 +151,7 @@ import {
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 
