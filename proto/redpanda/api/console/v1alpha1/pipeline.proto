@@ -2,86 +2,86 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
-import "redpanda/api/dataplane/v1alpha2/pipeline.proto";
+import "redpanda/api/dataplane/v1/pipeline.proto";
 
 message CreatePipelineRequest {
-  redpanda.api.dataplane.v1alpha2.CreatePipelineRequest request = 1;
+  redpanda.api.dataplane.v1.CreatePipelineRequest request = 1;
 }
 
 message CreatePipelineResponse {
-  redpanda.api.dataplane.v1alpha2.CreatePipelineResponse response = 1;
+  redpanda.api.dataplane.v1.CreatePipelineResponse response = 1;
 }
 
 message GetPipelineRequest {
-  redpanda.api.dataplane.v1alpha2.GetPipelineRequest request = 1;
+  redpanda.api.dataplane.v1.GetPipelineRequest request = 1;
 }
 
 message GetPipelineResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelineResponse response = 1;
+  redpanda.api.dataplane.v1.GetPipelineResponse response = 1;
 }
 
 message DeletePipelineRequest {
-  redpanda.api.dataplane.v1alpha2.DeletePipelineRequest request = 1;
+  redpanda.api.dataplane.v1.DeletePipelineRequest request = 1;
 }
 
 message DeletePipelineResponse {
-  redpanda.api.dataplane.v1alpha2.DeletePipelineResponse response = 1;
+  redpanda.api.dataplane.v1.DeletePipelineResponse response = 1;
 }
 
 message ListPipelinesRequest {
-  redpanda.api.dataplane.v1alpha2.ListPipelinesRequest request = 1;
+  redpanda.api.dataplane.v1.ListPipelinesRequest request = 1;
 }
 
 message ListPipelinesResponse {
-  redpanda.api.dataplane.v1alpha2.ListPipelinesResponse response = 1;
+  redpanda.api.dataplane.v1.ListPipelinesResponse response = 1;
 }
 
 message UpdatePipelineRequest {
-  redpanda.api.dataplane.v1alpha2.UpdatePipelineRequest request = 1;
+  redpanda.api.dataplane.v1.UpdatePipelineRequest request = 1;
 }
 
 message UpdatePipelineResponse {
-  redpanda.api.dataplane.v1alpha2.UpdatePipelineResponse response = 1;
+  redpanda.api.dataplane.v1.UpdatePipelineResponse response = 1;
 }
 
 message StopPipelineRequest {
-  redpanda.api.dataplane.v1alpha2.StopPipelineRequest request = 1;
+  redpanda.api.dataplane.v1.StopPipelineRequest request = 1;
 }
 
 message StopPipelineResponse {
-  redpanda.api.dataplane.v1alpha2.StopPipelineResponse response = 1;
+  redpanda.api.dataplane.v1.StopPipelineResponse response = 1;
 }
 
 message StartPipelineRequest {
-  redpanda.api.dataplane.v1alpha2.StartPipelineRequest request = 1;
+  redpanda.api.dataplane.v1.StartPipelineRequest request = 1;
 }
 
 message StartPipelineResponse {
-  redpanda.api.dataplane.v1alpha2.StartPipelineResponse response = 1;
+  redpanda.api.dataplane.v1.StartPipelineResponse response = 1;
 }
 
 message GetPipelineServiceConfigSchemaRequest {
-  redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaRequest request = 1;
+  redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaRequest request = 1;
 }
 
 message GetPipelineServiceConfigSchemaResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse response = 1;
+  redpanda.api.dataplane.v1.GetPipelineServiceConfigSchemaResponse response = 1;
 }
 
 message GetPipelinesForSecretRequest {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretRequest request = 1;
+  redpanda.api.dataplane.v1.GetPipelinesForSecretRequest request = 1;
 }
 
 message GetPipelinesForSecretResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse response = 1;
+  redpanda.api.dataplane.v1.GetPipelinesForSecretResponse response = 1;
 }
 
 message GetPipelinesBySecretsRequest {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsRequest request = 1;
+  redpanda.api.dataplane.v1.GetPipelinesBySecretsRequest request = 1;
 }
 
 message GetPipelinesBySecretsResponse {
-  redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse response = 1;
+  redpanda.api.dataplane.v1.GetPipelinesBySecretsResponse response = 1;
 }
 
 service PipelineService {

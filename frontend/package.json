@@ -5,7 +5,7 @@
   "proxy": "http://localhost:9090",
   "homepage": ".",
   "engines": {
-    "node": "20"
+    "node": ">=22"
   },
   "scripts": {
     "start": "rsbuild dev",
@@ -13,7 +13,7 @@
     "preview": "rsbuild preview",
     "build": "NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
     "build-local-test": "REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
-    "install:browsers": "npx playwright install --with-deps",
+    "install:chromium": "bunx playwright install chromium",
     "e2e-test": "playwright test tests/console/ -c playwright.config.ts",
     "e2e-test-enterprise": "playwright test tests/console-enterprise/ -c playwright.enterprise.config.ts",
     "test": "TZ=GMT vitest run",
@@ -26,9 +26,7 @@
     "lint:check": "biome ci src/*",
     "format:check": "biome format src/*",
     "format": "biome format src/* --write",
-    "fetch-monaco": "node scripts/fetch-monaco.mjs",
     "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
-    "prepare": "npm run fetch-monaco",
     "analyze": "RSDOCTOR=true npm run build"
   },
   "overrides": {
