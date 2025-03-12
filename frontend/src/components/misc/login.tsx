@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ConnectError } from '@connectrpc/connect';
 import {
   Alert,
   AlertDescription,
@@ -52,12 +53,16 @@ import { SingleSelect } from './Select';
 
 const authenticationApi = observable({
   methods: [] as AuthenticationMethod[],
+  methodsErrorResponse: null as ConnectError | null,
 
   async refreshAuthenticationMethods(): Promise<void> {
     const client = appConfig.authenticationClient;
     if (!client) throw new Error('security client is not initialized');
 
-    const { methods } = await client.listAuthenticationMethods({});
+    const { methods } = await client.listAuthenticationMethods({}).catch((e) => {
+      this.methodsErrorResponse = e;
+      return { methods: [] };
+    });
     this.methods = methods;
   },
 
@@ -245,6 +250,14 @@ const LoginPage = observer(() => {
             </Box>
           )}
           <Stack my={5}>
+            {authenticationApi.methodsErrorResponse && (
+              <Alert status="error">
+                <AlertIcon />
+                <AlertDescription>
+                  Failed to fetch authentication methods: {authenticationApi.methodsErrorResponse.message}
+                </AlertDescription>
+              </Alert>
+            )}
             {authenticationApi.methods.reduce((acc, method, index) => {
               const AuthComponent = AUTH_ELEMENTS[method];
               if (AuthComponent) {
