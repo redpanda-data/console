@@ -25,6 +25,53 @@ components:
         - ACTION_FINISH
         - ACTION_CANCEL
       type: string
+    AddPartitionsToTopicsRequest:
+      properties:
+        partition_count:
+          description: The number of partitions to add for the topics.
+          format: int32
+          type: integer
+        topic_names:
+          description: The topic names.
+          items:
+            type: string
+          type: array
+        validate_only:
+          description: Validate the request only, do not execute it.
+          type: boolean
+      type: object
+    AddPartitionsToTopicsResponse:
+      properties:
+        statuses:
+          description: The status of the operation for each topic.
+          items:
+            $ref: '#/components/schemas/AlterTopicPartitionStatus'
+          type: array
+      type: object
+    AddTopicPartitionsBody:
+      properties:
+        partition_count:
+          description: The number of partitions to add to the topic.
+          format: int32
+          type: integer
+        validate_only:
+          description: Validate the request only, do not execute it.
+          type: boolean
+      type: object
+    AddTopicPartitionsResponse:
+      type: object
+    AlterTopicPartitionStatus:
+      properties:
+        error:
+          description: The error if any.
+          type: string
+        success:
+          description: Whether the operation was successful.
+          type: boolean
+        topic_name:
+          description: The topic name.
+          type: string
+      type: object
     BadRequest:
       description: |-
         Describes violations in a client request. This error type focuses on the
@@ -1370,6 +1417,29 @@ components:
           nullable: true
           type: string
       type: object
+    SetPartitionsToTopicsRequest:
+      properties:
+        partition_count:
+          description: The number of partitions to set for the topics.
+          format: int32
+          type: integer
+        topic_names:
+          description: The topic names.
+          items:
+            type: string
+          type: array
+        validate_only:
+          description: Validate the request only, do not execute it.
+          type: boolean
+      type: object
+    SetPartitionsToTopicsResponse:
+      properties:
+        statuses:
+          description: The status of the operation for each topic.
+          items:
+            $ref: '#/components/schemas/AlterTopicPartitionStatus'
+          type: array
+      type: object
     SetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -1377,6 +1447,18 @@ components:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
+      type: object
+    SetTopicPartitionsBody:
+      properties:
+        partition_count:
+          description: The number of partitions to set for the topic.
+          format: int32
+          type: integer
+        validate_only:
+          description: Validate the request only, do not execute it.
+          type: boolean
+      type: object
+    SetTopicPartitionsResponse:
       type: object
     StartPipelineResponse:
       properties:
@@ -3986,6 +4068,95 @@ paths:
       summary: Create Topic
       tags:
         - Topics
+  /v1/topics-partitions:
+    patch:
+      description: Add partitions to existing topics. Depending on the partitioning strategy used, this may impact ordering guarantees.
+      operationId: TopicService_AddPartitionsToTopics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPartitionsToTopicsRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPartitionsToTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Add Topic Partitions
+      tags:
+        - Topics
+    put:
+      description: Set partition counts for existing topics. New value must be equal to or larger than the current count of partitions in the topic. All topics will have the same final count of partitions. Depending on the partitioning strategy used, this may impact ordering guarantees.
+      operationId: TopicService_SetPartitionsToTopics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPartitionsToTopicsRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPartitionsToTopicsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Set Topic Partitions
+      tags:
+        - Topics
   /v1/topics/{topic_name}:
     delete:
       description: Delete the Kafka topic with the requested name.
@@ -4181,6 +4352,109 @@ paths:
       summary: Set Topic Configurations
       tags:
         - Topics
+  /v1/topics/{topic_name}/partitions:
+    patch:
+      description: Add partitions to an existing topic. Depending on the partitioning strategy used, this may impact ordering guarantees.
+      operationId: TopicService_AddTopicPartitions
+      parameters:
+        - description: The topic name.
+          in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTopicPartitionsBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddTopicPartitionsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Add Topic Partitions
+      tags:
+        - Topics
+    put:
+      description: Set partitions to an existing topic. New value must be equal to or larger than the current count of partitions in the topic. Depending on the partitioning strategy used, this may impact ordering guarantees.
+      operationId: TopicService_SetTopicPartitions
+      parameters:
+        - description: The topic name.
+          in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTopicPartitionsBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetTopicPartitionsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Add Topic Partitions
+      tags:
+        - Topics
   /v1/transforms:
     get:
       description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
@@ -4264,7 +4538,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

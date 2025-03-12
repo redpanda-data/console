@@ -391,3 +391,127 @@ func (s *Service) CreateTopic(ctx context.Context, req *connect.Request[v1.Creat
 	connectResponse.Header().Set("x-http-code", strconv.Itoa(http.StatusCreated))
 	return connectResponse, nil
 }
+
+// AddTopicPartitions add partition counts to an existing topic.
+func (s *Service) AddTopicPartitions(ctx context.Context, req *connect.Request[v1.AddTopicPartitionsRequest]) (*connect.Response[v1.AddTopicPartitionsResponse], error) {
+	topicName := req.Msg.GetTopicName()
+
+	res, err := s.consoleSvc.AddPartitionsToTopics(ctx,
+		int(req.Msg.GetPartitionCount()),
+		[]string{topicName},
+		req.Msg.GetValidateOnly())
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if res[topicName].Err != nil {
+		return nil, s.handleKafkaTopicPartitionError(res[topicName].Err, res[topicName].ErrMessage)
+	}
+
+	return connect.NewResponse(&v1.AddTopicPartitionsResponse{}), nil
+}
+
+// SetTopicPartitions sets partition counts to an existing topic.
+func (s *Service) SetTopicPartitions(ctx context.Context, req *connect.Request[v1.SetTopicPartitionsRequest]) (*connect.Response[v1.SetTopicPartitionsResponse], error) {
+	topicName := req.Msg.GetTopicName()
+
+	res, err := s.consoleSvc.SetPartitionsToTopics(ctx,
+		int(req.Msg.GetPartitionCount()),
+		[]string{topicName},
+		req.Msg.GetValidateOnly())
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	if res[topicName].Err != nil {
+		return nil, s.handleKafkaTopicPartitionError(res[topicName].Err, res[topicName].ErrMessage)
+	}
+
+	return connect.NewResponse(&v1.SetTopicPartitionsResponse{}), nil
+}
+
+// AddPartitionsToTopics add partition counts to topics.
+func (s *Service) AddPartitionsToTopics(ctx context.Context, req *connect.Request[v1.AddPartitionsToTopicsRequest]) (*connect.Response[v1.AddPartitionsToTopicsResponse], error) {
+	statuses, err := s.consoleSvc.AddPartitionsToTopics(ctx,
+		int(req.Msg.GetPartitionCount()),
+		req.Msg.GetTopicNames(),
+		req.Msg.GetValidateOnly())
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	resMsg := &v1.AddPartitionsToTopicsResponse{
+		Statuses: make([]*v1.AlterTopicPartitionStatus, 0, len(statuses)),
+	}
+
+	for topicName, result := range statuses {
+		errMsg := ""
+		err := result.Err
+		if err != nil {
+			if result.ErrMessage != "" {
+				err = fmt.Errorf(result.ErrMessage+": %w", err)
+			}
+
+			errMsg = err.Error()
+		}
+
+		resMsg.Statuses = append(resMsg.Statuses, &v1.AlterTopicPartitionStatus{
+			TopicName: topicName,
+			Success:   errMsg == "",
+			Error:     errMsg,
+		})
+	}
+
+	return connect.NewResponse(resMsg), nil
+}
+
+// SetPartitionsToTopics sets partition counts to topics.
+func (s *Service) SetPartitionsToTopics(ctx context.Context, req *connect.Request[v1.SetPartitionsToTopicsRequest]) (*connect.Response[v1.SetPartitionsToTopicsResponse], error) {
+	statuses, err := s.consoleSvc.SetPartitionsToTopics(ctx,
+		int(req.Msg.GetPartitionCount()),
+		req.Msg.GetTopicNames(),
+		req.Msg.GetValidateOnly())
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	resMsg := &v1.SetPartitionsToTopicsResponse{
+		Statuses: make([]*v1.AlterTopicPartitionStatus, 0, len(statuses)),
+	}
+
+	for topicName, result := range statuses {
+		errMsg := ""
+		err := result.Err
+		if err != nil {
+			if result.ErrMessage != "" {
+				err = fmt.Errorf(result.ErrMessage+": %w", err)
+			}
+
+			errMsg = err.Error()
+		}
+
+		resMsg.Statuses = append(resMsg.Statuses, &v1.AlterTopicPartitionStatus{
+			TopicName: topicName,
+			Success:   errMsg == "",
+			Error:     errMsg,
+		})
+	}
+
+	return connect.NewResponse(resMsg), nil
+}
