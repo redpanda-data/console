@@ -1,0 +1,42 @@
+input:
+    generate:
+        interval: 1s
+        mapping: |
+            let first_name = fake("first_name")
+            let last_name  = fake("last_name")
+
+            root.user_id    = counter()
+            root.name       = $first_name + " " + $last_name
+            root.email      = ($first_name.slice(0,1) + $last_name + "@" + fake("domain_name")).lowercase()
+            root.ip         = fake("ipv4")
+            root.login_time = now()
+pipeline:
+    processors:
+        - mapping: |
+            root = range(0, random_int(min:2, max:4)).map_each(cust -> this)
+        - unarchive:
+            format: "json_array"
+        - mapping: |
+            if batch_index() == 0 {
+                meta topic = "logins"
+                root = this
+            } else {
+                meta topic       = "transactions"
+                root.user_id     = this.user_id
+                root.email       = this.email
+                root.index       = batch_index() - 1
+                root.product_url = fake("url")
+                root.price       = fake("amount_with_currency")
+                root.timestamp   = now()
+            }
+output:
+  kafka_franz:
+    seed_brokers: 
+    - crbko6a72juhk89a6c3g.any.eu-central-1.mpx.prd.cloud.redpanda.com:9092
+    topic: martin
+    tls:
+      enabled: true
+    sasl:
+    - mechanism: SCRAM-SHA-256
+      username: admin
+      password: s3cret
