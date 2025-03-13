@@ -20,6 +20,9 @@ import './assets/fonts/kumbh-sans.css';
 import './assets/fonts/inter.css';
 /* end global styles */
 
+/* start tailwind styles */
+import './globals.css';
+/* end tailwind styles */
 import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/ui';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
