@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.8.4 / 2025-03-13
+
+- [CHANGE] Move to bun package manager for frontend builds.
+- [SECURITY] Update go-git module to address security issue.
+- [SECURITY] Update golang.org/x/net module to address security issue
+
 ## v2.8.3 / 2025-02-27
 
 - [IMPROVEMENT] Improvements to memory consumption and performance of Protocol Buffer parsing.
