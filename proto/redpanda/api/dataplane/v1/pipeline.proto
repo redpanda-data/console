@@ -51,6 +51,15 @@ message Pipeline {
   // May be empty if no http_server is used.
   string url = 10;
 
+  // Tags are key-value pairs that can be assigned to a pipeline resource.
+  // They help organize pipelines and enable filtering when listing them.
+  map<string, string> tags = 11 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
     // the pipeline.
@@ -411,6 +420,14 @@ message ListPipelinesRequest {
       (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
       (buf.validate.field).string.max_len = 128
     ];
+
+    // Filter pipelines that contain all of these key/value pairs.
+    map<string, string> tags = 2 [(buf.validate.field).map = {
+      max_pairs: 16
+      values: {
+        string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+      }
+    }];
   }
 }
 
@@ -445,6 +462,15 @@ message PipelineUpdate {
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
+
+  // Optional: A map of tags to add or update.
+  // If a tag's value is empty, the server interprets that as a deletion.
+  map<string, string> tags = 7 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
 }
 
 message UpdatePipelineRequest {
