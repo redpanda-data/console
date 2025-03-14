@@ -121,11 +121,20 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
+  const agentCreateMatch = useRouteMatch({
+    path: '/agents/create',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
   if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
 
   if (schemaCreateMatch) return false;
 
   if (topicProduceRecordMatch) return false;
+
+  if (agentCreateMatch) return false;
 
   return true;
 }

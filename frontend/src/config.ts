@@ -3,8 +3,6 @@ import {
   ConnectError,
   type Interceptor as ConnectRpcInterceptor,
   type PromiseClient,
-  type StreamRequest,
-  type UnaryRequest,
   createPromiseClient,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -29,7 +27,6 @@ import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
@@ -42,11 +39,11 @@ declare const __webpack_public_path__: string;
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
-const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
+export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
-const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-  if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
-  return await next(req);
+export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
+  if (config.jwt) request.header.set('Authorization', `Bearer ${config.jwt}`);
+  return await next(request);
 };
 
 /**
@@ -58,9 +55,10 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
  * If such an error is detected, it redirects the user to the `/trial-expired` page.
  *
  */
-const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+
+export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
-    return await next(req);
+    return await next(request);
   } catch (error) {
     if (error instanceof ConnectError) {
       if (error.code === Code.FailedPrecondition) {
@@ -118,7 +116,6 @@ interface Config {
   debugBundleClient?: PromiseClient<typeof DebugBundleService>;
   securityClient?: PromiseClient<typeof SecurityService>;
   pipelinesClient?: PromiseClient<typeof PipelineService>;
-  pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
@@ -158,7 +155,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
   const securityGrpcClient = createPromiseClient(SecurityService, transport);
   const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
-  const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
   const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
   const transformClient = createPromiseClient(TransformService, transport);
   Object.assign(config, {
@@ -172,7 +168,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     debugBundleClient: debugBundleGrpcClient,
     securityClient: securityGrpcClient,
     pipelinesClient: pipelinesGrpcClient,
-    pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     ...args,
@@ -302,14 +297,14 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // protected, so we need to delay the call until the user is logged in.
   if (!AppFeatures.SINGLE_SIGN_ON) {
     api.refreshSupportedEndpoints();
-    api.listLicenses();
+    // api.listLicenses();
   } else {
     when(
       () => Boolean(api.userData),
       () => {
         setTimeout(() => {
           api.refreshSupportedEndpoints();
-          api.listLicenses();
+          // api.listLicenses();
         });
       },
     );

@@ -42,3 +42,9 @@ plugins:
   - plugin: connect-gateway
     out: backend/pkg/protogen
     opt: paths=source_relative
+  - plugin: buf.build/connectrpc/query-es:v1.4.0
+    opt:
+      - target=ts
+      - import_extension=
+      - js_import_style=legacy_commonjs
+    out: frontend/src/protogen

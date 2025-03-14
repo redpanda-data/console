@@ -1,0 +1,27 @@
+input:
+  kafka:
+    addresses: [ TODO ]
+    topics: [ articles ]
+    consumer_group: benthos_articles_group
+
+pipeline:
+  processors:
+    # Reduce document into only fields we wish to cache.
+    - mapping: 'article = article'
+
+    # Store reduced articles into our cache.
+    - cache:
+        operator: set
+        resource: hydration_cache
+        key: '${!json("article.id")}'
+        value: '${!content()}'
+
+# Drop all articles after they are cached.
+output:
+  drop: {}
+
+cache_resources:
+  - label: hydration_cache
+    redis:
+      url: TODO
+      default_ttl: 168h

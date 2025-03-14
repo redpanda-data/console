@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent } from 'react';
+import { BsStars } from 'react-icons/bs';
 import { MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
 import { Switch } from 'react-router-dom';
@@ -45,6 +46,9 @@ import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgres
 import AdminPage from './pages/admin/AdminPage';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
+import { AgentDetailsPage } from './pages/agents/agent-details';
+import { AgentListPage } from './pages/agents/agent-list';
+import { AgentCreatePage } from './pages/agents/create/agent-create';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import CreateConnector from './pages/connect/CreateConnector';
@@ -158,7 +162,7 @@ enum DisabledReasons {
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.noPermission]: (
     <span>
-      You don't have premissions
+      You don't have permissions
       <br />
       to view this page.
     </span>
@@ -309,6 +313,24 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(true, [Feature.ConsumerGroups]),
   ),
   MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
+
+  MakeRoute<{}>(
+    '/agents',
+    AgentListPage,
+    'AI Agents',
+    BsStars,
+    true,
+    routeVisibility(
+      true,
+      [], // [Feature.ListAgents],
+      [], // ['canListAgents'],
+      [], // ['LIST_AGENTS']
+    ),
+  ),
+
+  MakeRoute<{}>('/agents/create', AgentCreatePage, 'AI Agents'),
+
+  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents'),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true, routeVisibility(true, [], ['canListAcls'])),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),

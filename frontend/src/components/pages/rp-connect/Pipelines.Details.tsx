@@ -386,7 +386,7 @@ function isFilterMatch(str: string, m: TopicMessage) {
   return false;
 }
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
+export async function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
   const filterCode: string = `return key == "${pipelineId}";`;
 
   const lastXHours = 5;
