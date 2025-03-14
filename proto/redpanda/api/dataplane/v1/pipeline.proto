@@ -6,6 +6,7 @@ import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/field_mask.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
@@ -484,6 +485,9 @@ message UpdatePipelineRequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+  // Specifies which fields should be updated. If not provided,
+  // all fields will be updated.
+  google.protobuf.FieldMask update_mask = 3;
 }
 
 message UpdatePipelineResponse {
