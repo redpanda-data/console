@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
 
 /**
  * Defines the pipeline resource.
@@ -68,6 +68,14 @@ export class Pipeline extends Message<Pipeline> {
    */
   url = "";
 
+  /**
+   * Tags are key-value pairs that can be assigned to a pipeline resource.
+   * They help organize pipelines and enable filtering when listing them.
+   *
+   * @generated from field: map<string, string> tags = 11;
+   */
+  tags: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<Pipeline>) {
     super();
     proto3.util.initPartial(data, this);
@@ -84,6 +92,7 @@ export class Pipeline extends Message<Pipeline> {
     { no: 7, name: "state", kind: "enum", T: proto3.getEnumType(Pipeline_State) },
     { no: 8, name: "status", kind: "message", T: Pipeline_Status },
     { no: 10, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "tags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Pipeline {
@@ -553,6 +562,13 @@ export class ListPipelinesRequest_Filter extends Message<ListPipelinesRequest_Fi
    */
   nameContains = "";
 
+  /**
+   * Filter pipelines that contain all of these key/value pairs.
+   *
+   * @generated from field: map<string, string> tags = 2;
+   */
+  tags: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<ListPipelinesRequest_Filter>) {
     super();
     proto3.util.initPartial(data, this);
@@ -562,6 +578,7 @@ export class ListPipelinesRequest_Filter extends Message<ListPipelinesRequest_Fi
   static readonly typeName = "redpanda.api.dataplane.v1.ListPipelinesRequest.Filter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name_contains", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "tags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPipelinesRequest_Filter {
@@ -656,6 +673,14 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
    */
   resources?: Pipeline_Resources;
 
+  /**
+   * A map of tags to add, update or delete.
+   * If a tag's value is empty, the server interprets that as a deletion.
+   *
+   * @generated from field: map<string, string> tags = 7;
+   */
+  tags: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<PipelineUpdate>) {
     super();
     proto3.util.initPartial(data, this);
@@ -668,6 +693,7 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "resources", kind: "message", T: Pipeline_Resources },
+    { no: 7, name: "tags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelineUpdate {
@@ -703,6 +729,14 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
    */
   pipeline?: PipelineUpdate;
 
+  /**
+   * Specifies which fields should be updated. If not provided,
+   * all fields will be updated.
+   *
+   * @generated from field: google.protobuf.FieldMask update_mask = 3;
+   */
+  updateMask?: FieldMask;
+
   constructor(data?: PartialMessage<UpdatePipelineRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -713,6 +747,7 @@ export class UpdatePipelineRequest extends Message<UpdatePipelineRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "pipeline", kind: "message", T: PipelineUpdate },
+    { no: 3, name: "update_mask", kind: "message", T: FieldMask },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdatePipelineRequest {
