@@ -173,7 +173,10 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 
 // Start the API server and block
 func (api *API) Start() {
-	startCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	// Assume 6s for other initializations and up to max startup time before we cancel
+	// the context and force to return early.
+	maxStartTime := 6*time.Second + api.Cfg.Kafka.Startup.TotalMaxTime()
+	startCtx, cancel := context.WithTimeout(context.Background(), maxStartTime)
 	defer cancel()
 
 	err := api.ConsoleSvc.Start(startCtx)
