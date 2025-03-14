@@ -3,6 +3,7 @@ import {
   Button,
   Flex,
   FormControl,
+  FormErrorMessage,
   FormLabel,
   HStack,
   Heading,
@@ -37,14 +38,6 @@ import {
   determineSecretType,
   normalizeSecretName,
 } from './secret-create-modal';
-
-/**
- * Schema for agent form validation
- */
-const agentFormSchema = z.object({
-  name: z.string().min(1, 'Agent name is required'),
-  description: z.string().min(1, 'Description is required'),
-});
 
 /**
  * Finds all secret placeholders in a YAML string in the format ${secrets.SECRET_NAME} or ${SECRET_NAME}
@@ -404,9 +397,8 @@ export const AgentCreatePage = () => {
     defaultValues: {
       name: 'Redpanda Knowledge',
       description: 'Can answer any questions about Redpanda based on the internal knowledge',
-    },
-    validators: {
-      onChange: agentFormSchema,
+      selectedConnector: 'fancy-agent',
+      secretSelections: {},
     },
     onSubmit: async ({ value }) => {
       console.log('form value: ', value);
@@ -454,6 +446,7 @@ export const AgentCreatePage = () => {
    */
   const handleConnectorSelect = (id: string): void => {
     setSelectedConnector(id);
+    form.setFieldValue('selectedConnector', id);
   };
 
   /**
@@ -475,6 +468,13 @@ export const AgentCreatePage = () => {
       ...prev,
       [key]: secret,
     }));
+
+    // Update the form value for selected secrets
+    const currentSecretSelections = form.getFieldValue('secretSelections') || {};
+    form.setFieldValue('secretSelections', {
+      ...currentSecretSelections,
+      [key]: secret?.id,
+    });
 
     // If this is a newly created secret, check if it's a match for auto-detection
     if (isNewlyCreated && secret?.id && isSecretMatch(secret.id, key)) {
@@ -530,8 +530,12 @@ export const AgentCreatePage = () => {
                   <form.Field
                     name="name"
                     validators={{
-                      onChange: agentFormSchema.shape.name,
-                      onBlur: agentFormSchema.shape.name,
+                      onChange: (value) => {
+                        if (!value || value.length === 0) {
+                          return 'Agent name is required';
+                        }
+                        return undefined;
+                      },
                     }}
                   >
                     {(field) => (
@@ -550,6 +554,9 @@ export const AgentCreatePage = () => {
                           height="34px"
                           fontSize="14px"
                         />
+                        {field.state.meta.errors?.length > 0 && (
+                          <FormErrorMessage>{String(field.state.meta.errors[0])}</FormErrorMessage>
+                        )}
                       </FormControl>
                     )}
                   </form.Field>
@@ -557,8 +564,12 @@ export const AgentCreatePage = () => {
                   <form.Field
                     name="description"
                     validators={{
-                      onChange: agentFormSchema.shape.description,
-                      onBlur: agentFormSchema.shape.description,
+                      onChange: (value) => {
+                        if (!value || value.length === 0) {
+                          return 'Description is required';
+                        }
+                        return undefined;
+                      },
                     }}
                   >
                     {(field) => (
@@ -577,6 +588,9 @@ export const AgentCreatePage = () => {
                           height="34px"
                           fontSize="14px"
                         />
+                        {field.state.meta.errors?.length > 0 && (
+                          <FormErrorMessage>{String(field.state.meta.errors[0])}</FormErrorMessage>
+                        )}
                       </FormControl>
                     )}
                   </form.Field>
@@ -589,37 +603,59 @@ export const AgentCreatePage = () => {
                   Agent
                 </Heading>
 
-                <Flex flexWrap="wrap" gap={5} mb={6}>
-                  <AgentTemplateCard
-                    id="fancy-agent"
-                    title="New message received"
-                    subtitle="Fancy Agent Name"
-                    description="This is a description this could be as long as three lines but then it keeps going until it gets truncate..."
-                    icon={<Icon as={MdChat} boxSize={6} />}
-                    isSelected={selectedConnector === 'fancy-agent'}
-                    onClick={handleConnectorSelect}
-                  />
-                  <AgentTemplateCard
-                    id="rest-api"
-                    title="New HTTP request"
-                    subtitle="REST API"
-                    description="This is a description this could be as long as three lines but then it keeps going until it gets truncate..."
-                    icon={<Icon as={MdNewspaper} boxSize={6} />}
-                    isSelected={selectedConnector === 'rest-api'}
-                    isDisabled
-                    onClick={handleConnectorSelect}
-                  />
-                  <AgentTemplateCard
-                    id="slack-bot"
-                    title="New event in slack"
-                    subtitle="Slack Bot"
-                    description="This is a description this could be as long as three lines but then it keeps going until it gets truncate..."
-                    icon={<Icon as={FaSlack} boxSize={6} />}
-                    isSelected={selectedConnector === 'slack-bot'}
-                    isDisabled
-                    onClick={handleConnectorSelect}
-                  />
-                </Flex>
+                <form.Field
+                  name="selectedConnector"
+                  validators={{
+                    onChange: (value) => {
+                      if (!value || value.length === 0) {
+                        return 'You must select a connector';
+                      }
+                      return undefined;
+                    },
+                  }}
+                >
+                  {(field) => (
+                    <FormControl isInvalid={!!field.state.meta.errors?.length}>
+                      <Flex flexWrap="wrap" gap={5} mb={6}>
+                        <AgentTemplateCard
+                          id="fancy-agent"
+                          title="New message received"
+                          subtitle="Fancy Agent Name"
+                          description="This is a description this could be as long as three lines but then it keeps going until it gets truncate..."
+                          icon={<Icon as={MdChat} boxSize={6} />}
+                          isSelected={selectedConnector === 'fancy-agent'}
+                          onClick={(id) => {
+                            handleConnectorSelect(id);
+                            field.handleChange(id);
+                          }}
+                        />
+                        <AgentTemplateCard
+                          id="rest-api"
+                          title="New HTTP request"
+                          subtitle="REST API"
+                          description="This is a description this could be as long as three lines but then it keeps going until it gets truncate..."
+                          icon={<Icon as={MdNewspaper} boxSize={6} />}
+                          isSelected={selectedConnector === 'rest-api'}
+                          isDisabled
+                          onClick={handleConnectorSelect}
+                        />
+                        <AgentTemplateCard
+                          id="slack-bot"
+                          title="New event in slack"
+                          subtitle="Slack Bot"
+                          description="This is a description this could be as long as three lines but then it keeps going until it gets truncate..."
+                          icon={<Icon as={FaSlack} boxSize={6} />}
+                          isSelected={selectedConnector === 'slack-bot'}
+                          isDisabled
+                          onClick={handleConnectorSelect}
+                        />
+                      </Flex>
+                      {field.state.meta.errors?.length > 0 && (
+                        <FormErrorMessage>{String(field.state.meta.errors[0])}</FormErrorMessage>
+                      )}
+                    </FormControl>
+                  )}
+                </form.Field>
               </Box>
 
               {/* Configurations Section */}
@@ -671,6 +707,8 @@ export const AgentCreatePage = () => {
                               onChange={(val) => {
                                 if (val && isSingleValue(val) && val.value) {
                                   handleSecretSelect(placeholder.name, val.value, false);
+                                } else {
+                                  handleSecretSelect(placeholder.name, undefined, false);
                                 }
                               }}
                               options={availableSecrets}
