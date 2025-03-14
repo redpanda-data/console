@@ -12,9 +12,15 @@ package console
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"go.uber.org/zap"
 
+	"github.com/redpanda-data/console/backend/pkg/backoff"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
@@ -120,7 +126,7 @@ func NewService(
 
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these
 // tasks can not be setup an error will be returned which will cause the application to exit.
-func (s *Service) Start() error {
+func (s *Service) Start(ctx context.Context) error {
 	if s.gitSvc != nil {
 		err := s.gitSvc.Start()
 		if err != nil {
@@ -134,10 +140,87 @@ func (s *Service) Start() error {
 		}
 	}
 
+	if err := s.testKafkaConnectivity(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Stop stops running go routines and releases allocated resources.
 func (*Service) Stop() {
 	// Nothing to stop, the gitSvc listens for OS signals itself and stops its goroutines then.
+}
+
+func (s *Service) testKafkaConnectivity(ctx context.Context) error {
+	shouldTest := s.cfg.Kafka.Startup.EstablishConnectionEagerly
+	canTest := !s.cfg.Kafka.SASL.ImpersonateUser
+
+	if !shouldTest || !canTest {
+		return nil
+	}
+
+	testConnection := func(kafkaCl *kgo.Client, timeout time.Duration) error {
+		s.logger.Info("connecting to Kafka seed brokers, trying to fetch cluster metadata", zap.Strings("seed_brokers", s.cfg.Kafka.Brokers))
+		req := kmsg.NewMetadataRequest()
+		res, err := req.RequestWith(ctx, kafkaCl)
+		if err != nil {
+			return fmt.Errorf("failed to request metadata: %w", err)
+		}
+
+		// Request versions in order to guess Kafka Cluster version
+		versionsReq := kmsg.NewApiVersionsRequest()
+		versionsRes, err := versionsReq.RequestWith(ctx, kafkaCl)
+		if err != nil {
+			return fmt.Errorf("failed to request api versions: %w", err)
+		}
+		err = kerr.ErrorForCode(versionsRes.ErrorCode)
+		if err != nil {
+			return fmt.Errorf("failed to request api versions. Inner kafka error: %w", err)
+		}
+		versions := kversion.FromApiVersionsResponse(versionsRes)
+
+		s.logger.Info("successfully connected to kafka cluster",
+			zap.Int("advertised_broker_count", len(res.Brokers)),
+			zap.Int("topic_count", len(res.Topics)),
+			zap.Int32("controller_id", res.ControllerID),
+			zap.String("kafka_version", versions.VersionGuess()))
+
+		return nil
+	}
+
+	// Ensure Kafka connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
+	// Retries with backoff is very helpful in environments where Console concurrently starts with the Kafka target,
+	// such as a docker-compose demo.
+	eb := backoff.ExponentialBackoff{
+		BaseInterval: s.cfg.Kafka.Startup.RetryInterval,
+		MaxInterval:  s.cfg.Kafka.Startup.MaxRetryInterval,
+		Multiplier:   s.cfg.Kafka.Startup.BackoffMultiplier,
+	}
+	attempt := 0
+
+	kafkaCl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	for attempt < s.cfg.Kafka.Startup.MaxRetries && s.cfg.Kafka.Startup.EstablishConnectionEagerly {
+		err = testConnection(kafkaCl, time.Second*15)
+		if err == nil {
+			break
+		}
+
+		backoffDuration := eb.Backoff(attempt)
+		s.logger.Warn(
+			fmt.Sprintf("failed to test Kafka connection, going to retry in %s", backoffDuration),
+			zap.Int("remaining_retries", s.cfg.Kafka.Startup.MaxRetries-attempt),
+		)
+		attempt++
+		time.Sleep(backoffDuration)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to test kafka connection: %w", err)
+	}
+
+	return nil
 }

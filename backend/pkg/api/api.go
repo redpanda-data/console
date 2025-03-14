@@ -173,7 +173,10 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 
 // Start the API server and block
 func (api *API) Start() {
-	err := api.ConsoleSvc.Start()
+	startCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	err := api.ConsoleSvc.Start(startCtx)
 	if err != nil {
 		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
