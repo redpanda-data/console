@@ -54,3 +54,25 @@ func (k *ServiceStartupAttemptsOptions) Validate() error {
 
 	return nil
 }
+
+// TotalMaxTime calculates the maximum duration for all retry attempts.
+// It includes a fixed 6-second time for each attempt and the subsequent
+// backoff intervals, which increase by BackoffMultiplier (capped at MaxRetryInterval).
+func (k *ServiceStartupAttemptsOptions) TotalMaxTime() time.Duration {
+	// Assuming each attempt takes 6s before a failure triggers a backoff.
+	totalTime := time.Duration(k.MaxRetries) * 6 * time.Second
+
+	// Calculate cumulative backoff delays for all but the final attempt.
+	backoff := k.RetryInterval
+	for i := 1; i < k.MaxRetries; i++ {
+		totalTime += backoff
+		next := time.Duration(float64(backoff) * k.BackoffMultiplier)
+		if next > k.MaxRetryInterval {
+			backoff = k.MaxRetryInterval
+		} else {
+			backoff = next
+		}
+	}
+
+	return totalTime
+}
