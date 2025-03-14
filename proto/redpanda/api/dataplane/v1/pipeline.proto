@@ -464,7 +464,7 @@ message PipelineUpdate {
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
 
-  // Optional: A map of tags to add or update.
+  // A map of tags to add, update or delete.
   // If a tag's value is empty, the server interprets that as a deletion.
   map<string, string> tags = 7 [(buf.validate.field).map = {
     max_pairs: 16
