@@ -3596,6 +3596,13 @@ paths:
           required: true
           schema:
             type: string
+        - description: |-
+            Specifies which fields should be updated. If not provided,
+            all fields will be updated.
+          in: query
+          name: update_mask
+          schema:
+            type: string
       requestBody:
         content:
           application/json:

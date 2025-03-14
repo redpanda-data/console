@@ -5,8 +5,8 @@ package redpanda.api.dataplane.v1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
