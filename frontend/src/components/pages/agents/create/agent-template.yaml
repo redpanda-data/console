@@ -1,129 +1,46 @@
 input:
-  redpanda:
-    seed_brokers: ['${REDPANDA_BROKERS}']
-    topics: [transactions]
-    consumer_group: "redpanda-connect-demo"
-    tls:
-      enabled: true
-    sasl:
-      - mechanism: SCRAM-SHA-256
-        username: "${secrets.USERNAME}"
-        password: "${secrets.PASSWORD}"
+  http_server:
+    path: /post/chat
+    allowed_verbs:
+      - POST
 pipeline:
   processors:
-    - ollama_chat:
-        model: llama3.3
-        prompt: |
-          The current time is ${!now()}.
-          You are an agent analyzing financial transactions. You have recieved the following transaction for analysis:
-          Username: ${!this.username}
-          Amount: ${!this.amount}
-          Store: ${!this.store} in ${!this.location}
-          Time: ${!this.timestamp}
-
-          Determine if the transaction is trivial, legitimate or fraudulant. If necessary query data from available systems.
-          For small purchases, there is no need to query data, they can be allowed through directly.
-          If the transaction is **obviously** fraud then directly block the account to prevent further illegitimate purchases.
-          When the task is completed, output a concise report detailing the data access you used and the action, if any, was
-          taken on the account. The report should justify any actions that were taken or not taken.
-        tools:
-          - name: query_last_known_location
-            description: "Query the app server for the last known location of a user"
-            parameters:
-              required: ["username"]
-              properties:
-                username:
-                  type: string
-                  description: "The user to lookup their last known location"
-            processors:
-              - http:
-                  url: 'https://rp-byoc-tyler.web.app/location?username=${!this.username.escape_url_query()}'
-                  verb: GET
-              - mapping: |
-                  root = if errored() {
-                    "There was an error fetching the location: " + error()
-                  } else {
-                    "The user last opened the app in %s at %s".format(this.location, this.time)
-                  }
-              - log:
-                  message: "query_last_known_location tool invoked\n:${!content()}"
-          - name: lookup_recent_purchases
-            description: "Lookup the 10 most recent purchases with location, amounts and store information"
-            parameters:
-              required: ["username"]
-              properties:
-                username:
-                  type: string
-                  description: "The username attached the transactions that will be fetched"
-            processors:
-              - sql_select:
-                  driver: postgres
-                  dsn: "${secrets.POSTGRES_DSN}"
-                  table: transactions
-                  columns: [username, store_name, ts, amount, location]
-                  where: username = $1
-                  args_mapping: 'root = [this.username]'
-                  suffix: ORDER BY ts DESC LIMIT 10
-              - log:
-                  message: "lookup_recent_purchases tool invoked\n:${!content()}"
-              - mapping: |
-                  root = if this.length() == 0 {
-                    "The user has made no purchases"
-                  } else {
-                    "The user has made the following purchases:\n" + this.map_each(row -> (
-                      " * %s: $%s in %s at %s\n".format(row.store_name, row.amount, row.location, row.ts)
-                    )).join("\n")
-                  }
-              - log:
-                  message: "lookup_recent_purchases tool invoked\n:${!content()}"
-          - name: block_further_transactions
-            description: "Block the account if it is compromised so no more purchases can be made"
-            parameters:
-              required: ["username"]
-              properties:
-                username:
-                  type: string
-                  description: "The username of the account that needs to be blocked"
-            processors:
-              - sql_raw:
-                  driver: postgres
-                  dsn: "${secrets.POSTGRES_DSN}"
-                  query: |
-                    UPDATE accounts SET active = false WHERE username = $1
-                  args_mapping: 'root = [this.username]'
-              - mapping: |
-                  root = "account successfully blocked 👍"
-              - log:
-                  message: "block_further_transactions tool invoked\n: ${!content()}"
-          - name: phone_a_friend
-            description: "If further reason capabilities are needed, then you can ask OpenAI for help using masked and anonymized data"
-            parameters:
-              required: ["prompt"]
-              properties:
-                username:
-                  type: string
-                  description: "The prompt for the OpenAI large language model"
-            processors:
-              - openai_chat_completion:
-                  api_key: ${secrets.OPENAI_API_KEY}
-                  model: o3-mini
-                  prompt: "${!this.prompt}"
-              - log:
-                  message: "phone_a_friend tool invoked\n:${!content()}"
-    - mapping: |
-        root.report = content().string().trim()
-        root.timestamp = now()
-    - catch:
-        - log:
-            message: "ERROR: ${!error()}"
+    - openai_chat_completion:
+        api_key: "${USER_CONFIGURED_OPENAI_API_KEY}"
+        model: "${USER_CONFIGURED_OPENAI_MODEL:gpt-4o}"
+        system_prompt: |
+          You are a helpful question answering AI agent.
+          You answer questions and have available a tool to search a document store
+          for semantically relevant content to answer questions.
+        prompt: "${ !this.question }"
+        response_format: json
+        json_schema:
+          name: ""
+          schema: ""
+        # tools:
+        #   - name: SearchVectorDB
+        #     description: 'Retrieve documents from the vector database to help answer questions'
+        #     parameters:
+        #       required: ["question"]
+        #       properties:
+        #         question:
+        #           type: string
+        #           description: "the text to compute embeddings for and search for similar vectors"
+        #     processors:
+        #       - openai_embeddings:
+        #           api_key: "${USER_CONFIGURED_OPENAI_API_KEY}"
+        #           model: text-embedding-3-small
+        #           text_mapping: "${ !this.question }"
+        #           dimensions: 768
+        #       - sql_raw:
+        #           driver: "postgresql"
+        #           dsn: "${USER_CONFIGURED_POSTGRES_DSN}"
+        #           query: |
+        #             SELECT document FROM ${USER_CONFIGURED_TOPIC} ORDER BY embeddings <-> $1 LIMIT 5
+        #           args_mapping: "[ this.vector() ]"
+        #       - mapping: |
+        #           Searching the vector database resulted in the following results:
+        #           ${ !this.map_each(row -> row.document).join("\n\n") }
 output:
-  gcp_bigquery:
-    project: 'rp-byoc-tyler'
-    dataset: "ai_pipelines"
-    table: "transaction_actions"
-    format: 'NEWLINE_DELIMITED_JSON'
-    auto_detect: true
-    credentials_json: '${secrets.GCP_SERVICE_ACCOUNT}'
-
-logger:
-  level: TRACE
+  reject_errored:
+    drop: {}

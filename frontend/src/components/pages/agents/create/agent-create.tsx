@@ -1,48 +1,42 @@
 import {
-  Badge,
   Box,
   Button,
-  ButtonGroup,
-  Card,
-  CardBody,
   Flex,
   FormControl,
-  FormErrorMessage,
-  FormHelperText,
   FormLabel,
   HStack,
   Heading,
   Icon,
   Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
   Select,
   Text,
+  Tooltip,
   VStack,
   isSingleValue,
-  useToast,
 } from '@redpanda-data/ui';
 import { useForm } from '@tanstack/react-form';
 import {
   CreatePipelineRequest as CreatePipelineRequestDataPlane,
   PipelineCreate,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { Scope, type Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { CreateSecretRequest as CreateSecretRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useMemo, useState } from 'react';
 import { FaSlack } from 'react-icons/fa';
-import { MdAdd, MdChat, MdNewspaper } from 'react-icons/md';
+import { MdAdd, MdChat, MdInfo, MdNewspaper } from 'react-icons/md';
 import { REDPANDA_AI_AGENT_PIPELINE_PREFIX, useCreatePipelineMutationWithToast } from 'react-query/api/pipeline';
-import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { useHistory } from 'react-router-dom';
-import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
-import agentTemplate2 from './agent-template-2.yaml';
+import { AgentTemplateCard } from './agent-template-card';
 import agentTemplate from './agent-template.yaml';
-import pipelineTemplate from './pipeline-template.yaml';
+import indexingTemplate from './indexing.yaml';
+import {
+  AddSecretModal,
+  type SecretSelection,
+  type SecretType,
+  determineSecretType,
+  normalizeSecretName,
+} from './secret-create-modal';
 
 /**
  * Schema for agent form validation
@@ -50,180 +44,7 @@ import pipelineTemplate from './pipeline-template.yaml';
 const agentFormSchema = z.object({
   name: z.string().min(1, 'Agent name is required'),
   description: z.string().min(1, 'Description is required'),
-  // openAiToken: z.string().min(1, 'OpenAI token is required'),
-  // postgresConnectionUrl: z.string().min(1, 'Postgres connection URL is required'),
-  // pineconeApiKey: z.string().min(1, 'Pinecone API key is required'),
-  // pineconeIndexName: z.string().min(1, 'Pinecone index name is required'),
-  // pineconeNamespace: z.string().min(1, 'Pinecone namespace is required'),
 });
-
-/**
- * Interface for connector properties displayed in selection cards
- */
-interface ConnectorProps {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  icon: React.ReactElement;
-  isSelected: boolean;
-  isDisabled?: boolean;
-  onClick: (id: string) => void;
-}
-
-/**
- * ConnectorCard component - Displays a selectable card for agent connectors
- */
-const ConnectorCard = ({
-  id,
-  title,
-  subtitle,
-  description,
-  icon,
-  isSelected,
-  isDisabled = false,
-  onClick,
-}: ConnectorProps): JSX.Element => {
-  const handleClick = (): void => {
-    if (!isDisabled) {
-      onClick(id);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent): void => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (!isDisabled) {
-        onClick(id);
-      }
-    }
-  };
-
-  return (
-    <Card
-      width="324px"
-      borderWidth={isSelected ? '2px' : '1px'}
-      borderColor={isSelected ? 'rgba(22, 31, 46, 0.7)' : 'rgba(22, 31, 46, 0.3)'}
-      borderRadius="8px"
-      opacity={isDisabled ? 0.5 : 1}
-      cursor={isDisabled ? 'not-allowed' : 'pointer'}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      aria-label={`Select ${title} connector`}
-      _hover={!isDisabled ? { boxShadow: 'sm' } : {}}
-    >
-      <CardBody padding="16px 18px">
-        <Flex direction="column" gap="6px">
-          <Box mb="2">{icon}</Box>
-          <Flex direction="column" gap="-1px">
-            <Text fontSize="12px" fontWeight="600" lineHeight="1.4">
-              {title}
-            </Text>
-            <Text fontSize="16px" fontWeight="600" lineHeight="1.3">
-              {subtitle}
-            </Text>
-          </Flex>
-          <Text fontSize="14px" lineHeight="1.4" color="rgba(0, 0, 0, 0.8)" noOfLines={3}>
-            {description}
-          </Text>
-          <Badge alignSelf="flex-start" fontSize="12px" fontWeight="400" borderRadius="14px" padding="4px 8px">
-            Documentation
-          </Badge>
-        </Flex>
-      </CardBody>
-    </Card>
-  );
-};
-
-/**
- * Interface for secret selection state
- */
-interface SecretSelection {
-  [key: string]: Secret | undefined;
-}
-
-/**
- * Secret types with their validation rules
- */
-type SecretType =
-  | 'USERNAME'
-  | 'PASSWORD'
-  | 'POSTGRES_DSN'
-  | 'OPENAI_API_KEY'
-  | 'GCP_SERVICE_ACCOUNT'
-  | 'REDPANDA_BROKERS'
-  | 'GENERIC';
-
-/**
- * Interface for secret validation rules
- */
-interface SecretValidationRule {
-  validate: (value: string) => boolean;
-  errorMessage: string;
-  placeholder: string;
-}
-
-/**
- * Validation rules for different types of secrets
- */
-const secretValidationRules: Record<SecretType, SecretValidationRule> = {
-  USERNAME: {
-    validate: (value: string) => value.length >= 8,
-    errorMessage: 'Username must be at least 8 characters',
-    placeholder: 'Enter username (min 8 characters)',
-  },
-  PASSWORD: {
-    validate: (value: string) => {
-      const hasDigit = /\d/.test(value);
-      const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value);
-      return hasDigit && hasSpecial;
-    },
-    errorMessage: 'Password must contain at least 1 digit and 1 special character',
-    placeholder: 'Enter password (requires digit and special char)',
-  },
-  POSTGRES_DSN: {
-    validate: (value: string) => /^postgres:\/\/[^:]+:[^@]+@[^:]+:\d+\/\w+$/.test(value),
-    errorMessage: 'PostgresDSN must be in format: postgres://postgres:123456@127.0.0.1:5432/dummy',
-    placeholder: 'Enter Postgres DSN (e.g. postgres://user:pass@host:port/db)',
-  },
-  OPENAI_API_KEY: {
-    validate: (value: string) => value.startsWith('sk-'),
-    errorMessage: 'OpenAI API key must start with "sk-"',
-    placeholder: 'Enter OpenAI API key (starts with sk-)',
-  },
-  GCP_SERVICE_ACCOUNT: {
-    validate: (value: string) => value.length >= 8,
-    errorMessage: 'GCP Service Account must be at least 8 characters',
-    placeholder: 'Enter GCP Service Account (min 8 chars)',
-  },
-  REDPANDA_BROKERS: {
-    validate: () => true, // No validation required
-    errorMessage: '',
-    placeholder: 'Enter Redpanda brokers',
-  },
-  GENERIC: {
-    validate: () => true, // No validation required
-    errorMessage: '',
-    placeholder: 'Enter secret value',
-  },
-};
-
-/**
- * Determine the secret type based on the placeholder name
- * @param name The name of the placeholder
- * @returns The type of secret
- */
-const determineSecretType = (name: string): SecretType => {
-  name = name.toUpperCase();
-  if (name === 'USERNAME') return 'USERNAME';
-  if (name === 'PASSWORD') return 'PASSWORD';
-  if (name === 'POSTGRES_DSN') return 'POSTGRES_DSN';
-  if (name === 'OPENAI_API_KEY') return 'OPENAI_API_KEY';
-  if (name === 'GCP_SERVICE_ACCOUNT') return 'GCP_SERVICE_ACCOUNT';
-  if (name === 'REDPANDA_BROKERS') return 'REDPANDA_BROKERS';
-  return 'GENERIC';
-};
 
 /**
  * Finds all secret placeholders in a YAML string in the format ${secrets.SECRET_NAME} or ${SECRET_NAME}
@@ -247,6 +68,12 @@ const findSecretPlaceholders = (yamlStr: string): Array<{ name: string; fullMatc
     const fullMatch = match[0];
     const extractedName = match[1];
 
+    // Skip if it starts with "this."
+    if (extractedName.startsWith('this.')) {
+      console.log(`Skipping placeholder starting with 'this.': ${extractedName}`);
+      continue;
+    }
+
     allMatches.push({
       fullMatch,
       extractedName,
@@ -262,8 +89,11 @@ const findSecretPlaceholders = (yamlStr: string): Array<{ name: string; fullMatc
     const fullMatch = match[0];
     const extractedName = match[1];
 
-    // Skip if it's a template function or already captured via secrets.NAME format
-    if (extractedName.includes('!') || fullMatch.includes('${secrets.')) {
+    // Skip if it's a template function or already captured via secrets.NAME format or starts with "this."
+    if (extractedName.includes('!') || fullMatch.includes('${secrets.') || extractedName.startsWith('this.')) {
+      if (extractedName.startsWith('this.')) {
+        console.log(`Skipping placeholder starting with 'this.': ${extractedName}`);
+      }
       continue;
     }
 
@@ -278,7 +108,7 @@ const findSecretPlaceholders = (yamlStr: string): Array<{ name: string; fullMatc
   console.log('All placeholder matches:', allMatches);
 
   // Second pass: normalize and group by normalized name
-  for (const { fullMatch, extractedName, originalFormat } of allMatches) {
+  for (const { fullMatch, extractedName } of allMatches) {
     // Normalize the name for comparison (uppercase)
     const normalizedName = extractedName.toUpperCase();
 
@@ -316,32 +146,136 @@ const findSecretPlaceholders = (yamlStr: string): Array<{ name: string; fullMatc
 const replaceSecretPlaceholders = (yamlStr: string, secretMap: Record<string, string>): string => {
   let result = yamlStr;
 
-  console.log('Original template:', yamlStr);
+  console.group('Secret placeholder replacement');
+  console.log('Original template length:', yamlStr.length);
   console.log('Secret mapping to apply:', secretMap);
 
+  // Track which secrets were used
+  const usedSecrets: Record<string, boolean> = {};
+  let replacementCount = 0;
+
   for (const [placeholder, secretId] of Object.entries(secretMap)) {
-    // Format the secret reference correctly with ${secrets.SECRET_ID}
-    // const formattedSecretRef = `\${secrets.${secretId}}`;
-    const formattedSecretRef = `{${secretId}}`;
-    // Normalize the placeholder name to ensure case-insensitive matching
+    // Skip empty or invalid entries
+    if (!placeholder || !secretId) {
+      console.log(`Skipping empty placeholder or secretId: ${placeholder} -> ${secretId}`);
+      continue;
+    }
+
+    // Skip placeholders starting with 'this.'
+    if (placeholder.startsWith('this.')) {
+      console.log(`Skipping replacement for placeholder starting with 'this.': ${placeholder}`);
+      continue;
+    }
+
+    // Normalize the secret ID to ensure it follows the required pattern
+    const normalizedSecretId = normalizeSecretName(secretId);
+
+    // Format the secret reference correctly with {SECRET_ID}
+    const formattedSecretRef = `{${normalizedSecretId}}`;
+
+    // Normalize the placeholder name for case-insensitive matching
     const normalizedPlaceholder = placeholder.toUpperCase();
 
     console.log(`Replacing placeholder '${placeholder}' with formatted reference '${formattedSecretRef}'`);
 
-    // Replace ${secrets.NAME} format (case insensitive)
-    const secretsRegex = new RegExp(`\\$\\{secrets\\.${normalizedPlaceholder}\\}`, 'gi');
-    result = result.replace(secretsRegex, formattedSecretRef);
+    // Create a regexp for each format the placeholder could appear in
+    const formats = [
+      // ${secrets.PLACEHOLDER}
+      new RegExp(`\\$\\{secrets\\.${normalizedPlaceholder}\\}`, 'gi'),
+      // ${PLACEHOLDER}
+      new RegExp(`\\$\\{${normalizedPlaceholder}\\}(?!\\.)`, 'gi'),
+    ];
 
-    // Replace ${NAME} format directly (case insensitive), but carefully to avoid replacing template functions
-    const directRegex = new RegExp(`\\$\\{${normalizedPlaceholder}\\}(?!\\.)`, 'gi');
-    result = result.replace(directRegex, formattedSecretRef);
+    // Keep track of replacements for this placeholder
+    let placeholderReplacementCount = 0;
+
+    // Apply each format replacement
+    for (const pattern of formats) {
+      const beforeCount = result.length;
+      result = result.replace(pattern, (match) => {
+        // Double-check the match doesn't contain 'this.'
+        if (match.includes('this.')) {
+          console.log(`Skipping 'this.' prefixed match: ${match}`);
+          return match; // Keep original
+        }
+        placeholderReplacementCount++;
+        return formattedSecretRef;
+      });
+
+      // Check if any replacements were made with this pattern
+      if (beforeCount !== result.length) {
+        console.log(`  Pattern ${pattern} matched and replaced`);
+      }
+    }
+
+    // Log results for this placeholder
+    if (placeholderReplacementCount > 0) {
+      console.log(`  Replaced ${placeholderReplacementCount} instances of '${placeholder}'`);
+      usedSecrets[placeholder] = true;
+      replacementCount += placeholderReplacementCount;
+    } else {
+      console.warn(`  No replacements made for '${placeholder}' - check if it exists in the template`);
+    }
   }
 
+  // Log summary of replacements
+  console.log(`Total replacements: ${replacementCount}`);
+
+  // Check if any secrets were not used
+  const unusedSecrets = Object.keys(secretMap).filter((key) => !usedSecrets[key]);
+  if (unusedSecrets.length > 0) {
+    console.warn('Unused secrets - these placeholders might not exist in the template:', unusedSecrets);
+  }
+
+  console.groupEnd();
   return result;
 };
 
+/**
+ * Interface for tracking auto-detected secrets
+ */
+interface AutoDetectedSecretInfo {
+  isAutoDetected: boolean;
+}
+
+/**
+ * Determine if a secret and placeholder have a matching relationship
+ * @param secretId The secret ID
+ * @param placeholderName The placeholder name
+ * @returns True if there's any match (exact or partial), false otherwise
+ */
+const isSecretMatch = (secretId: string, placeholderName: string): boolean => {
+  // Normalize both inputs to handle special characters consistently
+  const normalizedSecretId = normalizeSecretName(secretId);
+  const normalizedPlaceholder = normalizeSecretName(placeholderName);
+
+  // Check for exact match with normalized values
+  if (normalizedSecretId === normalizedPlaceholder) {
+    return true;
+  }
+
+  // Check for partial matches with normalized values - prefixed or containing
+  if (normalizedSecretId.includes(normalizedPlaceholder) || normalizedPlaceholder.includes(normalizedSecretId)) {
+    return true;
+  }
+
+  // Handle special patterns like `USER_CONFIGURED_X` matching with just `X`
+  const userConfiguredPrefix = 'USER_CONFIGURED_';
+  if (normalizedSecretId.startsWith(userConfiguredPrefix)) {
+    const secretWithoutPrefix = normalizedSecretId.substring(userConfiguredPrefix.length);
+    if (
+      secretWithoutPrefix === normalizedPlaceholder ||
+      secretWithoutPrefix.includes(normalizedPlaceholder) ||
+      normalizedPlaceholder.includes(secretWithoutPrefix)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export const AgentCreatePage = () => {
-  const toast = useToast();
   const [selectedConnector, setSelectedConnector] = useState<string>('fancy-agent');
   const [isAddSecretModalOpen, setIsAddSecretModalOpen] = useState(false);
   const [selectedSecrets, setSelectedSecrets] = useState<SecretSelection>({});
@@ -367,7 +301,42 @@ export const AgentCreatePage = () => {
 
   // Find all secret placeholders in the agent template
   const secretPlaceholders = useMemo(() => {
-    return findSecretPlaceholders(JSON.stringify(agentTemplate));
+    const agentPlaceholders = findSecretPlaceholders(JSON.stringify(agentTemplate));
+    const indexingPlaceholders = findSecretPlaceholders(JSON.stringify(indexingTemplate));
+
+    // Use a Map for deduplication with normalized name as key
+    const dedupMap = new Map<string, { name: string; fullMatch: string; formats: string[] }>();
+
+    // Process placeholders from both templates using for...of instead of forEach
+    for (const placeholder of [...agentPlaceholders, ...indexingPlaceholders]) {
+      const normalizedName = placeholder.name.toUpperCase();
+
+      if (dedupMap.has(normalizedName)) {
+        // Merge formats for existing placeholders - avoid non-null assertion
+        const existing = dedupMap.get(normalizedName);
+        if (!existing) continue; // Skip if for some reason the value is null or undefined
+
+        // Combine formats without duplicates using for...of instead of forEach
+        for (const format of placeholder.formats) {
+          if (!existing.formats.includes(format)) {
+            existing.formats.push(format);
+          }
+        }
+      } else {
+        // Add new placeholder
+        dedupMap.set(normalizedName, {
+          name: placeholder.name,
+          fullMatch: placeholder.fullMatch,
+          formats: [...placeholder.formats], // Clone to avoid reference issues
+        });
+      }
+    }
+
+    // Convert map back to array for rendering
+    const uniquePlaceholders = Array.from(dedupMap.values());
+
+    console.log('Deduplicated placeholders (across templates):', uniquePlaceholders);
+    return uniquePlaceholders;
   }, []);
 
   // Log found placeholders for debugging
@@ -380,7 +349,7 @@ export const AgentCreatePage = () => {
     if (secretsLoaded && secretList?.secrets && secretPlaceholders.length > 0) {
       const newAutoDetectedSecrets = { ...autoDetectedSecrets };
       const newSelectedSecrets = { ...selectedSecrets };
-      let newDetectionsCount = 0;
+      let matchCount = 0;
 
       // For each placeholder, find a matching secret
       for (const placeholder of secretPlaceholders) {
@@ -389,41 +358,38 @@ export const AgentCreatePage = () => {
         // Skip if already auto-detected
         if (autoDetectedSecrets[placeholder.name]) continue;
 
-        // Try to find a secret with exact match to placeholder name
+        // Try to find a matching secret using the normalized names for comparison
         const matchingSecret = secretList.secrets?.find(
-          (secret) => secret?.id && secret.id.toUpperCase() === placeholder.name.toUpperCase(),
+          (secret) => secret?.id && isSecretMatch(secret.id, placeholder.name),
         );
 
         if (matchingSecret) {
           // Auto-select this secret
           newSelectedSecrets[placeholder.name] = matchingSecret;
           newAutoDetectedSecrets[placeholder.name] = true;
-          newDetectionsCount++;
-          console.log(`Auto-detected secret for ${placeholder.name}: ${matchingSecret.id}`);
+          matchCount++;
+          console.log(`Auto-detected match for ${placeholder.name}: ${matchingSecret.id}`);
         }
       }
 
       // Update state if we found any new matches
-      if (newDetectionsCount > 0) {
+      if (matchCount > 0) {
         setSelectedSecrets(newSelectedSecrets);
         setAutoDetectedSecrets(newAutoDetectedSecrets);
-
-        toast({
-          title: 'Secrets auto-detected',
-          description: `${newDetectionsCount} secrets were automatically matched with placeholders.`,
-          status: 'info',
-          duration: 5000,
-          isClosable: true,
-        });
       }
     }
-  }, [secretList, secretPlaceholders, secretsLoaded, selectedSecrets, autoDetectedSecrets, toast]);
+  }, [secretList, secretPlaceholders, secretsLoaded, selectedSecrets, autoDetectedSecrets]);
 
   // Effect to handle automatic selection of newly created secrets
   useEffect(() => {
     if (pendingSecretSelection && secretList?.secrets) {
       const { placeholderName, secretId } = pendingSecretSelection;
-      const newSecret = secretList.secrets.find((secret) => secret?.id === secretId);
+
+      // Find the secret with normalized ID comparison
+      const normalizedSecretId = normalizeSecretName(secretId);
+      const newSecret = secretList.secrets.find(
+        (secret) => normalizeSecretName(secret?.id || '') === normalizedSecretId,
+      );
 
       if (newSecret) {
         // Select the new secret in the dropdown
@@ -443,49 +409,42 @@ export const AgentCreatePage = () => {
       onChange: agentFormSchema,
     },
     onSubmit: async ({ value }) => {
-      try {
-        console.log('form value: ', value);
+      console.log('form value: ', value);
 
-        // Prepare mapping of secret placeholders to actual secret IDs
-        const secretMapping: Record<string, string> = {};
+      // Prepare mapping of secret placeholders to actual secret IDs
+      const secretMapping: Record<string, string> = {};
 
-        // Create mapping from selected secrets
-        for (const [key, secret] of Object.entries(selectedSecrets)) {
-          if (secret?.id) {
-            secretMapping[key] = `${secret.id}`;
-          }
+      // Create mapping from selected secrets, normalizing all secret IDs
+      for (const [key, secret] of Object.entries(selectedSecrets)) {
+        if (secret?.id) {
+          // Ensure secret ID follows the required pattern
+          secretMapping[key] = normalizeSecretName(secret.id);
         }
+      }
 
-        console.log('Secret mapping:', secretMapping);
+      console.log('Secret mapping:', secretMapping);
 
-        // Replace placeholders in YAML template
-        const yamlTemplateStr = JSON.stringify(agentTemplate);
-        const processedTemplate = replaceSecretPlaceholders(yamlTemplateStr, secretMapping);
+      // Replace placeholders in YAML template
+      const yamlTemplateStr = JSON.stringify(agentTemplate);
+      const processedTemplate = replaceSecretPlaceholders(yamlTemplateStr, secretMapping);
 
-        // Log the processed template
-        console.log('Processed template with secret placeholders replaced:', processedTemplate);
+      // Log the processed template
+      console.log('Processed template with secret placeholders replaced:', processedTemplate);
 
-        const processedTemplateObj = JSON.parse(processedTemplate);
+      const processedTemplateObj = JSON.parse(processedTemplate);
 
-        await createAgent({
-          request: new CreatePipelineRequestDataPlane({
-            pipeline: new PipelineCreate({
-              displayName: `${REDPANDA_AI_AGENT_PIPELINE_PREFIX}${value.name.toUpperCase()}`,
-              description: value.description,
-              configYaml: JSON.stringify(processedTemplateObj, null, 4),
-            }),
+      const createAgentResponse = await createAgent({
+        request: new CreatePipelineRequestDataPlane({
+          pipeline: new PipelineCreate({
+            displayName: `${REDPANDA_AI_AGENT_PIPELINE_PREFIX}${value.name.toUpperCase()}`,
+            description: value.description,
+            configYaml: JSON.stringify(processedTemplateObj, null, 4),
           }),
-        });
+        }),
+      });
 
-        history.push('/agents');
-      } catch (error) {
-        toast({
-          title: 'Error creating agent',
-          description: 'An error occurred while creating the agent.',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+      if (createAgentResponse.response?.pipeline?.id) {
+        history.push(`/agents/${createAgentResponse.response.pipeline.id}`);
       }
     },
   });
@@ -501,19 +460,30 @@ export const AgentCreatePage = () => {
    * Handles secret selection from dropdown
    */
   const handleSecretSelect = (key: string, secret: Secret | undefined, isNewlyCreated = false): void => {
+    // Check if the secret ID contains special characters that will be normalized
+    let secretNormalizationInfo = '';
+
+    if (secret?.id) {
+      const normalizedId = normalizeSecretName(secret.id);
+      if (normalizedId !== secret.id) {
+        secretNormalizationInfo = `Note: Secret ID "${secret.id}" will be normalized to "${normalizedId}" to match required pattern`;
+        console.log(secretNormalizationInfo);
+      }
+    }
+
     setSelectedSecrets((prev) => ({
       ...prev,
       [key]: secret,
     }));
 
-    // If this is a newly created secret that matches its placeholder name, mark it as auto-detected
-    if (isNewlyCreated && secret?.id && secret.id.toUpperCase() === key.toUpperCase()) {
+    // If this is a newly created secret, check if it's a match for auto-detection
+    if (isNewlyCreated && secret?.id && isSecretMatch(secret.id, key)) {
       setAutoDetectedSecrets((prev) => ({
         ...prev,
         [key]: true,
       }));
     }
-    // Only remove from auto-detected if not newly created and user manually changed it
+    // Remove from auto-detected if user manually changed it
     else if (!isNewlyCreated && autoDetectedSecrets[key]) {
       setAutoDetectedSecrets((prev) => {
         const updated = { ...prev };
@@ -620,7 +590,7 @@ export const AgentCreatePage = () => {
                 </Heading>
 
                 <Flex flexWrap="wrap" gap={5} mb={6}>
-                  <ConnectorCard
+                  <AgentTemplateCard
                     id="fancy-agent"
                     title="New message received"
                     subtitle="Fancy Agent Name"
@@ -629,7 +599,7 @@ export const AgentCreatePage = () => {
                     isSelected={selectedConnector === 'fancy-agent'}
                     onClick={handleConnectorSelect}
                   />
-                  <ConnectorCard
+                  <AgentTemplateCard
                     id="rest-api"
                     title="New HTTP request"
                     subtitle="REST API"
@@ -639,7 +609,7 @@ export const AgentCreatePage = () => {
                     isDisabled
                     onClick={handleConnectorSelect}
                   />
-                  <ConnectorCard
+                  <AgentTemplateCard
                     id="slack-bot"
                     title="New event in slack"
                     subtitle="Slack Bot"
@@ -662,12 +632,16 @@ export const AgentCreatePage = () => {
                     Provide the required configurations for your agent. Secrets will be stored in your dataplane's
                     secret store and can be re-used across agents.
                   </Text>
-                  <Text fontSize="14px" lineHeight="1.5" color="gray.600" mt={1}>
-                    <Text as="span" fontWeight={600} color="green.600">
-                      Auto-detection:
-                    </Text>{' '}
-                    The system automatically matches existing secrets with placeholders that have the same name, making
-                    it easier to create agents with minimal configuration.
+                  <Text fontSize="14px" lineHeight="1.5" mt={2} color="gray.600">
+                    Note: Some secret types like{' '}
+                    <Text as="span" fontWeight="bold">
+                      POSTGRES_DSN
+                    </Text>
+                    ,{' '}
+                    <Text as="span" fontWeight="bold">
+                      OPENAI_API_KEY
+                    </Text>
+                    , and others have specific format requirements and will be validated when creating the secret.
                   </Text>
                 </Box>
 
@@ -677,75 +651,65 @@ export const AgentCreatePage = () => {
                     <Flex alignItems="center" mb={2}>
                       <Icon as={MdAdd} color="green.500" mr={2} />
                       <Text fontWeight={600} fontSize="14px" color="green.700">
-                        Auto-detected Secrets
+                        Auto-detected secrets
                       </Text>
                     </Flex>
-                    <Text fontSize="14px" color="gray.700" mb={2}>
-                      The following secrets were automatically matched with placeholders based on naming conventions:
-                    </Text>
-                    <Box pl={2}>
-                      {Object.keys(autoDetectedSecrets).map((placeholderName) => (
-                        <HStack key={placeholderName} fontSize="14px" spacing={1}>
-                          <Text fontWeight={600}>{placeholderName}</Text>
-                          <Text>→</Text>
-                          <Text>{selectedSecrets[placeholderName]?.id}</Text>
-                        </HStack>
-                      ))}
-                    </Box>
-                    <Text fontSize="12px" color="gray.600" mt={2}>
+                    <Text fontSize="12px" color="gray.600">
                       You can change these selections in the form below if needed.
                     </Text>
                   </Box>
                 )}
 
                 <VStack spacing={4} align="stretch" maxWidth="500px">
-                  {secretPlaceholders.map((placeholder) => (
-                    <FormControl key={placeholder.name}>
-                      <FormLabel fontSize="14px" fontWeight={500}>
-                        {placeholder.name}
-                        {autoDetectedSecrets[placeholder.name] && (
-                          <Badge ml={2} fontSize="10px">
-                            Auto-detected
-                          </Badge>
-                        )}
-                      </FormLabel>
-                      <Flex gap={2}>
-                        <Box flex="1">
-                          <Select<Secret | undefined>
-                            onChange={(val) => {
-                              if (val && isSingleValue(val) && val.value) {
-                                handleSecretSelect(placeholder.name, val.value, false);
-                              }
-                            }}
-                            options={availableSecrets}
-                            placeholder={`Select ${placeholder.name} secret`}
-                            value={availableSecrets.find(
-                              (opt) => opt.value?.id === selectedSecrets[placeholder.name]?.id,
+                  {secretPlaceholders.map((placeholder) => {
+                    // Check if the selected secret for this placeholder needs normalization
+                    const selectedSecret = selectedSecrets[placeholder.name];
+                    const needsNormalization =
+                      selectedSecret?.id && normalizeSecretName(selectedSecret.id) !== selectedSecret.id;
+
+                    // Determine if this placeholder might need specific validation
+                    const secretType = determineSecretType(placeholder.name);
+                    const needsSpecialValidation = secretType !== 'GENERIC';
+
+                    return (
+                      <FormControl key={placeholder.name}>
+                        <FormLabel fontSize="14px" fontWeight={500}>
+                          <Text>{placeholder.name}</Text>
+                        </FormLabel>
+                        <Flex gap={2}>
+                          <Box flex="1">
+                            <Select<Secret | undefined>
+                              onChange={(val) => {
+                                if (val && isSingleValue(val) && val.value) {
+                                  handleSecretSelect(placeholder.name, val.value, false);
+                                }
+                              }}
+                              options={availableSecrets}
+                              placeholder={'Select secret'}
+                              value={availableSecrets.find(
+                                (opt) => opt.value?.id === selectedSecrets[placeholder.name]?.id,
+                              )}
+                            />
+                            {needsNormalization && (
+                              <Text fontSize="12px" color="orange.500" mt={1}>
+                                Note: Secret ID will be normalized to "{normalizeSecretName(selectedSecret.id)}"
+                              </Text>
                             )}
-                          />
-                        </Box>
-                        <Button
-                          onClick={() => {
-                            handleOpenAddSecretModal(placeholder.name);
-                          }}
-                        >
-                          <HStack>
-                            <Icon as={MdAdd} boxSize={4} />
-                            <Text>Add Secret</Text>
-                          </HStack>
-                        </Button>
-                      </Flex>
-                      <FormHelperText fontSize="14px" color="#64748B">
-                        Secret value for{' '}
-                        {placeholder.formats.length > 1 ? placeholder.formats.join(', ') : placeholder.fullMatch}
-                        {autoDetectedSecrets[placeholder.name] && (
-                          <Text as="span" color="green.500" ml={1}>
-                            (automatically matched with existing secret)
-                          </Text>
-                        )}
-                      </FormHelperText>
-                    </FormControl>
-                  ))}
+                          </Box>
+                          <Button
+                            onClick={() => {
+                              handleOpenAddSecretModal(placeholder.name);
+                            }}
+                          >
+                            <HStack>
+                              <Icon as={MdAdd} boxSize={4} />
+                              <Text>Add Secret</Text>
+                            </HStack>
+                          </Button>
+                        </Flex>
+                      </FormControl>
+                    );
+                  })}
                 </VStack>
               </Box>
 
@@ -755,31 +719,15 @@ export const AgentCreatePage = () => {
                   {({ canSubmit, isSubmitting }) => (
                     <Button
                       type="submit"
-                      bgColor="#E86B54"
-                      color="white"
-                      height="40px"
-                      px={6}
-                      fontWeight={600}
-                      fontSize="14px"
+                      variant="brand"
                       isLoading={isSubmitting}
-                      loadingText="Creating"
                       isDisabled={!canSubmit}
-                      _hover={{ bg: '#D85C45' }}
-                      leftIcon={
-                        Object.keys(autoDetectedSecrets).length > 0 ? <Icon as={MdAdd} boxSize={5} /> : undefined
-                      }
+                      loadingText="Creating"
                     >
-                      {Object.keys(autoDetectedSecrets).length > 0
-                        ? `Create with ${Object.keys(autoDetectedSecrets).length} Auto-Detected Secrets`
-                        : 'Create Agent'}
+                      Create Agent
                     </Button>
                   )}
                 </form.Subscribe>
-                {Object.keys(autoDetectedSecrets).length > 0 && (
-                  <Badge colorScheme="green" variant="subtle" fontSize="12px" alignSelf="center" py={1} px={2}>
-                    One-click deploy ready
-                  </Badge>
-                )}
               </Flex>
             </VStack>
           </form>
@@ -796,174 +744,5 @@ export const AgentCreatePage = () => {
         }}
       />
     </Box>
-  );
-};
-
-interface AddSecretModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  secretType: SecretType;
-  placeholderName: string;
-  onSecretCreated?: (placeholderName: string, secretId: string) => void;
-}
-
-export const AddSecretModal = ({
-  isOpen,
-  onClose,
-  secretType,
-  placeholderName,
-  onSecretCreated,
-}: AddSecretModalProps) => {
-  const [secretName, setSecretName] = useState('');
-  const [secretValue, setSecretValue] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationError, setValidationError] = useState('');
-  const toast = useToast();
-
-  // Get the list of existing secrets to check for duplicates
-  const { data: secretList } = useListSecretsQuery();
-  const { mutateAsync: createSecret } = useCreateSecretMutation();
-
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setSecretName(placeholderName.toUpperCase());
-      setSecretValue('');
-      setIsValidating(false);
-      setValidationError('');
-    }
-  }, [isOpen, placeholderName]);
-
-  // Check if the secret name already exists
-  const isSecretNameTaken = (name: string): boolean => {
-    if (!secretList?.secrets) return false;
-    const normalizedName = name.toUpperCase();
-    return secretList.secrets.some((secret) => secret?.id?.toUpperCase() === normalizedName);
-  };
-
-  const handleCreateSecret = async (): Promise<void> => {
-    setIsValidating(true);
-
-    // First check if the secret name is already taken
-    const normalizedSecretName = secretName.toUpperCase();
-    if (isSecretNameTaken(normalizedSecretName)) {
-      setValidationError(`Secret with name '${normalizedSecretName}' already exists. Please use a different name.`);
-      setIsValidating(false);
-      return;
-    }
-
-    // Validate the secret based on its type
-    const validationRule = secretValidationRules[secretType];
-    const isValid = validationRule.validate(secretValue);
-
-    if (!isValid) {
-      setValidationError(validationRule.errorMessage);
-      setIsValidating(false);
-      return;
-    }
-
-    try {
-      await createSecret({
-        request: new CreateSecretRequestDataPlane({
-          id: normalizedSecretName,
-          secretData: base64ToUInt8Array(encodeBase64(secretValue)),
-          scopes: [Scope.REDPANDA_CONNECT],
-        }),
-      });
-
-      toast({
-        title: 'Secret created',
-        description: `Successfully created secret for ${placeholderName}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-
-      // If the callback exists, pass the placeholder name and secret ID
-      if (onSecretCreated) {
-        onSecretCreated(placeholderName, normalizedSecretName);
-      }
-
-      onClose();
-    } catch (error) {
-      toast({
-        title: 'Error creating secret',
-        description: 'An error occurred while creating the secret.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsValidating(false);
-    }
-  };
-
-  return (
-    <Modal size="xl" isOpen={isOpen} onClose={onClose}>
-      <ModalContent>
-        <ModalHeader>Add Secret for {placeholderName}</ModalHeader>
-        <ModalBody>
-          <VStack spacing={4}>
-            <FormControl isInvalid={!!validationError && validationError.includes('already exists')}>
-              <FormLabel fontSize="14px" fontWeight={500}>
-                Secret Name
-              </FormLabel>
-              <Input
-                placeholder="Enter secret name"
-                value={secretName}
-                onChange={(e) => {
-                  setSecretName(e.target.value);
-                  // Clear validation error when user changes the name
-                  if (validationError?.includes('already exists')) {
-                    setValidationError('');
-                  }
-                }}
-              />
-              {validationError?.includes('already exists') ? (
-                <FormErrorMessage>{validationError}</FormErrorMessage>
-              ) : (
-                <FormHelperText>This will be the ID used to reference this secret.</FormHelperText>
-              )}
-            </FormControl>
-
-            <FormControl isInvalid={!!validationError && !validationError.includes('already exists')}>
-              <FormLabel fontSize="14px" fontWeight={500}>
-                Secret Value
-              </FormLabel>
-              <Input
-                placeholder={secretValidationRules[secretType].placeholder}
-                value={secretValue}
-                onChange={(e) => {
-                  setSecretValue(e.target.value);
-                  // Only clear non-duplicate name validation errors
-                  if (validationError && !validationError?.includes('already exists')) {
-                    setValidationError('');
-                  }
-                }}
-              />
-              {validationError && !validationError?.includes('already exists') ? (
-                <FormErrorMessage>{validationError}</FormErrorMessage>
-              ) : (
-                <FormHelperText>
-                  {secretType !== 'GENERIC'
-                    ? `This field has validation for ${secretType.replace(/_/g, ' ').toLowerCase()}`
-                    : 'No specific validation required for this secret type.'}
-                </FormHelperText>
-              )}
-            </FormControl>
-          </VStack>
-        </ModalBody>
-        <ModalFooter>
-          <ButtonGroup>
-            <Button onClick={handleCreateSecret} isLoading={isValidating} loadingText="Validating" variant="brand">
-              Create
-            </Button>
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-          </ButtonGroup>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
   );
 };
