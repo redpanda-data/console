@@ -141,7 +141,7 @@ func (s *Service) Start(ctx context.Context) error {
 	}
 
 	if err := s.testKafkaConnectivity(ctx); err != nil {
-		return err
+		return fmt.Errorf("failed to test kafka connectivity: %w", err)
 	}
 
 	return nil
@@ -161,16 +161,19 @@ func (s *Service) testKafkaConnectivity(ctx context.Context) error {
 	}
 
 	testConnection := func(kafkaCl *kgo.Client, timeout time.Duration) error {
+		connectionCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
 		s.logger.Info("connecting to Kafka seed brokers, trying to fetch cluster metadata", zap.Strings("seed_brokers", s.cfg.Kafka.Brokers))
 		req := kmsg.NewMetadataRequest()
-		res, err := req.RequestWith(ctx, kafkaCl)
+		res, err := req.RequestWith(connectionCtx, kafkaCl)
 		if err != nil {
 			return fmt.Errorf("failed to request metadata: %w", err)
 		}
 
 		// Request versions in order to guess Kafka Cluster version
 		versionsReq := kmsg.NewApiVersionsRequest()
-		versionsRes, err := versionsReq.RequestWith(ctx, kafkaCl)
+		versionsRes, err := versionsReq.RequestWith(connectionCtx, kafkaCl)
 		if err != nil {
 			return fmt.Errorf("failed to request api versions: %w", err)
 		}
