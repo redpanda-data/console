@@ -5,6 +5,7 @@ package redpanda.api.dataplane.v1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 
@@ -51,6 +52,15 @@ message Pipeline {
   // URL to connect to the pipeline, e.g. via http_server.
   // May be empty if no http_server is used.
   string url = 10;
+
+  // Tags are key-value pairs that can be assigned to a pipeline resource.
+  // They help organize pipelines and enable filtering when listing them.
+  map<string, string> tags = 11 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
 
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
@@ -452,6 +462,14 @@ message ListPipelinesRequest {
       (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
       (buf.validate.field).string.max_len = 128
     ];
+
+    // Filter pipelines that contain all of these key/value pairs.
+    map<string, string> tags = 2 [(buf.validate.field).map = {
+      max_pairs: 16
+      values: {
+        string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+      }
+    }];
   }
 }
 
@@ -486,6 +504,15 @@ message PipelineUpdate {
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
+
+  // A map of tags to add, update or delete.
+  // If a tag's value is empty, the server interprets that as a deletion.
+  map<string, string> tags = 7 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
 }
 
 message UpdatePipelineRequest {
@@ -495,10 +522,15 @@ message UpdatePipelineRequest {
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
   ];
+
   PipelineUpdate pipeline = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+
+  // Specifies which fields should be updated. If not provided,
+  // all fields will be updated.
+  google.protobuf.FieldMask update_mask = 3;
 }
 
 message UpdatePipelineResponse {
