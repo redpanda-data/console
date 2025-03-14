@@ -632,17 +632,6 @@ export const AgentCreatePage = () => {
                     Provide the required configurations for your agent. Secrets will be stored in your dataplane's
                     secret store and can be re-used across agents.
                   </Text>
-                  <Text fontSize="14px" lineHeight="1.5" mt={2} color="gray.600">
-                    Note: Some secret types like{' '}
-                    <Text as="span" fontWeight="bold">
-                      POSTGRES_DSN
-                    </Text>
-                    ,{' '}
-                    <Text as="span" fontWeight="bold">
-                      OPENAI_API_KEY
-                    </Text>
-                    , and others have specific format requirements and will be validated when creating the secret.
-                  </Text>
                 </Box>
 
                 {/* Summary of auto-detected secrets */}

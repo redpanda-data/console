@@ -29,6 +29,7 @@ import { useHistory, useParams } from 'react-router-dom';
 import type { TopicMessage } from 'state/restInterfaces';
 import { uiState } from 'state/uiState';
 import checkIcon from '../../../assets/icons/check-icon.svg';
+import { AgentExpandedMessage } from './agent-expanded-message';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = ({ agent }: { agent: Pipeline | undefined }) => {
@@ -263,7 +264,11 @@ export const AgentDetailsPage = () => {
                 <Text color="#475467">No log entries found for this agent.</Text>
               </Box>
             ) : (
-              <DataTable<LogEntry> data={formattedLogsData} columns={logsTableColumns} />
+              <DataTable<LogEntry>
+                data={formattedLogsData}
+                columns={logsTableColumns}
+                subComponent={({ row: { original } }) => <AgentExpandedMessage msg={original} />}
+              />
             )}
           </Box>
         </Box>
