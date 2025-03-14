@@ -893,6 +893,11 @@ components:
         name_contains:
           description: Substring match on pipeline name. Case-sensitive.
           type: string
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: Filter pipelines that contain all of these key/value pairs.
+          type: object
       type: object
     ListPipelinesResponse:
       properties:
@@ -1164,6 +1169,13 @@ components:
           $ref: '#/components/schemas/Pipeline.State'
         status:
           $ref: '#/components/schemas/Pipeline.Status'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Tags are key-value pairs that can be assigned to a pipeline resource.
+            They help organize pipelines and enable filtering when listing them.
+          type: object
         url:
           description: |-
             URL to connect to the pipeline, e.g. via http_server.
@@ -1229,6 +1241,13 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Optional: A map of tags to add or update.
+            If a tag's value is empty, the server interprets that as a deletion.
+          type: object
       required:
         - display_name
         - config_yaml
@@ -3324,6 +3343,11 @@ paths:
           name: filter.name_contains
           schema:
             type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.tags[string]
+          schema:
+            type: string
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
@@ -3570,6 +3594,13 @@ paths:
           in: path
           name: id
           required: true
+          schema:
+            type: string
+        - description: |-
+            Specifies which fields should be updated. If not provided,
+            all fields will be updated.
+          in: query
+          name: update_mask
           schema:
             type: string
       requestBody:
