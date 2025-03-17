@@ -26,6 +26,10 @@ const (
 	TopicService_GetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/GetTopicConfigurations"
 	TopicService_UpdateTopicConfigurations_FullMethodName = "/redpanda.api.dataplane.v1.TopicService/UpdateTopicConfigurations"
 	TopicService_SetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/SetTopicConfigurations"
+	TopicService_AddTopicPartitions_FullMethodName        = "/redpanda.api.dataplane.v1.TopicService/AddTopicPartitions"
+	TopicService_SetTopicPartitions_FullMethodName        = "/redpanda.api.dataplane.v1.TopicService/SetTopicPartitions"
+	TopicService_AddPartitionsToTopics_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/AddPartitionsToTopics"
+	TopicService_SetPartitionsToTopics_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/SetPartitionsToTopics"
 )
 
 // TopicServiceClient is the client API for TopicService service.
@@ -38,6 +42,10 @@ type TopicServiceClient interface {
 	GetTopicConfigurations(ctx context.Context, in *GetTopicConfigurationsRequest, opts ...grpc.CallOption) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(ctx context.Context, in *UpdateTopicConfigurationsRequest, opts ...grpc.CallOption) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(ctx context.Context, in *SetTopicConfigurationsRequest, opts ...grpc.CallOption) (*SetTopicConfigurationsResponse, error)
+	AddTopicPartitions(ctx context.Context, in *AddTopicPartitionsRequest, opts ...grpc.CallOption) (*AddTopicPartitionsResponse, error)
+	SetTopicPartitions(ctx context.Context, in *SetTopicPartitionsRequest, opts ...grpc.CallOption) (*SetTopicPartitionsResponse, error)
+	AddPartitionsToTopics(ctx context.Context, in *AddPartitionsToTopicsRequest, opts ...grpc.CallOption) (*AddPartitionsToTopicsResponse, error)
+	SetPartitionsToTopics(ctx context.Context, in *SetPartitionsToTopicsRequest, opts ...grpc.CallOption) (*SetPartitionsToTopicsResponse, error)
 }
 
 type topicServiceClient struct {
@@ -108,6 +116,46 @@ func (c *topicServiceClient) SetTopicConfigurations(ctx context.Context, in *Set
 	return out, nil
 }
 
+func (c *topicServiceClient) AddTopicPartitions(ctx context.Context, in *AddTopicPartitionsRequest, opts ...grpc.CallOption) (*AddTopicPartitionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddTopicPartitionsResponse)
+	err := c.cc.Invoke(ctx, TopicService_AddTopicPartitions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) SetTopicPartitions(ctx context.Context, in *SetTopicPartitionsRequest, opts ...grpc.CallOption) (*SetTopicPartitionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetTopicPartitionsResponse)
+	err := c.cc.Invoke(ctx, TopicService_SetTopicPartitions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) AddPartitionsToTopics(ctx context.Context, in *AddPartitionsToTopicsRequest, opts ...grpc.CallOption) (*AddPartitionsToTopicsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddPartitionsToTopicsResponse)
+	err := c.cc.Invoke(ctx, TopicService_AddPartitionsToTopics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) SetPartitionsToTopics(ctx context.Context, in *SetPartitionsToTopicsRequest, opts ...grpc.CallOption) (*SetPartitionsToTopicsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetPartitionsToTopicsResponse)
+	err := c.cc.Invoke(ctx, TopicService_SetPartitionsToTopics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TopicServiceServer is the server API for TopicService service.
 // All implementations must embed UnimplementedTopicServiceServer
 // for forward compatibility.
@@ -118,6 +166,10 @@ type TopicServiceServer interface {
 	GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(context.Context, *UpdateTopicConfigurationsRequest) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error)
+	AddTopicPartitions(context.Context, *AddTopicPartitionsRequest) (*AddTopicPartitionsResponse, error)
+	SetTopicPartitions(context.Context, *SetTopicPartitionsRequest) (*SetTopicPartitionsResponse, error)
+	AddPartitionsToTopics(context.Context, *AddPartitionsToTopicsRequest) (*AddPartitionsToTopicsResponse, error)
+	SetPartitionsToTopics(context.Context, *SetPartitionsToTopicsRequest) (*SetPartitionsToTopicsResponse, error)
 	mustEmbedUnimplementedTopicServiceServer()
 }
 
@@ -145,6 +197,18 @@ func (UnimplementedTopicServiceServer) UpdateTopicConfigurations(context.Context
 }
 func (UnimplementedTopicServiceServer) SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetTopicConfigurations not implemented")
+}
+func (UnimplementedTopicServiceServer) AddTopicPartitions(context.Context, *AddTopicPartitionsRequest) (*AddTopicPartitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddTopicPartitions not implemented")
+}
+func (UnimplementedTopicServiceServer) SetTopicPartitions(context.Context, *SetTopicPartitionsRequest) (*SetTopicPartitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetTopicPartitions not implemented")
+}
+func (UnimplementedTopicServiceServer) AddPartitionsToTopics(context.Context, *AddPartitionsToTopicsRequest) (*AddPartitionsToTopicsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddPartitionsToTopics not implemented")
+}
+func (UnimplementedTopicServiceServer) SetPartitionsToTopics(context.Context, *SetPartitionsToTopicsRequest) (*SetPartitionsToTopicsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetPartitionsToTopics not implemented")
 }
 func (UnimplementedTopicServiceServer) mustEmbedUnimplementedTopicServiceServer() {}
 func (UnimplementedTopicServiceServer) testEmbeddedByValue()                      {}
@@ -275,6 +339,78 @@ func _TopicService_SetTopicConfigurations_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TopicService_AddTopicPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddTopicPartitionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).AddTopicPartitions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_AddTopicPartitions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).AddTopicPartitions(ctx, req.(*AddTopicPartitionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_SetTopicPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTopicPartitionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).SetTopicPartitions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_SetTopicPartitions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).SetTopicPartitions(ctx, req.(*SetTopicPartitionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_AddPartitionsToTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddPartitionsToTopicsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).AddPartitionsToTopics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_AddPartitionsToTopics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).AddPartitionsToTopics(ctx, req.(*AddPartitionsToTopicsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_SetPartitionsToTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetPartitionsToTopicsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).SetPartitionsToTopics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_SetPartitionsToTopics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).SetPartitionsToTopics(ctx, req.(*SetPartitionsToTopicsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TopicService_ServiceDesc is the grpc.ServiceDesc for TopicService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -305,6 +441,22 @@ var TopicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetTopicConfigurations",
 			Handler:    _TopicService_SetTopicConfigurations_Handler,
+		},
+		{
+			MethodName: "AddTopicPartitions",
+			Handler:    _TopicService_AddTopicPartitions_Handler,
+		},
+		{
+			MethodName: "SetTopicPartitions",
+			Handler:    _TopicService_SetTopicPartitions_Handler,
+		},
+		{
+			MethodName: "AddPartitionsToTopics",
+			Handler:    _TopicService_AddPartitionsToTopics_Handler,
+		},
+		{
+			MethodName: "SetPartitionsToTopics",
+			Handler:    _TopicService_SetPartitionsToTopics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

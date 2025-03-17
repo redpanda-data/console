@@ -23,6 +23,10 @@ type TopicServiceGatewayServer struct {
 	getTopicConfigurations    connect_gateway.UnaryHandler[v1.GetTopicConfigurationsRequest, v1.GetTopicConfigurationsResponse]
 	updateTopicConfigurations connect_gateway.UnaryHandler[v1.UpdateTopicConfigurationsRequest, v1.UpdateTopicConfigurationsResponse]
 	setTopicConfigurations    connect_gateway.UnaryHandler[v1.SetTopicConfigurationsRequest, v1.SetTopicConfigurationsResponse]
+	addTopicPartitions        connect_gateway.UnaryHandler[v1.AddTopicPartitionsRequest, v1.AddTopicPartitionsResponse]
+	setTopicPartitions        connect_gateway.UnaryHandler[v1.SetTopicPartitionsRequest, v1.SetTopicPartitionsResponse]
+	addPartitionsToTopics     connect_gateway.UnaryHandler[v1.AddPartitionsToTopicsRequest, v1.AddPartitionsToTopicsResponse]
+	setPartitionsToTopics     connect_gateway.UnaryHandler[v1.SetPartitionsToTopicsRequest, v1.SetPartitionsToTopicsResponse]
 }
 
 // NewTopicServiceGatewayServer constructs a Connect-Gateway gRPC server for the TopicService
@@ -35,6 +39,10 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		getTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
 		updateTopicConfigurations: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationsProcedure, svc.UpdateTopicConfigurations, opts...),
 		setTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationsProcedure, svc.SetTopicConfigurations, opts...),
+		addTopicPartitions:        connect_gateway.NewUnaryHandler(TopicServiceAddTopicPartitionsProcedure, svc.AddTopicPartitions, opts...),
+		setTopicPartitions:        connect_gateway.NewUnaryHandler(TopicServiceSetTopicPartitionsProcedure, svc.SetTopicPartitions, opts...),
+		addPartitionsToTopics:     connect_gateway.NewUnaryHandler(TopicServiceAddPartitionsToTopicsProcedure, svc.AddPartitionsToTopics, opts...),
+		setPartitionsToTopics:     connect_gateway.NewUnaryHandler(TopicServiceSetPartitionsToTopicsProcedure, svc.SetPartitionsToTopics, opts...),
 	}
 }
 
@@ -60,6 +68,22 @@ func (s *TopicServiceGatewayServer) UpdateTopicConfigurations(ctx context.Contex
 
 func (s *TopicServiceGatewayServer) SetTopicConfigurations(ctx context.Context, req *v1.SetTopicConfigurationsRequest) (*v1.SetTopicConfigurationsResponse, error) {
 	return s.setTopicConfigurations(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) AddTopicPartitions(ctx context.Context, req *v1.AddTopicPartitionsRequest) (*v1.AddTopicPartitionsResponse, error) {
+	return s.addTopicPartitions(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) SetTopicPartitions(ctx context.Context, req *v1.SetTopicPartitionsRequest) (*v1.SetTopicPartitionsResponse, error) {
+	return s.setTopicPartitions(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) AddPartitionsToTopics(ctx context.Context, req *v1.AddPartitionsToTopicsRequest) (*v1.AddPartitionsToTopicsResponse, error) {
+	return s.addPartitionsToTopics(ctx, req)
+}
+
+func (s *TopicServiceGatewayServer) SetPartitionsToTopics(ctx context.Context, req *v1.SetPartitionsToTopicsRequest) (*v1.SetPartitionsToTopicsResponse, error) {
+	return s.setPartitionsToTopics(ctx, req)
 }
 
 // RegisterTopicServiceHandlerGatewayServer registers the Connect handlers for the TopicService
