@@ -29,9 +29,11 @@ import (
 
 // Config holds all (subdependency)Configs needed to run the API
 type Config struct {
-	ConfigFilepath   string
-	MetricsNamespace string `yaml:"metricsNamespace"`
-	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
+	ConfigFilepath string
+	// StrictConfigValidation rejects unknown YAML variables, unless turned off.
+	StrictConfigValidation bool
+	MetricsNamespace       string `yaml:"metricsNamespace"`
+	ServeFrontend          bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 
 	Console        Console      `yaml:"console"`
 	Redpanda       Redpanda     `yaml:"redpanda"`
@@ -46,6 +48,7 @@ type Config struct {
 // RegisterFlags for all (sub)configs
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.ConfigFilepath, "config.filepath", "", "Path to the config file")
+	f.BoolVar(&c.StrictConfigValidation, "config.strict-validation", true, "Strict validation rejects unknown variables in the provided YAML config")
 
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
@@ -99,6 +102,7 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
 	c.MetricsNamespace = "console"
+	c.StrictConfigValidation = true
 
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
@@ -150,7 +154,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 			Metadata:         nil,
 			Result:           &cfg,
 			WeaklyTypedInput: true,
-			ErrorUnused:      true,
+			ErrorUnused:      cfg.StrictConfigValidation,
 			TagName:          "yaml",
 		},
 	}
