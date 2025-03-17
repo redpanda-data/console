@@ -3,8 +3,6 @@ import {
   ConnectError,
   type Interceptor as ConnectRpcInterceptor,
   type PromiseClient,
-  type StreamRequest,
-  type UnaryRequest,
   createPromiseClient,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -42,11 +40,11 @@ declare const __webpack_public_path__: string;
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
-const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
+export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
-const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-  if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
-  return await next(req);
+export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
+  if (config.jwt) request.header.set('Authorization', `Bearer ${config.jwt}`);
+  return await next(request);
 };
 
 /**
@@ -58,9 +56,9 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
  * If such an error is detected, it redirects the user to the `/trial-expired` page.
  *
  */
-const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
-    return await next(req);
+    return await next(request);
   } catch (error) {
     if (error instanceof ConnectError) {
       if (error.code === Code.FailedPrecondition) {
