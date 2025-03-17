@@ -127,5 +127,14 @@ function useShouldShowRefresh() {
 
   if (topicProduceRecordMatch) return false;
 
+  const secretsMatch = useRouteMatch({
+    path: '/secrets',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
+  if (secretsMatch) return false;
+
   return true;
 }

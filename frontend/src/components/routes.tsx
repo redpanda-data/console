@@ -22,7 +22,7 @@ import {
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent } from 'react';
-import { MdOutlineSmartToy } from 'react-icons/md';
+import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
 import { Switch } from 'react-router-dom';
 import { isServerless } from '../config';
@@ -64,6 +64,7 @@ import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/Schema.Create';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
 import SchemaList from './pages/schemas/Schema.List';
+import { SecretsStorePage } from './pages/secrets/secrets-store-page';
 import TopicDetails from './pages/topics/Topic.Details';
 import TopicList from './pages/topics/Topic.List';
 import { TopicProducePage } from './pages/topics/Topic.Produce';
@@ -309,6 +310,15 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(true, [Feature.ConsumerGroups]),
   ),
   MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
+
+  MakeRoute<{}>(
+    '/secrets',
+    SecretsStorePage,
+    'Secrets Store',
+    MdKey,
+    true,
+    routeVisibility(true, [Feature.SecretsService]), // If secrets service is configured, then we are not self-hosted, so we can show the new route
+  ),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true, routeVisibility(true, [], ['canListAcls'])),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
