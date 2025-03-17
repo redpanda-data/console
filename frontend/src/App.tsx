@@ -20,9 +20,14 @@ import './assets/fonts/kumbh-sans.css';
 import './assets/fonts/inter.css';
 /* end global styles */
 
+import { TransportProvider } from '@connectrpc/connect-query';
+import { createConnectTransport } from '@connectrpc/connect-web';
 import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/ui';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { observer } from 'mobx-react';
+import queryClient from 'queryClient';
 import { BrowserRouter } from 'react-router-dom';
 import RequireAuth from './components/RequireAuth';
 import AppContent from './components/layout/Content';
@@ -31,7 +36,13 @@ import HistorySetter from './components/misc/HistorySetter';
 import { UserProfile } from './components/misc/UserButton';
 import { createVisibleSidebarItems } from './components/routes';
 import { APP_ROUTES } from './components/routes';
-import { isEmbedded, setup } from './config';
+import {
+  addBearerTokenInterceptor,
+  checkExpiredLicenseInterceptor,
+  getGrpcBasePath,
+  isEmbedded,
+  setup,
+} from './config';
 import { uiSettings } from './state/ui';
 import { getBasePath } from './utils/env';
 
@@ -46,24 +57,34 @@ const AppSidebar = observer(() => {
 
 const App = () => {
   setup({});
+
+  const transport = createConnectTransport({
+    baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
+    interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+  });
+
   return (
     <BrowserRouter basename={getBasePath()}>
       <HistorySetter />
       <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-        <ErrorBoundary>
-          <RequireAuth>
-            {isEmbedded() ? (
-              <AppContent />
-            ) : (
-              <Grid templateColumns="auto 1fr" minH="100vh">
-                <AppSidebar />
-                <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
+        <TransportProvider transport={transport}>
+          <QueryClientProvider client={queryClient}>
+            <ErrorBoundary>
+              <RequireAuth>
+                {isEmbedded() ? (
                   <AppContent />
-                </Container>
-              </Grid>
-            )}
-          </RequireAuth>
-        </ErrorBoundary>
+                ) : (
+                  <Grid templateColumns="auto 1fr" minH="100vh">
+                    <AppSidebar />
+                    <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
+                      <AppContent />
+                    </Container>
+                  </Grid>
+                )}
+              </RequireAuth>
+            </ErrorBoundary>
+          </QueryClientProvider>
+        </TransportProvider>
       </ChakraProvider>
     </BrowserRouter>
   );
