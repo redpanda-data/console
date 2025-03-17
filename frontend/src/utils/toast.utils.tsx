@@ -14,6 +14,14 @@ export const TOASTS = {
       SUCCESS: 'SECRET_CREATE_SUCCESS',
       ERROR: 'SECRET_CREATE_ERROR',
     },
+    UPDATE: {
+      SUCCESS: 'SECRET_UPDATE_SUCCESS',
+      ERROR: 'SECRET_UPDATE_ERROR',
+    },
+    DELETE: {
+      SUCCESS: 'SECRET_DELETE_SUCCESS',
+      ERROR: 'SECRET_DELETE_ERROR',
+    },
   },
   PIPELINE: {
     CREATE: {
