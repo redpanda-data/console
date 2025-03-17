@@ -41,6 +41,7 @@ tasks:
     deps:
       - install-buf
       - install-connect-gateway
+      - install-protoc-gen-connectrpc-go
     vars:
       BUF_INPUTS: proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto {{.BACKEND_ROOT}}/pkg/kafka/testdata/proto_update {{.BACKEND_ROOT}}/pkg/serde/testdata/proto {{.BACKEND_ROOT}}/pkg/testutil/testdata/proto
     cmds:
@@ -113,3 +114,16 @@ tasks:
     status:
       - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway >/dev/null 2>&1"
       - '[[ $({{ .BUILD_ROOT }}/bin/go/protoc-gen-connect-gateway --version) == "{{.VERSION}}" ]]'
+
+  install-protoc-gen-connectrpc-go:
+    deps:
+      - :backend:install-go
+    desc: Installs connectrpc.com/connect/cmd/protoc-gen-connect-go
+    vars:
+      VERSION: 1.11.1
+    run: once
+    cmds:
+      - '{{.PATH_PREFIX}} go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v{{.VERSION}}'
+    status:
+      - test -f '{{.BUILD_ROOT}}/bin/go/protoc-gen-go-grpc'
+      - '[[ $({{.PATH_PREFIX}} protoc-gen-connect-go --version) == "{{.VERSION}}" ]]'
