@@ -806,7 +806,6 @@ export class DeleteOffsetsModal extends Component<{
     offsets = offsets ?? this.lastOffsets;
 
     const offsetsByTopic = offsets?.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
-    const singleTopic = offsetsByTopic?.length === 1;
     const singlePartition = offsets?.length === 1;
 
     return (
@@ -876,26 +875,34 @@ export class DeleteOffsetsModal extends Component<{
             <Box>
               {mode === 'group' && (
                 <Box>
-                  <Text>Group offsets will be deleted for all topics and partitions:</Text>
-                  <UnorderedList fontWeight="600" my={2}>
-                    {singleTopic ? (
-                      <>
-                        <ListItem>
-                          Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                        </ListItem>
-                        <ListItem>
-                          {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
-                        </ListItem>
-                      </>
-                    ) : (
-                      <>
-                        <ListItem>
-                          {offsetsByTopic.length} Topics / {offsets.length}{' '}
-                          {singlePartition ? 'partition' : 'partitions'}
-                        </ListItem>
-                      </>
-                    )}
-                  </UnorderedList>
+                  <Box borderRadius="md" mb={4}>
+                    <Text>This action will delete the following consumer group:</Text>
+                  </Box>
+
+                  <Flex flexDirection="column" gap={1}>
+                    <Text>
+                      <Text as="span" fontWeight="bold">
+                        Name:
+                      </Text>{' '}
+                      {group.groupId}
+                    </Text>
+
+                    <Text>
+                      <Text as="span" fontWeight="bold">
+                        Partitions:
+                      </Text>{' '}
+                      {offsets.length}
+                    </Text>
+
+                    <Text>
+                      <Text as="span" fontWeight="bold">
+                        Topics:
+                      </Text>{' '}
+                      {offsetsByTopic.length}
+                    </Text>
+
+                    <Text>Are you sure?</Text>
+                  </Flex>
                 </Box>
               )}
 
