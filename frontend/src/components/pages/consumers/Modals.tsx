@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { PencilIcon as PencilIconOutline, TrashIcon as TrashIconOutline } from '@heroicons/react/outline';
+import { PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
@@ -20,7 +20,6 @@ import {
   Flex,
   FormLabel,
   HStack,
-  Input,
   List,
   ListItem,
   Modal,
@@ -36,7 +35,7 @@ import {
   UnorderedList,
   createStandaloneToast,
   redpandaTheme,
-  redpandaToastOptions,
+  redpandaToastOptions
 } from '@redpanda-data/ui';
 import { type IReactionDisposer, action, autorun, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
