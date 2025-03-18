@@ -175,122 +175,125 @@ class RpConnectPipelinesList extends PageComponent<{}> {
 
     return (
       <PageContent>
-        <Section>
-          <ToastContainer />
-          {/* Pipeline List */}
+        <ToastContainer />
+        {/* Pipeline List */}
 
-          {pipelinesApi.pipelines.length !== 0 && (
-            <Flex my={5} flexDir={'column'} gap={2}>
-              <CreatePipelineButton />
-              <SearchField
-                width="350px"
-                searchText={uiSettings.pipelinesList.quickSearch}
-                setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
-                placeholderText="Enter search term / regex..."
-              />
-            </Flex>
-          )}
-
-          {(pipelinesApi.pipelines ?? []).length === 0 ? (
-            <EmptyPlaceholder />
-          ) : (
-            <DataTable<Pipeline>
-              data={filteredPipelines}
-              pagination
-              defaultPageSize={10}
-              sorting
-              columns={[
-                {
-                  header: 'ID',
-                  cell: ({ row: { original } }) => (
-                    <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                      <Text>{original.id}</Text>
-                    </Link>
-                  ),
-                  size: 100,
-                },
-                {
-                  header: 'Pipeline Name',
-                  cell: ({ row: { original } }) => (
-                    <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                      <Text wordBreak="break-word" whiteSpace="break-spaces">
-                        {original.displayName}
-                      </Text>
-                    </Link>
-                  ),
-                  size: Number.POSITIVE_INFINITY,
-                },
-                {
-                  header: 'Description',
-                  accessorKey: 'description',
-                  size: 100,
-                },
-                {
-                  header: 'State',
-                  cell: ({ row: { original } }) => {
-                    return (
-                      <>
-                        <PipelineStatus status={original.state} />
-                      </>
-                    );
-                  },
-                },
-                // {
-                //     header: 'Throughput',
-                //     cell: ({ row: { original } }) => {
-                //         return <>
-                //             <PipelineThroughput pipeline={original} />
-                //         </>
-                //     },
-                //     size: 100,
-                // },
-                {
-                  header: '',
-                  id: 'actions',
-                  cell: ({ row: { original: r } }) => (
-                    <Button
-                      variant="icon"
-                      height="16px"
-                      color="gray.500"
-                      // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        openDeleteModal(r.displayName, () => {
-                          pipelinesApi
-                            .deletePipeline(r.id)
-                            .then(async () => {
-                              toast({
-                                status: 'success',
-                                duration: 4000,
-                                isClosable: false,
-                                title: 'Pipeline deleted',
-                              });
-                              pipelinesApi.refreshPipelines(true);
-                            })
-                            .catch((err) => {
-                              toast({
-                                status: 'error',
-                                duration: null,
-                                isClosable: true,
-                                title: 'Failed to delete pipeline',
-                                description: String(err),
-                              });
-                            });
-                        });
-                      }}
-                    >
-                      <TrashIcon />
-                    </Button>
-                  ),
-                  size: 1,
-                },
-              ]}
-              emptyText=""
+        {pipelinesApi.pipelines.length !== 0 && (
+          <Flex my={5} flexDir={'column'} gap={2}>
+            <CreatePipelineButton />
+            <SearchField
+              width="350px"
+              searchText={uiSettings.pipelinesList.quickSearch}
+              setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
+              placeholderText="Enter search term / regex..."
             />
-          )}
-        </Section>
+          </Flex>
+        )}
+
+        {(pipelinesApi.pipelines ?? []).length === 0 ? (
+          <EmptyPlaceholder />
+        ) : (
+          <DataTable<Pipeline>
+            data={filteredPipelines}
+            pagination
+            defaultPageSize={10}
+            sorting
+            columns={[
+              {
+                header: 'ID',
+                cell: ({ row: { original } }) => (
+                  <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                    <Text>{original.id}</Text>
+                  </Link>
+                ),
+                size: 100,
+              },
+              {
+                header: 'Pipeline Name',
+                cell: ({ row: { original } }) => (
+                  <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
+                    <Text wordBreak="break-word" whiteSpace="break-spaces">
+                      {original.displayName}
+                    </Text>
+                  </Link>
+                ),
+                size: Number.POSITIVE_INFINITY,
+              },
+              {
+                header: 'Description',
+                accessorKey: 'description',
+                cell: ({ row: { original } }) => (
+                  <Text minWidth="200px" wordBreak="break-word" whiteSpace="break-spaces">
+                    {original.description}
+                  </Text>
+                ),
+                size: 200,
+              },
+              {
+                header: 'State',
+                cell: ({ row: { original } }) => {
+                  return (
+                    <>
+                      <PipelineStatus status={original.state} />
+                    </>
+                  );
+                },
+              },
+              // {
+              //     header: 'Throughput',
+              //     cell: ({ row: { original } }) => {
+              //         return <>
+              //             <PipelineThroughput pipeline={original} />
+              //         </>
+              //     },
+              //     size: 100,
+              // },
+              {
+                header: '',
+                id: 'actions',
+                cell: ({ row: { original: r } }) => (
+                  <Button
+                    variant="icon"
+                    height="16px"
+                    color="gray.500"
+                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+
+                      openDeleteModal(r.displayName, () => {
+                        pipelinesApi
+                          .deletePipeline(r.id)
+                          .then(async () => {
+                            toast({
+                              status: 'success',
+                              duration: 4000,
+                              isClosable: false,
+                              title: 'Pipeline deleted',
+                            });
+                            pipelinesApi.refreshPipelines(true);
+                          })
+                          .catch((err) => {
+                            toast({
+                              status: 'error',
+                              duration: null,
+                              isClosable: true,
+                              title: 'Failed to delete pipeline',
+                              description: String(err),
+                            });
+                          });
+                      });
+                    }}
+                  >
+                    <TrashIcon />
+                  </Button>
+                ),
+                size: 1,
+              },
+            ]}
+            emptyText=""
+          />
+        )}
       </PageContent>
     );
   }
