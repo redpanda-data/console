@@ -25,53 +25,6 @@ components:
         - ACTION_FINISH
         - ACTION_CANCEL
       type: string
-    AddPartitionsToTopicsRequest:
-      properties:
-        partition_count:
-          description: The number of partitions to add for the topics.
-          format: int32
-          type: integer
-        topic_names:
-          description: The topic names.
-          items:
-            type: string
-          type: array
-        validate_only:
-          description: Validate the request only, do not execute it.
-          type: boolean
-      type: object
-    AddPartitionsToTopicsResponse:
-      properties:
-        statuses:
-          description: The status of the operation for each topic.
-          items:
-            $ref: '#/components/schemas/AlterTopicPartitionStatus'
-          type: array
-      type: object
-    AddTopicPartitionsBody:
-      properties:
-        partition_count:
-          description: The number of partitions to add to the topic.
-          format: int32
-          type: integer
-        validate_only:
-          description: Validate the request only, do not execute it.
-          type: boolean
-      type: object
-    AddTopicPartitionsResponse:
-      type: object
-    AlterTopicPartitionStatus:
-      properties:
-        error:
-          description: The error if any.
-          type: string
-        success:
-          description: Whether the operation was successful.
-          type: boolean
-        topic_name:
-          description: The topic name.
-          type: string
-      type: object
     BadRequest:
       description: |-
         Describes violations in a client request. This error type focuses on the
@@ -353,13 +306,8 @@ components:
       type: object
     CreateACLResponse:
       type: object
-    CreateConnectorResponse:
-      properties:
-        connector:
-          $ref: '#/components/schemas/ConnectorSpec'
-      type: object
-    CreateKafkaConnectSecretBody:
-      description: CreateKafkaConnectSecretRequest is the request of CreateKafkaConnectSecret.
+    CreateConnectSecretBody:
+      description: CreateConnectSecretRequest is the request of CreateConnectSecret.
       properties:
         labels:
           additionalProperties:
@@ -377,11 +325,16 @@ components:
         - name
         - secret_data
       type: object
-    CreateKafkaConnectSecretResponse:
-      description: CreateKafkaConnectSecretResponse is the response of CreateKafkaConnectSecret.
+    CreateConnectSecretResponse:
+      description: CreateConnectSecretResponse is the response of CreateConnectSecret.
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    CreateConnectorResponse:
+      properties:
+        connector:
+          $ref: '#/components/schemas/ConnectorSpec'
       type: object
     CreatePipelineResponse:
       properties:
@@ -455,6 +408,9 @@ components:
       type: object
     CreateTopicResponse:
       properties:
+        name:
+          description: Name of topic.
+          type: string
         partition_count:
           description: |-
             The number of partitions created for the topic.
@@ -471,9 +427,6 @@ components:
             this information.
           format: int32
           type: integer
-        topic_name:
-          description: Name of topic.
-          type: string
       type: object
     CreateUserRequest.User:
       properties:
@@ -538,8 +491,8 @@ components:
             $ref: '#/components/schemas/MatchingACL'
           type: array
       type: object
-    DeleteKafkaConnectSecretResponse:
-      description: DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
+    DeleteConnectSecretResponse:
+      description: DeleteConnectSecretResponse is the response of DeleteConnectSecret.
       type: object
     DeleteMountTaskResponse:
       type: object
@@ -708,6 +661,12 @@ components:
         cluster:
           $ref: '#/components/schemas/ConnectCluster'
       type: object
+    GetConnectSecretResponse:
+      description: GetConnectSecretResponse is the response of GetConnectSecret.
+      properties:
+        secret:
+          $ref: '#/components/schemas/Secret'
+      type: object
     GetConnectorConfigResponse:
       properties:
         config:
@@ -724,12 +683,6 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/ConnectorStatus'
-      type: object
-    GetKafkaConnectSecretResponse:
-      description: GetKafkaConnectSecretResponse is the response of GetKafkaConnectSecret.
-      properties:
-        secret:
-          $ref: '#/components/schemas/Secret'
       type: object
     GetMountTaskResponse:
       properties:
@@ -843,6 +796,18 @@ components:
             $ref: '#/components/schemas/ConnectCluster'
           type: array
       type: object
+    ListConnectSecretsResponse:
+      description: ListConnectSecretsResponse is the response of ListConnectSecrets.
+      properties:
+        next_page_token:
+          description: Token to retrieve the next page.
+          type: string
+        secrets:
+          description: Secrets retrieved.
+          items:
+            $ref: '#/components/schemas/Secret'
+          type: array
+      type: object
     ListConnectorTopicsResponse:
       properties:
         topics:
@@ -861,18 +826,6 @@ components:
         next_page_token:
           description: Page Token to fetch the next page. The value can be used as page_token in the next call to this endpoint.
           type: string
-      type: object
-    ListKafkaConnectSecretsResponse:
-      description: ListKafkaConnectSecretsResponse is the response of ListKafkaConnectSecrets.
-      properties:
-        next_page_token:
-          description: Token to retrieve the next page.
-          type: string
-        secrets:
-          description: Secrets retrieved.
-          items:
-            $ref: '#/components/schemas/Secret'
-          type: array
       type: object
     ListMountTasksResponse:
       properties:
@@ -893,11 +846,6 @@ components:
         name_contains:
           description: Substring match on pipeline name. Case-sensitive.
           type: string
-        tags[string]:
-          additionalProperties:
-            type: string
-          description: Filter pipelines that contain all of these key/value pairs.
-          type: object
       type: object
     ListPipelinesResponse:
       properties:
@@ -1169,18 +1117,6 @@ components:
           $ref: '#/components/schemas/Pipeline.State'
         status:
           $ref: '#/components/schemas/Pipeline.Status'
-        tags:
-          additionalProperties:
-            type: string
-          description: |-
-            Tags are key-value pairs that can be assigned to a pipeline resource.
-            They help organize pipelines and enable filtering when listing them.
-          type: object
-        url:
-          description: |-
-            URL to connect to the pipeline, e.g. via http_server.
-            May be empty if no http_server is used.
-          type: string
       required:
         - id
         - display_name
@@ -1241,13 +1177,6 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
-        tags:
-          additionalProperties:
-            type: string
-          description: |-
-            A map of tags to add, update or delete.
-            If a tag's value is empty, the server interprets that as a deletion.
-          type: object
       required:
         - display_name
         - config_yaml
@@ -1436,29 +1365,6 @@ components:
           nullable: true
           type: string
       type: object
-    SetPartitionsToTopicsRequest:
-      properties:
-        partition_count:
-          description: The number of partitions to set for the topics.
-          format: int32
-          type: integer
-        topic_names:
-          description: The topic names.
-          items:
-            type: string
-          type: array
-        validate_only:
-          description: Validate the request only, do not execute it.
-          type: boolean
-      type: object
-    SetPartitionsToTopicsResponse:
-      properties:
-        statuses:
-          description: The status of the operation for each topic.
-          items:
-            $ref: '#/components/schemas/AlterTopicPartitionStatus'
-          type: array
-      type: object
     SetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -1466,18 +1372,6 @@ components:
           items:
             $ref: '#/components/schemas/Configuration'
           type: array
-      type: object
-    SetTopicPartitionsBody:
-      properties:
-        partition_count:
-          description: The number of partitions to set for the topic.
-          format: int32
-          type: integer
-        validate_only:
-          description: Validate the request only, do not execute it.
-          type: boolean
-      type: object
-    SetTopicPartitionsResponse:
       type: object
     StartPipelineResponse:
       properties:
@@ -1517,14 +1411,14 @@ components:
       type: object
     TopicLocation:
       properties:
+        name:
+          description: Topic name.
+          type: string
         topic_location:
           description: |-
             Full reference for the unmounted topic in this format: `topic-name/cluster-uuid/revision`.
             Use this as unique identifier for mounting a topic if there are multiple topics available
             with the same name.
-          type: string
-        topic_name:
-          description: Topic name.
           type: string
       type: object
     TopicMount:
@@ -1590,8 +1484,8 @@ components:
           nullable: true
           type: string
       type: object
-    UpdateKafkaConnectSecretBody:
-      description: UpdateKafkaConnectSecretRequest is the request of UpdateKafkaConnectSecret.
+    UpdateConnectSecretBody:
+      description: UpdateConnectSecretRequest is the request of UpdateConnectSecret.
       properties:
         labels:
           additionalProperties:
@@ -1605,8 +1499,8 @@ components:
       required:
         - secret_data
       type: object
-    UpdateKafkaConnectSecretResponse:
-      description: UpdateKafkaConnectSecretResponse is the response of UpdateKafkaConnectSecret.
+    UpdateConnectSecretResponse:
+      description: UpdateConnectSecretResponse is the response of UpdateConnectSecret.
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
@@ -1772,10 +1666,10 @@ components:
       type: oauth2
 info:
   title: Redpanda Cloud Data Plane API
-  version: v1
+  version: v1alpha2
 openapi: 3.0.3
 paths:
-  /v1/acls:
+  /v1alpha2/acls:
     delete:
       description: Delete all ACLs that match the filter criteria. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_DeleteACLs
@@ -2032,7 +1926,7 @@ paths:
       summary: Create ACL
       tags:
         - Redpanda ACLs
-  /v1/cloud-storage/mount-tasks:
+  /v1alpha2/cloud-storage/mount-tasks:
     get:
       description: This operation retrieves the status of a task responsible for mounting or unmounting topics. It provides details on the task’s type (mount or unmount), its current state, and the topics involved.
       operationId: CloudStorageService_ListMountTasks
@@ -2070,7 +1964,7 @@ paths:
       summary: Retrieve the mount task status
       tags:
         - Cloud Storage
-  /v1/cloud-storage/mount-tasks/{id}:
+  /v1alpha2/cloud-storage/mount-tasks/{id}:
     delete:
       description: Delete a mount or unmount by ID.
       operationId: CloudStorageService_DeleteMountTask
@@ -2213,7 +2107,7 @@ paths:
       summary: Update a mount or unmount
       tags:
         - Cloud Storage
-  /v1/cloud-storage/topics/mount:
+  /v1alpha2/cloud-storage/topics/mount:
     post:
       description: Attach mountable topics from object storage to a cluster, making them available for consumption and production again. Mounting a topic reloads its data and state to the local brokers, allowing active use of the topic.
       operationId: CloudStorageService_MountTopics
@@ -2262,7 +2156,7 @@ paths:
       summary: Mount topics from object storage
       tags:
         - Cloud Storage
-  /v1/cloud-storage/topics/mountable:
+  /v1alpha2/cloud-storage/topics/mountable:
     get:
       description: Retrieve all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in object storage and can be mounted for consumption or production within the cluster.
       operationId: CloudStorageService_ListMountableTopics
@@ -2300,7 +2194,7 @@ paths:
       summary: List mountable topics
       tags:
         - Cloud Storage
-  /v1/cloud-storage/topics/unmount:
+  /v1alpha2/cloud-storage/topics/unmount:
     post:
       description: Unmount topics to object storage, freeing up all local cluster resources. Once you unmount a topic, it can no longer be consumed or produced to. It detaches from the active cluster while its data remains safely stored in the external object storage.
       operationId: CloudStorageService_UnmountTopics
@@ -2350,7 +2244,7 @@ paths:
       summary: Unmount topics to object storage
       tags:
         - Cloud Storage
-  /v1/kafka-connect/clusters:
+  /v1alpha2/kafka-connect/clusters:
     get:
       description: List connect clusters available for being consumed by the console's kafka-connect service.
       operationId: KafkaConnectService_ListConnectClusters
@@ -2382,7 +2276,7 @@ paths:
       summary: List connect clusters
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}:
     get:
       description: Get information about an available Kafka Connect cluster.
       operationId: KafkaConnectService_GetConnectCluster
@@ -2427,7 +2321,7 @@ paths:
       summary: Get connect cluster
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors:
     get:
       description: List connectors managed by the Kafka Connect service.
       operationId: KafkaConnectService_ListConnectors
@@ -2522,7 +2416,7 @@ paths:
       summary: Create connector
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}:
     delete:
       description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
       operationId: KafkaConnectService_DeleteConnector
@@ -2610,7 +2504,7 @@ paths:
       summary: Get connector
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
     get:
       description: Get the configuration for the connector.
       operationId: KafkaConnectService_GetConnectorConfig
@@ -2711,7 +2605,7 @@ paths:
       summary: Upsert connector configuration
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
     put:
       description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_PauseConnector
@@ -2755,7 +2649,7 @@ paths:
       summary: Pause connector
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
     post:
       description: Triggers a connector restart. You must specify whether or not tasks are also restarted, and whether only failed connectors are restarted.
       operationId: KafkaConnectService_RestartConnector
@@ -2806,7 +2700,7 @@ paths:
       summary: Restart connector
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
     put:
       description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
       operationId: KafkaConnectService_ResumeConnector
@@ -2850,7 +2744,7 @@ paths:
       summary: Resume connector
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/status:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/status:
     get:
       description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
       operationId: KafkaConnectService_GetConnectorStatus
@@ -2895,7 +2789,7 @@ paths:
       summary: Get connector status
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
       description: Stops a connector, but does not delete it. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
       operationId: KafkaConnectService_StopConnector
@@ -2939,7 +2833,7 @@ paths:
       summary: Stop connector
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
       description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
       operationId: KafkaConnectService_ListConnectorTopics
@@ -2984,7 +2878,7 @@ paths:
       summary: List connector topics
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
     put:
       description: Resets the set of topic names that the connector is using.
       operationId: KafkaConnectService_ResetConnectorTopics
@@ -3028,10 +2922,10 @@ paths:
       summary: Reset connector topics
       tags:
         - Kafka Connect
-  /v1/kafka-connect/clusters/{cluster_name}/secrets:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/secrets:
     get:
       description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
-      operationId: SecretService_ListKafkaConnectSecrets
+      operationId: SecretService_ListConnectSecrets
       parameters:
         - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -3101,7 +2995,7 @@ paths:
         - Secrets
     post:
       description: Create a Kafka Connect cluster secret.
-      operationId: SecretService_CreateKafkaConnectSecret
+      operationId: SecretService_CreateConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -3113,7 +3007,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateKafkaConnectSecretBody'
+              $ref: '#/components/schemas/CreateConnectSecretBody'
         required: true
         x-originalParamName: body
       responses:
@@ -3144,10 +3038,10 @@ paths:
       summary: Create Connect Cluster Secret
       tags:
         - Secrets
-  /v1/kafka-connect/clusters/{cluster_name}/secrets/{id}:
+  /v1alpha2/kafka-connect/clusters/{cluster_name}/secrets/{id}:
     delete:
       description: Delete a Kafka Connect cluster secret.
-      operationId: SecretService_DeleteKafkaConnectSecret
+      operationId: SecretService_DeleteConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -3196,7 +3090,7 @@ paths:
         - Secrets
     get:
       description: Get a specific Kafka Connect cluster secret.
-      operationId: SecretService_GetKafkaConnectSecret
+      operationId: SecretService_GetConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -3246,7 +3140,7 @@ paths:
         - Secrets
     put:
       description: Update a Kafka Connect cluster secret.
-      operationId: SecretService_UpdateKafkaConnectSecret
+      operationId: SecretService_UpdateConnectSecret
       parameters:
         - description: Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`.
           in: path
@@ -3264,7 +3158,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateKafkaConnectSecretBody'
+              $ref: '#/components/schemas/UpdateConnectSecretBody'
         required: true
         x-originalParamName: body
       responses:
@@ -3301,7 +3195,7 @@ paths:
       summary: Update Connect Cluster Secret
       tags:
         - Secrets
-  /v1/redpanda-connect/config-schema:
+  /v1alpha2/redpanda-connect/config-schema:
     get:
       description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
       operationId: PipelineService_GetPipelineServiceConfigSchema
@@ -3333,7 +3227,7 @@ paths:
       summary: Retrieve the schema for Redpanda Connect pipeline configurations.
       tags:
         - Redpanda Connect Pipeline
-  /v1/redpanda-connect/pipelines:
+  /v1alpha2/redpanda-connect/pipelines:
     get:
       description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
       operationId: PipelineService_ListPipelines
@@ -3341,11 +3235,6 @@ paths:
         - description: Substring match on pipeline name. Case-sensitive.
           in: query
           name: filter.name_contains
-          schema:
-            type: string
-        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          name: filter.tags[string]
           schema:
             type: string
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
@@ -3427,7 +3316,7 @@ paths:
       summary: Create Redpanda Connect pipeline
       tags:
         - Redpanda Connect Pipeline
-  /v1/redpanda-connect/pipelines-by-secrets:
+  /v1alpha2/redpanda-connect/pipelines-by-secrets:
     get:
       description: Get Redpanda Connect pipelines by secrets.
       operationId: PipelineService_GetPipelinesBySecrets
@@ -3459,7 +3348,7 @@ paths:
       summary: Get Redpanda Connect pipelines by secrets
       tags:
         - Redpanda Connect Pipeline
-  /v1/redpanda-connect/pipelines-for-secret:
+  /v1alpha2/redpanda-connect/pipelines-for-secret:
     get:
       description: Get Redpanda Connect pipelines for a given secret.
       operationId: PipelineService_GetPipelinesForSecret
@@ -3498,7 +3387,7 @@ paths:
       summary: Get Redpanda Connect pipelines for secret
       tags:
         - Redpanda Connect Pipeline
-  /v1/redpanda-connect/pipelines/{id}:
+  /v1alpha2/redpanda-connect/pipelines/{id}:
     delete:
       description: Delete a Redpanda Connect pipeline.
       operationId: PipelineService_DeletePipeline
@@ -3596,13 +3485,6 @@ paths:
           required: true
           schema:
             type: string
-        - description: |-
-            Specifies which fields should be updated. If not provided,
-            all fields will be updated.
-          in: query
-          name: update_mask
-          schema:
-            type: string
       requestBody:
         content:
           application/json:
@@ -3638,7 +3520,7 @@ paths:
       summary: Update a Redpanda Connect pipeline
       tags:
         - Redpanda Connect Pipeline
-  /v1/redpanda-connect/pipelines/{id}/start:
+  /v1alpha2/redpanda-connect/pipelines/{id}/start:
     put:
       description: Start a stopped Redpanda Connect pipeline.
       operationId: PipelineService_StartPipeline
@@ -3683,7 +3565,7 @@ paths:
       summary: Start a Redpanda Connect pipeline
       tags:
         - Redpanda Connect Pipeline
-  /v1/redpanda-connect/pipelines/{id}/stop:
+  /v1alpha2/redpanda-connect/pipelines/{id}/stop:
     put:
       description: Stop a running Redpanda Connect pipeline.
       operationId: PipelineService_StopPipeline
@@ -3728,7 +3610,7 @@ paths:
       summary: Stops a Redpanda Connect pipeline
       tags:
         - Redpanda Connect Pipeline
-  /v1/secret-scopes:
+  /v1alpha2/secret-scopes:
     get:
       description: List supported secret scopes.
       operationId: SecretService_ListSecretScopes
@@ -3760,7 +3642,7 @@ paths:
       summary: List Secret Scopes
       tags:
         - Secrets
-  /v1/secrets:
+  /v1alpha2/secrets:
     get:
       description: 'List secrets. Optional: filter based on secret name and labels.'
       operationId: SecretService_ListSecrets
@@ -3864,7 +3746,7 @@ paths:
       summary: Create Secret
       tags:
         - Secrets
-  /v1/secrets/{id}:
+  /v1alpha2/secrets/{id}:
     delete:
       description: Delete a secret.
       operationId: SecretService_DeleteSecret
@@ -4003,7 +3885,7 @@ paths:
       summary: Update Secret
       tags:
         - Secrets
-  /v1/topics:
+  /v1alpha2/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
       operationId: TopicService_ListTopics
@@ -4053,7 +3935,7 @@ paths:
       tags:
         - Topics
     post:
-      description: Create a [topic](https://docs.redpanda.com/redpanda-cloud/get-started/create-topic/).
+      description: Create a [topic](https://docs.redpanda.com/current/deploy/deployment-option/cloud/create-topic/).
       operationId: TopicService_CreateTopic
       parameters:
         - description: |-
@@ -4099,103 +3981,14 @@ paths:
       summary: Create Topic
       tags:
         - Topics
-  /v1/topics-partitions:
-    patch:
-      description: Add partitions to existing topics. Depending on the partitioning strategy used, this may impact ordering guarantees.
-      operationId: TopicService_AddPartitionsToTopics
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddPartitionsToTopicsRequest'
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddPartitionsToTopicsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Add Topic Partitions
-      tags:
-        - Topics
-    put:
-      description: Set partition counts for existing topics. New value must be equal to or larger than the current count of partitions in the topic. All topics will have the same final count of partitions. Depending on the partitioning strategy used, this may impact ordering guarantees.
-      operationId: TopicService_SetPartitionsToTopics
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetPartitionsToTopicsRequest'
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetPartitionsToTopicsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Set Topic Partitions
-      tags:
-        - Topics
-  /v1/topics/{topic_name}:
+  /v1alpha2/topics/{name}:
     delete:
       description: Delete the Kafka topic with the requested name.
       operationId: TopicService_DeleteTopic
       parameters:
         - description: Topic name.
           in: path
-          name: topic_name
+          name: name
           required: true
           schema:
             type: string
@@ -4232,7 +4025,7 @@ paths:
       summary: Delete Topic
       tags:
         - Topics
-  /v1/topics/{topic_name}/configurations:
+  /v1alpha2/topics/{topic_name}/configurations:
     get:
       description: Get key-value configs for a topic.
       operationId: TopicService_GetTopicConfigurations
@@ -4383,110 +4176,7 @@ paths:
       summary: Set Topic Configurations
       tags:
         - Topics
-  /v1/topics/{topic_name}/partitions:
-    patch:
-      description: Add partitions to an existing topic. Depending on the partitioning strategy used, this may impact ordering guarantees.
-      operationId: TopicService_AddTopicPartitions
-      parameters:
-        - description: The topic name.
-          in: path
-          name: topic_name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddTopicPartitionsBody'
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddTopicPartitionsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Add Topic Partitions
-      tags:
-        - Topics
-    put:
-      description: Set partitions to an existing topic. New value must be equal to or larger than the current count of partitions in the topic. Depending on the partitioning strategy used, this may impact ordering guarantees.
-      operationId: TopicService_SetTopicPartitions
-      parameters:
-        - description: The topic name.
-          in: path
-          name: topic_name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetTopicPartitionsBody'
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetTopicPartitionsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Not Found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Add Topic Partitions
-      tags:
-        - Topics
-  /v1/transforms:
+  /v1alpha2/transforms:
     get:
       description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
       operationId: TransformService_ListTransforms
@@ -4590,7 +4280,7 @@ paths:
       summary: Deploy Transform
       tags:
         - WASM Transforms
-  /v1/transforms/{name}:
+  /v1alpha2/transforms/{name}:
     delete:
       description: Delete a Wasm transform with the requested name.
       operationId: TransformService_DeleteTransform
@@ -4696,7 +4386,7 @@ paths:
       summary: Get Transform
       tags:
         - WASM Transforms
-  /v1/users:
+  /v1alpha2/users:
     get:
       description: 'List users. Optional: filter based on username.'
       operationId: UserService_ListUsers
@@ -4823,7 +4513,7 @@ paths:
       summary: Create User
       tags:
         - Redpanda Users
-  /v1/users/{name}:
+  /v1alpha2/users/{name}:
     delete:
       description: Delete the specified user
       operationId: UserService_DeleteUser
@@ -4876,7 +4566,7 @@ paths:
       summary: Delete User
       tags:
         - Redpanda Users
-  /v1/users/{user.name}:
+  /v1alpha2/users/{user.name}:
     put:
       description: Update a user's credentials.
       operationId: UserService_UpdateUser
@@ -4969,7 +4659,7 @@ servers:
           					Example (Dedicated): "https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com"<br>
           					Example (BYOC): "https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com"
 tags:
-  - description: Manage Redpanda access control lists (ACLs). See [Redpanda Cloud Authorization](https://docs.redpanda.com/redpanda-cloud/security/authorization/cloud-authorization/) for more information.
+  - description: Manage Redpanda [access-control lists](https://docs.redpanda.com/current/manage/security/authorization/acl/) (ACLs).
     name: Redpanda ACLs
   - description: 'Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)'
     name: Cloud Storage
@@ -4983,5 +4673,5 @@ tags:
     name: Secrets
   - description: Manage Redpanda topics.
     name: Topics
-  - description: Manage Redpanda users. To manage access, see the Data Plane [ACL endpoints](https://docs.redpanda.com/api/cloud-dataplane-api/#get-/v1/acls).
+  - description: Manage Redpanda users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#get-/v1alpha2/acls).
     name: Redpanda Users
