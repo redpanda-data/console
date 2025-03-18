@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
@@ -128,7 +127,6 @@ export class EditOffsetsModal extends Component<{
 
   render() {
     let offsets = this.props.offsets;
-    const group = this.props.group;
 
     const visible = Boolean(offsets);
     this.updateVisible(visible);
@@ -137,7 +135,6 @@ export class EditOffsetsModal extends Component<{
     if (!offsets) return null;
 
     this.offsetsByTopic = offsets.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
-    const single = this.offsetsByTopic.length === 1;
 
     return (
       <>
