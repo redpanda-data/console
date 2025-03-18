@@ -388,3 +388,31 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, cl *kgo.Client, 
 
 	return partitionLogDirs
 }
+
+// AddPartitionsToTopics adds new partitions to an existing topics.
+func (s *Service) AddPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if validateOnly {
+		return adminCl.ValidateCreatePartitions(ctx, add, topicNames...)
+	}
+
+	return adminCl.CreatePartitions(ctx, add, topicNames...)
+}
+
+// SetPartitionsToTopics sets modifies the number of existing topics.
+func (s *Service) SetPartitionsToTopics(ctx context.Context, count int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if validateOnly {
+		return adminCl.ValidateUpdatePartitions(ctx, count, topicNames...)
+	}
+
+	return adminCl.UpdatePartitions(ctx, count, topicNames...)
+}
