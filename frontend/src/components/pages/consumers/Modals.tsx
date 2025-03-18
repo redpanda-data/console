@@ -35,7 +35,7 @@ import {
   UnorderedList,
   createStandaloneToast,
   redpandaTheme,
-  redpandaToastOptions
+  redpandaToastOptions,
 } from '@redpanda-data/ui';
 import { type IReactionDisposer, action, autorun, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
@@ -148,34 +148,11 @@ export class EditOffsetsModal extends Component<{
             <ModalHeader>Edit consumer group</ModalHeader>
             <ModalBody>
               <HStack spacing={6}>
-                <div>
-                  <div
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      padding: '14px',
-                      marginTop: '4px',
-                      marginLeft: '4px',
-                      background: '#718096',
-                      borderRadius: '1000px',
-                    }}
-                  >
-                    <PencilIconOutline color="white" />
-                  </div>
-                </div>
-                <div>
-                  <span>Group offsets will be editted for:</span>
-
-                  <div style={{ fontWeight: 600, margin: '8px 0', lineHeight: '1.5' }}>
-                    <div>
-                      Group: <span className="codeBox">{group.groupId}</span>
-                    </div>
-                    <div>
-                      {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length}{' '}
-                      {offsets.length === 1 ? 'Partition' : 'Partitions'}
-                    </div>
-                  </div>
-                </div>
+                <Text>
+                  You are editing a group with {this.offsetsByTopic.length}{' '}
+                  {this.offsetsByTopic.length === 1 ? 'topic' : 'topics'} and {offsets.length}{' '}
+                  {offsets.length === 1 ? 'partition' : 'partitions'}.
+                </Text>
               </HStack>
 
               {/* Content */}
