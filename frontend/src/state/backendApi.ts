@@ -150,7 +150,7 @@ import {
   type Pipeline,
   type PipelineCreate,
   type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   type CreateSecretRequest,
   type DeleteSecretRequest,
@@ -159,7 +159,7 @@ import {
   Scope,
   type Secret,
   type UpdateSecretRequest,
-} from '../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
