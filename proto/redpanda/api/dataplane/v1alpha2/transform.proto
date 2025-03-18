@@ -180,7 +180,7 @@ message DeleteTransformResponse {}
 
 service TransformService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "WASM Transforms"
+    name: "WASM Transforms (v1alpha2)"
     description: "Manage Wasm transforms in Redpanda."
   };
   rpc ListTransforms(ListTransformsRequest) returns (ListTransformsResponse) {
