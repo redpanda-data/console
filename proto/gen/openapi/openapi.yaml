@@ -1245,7 +1245,7 @@ components:
           additionalProperties:
             type: string
           description: |-
-            Optional: A map of tags to add or update.
+            A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
       required:
@@ -2398,7 +2398,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectCluster'
+                $ref: '#/components/schemas/GetConnectClusterResponse'
           description: OK
         "401":
           content:
@@ -2499,7 +2499,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectorSpec'
+                $ref: '#/components/schemas/CreateConnectorResponse'
           description: Created
         "401":
           content:
@@ -2587,7 +2587,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectorSpec'
+                $ref: '#/components/schemas/GetConnectorResponse'
           description: OK
         "401":
           content:
@@ -2628,6 +2628,12 @@ paths:
           schema:
             type: string
       responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetConnectorConfigResponse'
+          description: OK
         "401":
           content:
             application/json:
@@ -2682,7 +2688,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectorSpec'
+                $ref: '#/components/schemas/UpsertConnectorResponse'
           description: Updated
         "201":
           content:
@@ -2872,7 +2878,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectorStatus'
+                $ref: '#/components/schemas/GetConnectorStatusResponse'
           description: OK
         "401":
           content:
@@ -3076,7 +3082,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListSecretsResponse'
+                $ref: '#/components/schemas/ListKafkaConnectSecretsResponse'
           description: OK
         "401":
           content:
@@ -3121,7 +3127,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/CreateKafkaConnectSecretResponse'
           description: Secret created
         "401":
           content:
@@ -3215,7 +3221,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetKafkaConnectSecretResponse'
           description: OK
         "401":
           content:
@@ -3272,7 +3278,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/UpdateKafkaConnectSecretResponse'
           description: OK
         "401":
           content:
@@ -3404,7 +3410,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Pipeline'
+                $ref: '#/components/schemas/CreatePipelineResponse'
           description: OK
         "401":
           content:
@@ -3557,7 +3563,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Pipeline'
+                $ref: '#/components/schemas/GetPipelineResponse'
           description: OK
         "401":
           content:
@@ -3615,7 +3621,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Pipeline'
+                $ref: '#/components/schemas/UpdatePipelineResponse'
           description: OK
         "401":
           content:
@@ -3654,7 +3660,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Pipeline'
+                $ref: '#/components/schemas/StartPipelineResponse'
           description: Started
         "401":
           content:
@@ -3699,7 +3705,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Pipeline'
+                $ref: '#/components/schemas/StopPipelineResponse'
           description: Stopped
         "401":
           content:
@@ -3841,7 +3847,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/CreateSecretResponse'
           description: Secret created
         "401":
           content:
@@ -3923,7 +3929,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetSecretResponse'
           description: OK
         "401":
           content:
@@ -3974,7 +3980,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/UpdateSecretResponse'
           description: OK
         "401":
           content:
