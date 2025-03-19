@@ -9,82 +9,128 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { PageComponent, type PageInitHelper } from '../Page';
 import PageContent from '../../misc/PageContent';
-
-interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'system';
-  timestamp: Date;
-}
+import { chatDb, type ChatMessage } from '../../../database/chatDb';
 
 const ChatPageContent: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: 'Welcome to the Chat! How can I help you today?',
-      sender: 'system',
-      timestamp: new Date(),
-    },
-    {
-      id: '2',
-      content: 'Hello! I have some questions about Redpanda.',
-      sender: 'user',
-      timestamp: new Date(Date.now() - 60000),
-    },
-    {
-      id: '3',
-      content: "Sure, I'd be happy to answer any questions about Redpanda. What would you like to know?",
-      sender: 'system',
-      timestamp: new Date(Date.now() - 30000),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(false);
+
+  // Load messages from database on component mount
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        const storedMessages = await chatDb.getAllMessages();
+
+        if (storedMessages.length === 0) {
+          // Add default welcome messages if no messages exist
+          const defaultMessages: ChatMessage[] = [
+            {
+              id: '1',
+              content: 'Welcome to the Chat! How can I help you today?',
+              sender: 'system',
+              timestamp: new Date(),
+            },
+            {
+              id: '2',
+              content: 'Hello! I have some questions about Redpanda.',
+              sender: 'user',
+              timestamp: new Date(Date.now() - 60000),
+            },
+            {
+              id: '3',
+              content: "Sure, I'd be happy to answer any questions about Redpanda. What would you like to know?",
+              sender: 'system',
+              timestamp: new Date(Date.now() - 30000),
+            },
+          ];
+
+          // Store default messages in the database
+          for (const message of defaultMessages) {
+            await chatDb.addMessage(message);
+          }
+
+          setMessages(defaultMessages);
+        } else {
+          setMessages(storedMessages);
+        }
+      } catch (error) {
+        console.error('Error loading messages:', error);
+      } finally {
+        setIsLoading(false);
+        shouldScrollRef.current = true;
+      }
+    };
+
+    loadMessages();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!inputValue.trim()) return;
 
-    // Add user message
-    const userMessage: Message = {
+    // Create user message
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
       sender: 'user',
       timestamp: new Date(),
     };
 
-    shouldScrollRef.current = true;
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
-    setInputValue('');
+    try {
+      // Add to database
+      await chatDb.addMessage(userMessage);
 
-    // Simulate system response after a short delay
-    setTimeout(() => {
-      const systemMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `Echo: ${inputValue}`,
-        sender: 'system',
-        timestamp: new Date(),
-      };
-
+      // Update state
       shouldScrollRef.current = true;
-      setMessages((prevMessages) => [...prevMessages, systemMessage]);
-    }, 1000);
+      setMessages((prevMessages) => [...prevMessages, userMessage]);
+      setInputValue('');
+
+      // Simulate system response after a short delay
+      setTimeout(async () => {
+        const systemMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: `Echo: ${inputValue}`,
+          sender: 'system',
+          timestamp: new Date(),
+        };
+
+        // Add to database
+        await chatDb.addMessage(systemMessage);
+
+        // Update state
+        shouldScrollRef.current = true;
+        setMessages((prevMessages) => [...prevMessages, systemMessage]);
+      }, 1000);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(e);
+    }
+  };
+
+  const handleClearChat = async () => {
+    try {
+      await chatDb.clearAllMessages();
+      setMessages([]);
+    } catch (error) {
+      console.error('Error clearing messages:', error);
     }
   };
 
@@ -96,8 +142,29 @@ const ChatPageContent: React.FC = () => {
     }
   });
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+        <div className="animate-pulse text-slate-500">Loading messages...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] w-full px-4">
+      {/* Header with clear button */}
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-medium text-slate-800">Chat History</h2>
+        <button
+          type="button"
+          onClick={handleClearChat}
+          className="text-xs text-red-600 hover:text-red-800 py-1 px-2 rounded border border-red-200 hover:border-red-400 transition-colors"
+          aria-label="Clear chat history"
+        >
+          Clear History
+        </button>
+      </div>
+
       {/* Messages container with scroll */}
       <div
         className="flex-1 overflow-y-auto bg-slate-50 rounded-md p-4 mb-4 border border-slate-200 shadow-sm"
