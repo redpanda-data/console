@@ -11,9 +11,14 @@ package serde
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 // Compile-time check to ensure CLSTHeaderSchemaSerde implements Serde
@@ -33,39 +38,59 @@ func (CLSTHeaderSchemaSerde) Name() PayloadEncoding {
 // DeserializePayload maps relevant headers into SchemaInfo
 func (headerSchemaSerde CLSTHeaderSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 
+	// fmt.Printf("Record Value: %+v \n\n Record Key: %s\n\n", string(record.Value), string(record.Key))
 	schemaInfo, err := getSchemaInfoFromHeaders(record)
 	if err != nil {
 		fmt.Println("Error extracting schema info:", err)
 		return nil, fmt.Errorf("failed to extract schema info from headers: %w", err)
 	}
-	fmt.Printf("Key: %s and Value: %v\n", schemaInfo.ProtobufTypeKey, schemaInfo.ProtobufTypeValue)
 
-	// Buf schema example: https://clst.buf.team/fleet/bk/docs/main:apollo.bk.v1#apollo.bk.v1.Transaction
+	var fullName string
+	if payloadForValue(payloadType) {
+		fullName = schemaInfo.ProtobufTypeValue
+	} else {
+		fullName = schemaInfo.ProtobufTypeKey
+	}
 
-	// fd, exists := headerSchemaSerde.ProtoSvc.GetFileDescriptorBySchemaID(schemaInfo.ProtobufTypeValue)
-	// if !exists {
-	// 	return &RecordPayload{}, fmt.Errorf("schema ID %+v not found", schemaID)
-	// }
+	// fmt.Printf("SchemaInfro: %+v \n\n FullName: %s\n\n", schemaInfo, fullName)
 
-	// Now handle the record value payload
-	// msgPayload := payloadFromRecord(record, payloadType)
-	// var jsonData map[string]interface{}
-	// if err := json.Unmarshal(msgPayload, &jsonData); err != nil {
-	// 	fmt.Println("Error deserializing JSON payload:", err)
-	// 	return nil, fmt.Errorf("failed to deserialize JSON payload: %w", err)
-	// }
+	module := getModule(fullName)
+	symbols := []string{fullName}
+	messageDescriptor, err := getMessageDescriptor(module, "main", symbols, fullName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file descriptor set: %w", err)
+	}
+	// fmt.Printf("MessageDescriptor: %v\n\n", messageDescriptor)
 
-	// fmt.Println("Successfully deserialized JSON payload")
-	// return &RecordPayload{
-	// 	DeserializedPayload: jsonData,
-	// 	NormalizedPayload:   msgPayload,
-	// 	Encoding:            PayloadEncoding("header-schema"),
-	// }, nil
-	// return &RecordPayload{}, fmt.Errorf("CLST Deserializer	not implemented")
-	return &RecordPayload{
-		DeserializedPayload: schemaInfo,
-		NormalizedPayload:   nil,
-		Encoding:            PayloadEncodingCLSTHeaderSchema,
+	payload := payloadFromRecord(record, payloadType)
+
+	// fmt.Printf("Payload: %v\n\n", payload)
+	dynamicMsg := dynamicpb.NewMessage(messageDescriptor)
+
+	if err := proto.Unmarshal(payload, dynamicMsg); err != nil {
+		return &RecordPayload{}, fmt.Errorf("failed to unmarshal record data: %w", err)
+	}
+	// fmt.Printf("DynamicMsg: %v\n\n", dynamicMsg)
+	fixAnyFields(dynamicMsg)
+
+	// fmt.Printf("DynamicMsg After Fixed: %v\n\n", dynamicMsg)
+
+	jsonBytes, err := protojson.Marshal(dynamicMsg)
+	if err != nil {
+		return &RecordPayload{}, fmt.Errorf("failed to marshal dynamic Message: %w", err)
+	}
+
+	var native interface{}
+	if err := json.Unmarshal(jsonBytes, &native); err != nil {
+		return nil, fmt.Errorf("json.Unmarshal dynamic message: %w", err)
+	}
+
+	result := &RecordPayload{
+		DeserializedPayload: native,    // structured
+		NormalizedPayload:   jsonBytes, // raw JSON
+		Encoding:            PayloadEncodingProtobuf,
 		SchemaID:            nil,
-	}, nil
+	}
+
+	return result, nil
 }

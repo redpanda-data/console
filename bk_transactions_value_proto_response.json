@@ -1,0 +1,2045 @@
+{
+ "fileDescriptorSet": {
+  "file": [
+   {
+    "name": "google/protobuf/wrappers.proto",
+    "package": "google.protobuf",
+    "messageType": [
+     {
+      "name": "Int64Value",
+      "field": [
+       {
+        "name": "value",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "value"
+       }
+      ]
+     },
+     {
+      "name": "StringValue",
+      "field": [
+       {
+        "name": "value",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "value"
+       }
+      ]
+     }
+    ],
+    "options": {
+     "javaPackage": "com.google.protobuf",
+     "javaOuterClassname": "WrappersProto",
+     "javaMultipleFiles": true,
+     "goPackage": "google.golang.org/protobuf/types/known/wrapperspb",
+     "ccEnableArenas": true,
+     "objcClassPrefix": "GPB",
+     "csharpNamespace": "Google.Protobuf.WellKnownTypes"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/common.proto",
+    "package": "apollo.bk.v1",
+    "enumType": [
+     {
+      "name": "ModifySodLedgers",
+      "value": [
+       {
+        "name": "MODIFY_SOD_LEDGERS_INVALID",
+        "number": 0
+       },
+       {
+        "name": "MODIFY_SOD_LEDGERS_DO_UPDATE",
+        "number": 1
+       },
+       {
+        "name": "MODIFY_SOD_LEDGERS_DO_NOT_UPDATE",
+        "number": 2
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/gateway.proto",
+    "package": "apollo.bk.v1",
+    "enumType": [
+     {
+      "name": "GatewayType",
+      "value": [
+       {
+        "name": "GATEWAY_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "GATEWAY_TYPE_API",
+        "number": 1
+       },
+       {
+        "name": "GATEWAY_TYPE_FILE",
+        "number": 2
+       },
+       {
+        "name": "GATEWAY_TYPE_QUEUE",
+        "number": 3
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/source.proto",
+    "package": "apollo.bk.v1",
+    "dependency": [
+     "apollo/bk/v1/gateway.proto"
+    ],
+    "messageType": [
+     {
+      "name": "ServerSource",
+      "field": [
+       {
+        "name": "exception_id",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "exceptionId"
+       },
+       {
+        "name": "file_id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "fileId"
+       },
+       {
+        "name": "gateway_type",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.GatewayType",
+        "jsonName": "gatewayType"
+       },
+       {
+        "name": "batch_id",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "batchId"
+       }
+      ]
+     },
+     {
+      "name": "ClientSource",
+      "field": [
+       {
+        "name": "method",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.Method",
+        "jsonName": "method"
+       },
+       {
+        "name": "client_id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "clientId"
+       },
+       {
+        "name": "user",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "user"
+       },
+       {
+        "name": "action_reason",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.ActionReason",
+        "jsonName": "actionReason"
+       },
+       {
+        "name": "fix_metadata",
+        "number": 101,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.FixClientSourceMetadata",
+        "oneofIndex": 0,
+        "jsonName": "fixMetadata"
+       },
+       {
+        "name": "file_metadata",
+        "number": 102,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.FileClientSourceMetadata",
+        "oneofIndex": 0,
+        "jsonName": "fileMetadata"
+       }
+      ],
+      "oneofDecl": [
+       {
+        "name": "metadata"
+       }
+      ]
+     },
+     {
+      "name": "FixClientSourceMetadata",
+      "field": [
+       {
+        "name": "sequence_number",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "sequenceNumber"
+       },
+       {
+        "name": "target_comp_id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "targetCompId"
+       },
+       {
+        "name": "sender_comp_id",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "senderCompId"
+       },
+       {
+        "name": "session_id",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "sessionId"
+       }
+      ]
+     },
+     {
+      "name": "FileClientSourceMetadata",
+      "field": [
+       {
+        "name": "row_number",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "rowNumber"
+       }
+      ]
+     }
+    ],
+    "enumType": [
+     {
+      "name": "Method",
+      "value": [
+       {
+        "name": "METHOD_INVALID",
+        "number": 0
+       },
+       {
+        "name": "METHOD_FIX",
+        "number": 1
+       },
+       {
+        "name": "METHOD_API",
+        "number": 2
+       },
+       {
+        "name": "METHOD_FILE",
+        "number": 3
+       },
+       {
+        "name": "METHOD_MANUAL",
+        "number": 4
+       },
+       {
+        "name": "METHOD_QUEUE",
+        "number": 5
+       }
+      ]
+     },
+     {
+      "name": "ActionReason",
+      "value": [
+       {
+        "name": "ACTION_REASON_INVALID",
+        "number": 0
+       },
+       {
+        "name": "ACTION_REASON_PEELED_SECURITY",
+        "number": 1
+       },
+       {
+        "name": "ACTION_REASON_ADJUSTMENT",
+        "number": 2
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "google/protobuf/struct.proto",
+    "package": "google.protobuf",
+    "messageType": [
+     {
+      "name": "Struct",
+      "field": [
+       {
+        "name": "fields",
+        "number": 1,
+        "label": "LABEL_REPEATED",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct.FieldsEntry",
+        "jsonName": "fields"
+       }
+      ],
+      "nestedType": [
+       {
+        "name": "FieldsEntry",
+        "field": [
+         {
+          "name": "key",
+          "number": 1,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "key"
+         },
+         {
+          "name": "value",
+          "number": 2,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_MESSAGE",
+          "typeName": ".google.protobuf.Value",
+          "jsonName": "value"
+         }
+        ],
+        "options": {
+         "mapEntry": true
+        }
+       }
+      ]
+     },
+     {
+      "name": "Value",
+      "field": [
+       {
+        "name": "null_value",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".google.protobuf.NullValue",
+        "oneofIndex": 0,
+        "jsonName": "nullValue"
+       },
+       {
+        "name": "number_value",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_DOUBLE",
+        "oneofIndex": 0,
+        "jsonName": "numberValue"
+       },
+       {
+        "name": "string_value",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "oneofIndex": 0,
+        "jsonName": "stringValue"
+       },
+       {
+        "name": "bool_value",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "oneofIndex": 0,
+        "jsonName": "boolValue"
+       },
+       {
+        "name": "struct_value",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct",
+        "oneofIndex": 0,
+        "jsonName": "structValue"
+       },
+       {
+        "name": "list_value",
+        "number": 6,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.ListValue",
+        "oneofIndex": 0,
+        "jsonName": "listValue"
+       }
+      ],
+      "oneofDecl": [
+       {
+        "name": "kind"
+       }
+      ]
+     },
+     {
+      "name": "ListValue",
+      "field": [
+       {
+        "name": "values",
+        "number": 1,
+        "label": "LABEL_REPEATED",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Value",
+        "jsonName": "values"
+       }
+      ]
+     }
+    ],
+    "enumType": [
+     {
+      "name": "NullValue",
+      "value": [
+       {
+        "name": "NULL_VALUE",
+        "number": 0
+       }
+      ]
+     }
+    ],
+    "options": {
+     "javaPackage": "com.google.protobuf",
+     "javaOuterClassname": "StructProto",
+     "javaMultipleFiles": true,
+     "goPackage": "google.golang.org/protobuf/types/known/structpb",
+     "ccEnableArenas": true,
+     "objcClassPrefix": "GPB",
+     "csharpNamespace": "Google.Protobuf.WellKnownTypes"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/journal.proto",
+    "package": "apollo.bk.v1",
+    "dependency": [
+     "google/protobuf/struct.proto",
+     "google/protobuf/wrappers.proto"
+    ],
+    "messageType": [
+     {
+      "name": "JournalEntry",
+      "field": [
+       {
+        "name": "entry_id",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "entryId"
+       },
+       {
+        "name": "account_id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "accountId"
+       },
+       {
+        "name": "segment",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "segment"
+       },
+       {
+        "name": "instrument_id",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "instrumentId"
+       },
+       {
+        "name": "currency_id",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "currencyId"
+       },
+       {
+        "name": "position",
+        "number": 7,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "position"
+       },
+       {
+        "name": "balance",
+        "number": 8,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "balance"
+       },
+       {
+        "name": "position_type",
+        "number": 9,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.PositionType",
+        "jsonName": "positionType"
+       },
+       {
+        "name": "cost_basis",
+        "number": 10,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.StringValue",
+        "jsonName": "costBasis"
+       }
+      ]
+     },
+     {
+      "name": "Journal",
+      "field": [
+       {
+        "name": "created_at",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "createdAt"
+       },
+       {
+        "name": "id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "id"
+       },
+       {
+        "name": "user",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "user"
+       },
+       {
+        "name": "memo",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "memo"
+       },
+       {
+        "name": "date",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "date"
+       },
+       {
+        "name": "flag",
+        "number": 6,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.JournalFlag",
+        "jsonName": "flag"
+       },
+       {
+        "name": "entries",
+        "number": 7,
+        "label": "LABEL_REPEATED",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.JournalEntry",
+        "jsonName": "entries"
+       },
+       {
+        "name": "external_id",
+        "number": 8,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "externalId",
+        "options": {
+         "deprecated": true
+        }
+       },
+       {
+        "name": "is_adjustment",
+        "number": 9,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "isAdjustment"
+       },
+       {
+        "name": "timestamp",
+        "number": 10,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "timestamp"
+       },
+       {
+        "name": "metadata",
+        "number": 11,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct",
+        "jsonName": "metadata"
+       },
+       {
+        "name": "user_data",
+        "number": 12,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct",
+        "jsonName": "userData"
+       }
+      ]
+     }
+    ],
+    "enumType": [
+     {
+      "name": "JournalFlag",
+      "value": [
+       {
+        "name": "JOURNAL_FLAG_INVALID",
+        "number": 0
+       },
+       {
+        "name": "JOURNAL_FLAG_TD_ONLY",
+        "number": 1
+       },
+       {
+        "name": "JOURNAL_FLAG_SD_ONLY",
+        "number": 2
+       },
+       {
+        "name": "JOURNAL_FLAG_ALL",
+        "number": 3
+       }
+      ]
+     },
+     {
+      "name": "PositionType",
+      "value": [
+       {
+        "name": "POSITION_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "POSITION_TYPE_NET",
+        "number": 1
+       },
+       {
+        "name": "POSITION_TYPE_LONG",
+        "number": 2
+       },
+       {
+        "name": "POSITION_TYPE_SHORT",
+        "number": 3
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/trade.proto",
+    "package": "apollo.bk.v1",
+    "dependency": [
+     "google/protobuf/struct.proto"
+    ],
+    "messageType": [
+     {
+      "name": "Haircut",
+      "field": [
+       {
+        "name": "method",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.HaircutMethod",
+        "jsonName": "method"
+       },
+       {
+        "name": "factor",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "factor"
+       }
+      ]
+     },
+     {
+      "name": "Fee",
+      "field": [
+       {
+        "name": "fee_type",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.FeeType",
+        "jsonName": "feeType"
+       },
+       {
+        "name": "amount",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "amount"
+       },
+       {
+        "name": "currency_id",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "currencyId"
+       },
+       {
+        "name": "country",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "country"
+       },
+       {
+        "name": "externally_provided",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "externallyProvided"
+       }
+      ]
+     },
+     {
+      "name": "Trade",
+      "field": [
+       {
+        "name": "created_at",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "createdAt"
+       },
+       {
+        "name": "id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "id"
+       },
+       {
+        "name": "trade_type",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.TradeType",
+        "jsonName": "tradeType"
+       },
+       {
+        "name": "order_id",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "orderId"
+       },
+       {
+        "name": "client_trade_id",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "clientTradeId"
+       },
+       {
+        "name": "cancel_trade_id",
+        "number": 6,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "cancelTradeId"
+       },
+       {
+        "name": "timestamp",
+        "number": 7,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "timestamp"
+       },
+       {
+        "name": "trade_date",
+        "number": 8,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "tradeDate"
+       },
+       {
+        "name": "settlement_date",
+        "number": 9,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "settlementDate"
+       },
+       {
+        "name": "account_id",
+        "number": 10,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "accountId"
+       },
+       {
+        "name": "contra_account_id",
+        "number": 11,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "contraAccountId"
+       },
+       {
+        "name": "instrument_id",
+        "number": 12,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "instrumentId"
+       },
+       {
+        "name": "currency_id",
+        "number": 13,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "currencyId"
+       },
+       {
+        "name": "price",
+        "number": 14,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "price"
+       },
+       {
+        "name": "quantity",
+        "number": 15,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "quantity"
+       },
+       {
+        "name": "side",
+        "number": 16,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.Side",
+        "jsonName": "side"
+       },
+       {
+        "name": "direction",
+        "number": 17,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.Direction",
+        "jsonName": "direction"
+       },
+       {
+        "name": "short_sale",
+        "number": 18,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "shortSale"
+       },
+       {
+        "name": "contra_short_sale",
+        "number": 19,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "contraShortSale"
+       },
+       {
+        "name": "gross_amount",
+        "number": 20,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "grossAmount"
+       },
+       {
+        "name": "net_amount",
+        "number": 21,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "netAmount"
+       },
+       {
+        "name": "behalf_of_account_id",
+        "number": 22,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "behalfOfAccountId"
+       },
+       {
+        "name": "sec_fee",
+        "number": 23,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "secFee"
+       },
+       {
+        "name": "taf_fee",
+        "number": 24,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "tafFee"
+       },
+       {
+        "name": "orf_fee",
+        "number": 25,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "orfFee"
+       },
+       {
+        "name": "ftt_fee",
+        "number": 26,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "fttFee"
+       },
+       {
+        "name": "ptm_levy",
+        "number": 27,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "ptmLevy"
+       },
+       {
+        "name": "local_tax",
+        "number": 28,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "localTax"
+       },
+       {
+        "name": "commission",
+        "number": 29,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "commission"
+       },
+       {
+        "name": "capacity",
+        "number": 30,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.Capacity",
+        "jsonName": "capacity"
+       },
+       {
+        "name": "clearing_method",
+        "number": 31,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.ClearingMethod",
+        "jsonName": "clearingMethod"
+       },
+       {
+        "name": "nscc_clearing",
+        "number": 32,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.NsccClearing",
+        "jsonName": "nsccClearing"
+       },
+       {
+        "name": "mic",
+        "number": 33,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "mic"
+       },
+       {
+        "name": "contra_mpid",
+        "number": 34,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "contraMpid"
+       },
+       {
+        "name": "contra_clearing_num",
+        "number": 35,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "contraClearingNum"
+       },
+       {
+        "name": "exec_mpid",
+        "number": 36,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "execMpid"
+       },
+       {
+        "name": "last_market",
+        "number": 37,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "lastMarket"
+       },
+       {
+        "name": "locate_id",
+        "number": 38,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "locateId"
+       },
+       {
+        "name": "locate_source",
+        "number": 39,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "locateSource"
+       },
+       {
+        "name": "is_when_issued",
+        "number": 40,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "isWhenIssued"
+       },
+       {
+        "name": "solicited",
+        "number": 41,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "solicited"
+       },
+       {
+        "name": "registered_rep",
+        "number": 42,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "registeredRep"
+       },
+       {
+        "name": "branch_office",
+        "number": 43,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "branchOffice"
+       },
+       {
+        "name": "user_data",
+        "number": 44,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct",
+        "jsonName": "userData"
+       },
+       {
+        "name": "security_location_id",
+        "number": 45,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "securityLocationId"
+       },
+       {
+        "name": "money_location_id",
+        "number": 46,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "moneyLocationId"
+       },
+       {
+        "name": "pset",
+        "number": 47,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "pset"
+       },
+       {
+        "name": "settlement_currency_id",
+        "number": 48,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "settlementCurrencyId"
+       },
+       {
+        "name": "version",
+        "number": 49,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "version"
+       },
+       {
+        "name": "contra_external_account",
+        "number": 50,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "contraExternalAccount"
+       },
+       {
+        "name": "fixed_income",
+        "number": 51,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Trade.FixedIncome",
+        "jsonName": "fixedIncome"
+       },
+       {
+        "name": "sub_type",
+        "number": 52,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.TradeSubType",
+        "jsonName": "subType"
+       },
+       {
+        "name": "omit_sec",
+        "number": 53,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "omitSec"
+       },
+       {
+        "name": "omit_taf",
+        "number": 54,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "omitTaf"
+       },
+       {
+        "name": "omit_orf",
+        "number": 55,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "omitOrf"
+       },
+       {
+        "name": "haircut",
+        "number": 56,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Haircut",
+        "jsonName": "haircut"
+       },
+       {
+        "name": "deemed_to_own",
+        "number": 57,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "deemedToOwn"
+       },
+       {
+        "name": "metadata",
+        "number": 58,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct",
+        "jsonName": "metadata"
+       },
+       {
+        "name": "last_liquidity_indicator",
+        "number": 59,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "lastLiquidityIndicator"
+       },
+       {
+        "name": "exchange_fee",
+        "number": 60,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "exchangeFee"
+       },
+       {
+        "name": "trade_liquidity_indicator",
+        "number": 61,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "tradeLiquidityIndicator"
+       },
+       {
+        "name": "is_restricted",
+        "number": 62,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "isRestricted"
+       },
+       {
+        "name": "omit_ftt",
+        "number": 63,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BOOL",
+        "jsonName": "omitFtt"
+       },
+       {
+        "name": "soft_dollar_commission",
+        "number": 64,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "softDollarCommission"
+       },
+       {
+        "name": "fees",
+        "number": 65,
+        "label": "LABEL_REPEATED",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Fee",
+        "jsonName": "fees"
+       },
+       {
+        "name": "outsourced_fee",
+        "number": 66,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "outsourcedFee"
+       }
+      ],
+      "nestedType": [
+       {
+        "name": "FixedIncome",
+        "field": [
+         {
+          "name": "accrued_interest",
+          "number": 1,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "accruedInterest"
+         },
+         {
+          "name": "repo_rate",
+          "number": 2,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "repoRate"
+         },
+         {
+          "name": "factor",
+          "number": 3,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "factor"
+         },
+         {
+          "name": "concession",
+          "number": 4,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "concession"
+         },
+         {
+          "name": "bvp_fee",
+          "number": 5,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "bvpFee"
+         },
+         {
+          "name": "spread",
+          "number": 6,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "spread"
+         },
+         {
+          "name": "benchmark_curve_currency_id",
+          "number": 7,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_INT64",
+          "jsonName": "benchmarkCurveCurrencyId"
+         },
+         {
+          "name": "benchmark_curve",
+          "number": 8,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "benchmarkCurve"
+         },
+         {
+          "name": "repo_term",
+          "number": 9,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "repoTerm"
+         },
+         {
+          "name": "yield_type",
+          "number": 10,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "yieldType"
+         },
+         {
+          "name": "yield_percentage",
+          "number": 11,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_STRING",
+          "jsonName": "yieldPercentage"
+         },
+         {
+          "name": "trade_origination_date",
+          "number": 12,
+          "label": "LABEL_OPTIONAL",
+          "type": "TYPE_INT32",
+          "jsonName": "tradeOriginationDate"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "enumType": [
+     {
+      "name": "TradeType",
+      "value": [
+       {
+        "name": "TRADE_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "TRADE_TYPE_TRANSFER",
+        "number": 1
+       },
+       {
+        "name": "TRADE_TYPE_EXCHANGE",
+        "number": 2
+       },
+       {
+        "name": "TRADE_TYPE_BILATERAL",
+        "number": 3
+       },
+       {
+        "name": "TRADE_TYPE_ALLOCATION",
+        "number": 4
+       },
+       {
+        "name": "TRADE_TYPE_AWAY",
+        "number": 5
+       }
+      ]
+     },
+     {
+      "name": "Side",
+      "value": [
+       {
+        "name": "SIDE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "SIDE_BUY",
+        "number": 1
+       },
+       {
+        "name": "SIDE_SELL",
+        "number": 2
+       }
+      ]
+     },
+     {
+      "name": "Direction",
+      "value": [
+       {
+        "name": "DIRECTION_INVALID",
+        "number": 0
+       },
+       {
+        "name": "DIRECTION_NET",
+        "number": 2
+       },
+       {
+        "name": "DIRECTION_OPEN",
+        "number": 3
+       },
+       {
+        "name": "DIRECTION_CLOSE",
+        "number": 4
+       }
+      ]
+     },
+     {
+      "name": "Capacity",
+      "value": [
+       {
+        "name": "CAPACITY_INVALID",
+        "number": 0
+       },
+       {
+        "name": "CAPACITY_PRINCIPAL",
+        "number": 1
+       },
+       {
+        "name": "CAPACITY_AGENCY",
+        "number": 2
+       },
+       {
+        "name": "CAPACITY_MIXED",
+        "number": 3
+       },
+       {
+        "name": "CAPACITY_RISKLESS_PRINCIPAL",
+        "number": 4
+       }
+      ]
+     },
+     {
+      "name": "ClearingMethod",
+      "value": [
+       {
+        "name": "CLEARING_METHOD_INVALID",
+        "number": 0
+       },
+       {
+        "name": "CLEARING_METHOD_INTERNAL",
+        "number": 1
+       },
+       {
+        "name": "CLEARING_METHOD_OCC",
+        "number": 2
+       },
+       {
+        "name": "CLEARING_METHOD_FICC",
+        "number": 3
+       },
+       {
+        "name": "CLEARING_METHOD_SUBC",
+        "number": 4
+       },
+       {
+        "name": "CLEARING_METHOD_EXCNS",
+        "number": 5
+       },
+       {
+        "name": "CLEARING_METHOD_CNS",
+        "number": 6
+       },
+       {
+        "name": "CLEARING_METHOD_BO",
+        "number": 7
+       },
+       {
+        "name": "CLEARING_METHOD_DVP",
+        "number": 8
+       },
+       {
+        "name": "CLEARING_METHOD_AWAY",
+        "number": 9
+       },
+       {
+        "name": "CLEARING_METHOD_OCCPM",
+        "number": 10
+       },
+       {
+        "name": "CLEARING_METHOD_CMTA",
+        "number": 11
+       },
+       {
+        "name": "CLEARING_METHOD_RTTM_CMU",
+        "number": 12
+       },
+       {
+        "name": "CLEARING_METHOD_RTTM_GOV",
+        "number": 13
+       },
+       {
+        "name": "CLEARING_METHOD_RTTM_MBS",
+        "number": 14
+       },
+       {
+        "name": "CLEARING_METHOD_GSD",
+        "number": 15
+       },
+       {
+        "name": "CLEARING_METHOD_MBS",
+        "number": 16
+       },
+       {
+        "name": "CLEARING_METHOD_INTL_PRECOMPRESSED",
+        "number": 17
+       },
+       {
+        "name": "CLEARING_METHOD_INTL_COMPRESSED",
+        "number": 18
+       },
+       {
+        "name": "CLEARING_METHOD_RTTM_GOV_SPONSORED",
+        "number": 19
+       }
+      ]
+     },
+     {
+      "name": "NsccClearing",
+      "value": [
+       {
+        "name": "NSCC_CLEARING_INVALID",
+        "number": 0
+       },
+       {
+        "name": "NSCC_CLEARING_CONTRA",
+        "number": 1
+       },
+       {
+        "name": "NSCC_CLEARING_AGU",
+        "number": 2
+       },
+       {
+        "name": "NSCC_CLEARING_QSR",
+        "number": 3
+       },
+       {
+        "name": "NSCC_CLEARING_CORR",
+        "number": 4
+       },
+       {
+        "name": "NSCC_CLEARING_CORR_FEES",
+        "number": 5
+       },
+       {
+        "name": "NSCC_CLEARING_CMTA",
+        "number": 6
+       },
+       {
+        "name": "NSCC_CLEARING_EXCNS",
+        "number": 7
+       }
+      ]
+     },
+     {
+      "name": "TradeSubType",
+      "value": [
+       {
+        "name": "TRADE_SUB_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "TRADE_SUB_TYPE_REPO",
+        "number": 1
+       },
+       {
+        "name": "TRADE_SUB_TYPE_REVERSE_REPO",
+        "number": 2
+       },
+       {
+        "name": "TRADE_SUB_TYPE_BORROW_VERSUS_PLEDGE",
+        "number": 3
+       },
+       {
+        "name": "TRADE_SUB_TYPE_LOAN_VERSUS_PLEDGE",
+        "number": 4
+       },
+       {
+        "name": "TRADE_SUB_TYPE_LOAN",
+        "number": 5,
+        "options": {
+         "deprecated": true
+        }
+       },
+       {
+        "name": "TRADE_SUB_TYPE_BORROW_VERSUS_CASH",
+        "number": 6
+       },
+       {
+        "name": "TRADE_SUB_TYPE_LOAN_VERSUS_CASH",
+        "number": 7
+       },
+       {
+        "name": "TRADE_SUB_TYPE_CASH_PLEDGE",
+        "number": 8
+       },
+       {
+        "name": "TRADE_SUB_TYPE_SECURITY_PLEDGE",
+        "number": 9
+       },
+       {
+        "name": "TRADE_SUB_TYPE_INTERNATIONAL_LOAN_VERSUS_CASH",
+        "number": 10
+       },
+       {
+        "name": "TRADE_SUB_TYPE_INTERNATIONAL_BORROW_VERSUS_CASH",
+        "number": 11
+       }
+      ]
+     },
+     {
+      "name": "HaircutMethod",
+      "value": [
+       {
+        "name": "HAIRCUT_METHOD_INVALID",
+        "number": 0
+       },
+       {
+        "name": "HAIRCUT_METHOD_DIVIDE",
+        "number": 1
+       },
+       {
+        "name": "HAIRCUT_METHOD_MULTIPLY",
+        "number": 2
+       }
+      ]
+     },
+     {
+      "name": "FeeType",
+      "value": [
+       {
+        "name": "FEE_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "FEE_TYPE_SEC",
+        "number": 1
+       },
+       {
+        "name": "FEE_TYPE_TAF",
+        "number": 2
+       },
+       {
+        "name": "FEE_TYPE_ORF",
+        "number": 3
+       },
+       {
+        "name": "FEE_TYPE_FTT",
+        "number": 4
+       },
+       {
+        "name": "FEE_TYPE_PTM_LEVY",
+        "number": 5
+       },
+       {
+        "name": "FEE_TYPE_LOCAL_TAX",
+        "number": 6
+       },
+       {
+        "name": "FEE_TYPE_STAMP_TAX",
+        "number": 7
+       },
+       {
+        "name": "FEE_TYPE_CAT",
+        "number": 8
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/transaction.proto",
+    "package": "apollo.bk.v1",
+    "dependency": [
+     "apollo/bk/v1/common.proto",
+     "apollo/bk/v1/journal.proto",
+     "apollo/bk/v1/source.proto",
+     "apollo/bk/v1/trade.proto",
+     "google/protobuf/struct.proto",
+     "google/protobuf/wrappers.proto"
+    ],
+    "messageType": [
+     {
+      "name": "Relation",
+      "field": [
+       {
+        "name": "related_type",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.RelatedType",
+        "jsonName": "relatedType"
+       },
+       {
+        "name": "related_id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "relatedId"
+       },
+       {
+        "name": "relation_type",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.RelationType",
+        "jsonName": "relationType"
+       }
+      ]
+     },
+     {
+      "name": "Posting",
+      "field": [
+       {
+        "name": "id",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "id"
+       },
+       {
+        "name": "posting_type",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.PostingType",
+        "jsonName": "postingType"
+       },
+       {
+        "name": "account_id",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "accountId"
+       },
+       {
+        "name": "segment",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "segment"
+       },
+       {
+        "name": "currency_id",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "currencyId"
+       },
+       {
+        "name": "instrument_id",
+        "number": 6,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Int64Value",
+        "jsonName": "instrumentId"
+       },
+       {
+        "name": "balance_update",
+        "number": 7,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "balanceUpdate"
+       },
+       {
+        "name": "position_update",
+        "number": 8,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "positionUpdate"
+       },
+       {
+        "name": "position_type",
+        "number": 9,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.PositionType",
+        "jsonName": "positionType"
+       },
+       {
+        "name": "long_position",
+        "number": 10,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "longPosition",
+        "options": {
+         "deprecated": true
+        }
+       },
+       {
+        "name": "short_position",
+        "number": 11,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "shortPosition",
+        "options": {
+         "deprecated": true
+        }
+       }
+      ]
+     },
+     {
+      "name": "Transaction",
+      "field": [
+       {
+        "name": "created_at",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "createdAt"
+       },
+       {
+        "name": "id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "id"
+       },
+       {
+        "name": "transaction_type",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.TransactionType",
+        "jsonName": "transactionType"
+       },
+       {
+        "name": "idempotency_id",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "idempotencyId"
+       },
+       {
+        "name": "activity",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "activity"
+       },
+       {
+        "name": "effective_date",
+        "number": 6,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "effectiveDate"
+       },
+       {
+        "name": "postings",
+        "number": 7,
+        "label": "LABEL_REPEATED",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Posting",
+        "jsonName": "postings"
+       },
+       {
+        "name": "relations",
+        "number": 8,
+        "label": "LABEL_REPEATED",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Relation",
+        "jsonName": "relations"
+       },
+       {
+        "name": "trade",
+        "number": 9,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Trade",
+        "oneofIndex": 0,
+        "jsonName": "trade"
+       },
+       {
+        "name": "journal",
+        "number": 10,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Journal",
+        "oneofIndex": 0,
+        "jsonName": "journal"
+       },
+       {
+        "name": "server_source",
+        "number": 11,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.ServerSource",
+        "jsonName": "serverSource"
+       },
+       {
+        "name": "client_source",
+        "number": 12,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.ClientSource",
+        "jsonName": "clientSource"
+       },
+       {
+        "name": "metadata",
+        "number": 13,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Struct",
+        "jsonName": "metadata"
+       },
+       {
+        "name": "scheduled_at",
+        "number": 14,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "scheduledAt"
+       },
+       {
+        "name": "modify_sod_ledgers",
+        "number": 15,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.ModifySodLedgers",
+        "jsonName": "modifySodLedgers"
+       }
+      ],
+      "oneofDecl": [
+       {
+        "name": "event"
+       }
+      ]
+     }
+    ],
+    "enumType": [
+     {
+      "name": "TransactionType",
+      "value": [
+       {
+        "name": "TRANSACTION_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "TRANSACTION_TYPE_INSERT",
+        "number": 1
+       },
+       {
+        "name": "TRANSACTION_TYPE_CANCEL",
+        "number": 2
+       },
+       {
+        "name": "TRANSACTION_TYPE_SETTLE",
+        "number": 3
+       },
+       {
+        "name": "TRANSACTION_TYPE_CLEANUP",
+        "number": 4
+       },
+       {
+        "name": "TRANSACTION_TYPE_INSERT_OBLIGATION",
+        "number": 5
+       },
+       {
+        "name": "TRANSACTION_TYPE_SETTLE_OBLIGATION",
+        "number": 6
+       },
+       {
+        "name": "TRANSACTION_TYPE_UNSETTLE_OBLIGATION",
+        "number": 7
+       },
+       {
+        "name": "TRANSACTION_TYPE_PB_FLIPPED",
+        "number": 8
+       },
+       {
+        "name": "TRANSACTION_TYPE_NOVATED",
+        "number": 9
+       }
+      ]
+     },
+     {
+      "name": "PostingType",
+      "value": [
+       {
+        "name": "POSTING_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "POSTING_TYPE_TD",
+        "number": 1
+       },
+       {
+        "name": "POSTING_TYPE_SD",
+        "number": 2
+       }
+      ]
+     },
+     {
+      "name": "RelatedType",
+      "value": [
+       {
+        "name": "RELATED_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "RELATED_TYPE_JOURNAL",
+        "number": 1
+       },
+       {
+        "name": "RELATED_TYPE_TRADE",
+        "number": 2
+       },
+       {
+        "name": "RELATED_TYPE_SETTLEMENT",
+        "number": 3
+       }
+      ]
+     },
+     {
+      "name": "RelationType",
+      "value": [
+       {
+        "name": "RELATION_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "RELATION_TYPE_OPTION_ALLOCATION",
+        "number": 1
+       },
+       {
+        "name": "RELATION_TYPE_SWIFT",
+        "number": 2
+       },
+       {
+        "name": "RELATION_TYPE_CTS",
+        "number": 3
+       },
+       {
+        "name": "RELATION_TYPE_CACO",
+        "number": 4
+       },
+       {
+        "name": "RELATION_TYPE_ATX",
+        "number": 5
+       },
+       {
+        "name": "RELATION_TYPE_BOOTSTRAP",
+        "number": 6
+       },
+       {
+        "name": "RELATION_TYPE_OBLIGATION",
+        "number": 7
+       },
+       {
+        "name": "RELATION_TYPE_OBLIGATION_ACTION",
+        "number": 8
+       },
+       {
+        "name": "RELATION_TYPE_AMEND",
+        "number": 9
+       },
+       {
+        "name": "RELATION_TYPE_OBLIGATION_ADJUSTMENT",
+        "number": 10
+       },
+       {
+        "name": "RELATION_TYPE_BASIS_ECONOMIC_MOVEMENT",
+        "number": 11
+       },
+       {
+        "name": "RELATION_TYPE_BASIS_EOD_ECONOMIC",
+        "number": 12
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   }
+  ]
+ },
+ "version": "3fac9b0cc92745e3856ed3b27544dabf"
+}

@@ -1,0 +1,95 @@
+{
+ "fileDescriptorSet": {
+  "file": [
+   {
+    "name": "google/protobuf/any.proto",
+    "package": "google.protobuf",
+    "messageType": [
+     {
+      "name": "Any",
+      "field": [
+       {
+        "name": "type_url",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "typeUrl"
+       },
+       {
+        "name": "value",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_BYTES",
+        "jsonName": "value"
+       }
+      ]
+     }
+    ],
+    "options": {
+     "javaPackage": "com.google.protobuf",
+     "javaOuterClassname": "AnyProto",
+     "javaMultipleFiles": true,
+     "goPackage": "google.golang.org/protobuf/types/known/anypb",
+     "objcClassPrefix": "GPB",
+     "csharpNamespace": "Google.Protobuf.WellKnownTypes"
+    },
+    "syntax": "proto3"
+   },
+   {
+    "name": "apollo/bk/v1/events.proto",
+    "package": "apollo.bk.v1",
+    "dependency": [
+     "google/protobuf/any.proto"
+    ],
+    "messageType": [
+     {
+      "name": "Event",
+      "field": [
+       {
+        "name": "name",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "name"
+       },
+       {
+        "name": "source",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "source"
+       },
+       {
+        "name": "created_at",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "createdAt"
+       },
+       {
+        "name": "id",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "id"
+       },
+       {
+        "name": "payload",
+        "number": 100,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".google.protobuf.Any",
+        "jsonName": "payload"
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   }
+  ]
+ },
+ "version": "3fac9b0cc92745e3856ed3b27544dabf"
+}

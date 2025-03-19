@@ -1,0 +1,184 @@
+{
+ "fileDescriptorSet": {
+  "file": [
+   {
+    "name": "apollo/bk/v1/keys.proto",
+    "package": "apollo.bk.v1",
+    "messageType": [
+     {
+      "name": "TradeKey",
+      "field": [
+       {
+        "name": "account_id",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "accountId"
+       },
+       {
+        "name": "client_trade_id",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "clientTradeId"
+       }
+      ]
+     },
+     {
+      "name": "JournalKey",
+      "field": [
+       {
+        "name": "journal_id",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "journalId"
+       }
+      ]
+     },
+     {
+      "name": "InstrumentKey",
+      "field": [
+       {
+        "name": "instrument_id",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT64",
+        "jsonName": "instrumentId"
+       }
+      ]
+     },
+     {
+      "name": "BucketKey",
+      "field": [
+       {
+        "name": "partition_bucket",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_STRING",
+        "jsonName": "partitionBucket"
+       }
+      ]
+     },
+     {
+      "name": "Marker",
+      "field": [
+       {
+        "name": "marker_type",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_ENUM",
+        "typeName": ".apollo.bk.v1.MarkerType",
+        "jsonName": "markerType"
+       },
+       {
+        "name": "current_date",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "currentDate"
+       },
+       {
+        "name": "next_date",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "nextDate"
+       },
+       {
+        "name": "partition",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_INT32",
+        "jsonName": "partition"
+       }
+      ]
+     },
+     {
+      "name": "TransactionKey",
+      "field": [
+       {
+        "name": "trade_key",
+        "number": 1,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.TradeKey",
+        "oneofIndex": 0,
+        "jsonName": "tradeKey"
+       },
+       {
+        "name": "journal_key",
+        "number": 2,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.JournalKey",
+        "oneofIndex": 0,
+        "jsonName": "journalKey"
+       },
+       {
+        "name": "marker",
+        "number": 3,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.Marker",
+        "oneofIndex": 0,
+        "jsonName": "marker"
+       },
+       {
+        "name": "instrument_key",
+        "number": 4,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.InstrumentKey",
+        "oneofIndex": 0,
+        "jsonName": "instrumentKey"
+       },
+       {
+        "name": "bucket_key",
+        "number": 5,
+        "label": "LABEL_OPTIONAL",
+        "type": "TYPE_MESSAGE",
+        "typeName": ".apollo.bk.v1.BucketKey",
+        "oneofIndex": 0,
+        "jsonName": "bucketKey"
+       }
+      ],
+      "oneofDecl": [
+       {
+        "name": "key"
+       }
+      ]
+     }
+    ],
+    "enumType": [
+     {
+      "name": "MarkerType",
+      "value": [
+       {
+        "name": "MARKER_TYPE_INVALID",
+        "number": 0
+       },
+       {
+        "name": "MARKER_TYPE_EOD",
+        "number": 1
+       },
+       {
+        "name": "MARKER_TYPE_SOD",
+        "number": 2
+       },
+       {
+        "name": "MARKER_TYPE_SOD_FINAL",
+        "number": 3
+       }
+      ]
+     }
+    ],
+    "options": {
+     "goPackage": "apollo/pkg/proto/v1"
+    },
+    "syntax": "proto3"
+   }
+  ]
+ },
+ "version": "8e9b6e75ca5f4301b5b5827202baac71"
+}
