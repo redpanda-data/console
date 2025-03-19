@@ -98,7 +98,7 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 		if fmEr, ok := protoMessage.(fm); ok {
 			// There is an update mask. Find the resource field, based on google.api.resource annotation.
 			// This allows us to strip the prefix from the validator, eg. pipeline.display_name throws an error; strip `pipeline.`.
-			// This is necessary, because update_mask does not contain this prefixed, it is scoped to operator "within" the resource already, eg. update_mask may be `"tags"`.
+			// This is necessary, because update_mask does not contain this prefix, it is scoped to operate "within" the resource already, eg. update_mask may be `"tags"`.
 			if resourceName, ok := findResourceName(fmEr); ok {
 				if e := new(protovalidate.ValidationError); errors.As(err, &e) {
 					e.Violations = slices.DeleteFunc(e.Violations, func(v *protovalidate.Violation) bool {
