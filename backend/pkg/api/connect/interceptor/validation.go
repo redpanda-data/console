@@ -14,13 +14,18 @@ package interceptor
 import (
 	"context"
 	"errors"
+	"slices"
+	"strings"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/bufbuild/protovalidate-go"
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 )
@@ -37,6 +42,36 @@ func NewRequestValidationInterceptor(validator *protovalidate.Validator, logger 
 		validator: validator,
 		logger:    logger,
 	}
+}
+
+type fm interface {
+	GetUpdateMask() *fieldmaskpb.FieldMask
+}
+
+// UpdateAffectsField checks if a path is covered by a fieldmask.
+func UpdateAffectsField(updateMask *fieldmaskpb.FieldMask, fieldPath string) bool {
+	return len(fieldmaskpb.Intersect(updateMask, &fieldmaskpb.FieldMask{Paths: []string{fieldPath}}).Paths) > 0
+}
+
+// findResourceName attempts to find the resource name in a grpc request.
+func findResourceName(req fm) (string, bool) {
+	var resourceName string
+	if protoMessage, ok := req.(proto.Message); ok {
+		protoMessage.ProtoReflect().Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+			if fd.Kind() == protoreflect.MessageKind && !fd.IsMap() && !fd.IsList() {
+				if opts := fd.Message().Options(); opts != nil {
+					if e := proto.GetExtension(opts, annotations.E_Resource); e != nil {
+						if p, ok := e.(*annotations.ResourceDescriptor); ok && p != nil {
+							resourceName = p.Singular
+							return false
+						}
+					}
+				}
+			}
+			return true
+		})
+	}
+	return resourceName, resourceName != ""
 }
 
 // WrapUnary creates an interceptor to validate Connect requests.
@@ -56,6 +91,25 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 		err := in.validator.Validate(protoMessage)
 		if err == nil {
 			return next(ctx, req)
+		}
+
+		// Second chance: strip errors of fields not covered by fieldmask.
+		// Since fieldmask does not update fields not covered, it doesn't matter if they fail to validate.
+		if fmEr, ok := protoMessage.(fm); ok {
+			// There is an update mask. Find the resource field, based on google.api.resource annotation.
+			// This allows us to strip the prefix from the validator, eg. pipeline.display_name throws an error; strip `pipeline.`.
+			// This is necessary, because update_mask does not contain this prefixed, it is scoped to operator "within" the resource already, eg. update_mask may be `"tags"`.
+			if resourceName, ok := findResourceName(fmEr); ok {
+				if e := new(protovalidate.ValidationError); errors.As(err, &e) {
+					e.Violations = slices.DeleteFunc(e.Violations, func(v *protovalidate.Violation) bool {
+						return !UpdateAffectsField(fmEr.GetUpdateMask(), strings.TrimPrefix(*v.Proto.FieldPath, resourceName+".")) //nolint:staticcheck // we want to keep using this deprecated field for now.
+					})
+					// If no violations anymore after stripping the obsolete ones - proceed with the call.
+					if len(e.Violations) == 0 {
+						return next(ctx, req)
+					}
+				}
+			}
 		}
 
 		var badRequest *errdetails.BadRequest

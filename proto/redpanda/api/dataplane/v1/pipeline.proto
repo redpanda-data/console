@@ -5,11 +5,17 @@ package redpanda.api.dataplane.v1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1/Pipeline"
+    singular: "pipeline"
+    plural: "pipelines"
+  };
   reserved 5, 6;
   reserved "request", "limit";
 
@@ -347,6 +353,12 @@ service PipelineService {
 
 // PipelineCreate contains the details for the pipeline creation request.
 message PipelineCreate {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1/PipelineCreate"
+    singular: "pipeline"
+    plural: "pipelines"
+  };
+
   reserved 4, 5;
   reserved "request", "limit";
 
@@ -438,6 +450,12 @@ message ListPipelinesResponse {
 }
 
 message PipelineUpdate {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1/PipelineUpdate"
+    singular: "pipeline"
+    plural: "pipelines"
+  };
+
   reserved 4, 5;
   reserved "request", "limit";
   // User-friendly pipeline name.
