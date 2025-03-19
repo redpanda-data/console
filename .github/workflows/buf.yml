@@ -5,11 +5,8 @@ on:
     paths:
       - .github/workflows/buf.yml
       - proto/**.proto
-  pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
-    paths:
-      - .github/workflows/buf.yml
-      - proto/**.proto
+    branches:
+      - master
   delete:
 jobs:
   push-module:
