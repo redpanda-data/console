@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import { MethodKind } from "@bufbuild/protobuf";
-import { CreateTopicRequest, CreateTopicResponse, DeleteTopicRequest, DeleteTopicResponse, GetTopicConfigurationsRequest, GetTopicConfigurationsResponse, ListTopicsRequest, ListTopicsResponse, SetTopicConfigurationsRequest, SetTopicConfigurationsResponse, UpdateTopicConfigurationsRequest, UpdateTopicConfigurationsResponse } from "./topic_pb";
+import { AddPartitionsToTopicsRequest, AddPartitionsToTopicsResponse, AddTopicPartitionsRequest, AddTopicPartitionsResponse, CreateTopicRequest, CreateTopicResponse, DeleteTopicRequest, DeleteTopicResponse, GetTopicConfigurationsRequest, GetTopicConfigurationsResponse, ListTopicsRequest, ListTopicsResponse, SetPartitionsToTopicsRequest, SetPartitionsToTopicsResponse, SetTopicConfigurationsRequest, SetTopicConfigurationsResponse, SetTopicPartitionsRequest, SetTopicPartitionsResponse, UpdateTopicConfigurationsRequest, UpdateTopicConfigurationsResponse } from "./topic_pb";
 
 /**
  * @generated from rpc redpanda.api.dataplane.v1.TopicService.CreateTopic
@@ -85,6 +85,62 @@ export const setTopicConfigurations = {
   kind: MethodKind.Unary,
   I: SetTopicConfigurationsRequest,
   O: SetTopicConfigurationsResponse,
+  service: {
+    typeName: "redpanda.api.dataplane.v1.TopicService"
+  }
+} as const;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.AddTopicPartitions
+ */
+export const addTopicPartitions = {
+  localName: "addTopicPartitions",
+  name: "AddTopicPartitions",
+  kind: MethodKind.Unary,
+  I: AddTopicPartitionsRequest,
+  O: AddTopicPartitionsResponse,
+  service: {
+    typeName: "redpanda.api.dataplane.v1.TopicService"
+  }
+} as const;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.SetTopicPartitions
+ */
+export const setTopicPartitions = {
+  localName: "setTopicPartitions",
+  name: "SetTopicPartitions",
+  kind: MethodKind.Unary,
+  I: SetTopicPartitionsRequest,
+  O: SetTopicPartitionsResponse,
+  service: {
+    typeName: "redpanda.api.dataplane.v1.TopicService"
+  }
+} as const;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.AddPartitionsToTopics
+ */
+export const addPartitionsToTopics = {
+  localName: "addPartitionsToTopics",
+  name: "AddPartitionsToTopics",
+  kind: MethodKind.Unary,
+  I: AddPartitionsToTopicsRequest,
+  O: AddPartitionsToTopicsResponse,
+  service: {
+    typeName: "redpanda.api.dataplane.v1.TopicService"
+  }
+} as const;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.SetPartitionsToTopics
+ */
+export const setPartitionsToTopics = {
+  localName: "setPartitionsToTopics",
+  name: "SetPartitionsToTopics",
+  kind: MethodKind.Unary,
+  I: SetPartitionsToTopicsRequest,
+  O: SetPartitionsToTopicsResponse,
   service: {
     typeName: "redpanda.api.dataplane.v1.TopicService"
   }

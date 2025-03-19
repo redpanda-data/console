@@ -191,7 +191,7 @@ message UpdateMountTaskResponse {}
 // Requires that you have tiered storage enabled.
 service CloudStorageService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Cloud Storage"
+    name: "Cloud Storage (v1alpha2)"
     description: "Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)"
   };
   rpc MountTopics(MountTopicsRequest) returns (MountTopicsResponse) {

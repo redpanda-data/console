@@ -1780,7 +1780,7 @@ paths:
           description: An unexpected error response.
       summary: Delete ACLs
       tags:
-        - Redpanda ACLs
+        - Redpanda ACLs (v1alpha2)
     get:
       description: List all ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
       operationId: ACLService_ListACLs
@@ -1887,7 +1887,7 @@ paths:
           description: An unexpected error response.
       summary: List ACLs
       tags:
-        - Redpanda ACLs
+        - Redpanda ACLs (v1alpha2)
     post:
       description: Create a new ACL.
       operationId: ACLService_CreateACL
@@ -1925,7 +1925,7 @@ paths:
           description: An unexpected error response.
       summary: Create ACL
       tags:
-        - Redpanda ACLs
+        - Redpanda ACLs (v1alpha2)
   /v1alpha2/cloud-storage/mount-tasks:
     get:
       description: This operation retrieves the status of a task responsible for mounting or unmounting topics. It provides details on the task’s type (mount or unmount), its current state, and the topics involved.
@@ -1963,7 +1963,7 @@ paths:
           description: An unexpected error response.
       summary: Retrieve the mount task status
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
   /v1alpha2/cloud-storage/mount-tasks/{id}:
     delete:
       description: Delete a mount or unmount by ID.
@@ -2009,7 +2009,7 @@ paths:
           description: An unexpected error response.
       summary: Delete a mount or unmount
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
     get:
       description: Retrieves the status of a mount or unmount by ID. The response provides details on the operation type (mount or unmount), its current state, and the topics involved. Use the ID returned when you start the mount or unmount, or use the ListMountTasks endpoint to retrieve a list of IDs.
       operationId: CloudStorageService_GetMountTask
@@ -2054,7 +2054,7 @@ paths:
           description: An unexpected error response.
       summary: Get the status of a mount or unmount by ID
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
     post:
       description: This operation allows performing an action on an ongoing mount task.
       operationId: CloudStorageService_UpdateMountTask
@@ -2106,7 +2106,7 @@ paths:
           description: An unexpected error response.
       summary: Update a mount or unmount
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
   /v1alpha2/cloud-storage/topics/mount:
     post:
       description: Attach mountable topics from object storage to a cluster, making them available for consumption and production again. Mounting a topic reloads its data and state to the local brokers, allowing active use of the topic.
@@ -2155,7 +2155,7 @@ paths:
           description: An unexpected error response.
       summary: Mount topics from object storage
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
   /v1alpha2/cloud-storage/topics/mountable:
     get:
       description: Retrieve all topics that are currently unmounted and available to be mounted to the cluster. These topics reside in object storage and can be mounted for consumption or production within the cluster.
@@ -2193,7 +2193,7 @@ paths:
           description: An unexpected error response.
       summary: List mountable topics
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
   /v1alpha2/cloud-storage/topics/unmount:
     post:
       description: Unmount topics to object storage, freeing up all local cluster resources. Once you unmount a topic, it can no longer be consumed or produced to. It detaches from the active cluster while its data remains safely stored in the external object storage.
@@ -2243,7 +2243,7 @@ paths:
           description: An unexpected error response.
       summary: Unmount topics to object storage
       tags:
-        - Cloud Storage
+        - Cloud Storage (v1alpha2)
   /v1alpha2/kafka-connect/clusters:
     get:
       description: List connect clusters available for being consumed by the console's kafka-connect service.
@@ -2275,7 +2275,7 @@ paths:
           description: An unexpected error response.
       summary: List connect clusters
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}:
     get:
       description: Get information about an available Kafka Connect cluster.
@@ -2320,7 +2320,7 @@ paths:
           description: An unexpected error response.
       summary: Get connect cluster
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors:
     get:
       description: List connectors managed by the Kafka Connect service.
@@ -2370,7 +2370,7 @@ paths:
           description: An unexpected error response.
       summary: List connectors
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
     post:
       description: Create a connector with the specified configuration.
       operationId: KafkaConnectService_CreateConnector
@@ -2415,7 +2415,7 @@ paths:
           description: An unexpected error response.
       summary: Create connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}:
     delete:
       description: Delete a connector. This operation force stops all tasks and also deletes the connector configuration.
@@ -2459,7 +2459,7 @@ paths:
           description: An unexpected error response.
       summary: Delete connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
     get:
       description: Get information about a connector in a specific cluster.
       operationId: KafkaConnectService_GetConnector
@@ -2503,7 +2503,7 @@ paths:
           description: An unexpected error response.
       summary: Get connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/config:
     get:
       description: Get the configuration for the connector.
@@ -2542,7 +2542,7 @@ paths:
           description: An unexpected error response.
       summary: Get connector configuration
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
     put:
       description: Update the configuration for an existing connector with the specified name, or create a new connector using the given configuration. Returns information about the connector after the change has been made.
       operationId: KafkaConnectService_UpsertConnector
@@ -2604,7 +2604,7 @@ paths:
           description: An unexpected error response.
       summary: Upsert connector configuration
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/pause:
     put:
       description: Pause the connector and its tasks, which stops messages from processing until the connector is resumed. This call is asynchronous and may take some time to process.
@@ -2648,7 +2648,7 @@ paths:
           description: An unexpected error response.
       summary: Pause connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/restart:
     post:
       description: Triggers a connector restart. You must specify whether or not tasks are also restarted, and whether only failed connectors are restarted.
@@ -2699,7 +2699,7 @@ paths:
           description: An unexpected error response.
       summary: Restart connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/resume:
     put:
       description: Resume a paused connector and its tasks, and resumes message processing. This call is asynchronous and may take some time to process. If the connector was not paused, this operation does not do anything.
@@ -2743,7 +2743,7 @@ paths:
           description: An unexpected error response.
       summary: Resume connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/status:
     get:
       description: Gets the current status of the connector, including the state for each of its tasks, error information, etc.
@@ -2788,7 +2788,7 @@ paths:
           description: An unexpected error response.
       summary: Get connector status
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/stop:
     put:
       description: Stops a connector, but does not delete it. All tasks for the connector are shut down completely. This call is asynchronous and may take some time to process.
@@ -2832,7 +2832,7 @@ paths:
           description: An unexpected error response.
       summary: Stop connector
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics:
     get:
       description: Returns a list of connector topic names. If the connector is inactive, this call returns an empty list.
@@ -2877,7 +2877,7 @@ paths:
           description: An unexpected error response.
       summary: List connector topics
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/connectors/{name}/topics/reset:
     put:
       description: Resets the set of topic names that the connector is using.
@@ -2921,7 +2921,7 @@ paths:
           description: An unexpected error response.
       summary: Reset connector topics
       tags:
-        - Kafka Connect
+        - Kafka Connect (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/secrets:
     get:
       description: 'List Kafka Connect cluster secrets. Optional: filter based on secret name and labels.'
@@ -2992,7 +2992,7 @@ paths:
           description: An unexpected error response.
       summary: List Connect Cluster Secrets
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
     post:
       description: Create a Kafka Connect cluster secret.
       operationId: SecretService_CreateConnectSecret
@@ -3037,7 +3037,7 @@ paths:
           description: An unexpected error response.
       summary: Create Connect Cluster Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
   /v1alpha2/kafka-connect/clusters/{cluster_name}/secrets/{id}:
     delete:
       description: Delete a Kafka Connect cluster secret.
@@ -3087,7 +3087,7 @@ paths:
           description: An unexpected error response.
       summary: Delete Connect Cluster Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
     get:
       description: Get a specific Kafka Connect cluster secret.
       operationId: SecretService_GetConnectSecret
@@ -3137,7 +3137,7 @@ paths:
           description: An unexpected error response.
       summary: Get Connect Cluster Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
     put:
       description: Update a Kafka Connect cluster secret.
       operationId: SecretService_UpdateConnectSecret
@@ -3194,7 +3194,7 @@ paths:
           description: An unexpected error response.
       summary: Update Connect Cluster Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
   /v1alpha2/redpanda-connect/config-schema:
     get:
       description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
@@ -3226,7 +3226,7 @@ paths:
           description: An unexpected error response.
       summary: Retrieve the schema for Redpanda Connect pipeline configurations.
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/redpanda-connect/pipelines:
     get:
       description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
@@ -3277,7 +3277,7 @@ paths:
           description: An unexpected error response.
       summary: List Redpanda Connect pipelines
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
     post:
       description: Create a new Redpanda Connect pipeline.
       operationId: PipelineService_CreatePipeline
@@ -3315,7 +3315,7 @@ paths:
           description: An unexpected error response.
       summary: Create Redpanda Connect pipeline
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/redpanda-connect/pipelines-by-secrets:
     get:
       description: Get Redpanda Connect pipelines by secrets.
@@ -3347,7 +3347,7 @@ paths:
           description: An unexpected error response.
       summary: Get Redpanda Connect pipelines by secrets
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/redpanda-connect/pipelines-for-secret:
     get:
       description: Get Redpanda Connect pipelines for a given secret.
@@ -3386,7 +3386,7 @@ paths:
           description: An unexpected error response.
       summary: Get Redpanda Connect pipelines for secret
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/redpanda-connect/pipelines/{id}:
     delete:
       description: Delete a Redpanda Connect pipeline.
@@ -3430,7 +3430,7 @@ paths:
           description: An unexpected error response.
       summary: Delete a Redpanda Connect pipeline
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
     get:
       description: Get a specific Redpanda Connect pipeline.
       operationId: PipelineService_GetPipeline
@@ -3474,7 +3474,7 @@ paths:
           description: An unexpected error response.
       summary: Get Redpanda Connect pipeline
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
     put:
       description: Update the [configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) of a Redpanda Connect pipeline.
       operationId: PipelineService_UpdatePipeline
@@ -3519,7 +3519,7 @@ paths:
           description: An unexpected error response.
       summary: Update a Redpanda Connect pipeline
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/redpanda-connect/pipelines/{id}/start:
     put:
       description: Start a stopped Redpanda Connect pipeline.
@@ -3564,7 +3564,7 @@ paths:
           description: An unexpected error response.
       summary: Start a Redpanda Connect pipeline
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/redpanda-connect/pipelines/{id}/stop:
     put:
       description: Stop a running Redpanda Connect pipeline.
@@ -3609,7 +3609,7 @@ paths:
           description: An unexpected error response.
       summary: Stops a Redpanda Connect pipeline
       tags:
-        - Redpanda Connect Pipeline
+        - Redpanda Connect Pipeline (v1alpha2)
   /v1alpha2/secret-scopes:
     get:
       description: List supported secret scopes.
@@ -3641,7 +3641,7 @@ paths:
           description: An unexpected error response.
       summary: List Secret Scopes
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
   /v1alpha2/secrets:
     get:
       description: 'List secrets. Optional: filter based on secret name and labels.'
@@ -3706,7 +3706,7 @@ paths:
           description: An unexpected error response.
       summary: List Secrets
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
     post:
       description: Create a secret.
       operationId: SecretService_CreateSecret
@@ -3745,7 +3745,7 @@ paths:
           description: An unexpected error response.
       summary: Create Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
   /v1alpha2/secrets/{id}:
     delete:
       description: Delete a secret.
@@ -3789,7 +3789,7 @@ paths:
           description: An unexpected error response.
       summary: Delete Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
     get:
       description: Get a secret.
       operationId: SecretService_GetSecret
@@ -3833,7 +3833,7 @@ paths:
           description: An unexpected error response.
       summary: Get Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
     put:
       description: Update a secret.
       operationId: SecretService_UpdateSecret
@@ -3884,7 +3884,7 @@ paths:
           description: An unexpected error response.
       summary: Update Secret
       tags:
-        - Secrets
+        - Secrets (v1alpha2)
   /v1alpha2/topics:
     get:
       description: 'List topics, with partition count and replication factor. Optional: filter based on topic name.'
@@ -3933,7 +3933,7 @@ paths:
           description: An unexpected error response.
       summary: List Topics
       tags:
-        - Topics
+        - Topics (v1alpha2)
     post:
       description: Create a [topic](https://docs.redpanda.com/current/deploy/deployment-option/cloud/create-topic/).
       operationId: TopicService_CreateTopic
@@ -3980,7 +3980,7 @@ paths:
           description: An unexpected error response.
       summary: Create Topic
       tags:
-        - Topics
+        - Topics (v1alpha2)
   /v1alpha2/topics/{name}:
     delete:
       description: Delete the Kafka topic with the requested name.
@@ -4024,7 +4024,7 @@ paths:
           description: An unexpected error response.
       summary: Delete Topic
       tags:
-        - Topics
+        - Topics (v1alpha2)
   /v1alpha2/topics/{topic_name}/configurations:
     get:
       description: Get key-value configs for a topic.
@@ -4069,7 +4069,7 @@ paths:
           description: An unexpected error response.
       summary: Get Topic Configurations
       tags:
-        - Topics
+        - Topics (v1alpha2)
     patch:
       description: Update a subset of the topic configurations.
       operationId: TopicService_UpdateTopicConfigurations
@@ -4122,7 +4122,7 @@ paths:
           description: An unexpected error response.
       summary: Update Topic Configuration
       tags:
-        - Topics
+        - Topics (v1alpha2)
     put:
       description: Update the entire set of key-value configurations for a topic. Config entries that are not provided in the request are removed and will fall back to their default values.
       operationId: TopicService_SetTopicConfigurations
@@ -4175,7 +4175,7 @@ paths:
           description: An unexpected error response.
       summary: Set Topic Configurations
       tags:
-        - Topics
+        - Topics (v1alpha2)
   /v1alpha2/transforms:
     get:
       description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
@@ -4251,7 +4251,7 @@ paths:
           description: An unexpected error response.
       summary: List Transforms
       tags:
-        - WASM Transforms
+        - WASM Transforms (v1alpha2)
     put:
       description: Initiate deployment of a new Wasm transform. This endpoint uses multipart/form-data encoding. Following deployment, a brief period is required before the Wasm transform becomes operational. Monitor the partition statuses to check whether the transform is active. This usually takes around 3s, but no longer than 10s.
       operationId: TransformService_DeployTransform
@@ -4279,7 +4279,7 @@ paths:
           description: Created
       summary: Deploy Transform
       tags:
-        - WASM Transforms
+        - WASM Transforms (v1alpha2)
   /v1alpha2/transforms/{name}:
     delete:
       description: Delete a Wasm transform with the requested name.
@@ -4326,7 +4326,7 @@ paths:
           description: An unexpected error response.
       summary: Delete Transform
       tags:
-        - WASM Transforms
+        - WASM Transforms (v1alpha2)
     get:
       description: Get a specific Wasm transform.
       operationId: TransformService_GetTransform
@@ -4385,7 +4385,7 @@ paths:
           description: An unexpected error response.
       summary: Get Transform
       tags:
-        - WASM Transforms
+        - WASM Transforms (v1alpha2)
   /v1alpha2/users:
     get:
       description: 'List users. Optional: filter based on username.'
@@ -4446,7 +4446,7 @@ paths:
           description: An unexpected error response.
       summary: List Users
       tags:
-        - Redpanda Users
+        - Redpanda Users (v1alpha2)
     post:
       description: Create a new user.
       operationId: UserService_CreateUser
@@ -4512,7 +4512,7 @@ paths:
           description: An unexpected error response.
       summary: Create User
       tags:
-        - Redpanda Users
+        - Redpanda Users (v1alpha2)
   /v1alpha2/users/{name}:
     delete:
       description: Delete the specified user
@@ -4565,7 +4565,7 @@ paths:
           description: An unexpected error response.
       summary: Delete User
       tags:
-        - Redpanda Users
+        - Redpanda Users (v1alpha2)
   /v1alpha2/users/{user.name}:
     put:
       description: Update a user's credentials.
@@ -4645,7 +4645,7 @@ paths:
           description: An unexpected error response.
       summary: Update User
       tags:
-        - Redpanda Users
+        - Redpanda Users (v1alpha2)
 security:
   - auth0: []
 servers:
@@ -4659,19 +4659,19 @@ servers:
           					Example (Dedicated): "https://api-a4cb21.ck09mi9c4vs17hng9gig.fmc.prd.cloud.redpanda.com"<br>
           					Example (BYOC): "https://api-a4cb21.ck09mi9c4vs17hng9gig.byoc.prd.cloud.redpanda.com"
 tags:
-  - description: Manage Redpanda [access-control lists](https://docs.redpanda.com/current/manage/security/authorization/acl/) (ACLs).
-    name: Redpanda ACLs
+  - description: Manage Redpanda access control lists (ACLs). See [Redpanda Cloud Authorization](https://docs.redpanda.com/redpanda-cloud/security/authorization/cloud-authorization/) for more information.
+    name: Redpanda ACLs (v1alpha2)
   - description: 'Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)'
-    name: Cloud Storage
+    name: Cloud Storage (v1alpha2)
   - description: Manage Wasm transforms in Redpanda.
-    name: WASM Transforms
+    name: WASM Transforms (v1alpha2)
   - description: Manage [connectors](https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/) and interact with the Kafka Connect API.
-    name: Kafka Connect
+    name: Kafka Connect (v1alpha2)
   - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
-    name: Redpanda Connect Pipeline
+    name: Redpanda Connect Pipeline (v1alpha2)
   - description: Manage [secrets](https://docs.redpanda.com/redpanda-cloud/security/secrets) for Redpanda Cloud.
-    name: Secrets
+    name: Secrets (v1alpha2)
   - description: Manage Redpanda topics.
-    name: Topics
-  - description: Manage Redpanda users. To manage access, see the Cloud API [ACL endpoints](https://docs.redpanda.com/api/cloud-api/#get-/v1alpha2/acls).
-    name: Redpanda Users
+    name: Topics (v1alpha2)
+  - description: Manage Redpanda users. To manage access, see the Data Plane [ACL endpoints](https://docs.redpanda.com/api/cloud-dataplane-api/#get-/v1alpha2/acls).
+    name: Redpanda Users (v1alpha2)
