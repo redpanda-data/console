@@ -153,17 +153,11 @@ const ChatPageContent: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] w-full px-4">
-      {/* Header with clear button */}
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-medium text-slate-800">Chat History</h2>
-        <button
-          type="button"
-          onClick={handleClearChat}
-          className="text-xs text-red-600 hover:text-red-800 py-1 px-2 rounded border border-red-200 hover:border-red-400 transition-colors"
-          aria-label="Clear chat history"
-        >
+      {/* Clear button */}
+      <div className="flex justify-end mb-2">
+        <Button size="xs" colorScheme="red" variant="outline" onClick={handleClearChat} aria-label="Clear chat history">
           Clear History
-        </button>
+        </Button>
       </div>
 
       {/* Messages container with scroll */}
