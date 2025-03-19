@@ -166,6 +166,6 @@ export const useGetPipelinesForSecretQuery = ({ secretId }: { secretId: Secret['
   });
 
   return useQuery(getPipelinesForSecret, getPipelinesForSecretRequest, {
-    enabled: secretId !== undefined,
+    enabled: secretId !== '',
   });
 };
