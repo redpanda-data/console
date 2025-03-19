@@ -14,7 +14,7 @@ import { Link as ChLink } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
-import { PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -163,7 +163,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
-        }),
+        })
       )
       .then(async () => {
         toast({
