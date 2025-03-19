@@ -11,6 +11,7 @@
 
 import {
   BeakerIcon,
+  ChatIcon,
   CogIcon,
   CollectionIcon,
   CubeTransparentIcon,
@@ -70,6 +71,7 @@ import { TopicProducePage } from './pages/topics/Topic.Produce';
 import TransformDetails from './pages/transforms/Transform.Details';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import ChatPage from './pages/chat/Chat';
 
 //
 //	Route Types
@@ -280,6 +282,8 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
   MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
   MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
+
+  MakeRoute<{}>('/chat', ChatPage, 'Chat', ChatIcon),
 
   MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
   MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),
