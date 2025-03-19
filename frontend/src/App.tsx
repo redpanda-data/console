@@ -83,6 +83,7 @@ const App = () => {
                 )}
               </RequireAuth>
             </ErrorBoundary>
+            <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production'} />
           </QueryClientProvider>
         </TransportProvider>
       </ChakraProvider>

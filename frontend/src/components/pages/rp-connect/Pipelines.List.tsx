@@ -28,7 +28,6 @@ import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 
