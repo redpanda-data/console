@@ -164,7 +164,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
-        }),
+        })
       )
       .then(async () => {
         toast({
