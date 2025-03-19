@@ -555,7 +555,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ConnectCluster"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetConnectClusterResponse"}
           }
         }
       }
@@ -605,7 +605,7 @@ service KafkaConnectService {
         value: {
           description: "Created"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateConnectorResponse"}
           }
         }
       }
@@ -644,7 +644,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetConnectorResponse"}
           }
         }
       }
@@ -666,7 +666,7 @@ service KafkaConnectService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ConnectorStatus"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetConnectorStatusResponse"}
           }
         }
       }
@@ -757,7 +757,7 @@ service KafkaConnectService {
         value: {
           description: "Updated"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ConnectorSpec"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.UpsertConnectorResponse"}
           }
         }
       }
@@ -779,6 +779,15 @@ service KafkaConnectService {
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get connector configuration"
       description: "Get the configuration for the connector."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetConnectorConfigResponse"}
+          }
+        }
+      }
     };
   }
 

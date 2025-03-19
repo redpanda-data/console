@@ -135,7 +135,7 @@ service PipelineService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreatePipelineResponse"}
           }
         }
       }
@@ -153,7 +153,7 @@ service PipelineService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetPipelineResponse"}
           }
         }
       }
@@ -202,7 +202,7 @@ service PipelineService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.UpdatePipelineResponse"}
           }
         }
       }
@@ -245,7 +245,7 @@ service PipelineService {
         value: {
           description: "Stopped"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.StopPipelineResponse"}
           }
         }
       }
@@ -272,7 +272,7 @@ service PipelineService {
         value: {
           description: "Started"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.Pipeline"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.StartPipelineResponse"}
           }
         }
       }

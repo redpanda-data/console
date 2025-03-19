@@ -674,7 +674,7 @@ export class PipelineUpdate extends Message<PipelineUpdate> {
   resources?: Pipeline_Resources;
 
   /**
-   * Optional: A map of tags to add or update.
+   * A map of tags to add, update or delete.
    * If a tag's value is empty, the server interprets that as a deletion.
    *
    * @generated from field: map<string, string> tags = 7;
