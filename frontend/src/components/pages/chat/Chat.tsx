@@ -13,6 +13,7 @@ import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { PageComponent, type PageInitHelper } from '../Page';
 import PageContent from '../../misc/PageContent';
 import { chatDb, type ChatMessage } from '../../../database/chatDb';
+import { Button } from '@redpanda-data/ui';
 
 const ChatPageContent: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
@@ -208,14 +209,22 @@ const ChatPageContent: React.FC = () => {
               autoCorrect="off"
               autoCapitalize="off"
             />
-            <button
-              className="absolute bottom-3 right-3 bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white rounded-md px-4 py-2 text-sm transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            <Button
+              variant="ghost"
+              position="absolute"
+              bottom="3"
+              right="3"
+              colorScheme="blue"
+              size="sm"
               type="submit"
               aria-label="Send message"
-              disabled={!inputValue.trim()}
+              isDisabled={!inputValue.trim()}
+              height="auto"
+              py="2"
+              px="4"
             >
               Send
-            </button>
+            </Button>
           </div>
         </form>
         <p className="text-xs text-slate-500 mt-2">Press Enter to send, Shift+Enter for a new line</p>
