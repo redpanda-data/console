@@ -14,11 +14,32 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import PageContent from '../../misc/PageContent';
 import { chatDb, type ChatMessage } from '../../../database/chatDb';
 import { Button } from '@redpanda-data/ui';
+import fetchWithTimeout from '../../../utils/fetchWithTimeout';
+
+// API endpoint for chat, this is a proxy to the Redpanda Cloud API for now
+const CHAT_API_ENDPOINT = 'http://localhost:8010/proxy/post/chat';
+const API_TIMEOUT = 15000; // 15 seconds
+
+interface ChatApiResponse {
+  message: string;
+  success: boolean;
+  error?: string;
+}
+
+interface ChatApiRequest {
+  message: string;
+  history: {
+    content: string;
+    sender: 'user' | 'system';
+    timestamp: string;
+  }[];
+}
 
 const ChatPageContent: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(false);
@@ -76,10 +97,50 @@ const ChatPageContent: React.FC = () => {
     setInputValue(e.target.value);
   };
 
+  const sendMessageToApi = async (message: string, chatHistory: ChatMessage[]): Promise<ChatApiResponse> => {
+    try {
+      // Limit chat history to last 30 messages
+      const recentHistory = chatHistory.slice(-30);
+
+      // Format chat history for the API request
+      const formattedHistory = recentHistory.map((msg) => ({
+        content: msg.content,
+        sender: msg.sender,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+
+      const payload: ChatApiRequest = {
+        message,
+        history: formattedHistory,
+      };
+
+      const response = await fetchWithTimeout(CHAT_API_ENDPOINT, API_TIMEOUT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+
+      return (await response.json()) as ChatApiResponse;
+    } catch (error) {
+      console.error('Error sending message to API:', error);
+      return {
+        success: false,
+        message: 'Failed to send message to server. Please try again later.',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isSending) return;
 
     // Create user message
     const userMessage: ChatMessage = {
@@ -90,32 +151,55 @@ const ChatPageContent: React.FC = () => {
     };
 
     try {
+      setIsSending(true);
+
       // Add to database
       await chatDb.addMessage(userMessage);
 
-      // Update state
+      // Update state with the new user message
+      const updatedMessages = [...messages, userMessage];
       shouldScrollRef.current = true;
-      setMessages((prevMessages) => [...prevMessages, userMessage]);
+      setMessages(updatedMessages);
       setInputValue('');
 
-      // Simulate system response after a short delay
-      setTimeout(async () => {
-        const systemMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          content: `Echo: ${inputValue}`,
-          sender: 'system',
-          timestamp: new Date(),
-        };
+      // Send message to API along with chat history
+      const apiResponse = await sendMessageToApi(userMessage.content, updatedMessages);
 
-        // Add to database
-        await chatDb.addMessage(systemMessage);
+      // Create system message from API response
+      const systemMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: apiResponse.success
+          ? apiResponse.message
+          : 'Sorry, there was an error processing your request. Please try again later.',
+        sender: 'system',
+        timestamp: new Date(),
+      };
 
-        // Update state
-        shouldScrollRef.current = true;
-        setMessages((prevMessages) => [...prevMessages, systemMessage]);
-      }, 1000);
+      // Add to database
+      await chatDb.addMessage(systemMessage);
+
+      // Update state
+      shouldScrollRef.current = true;
+      setMessages((prevMessages) => [...prevMessages, systemMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
+
+      // Create error message
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: 'Sorry, there was an error sending your message. Please try again later.',
+        sender: 'system',
+        timestamp: new Date(),
+      };
+
+      // Add to database
+      await chatDb.addMessage(errorMessage);
+
+      // Update state
+      shouldScrollRef.current = true;
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -202,6 +286,7 @@ const ChatPageContent: React.FC = () => {
               spellCheck="false"
               autoCorrect="off"
               autoCapitalize="off"
+              disabled={isSending}
             />
             <Button
               variant="ghost"
@@ -212,10 +297,12 @@ const ChatPageContent: React.FC = () => {
               size="sm"
               type="submit"
               aria-label="Send message"
-              isDisabled={!inputValue.trim()}
+              isDisabled={!inputValue.trim() || isSending}
               height="auto"
               py="2"
               px="4"
+              isLoading={isSending}
+              loadingText="Sending"
             >
               Send
             </Button>
