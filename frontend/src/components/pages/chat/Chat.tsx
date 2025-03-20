@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PageComponent, type PageInitHelper } from '../Page';
 import PageContent from '../../misc/PageContent';
 import { chatDb, type ChatMessage } from '../../../database/chatDb';
 import { Button } from '@redpanda-data/ui';
 import fetchWithTimeout from '../../../utils/fetchWithTimeout';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 // API endpoint for chat, this is a proxy to the Redpanda Cloud API for now
 const CHAT_API_ENDPOINT = 'http://localhost:8010/proxy/post/chat';
@@ -37,61 +38,27 @@ interface ChatApiRequest {
 
 const ChatPageContent: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const shouldScrollRef = useRef(false);
 
-  // Load messages from database on component mount
+  // Use live query to listen for message changes in the database
+  const messages =
+    useLiveQuery(async () => {
+      const storedMessages = await chatDb.getAllMessages();
+      setShouldScroll(true);
+      return storedMessages;
+    }, []) || [];
+
+  // Update scroll position when shouldScroll changes
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const storedMessages = await chatDb.getAllMessages();
-
-        if (storedMessages.length === 0) {
-          // Add default welcome messages if no messages exist
-          const defaultMessages: ChatMessage[] = [
-            {
-              id: '1',
-              content: 'Welcome to the Chat! How can I help you today?',
-              sender: 'system',
-              timestamp: new Date(),
-            },
-            {
-              id: '2',
-              content: 'Hello! I have some questions about Redpanda.',
-              sender: 'user',
-              timestamp: new Date(Date.now() - 60000),
-            },
-            {
-              id: '3',
-              content: "Sure, I'd be happy to answer any questions about Redpanda. What would you like to know?",
-              sender: 'system',
-              timestamp: new Date(Date.now() - 30000),
-            },
-          ];
-
-          // Store default messages in the database
-          for (const message of defaultMessages) {
-            await chatDb.addMessage(message);
-          }
-
-          setMessages(defaultMessages);
-        } else {
-          setMessages(storedMessages);
-        }
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      } finally {
-        setIsLoading(false);
-        shouldScrollRef.current = true;
-      }
-    };
-
-    loadMessages();
-  }, []);
+    if (shouldScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      setShouldScroll(false);
+    }
+  }, [shouldScroll]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
@@ -155,15 +122,17 @@ const ChatPageContent: React.FC = () => {
 
       // Add to database
       await chatDb.addMessage(userMessage);
-
-      // Update state with the new user message
-      const updatedMessages = [...messages, userMessage];
-      shouldScrollRef.current = true;
-      setMessages(updatedMessages);
       setInputValue('');
+      setShouldScroll(true);
+
+      // Show typing indicator while waiting for response
+      setIsTyping(true);
 
       // Send message to API along with chat history
-      const apiResponse = await sendMessageToApi(userMessage.content, updatedMessages);
+      const apiResponse = await sendMessageToApi(userMessage.content, [...messages, userMessage]);
+
+      // Hide typing indicator
+      setIsTyping(false);
 
       // Create system message from API response
       const systemMessage: ChatMessage = {
@@ -177,12 +146,12 @@ const ChatPageContent: React.FC = () => {
 
       // Add to database
       await chatDb.addMessage(systemMessage);
-
-      // Update state
-      shouldScrollRef.current = true;
-      setMessages((prevMessages) => [...prevMessages, systemMessage]);
+      setShouldScroll(true);
     } catch (error) {
       console.error('Error sending message:', error);
+
+      // Hide typing indicator
+      setIsTyping(false);
 
       // Create error message
       const errorMessage: ChatMessage = {
@@ -194,10 +163,7 @@ const ChatPageContent: React.FC = () => {
 
       // Add to database
       await chatDb.addMessage(errorMessage);
-
-      // Update state
-      shouldScrollRef.current = true;
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setShouldScroll(true);
     } finally {
       setIsSending(false);
     }
@@ -213,21 +179,12 @@ const ChatPageContent: React.FC = () => {
   const handleClearChat = async () => {
     try {
       await chatDb.clearAllMessages();
-      setMessages([]);
     } catch (error) {
       console.error('Error clearing messages:', error);
     }
   };
 
-  // Auto-scroll to bottom when messages change
-  useLayoutEffect(() => {
-    if (shouldScrollRef.current && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      shouldScrollRef.current = false;
-    }
-  });
-
-  if (isLoading) {
+  if (!messages) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
         <div className="animate-pulse text-slate-500">Loading messages...</div>
@@ -251,7 +208,7 @@ const ChatPageContent: React.FC = () => {
         role="log"
       >
         <div className="flex flex-col space-y-4">
-          {messages.map((message) => (
+          {messages.map((message: ChatMessage) => (
             <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`p-3 rounded-lg max-w-[80%] ${
@@ -267,6 +224,21 @@ const ChatPageContent: React.FC = () => {
               </div>
             </div>
           ))}
+
+          {/* Typing indicator */}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="p-3 rounded-lg bg-white text-slate-900 border border-slate-200 max-w-[80%]">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-75" />
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-150" />
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-300" />
+                  <span className="text-xs text-slate-500 ml-2">System is typing...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
