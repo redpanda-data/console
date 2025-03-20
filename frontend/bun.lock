@@ -55,6 +55,7 @@
         "@rsbuild/plugin-react": "1.1.1",
         "@rsbuild/plugin-sass": "1.2.2",
         "@rsbuild/plugin-svgr": "1.0.7",
+        "@rsbuild/plugin-yaml": "^1.0.2",
         "@rsdoctor/rspack-plugin": "^1.0.0",
         "@rspack/cli": "1.2.8",
         "@tanstack/react-query-devtools": "^5.69.0",
@@ -581,6 +582,8 @@
     "@rsbuild/plugin-sass": ["@rsbuild/plugin-sass@1.2.2", "", { "dependencies": { "deepmerge": "^4.3.1", "loader-utils": "^2.0.4", "postcss": "^8.5.2", "reduce-configs": "^1.1.0", "sass-embedded": "^1.85.0" }, "peerDependencies": { "@rsbuild/core": "1.x" } }, "sha512-vznLfxxPXDyFSPYW7JWTYf/6SJMx5DEgKParNd5lXo7FRa1IKsQOrJdf6F3Rm+T7jKoAvnCVXjM2IkxBW2yJSA=="],
 
     "@rsbuild/plugin-svgr": ["@rsbuild/plugin-svgr@1.0.7", "", { "dependencies": { "@rsbuild/plugin-react": "1.1.1", "@svgr/core": "8.1.0", "@svgr/plugin-jsx": "8.1.0", "@svgr/plugin-svgo": "8.1.0", "deepmerge": "^4.3.1", "loader-utils": "^2.0.4" }, "peerDependencies": { "@rsbuild/core": "1.x" } }, "sha512-+hCaG78P0nt8nrMvdWJ720c0WNj9ogNBL7ib8+UfyYezqliMRR++Zx6QIPXYBfTP+pCa/TKPph/ZQvAdPJq+Ig=="],
+
+    "@rsbuild/plugin-yaml": ["@rsbuild/plugin-yaml@1.0.2", "", { "peerDependencies": { "@rsbuild/core": "1.x || ^1.0.1-beta.0" }, "optionalPeers": ["@rsbuild/core"] }, "sha512-M7POrqJAYS8IoY4trdLe9DUhDC01MvA0ge4ZKHoVQzlNLWVj2QHHXdz55/bfpkNYhoNGdCntoDmE/dn1zIpcAw=="],
 
     "@rsdoctor/client": ["@rsdoctor/client@1.0.0", "", {}, "sha512-wL9pGgTNOf+7hv0noyneWhHeS+Hqf8Ep7la/MTD23pLDEdXMIeTuaf6v80aJFf5hcRu6t2olfq93DvD1Se8Adw=="],
 
