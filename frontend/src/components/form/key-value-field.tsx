@@ -1,4 +1,4 @@
-import { Button, Flex, FormControl, FormHelperText, FormLabel, Input } from '@redpanda-data/ui';
+import { Button, Flex, FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
 import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
@@ -7,12 +7,12 @@ interface KeyValuePair {
   value: string;
 }
 
-interface KeyValueFieldProps {
+interface KeyValueFieldProps extends InputProps {
   label: string;
   helperText?: string;
 }
 
-export const KeyValueField = ({ label, helperText }: KeyValueFieldProps) => {
+export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps) => {
   const field = useFieldContext<Array<KeyValuePair>>();
 
   // Add a new label
@@ -26,21 +26,29 @@ export const KeyValueField = ({ label, helperText }: KeyValueFieldProps) => {
       {helperText && <FormHelperText mb={2}>{helperText}</FormHelperText>}
 
       {field.state.value.map((_, index) => (
-        <KeyValuePairField key={index} index={index} />
+        <KeyValuePairField key={index} index={index} {...rest} />
       ))}
 
-      <Button mt={2} size="sm" variant="outline" onClick={addLabel} leftIcon={<span>+</span>}>
+      <Button
+        mt={2}
+        size="sm"
+        variant="outline"
+        onClick={addLabel}
+        data-testid="add-label-button"
+        leftIcon={<span>+</span>}
+      >
         Add label
       </Button>
     </FormControl>
   );
 };
 
-interface KeyValuePairFieldProps {
+interface KeyValuePairFieldProps extends InputProps {
   index: number;
+  'data-testid'?: string;
 }
 
-const KeyValuePairField = ({ index }: KeyValuePairFieldProps) => {
+const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
   const parentField = useFieldContext<Array<KeyValuePair>>();
   const currentLabel = parentField.state.value[index];
 
@@ -68,11 +76,23 @@ const KeyValuePairField = ({ index }: KeyValuePairFieldProps) => {
   return (
     <Flex gap={2} mb={2}>
       <FormControl isInvalid={!!isKeyError}>
-        <Input placeholder="Key" value={currentLabel.key} onChange={(e) => handleKeyChange(e.target.value)} />
+        <Input
+          placeholder="Key"
+          value={currentLabel.key}
+          onChange={(e) => handleKeyChange(e.target.value)}
+          {...rest}
+          data-testid={rest['data-testid'] ? `${rest['data-testid']}-key-${index}` : undefined}
+        />
         <ErrorInfoField field={parentField} index={`${currentLabel.key}-key`} />
       </FormControl>
       <FormControl isInvalid={!!isValueError}>
-        <Input placeholder="Value" value={currentLabel.value} onChange={(e) => handleValueChange(e.target.value)} />
+        <Input
+          placeholder="Value"
+          value={currentLabel.value}
+          onChange={(e) => handleValueChange(e.target.value)}
+          {...rest}
+          data-testid={rest['data-testid'] ? `${rest['data-testid']}-value-${index}` : undefined}
+        />
         <ErrorInfoField field={parentField} index={`${currentLabel.value}-value`} />
       </FormControl>
     </Flex>

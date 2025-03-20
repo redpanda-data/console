@@ -17,6 +17,7 @@ export const SecretInUseAlert = ({ pipelines }: { pipelines: Pipeline[] }) => {
       borderColor="red.200"
       bg="white"
       p={4}
+      data-testid="secret-in-use-alert"
     >
       <Flex gap="12px">
         <Icon as={AiOutlineExclamationCircle} boxSize={4} color="red.600" />

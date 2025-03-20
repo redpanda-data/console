@@ -96,13 +96,20 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
                       helperText="ID must use uppercase letters, numbers, and underscores only."
                       placeholder="SECRET_ID"
                       transform={(value: string) => value.toUpperCase()}
+                      data-testid="secret-id-field"
                     />
                   )}
                 </form.AppField>
-                <form.AppField name="value">{(field) => <field.PasswordField label="Value" />}</form.AppField>
+                <form.AppField name="value">
+                  {(field) => <field.PasswordField label="Value" data-testid="secret-value-field" />}
+                </form.AppField>
                 <form.AppField name="labels" mode="array">
                   {(field) => (
-                    <field.KeyValueField label="Labels" helperText="Labels can help you to organize your secrets." />
+                    <field.KeyValueField
+                      label="Labels"
+                      helperText="Labels can help you to organize your secrets."
+                      data-testid="secret-labels-field"
+                    />
                   )}
                 </form.AppField>
               </Stack>

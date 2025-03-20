@@ -30,16 +30,17 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
   const { mutateAsync: updateSecret, isPending: isUpdateSecretPending } = useUpdateSecretMutationWithToast();
 
   // Get existing secret details (for labels)
-  const { data: secretsData } = useListSecretsQuery();
-  const secret = secretsData?.secrets?.find((secret) => secret?.id === secretId);
+  const { data: secretList } = useListSecretsQuery();
+
+  const matchingSecret = secretList?.secrets?.find((secret) => secret?.id === secretId);
 
   // Get pipelines using this secret
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
   // Get existing labels from the secret
-  const existingLabels = secret?.labels
-    ? Object.entries(secret.labels)
+  const existingLabels = matchingSecret?.labels
+    ? Object.entries(matchingSecret.labels)
         .filter(([key, value]) => !(key === 'owner' && value === 'console'))
         .map(([key, value]) => ({ key, value }))
     : [{ key: '', value: '' }];
@@ -88,13 +89,21 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
               <Stack spacing={4}>
                 <SecretInUseAlert pipelines={matchingPipelines} />
 
-                <form.AppField name="id">{(field) => <field.TextField label="ID" isDisabled={true} />}</form.AppField>
+                <form.AppField name="id">
+                  {(field) => <field.TextField label="ID" isDisabled data-testid="secret-id-field" />}
+                </form.AppField>
 
-                <form.AppField name="value">{(field) => <field.PasswordField label="Value" />}</form.AppField>
+                <form.AppField name="value">
+                  {(field) => <field.PasswordField label="Value" data-testid="secret-value-field" />}
+                </form.AppField>
 
                 <form.AppField name="labels" mode="array">
                   {(field) => (
-                    <field.KeyValueField label="Labels" helperText="Labels can help you to organize your secrets." />
+                    <field.KeyValueField
+                      label="Labels"
+                      helperText="Labels can help you to organize your secrets."
+                      data-testid="secret-labels-field"
+                    />
                   )}
                 </form.AppField>
               </Stack>
