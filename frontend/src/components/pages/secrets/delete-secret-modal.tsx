@@ -14,6 +14,7 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
+import { useEffect } from 'react';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useDeleteSecretMutationWithToast } from 'react-query/api/secret';
 import { deleteSecretSchema } from './form/delete-secret-schema';
@@ -33,7 +34,6 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
 
   const formOpts = formOptions({
     defaultValues: {
-      id: secretId,
       confirmationText: '',
     },
     validators: {
@@ -43,11 +43,19 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
       await deleteSecret({
         request: { id: secretId },
       });
+      form.reset();
       onClose();
     },
   });
 
   const form = useAppForm({ ...formOpts });
+
+  // Reset form on modal open/close
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset();
+    }
+  }, [isOpen, form]);
 
   return (
     <Modal size="lg" isOpen={isOpen} onClose={onClose} isCentered>
@@ -64,14 +72,9 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
                 </Text>
                 <SecretInUseAlert pipelines={matchingPipelines} />
 
-                <form.AppField name="id">
-                  {(field) => <field.TextField label="Secret ID" isDisabled={true} />}
-                </form.AppField>
-
                 <form.AppField name="confirmationText">
                   {(field) => (
                     <field.TextField
-                      label="Confirmation"
                       placeholder={`Type "${secretId}" to confirm`}
                       transform={(value) => value.toUpperCase()}
                       data-testid="txt-confirmation-delete"

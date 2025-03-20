@@ -12,6 +12,7 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
+import { useEffect } from 'react';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutationWithToast } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -71,11 +72,19 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
       });
 
       await updateSecret({ request });
+      form.reset();
       onClose();
     },
   });
 
   const form = useAppForm({ ...formOpts });
+
+  // Reset form on modal open/close
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset();
+    }
+  }, [isOpen, form]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
@@ -110,7 +119,12 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
             </ModalBody>
             <ModalFooter>
               <ButtonGroup isDisabled={isUpdateSecretPending}>
-                <form.SubscribeButton label="Update" variant="brand" data-testid="update-secret-button" />
+                <form.SubscribeButton
+                  label="Update"
+                  variant="brand"
+                  data-testid="update-secret-button"
+                  loadingText="Updating"
+                />
                 <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>
                   Cancel
                 </Button>

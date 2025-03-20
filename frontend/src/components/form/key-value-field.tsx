@@ -83,7 +83,7 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
           {...rest}
           data-testid={rest['data-testid'] ? `${rest['data-testid']}-key-${index}` : undefined}
         />
-        <ErrorInfoField field={parentField} index={`${currentLabel.key}-key`} />
+        <ErrorInfoField field={parentField} />
       </FormControl>
       <FormControl isInvalid={!!isValueError}>
         <Input
@@ -93,7 +93,7 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
           {...rest}
           data-testid={rest['data-testid'] ? `${rest['data-testid']}-value-${index}` : undefined}
         />
-        <ErrorInfoField field={parentField} index={`${currentLabel.value}-value`} />
+        <ErrorInfoField field={parentField} />
       </FormControl>
     </Flex>
   );

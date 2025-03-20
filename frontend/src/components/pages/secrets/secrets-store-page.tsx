@@ -5,28 +5,27 @@ import {
   Button,
   ButtonGroup,
   DataTable,
+  Empty,
   Flex,
   HStack,
-  Heading,
   Icon,
   SearchField,
   Spinner,
   Stack,
   Text,
-  VStack,
   useDisclosure,
 } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
 import { ListSecretsFilter, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { ListSecretsRequest as ListSecretsRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { uiState } from 'state/uiState';
 import { CreateSecretModal } from './create-secret-modal';
 import { DeleteSecretModal } from './delete-secret-modal';
+import { NoDataPlaceholder } from './no-data-placeholder';
 import { UpdateSecretModal } from './update-secret-modal';
-
-import { ListSecretsRequest as ListSecretsRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
@@ -110,20 +109,8 @@ export const SecretsStorePage = () => {
     updatePageTitle();
   }, []);
 
-  if (isSecretListLoading) {
-    return (
-      <Flex justifyContent="center" padding={8}>
-        <Spinner size="lg" />
-      </Flex>
-    );
-  }
-
   if (isSecretListError) {
-    return (
-      <Box p={4} textAlign="center">
-        <Text color="red.500">Error loading secrets. Please try again later.</Text>
-      </Box>
-    );
+    return <Empty />;
   }
 
   return (
@@ -148,11 +135,12 @@ export const SecretsStorePage = () => {
           placeholderText="Filter secrets..."
         />
 
-        {secretList?.secrets?.length === 0 ? (
-          <VStack spacing={4} py={8} textAlign="center">
-            <Heading size="md">No secrets found</Heading>
-            <Text>You don't have any secrets yet. Create your first secret to get started.</Text>
-          </VStack>
+        {isSecretListLoading ? (
+          <Flex justifyContent="center" padding={8}>
+            <Spinner size="lg" />
+          </Flex>
+        ) : secretList?.secrets?.length === 0 ? (
+          <Empty />
         ) : (
           <DataTable
             data={secretList?.secrets ?? []}
@@ -172,8 +160,11 @@ export const SecretsStorePage = () => {
                 id: 'labels',
                 cell: ({ row: { original } }) => {
                   const labels = original?.labels;
-                  if (!labels || Object.keys(labels).length === 0) {
-                    return <Text color="gray.500">No labels</Text>;
+                  if (
+                    !labels ||
+                    Object.keys(labels).filter((key) => !(key === 'owner' && labels[key] === 'console')).length === 0
+                  ) {
+                    return <Text>No labels</Text>;
                   }
                   return (
                     <Flex wrap="wrap" gap={2}>

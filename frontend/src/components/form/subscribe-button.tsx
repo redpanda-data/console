@@ -2,7 +2,7 @@ import { Button, type ButtonProps } from '@redpanda-data/ui';
 import { useFormContext } from './form-hook-contexts';
 
 export interface SubscribeButtonProps extends Omit<ButtonProps, 'onClick' | 'isLoading' | 'isDisabled'> {
-  label: string;
+  label?: string;
   loadingText?: string;
 }
 
@@ -28,7 +28,7 @@ export const SubscribeButton = ({
           }}
           {...rest}
         >
-          {label}
+          {label ?? 'Submit'}
         </Button>
       )}
     </form.Subscribe>

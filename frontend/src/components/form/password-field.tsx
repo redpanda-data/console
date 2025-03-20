@@ -1,19 +1,20 @@
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import {
   Button,
   FormControl,
   FormLabel,
+  Icon,
   Input,
   InputGroup,
   type InputProps,
   InputRightElement,
   useBoolean,
 } from '@redpanda-data/ui';
+import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
 import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
 interface PasswordFieldProps extends InputProps {
-  label: string;
+  label?: string;
 }
 
 export const PasswordField = ({ label, ...rest }: PasswordFieldProps) => {
@@ -22,7 +23,7 @@ export const PasswordField = ({ label, ...rest }: PasswordFieldProps) => {
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      <FormLabel fontWeight="medium">{label}</FormLabel>
+      {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
       <InputGroup>
         <Input
           type={showValue ? 'text' : 'password'}
@@ -33,7 +34,7 @@ export const PasswordField = ({ label, ...rest }: PasswordFieldProps) => {
         />
         <InputRightElement>
           <Button variant="ghost" onClick={setShowValue.toggle}>
-            {showValue ? <ViewOffIcon /> : <ViewIcon />}
+            {showValue ? <Icon as={IoMdEyeOff} /> : <Icon as={IoMdEye} />}
           </Button>
         </InputRightElement>
       </InputGroup>
