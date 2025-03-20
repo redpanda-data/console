@@ -1,7 +1,6 @@
 import { proto3 } from '@bufbuild/protobuf';
 import {
   Badge,
-  Box,
   Button,
   ButtonGroup,
   DataTable,
@@ -24,7 +23,6 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { uiState } from 'state/uiState';
 import { CreateSecretModal } from './create-secret-modal';
 import { DeleteSecretModal } from './delete-secret-modal';
-import { NoDataPlaceholder } from './no-data-placeholder';
 import { UpdateSecretModal } from './update-secret-modal';
 
 // Hack for MobX to ensure we don't need to use observables
