@@ -12,7 +12,7 @@ interface ErrorInfoFieldProps {
  * The form field needs the `isInvalid` prop set to true and it had to be touched by the user.
  * @see https://v2.chakra-ui.com/docs/components/form-control#error-message
  */
-export const ErrorInfoField = ({ field, index }: ErrorInfoFieldProps) => {
+export const ErrorInfoField = ({ field }: ErrorInfoFieldProps) => {
   if (field.state.meta.errors?.length === 0) {
     return null;
   }
@@ -20,8 +20,8 @@ export const ErrorInfoField = ({ field, index }: ErrorInfoFieldProps) => {
   return (
     <FormErrorMessage>
       <UnorderedList>
-        {field.state.meta.errors.map((error) => (
-          <ListItem key={index ?? error.message}>
+        {field.state.meta.errors.map((error, index) => (
+          <ListItem key={`${field.name}-${index}`}>
             <Text>{error.message}</Text>
           </ListItem>
         ))}
