@@ -2070,7 +2070,7 @@
   resolved "https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.27.4.tgz"
   integrity sha512-3j4jx1TppORdTAoBJRd+/wJRGCPC0ETWkXOecJ6PPZLj6SptXkrXcNqdj0oclbKML6FkQltdz7bBA3rUSirZug==
 
-"@rsbuild/core@1.2.19", "@rsbuild/core@1.x":
+"@rsbuild/core@1.2.19", "@rsbuild/core@1.x", "@rsbuild/core@1.x || ^1.0.1-beta.0":
   version "1.2.19"
   resolved "https://registry.npmjs.org/@rsbuild/core/-/core-1.2.19.tgz"
   integrity sha512-k76is4HygmbYYMLG2V1d1yQeurHHC+ZEtGs/nwE11y6HmwSndoFhmjOeQbQ2Ul0b2B8HErksqSMtlCxd37YPPQ==
@@ -2122,6 +2122,11 @@
     "@svgr/plugin-svgo" "8.1.0"
     deepmerge "^4.3.1"
     loader-utils "^2.0.4"
+
+"@rsbuild/plugin-yaml@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/@rsbuild/plugin-yaml/-/plugin-yaml-1.0.2.tgz"
+  integrity sha512-M7POrqJAYS8IoY4trdLe9DUhDC01MvA0ge4ZKHoVQzlNLWVj2QHHXdz55/bfpkNYhoNGdCntoDmE/dn1zIpcAw==
 
 "@rsdoctor/client@1.0.0":
   version "1.0.0"
