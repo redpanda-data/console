@@ -17,7 +17,7 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
-import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { ListSecretsFilter, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -25,6 +25,8 @@ import { uiState } from 'state/uiState';
 import { CreateSecretModal } from './create-secret-modal';
 import { DeleteSecretModal } from './delete-secret-modal';
 import { UpdateSecretModal } from './update-secret-modal';
+
+import { ListSecretsRequest as ListSecretsRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
@@ -60,7 +62,7 @@ export const getScopeDisplayValue = (scope: Scope) => {
  */
 export const SecretsStorePage = () => {
   // State for search query and edit modal
-  const [searchQuery, setSearchQuery] = useState('');
+  const [nameContains, setNameContains] = useState('');
 
   const [updateSecretId, setUpdateSecretId] = useState<string>('');
   const [deleteSecretId, setDeleteSecretId] = useState<string>('');
@@ -80,20 +82,17 @@ export const SecretsStorePage = () => {
     onClose: onDeleteSecretModalClose,
   } = useDisclosure();
 
-  // Fetch secrets data
-  const { data: secretsData, isLoading, isError } = useListSecretsQuery();
-
-  // Filter secrets based on search query
-  const filteredSecrets =
-    secretsData?.secrets?.filter((secret) => {
-      if (!searchQuery) return true;
-      try {
-        const searchRegExp = new RegExp(searchQuery, 'i');
-        return secret?.id.match(searchRegExp);
-      } catch {
-        return false;
-      }
-    }) || [];
+  const {
+    data: secretList,
+    isLoading: isSecretListLoading,
+    isError: isSecretListError,
+  } = useListSecretsQuery(
+    new ListSecretsRequestDataPlane({
+      filter: new ListSecretsFilter({
+        nameContains,
+      }),
+    }),
+  );
 
   // Handle opening edit modal for a specific secret
   const handleUpdateSecretModal = (secretId: string) => {
@@ -111,7 +110,7 @@ export const SecretsStorePage = () => {
     updatePageTitle();
   }, []);
 
-  if (isLoading) {
+  if (isSecretListLoading) {
     return (
       <Flex justifyContent="center" padding={8}>
         <Spinner size="lg" />
@@ -119,7 +118,7 @@ export const SecretsStorePage = () => {
     );
   }
 
-  if (isError) {
+  if (isSecretListError) {
     return (
       <Box p={4} textAlign="center">
         <Text color="red.500">Error loading secrets. Please try again later.</Text>
@@ -144,19 +143,19 @@ export const SecretsStorePage = () => {
 
         <SearchField
           width="350px"
-          searchText={searchQuery}
-          setSearchText={setSearchQuery}
+          searchText={nameContains}
+          setSearchText={setNameContains}
           placeholderText="Filter secrets..."
         />
 
-        {filteredSecrets.length === 0 ? (
+        {secretList?.secrets?.length === 0 ? (
           <VStack spacing={4} py={8} textAlign="center">
             <Heading size="md">No secrets found</Heading>
             <Text>You don't have any secrets yet. Create your first secret to get started.</Text>
           </VStack>
         ) : (
           <DataTable
-            data={filteredSecrets}
+            data={secretList?.secrets ?? []}
             pagination
             defaultPageSize={10}
             sorting
