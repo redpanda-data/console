@@ -1,4 +1,6 @@
+import { proto3 } from '@bufbuild/protobuf';
 import {
+  Badge,
   Box,
   Button,
   ButtonGroup,
@@ -15,6 +17,7 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -38,7 +41,19 @@ export const updatePageTitle = () => {
 export interface SecretFormData {
   id: string;
   value: string;
+  labels: { key: string; value: string }[];
 }
+
+export const getScopeDisplayValue = (scope: Scope) => {
+  switch (scope) {
+    case Scope.REDPANDA_CONNECT:
+      return 'RP Connect';
+    case Scope.UNSPECIFIED:
+      return 'Unspecified';
+    default:
+      return proto3.getEnumType(Scope).findNumber(scope)?.name;
+  }
+};
 
 /**
  * Main component for the Secrets Store page
@@ -151,22 +166,57 @@ export const SecretsStorePage = () => {
                 cell: ({ row: { original } }) => (
                   <Text data-testid={`secret-text-${original?.id}`}>{original?.id}</Text>
                 ),
-                size: Number.POSITIVE_INFINITY,
+                size: 200,
+              },
+              {
+                header: 'Labels',
+                id: 'labels',
+                cell: ({ row: { original } }) => {
+                  const labels = original?.labels;
+                  if (!labels || Object.keys(labels).length === 0) {
+                    return <Text color="gray.500">No labels</Text>;
+                  }
+                  return (
+                    <Flex wrap="wrap" gap={2}>
+                      {Object.entries(labels)
+                        .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+                        .map(([key, value]) => (
+                          <Badge variant="inverted" key={`${original?.id}-${key}`} borderRadius="full">
+                            <Text>
+                              {key}: {value}
+                            </Text>
+                          </Badge>
+                        ))}
+                    </Flex>
+                  );
+                },
+                size: 250,
+              },
+              {
+                header: 'Scope',
+                id: 'scope',
+                cell: ({ row: { original } }) =>
+                  original?.scopes.map((scope) => <Text key={scope}>{getScopeDisplayValue(scope)}</Text>),
+                size: 50,
               },
               {
                 header: '',
                 id: 'actions',
                 cell: ({ row: { original } }) => (
-                  <HStack spacing={4} alignSelf="flex-end">
+                  <HStack spacing={4} justifyContent="flex-end" width="100%">
                     <Icon
                       data-testid={`edit-secret-${original?.id}`}
                       as={AiOutlineEdit}
                       onClick={() => handleUpdateSecretModal(original?.id ?? '')}
+                      cursor="pointer"
+                      aria-label="Edit secret"
                     />
                     <Icon
                       data-testid={`delete-secret-${original?.id}`}
                       as={AiOutlineDelete}
                       onClick={() => handleDeleteSecretModal(original?.id ?? '')}
+                      cursor="pointer"
+                      aria-label="Delete secret"
                     />
                   </HStack>
                 ),
