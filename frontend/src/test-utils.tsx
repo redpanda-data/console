@@ -75,5 +75,8 @@ const connectQueryWrapper = (
   };
 };
 
+// re-export everything
+export * from '@testing-library/react';
+
 // override render method
 export { renderWithRouter, customRender as render, connectQueryWrapper };

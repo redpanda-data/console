@@ -1,11 +1,9 @@
 import {
+  type Client,
   Code,
   ConnectError,
   type Interceptor as ConnectRpcInterceptor,
-  type PromiseClient,
-  type StreamRequest,
-  type UnaryRequest,
-  createPromiseClient,
+  createClient,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { type Monaco, loader } from '@monaco-editor/react';
@@ -42,11 +40,11 @@ declare const __webpack_public_path__: string;
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
-const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
+export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
-const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
-  if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
-  return await next(req);
+export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
+  if (config.jwt) request.header.set('Authorization', `Bearer ${config.jwt}`);
+  return await next(request);
 };
 
 /**
@@ -58,9 +56,9 @@ const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: U
  * If such an error is detected, it redirects the user to the `/trial-expired` page.
  *
  */
-const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
+export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
-    return await next(req);
+    return await next(request);
   } catch (error) {
     if (error instanceof ConnectError) {
       if (error.code === Code.FailedPrecondition) {
@@ -113,14 +111,14 @@ export interface Breadcrumb {
 
 interface Config {
   restBasePath: string;
-  licenseClient?: PromiseClient<typeof LicenseService>;
-  consoleClient?: PromiseClient<typeof ConsoleService>;
-  debugBundleClient?: PromiseClient<typeof DebugBundleService>;
-  securityClient?: PromiseClient<typeof SecurityService>;
-  pipelinesClient?: PromiseClient<typeof PipelineService>;
-  pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
-  rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
-  transformsClient?: PromiseClient<typeof TransformService>;
+  licenseClient?: Client<typeof LicenseService>;
+  consoleClient?: Client<typeof ConsoleService>;
+  debugBundleClient?: Client<typeof DebugBundleService>;
+  securityClient?: Client<typeof SecurityService>;
+  pipelinesClient?: Client<typeof PipelineService>;
+  pipelinesClientV2?: Client<typeof PipelineServiceV2>;
+  rpcnSecretsClient?: Client<typeof RPCNSecretService>;
+  transformsClient?: Client<typeof TransformService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -153,14 +151,14 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   });
 
-  const licenseGrpcClient = createPromiseClient(LicenseService, transport);
-  const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
-  const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
-  const securityGrpcClient = createPromiseClient(SecurityService, transport);
-  const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
-  const pipelinesV2GrpcClient = createPromiseClient(PipelineServiceV2, transport);
-  const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
-  const transformClient = createPromiseClient(TransformService, transport);
+  const licenseGrpcClient = createClient(LicenseService, transport);
+  const consoleGrpcClient = createClient(ConsoleService, transport);
+  const debugBundleGrpcClient = createClient(DebugBundleService, transport);
+  const securityGrpcClient = createClient(SecurityService, transport);
+  const pipelinesGrpcClient = createClient(PipelineService, transport);
+  const pipelinesV2GrpcClient = createClient(PipelineServiceV2, transport);
+  const secretGrpcClient = createClient(RPCNSecretService, transport);
+  const transformClient = createClient(TransformService, transport);
   Object.assign(config, {
     jwt,
     isServerless,

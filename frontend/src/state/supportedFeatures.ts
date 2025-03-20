@@ -59,6 +59,10 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.DebugBundleService',
     method: 'POST',
   };
+  static readonly SecretService: FeatureEntry = {
+    endpoint: 'redpanda.api.console.v1alpha1.SecretService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -126,6 +130,9 @@ class SupportedFeatures {
   }
   @computed get debugBundle(): boolean {
     return isSupported(Feature.DebugBundleService);
+  }
+  @computed get rpcnSecretsApi(): boolean {
+    return isSupported(Feature.SecretService);
   }
 }
 
