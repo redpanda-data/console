@@ -35,9 +35,9 @@
   "dependencies": {
     "@chakra-ui/icons": "^2.1",
     "@chakra-ui/react-use-disclosure": "^2.1",
-    "@connectrpc/connect": "^1.1.2",
+    "@connectrpc/connect": "^1.6.1",
     "@connectrpc/connect-query": "^1.4.2",
-    "@connectrpc/connect-web": "^1.1.2",
+    "@connectrpc/connect-web": "^1.6.1",
     "@heroicons/react": "^1.0.6",
     "@hookform/resolvers": "^4.1.3",
     "@monaco-editor/react": "^4.6.0",
