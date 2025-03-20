@@ -319,7 +319,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(true, [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
 
-  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true, routeVisibility(true, [], ['canListAcls'])),
+  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
