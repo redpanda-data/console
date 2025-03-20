@@ -2,6 +2,7 @@ import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import {
   Button,
   ButtonGroup,
+  Flex,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -31,6 +32,7 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
   const [formData, setFormData] = useState<SecretFormData>({
     id: '',
     value: '',
+    labels: [{ key: '', value: '' }],
   });
   const [showValue, setShowValue] = useBoolean(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -46,6 +48,7 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
       setFormData({
         id: '',
         value: '',
+        labels: [{ key: '', value: '' }],
       });
       setErrors({});
     }
@@ -69,6 +72,16 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
       newErrors.value = 'Value is required';
     }
 
+    // Validate labels if any are filled
+    for (const [index, label] of formData.labels.entries()) {
+      if (label.key && !label.value) {
+        newErrors[`label-${index}-value`] = 'Label value is required';
+      }
+      if (!label.key && label.value) {
+        newErrors[`label-${index}-key`] = 'Label key is required';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -77,11 +90,20 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // Convert labels to map format
+    const labelsMap: { [key: string]: string } = {};
+    for (const label of formData.labels) {
+      if (label.key && label.value) {
+        labelsMap[label.key] = label.value;
+      }
+    }
+
     const request = new CreateSecretRequest({
       id: formData.id,
       // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       secretData: base64ToUInt8Array(encodeBase64(formData.value)),
       scopes: [Scope.REDPANDA_CONNECT],
+      labels: labelsMap,
     });
 
     await createSecret({ request });
@@ -93,6 +115,21 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
     setFormData({ ...formData, [field]: value });
   };
 
+  // Handle label changes
+  const handleLabelChange = (index: number, field: 'key' | 'value', value: string) => {
+    const updatedLabels = [...formData.labels];
+    updatedLabels[index] = { ...updatedLabels[index], [field]: value };
+    setFormData({ ...formData, labels: updatedLabels });
+  };
+
+  // Add a new label
+  const addLabel = () => {
+    setFormData({
+      ...formData,
+      labels: [...formData.labels, { key: '', value: '' }],
+    });
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
@@ -100,17 +137,17 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
         <ModalHeader>Create new Secret</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Stack spacing={4}>
+          <Stack spacing={2}>
             <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
 
             <FormControl isInvalid={!!errors.id}>
               <FormLabel fontWeight="medium">ID</FormLabel>
+              <FormHelperText mb={2}>ID must use uppercase letters, numbers, and underscores only.</FormHelperText>
               <Input
                 value={formData.id}
                 onChange={(e) => handleInputChange('id', e.target.value.toUpperCase())} // Always uppercase
-                placeholder="POSTGRES_CONNECTION_URL"
+                placeholder="SECRET_ID"
               />
-              <FormHelperText>ID must use uppercase letters, numbers, and underscores only.</FormHelperText>
               {errors.id && <FormErrorMessage>{errors.id}</FormErrorMessage>}
             </FormControl>
 
@@ -129,6 +166,41 @@ export const CreateSecretModal = ({ isOpen, onClose }: { isOpen: boolean; onClos
                 </InputRightElement>
               </InputGroup>
               {errors.value && <FormErrorMessage>{errors.value}</FormErrorMessage>}
+            </FormControl>
+
+            {/* Labels Section */}
+            <FormControl mb={4}>
+              <FormLabel fontWeight="medium">Labels</FormLabel>
+              <FormHelperText mb={2}>Labels can help you to organize your secrets.</FormHelperText>
+              {formData.labels.map((label, index) => (
+                <Flex key={index} gap={2} mb={2}>
+                  <FormControl isInvalid={!!errors[`label-${index}-key`]}>
+                    <Input
+                      placeholder="Key"
+                      value={label.key}
+                      onChange={(e) => handleLabelChange(index, 'key', e.target.value)}
+                    />
+                    {errors[`label-${index}-key`] && (
+                      <FormErrorMessage>{errors[`label-${index}-key`]}</FormErrorMessage>
+                    )}
+                  </FormControl>
+
+                  <FormControl isInvalid={!!errors[`label-${index}-value`]}>
+                    <Input
+                      placeholder="Value"
+                      value={label.value}
+                      onChange={(e) => handleLabelChange(index, 'value', e.target.value)}
+                    />
+                    {errors[`label-${index}-value`] && (
+                      <FormErrorMessage>{errors[`label-${index}-value`]}</FormErrorMessage>
+                    )}
+                  </FormControl>
+                </Flex>
+              ))}
+
+              <Button mt={2} size="sm" variant="outline" onClick={addLabel} leftIcon={<span>+</span>}>
+                Add label
+              </Button>
             </FormControl>
           </Stack>
         </ModalBody>
