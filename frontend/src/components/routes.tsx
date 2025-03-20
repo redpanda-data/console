@@ -317,7 +317,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Secrets Store',
     MdKey,
     true,
-    routeVisibility(true, [Feature.SecretsService]), // If secrets service is configured, then we are not self-hosted, so we can show the new route
+    routeVisibility(true, [Feature.SecretService]), // If secret service is configured, then we are not self-hosted, so we can show the new route
   ),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true, routeVisibility(true, [], ['canListAcls'])),
