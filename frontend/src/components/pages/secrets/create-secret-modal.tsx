@@ -117,7 +117,12 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
 
             <ModalFooter>
               <ButtonGroup isDisabled={isCreateSecretPending}>
-                <form.SubscribeButton label="Create" variant="brand" data-testid="create-secret-button" />
+                <form.SubscribeButton
+                  label="Create"
+                  variant="brand"
+                  data-testid="create-secret-button"
+                  loadingText="Creating"
+                />
 
                 <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>
                   Cancel

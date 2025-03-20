@@ -3,7 +3,7 @@ import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
 interface TextFieldProps extends Omit<InputProps, 'transform'> {
-  label: string;
+  label?: string;
   helperText?: string;
   placeholder?: string;
   transform?: (value: string) => string;
@@ -15,7 +15,7 @@ export const TextField = ({ label, helperText, placeholder, transform, isDisable
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      <FormLabel fontWeight="medium">{label}</FormLabel>
+      {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
       {helperText && <FormHelperText mb={2}>{helperText}</FormHelperText>}
       <Input
         value={field.state.value}
