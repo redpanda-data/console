@@ -18,13 +18,14 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
-  Text,
 } from '@redpanda-data/ui';
 import { CreatableSelect } from 'chakra-react-select';
 import { useEffect, useState } from 'react';
+import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutationWithToast } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { Scope, UpdateSecretRequest } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { SecretInUseAlert } from './secret-in-use-alert';
 import type { SecretFormData } from './secrets-store-page';
 
 export const UpdateSecretModal = ({
@@ -50,6 +51,10 @@ export const UpdateSecretModal = ({
   // Get existing secret details (for labels)
   const { data: secretsData } = useListSecretsQuery();
   const secret = secretsData?.secrets?.find((secret) => secret?.id === secretId);
+
+  // Get pipelines using this secret
+  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
+  const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
   // Initialize form data with existing secret labels
   useEffect(() => {
@@ -233,7 +238,7 @@ export const UpdateSecretModal = ({
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
+            <SecretInUseAlert pipelines={matchingPipelines} />
             <FormControl>
               <FormLabel fontWeight="medium">ID</FormLabel>
               <Input value={formData.id} isDisabled />
