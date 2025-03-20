@@ -59,13 +59,14 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.DebugBundleService',
     method: 'POST',
   };
-  static readonly SecretsService: FeatureEntry = {
-    endpoint: 'redpanda.api.console.v1alpha1.SecretsService',
+  static readonly SecretService: FeatureEntry = {
+    endpoint: 'redpanda.api.console.v1alpha1.SecretService',
     method: 'POST',
   };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
+  console.log('isSupported', f);
   const c = api.endpointCompatibility;
   if (!c) return true; // not yet checked, allow it by default...
 
