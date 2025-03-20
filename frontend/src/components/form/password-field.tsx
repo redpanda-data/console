@@ -1,13 +1,22 @@
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { Button, FormControl, FormLabel, Input, InputGroup, InputRightElement, useBoolean } from '@redpanda-data/ui';
+import {
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  InputGroup,
+  type InputProps,
+  InputRightElement,
+  useBoolean,
+} from '@redpanda-data/ui';
 import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
-interface PasswordFieldProps {
+interface PasswordFieldProps extends InputProps {
   label: string;
 }
 
-export const PasswordField = ({ label }: PasswordFieldProps) => {
+export const PasswordField = ({ label, ...rest }: PasswordFieldProps) => {
   const field = useFieldContext<string>();
   const [showValue, setShowValue] = useBoolean(false);
 
@@ -20,6 +29,7 @@ export const PasswordField = ({ label }: PasswordFieldProps) => {
           value={field.state.value}
           onChange={(e) => field.handleChange(e.target.value)}
           onBlur={field.handleBlur}
+          {...rest}
         />
         <InputRightElement>
           <Button variant="ghost" onClick={setShowValue.toggle}>

@@ -1,8 +1,8 @@
-import { FormControl, FormHelperText, FormLabel, Input } from '@redpanda-data/ui';
+import { FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
 import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
-interface TextFieldProps {
+interface TextFieldProps extends Omit<InputProps, 'transform'> {
   label: string;
   helperText?: string;
   placeholder?: string;
@@ -10,7 +10,7 @@ interface TextFieldProps {
   isDisabled?: boolean;
 }
 
-export const TextField = ({ label, helperText, placeholder, transform, isDisabled }: TextFieldProps) => {
+export const TextField = ({ label, helperText, placeholder, transform, isDisabled, ...rest }: TextFieldProps) => {
   const field = useFieldContext<string>();
 
   return (
@@ -24,6 +24,7 @@ export const TextField = ({ label, helperText, placeholder, transform, isDisable
         }}
         placeholder={placeholder}
         isDisabled={isDisabled}
+        {...rest}
       />
       <ErrorInfoField field={field} />
     </FormControl>
