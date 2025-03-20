@@ -1,15 +1,6 @@
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import {
   Button,
   ButtonGroup,
-  Flex,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  Input,
-  InputGroup,
-  InputRightElement,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -19,14 +10,15 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  useBoolean,
 } from '@redpanda-data/ui';
-import { useForm } from '@tanstack/react-form';
+import { formOptions } from '@tanstack/react-form';
+import { useAppForm } from 'components/form/form';
 import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
+import { createSecretSchema } from './form/create-secret-schema';
 
 interface CreateSecretModalProps {
   isOpen: boolean;
@@ -34,53 +26,20 @@ interface CreateSecretModalProps {
 }
 
 export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) => {
-  const [showValue, setShowValue] = useBoolean(false);
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
   const { mutateAsync: createSecret, isPending: isPendingCreateSecret } = useCreateSecretMutationWithToast();
 
-  // Define validation schema using Zod
-  const secretSchema = z.object({
-    id: z
-      .string()
-      .min(1, 'ID is required')
-      .regex(
-        /^[A-Z][A-Z0-9_]*$/,
-        'ID must use uppercase letters, numbers, and underscores only, starting with a letter',
-      )
-      .refine((id) => !secretList?.secrets?.some((secret) => secret?.id === id), { message: 'ID is already in use' }),
-    value: z.string().min(1, 'Value is required'),
-    labels: z
-      .array(
-        z.object({
-          key: z.string(),
-          value: z.string(),
-        }),
-      )
-      .optional()
-      .default([])
-      .refine(
-        (labels) => {
-          // Only validate non-empty labels - if both key and value are empty, that's fine
-          return labels.every((label) => {
-            return (label.key === '' && label.value === '') || (label.key !== '' && label.value !== '');
-          });
-        },
-        {
-          message: 'Both key and value must be provided for a label',
-        },
-      ),
-  });
-
-  // Form definition with Zod validation
-  const form = useForm({
+  const formOpts = formOptions({
     defaultValues: {
       id: '',
       value: '',
       labels: [{ key: '', value: '' }],
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({
+      value,
+    }: { value: { id: string; value: string; labels: Array<{ key: string; value: string }> } }) => {
       const labelsMap: { [key: string]: string } = {};
       for (const label of value.labels) {
         if (label.key && label.value) {
@@ -101,33 +60,20 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
     },
     validators: {
       // Use Zod schema for form-level validation
-      onSubmit: ({ value }) => {
+      onSubmit: ({
+        value,
+      }: { value: { id: string; value: string; labels: Array<{ key: string; value: string }> } }) => {
         const errors: Record<string, string> = {};
+        const schema = createSecretSchema(secretList?.secrets);
 
         try {
-          secretSchema.parse(value);
+          schema.parse(value);
         } catch (error) {
           if (error instanceof z.ZodError) {
             // Convert Zod errors to the format expected by TanStack Form
             for (const err of error.errors) {
               const path = err.path.join('.');
               errors[path] = err.message;
-            }
-
-            // Special handling for array field errors that might not be caught by Zod
-            // Only validate labels that aren't completely empty
-            if (value.labels) {
-              for (const [index, label] of value.labels.entries()) {
-                // Skip validation for empty labels (both key and value are empty)
-                if (label.key === '' && label.value === '') continue;
-
-                if (label.key && !label.value) {
-                  errors[`labels[${index}].value`] = 'Label value is required';
-                }
-                if (!label.key && label.value) {
-                  errors[`labels[${index}].key`] = 'Label key is required';
-                }
-              }
             }
           }
         }
@@ -137,6 +83,8 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
     },
   });
 
+  const form = useAppForm({ ...formOpts });
+
   // Reset form on modal open/close
   useEffect(() => {
     if (!isOpen) {
@@ -144,202 +92,91 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
     }
   }, [isOpen, form]);
 
-  // Add a new label
-  const addLabel = () => {
-    const currentLabels = form.state.values.labels || [];
-    form.setFieldValue('labels', [...currentLabels, { key: '', value: '' }]);
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Create new Secret</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Stack spacing={2}>
-            <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
+        <form.AppForm>
+          <ModalHeader>Create new Secret</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing={2}>
+              <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
 
-            <form.Field
-              name="id"
-              validators={{
-                onChange: ({ value }) => {
-                  const idSchema = z
-                    .string()
-                    .min(1, 'ID is required')
-                    .regex(
-                      /^[A-Z][A-Z0-9_]*$/,
-                      'ID must use uppercase letters, numbers, and underscores only, starting with a letter',
-                    )
-                    .refine((id) => !secretList?.secrets?.some((secret) => secret?.id === id), {
-                      message: 'ID is already in use',
-                    });
+              <form.AppField
+                name="id"
+                validators={{
+                  onChange: ({ value }: { value: string }) => {
+                    const idSchema = z
+                      .string()
+                      .min(1, 'ID is required')
+                      .regex(
+                        /^[A-Z][A-Z0-9_]*$/,
+                        'ID must use uppercase letters, numbers, and underscores only, starting with a letter',
+                      )
+                      .refine((id) => !secretList?.secrets?.some((secret) => secret?.id === id), {
+                        message: 'ID is already in use',
+                      });
 
-                  try {
-                    idSchema.parse(value);
-                    return undefined;
-                  } catch (error) {
-                    if (error instanceof z.ZodError && error.errors.length > 0) {
-                      return error.errors[0].message;
+                    try {
+                      idSchema.parse(value);
+                      return undefined;
+                    } catch (error) {
+                      if (error instanceof z.ZodError && error.errors.length > 0) {
+                        return error.errors[0].message;
+                      }
+                      return undefined;
                     }
-                    return undefined;
-                  }
-                },
-              }}
-            >
-              {(field) => (
-                <FormControl isInvalid={!!field.state.meta.errors?.length}>
-                  <FormLabel fontWeight="medium">ID</FormLabel>
-                  <FormHelperText mb={2}>ID must use uppercase letters, numbers, and underscores only.</FormHelperText>
-                  <Input
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
-                    onBlur={field.handleBlur}
+                  },
+                }}
+              >
+                {(field) => (
+                  <field.TextField
+                    label="ID"
+                    helperText="ID must use uppercase letters, numbers, and underscores only."
                     placeholder="SECRET_ID"
+                    transform={(value: string) => value.toUpperCase()}
                   />
-                  {field.state.meta.errors?.length > 0 && (
-                    <FormErrorMessage>{field.state.meta.errors[0]}</FormErrorMessage>
-                  )}
-                </FormControl>
-              )}
-            </form.Field>
-
-            <form.Field
-              name="value"
-              validators={{
-                onChange: ({ value }) => {
-                  const valueSchema = z.string().min(1, 'Value is required');
-                  try {
-                    valueSchema.parse(value);
-                    return undefined;
-                  } catch (error) {
-                    if (error instanceof z.ZodError && error.errors.length > 0) {
-                      return error.errors[0].message;
-                    }
-                    return undefined;
-                  }
-                },
-              }}
-            >
-              {(field) => (
-                <FormControl isInvalid={!!field.state.meta.errors?.length}>
-                  <FormLabel fontWeight="medium">Value</FormLabel>
-                  <InputGroup>
-                    <Input
-                      type={showValue ? 'text' : 'password'}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                    />
-                    <InputRightElement>
-                      <Button variant="ghost" onClick={setShowValue.toggle}>
-                        {showValue ? <ViewOffIcon /> : <ViewIcon />}
-                      </Button>
-                    </InputRightElement>
-                  </InputGroup>
-                  {field.state.meta.errors?.length > 0 && (
-                    <FormErrorMessage>{field.state.meta.errors[0]}</FormErrorMessage>
-                  )}
-                </FormControl>
-              )}
-            </form.Field>
-
-            {/* Labels Section */}
-            <FormControl mb={4}>
-              <FormLabel fontWeight="medium">Labels</FormLabel>
-              <FormHelperText mb={2}>Labels can help you to organize your secrets.</FormHelperText>
-
-              <form.Field name="labels" mode="array">
-                {(labelsField) => (
-                  <>
-                    {labelsField.state.value.map((_, index) => (
-                      <Flex key={index} gap={2} mb={2}>
-                        <form.Field
-                          name={`labels[${index}].key`}
-                          validators={{
-                            onChange: ({ value }) => {
-                              const labels = form.state.values.labels;
-                              if (!value && labels?.[index]?.value) {
-                                return 'Label key is required';
-                              }
-                              return undefined;
-                            },
-                          }}
-                        >
-                          {(field) => (
-                            <FormControl isInvalid={!!field.state.meta.errors?.length}>
-                              <Input
-                                placeholder="Key"
-                                value={field.state.value}
-                                onChange={(e) => field.handleChange(e.target.value)}
-                                onBlur={field.handleBlur}
-                              />
-                              {field.state.meta.errors?.length > 0 && (
-                                <FormErrorMessage>{field.state.meta.errors[0]}</FormErrorMessage>
-                              )}
-                            </FormControl>
-                          )}
-                        </form.Field>
-
-                        <form.Field
-                          name={`labels[${index}].value`}
-                          validators={{
-                            onChange: ({ value }) => {
-                              const labels = form.state.values.labels;
-                              if (!value && labels?.[index]?.key) {
-                                return 'Label value is required';
-                              }
-                              return undefined;
-                            },
-                          }}
-                        >
-                          {(field) => (
-                            <FormControl isInvalid={!!field.state.meta.errors?.length}>
-                              <Input
-                                placeholder="Value"
-                                value={field.state.value}
-                                onChange={(e) => field.handleChange(e.target.value)}
-                                onBlur={field.handleBlur}
-                              />
-                              {field.state.meta.errors?.length > 0 && (
-                                <FormErrorMessage>{field.state.meta.errors[0]}</FormErrorMessage>
-                              )}
-                            </FormControl>
-                          )}
-                        </form.Field>
-                      </Flex>
-                    ))}
-                  </>
                 )}
-              </form.Field>
+              </form.AppField>
 
-              <Button mt={2} size="sm" variant="outline" onClick={addLabel} leftIcon={<span>+</span>}>
-                Add label
+              <form.AppField
+                name="value"
+                validators={{
+                  onChange: ({ value }: { value: string }) => {
+                    const valueSchema = z.string().min(1, 'Value is required');
+                    try {
+                      valueSchema.parse(value);
+                      return undefined;
+                    } catch (error) {
+                      if (error instanceof z.ZodError && error.errors.length > 0) {
+                        return error.errors[0].message;
+                      }
+                      return undefined;
+                    }
+                  },
+                }}
+              >
+                {(field) => <field.PasswordField label="Value" />}
+              </form.AppField>
+              <form.AppField name="labels" mode="array">
+                {(field) => (
+                  <field.KeyValueField label="Labels" helperText="Labels can help you to organize your secrets." />
+                )}
+              </form.AppField>
+            </Stack>
+          </ModalBody>
+
+          <ModalFooter>
+            <ButtonGroup isDisabled={isPendingCreateSecret}>
+              <form.SubscribeButton label="Create" variant="brand" />
+
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
               </Button>
-            </FormControl>
-          </Stack>
-        </ModalBody>
-
-        <ModalFooter>
-          <ButtonGroup isDisabled={isPendingCreateSecret}>
-            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting, state.isValid]}>
-              {([canSubmit, isSubmitting]) => (
-                <Button
-                  variant="brand"
-                  onClick={() => form.handleSubmit()}
-                  isDisabled={!canSubmit || isPendingCreateSecret}
-                  isLoading={isPendingCreateSecret || isSubmitting}
-                  loadingText="Creating"
-                >
-                  Create
-                </Button>
-              )}
-            </form.Subscribe>
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-          </ButtonGroup>
-        </ModalFooter>
+            </ButtonGroup>
+          </ModalFooter>
+        </form.AppForm>
       </ModalContent>
     </Modal>
   );
