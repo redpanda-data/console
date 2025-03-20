@@ -1,8 +1,19 @@
-import { Button, Flex, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input } from '@redpanda-data/ui';
+import { Button, Flex, FormControl, FormHelperText, FormLabel, Input } from '@redpanda-data/ui';
+import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
-export const KeyValueField = ({ label, helperText }: { label: string; helperText?: string }) => {
-  const field = useFieldContext<Array<{ key: string; value: string }>>();
+interface KeyValuePair {
+  key: string;
+  value: string;
+}
+
+interface KeyValueFieldProps {
+  label: string;
+  helperText?: string;
+}
+
+export const KeyValueField = ({ label, helperText }: KeyValueFieldProps) => {
+  const field = useFieldContext<Array<KeyValuePair>>();
 
   // Add a new label
   const addLabel = () => {
@@ -25,9 +36,12 @@ export const KeyValueField = ({ label, helperText }: { label: string; helperText
   );
 };
 
-// KeyValuePairField for individual key-value pairs
-const KeyValuePairField = ({ index }: { index: number }) => {
-  const parentField = useFieldContext<Array<{ key: string; value: string }>>();
+interface KeyValuePairFieldProps {
+  index: number;
+}
+
+const KeyValuePairField = ({ index }: KeyValuePairFieldProps) => {
+  const parentField = useFieldContext<Array<KeyValuePair>>();
   const currentLabel = parentField.state.value[index];
 
   const handleKeyChange = (value: string) => {
@@ -55,12 +69,11 @@ const KeyValuePairField = ({ index }: { index: number }) => {
     <Flex gap={2} mb={2}>
       <FormControl isInvalid={!!isKeyError}>
         <Input placeholder="Key" value={currentLabel.key} onChange={(e) => handleKeyChange(e.target.value)} />
-        {isKeyError && <FormErrorMessage>Label key is required</FormErrorMessage>}
+        <ErrorInfoField field={parentField} index={`${currentLabel.key}-key`} />
       </FormControl>
-
       <FormControl isInvalid={!!isValueError}>
         <Input placeholder="Value" value={currentLabel.value} onChange={(e) => handleValueChange(e.target.value)} />
-        {isValueError && <FormErrorMessage>Label value is required</FormErrorMessage>}
+        <ErrorInfoField field={parentField} index={`${currentLabel.value}-value`} />
       </FormControl>
     </Flex>
   );

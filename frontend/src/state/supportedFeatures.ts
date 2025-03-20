@@ -66,7 +66,6 @@ export class Feature {
 }
 
 export function isSupported(f: FeatureEntry): boolean {
-  console.log('isSupported', f);
   const c = api.endpointCompatibility;
   if (!c) return true; // not yet checked, allow it by default...
 
