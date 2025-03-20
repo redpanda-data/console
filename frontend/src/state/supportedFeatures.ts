@@ -131,6 +131,9 @@ class SupportedFeatures {
   @computed get debugBundle(): boolean {
     return isSupported(Feature.DebugBundleService);
   }
+  @computed get rpcnSecretsApi(): boolean {
+    return isSupported(Feature.SecretService);
+  }
 }
 
 const features = new SupportedFeatures();
