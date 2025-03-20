@@ -1,21 +1,13 @@
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  InputGroup,
-  InputRightElement,
-  useBoolean,
-} from '@redpanda-data/ui';
+import { Button, FormControl, FormLabel, Input, InputGroup, InputRightElement, useBoolean } from '@redpanda-data/ui';
+import { ErrorInfoField } from './error-info-field';
 import { useFieldContext } from './form-hook-contexts';
 
-export const PasswordField = ({
-  label,
-}: {
+interface PasswordFieldProps {
   label: string;
-}) => {
+}
+
+export const PasswordField = ({ label }: PasswordFieldProps) => {
   const field = useFieldContext<string>();
   const [showValue, setShowValue] = useBoolean(false);
 
@@ -35,7 +27,7 @@ export const PasswordField = ({
           </Button>
         </InputRightElement>
       </InputGroup>
-      {field.state.meta.errors?.length > 0 && <FormErrorMessage>{field.state.meta.errors[0]}</FormErrorMessage>}
+      <ErrorInfoField field={field} />
     </FormControl>
   );
 };

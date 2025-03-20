@@ -1,26 +1,17 @@
-import { Button } from '@redpanda-data/ui';
+import { Button, type ButtonProps } from '@redpanda-data/ui';
 import { useFormContext } from './form-hook-contexts';
 
-interface SubscribeButtonProps {
+export interface SubscribeButtonProps extends Omit<ButtonProps, 'onClick' | 'isLoading' | 'isDisabled'> {
   label: string;
-  variant?:
-    | 'brand'
-    | 'ghost'
-    | 'link'
-    | 'nav'
-    | 'outline'
-    | 'solid'
-    | 'solid-brand'
-    | 'outline-delete'
-    | 'delete'
-    | 'icon'
-    | 'ghost-white'
-    | 'subtle'
-    | 'unstyled'
-    | 'inputOutline';
+  loadingText?: string;
 }
 
-export const SubscribeButton = ({ label, variant = 'brand' }: SubscribeButtonProps) => {
+export const SubscribeButton = ({
+  label,
+  variant = 'brand',
+  loadingText = 'Creating',
+  ...rest
+}: SubscribeButtonProps) => {
   const form = useFormContext();
   return (
     <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
@@ -29,8 +20,13 @@ export const SubscribeButton = ({ label, variant = 'brand' }: SubscribeButtonPro
           variant={variant}
           isLoading={isSubmitting}
           isDisabled={!canSubmit || isSubmitting}
-          loadingText="Creating"
-          onClick={() => form.handleSubmit()}
+          loadingText={loadingText}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            form.handleSubmit();
+          }}
+          {...rest}
         >
           {label}
         </Button>
