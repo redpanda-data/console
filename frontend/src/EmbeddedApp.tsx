@@ -23,6 +23,10 @@ import './assets/fonts/kumbh-sans.css';
 
 /* end global stylesheet */
 
+/* start tailwind styles */
+import './globals.css';
+/* end tailwind styles */
+
 import { appGlobal } from './state/appGlobal';
 
 import { TransportProvider } from '@connectrpc/connect-query';
@@ -93,7 +97,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
   return (
     <BrowserRouter basename={basePath}>
       <HistorySetter />
-      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
         <TransportProvider transport={transport}>
           <QueryClientProvider client={queryClient}>
             <ErrorBoundary>
