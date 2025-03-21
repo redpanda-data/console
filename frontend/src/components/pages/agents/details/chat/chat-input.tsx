@@ -1,0 +1,126 @@
+import { type ChatMessage, chatDb } from 'database/chat-db';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useState } from 'react';
+import { SendMessageButton } from './send-message-button';
+import { sendMessageToApi } from './send-message-to-api';
+
+interface ChatInputProps {
+  setIsTyping: (isTyping: boolean) => void;
+  agentUrl?: string;
+}
+
+export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
+  const [inputValue, setInputValue] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  // Use live query to listen for message changes in the database
+  const messages =
+    useLiveQuery(async () => {
+      const storedMessages = await chatDb.getAllMessages();
+      return storedMessages;
+    }, []) || [];
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!inputValue.trim() || isSending) return;
+
+    // Create user message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: inputValue,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    try {
+      setIsSending(true);
+
+      // Add to database
+      await chatDb.addMessage(userMessage);
+      setInputValue('');
+
+      // Show typing indicator while waiting for response
+      setIsTyping(true);
+
+      // Send message to API along with chat history
+      const apiResponse = await sendMessageToApi(userMessage.content, agentUrl, [...messages, userMessage]);
+
+      // Hide typing indicator
+      setIsTyping(false);
+
+      // Create system message from API response
+      const systemMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: apiResponse.success
+          ? apiResponse.message
+          : 'Sorry, there was an error processing your request. Please try again later.',
+        sender: 'system',
+        timestamp: new Date(),
+      };
+
+      // Add to database
+      await chatDb.addMessage(systemMessage);
+    } catch (error) {
+      console.error('Error sending message:', error);
+
+      // Hide typing indicator
+      setIsTyping(false);
+
+      // Create error message
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: 'Sorry, there was an error sending your message. Please try again later.',
+        sender: 'system',
+        timestamp: new Date(),
+      };
+
+      // Add to database
+      await chatDb.addMessage(errorMessage);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
+  return (
+    <div className="border border-slate-200 rounded-md p-4 bg-white shadow-sm">
+      <form
+        className="space-y-2"
+        onSubmit={(e) => {
+          if (agentUrl) {
+            handleSendMessage(e);
+          }
+        }}
+      >
+        <div className="relative">
+          <textarea
+            id="chat-input"
+            className="w-full rounded-md outline-none focus:outline-none focus:ring-0 border-none resize-none min-h-[80px] text-sm"
+            placeholder="Type your message here..."
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            aria-label="Type your message"
+            spellCheck="false"
+            autoCorrect="off"
+            autoCapitalize="off"
+            disabled={isSending}
+          />
+          <SendMessageButton inputValue={inputValue} isSending={isSending} />
+        </div>
+      </form>
+      <p className="text-xs text-slate-500 mt-2">Press Enter to send, Shift+Enter for a new line</p>
+    </div>
+  );
+};
