@@ -148,6 +148,13 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
+  const agentDetailsMatch = useRouteMatch({
+    path: '/agents/:agentId',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
   if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
 
   if (schemaCreateMatch) return false;
@@ -157,6 +164,8 @@ function useShouldShowRefresh() {
   if (secretsMatch) return false;
 
   if (agentsMatch) return false;
+
+  if (agentDetailsMatch) return false;
 
   return true;
 }
