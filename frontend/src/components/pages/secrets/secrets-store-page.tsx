@@ -14,6 +14,7 @@ import {
   Text,
   useDisclosure,
 } from '@redpanda-data/ui';
+import ErrorResult from 'components/misc/ErrorResult';
 import { runInAction } from 'mobx';
 import { ListSecretsFilter, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ListSecretsRequest as ListSecretsRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -83,6 +84,7 @@ export const SecretsStorePage = () => {
     data: secretList,
     isLoading: isSecretListLoading,
     isError: isSecretListError,
+    error: secretListError,
   } = useListSecretsQuery(
     new ListSecretsRequestDataPlane({
       filter: new ListSecretsFilter({
@@ -108,7 +110,7 @@ export const SecretsStorePage = () => {
   }, []);
 
   if (isSecretListError) {
-    return <Empty />;
+    return <ErrorResult error={secretListError} title="Error loading secrets" message="Please try again later." />;
   }
 
   return (
