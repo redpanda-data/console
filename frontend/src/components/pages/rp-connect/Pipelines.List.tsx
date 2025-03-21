@@ -18,6 +18,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark } from 'react-icons/md';
 import { MdRefresh } from 'react-icons/md';
+import { REDPANDA_AI_AGENT_PIPELINE_PREFIX } from 'react-query/api/pipeline';
 import { Link } from 'react-router-dom';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
@@ -159,18 +160,22 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   render() {
     if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
-    const filteredPipelines = (pipelinesApi.pipelines ?? []).filter((u) => {
-      const filter = uiSettings.pipelinesList.quickSearch;
-      if (!filter) return true;
-      try {
-        const quickSearchRegExp = new RegExp(filter, 'i');
-        if (u.id.match(quickSearchRegExp)) return true;
-        if (u.displayName.match(quickSearchRegExp)) return true;
-        return false;
-      } catch {
-        return false;
-      }
-    });
+    const filteredPipelines = (pipelinesApi.pipelines ?? [])
+      // Ensure we do not show the agents
+      .filter((pipeline) => !pipeline.displayName.startsWith(REDPANDA_AI_AGENT_PIPELINE_PREFIX))
+      .filter((pipeline) => !Object.entries(pipeline.tags).some(([key, value]) => key === 'type' && value === 'agent'))
+      .filter((u) => {
+        const filter = uiSettings.pipelinesList.quickSearch;
+        if (!filter) return true;
+        try {
+          const quickSearchRegExp = new RegExp(filter, 'i');
+          if (u.id.match(quickSearchRegExp)) return true;
+          if (u.displayName.match(quickSearchRegExp)) return true;
+          return false;
+        } catch {
+          return false;
+        }
+      });
 
     return (
       <PageContent>
