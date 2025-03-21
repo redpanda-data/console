@@ -22,10 +22,11 @@ import {
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent } from 'react';
+import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
 import { Switch } from 'react-router-dom';
-import { isServerless } from '../config';
+import { isEmbedded, isServerless } from '../config';
 import { api } from '../state/backendApi';
 import type { UserPermissions } from '../state/restInterfaces';
 import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
@@ -45,6 +46,9 @@ import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgres
 import AdminPage from './pages/admin/AdminPage';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
+import { AgentDetailsPage } from './pages/agents/agent-details-page';
+import { AgentListPage } from './pages/agents/agent-list-page';
+import { CreateAgentPage } from './pages/agents/create-agent-page';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import CreateConnector from './pages/connect/CreateConnector';
@@ -319,6 +323,24 @@ export const APP_ROUTES: IRouteEntry[] = [
     true,
     routeVisibility(true, [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
+
+  MakeRoute<{}>(
+    '/agents',
+    AgentListPage,
+    'AI Agents',
+    HiOutlinePuzzlePiece,
+    true,
+    routeVisibility(
+      () => isEmbedded(), // Pass a function reference instead of executing it immediately
+      [Feature.PipelineService],
+      [],
+      [],
+    ),
+  ),
+
+  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents'),
+
+  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents'),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true, routeVisibility(true, [], ['canListAcls'])),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
