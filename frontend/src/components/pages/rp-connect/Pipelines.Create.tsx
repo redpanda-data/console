@@ -396,7 +396,7 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
     'errors.log.enable',
   ];
 
-  const matchCount = kafkaConfigKeys.filter((key) => key in json).length;
+  const matchCount = kafkaConfigKeys.filter((key) => Object.keys(json).includes(key)).length;
 
   return matchCount > 0;
 };
