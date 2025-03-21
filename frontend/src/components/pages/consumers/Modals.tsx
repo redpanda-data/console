@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { PencilIcon as PencilIconOutline, TrashIcon as TrashIconOutline } from '@heroicons/react/outline';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
 import {
   Accordion,
   Box,
   Button,
+  ConfirmItemDeleteModal,
   DataTable,
   Flex,
   FormLabel,
@@ -27,6 +27,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  NumberInput,
   Radio,
   Text,
   Tooltip,
@@ -49,12 +50,12 @@ import type {
   TopicOffset,
 } from '../../../state/restInterfaces';
 import { toJson } from '../../../utils/jsonUtils';
-import { InfoText, numberToThousandsString } from '../../../utils/tsxUtils';
+import { InfoText, Button as RPButton, numberToThousandsString } from '../../../utils/tsxUtils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { SingleSelect } from '../../misc/Select';
 
-type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
+type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup' | 'shiftBy';
 
 // props:
 // - consumer group
@@ -92,6 +93,7 @@ export class EditOffsetsModal extends Component<{
   group: GroupDescription;
   offsets: GroupOffset[] | null;
   onClose: () => void;
+  initialTopic: string | null;
 }> {
   lastOffsets: GroupOffset[];
   lastVisible = false;
@@ -103,7 +105,10 @@ export class EditOffsetsModal extends Component<{
 
   @observable page: 0 | 1 = 0;
   @observable selectedOption: EditOptions = 'startOffset';
+  @observable selectedTopic: string | null = null;
   @observable timestampUtcMs: number = new Date().valueOf();
+  @observable customOffsetValue = 0;
+
   @observable otherConsumerGroups: GroupDescription[] = [];
   @observable selectedGroup: string | undefined = undefined;
   @observable otherGroupCopyMode: 'all' | 'onlyExisting' = 'onlyExisting';
@@ -116,9 +121,12 @@ export class EditOffsetsModal extends Component<{
     makeObservable(this);
   }
 
+  componentDidMount() {
+    this.selectedTopic = this.props.initialTopic;
+  }
+
   render() {
     let offsets = this.props.offsets;
-    const group = this.props.group;
 
     const visible = Boolean(offsets);
     this.updateVisible(visible);
@@ -127,7 +135,6 @@ export class EditOffsetsModal extends Component<{
     if (!offsets) return null;
 
     this.offsetsByTopic = offsets.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
-    const single = this.offsetsByTopic.length === 1;
 
     return (
       <>
@@ -138,34 +145,11 @@ export class EditOffsetsModal extends Component<{
             <ModalHeader>Edit consumer group</ModalHeader>
             <ModalBody>
               <HStack spacing={6}>
-                <div>
-                  <div
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      padding: '14px',
-                      marginTop: '4px',
-                      marginLeft: '4px',
-                      background: '#718096',
-                      borderRadius: '1000px',
-                    }}
-                  >
-                    <PencilIconOutline color="white" />
-                  </div>
-                </div>
-                <div>
-                  <span>Group offsets will be editted for:</span>
-
-                  <div style={{ fontWeight: 600, margin: '8px 0', lineHeight: '1.5' }}>
-                    <div>
-                      Group: <span className="codeBox">{group.groupId}</span>
-                    </div>
-                    <div>
-                      {this.offsetsByTopic.length} {single ? 'Topic' : 'Topics'} / {offsets.length}{' '}
-                      {offsets.length === 1 ? 'Partition' : 'Partitions'}
-                    </div>
-                  </div>
-                </div>
+                <Text>
+                  You are editing a group with {this.offsetsByTopic.length}{' '}
+                  {this.offsetsByTopic.length === 1 ? 'topic' : 'topics'} and {offsets.length}{' '}
+                  {offsets.length === 1 ? 'partition' : 'partitions'}.
+                </Text>
               </HStack>
 
               {/* Content */}
@@ -181,34 +165,61 @@ export class EditOffsetsModal extends Component<{
   }
 
   page1() {
+    const topicChoices = this.props.offsets?.groupInto((x) => x.topicName).map((x) => x.key) ?? [];
+
     return (
-      <Flex flexDirection="column" gap={4} mt={16}>
-        <Box maxW={300}>
-          <FormLabel>Start consuming at</FormLabel>
-          <SingleSelect
-            isDisabled={this.isLoadingTimestamps}
-            value={this.selectedOption}
-            onChange={(v) => (this.selectedOption = v as EditOptions)}
-            options={[
-              {
-                value: 'startOffset',
-                label: 'Start Offset',
-              },
-              {
-                value: 'endOffset',
-                label: 'End Offset',
-              },
-              {
-                value: 'time',
-                label: 'Specific Time',
-              },
-              {
-                value: 'otherGroup',
-                label: 'Other Consumer Group',
-              },
-            ]}
-          />
-        </Box>
+      <Flex flexDirection="column" gap={4}>
+        <Flex maxW={300} gap={2} flexDirection="column">
+          <Box>
+            <FormLabel>Topic</FormLabel>
+            <SingleSelect<string | null>
+              value={this.selectedTopic}
+              onChange={action((v) => {
+                this.selectedTopic = v;
+              })}
+              options={[
+                {
+                  value: null,
+                  label: 'All Topics',
+                },
+                ...topicChoices.map((x) => ({
+                  value: x,
+                  label: x,
+                })),
+              ]}
+            />
+          </Box>
+          <Box>
+            <FormLabel>Strategy</FormLabel>
+            <SingleSelect
+              isDisabled={this.isLoadingTimestamps}
+              value={this.selectedOption}
+              onChange={(v) => (this.selectedOption = v as EditOptions)}
+              options={[
+                {
+                  value: 'startOffset',
+                  label: 'Earliest',
+                },
+                {
+                  value: 'endOffset',
+                  label: 'Latest',
+                },
+                {
+                  value: 'shiftBy',
+                  label: 'Shift By',
+                },
+                {
+                  value: 'time',
+                  label: 'Specific Time',
+                },
+                {
+                  value: 'otherGroup',
+                  label: 'Other Consumer Group',
+                },
+              ]}
+            />
+          </Box>
+        </Flex>
 
         <Text>
           {
@@ -218,6 +229,7 @@ export class EditOffsetsModal extends Component<{
                 endOffset: "Set all offsets to the newest partition's offset.",
                 time: "Choose a timestamp to which all partition's offsets will be set.",
                 otherGroup: 'Copy offsets from another (inactive) consumer group',
+                shiftBy: 'Adjust offsets by a specified positive or negative value.',
               } as Record<EditOptions, string>
             )[this.selectedOption]
           }
@@ -230,6 +242,16 @@ export class EditOffsetsModal extends Component<{
               valueUtcMs={this.timestampUtcMs}
               onChange={(t) => (this.timestampUtcMs = t)}
               disabled={this.isLoadingTimestamps}
+            />
+          </Box>
+        )}
+
+        {this.selectedOption === 'shiftBy' && (
+          <Box mt={2}>
+            <FormLabel>Custom offset value</FormLabel>
+            <NumberInput
+              value={this.customOffsetValue}
+              onChange={(_, valueAsNumber) => (this.customOffsetValue = valueAsNumber)}
             />
           </Box>
         )}
@@ -293,65 +315,69 @@ export class EditOffsetsModal extends Component<{
       <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
         <Accordion
           defaultIndex={0}
-          items={this.offsetsByTopic.map(({ topicName, items }) => ({
-            heading: (
-              <Flex alignItems="center" gap={1} fontWeight={600} whiteSpace="nowrap">
-                {/* Title */}
-                <Text textOverflow="ellipsis" overflow="hidden" pr={8}>
-                  {topicName}
-                </Text>
-                <Text display="inline-block" ml="auto" padding="0 1rem">
-                  {items.length} Partitions
-                </Text>
-              </Flex>
-            ),
-            description: (
-              <DataTable<GroupOffset>
-                size="sm"
-                pagination
-                defaultPageSize={100}
-                sorting
-                data={items}
-                columns={[
-                  {
-                    size: 130,
-                    header: 'Partition',
-                    accessorKey: 'partitionId',
-                  },
-                  {
-                    size: 150,
-                    header: 'Offset Before',
-                    accessorKey: 'offset',
-                    cell: ({
-                      row: {
-                        original: { offset },
-                      },
-                    }) =>
-                      offset == null ? (
-                        <Tooltip
-                          label="The group does not have an offset for this partition yet"
-                          openDelay={1}
-                          placement="top"
-                          hasArrow
-                        >
-                          <span style={{ opacity: 0.66, marginLeft: '2px' }}>
-                            <SkipIcon />
-                          </span>
-                        </Tooltip>
-                      ) : (
-                        numberToThousandsString(offset)
+          items={this.offsetsByTopic
+            .filter(({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic)
+            .map(({ topicName, items }) => ({
+              heading: (
+                <Flex alignItems="center" gap={1} fontWeight={600} whiteSpace="nowrap">
+                  {/* Title */}
+                  <Text textOverflow="ellipsis" overflow="hidden" pr={8}>
+                    {topicName}
+                  </Text>
+                  <Text display="inline-block" ml="auto" padding="0 1rem">
+                    {items.length} Partitions
+                  </Text>
+                </Flex>
+              ),
+              description: (
+                <DataTable<GroupOffset>
+                  size="sm"
+                  pagination
+                  defaultPageSize={100}
+                  sorting
+                  data={items}
+                  columns={[
+                    {
+                      size: 130,
+                      header: 'Partition',
+                      accessorKey: 'partitionId',
+                    },
+                    {
+                      size: 150,
+                      header: 'Offset Before',
+                      accessorKey: 'offset',
+                      cell: ({
+                        row: {
+                          original: { offset },
+                        },
+                      }) =>
+                        offset == null ? (
+                          <Tooltip
+                            label="The group does not have an offset for this partition yet"
+                            openDelay={1}
+                            placement="top"
+                            hasArrow
+                          >
+                            <span style={{ opacity: 0.66, marginLeft: '2px' }}>
+                              <SkipIcon />
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          numberToThousandsString(offset)
+                        ),
+                    },
+                    {
+                      header: 'Offset After',
+                      id: 'offsetAfter',
+                      size: Number.POSITIVE_INFINITY,
+                      cell: ({ row: { original } }) => (
+                        <ColAfter selectedTime={this.timestampUtcMs} record={original} />
                       ),
-                  },
-                  {
-                    header: 'Offset After',
-                    id: 'offsetAfter',
-                    size: Number.POSITIVE_INFINITY,
-                    cell: ({ row: { original } }) => <ColAfter selectedTime={this.timestampUtcMs} record={original} />,
-                  },
-                ]}
-              />
-            ),
-          }))}
+                    },
+                  ]}
+                />
+              ),
+            }))}
         />
       </div>
     );
@@ -373,6 +399,12 @@ export class EditOffsetsModal extends Component<{
         // Latest
         for (const x of this.props.offsets) {
           x.newOffset = -1;
+        }
+      } else if (op === 'shiftBy') {
+        for (const x of this.props.offsets) {
+          if (x.offset) {
+            x.newOffset = x.offset + this.customOffsetValue;
+          }
         }
       } else if (op === 'time') {
         // Time
@@ -568,7 +600,9 @@ export class EditOffsetsModal extends Component<{
   async onApplyEdit() {
     const group = this.props.group;
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-    const offsets = this.props.offsets!;
+    const offsets = this.props.offsets!.filter(
+      ({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic,
+    );
 
     this.isApplyingEdit = true;
     const toastMsg = 'Applying offsets';
@@ -731,6 +765,8 @@ export class DeleteOffsetsModal extends Component<{
   mode: GroupDeletingMode;
   offsets: GroupOffset[] | null;
   onClose: () => void;
+  onInit: () => void;
+  disabledReason?: string;
 }> {
   lastOffsets: GroupOffset[];
 
@@ -741,173 +777,144 @@ export class DeleteOffsetsModal extends Component<{
     const visible = Boolean(offsets);
     if (offsets) this.lastOffsets = offsets;
     offsets = offsets ?? this.lastOffsets;
-    if (!offsets) return null;
 
-    const offsetsByTopic = offsets.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
-    const singleTopic = offsetsByTopic.length === 1;
-    const singlePartition = offsets.length === 1;
+    const offsetsByTopic = offsets?.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
+    const singlePartition = offsets?.length === 1;
 
     return (
-      <Modal isOpen={visible} onClose={this.props.onClose}>
-        <ModalOverlay />
-        <ModalContent minW="5xl">
-          <ModalHeader>{mode === 'group' ? 'Delete consumer group' : 'Delete consumer group offsets'}</ModalHeader>
-          <ModalBody>
-            <Flex flexDirection="row" gap={6}>
-              <div>
-                <div
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    padding: '12px',
-                    marginTop: '4px',
-                    background: '#F53649',
-                    borderRadius: '1000px',
-                  }}
-                >
-                  <TrashIconOutline color="white" />
-                </div>
-              </div>
-              <Box>
-                <Box>
-                  <Text>Are you sure you want to delete offsets from this consumer group?</Text>
-                  <Box fontWeight="600" mt={1} mb={6}>
-                    <Text>
-                      Group: <span className="codeBox">{group.groupId}</span>
-                    </Text>
-                  </Box>
-                </Box>
-
-                <Box>
-                  {mode === 'group' && (
-                    <Box>
-                      <Text>Group offsets will be deleted for all topics and partitions:</Text>
-                      <UnorderedList fontWeight="600" my={2}>
-                        {singleTopic ? (
-                          <>
-                            <ListItem>
-                              Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                            </ListItem>
-                            <ListItem>
-                              {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
-                            </ListItem>
-                          </>
-                        ) : (
-                          <>
-                            <ListItem>
-                              {offsetsByTopic.length} Topics / {offsets.length}{' '}
-                              {singlePartition ? 'partition' : 'partitions'}
-                            </ListItem>
-                          </>
-                        )}
-                      </UnorderedList>
-                    </Box>
-                  )}
-
-                  {mode === 'topic' && (
-                    <Box>
-                      <Text>Group offsets will be deleted for topic:</Text>
-                      <List fontWeight="600" my={2}>
-                        <ListItem>
-                          Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                        </ListItem>
-                        <ListItem>
-                          {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
-                        </ListItem>
-                      </List>
-                    </Box>
-                  )}
-
-                  {mode === 'partition' && (
-                    <Box>
-                      <Text>Group offsets will be deleted for partition:</Text>
-                      <UnorderedList fontWeight="600" my={2}>
-                        <ListItem>
-                          Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
-                        </ListItem>
-                        <ListItem>
-                          Partition: <span className="codeBox">{offsetsByTopic[0].items[0].partitionId}</span>
-                        </ListItem>
-                      </UnorderedList>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            </Flex>
-          </ModalBody>
-          <ModalFooter gap={2}>
-            <Button onClick={() => this.onDeleteOffsets()} colorScheme="red">
-              Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
-
-  @action
-  async onDeleteOffsets() {
-    const group = this.props.group;
-    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-    const offsets = this.props.offsets!;
-
-    const toastMsg = 'Deleting offsets';
-    const toastRef = toast({
-      status: 'loading',
-      description: `${toastMsg}...`,
-      duration: null,
-    });
-    try {
-      if (this.props.mode === 'group') {
-        await api.deleteConsumerGroup(group.groupId);
-      } else {
-        const deleteRequest = createDeleteRequest(offsets);
-        const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
-        const errors = deleteResponse
-          .map((t) => ({
-            ...t,
-            partitions: t.partitions.filter((x) => x.error),
-          }))
-          .filter((t) => t.partitions.length > 0);
-        if (errors.length > 0) {
-          console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
-          throw { request: deleteRequest, errors: errors };
+      <ConfirmItemDeleteModal
+        heading="Delete consumer group"
+        trigger={
+          <RPButton variant="outline" onClick={this.props.onInit} disabledReason={this.props.disabledReason}>
+            Delete group
+          </RPButton>
         }
-      }
+        itemType="consumer-group"
+        onConfirm={async (dismiss: (value?: unknown) => void, onError: (msg: string) => void) => {
+          const group = this.props.group;
+          // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+          const offsets = this.props.offsets!;
 
-      toast.update(toastRef, {
-        status: 'success',
-        duration: 2000,
-        description: `${toastMsg} - done`,
-      });
-    } catch (err) {
-      console.error(err);
-      toast.update(toastRef, {
-        status: 'error',
-        duration: 2000,
-        description: `${toastMsg} - failed`,
-      });
-      showErrorModal(
-        'Delete offsets',
-        <span>
-          Could not delete selected offsets in consumer group <span className="codeBox">{group.groupId}</span>.
-        </span>,
-        toJson(err, 4),
-      );
-    } finally {
-      api.refreshConsumerGroups(true);
+          const toastMsg = 'Deleting offsets';
+          const toastRef = toast({
+            status: 'loading',
+            description: `${toastMsg}...`,
+            duration: null,
+          });
+          try {
+            if (this.props.mode === 'group') {
+              await api.deleteConsumerGroup(group.groupId);
+            } else {
+              const deleteRequest = createDeleteRequest(offsets);
+              const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
+              const errors = deleteResponse
+                .map((t) => ({
+                  ...t,
+                  partitions: t.partitions.filter((x) => x.error),
+                }))
+                .filter((t) => t.partitions.length > 0);
+              if (errors.length > 0) {
+                console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
+                throw { request: deleteRequest, errors: errors };
+              }
+            }
 
-      const remainingOffsets = group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length;
-      if (remainingOffsets === 0) {
-        // Group is fully deleted, go back to list
-        appGlobal.history.replace('/groups');
-      } else {
-        this.props.onClose();
-      }
-    }
+            toast.update(toastRef, {
+              status: 'success',
+              duration: 2000,
+              description: `${toastMsg} - done`,
+            });
+
+            const remainingOffsets = group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length;
+            if (remainingOffsets === 0) {
+              // Group is fully deleted, go back to list
+              this.props.onClose();
+              appGlobal.history.replace('/groups');
+            } else {
+              this.props.onClose();
+              dismiss();
+            }
+          } catch (err) {
+            toast.close(toastRef);
+            console.error(err);
+            onError(`Could not delete selected offsets in consumer group ${group.groupId} - ${toJson(err, 4)}`);
+          } finally {
+            api.refreshConsumerGroups(true);
+          }
+        }}
+      >
+        <Box>
+          {visible && (
+            <Box>
+              {mode === 'group' && (
+                <Box>
+                  <Box borderRadius="md" mb={4}>
+                    <Text>This action will delete the following consumer group:</Text>
+                  </Box>
+
+                  <Flex flexDirection="column" gap={1}>
+                    <Text>
+                      <Text as="span" fontWeight="bold">
+                        Name:
+                      </Text>{' '}
+                      {group.groupId}
+                    </Text>
+
+                    <Text>
+                      <Text as="span" fontWeight="bold">
+                        Partitions:
+                      </Text>{' '}
+                      {offsets.length}
+                    </Text>
+
+                    <Text>
+                      <Text as="span" fontWeight="bold">
+                        Topics:
+                      </Text>{' '}
+                      {offsetsByTopic.length}
+                    </Text>
+
+                    <Text>Are you sure?</Text>
+                  </Flex>
+                </Box>
+              )}
+
+              {mode === 'topic' && (
+                <Box>
+                  <Text>Group offsets will be deleted for topic:</Text>
+                  <List fontWeight="600" my={2}>
+                    <ListItem>
+                      Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
+                    </ListItem>
+                    <ListItem>
+                      {offsets.length} {singlePartition ? 'Partition' : 'Partitions'}
+                    </ListItem>
+                  </List>
+                </Box>
+              )}
+
+              {mode === 'partition' && (
+                <Box>
+                  <Text>Group offsets will be deleted for partition:</Text>
+                  <UnorderedList fontWeight="600" my={2}>
+                    <ListItem>
+                      Topic: <span className="codeBox">{offsetsByTopic[0].topicName}</span>
+                    </ListItem>
+                    <ListItem>
+                      Partition: <span className="codeBox">{offsetsByTopic[0].items[0].partitionId}</span>
+                    </ListItem>
+                  </UnorderedList>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
+      </ConfirmItemDeleteModal>
+    );
   }
 }
 
+// Utility functions
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
