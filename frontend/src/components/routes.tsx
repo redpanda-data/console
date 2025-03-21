@@ -46,9 +46,9 @@ import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgres
 import AdminPage from './pages/admin/AdminPage';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
-import { AgentDetailsPage } from './pages/agents/agent-details-page';
 import { AgentListPage } from './pages/agents/agent-list-page';
 import { CreateAgentPage } from './pages/agents/create-agent-page';
+import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import CreateConnector from './pages/connect/CreateConnector';
