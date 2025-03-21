@@ -9,6 +9,7 @@ import {
   listPipelines,
   startPipeline,
   stopPipeline,
+  updatePipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
   GetPipelineRequest,
@@ -28,6 +29,9 @@ import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-wit
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 export const REDPANDA_AI_AGENT_PIPELINE_PREFIX = '_redpanda-agent';
+export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
+export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
+export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 
 export const useGetPipelineQuery = ({ id }: { id: Pipeline['id'] }) => {
   const getPipelineRequestDataPlane = new GetPipelineRequestDataPlane({ id });
@@ -35,7 +39,7 @@ export const useGetPipelineQuery = ({ id }: { id: Pipeline['id'] }) => {
   return useQuery(getPipeline, getPipelineRequest);
 };
 
-export const useListPipelinesAndAgentsQuery = (
+export const useListPipelinesQuery = (
   input?: PartialMessage<ListPipelinesRequestDataPlane>,
   options?: QueryOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse>,
 ) => {
@@ -54,18 +58,12 @@ export const useListPipelinesAndAgentsQuery = (
     enabled: options?.enabled,
   });
 
-  const allRecords = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
-
-  const pipelines = allRecords?.filter(
-    (pipeline) => !pipeline?.displayName.startsWith(REDPANDA_AI_AGENT_PIPELINE_PREFIX),
-  );
-  const agents = allRecords?.filter((pipeline) => pipeline?.displayName.startsWith(REDPANDA_AI_AGENT_PIPELINE_PREFIX));
+  const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
 
   return {
     ...listPipelinesResult,
     data: {
-      pipelines,
-      agents,
+      pipelines: allRetrievedPipelines,
     },
   };
 };
@@ -86,6 +84,28 @@ export const useCreatePipelineMutationWithToast = () => {
       showToast({
         id: TOASTS.PIPELINE.CREATE.ERROR,
         title: formatToastErrorMessageGRPC({ error, action: 'create', entity: 'pipeline' }),
+        status: 'error',
+      });
+    },
+  });
+};
+
+export const useUpdatePipelineMutationWithToast = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(updatePipeline, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+      showToast({
+        id: TOASTS.PIPELINE.UPDATE.SUCCESS,
+        title: 'Pipeline updated successfully',
+        status: 'success',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        id: TOASTS.PIPELINE.UPDATE.ERROR,
+        title: formatToastErrorMessageGRPC({ error, action: 'update', entity: 'pipeline' }),
         status: 'error',
       });
     },

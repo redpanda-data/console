@@ -20,6 +20,10 @@ import './assets/fonts/kumbh-sans.css';
 import './assets/fonts/inter.css';
 /* end global styles */
 
+/* start tailwind styles */
+import './globals.css';
+/* end tailwind styles */
+
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/ui';
@@ -66,7 +70,7 @@ const App = () => {
   return (
     <BrowserRouter basename={getBasePath()}>
       <HistorySetter />
-      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
         <TransportProvider transport={transport}>
           <QueryClientProvider client={queryClient}>
             <ErrorBoundary>
