@@ -1660,7 +1660,7 @@ components:
       description: RedpandaCloud
       flows:
         implicit:
-          authorizationUrl: https://prod-cloudv2.us.auth0.com/oauth/authorize
+          authorizationUrl: https://auth.prd.cloud.redpanda.com/oauth/authorize
           scopes: {}
           x-client-id: dQjapNIAHhF7EQqQToRla3yEII9sUSap
       type: oauth2
