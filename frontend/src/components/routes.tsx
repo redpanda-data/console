@@ -159,7 +159,7 @@ enum DisabledReasons {
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.noPermission]: (
     <span>
-      You don't have premissions
+      You don't have permissions
       <br />
       to view this page.
     </span>
