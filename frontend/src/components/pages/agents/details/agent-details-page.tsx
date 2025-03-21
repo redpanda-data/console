@@ -7,8 +7,8 @@ import { REDPANDA_AI_AGENT_PIPELINE_PREFIX, useGetPipelineQuery } from 'react-qu
 import { useHistory, useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { DeleteAgentModal } from '../delete-agent-modal';
-import { AgentChatTab } from './agent-chat-tab';
 import { AgentPipelineTab } from './agent-pipeline-tab';
+import { AgentChatTab } from './chat/agent-chat-tab';
 import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
 
 // Hack for MobX to ensure we don't need to use observables
@@ -53,7 +53,7 @@ export const AgentDetailsPage = () => {
     {
       key: 'chat',
       name: 'Chat',
-      component: <AgentChatTab />,
+      component: <AgentChatTab agent={agent} />,
     },
     // TODO: Update once pipelines are grouped together by tag
     {
