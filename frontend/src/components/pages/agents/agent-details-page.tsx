@@ -7,7 +7,7 @@ import { uiState } from 'state/uiState';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = ({ agent }: { agent: Pipeline | undefined }) => {
-  const nameWithoutPrefix = agent?.displayName.replace(REDPANDA_AI_AGENT_PIPELINE_PREFIX, '');
+  const nameWithoutPrefix = agent?.displayName.replace(REDPANDA_AI_AGENT_PIPELINE_PREFIX, '') ?? '';
   runInAction(() => {
     uiState.pageTitle = `Agent ${nameWithoutPrefix}`;
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the agent title is used without previous page breadcrumb being shown

@@ -1,6 +1,7 @@
 import {
   Button,
   ButtonGroup,
+  Link as ChakraLink,
   DataTable,
   Empty,
   Flex,
@@ -10,6 +11,7 @@ import {
   Spinner,
   Stack,
   Text,
+  useDisclosure,
 } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -24,8 +26,9 @@ import { AiOutlineDelete } from 'react-icons/ai';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { MdCheck, MdDone, MdError, MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { useListPipelinesQuery } from 'react-query/api/pipeline';
-import { useHistory } from 'react-router-dom';
+import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
 import { uiState } from 'state/uiState';
+import { DeleteAgentModal } from './delete-agent-modal';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
@@ -105,6 +108,14 @@ export const AgentListPage = () => {
   const history = useHistory();
 
   const [nameContains, setNameContains] = useState('');
+
+  const [deleteAgentId, setDeleteAgentId] = useState<string>('');
+
+  const {
+    isOpen: isDeleteAgentModalOpen,
+    onOpen: onDeleteAgentModalOpen,
+    onClose: onDeleteAgentModalClose,
+  } = useDisclosure();
   const {
     data: agentList,
     isLoading: isAgentListLoading,
@@ -122,93 +133,109 @@ export const AgentListPage = () => {
     // }),
   );
 
-  console.log('agentList: ', agentList);
-
-  // const filteredAgentList = agentList?.fil
-
   useEffect(() => {
     updatePageTitle();
   }, []);
+
+  const handleDeleteAgentModal = (agentId: string) => {
+    setDeleteAgentId(agentId);
+    onDeleteAgentModalOpen();
+  };
 
   if (isAgentListError) {
     return <Empty />;
   }
 
   return (
-    <Stack spacing={8}>
-      <Stack spacing={4}>
-        <Text>Manage your AI agents.</Text>
-        <ButtonGroup>
-          <Button
-            variant="outline"
-            onClick={() => {
-              history.push('/agents/create');
-            }}
-            data-testid="create-agent-button"
-          >
-            Create new Agent
-          </Button>
-        </ButtonGroup>
-      </Stack>
+    <>
+      <Stack spacing={8}>
+        <Stack spacing={4}>
+          <Text>Manage your AI agents.</Text>
+          <ButtonGroup>
+            <Button
+              variant="outline"
+              onClick={() => {
+                history.push('/agents/create');
+              }}
+              data-testid="create-agent-button"
+            >
+              Create new Agent
+            </Button>
+          </ButtonGroup>
+        </Stack>
 
-      <SearchField
-        width="350px"
-        searchText={nameContains}
-        setSearchText={setNameContains}
-        placeholderText="Filter agents..."
-      />
-
-      {isAgentListLoading ? (
-        <Flex justifyContent="center" padding={8}>
-          <Spinner size="lg" />
-        </Flex>
-      ) : agentList?.pipelines?.length === 0 ? (
-        <Empty />
-      ) : (
-        <DataTable
-          data={agentList?.pipelines ?? []}
-          pagination
-          defaultPageSize={10}
-          sorting
-          columns={[
-            {
-              header: 'Name',
-              cell: ({ row: { original } }) => (
-                <Text data-testid={`agent-name-${original?.id}`}>{original?.displayName}</Text>
-              ),
-              size: 200,
-            },
-            {
-              header: 'Description',
-              cell: ({ row: { original } }) => (
-                <Text data-testid={`agent-description-${original?.id}`}>{original?.description}</Text>
-              ),
-              size: 200,
-            },
-            {
-              header: 'Status',
-              id: 'status',
-              cell: ({ row: { original } }) => <AgentStateDisplayValue status={original?.state} />,
-              size: 50,
-            },
-            {
-              header: '',
-              id: 'actions',
-              cell: ({ row: { original } }) => (
-                <HStack spacing={4} justifyContent="flex-end" width="100%">
-                  <Icon
-                    data-testid={`delete-agent-${original?.id}`}
-                    as={AiOutlineDelete}
-                    // onClick={() => handleDeleteSecretModal(original?.id ?? '')}
-                    cursor="pointer"
-                    aria-label="Delete agent"
-                  />
-                </HStack>
-              ),
-            },
-          ]}
+        <SearchField
+          width="350px"
+          searchText={nameContains}
+          setSearchText={setNameContains}
+          placeholderText="Filter agents..."
         />
-      )}
-    </Stack>
+
+        {isAgentListLoading ? (
+          <Flex justifyContent="center" padding={8}>
+            <Spinner size="lg" />
+          </Flex>
+        ) : agentList?.pipelines?.length === 0 ? (
+          <Empty />
+        ) : (
+          <DataTable
+            data={agentList?.pipelines ?? []}
+            pagination
+            defaultPageSize={10}
+            sorting
+            columns={[
+              {
+                header: 'Name',
+                cell: ({ row: { original } }) => (
+                  <ChakraLink
+                    as={ReactRouterLink}
+                    to={`/agents/${original?.id}`}
+                    textDecoration="none"
+                    _hover={{
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <Text data-testid={`agent-name-${original?.id}`}>{original?.displayName}</Text>
+                  </ChakraLink>
+                ),
+                size: Number.POSITIVE_INFINITY,
+              },
+              {
+                header: 'Description',
+                cell: ({ row: { original } }) => (
+                  <Text data-testid={`agent-description-${original?.id}`}>{original?.description}</Text>
+                ),
+              },
+              {
+                header: 'Status',
+                id: 'status',
+                cell: ({ row: { original } }) => <AgentStateDisplayValue status={original?.state} />,
+              },
+              {
+                header: '',
+                id: 'actions',
+                cell: ({ row: { original } }) => (
+                  <HStack spacing={4} justifyContent="flex-end">
+                    <Icon
+                      data-testid={`delete-agent-${original?.id}`}
+                      as={AiOutlineDelete}
+                      onClick={() => handleDeleteAgentModal(original?.id ?? '')}
+                      cursor="pointer"
+                      aria-label="Delete agent"
+                    />
+                  </HStack>
+                ),
+              },
+            ]}
+          />
+        )}
+      </Stack>
+      <DeleteAgentModal
+        isOpen={isDeleteAgentModalOpen}
+        onClose={onDeleteAgentModalClose}
+        agentId={deleteAgentId}
+        agentName={agentList?.pipelines?.find((pipeline) => pipeline?.id === deleteAgentId)?.displayName ?? ''}
+      />
+    </>
   );
 };
