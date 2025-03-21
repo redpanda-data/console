@@ -27,7 +27,6 @@ import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
@@ -116,7 +115,6 @@ interface Config {
   debugBundleClient?: Client<typeof DebugBundleService>;
   securityClient?: Client<typeof SecurityService>;
   pipelinesClient?: Client<typeof PipelineService>;
-  pipelinesClientV2?: Client<typeof PipelineServiceV2>;
   rpcnSecretsClient?: Client<typeof RPCNSecretService>;
   transformsClient?: Client<typeof TransformService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
@@ -156,7 +154,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const debugBundleGrpcClient = createClient(DebugBundleService, transport);
   const securityGrpcClient = createClient(SecurityService, transport);
   const pipelinesGrpcClient = createClient(PipelineService, transport);
-  const pipelinesV2GrpcClient = createClient(PipelineServiceV2, transport);
   const secretGrpcClient = createClient(RPCNSecretService, transport);
   const transformClient = createClient(TransformService, transport);
   Object.assign(config, {
@@ -170,7 +167,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     debugBundleClient: debugBundleGrpcClient,
     securityClient: securityGrpcClient,
     pipelinesClient: pipelinesGrpcClient,
-    pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     ...args,
