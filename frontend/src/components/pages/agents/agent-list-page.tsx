@@ -14,21 +14,13 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
-import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-// import {
-//   ListPipelinesRequest as ListPipelinesRequestDataPlane,
-//   ListPipelinesRequest_Filter,
-//   Pipeline_State,
-// } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
-import { FaRegStopCircle } from 'react-icons/fa';
-import { MdCheck, MdDone, MdError, MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { useListPipelinesQuery } from 'react-query/api/pipeline';
 import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { DeleteAgentModal } from './delete-agent-modal';
+import { AgentStateDisplayValue } from './details/agent-state-display-value';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
@@ -37,71 +29,6 @@ export const updatePageTitle = () => {
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the agent title is used without previous page breadcrumb being shown
     uiState.pageBreadcrumbs.push({ title: 'Agents', linkTo: '/agents', heading: 'Agents' });
   });
-};
-
-interface AgentStateDisplayValueProps {
-  status?: Pipeline_State;
-}
-
-const AgentStateDisplayValue = ({ status }: AgentStateDisplayValueProps) => {
-  switch (status) {
-    case Pipeline_State.UNSPECIFIED: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={MdOutlineQuestionMark} color="red" />
-          <Text>Unknown</Text>
-        </HStack>
-      );
-    }
-    case Pipeline_State.STARTING: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={MdRefresh} color="blue" />
-          <Text>Starting</Text>
-        </HStack>
-      );
-    }
-    case Pipeline_State.RUNNING: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={MdCheck} color="green" />
-          <Text>Running</Text>
-        </HStack>
-      );
-    }
-    case Pipeline_State.STOPPING: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={MdRefresh} color="blue" />
-          <Text>Stopping</Text>
-        </HStack>
-      );
-    }
-    case Pipeline_State.STOPPED: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={FaRegStopCircle} />
-          <Text>Stopped</Text>
-        </HStack>
-      );
-    }
-    case Pipeline_State.ERROR: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={MdError} color="red" />
-          <Text>Error</Text>
-        </HStack>
-      );
-    }
-    case Pipeline_State.COMPLETED: {
-      return (
-        <HStack spacing={2}>
-          <Icon as={MdDone} color="green" />
-          <Text>Completed</Text>
-        </HStack>
-      );
-    }
-  }
 };
 
 export const AgentListPage = () => {
@@ -209,7 +136,7 @@ export const AgentListPage = () => {
               {
                 header: 'Status',
                 id: 'status',
-                cell: ({ row: { original } }) => <AgentStateDisplayValue status={original?.state} />,
+                cell: ({ row: { original } }) => <AgentStateDisplayValue state={original?.state} />,
               },
               {
                 header: '',
