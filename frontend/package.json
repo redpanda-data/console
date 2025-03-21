@@ -48,6 +48,8 @@
     "@tanstack/react-query": "^5.69.0",
     "array-move": "^4",
     "chakra-react-select": "5.0.4",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
     "framer-motion": "^7",
     "js-base64": "^3.7.7",
     "mobx": "^6.10",
