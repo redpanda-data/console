@@ -11,16 +11,20 @@ interface AgentPipelineTabProps {
 export const AgentPipelineTab = ({ agent }: AgentPipelineTabProps) => {
   return (
     <Stack spacing={8} mt={4}>
-      <HStack spacing={8}>
+      <Stack spacing={1}>
         <HStack spacing={2}>
-          <Text fontWeight="medium">Status:</Text>
+          <Text fontWeight="medium">Status</Text>
           <AgentStateDisplayValue state={agent?.state} />
         </HStack>
         <HStack spacing={2}>
-          <Text fontWeight="medium">ID:</Text>
-          <Text>{agent?.id || '-'}</Text>
+          <Text fontWeight="medium">ID</Text>
+          <Text>{agent?.id ?? '-'}</Text>
         </HStack>
-      </HStack>
+        <HStack spacing={2}>
+          <Text fontWeight="medium">URL</Text>
+          <Text>{agent?.url ?? '-'}</Text>
+        </HStack>
+      </Stack>
       <AgentPipelineTabLogs agent={agent} />
     </Stack>
   );

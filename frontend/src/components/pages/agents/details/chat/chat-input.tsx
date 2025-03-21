@@ -48,7 +48,12 @@ export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
       setIsTyping(true);
 
       // Send message to API along with chat history
-      const apiResponse = await sendMessageToApi(userMessage.content, agentUrl, [...messages, userMessage]);
+
+      const apiResponse = await sendMessageToApi({
+        message: userMessage.content,
+        chatHistory: [...messages, userMessage],
+        agentUrl,
+      });
 
       // Hide typing indicator
       setIsTyping(false);

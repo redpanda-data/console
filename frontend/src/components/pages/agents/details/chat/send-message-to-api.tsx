@@ -21,11 +21,17 @@ interface ChatApiRequest {
 // Limit chat history to last 30 messages
 export const CHAT_HISTORY_MESSAGE_LIMIT = 30;
 
-export const sendMessageToApi = async (
-  message: string,
-  agentUrl: string,
-  chatHistory: ChatMessage[],
-): Promise<ChatApiResponse> => {
+interface SendMessageToApiProps {
+  message: string;
+  chatHistory: ChatMessage[];
+  agentUrl?: string;
+}
+
+export const sendMessageToApi = async ({
+  message,
+  chatHistory,
+  agentUrl,
+}: SendMessageToApiProps): Promise<ChatApiResponse> => {
   try {
     const recentHistory = chatHistory.slice(-CHAT_HISTORY_MESSAGE_LIMIT);
 
@@ -45,6 +51,7 @@ export const sendMessageToApi = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // 'Access-Control-Allow-Origin': '*',
       },
       body: JSON.stringify(payload),
     });
