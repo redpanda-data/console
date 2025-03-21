@@ -21,7 +21,7 @@ export const AgentPipelineTab = ({ agent }: AgentPipelineTabProps) => {
           <Text>{agent?.id || '-'}</Text>
         </HStack>
       </HStack>
-      <AgentPipelineTabLogs />
+      <AgentPipelineTabLogs agent={agent} />
     </Stack>
   );
 };
