@@ -14,16 +14,6 @@ import { sanitizeString } from 'utils/filterHelper';
 import { TimestampDisplay } from 'utils/tsxUtils';
 import { encodeBase64 } from 'utils/utils';
 
-// Add logging UI settings to the uiState if it doesn't exist
-if (!('agentDetails' in uiState)) {
-  runInAction(() => {
-    (uiState as any).agentDetails = observable({
-      logsQuickSearch: '',
-      sorting: [] as SortingState,
-    });
-  });
-}
-
 const isFilterMatch = (filter: string, message: TopicMessage): boolean => {
   if (!filter) return true;
 
@@ -84,6 +74,16 @@ interface AgentPipelineTabLogsProps {
  * for inspiration
  */
 export const AgentPipelineTabLogs = observer(({ agent }: AgentPipelineTabLogsProps) => {
+  // Add logging UI settings to the uiState if it doesn't exist
+  if (!('agentDetails' in uiState)) {
+    runInAction(() => {
+      (uiState as any).agentDetails = observable({
+        logsQuickSearch: '',
+        sorting: [] as SortingState,
+      });
+    });
+  }
+
   const createLogsTabState = () => {
     const search: MessageSearch = createMessageSearch();
     const state = observable({
