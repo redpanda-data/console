@@ -1,5 +1,5 @@
 import { Box, Button, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import type { ColumnDef, ColumnSort, SortingState } from '@tanstack/react-table';
 import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Messages';
 import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
@@ -13,6 +13,14 @@ import { uiState } from 'state/uiState';
 import { sanitizeString } from 'utils/filterHelper';
 import { TimestampDisplay } from 'utils/tsxUtils';
 import { encodeBase64 } from 'utils/utils';
+
+// Default sorting configuration - sort by timestamp in descending order
+const DEFAULT_SORTING: SortingState = [
+  {
+    id: 'timestamp',
+    desc: true,
+  },
+];
 
 const isFilterMatch = (filter: string, message: TopicMessage): boolean => {
   if (!filter) return true;
@@ -79,7 +87,7 @@ export const AgentPipelineTabLogs = observer(({ agent }: AgentPipelineTabLogsPro
     runInAction(() => {
       (uiState as any).agentDetails = observable({
         logsQuickSearch: '',
-        sorting: [] as SortingState,
+        sorting: DEFAULT_SORTING,
       });
     });
   }
