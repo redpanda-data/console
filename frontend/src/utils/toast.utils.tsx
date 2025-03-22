@@ -45,6 +45,12 @@ export const TOASTS = {
       ERROR: 'PIPELINE_DELETE_ERROR',
     },
   },
+  TOPIC: {
+    CREATE: {
+      SUCCESS: 'TOPIC_CREATE_SUCCESS',
+      ERROR: 'TOPIC_CREATE_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
