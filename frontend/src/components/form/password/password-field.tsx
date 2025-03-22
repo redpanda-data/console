@@ -10,8 +10,8 @@ import {
   useBoolean,
 } from '@redpanda-data/ui';
 import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
-import { ErrorInfoField } from './error-info-field';
-import { useFieldContext } from './form-hook-contexts';
+import { ErrorInfoField } from '../error-info/error-info-field';
+import { useFieldContext } from '../form-hook-contexts';
 
 interface PasswordFieldProps extends InputProps {
   label?: string;
