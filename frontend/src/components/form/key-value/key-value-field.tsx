@@ -1,4 +1,5 @@
 import { Button, Flex, FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
+import type { ReactNode } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
@@ -8,8 +9,8 @@ interface KeyValuePair {
 }
 
 interface KeyValueFieldProps extends InputProps {
-  label: string;
-  helperText?: string;
+  label: ReactNode;
+  helperText?: ReactNode;
 }
 
 export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps) => {
@@ -23,7 +24,7 @@ export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps
   return (
     <FormControl mb={4}>
       <FormLabel fontWeight="medium">{label}</FormLabel>
-      {helperText && <FormHelperText mb={2}>{helperText}</FormHelperText>}
+      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
 
       {field.state.value.map((_, index) => (
         <KeyValuePairField key={index} index={index} {...rest} />
