@@ -20,10 +20,12 @@ export const AgentPipelineTab = ({ agent }: AgentPipelineTabProps) => {
           <Text fontWeight="medium">ID</Text>
           <Text>{agent?.id ?? '-'}</Text>
         </HStack>
-        <HStack spacing={2}>
-          <Text fontWeight="medium">URL</Text>
-          <Text>{agent?.url ?? '-'}</Text>
-        </HStack>
+        {agent?.url && (
+          <HStack spacing={2}>
+            <Text fontWeight="medium">URL</Text>
+            <Text>{agent?.url}</Text>
+          </HStack>
+        )}
       </Stack>
       <AgentPipelineTabLogs agent={agent} />
     </Stack>
