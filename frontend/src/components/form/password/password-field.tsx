@@ -1,6 +1,7 @@
 import {
   Button,
   FormControl,
+  FormHelperText,
   FormLabel,
   Icon,
   Input,
@@ -9,21 +10,24 @@ import {
   InputRightElement,
   useBoolean,
 } from '@redpanda-data/ui';
+import type { ReactNode } from 'react';
 import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
 interface PasswordFieldProps extends InputProps {
-  label?: string;
+  label?: ReactNode;
+  helperText?: ReactNode;
 }
 
-export const PasswordField = ({ label, ...rest }: PasswordFieldProps) => {
+export const PasswordField = ({ label, helperText, ...rest }: PasswordFieldProps) => {
   const field = useFieldContext<string>();
   const [showValue, setShowValue] = useBoolean(false);
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
       {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
+      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
       <InputGroup>
         <Input
           type={showValue ? 'text' : 'password'}
