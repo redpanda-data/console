@@ -7,9 +7,27 @@ import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils'
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
+const internalTopics = [
+  '__consumer_offsets',
+  '__redpanda.connect.logs',
+  '__redpanda.connect.status',
+  '__redpanda.connectors_logs',
+  '_internal_connectors_configs',
+  '_internal_connectors_offsets',
+  '_internal_connectors_status',
+  '_redpanda.audit_log',
+  '_redpanda_e2e_probe',
+  '_schemas',
+];
+
+interface ListTopicsExtraOptions {
+  includeInternalTopics?: boolean;
+}
+
 export const useListTopicsQuery = (
   input?: PartialMessage<ListTopicsRequest>,
   options?: QueryOptions<ListTopicsRequest, ListTopicsResponse, ListTopicsResponse>,
+  { includeInternalTopics = false }: ListTopicsExtraOptions = {},
 ) => {
   const listTopicsRequest = new ListTopicsRequest({
     pageSize: MAX_PAGE_SIZE,
@@ -24,10 +42,14 @@ export const useListTopicsQuery = (
 
   const allRetrievedTopics = listTopicsResult?.data?.pages?.flatMap(({ topics }) => topics);
 
+  const topics = includeInternalTopics
+    ? allRetrievedTopics
+    : allRetrievedTopics?.filter((topic) => !internalTopics.includes(topic.name));
+
   return {
     ...listTopicsResult,
     data: {
-      topics: allRetrievedTopics,
+      topics,
     },
   };
 };
