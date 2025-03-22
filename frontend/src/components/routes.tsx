@@ -47,7 +47,8 @@ import AdminPage from './pages/admin/AdminPage';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
 import { AgentListPage } from './pages/agents/agent-list-page';
-import { CreateAgentPage } from './pages/agents/create-agent-page';
+import { CreateAgentPage } from './pages/agents/create/create-agent-page';
+import { CreateAgentHTTP } from './pages/agents/create/templates/http/create-agent-http';
 import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
@@ -339,6 +340,7 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
 
   MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents'),
+  MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents'),
 
   MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents'),
 
