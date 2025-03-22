@@ -1,6 +1,6 @@
 import { FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
-import { ErrorInfoField } from './error-info-field';
-import { useFieldContext } from './form-hook-contexts';
+import { ErrorInfoField } from '../error-info/error-info-field';
+import { useFieldContext } from '../form-hook-contexts';
 
 interface TextFieldProps extends Omit<InputProps, 'transform'> {
   label?: string;
