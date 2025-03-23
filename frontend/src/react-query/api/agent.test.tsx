@@ -14,16 +14,24 @@ import { connectQueryWrapper, renderHook, waitFor } from 'test-utils';
 import { useCreateAgentPipelinesMutation } from './agent';
 
 describe('Agent API wrapper', () => {
-  test('useCreateAgentPipelinesMutation should trigger mutations for multiple pipelines for the agent', async () => {
+  test('useCreateAgentPipelinesMutation should trigger mutations for multiple pipelines for the agent and add internal tags', async () => {
     const firstPipeline = new PipelineCreate({
       displayName: 'firstPipeline',
-      description: 'firstPipeline',
+      description: 'firstPipelineDescription',
       configYaml: 'firstPipeline',
+      tags: {
+        __redpanda_cloud_agent_name: 'agent',
+        __redpanda_cloud_agent_description: 'description',
+      },
     });
     const secondPipeline = new PipelineCreate({
       displayName: 'secondPipeline',
-      description: 'secondPipeline',
+      description: 'secondPipelineDescription',
       configYaml: 'secondPipeline',
+      tags: {
+        __redpanda_cloud_agent_name: 'agent',
+        __redpanda_cloud_agent_description: 'description',
+      },
     });
 
     const pipelines = [firstPipeline, secondPipeline];
@@ -56,7 +64,14 @@ describe('Agent API wrapper', () => {
         1,
         new CreatePipelineRequest({
           request: new CreatePipelineRequestDataPlane({
-            pipeline: pipelines[0],
+            pipeline: {
+              ...firstPipeline,
+              tags: {
+                ...firstPipeline.tags,
+                __redpanda_cloud_agent_id: expect.any(String),
+                __redpanda_cloud_pipeline_type: 'agent',
+              },
+            },
           }),
         }),
         expect.anything(),
@@ -65,7 +80,14 @@ describe('Agent API wrapper', () => {
         2,
         new CreatePipelineRequest({
           request: new CreatePipelineRequestDataPlane({
-            pipeline: pipelines[1],
+            pipeline: {
+              ...secondPipeline,
+              tags: {
+                ...secondPipeline.tags,
+                __redpanda_cloud_agent_id: expect.any(String),
+                __redpanda_cloud_pipeline_type: 'agent',
+              },
+            },
           }),
         }),
         expect.anything(),
