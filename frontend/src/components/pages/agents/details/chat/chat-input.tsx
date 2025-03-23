@@ -122,7 +122,7 @@ export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
             autoCapitalize="off"
             disabled={isSending}
           />
-          <SendMessageButton inputValue={inputValue} isSending={isSending} />
+          <SendMessageButton inputValue={inputValue} isSending={isSending} onClick={handleSendMessage} />
         </div>
       </form>
       <p className="text-xs text-slate-500 mt-2">Press Enter to send, Shift+Enter for a new line</p>
