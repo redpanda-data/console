@@ -1,7 +1,7 @@
 import type { ChatMessage } from 'database/chat-db';
 import fetchWithTimeout from 'utils/fetchWithTimeout';
 
-const API_TIMEOUT = 15000; // 15 seconds
+const API_TIMEOUT = 15 * 1_000; // 15 seconds
 
 interface ChatApiResponse {
   message: string;

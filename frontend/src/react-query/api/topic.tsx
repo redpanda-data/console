@@ -1,33 +1,93 @@
 import type { PartialMessage } from '@bufbuild/protobuf';
-import { useMutation } from '@connectrpc/connect-query';
-import { useQueryClient } from '@tanstack/react-query';
+import { ConnectError } from '@connectrpc/connect';
+import { createConnectInfiniteQueryKey, useMutation } from '@connectrpc/connect-query';
+import {
+  useQueryClient,
+  useMutation as useTanstackMutation,
+  useQuery as useTanstackQuery,
+} from '@tanstack/react-query';
+import { config } from 'config';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
-import { ListTopicsRequest, type ListTopicsResponse } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import {
+  type CreateTopicRequest_Topic,
+  ListTopicsRequest,
+  type ListTopicsResponse,
+  ListTopicsResponse_Topic,
+} from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import type { GetTopicsResponse } from 'state/restInterfaces';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
-const internalTopics = [
-  '__consumer_offsets',
-  '__redpanda.connect.logs',
-  '__redpanda.connect.status',
-  '__redpanda.connectors_logs',
-  '_internal_connectors_configs',
-  '_internal_connectors_offsets',
-  '_internal_connectors_status',
-  '_redpanda.audit_log',
-  '_redpanda_e2e_probe',
-  '_schemas',
-];
+/**
+ * We need to use legacy API to list topics for now
+ * because of authorization that is only possible with Console v3 and above.
+ * TODO: Remove once Console v3 is released.
+ */
+export const useLegacyListTopicsQuery = (
+  _input?: PartialMessage<ListTopicsRequest>,
+  options?: QueryOptions<ListTopicsRequest, ListTopicsResponse, ListTopicsResponse>,
+  { includeInternalTopics = false }: { includeInternalTopics?: boolean } = {},
+) => {
+  const listTopicsRequest = new ListTopicsRequest({
+    pageSize: MAX_PAGE_SIZE,
+    pageToken: '',
+  });
+
+  const infiniteQueryKey = createConnectInfiniteQueryKey(listTopics, listTopicsRequest);
+
+  const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
+    // We need to precisely match the query key provided by other parts of connect-query
+    queryKey: infiniteQueryKey,
+    queryFn: async () => {
+      const response = await fetch(`${config.restBasePath}/topics`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${config.jwt}`,
+        },
+      });
+
+      const data = await response.json();
+
+      return data;
+    },
+    enabled: options?.enabled,
+  });
+
+  const allRetrievedTopics: ListTopicsResponse_Topic[] =
+    legacyListTopicsResult.data?.topics.map(
+      (topic) =>
+        new ListTopicsResponse_Topic({
+          name: topic.topicName,
+          internal: topic.isInternal,
+          partitionCount: topic.partitionCount,
+          replicationFactor: topic.replicationFactor,
+        }),
+    ) ?? [];
+
+  const topics = includeInternalTopics
+    ? allRetrievedTopics
+    : allRetrievedTopics?.filter((topic) => !topic.internal && !topic.name.startsWith('_'));
+
+  return {
+    ...legacyListTopicsResult,
+    data: {
+      topics,
+    },
+  };
+};
 
 interface ListTopicsExtraOptions {
-  includeInternalTopics?: boolean;
+  hideInternalTopics?: boolean;
 }
 
+/**
+ * WARNING: Only use once Console v3 is released.
+ */
 export const useListTopicsQuery = (
   input?: PartialMessage<ListTopicsRequest>,
   options?: QueryOptions<ListTopicsRequest, ListTopicsResponse, ListTopicsResponse>,
-  { includeInternalTopics = false }: ListTopicsExtraOptions = {},
+  { hideInternalTopics = false }: ListTopicsExtraOptions = {},
 ) => {
   const listTopicsRequest = new ListTopicsRequest({
     pageSize: MAX_PAGE_SIZE,
@@ -42,9 +102,9 @@ export const useListTopicsQuery = (
 
   const allRetrievedTopics = listTopicsResult?.data?.pages?.flatMap(({ topics }) => topics);
 
-  const topics = includeInternalTopics
-    ? allRetrievedTopics
-    : allRetrievedTopics?.filter((topic) => !internalTopics.includes(topic.name));
+  const topics = hideInternalTopics
+    ? allRetrievedTopics?.filter((topic) => !topic.internal && !topic.name.startsWith('_'))
+    : allRetrievedTopics;
 
   return {
     ...listTopicsResult,
@@ -54,6 +114,65 @@ export const useListTopicsQuery = (
   };
 };
 
+/**
+ * We need to use legacy API to create topics for now
+ * because of authorization that is only possible with Console v3 and above.
+ * TODO: Remove once Console v3 is released.
+ */
+export const useLegacyCreateTopicMutationWithToast = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation({
+    mutationFn: async (topic: CreateTopicRequest_Topic) => {
+      const response = await fetch(`${config.restBasePath}/topics`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.jwt}`,
+        },
+        body: JSON.stringify(topic),
+      });
+
+      const data = await response.json();
+
+      await queryClient.invalidateQueries({
+        queryKey: [listTopics.service.typeName],
+        exact: false,
+      });
+
+      return data;
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: [listTopics.service.typeName],
+        exact: false,
+      });
+
+      showToast({
+        id: TOASTS.TOPIC.CREATE.SUCCESS,
+        resourceName: variables?.name,
+        title: 'Topic created successfully',
+        status: 'success',
+      });
+    },
+    onError: (error, variables) => {
+      const connectError = ConnectError.from(error);
+      showToast({
+        id: TOASTS.TOPIC.CREATE.ERROR,
+        resourceName: variables?.name,
+        title: formatToastErrorMessageGRPC({
+          error: connectError,
+          action: 'create',
+          entity: 'topic',
+        }),
+        status: 'error',
+      });
+    },
+  });
+};
+
+/**
+ * WARNING: Only use once Console v3 is released.
+ */
 export const useCreateTopicMutationWithToast = () => {
   const queryClient = useQueryClient();
 
