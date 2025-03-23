@@ -312,6 +312,13 @@ export class PipelineCreate extends Message<PipelineCreate> {
    */
   resources?: Pipeline_Resources;
 
+  /**
+   * Optional lList of tags to attach to a pipeline.
+   *
+   * @generated from field: map<string, string> tags = 7;
+   */
+  tags: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<PipelineCreate>) {
     super();
     proto3.util.initPartial(data, this);
@@ -324,6 +331,7 @@ export class PipelineCreate extends Message<PipelineCreate> {
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "resources", kind: "message", T: Pipeline_Resources },
+    { no: 7, name: "tags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PipelineCreate {
