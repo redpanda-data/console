@@ -30,7 +30,7 @@ import { observer } from 'mobx-react';
 import type { IDisposable, editor, languages } from 'monaco-editor';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -176,7 +176,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
-        }),
+        })
       )
       .then(async () => {
         toast({
@@ -241,7 +241,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
 
 const registerSecretsAutocomplete = async (
   monaco: Monaco,
-  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>,
+  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
 ) => {
   await rpcnSecretManagerApi.refreshSecrets(true);
   const secrets = rpcnSecretManagerApi.secrets || [];
@@ -348,7 +348,7 @@ export const PipelineEditor = observer(
         ]}
       />
     );
-  },
+  }
 );
 
 /**
