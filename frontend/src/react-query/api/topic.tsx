@@ -65,7 +65,7 @@ export const useCreateTopicMutationWithToast = () => {
       });
 
       showToast({
-        id: TOASTS.SECRET.UPDATE.SUCCESS,
+        id: TOASTS.TOPIC.CREATE.SUCCESS,
         resourceName: variables?.topic?.name,
         title: 'Topic created successfully',
         status: 'success',
@@ -73,7 +73,7 @@ export const useCreateTopicMutationWithToast = () => {
     },
     onError: (error, variables) => {
       showToast({
-        id: TOASTS.SECRET.CREATE.ERROR,
+        id: TOASTS.TOPIC.CREATE.ERROR,
         resourceName: variables?.topic?.name,
         title: formatToastErrorMessageGRPC({
           error,
