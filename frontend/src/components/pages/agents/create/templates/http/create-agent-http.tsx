@@ -3,6 +3,7 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useListTopicsQuery } from 'react-query/api/topic';
+import { useListUsersQuery } from 'react-query/api/user';
 import { useHistory } from 'react-router-dom';
 import { createAgentHttpSchema } from './create-agent-http-schema';
 
@@ -23,6 +24,13 @@ export const CreateAgentHTTP = () => {
     secretList?.secrets?.map((secret) => ({
       value: secret?.id,
       label: secret?.id,
+    })) ?? [];
+
+  const { data: userList } = useListUsersQuery();
+  const userListOptions =
+    userList?.users?.map((user) => ({
+      value: user?.name,
+      label: user?.name,
     })) ?? [];
 
   const formOpts = formOptions({
@@ -118,7 +126,7 @@ export const CreateAgentHTTP = () => {
                     label="Username"
                     helperText="Username for the Redpanda user ... All credentials are securely stored in Secret Store"
                     placeholder="select or create user"
-                    options={secretListOptions}
+                    options={userListOptions}
                   />
                 )}
               </form.AppField>
