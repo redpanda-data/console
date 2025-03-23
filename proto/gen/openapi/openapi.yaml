@@ -1224,6 +1224,11 @@ components:
           type: string
         resources:
           $ref: '#/components/schemas/Resources'
+        tags:
+          additionalProperties:
+            type: string
+          description: Optional lList of tags to attach to a pipeline.
+          type: object
       required:
         - display_name
         - config_yaml
