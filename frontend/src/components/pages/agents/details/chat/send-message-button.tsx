@@ -1,11 +1,13 @@
 import { Button } from '@redpanda-data/ui';
+import type { MouseEvent } from 'react';
 
 interface SendMessageButtonProps {
   inputValue: string;
   isSending: boolean;
+  onClick: (e: MouseEvent) => void;
 }
 
-export const SendMessageButton = ({ inputValue, isSending }: SendMessageButtonProps) => {
+export const SendMessageButton = ({ inputValue, isSending, onClick }: SendMessageButtonProps) => {
   return (
     <Button
       variant="ghost"
@@ -22,6 +24,7 @@ export const SendMessageButton = ({ inputValue, isSending }: SendMessageButtonPr
       px="4"
       isLoading={isSending}
       loadingText="Sending"
+      onClick={onClick}
     >
       {isSending ? (
         <span className="flex items-center">
