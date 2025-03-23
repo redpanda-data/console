@@ -423,6 +423,14 @@ message PipelineCreate {
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
+
+  // Optional lList of tags to attach to a pipeline.
+  map<string, string> tags = 7 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
 }
 
 // CreatePipelineRequest is the request of CreatePipeline.
