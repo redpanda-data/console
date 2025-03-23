@@ -78,6 +78,7 @@
     "stacktrace-js": "^2.0.2",
     "tailwindcss": "^4.0.14",
     "tailwindcss-animate": "^1.0.7",
+    "uuid": "^11.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -85,6 +86,7 @@
     "@module-federation/enhanced": "^0.11.1",
     "@module-federation/runtime": "^0.11.1",
     "@playwright/test": "^1.51.1",
+    "@rollup/plugin-yaml": "^4.1.2",
     "@rsbuild/core": "1.2.19",
     "@rsbuild/plugin-react": "1.1.1",
     "@rsbuild/plugin-sass": "1.2.2",

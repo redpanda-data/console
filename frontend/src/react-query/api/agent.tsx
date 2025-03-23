@@ -9,9 +9,10 @@ import {
 import { CreatePipelineRequest, type CreatePipelineResponse } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   CreatePipelineRequest as CreatePipelineRequestDataPlane,
-  type PipelineCreate,
+  PipelineCreate,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CreateAgentPipelineParams {
   pipelines: PartialMessage<PipelineCreate>[];
@@ -28,24 +29,32 @@ export const useCreateAgentPipelinesMutation = () => {
   return {
     ...createPipelineMutation,
     mutate: async ({ pipelines }: CreateAgentPipelineParams) => {
-      return createAgentPipelinesPromises(queryClient, createPipelineMutation, pipelines);
+      return createAgentPipelinesPromises({ queryClient, createPipelineMutation, pipelines });
     },
     mutateAsync: async ({ pipelines }: CreateAgentPipelineParams) => {
-      return createAgentPipelinesPromises(queryClient, createPipelineMutation, pipelines);
+      return createAgentPipelinesPromises({ queryClient, createPipelineMutation, pipelines });
     },
   };
 };
 
-const createAgentPipelinesPromises = async (
-  queryClient: QueryClient,
+interface CreateAgentPipelinesPromisesProps {
+  queryClient: QueryClient;
   createPipelineMutation: UseMutationResult<
     CreatePipelineResponse,
     ConnectError,
     PartialMessage<CreatePipelineRequest>,
     unknown
-  >,
-  pipelines: PartialMessage<PipelineCreate>[],
-) => {
+  >;
+  pipelines: PartialMessage<PipelineCreate>[];
+}
+
+const createAgentPipelinesPromises = async ({
+  queryClient,
+  createPipelineMutation,
+  pipelines,
+}: CreateAgentPipelinesPromisesProps) => {
+  const agentId = uuidv4();
+
   try {
     const createPipelinePromises = [];
 
@@ -53,7 +62,16 @@ const createAgentPipelinesPromises = async (
     for (const pipeline of pipelines) {
       const createPipelinePromise = createPipelineMutation.mutateAsync(
         new CreatePipelineRequest({
-          request: new CreatePipelineRequestDataPlane({ pipeline }),
+          request: new CreatePipelineRequestDataPlane({
+            pipeline: new PipelineCreate({
+              ...pipeline,
+              tags: {
+                ...pipeline.tags,
+                __redpanda_cloud_pipeline_type: 'agent',
+                __redpanda_cloud_agent_id: agentId,
+              },
+            }),
+          }),
         }),
       );
 
