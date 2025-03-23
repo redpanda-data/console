@@ -157,13 +157,13 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         pipelineId,
         new PipelineUpdate({
           displayName: this.displayName,
-          tags: {},
           configYaml: this.editorContent,
           description: this.description,
           resources: {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
+          tags: {},
         }),
       )
       .then(async () => {
