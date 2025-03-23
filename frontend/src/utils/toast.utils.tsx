@@ -57,6 +57,12 @@ export const TOASTS = {
       ERROR: 'TOPIC_CREATE_ERROR',
     },
   },
+  USER: {
+    CREATE: {
+      SUCCESS: 'USER_CREATE_SUCCESS',
+      ERROR: 'USER_CREATE_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
