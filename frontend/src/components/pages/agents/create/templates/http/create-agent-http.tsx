@@ -2,8 +2,8 @@ import { Box, Button, ButtonGroup, Divider, Flex, Heading, Text, VStack } from '
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useListTopicsQuery } from 'react-query/api/topic';
-import { useListUsersQuery } from 'react-query/api/user';
+import { useLegacyListTopicsQuery, useListTopicsQuery } from 'react-query/api/topic';
+import { useLegacyListUsersQuery, useListUsersQuery } from 'react-query/api/user';
 import { useHistory } from 'react-router-dom';
 import { createAgentHttpSchema } from './create-agent-http-schema';
 
@@ -12,9 +12,9 @@ const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 export const CreateAgentHTTP = () => {
   const history = useHistory();
 
-  const { data: topicList } = useListTopicsQuery();
-  const topicListOptions =
-    topicList?.topics?.map((topic) => ({
+  const { data: legacyTopicList } = useLegacyListTopicsQuery();
+  const legacyTopicListOptions =
+    legacyTopicList?.topics?.map((topic) => ({
       value: topic?.name,
       label: topic?.name,
     })) ?? [];
@@ -26,9 +26,9 @@ export const CreateAgentHTTP = () => {
       label: secret?.id,
     })) ?? [];
 
-  const { data: userList } = useListUsersQuery();
-  const userListOptions =
-    userList?.users?.map((user) => ({
+  const { data: legacyUserList } = useLegacyListUsersQuery();
+  const legacyUserListOptions =
+    legacyUserList?.users?.map((user) => ({
       value: user?.name,
       label: user?.name,
     })) ?? [];
@@ -83,7 +83,7 @@ export const CreateAgentHTTP = () => {
                 <field.SingleSelectField
                   label="Source topic"
                   helperText="Topic that ... description"
-                  options={topicListOptions}
+                  options={legacyTopicListOptions}
                 />
               )}
             </form.AppField>
@@ -126,7 +126,7 @@ export const CreateAgentHTTP = () => {
                     label="Username"
                     helperText="Username for the Redpanda user ... All credentials are securely stored in Secret Store"
                     placeholder="select or create user"
-                    options={userListOptions}
+                    options={legacyUserListOptions}
                   />
                 )}
               </form.AppField>
