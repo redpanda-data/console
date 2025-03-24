@@ -102,7 +102,7 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
   };
 
   return (
-    <div className="border border-slate-200 rounded-md p-4 bg-white shadow-sm">
+    <div className="border border-slate-200 p-4 bg-white shadow-sm backdrop-blur-sm">
       <form
         className="space-y-2"
         onSubmit={(e) => {

@@ -54,9 +54,13 @@ export const AgentChatTab = ({ id, agent }: AgentChatTabProps) => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] w-full px-4">
-      <ChatClearButton onClear={handleClearChat} />
-      <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
-      <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} agentId={id} />
+      <div className="flex-1 flex flex-col min-h-0">
+        <ChatClearButton onClear={handleClearChat} />
+        <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
+      </div>
+      <div className="flex-shrink-0 sticky bottom-0 bg-white">
+        <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} agentId={id} />
+      </div>
     </div>
   );
 };
