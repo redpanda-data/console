@@ -7,7 +7,7 @@ import { SingleSelectField } from './select/single-select-field';
 import { SubscribeButton } from './subscribe/subscribe-button';
 import { TextField } from './text/text-field';
 
-export const { useAppForm } = createFormHook({
+export const { useAppForm, withForm } = createFormHook({
   fieldContext,
   formContext,
   fieldComponents: {
