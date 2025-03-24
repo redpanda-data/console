@@ -23,8 +23,8 @@ export const CreateAgentHTTP = () => {
     onSubmit: async ({ value }) => {
       const parsedPipelines = parseYamlTemplateSecrets({
         yamlTemplates: {
-          agent: JSON.stringify(ragChatPipeline, null, 4),
-          RAG: JSON.stringify(ragIndexingPipeline, null, 4),
+          agent: ragChatPipeline,
+          RAG: ragIndexingPipeline,
         },
         envVars: {
           TOPIC: value.TOPIC,
