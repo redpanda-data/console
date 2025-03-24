@@ -95,14 +95,14 @@ export const parseYamlTemplateSecrets = ({
     const secretsRegex = /\${secrets\.([A-Za-z0-9_]+)}/g;
 
     // Replace environment variables with their actual values
-    const processedYamlWithEnvVars = yamlTemplate.replace(envVarRegex, (match, envVarName) => {
-      const envValue = envVars[envVarName];
-      return envValue !== undefined ? envValue : match; // This should never happen after validation
+    const processedYamlWithEnvVars = yamlTemplate.replace(envVarRegex, (_match, envVarName) => {
+      const envValue = envVars?.[envVarName];
+      return envValue;
     });
 
     // Replace secret values with a standardized format based on provided mappings
-    const processedYaml = processedYamlWithEnvVars.replace(secretsRegex, (match, secretName) => {
-      const mappedName = secretMappings[secretName] || 'USER_DEFINED_SECRET_LABEL';
+    const processedYaml = processedYamlWithEnvVars.replace(secretsRegex, (_match, secretName) => {
+      const mappedName = secretMappings?.[secretName];
       return `\${secrets.${mappedName}}`;
     });
 
