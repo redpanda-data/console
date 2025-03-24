@@ -8,15 +8,17 @@ import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
 
 interface AgentChatTabProps {
+  id: string;
   agent?: Pipeline;
 }
 
 /**
  * This component is using Dexie to listen for message changes in the database.
  * It is also using Tailwind CSS under the hood for styling instead of Chakra UI.
+ * Each agent has its own separate conversation history.
  * @see https://github.com/dexie/Dexie.js
  */
-export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
+export const AgentChatTab = ({ id, agent }: AgentChatTabProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
 
@@ -33,14 +35,14 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
-      const storedMessages = await chatDb.getAllMessages();
+      const storedMessages = await chatDb.getAllMessages(id);
       setShouldScroll(true);
       return storedMessages;
-    }, []) || [];
+    }, [id]) || [];
 
   const handleClearChat = async () => {
     try {
-      await chatDb.clearAllMessages();
+      await chatDb.clearAllMessages(id);
     } catch (error) {
       console.error('Error clearing messages:', error);
     }
@@ -54,7 +56,7 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
     <div className="flex flex-col h-[calc(100vh-200px)] w-full px-4">
       <ChatClearButton onClear={handleClearChat} />
       <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
-      <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} />
+      <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} agentId={id} />
     </div>
   );
 };
