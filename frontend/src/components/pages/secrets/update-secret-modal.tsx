@@ -17,8 +17,8 @@ import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutationWithToast } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { Scope, UpdateSecretRequest } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 import { secretSchema } from './form/secret-schema';
-import { SecretInUseAlert } from './secret-in-use-alert';
 
 interface UpdateSecretModalProps {
   isOpen: boolean;
@@ -96,7 +96,7 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
-                <SecretInUseAlert pipelines={matchingPipelines} />
+                <ResourceInUseAlert resource="secret" usedBy="pipelines" pipelines={matchingPipelines} />
 
                 <form.AppField name="id">
                   {(field) => <field.TextField label="ID" isDisabled data-testid="secret-id-field" />}

@@ -4,6 +4,9 @@ interface ParseYamlTemplateSecretsParams {
   secretMappings: Record<string, string>;
 }
 
+// These vars are already predefined
+const whitelistedVars = ['REDPANDA_BROKERS'];
+
 /**
  * Processes one or more YAML templates by replacing environment variables with their values
  * and standardizing secret references using provided mappings
@@ -50,7 +53,9 @@ export const parseYamlTemplateSecrets = ({
     }
 
     // Find missing environment variables and secrets
-    const missingEnvVars = Array.from(envVarsInTemplate).filter((varName) => !(varName in envVars));
+    const missingEnvVars = Array.from(envVarsInTemplate).filter(
+      (varName) => !(varName in envVars) && !whitelistedVars.includes(varName),
+    );
 
     const missingSecrets = Array.from(secretsInTemplate).filter((secretName) => !(secretName in secretMappings));
 

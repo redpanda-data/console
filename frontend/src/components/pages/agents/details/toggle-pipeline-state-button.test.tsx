@@ -14,7 +14,7 @@ import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
 
 describe('TogglePipelineStateButton', () => {
   test('should start the pipeline', async () => {
-    const agent = new Pipeline({
+    const pipeline = new Pipeline({
       id: 'pipeline-id',
       displayName: 'pipeline-name',
       state: Pipeline_State.STOPPED,
@@ -28,22 +28,22 @@ describe('TogglePipelineStateButton', () => {
       rpc(stopPipeline, stopPipelineMock);
     });
 
-    render(<TogglePipelineStateButton agent={agent} />, { transport });
+    render(<TogglePipelineStateButton pipeline={pipeline} />, { transport });
 
     await waitFor(() => {
-      expect(screen.getByTestId('toggle-start-stop-agent-button')).toBeVisible();
-      expect(screen.getByTestId('toggle-start-stop-agent-button')).toBeEnabled();
-      expect(screen.getByTestId('toggle-start-stop-agent-button')).toHaveTextContent('Start');
+      expect(screen.getByTestId('toggle-start-stop-pipeline-button')).toBeVisible();
+      expect(screen.getByTestId('toggle-start-stop-pipeline-button')).toBeEnabled();
+      expect(screen.getByTestId('toggle-start-stop-pipeline-button')).toHaveTextContent('Start');
     });
 
-    fireEvent.click(screen.getByTestId('toggle-start-stop-agent-button'));
+    fireEvent.click(screen.getByTestId('toggle-start-stop-pipeline-button'));
 
     await waitFor(() => {
       expect(startPipelineMock).toHaveBeenCalled();
       expect(startPipelineMock).toHaveBeenCalledWith(
         new StartPipelineRequest({
           request: new StartPipelineRequestDataPlane({
-            id: agent.id,
+            id: pipeline.id,
           }),
         }),
         expect.anything(),
@@ -52,7 +52,7 @@ describe('TogglePipelineStateButton', () => {
   });
 
   test('should stop the pipeline', async () => {
-    const agent = new Pipeline({
+    const pipeline = new Pipeline({
       id: 'pipeline-id',
       displayName: 'pipeline-name',
       state: Pipeline_State.RUNNING,
@@ -66,22 +66,22 @@ describe('TogglePipelineStateButton', () => {
       rpc(stopPipeline, stopPipelineMock);
     });
 
-    render(<TogglePipelineStateButton agent={agent} />, { transport });
+    render(<TogglePipelineStateButton pipeline={pipeline} />, { transport });
 
     await waitFor(() => {
-      expect(screen.getByTestId('toggle-start-stop-agent-button')).toBeVisible();
-      expect(screen.getByTestId('toggle-start-stop-agent-button')).toBeEnabled();
-      expect(screen.getByTestId('toggle-start-stop-agent-button')).toHaveTextContent('Stop');
+      expect(screen.getByTestId('toggle-start-stop-pipeline-button')).toBeVisible();
+      expect(screen.getByTestId('toggle-start-stop-pipeline-button')).toBeEnabled();
+      expect(screen.getByTestId('toggle-start-stop-pipeline-button')).toHaveTextContent('Stop');
     });
 
-    fireEvent.click(screen.getByTestId('toggle-start-stop-agent-button'));
+    fireEvent.click(screen.getByTestId('toggle-start-stop-pipeline-button'));
 
     await waitFor(() => {
       expect(stopPipelineMock).toHaveBeenCalled();
       expect(stopPipelineMock).toHaveBeenCalledWith(
         new StopPipelineRequest({
           request: new StopPipelineRequestDataPlane({
-            id: agent.id,
+            id: pipeline.id,
           }),
         }),
         expect.anything(),

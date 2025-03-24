@@ -1,5 +1,5 @@
 import { Box, Button, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
-import type { ColumnDef, ColumnSort, SortingState } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Messages';
 import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
@@ -70,7 +70,7 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, ag
 }
 
 interface AgentPipelineTabLogsProps {
-  agent?: Pipeline;
+  pipeline?: Pipeline;
 }
 
 /**
@@ -81,7 +81,7 @@ interface AgentPipelineTabLogsProps {
  * @see https://github.com/valorem-labs-inc/react-hooks/blob/main/src/hooks/useStream.ts
  * for inspiration
  */
-export const AgentPipelineTabLogs = observer(({ agent }: AgentPipelineTabLogsProps) => {
+export const AgentPipelineTabLogs = observer(({ pipeline }: AgentPipelineTabLogsProps) => {
   // Add logging UI settings to the uiState if it doesn't exist
   if (!('agentDetails' in uiState)) {
     runInAction(() => {
@@ -102,8 +102,8 @@ export const AgentPipelineTabLogs = observer(({ agent }: AgentPipelineTabLogsPro
     });
 
     // Start search immediately if agent ID is available
-    if (agent?.id) {
-      const searchPromise = executeMessageSearch(search, REDPANDA_CONNECT_LOGS_TOPIC, agent.id);
+    if (pipeline?.id) {
+      const searchPromise = executeMessageSearch(search, REDPANDA_CONNECT_LOGS_TOPIC, pipeline.id);
       searchPromise.catch((x) => (state.error = String(x))).finally(() => (state.isComplete = true));
     }
 
