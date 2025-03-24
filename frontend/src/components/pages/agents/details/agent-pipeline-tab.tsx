@@ -1,4 +1,4 @@
-import { Box, ButtonGroup, HStack, Stack, Text } from '@redpanda-data/ui';
+import { Box, ButtonGroup, Stack } from '@redpanda-data/ui';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { useHistory } from 'react-router-dom';

@@ -18,7 +18,6 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark } from 'react-icons/md';
 import { MdRefresh } from 'react-icons/md';
-import { REDPANDA_AI_AGENT_PIPELINE_PREFIX } from 'react-query/api/pipeline';
 import { Link } from 'react-router-dom';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
