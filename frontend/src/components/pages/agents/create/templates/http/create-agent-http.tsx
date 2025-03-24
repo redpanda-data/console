@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Divider, Flex, Heading, Text, VStack } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Divider, Flex, Heading, Link, Text, VStack } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -6,7 +6,7 @@ import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
-import { useHistory } from 'react-router-dom';
+import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
@@ -130,7 +130,14 @@ export const CreateAgentHTTP = () => {
               {(field) => (
                 <field.SingleSelectField
                   label="OpenAI API credential"
-                  helperText="API credential from OpenAI to ... All credentials are securely stored in Secret Store"
+                  helperText={
+                    <Text>
+                      Credentials for OpenAI to ... All credentials are securely stored in{' '}
+                      <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
+                        Secret Store
+                      </Link>
+                    </Text>
+                  }
                   options={secretListOptions}
                 />
               )}
@@ -140,7 +147,14 @@ export const CreateAgentHTTP = () => {
               {(field) => (
                 <field.SingleSelectField
                   label="Postgres Connection URI"
-                  helperText="Credentials for the Postgres database that ... All credentials are securely stored in Secret Store"
+                  helperText={
+                    <Text>
+                      Credentials for the Postgres database that ... All credentials are securely stored in{' '}
+                      <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
+                        Secret Store
+                      </Link>
+                    </Text>
+                  }
                   options={secretListOptions}
                 />
               )}
@@ -163,8 +177,14 @@ export const CreateAgentHTTP = () => {
                 {(field) => (
                   <field.SingleSelectField
                     label="Username"
-                    helperText="Username for the Redpanda user ... All credentials are securely stored in Secret Store"
-                    placeholder="select or create user"
+                    helperText={
+                      <Text>
+                        Username for the Redpanda user ... All users can be found under{' '}
+                        <Link as={ReactRouterLink} to="/security/users" target="_blank" rel="noopener noreferrer">
+                          Security tab
+                        </Link>
+                      </Text>
+                    }
                     options={legacyUserListOptions}
                   />
                 )}
@@ -173,7 +193,14 @@ export const CreateAgentHTTP = () => {
                 {(field) => (
                   <field.SingleSelectField
                     label="Password"
-                    helperText="Password for the Redpanda user ... All credentials are securely stored in Secret Store"
+                    helperText={
+                      <Text>
+                        Password for the Redpanda user ... All credentials are securely stored in{' '}
+                        <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
+                          Secret Store
+                        </Link>
+                      </Text>
+                    }
                     placeholder="select or create secret"
                     options={secretListOptions}
                   />
