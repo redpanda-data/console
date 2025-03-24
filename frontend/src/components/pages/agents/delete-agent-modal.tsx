@@ -14,9 +14,11 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
+import { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect } from 'react';
-import { useDeletePipelineMutationWithToast } from 'react-query/api/pipeline';
+import { type Agent, useDeleteAgentPipelinesMutation } from 'react-query/api/agent';
 import { z } from 'zod';
+import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 
 const deleteAgentSchema = (agentName: string) =>
   z.object({
@@ -26,25 +28,25 @@ const deleteAgentSchema = (agentName: string) =>
   });
 
 export interface DeleteAgentModalProps {
-  agentId: string;
-  agentName: string;
+  agent?: Agent;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const DeleteAgentModal = ({ agentId, agentName, isOpen, onClose }: DeleteAgentModalProps) => {
-  const { mutateAsync: deleteAgent, isPending: isDeleteAgentPending } = useDeletePipelineMutationWithToast();
+export const DeleteAgentModal = ({ agent, isOpen, onClose }: DeleteAgentModalProps) => {
+  const { mutateAsync: deleteAgentPipelines, isPending: isDeleteAgentPipelinesPending } =
+    useDeleteAgentPipelinesMutation();
 
   const formOpts = formOptions({
     defaultValues: {
       confirmationText: '',
     },
     validators: {
-      onChange: deleteAgentSchema(agentName),
+      onChange: deleteAgentSchema(agent?.displayName ?? ''),
     },
     onSubmit: async () => {
-      await deleteAgent({
-        request: { id: agentId },
+      await deleteAgentPipelines({
+        pipelines: agent?.pipelines?.map((pipeline) => new Pipeline({ id: pipeline?.id })) ?? [],
       });
       onClose();
     },
@@ -69,14 +71,15 @@ export const DeleteAgentModal = ({ agentId, agentName, isOpen, onClose }: Delete
             <ModalBody mb={4}>
               <Stack spacing={4}>
                 <Text>
-                  This action will cause data loss. To confirm, type <Code>{agentName}</Code> into the confirmation box
-                  below.
+                  This action will cause data loss. To confirm, type <Code>{agent?.displayName}</Code> into the
+                  confirmation box below.
                 </Text>
+                <ResourceInUseAlert resource="agent" usedBy="pipelines" pipelines={agent?.pipelines as Pipeline[]} />
 
                 <form.AppField name="confirmationText">
                   {(field) => (
                     <field.TextField
-                      placeholder={`Type "${agentName}" to confirm`}
+                      placeholder={`Type "${agent?.displayName}" to confirm`}
                       data-testid="txt-confirmation-delete"
                     />
                   )}
@@ -85,7 +88,7 @@ export const DeleteAgentModal = ({ agentId, agentName, isOpen, onClose }: Delete
             </ModalBody>
             <ModalFooter>
               <Box alignSelf="end">
-                <ButtonGroup isDisabled={isDeleteAgentPending}>
+                <ButtonGroup isDisabled={isDeleteAgentPipelinesPending}>
                   <form.SubscribeButton
                     label="Delete"
                     variant="delete"

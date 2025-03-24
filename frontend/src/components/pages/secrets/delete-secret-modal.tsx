@@ -17,8 +17,8 @@ import { useAppForm } from 'components/form/form';
 import { useEffect } from 'react';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useDeleteSecretMutationWithToast } from 'react-query/api/secret';
+import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 import { deleteSecretSchema } from './form/delete-secret-schema';
-import { SecretInUseAlert } from './secret-in-use-alert';
 
 export interface DeleteSecretModalProps {
   secretId: string;
@@ -70,7 +70,7 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
                   This action will cause data loss. To confirm, type <Code>{secretId}</Code> into the confirmation box
                   below.
                 </Text>
-                <SecretInUseAlert pipelines={matchingPipelines} />
+                <ResourceInUseAlert resource="secret" usedBy="pipelines" pipelines={matchingPipelines} />
 
                 <form.AppField name="confirmationText">
                   {(field) => (

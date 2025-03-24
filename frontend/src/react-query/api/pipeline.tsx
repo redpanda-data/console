@@ -28,7 +28,6 @@ import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils'
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
-export const REDPANDA_AI_AGENT_PIPELINE_PREFIX = '_redpanda-agent';
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
@@ -46,6 +45,14 @@ export const useListPipelinesQuery = (
   const listPipelinesRequestDataPlane = new ListPipelinesRequestDataPlane({
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
+    // TODO: Use once nameContains is not required anymore
+    // filter: new ListPipelinesRequest_Filter({
+    //   ...input?.filter,
+    //   tags: {
+    //     ...input?.filter?.tags,
+    //     __redpanda_cloud_pipeline_type: 'pipeline',
+    //   },
+    // }),
     ...input,
   });
 
@@ -59,6 +66,11 @@ export const useListPipelinesQuery = (
   });
 
   const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
+
+  // TODO: Remove once nameContains is not required anymore
+  // const filteredPipelines = allRetrievedPipelines?.filter(
+  //   (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent',
+  // );
 
   return {
     ...listPipelinesResult,

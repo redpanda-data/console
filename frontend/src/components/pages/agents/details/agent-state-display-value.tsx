@@ -18,25 +18,25 @@ const AgentStateDisplay = (icon: IconType, text: string, color?: string) => (
 export const AgentStateDisplayValue = ({ state }: AgentStateDisplayValueProps) => {
   switch (state) {
     case Pipeline_State.UNSPECIFIED: {
-      return AgentStateDisplay(MdOutlineQuestionMark, 'Unknown', 'red');
+      return AgentStateDisplay(MdOutlineQuestionMark, 'Unknown', 'red.500');
     }
     case Pipeline_State.STARTING: {
-      return AgentStateDisplay(MdRefresh, 'Starting', 'blue');
+      return AgentStateDisplay(MdRefresh, 'Starting', 'blue.500');
     }
     case Pipeline_State.RUNNING: {
-      return AgentStateDisplay(MdCheck, 'Running', 'green');
+      return AgentStateDisplay(MdCheck, 'Running', 'green.500');
     }
     case Pipeline_State.STOPPING: {
-      return AgentStateDisplay(MdRefresh, 'Stopping', 'blue');
+      return AgentStateDisplay(MdRefresh, 'Stopping', 'blue.500');
     }
     case Pipeline_State.STOPPED: {
       return AgentStateDisplay(FaRegStopCircle, 'Stopped');
     }
     case Pipeline_State.ERROR: {
-      return AgentStateDisplay(MdError, 'Error', 'red');
+      return AgentStateDisplay(MdError, 'Error', 'red.500');
     }
     case Pipeline_State.COMPLETED: {
-      return AgentStateDisplay(MdDone, 'Completed', 'green');
+      return AgentStateDisplay(MdDone, 'Completed', 'green.500');
     }
   }
 };

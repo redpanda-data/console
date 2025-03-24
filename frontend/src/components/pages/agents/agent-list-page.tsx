@@ -16,7 +16,7 @@ import {
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
-import { useListPipelinesQuery } from 'react-query/api/pipeline';
+import { useListAgentsQuery } from 'react-query/api/agent';
 import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { DeleteAgentModal } from './delete-agent-modal';
@@ -43,22 +43,7 @@ export const AgentListPage = () => {
     onOpen: onDeleteAgentModalOpen,
     onClose: onDeleteAgentModalClose,
   } = useDisclosure();
-  const {
-    data: agentList,
-    isLoading: isAgentListLoading,
-    isError: isAgentListError,
-  } = useListPipelinesQuery(
-    // new ListPipelinesRequestDataPlane({
-    //   filter: nameContains
-    //     ? new ListPipelinesRequest_Filter({
-    //         nameContains,
-    //         tags: {
-    //           type: 'agent',
-    //         },
-    //       })
-    //     : undefined,
-    // }),
-  );
+  const { data: agentList, isLoading: isAgentListLoading, isError: isAgentListError } = useListAgentsQuery();
 
   useEffect(() => {
     updatePageTitle();
@@ -102,11 +87,11 @@ export const AgentListPage = () => {
           <Flex justifyContent="center" padding={8}>
             <Spinner size="lg" />
           </Flex>
-        ) : agentList?.pipelines?.length === 0 ? (
+        ) : agentList?.agents?.length === 0 ? (
           <Empty />
         ) : (
           <DataTable
-            data={agentList?.pipelines ?? []}
+            data={agentList?.agents ?? []}
             pagination
             defaultPageSize={10}
             sorting
@@ -160,8 +145,7 @@ export const AgentListPage = () => {
       <DeleteAgentModal
         isOpen={isDeleteAgentModalOpen}
         onClose={onDeleteAgentModalClose}
-        agentId={deleteAgentId}
-        agentName={agentList?.pipelines?.find((pipeline) => pipeline?.id === deleteAgentId)?.displayName ?? ''}
+        agent={agentList?.agents?.find((agent) => agent?.id === deleteAgentId)}
       />
     </>
   );
