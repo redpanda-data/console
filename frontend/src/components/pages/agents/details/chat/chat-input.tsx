@@ -7,18 +7,19 @@ import { sendMessageToApi } from './send-message-to-api';
 interface ChatInputProps {
   setIsTyping: (isTyping: boolean) => void;
   agentUrl?: string;
+  agentId: string;
 }
 
-export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
+export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
-      const storedMessages = await chatDb.getAllMessages();
+      const storedMessages = await chatDb.getAllMessages(agentId);
       return storedMessages;
-    }, []) || [];
+    }, [agentId]) || [];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
@@ -32,6 +33,7 @@ export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
     // Create user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
+      agentId,
       content: inputValue,
       sender: 'user',
       timestamp: new Date(),
@@ -48,7 +50,6 @@ export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
       setIsTyping(true);
 
       // Send message to API along with chat history
-
       const apiResponse = await sendMessageToApi({
         message: userMessage.content,
         chatHistory: [...messages, userMessage],
@@ -61,6 +62,7 @@ export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
       // Create system message from API response
       const systemMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
+        agentId,
         content: apiResponse.success
           ? apiResponse.message
           : 'Sorry, there was an error processing your request. Please try again later.',
@@ -79,6 +81,7 @@ export const ChatInput = ({ setIsTyping, agentUrl }: ChatInputProps) => {
       // Create error message
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
+        agentId,
         content: 'Sorry, there was an error sending your message. Please try again later.',
         sender: 'system',
         timestamp: new Date(),
