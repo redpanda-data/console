@@ -6,10 +6,11 @@ import { useMutation as useTanstackMutation, useQuery as useTanstackQuery } from
 import { config } from 'config';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import {
-  type CreateUserRequest_User,
+  type CreateUserRequest,
   ListUsersRequest,
   type ListUsersResponse,
   ListUsersResponse_User,
+  SASLMechanism,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
@@ -95,6 +96,29 @@ export const useListUsersQuery = (
   };
 };
 
+export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512') => {
+  switch (saslMechanism) {
+    case 'SCRAM-SHA-256':
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
+    case 'SCRAM-SHA-512':
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
+  }
+};
+
+/**
+ * TODO: Remove once Console v3 is released.
+ */
+export const getLegacySaslMechanism = (mechanism?: SASLMechanism) => {
+  switch (mechanism) {
+    case SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256:
+      return 'SCRAM-SHA-256';
+    case SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512:
+      return 'SCRAM-SHA-512';
+    default:
+      return 'SCRAM-SHA-256';
+  }
+};
+
 /**
  * We need to use legacy API to create users for now
  * because of authorization that is only possible with Console v3 and above.
@@ -103,14 +127,23 @@ export const useListUsersQuery = (
 export const useLegacyCreateUserMutationWithToast = () => {
   const queryClient = useQueryClient();
 
+  // TODO: Remove once Console v3 is released.
+  const { refetch: refetchLegacyUserList } = useLegacyListUsersQuery();
+
   return useTanstackMutation({
-    mutationFn: async (user: CreateUserRequest_User) => {
+    mutationFn: async (request: CreateUserRequest) => {
+      const legacyRequestBody = {
+        username: request.user?.name,
+        password: request.user?.password,
+        mechanism: getLegacySaslMechanism(request.user?.mechanism),
+      };
       const response = await fetch(`${config.restBasePath}/users`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${config.jwt}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(user),
+        body: JSON.stringify(legacyRequestBody),
       });
 
       const data = await response.json();
@@ -119,6 +152,12 @@ export const useLegacyCreateUserMutationWithToast = () => {
         queryKey: [listUsers.service.typeName],
         exact: false,
       });
+
+      /**
+       * We need to do this to ensure the user list is updated once you create a user with legacy API.
+       * TODO: Remove once Console v3 is released.
+       */
+      await refetchLegacyUserList();
 
       return data;
     },
@@ -130,7 +169,7 @@ export const useLegacyCreateUserMutationWithToast = () => {
 
       showToast({
         id: TOASTS.USER.CREATE.SUCCESS,
-        resourceName: variables?.name,
+        resourceName: variables?.user?.name,
         title: 'User created successfully',
         status: 'success',
       });
@@ -139,7 +178,7 @@ export const useLegacyCreateUserMutationWithToast = () => {
       const connectError = ConnectError.from(error);
       showToast({
         id: TOASTS.USER.CREATE.ERROR,
-        resourceName: variables?.name,
+        resourceName: variables?.user?.name,
         title: formatToastErrorMessageGRPC({
           error: connectError,
           action: 'create',

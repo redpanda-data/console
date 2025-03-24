@@ -1,6 +1,7 @@
-import { FormControl, FormHelperText, FormLabel } from '@redpanda-data/ui';
+import { FormControl, FormHelperText, FormLabel, HStack, Icon, Text } from '@redpanda-data/ui';
 import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
 import type { ReactNode } from 'react';
+import { AiOutlinePlus } from 'react-icons/ai';
 import { SingleSelect } from '../../misc/Select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
@@ -11,27 +12,58 @@ interface SingleSelectFieldProps {
   placeholder?: string;
   isDisabled?: boolean;
   options: SelectOption[];
+  showCreateNewOption?: boolean;
+  onCreateNewOptionClick?: () => void;
 }
 
-export const SingleSelectField = ({ label, helperText, placeholder, isDisabled, options }: SingleSelectFieldProps) => {
+export const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
+
+const CREATE_NEW_OPTION = {
+  value: CREATE_NEW_OPTION_VALUE,
+  label: (
+    <HStack spacing={1}>
+      <Icon as={AiOutlinePlus} />
+      <Text fontWeight="semibold">Create New</Text>
+    </HStack>
+  ),
+};
+
+export const SingleSelectField = ({
+  label,
+  helperText,
+  placeholder,
+  isDisabled,
+  options,
+  showCreateNewOption,
+  onCreateNewOptionClick,
+}: SingleSelectFieldProps) => {
   const field = useFieldContext<string>();
+
+  const handleChange = (value: string | number | readonly string[] | undefined) => {
+    if (value === CREATE_NEW_OPTION_VALUE) {
+      if (showCreateNewOption) {
+        onCreateNewOptionClick?.();
+      }
+    } else {
+      field.handleChange(value?.toString() ?? '');
+    }
+  };
+
+  const selectOptions = showCreateNewOption ? [...options, CREATE_NEW_OPTION] : options;
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
       {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
       {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
       <SingleSelect
-        options={options}
-        value={field.state.value}
-        onChange={(value) => {
-          field.handleChange(value?.toString() ?? '');
-        }}
+        options={selectOptions}
+        onChange={handleChange}
         placeholder={placeholder}
         isDisabled={isDisabled}
+        value={field.state.value}
       />
 
       <ErrorInfoField field={field} />
     </FormControl>
   );
 };
-//             <em>{field.state.meta.errors.map((err) => err.message).join(',')}</em>

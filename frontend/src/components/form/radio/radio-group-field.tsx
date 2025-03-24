@@ -1,4 +1,5 @@
 import { FormControl, FormLabel, Stack, type StackDirection } from '@redpanda-data/ui';
+import { useId } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 import { RadioCard, type Sizes } from './radio-card';
@@ -19,6 +20,7 @@ interface RadioGroupFieldProps {
 
 export const RadioGroupField = ({ label, options, size = 'md', direction = 'row', ...rest }: RadioGroupFieldProps) => {
   const field = useFieldContext<string>();
+  const id = useId();
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
@@ -31,8 +33,8 @@ export const RadioGroupField = ({ label, options, size = 'md', direction = 'row'
       >
         {options.map((option) => (
           <RadioCard
-            key={`${option.value}`}
-            id={`${option.value}`}
+            key={`${id}-${option.value}`}
+            id={`${id}-${option.value}`}
             value={`${option.value}`}
             isInvalid={option.invalid}
             isDisabled={option.disabled}

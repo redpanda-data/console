@@ -1,5 +1,9 @@
-import { Box, Heading, Link, Text, VStack } from '@redpanda-data/ui';
-import { withForm } from 'components/form/form';
+import { Box, Heading, Link, Text, VStack, useDisclosure } from '@redpanda-data/ui';
+import { type PrefixObjectAccessor, withForm } from 'components/form/form';
+import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
+import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
+import { useState } from 'react';
+import { useListAgentsQuery } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link as ReactRouterLink } from 'react-router-dom';
@@ -12,6 +16,24 @@ export const AgentDetailsForm = withForm({
     description: 'Description of agent ...',
   },
   render: ({ title, description, form }) => {
+    const { data: agentList } = useListAgentsQuery();
+
+    const {
+      isOpen: isCreateSecretModalOpen,
+      onOpen: onCreateSecretModalOpen,
+      onClose: onCreateSecretModalClose,
+    } = useDisclosure();
+
+    const {
+      isOpen: isCreateTopicModalOpen,
+      onOpen: onCreateTopicModalOpen,
+      onClose: onCreateTopicModalClose,
+    } = useDisclosure();
+
+    const [fieldToUpdate, setFieldToUpdate] = useState<
+      PrefixObjectAccessor<typeof createAgentHttpFormOpts.defaultValues, []> | undefined
+    >(undefined);
+
     const { data: secretList } = useListSecretsQuery();
     const secretListOptions =
       secretList?.secrets?.map((secret) => ({
@@ -26,6 +48,22 @@ export const AgentDetailsForm = withForm({
         label: topic?.name,
       })) ?? [];
 
+    const handleCreateTopicModalClose = (createdTopicId?: string) => {
+      if (createdTopicId && fieldToUpdate) {
+        form.setFieldValue(fieldToUpdate, createdTopicId);
+        setFieldToUpdate(undefined);
+      }
+      onCreateTopicModalClose();
+    };
+
+    const handleCreateSecretModalClose = (updatedValue?: string) => {
+      if (updatedValue && fieldToUpdate) {
+        form.setFieldValue(fieldToUpdate, updatedValue);
+        setFieldToUpdate(undefined);
+      }
+      onCreateSecretModalClose();
+    };
+
     return (
       <>
         <Box>
@@ -35,7 +73,15 @@ export const AgentDetailsForm = withForm({
           <Text color="gray.600">{description}</Text>
         </Box>
         <VStack spacing={4} align="stretch">
-          <form.AppField name="name">
+          <form.AppField
+            name="name"
+            validators={{
+              onChange: ({ value }: { value: string }) =>
+                agentList?.agents?.some((agent) => agent?.displayName === value)
+                  ? { message: 'Agent name is already in use', path: 'name' }
+                  : undefined,
+            }}
+          >
             {(field) => <field.TextField label="Name" placeholder="Enter agent name" />}
           </form.AppField>
           <form.AppField name="description">
@@ -54,6 +100,11 @@ export const AgentDetailsForm = withForm({
                   </Text>
                 }
                 options={legacyTopicListOptions}
+                showCreateNewOption
+                onCreateNewOptionClick={() => {
+                  setFieldToUpdate('TOPIC');
+                  onCreateTopicModalOpen();
+                }}
               />
             )}
           </form.AppField>
@@ -70,6 +121,11 @@ export const AgentDetailsForm = withForm({
                   </Text>
                 }
                 options={secretListOptions}
+                showCreateNewOption
+                onCreateNewOptionClick={() => {
+                  setFieldToUpdate('OPENAI_KEY');
+                  onCreateSecretModalOpen();
+                }}
               />
             )}
           </form.AppField>
@@ -86,10 +142,17 @@ export const AgentDetailsForm = withForm({
                   </Text>
                 }
                 options={secretListOptions}
+                showCreateNewOption
+                onCreateNewOptionClick={() => {
+                  setFieldToUpdate('POSTGRES_DSN');
+                  onCreateSecretModalOpen();
+                }}
               />
             )}
           </form.AppField>
         </VStack>
+        <CreateSecretModal isOpen={isCreateSecretModalOpen} onClose={handleCreateSecretModalClose} />
+        <CreateTopicModal isOpen={isCreateTopicModalOpen} onClose={handleCreateTopicModalClose} />
       </>
     );
   },
