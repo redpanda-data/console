@@ -1,5 +1,8 @@
+import { parse, stringify } from 'yaml';
+
+type YamlTemplate = Record<string, any>;
 interface ParseYamlTemplateSecretsParams {
-  yamlTemplates: Record<string, string>;
+  yamlTemplates: Record<string, YamlTemplate>;
   envVars: Record<string, string>;
   secretMappings: Record<string, string>;
 }
@@ -15,7 +18,7 @@ export const parseYamlTemplateSecrets = ({
   yamlTemplates,
   envVars = {},
   secretMappings = {},
-}: ParseYamlTemplateSecretsParams): Record<string, string> => {
+}: ParseYamlTemplateSecretsParams) => {
   if (!yamlTemplates || Object.keys(yamlTemplates).length === 0) {
     return {};
   }
@@ -27,9 +30,12 @@ export const parseYamlTemplateSecrets = ({
   // Process each YAML template
   for (const [templateKey, yamlTemplate] of Object.entries(yamlTemplates)) {
     if (!yamlTemplate) {
-      result[templateKey] = '';
+      result[templateKey] = stringify({});
       continue;
     }
+
+    // Convert YAML object to string for processing
+    const processedYamlString = stringify(yamlTemplate);
 
     // Find all environment variables and secrets in the template
     const envVarRegex = /\${([A-Za-z0-9_]+)}/g;
@@ -38,16 +44,18 @@ export const parseYamlTemplateSecrets = ({
     // Collect all environment variables referenced in the template
     const envVarsInTemplate = new Set<string>();
     let match: RegExpExecArray | null;
-    const templateCopy = yamlTemplate.slice();
 
-    while ((match = envVarRegex.exec(templateCopy)) !== null) {
+    // Reset regex lastIndex to ensure we find all matches
+    envVarRegex.lastIndex = 0;
+    while ((match = envVarRegex.exec(processedYamlString)) !== null) {
       const envVarName = match[1];
       envVarsInTemplate.add(envVarName);
     }
 
     // Collect all secrets referenced in the template
     const secretsInTemplate = new Set<string>();
-    while ((match = secretsRegex.exec(templateCopy)) !== null) {
+    secretsRegex.lastIndex = 0;
+    while ((match = secretsRegex.exec(processedYamlString)) !== null) {
       const secretName = match[1];
       secretsInTemplate.add(secretName);
     }
@@ -87,26 +95,31 @@ export const parseYamlTemplateSecrets = ({
   // Now that we've validated all templates, process each one
   for (const [templateKey, yamlTemplate] of Object.entries(yamlTemplates)) {
     if (!yamlTemplate) {
-      result[templateKey] = '';
+      result[templateKey] = stringify({});
       continue;
     }
 
+    // Convert YAML object to string for processing
+    let processedYamlString = stringify(yamlTemplate);
+
+    // Reset regex for replacements
     const envVarRegex = /\${([A-Za-z0-9_]+)}/g;
     const secretsRegex = /\${secrets\.([A-Za-z0-9_]+)}/g;
 
     // Replace environment variables with their actual values
-    const processedYamlWithEnvVars = yamlTemplate.replace(envVarRegex, (_match, envVarName) => {
-      const envValue = envVars?.[envVarName];
+    processedYamlString = processedYamlString.replace(envVarRegex, (_match: string, envVarName: string) => {
+      const envValue = envVars?.[envVarName] || '';
       return envValue;
     });
 
     // Replace secret values with a standardized format based on provided mappings
-    const processedYaml = processedYamlWithEnvVars.replace(secretsRegex, (_match, secretName) => {
-      const mappedName = secretMappings?.[secretName];
+    processedYamlString = processedYamlString.replace(secretsRegex, (_match: string, secretName: string) => {
+      const mappedName = secretMappings?.[secretName] || '';
       return `\${secrets.${mappedName}}`;
     });
 
-    result[templateKey] = processedYaml;
+    // Store the processed YAML string directly
+    result[templateKey] = processedYamlString;
   }
 
   return result;
