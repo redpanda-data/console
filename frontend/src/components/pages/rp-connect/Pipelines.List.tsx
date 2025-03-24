@@ -161,9 +161,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
     if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
     const filteredPipelines = (pipelinesApi.pipelines ?? [])
-      // Ensure we do not show the agents
-      .filter((pipeline) => !pipeline.displayName.startsWith(REDPANDA_AI_AGENT_PIPELINE_PREFIX))
-      .filter((pipeline) => !Object.entries(pipeline.tags).some(([key, value]) => key === 'type' && value === 'agent'))
+      ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
       .filter((u) => {
         const filter = uiSettings.pipelinesList.quickSearch;
         if (!filter) return true;

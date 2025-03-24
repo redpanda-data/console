@@ -1,16 +1,21 @@
 import { Box, Button, ButtonGroup, Divider, Flex, Heading, Text, VStack } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
+import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useLegacyListTopicsQuery, useListTopicsQuery } from 'react-query/api/topic';
-import { useLegacyListUsersQuery, useListUsersQuery } from 'react-query/api/user';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useHistory } from 'react-router-dom';
-import { createAgentHttpSchema } from './create-agent-http-schema';
+import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
+import ragChatPipeline from './rag-chat.yaml';
+import ragIndexingPipeline from './rag-indexing.yaml';
 
 const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 
 export const CreateAgentHTTP = () => {
   const history = useHistory();
+  const { mutateAsync: createAgentPipelinesMutation } = useCreateAgentPipelinesMutation();
 
   const { data: legacyTopicList } = useLegacyListTopicsQuery();
   const legacyTopicListOptions =
@@ -37,19 +42,53 @@ export const CreateAgentHTTP = () => {
     defaultValues: {
       name: '',
       description: '',
-      sourceTopic: '',
-      openaiApiCredential: '',
-      postgresConnectionUri: '',
-      username: '',
-      password: '',
-      saslMechanism: 'SCRAM-SHA-256',
+      TOPIC: '',
+      OPENAI_KEY: '',
+      POSTGRES_DSN: '',
+      USERNAME: '',
+      KAFKA_PASSWORD: '',
+      SASL_MECHANISM: 'SCRAM-SHA-256',
     },
-    validators: {
-      onChange: createAgentHttpSchema,
-    },
+    // validators: {
+    //   onChange: createAgentHttpSchema,
+    // },
     onSubmit: async ({ value }) => {
-      // In a real application, this would be an API call
-      console.log('Form submitted with values:', value);
+      const parsedPipelines = parseYamlTemplateSecrets({
+        yamlTemplates: {
+          agent: JSON.stringify(ragChatPipeline, null, 4),
+          RAG: JSON.stringify(ragIndexingPipeline, null, 4),
+        },
+        envVars: {
+          TOPIC: value.TOPIC,
+          SASL_MECHANISM: value.SASL_MECHANISM,
+          USERNAME: value.USERNAME,
+        },
+        secretMappings: {
+          KAFKA_PASSWORD: value.KAFKA_PASSWORD,
+          OPENAI_KEY: value.OPENAI_KEY,
+          POSTGRES_DSN: value.POSTGRES_DSN,
+        },
+      });
+      const pipelines = Object.entries(parsedPipelines).map(
+        ([key, pipeline]) =>
+          new PipelineCreate({
+            displayName: key,
+            description: key === 'agent' ? 'Chat' : 'Chat API', // TODO: Consider providing description for each pipeline
+            configYaml: pipeline,
+            tags: {
+              __redpanda_cloud_agent_name: value.name,
+              __redpanda_cloud_agent_description: value.description,
+              __redpanda_cloud_pipeline_purpose: key === 'agent' ? 'chat' : 'indexing', // TODO: Discuss if accurate
+            },
+          }),
+      );
+
+      const agentPipelines = await createAgentPipelinesMutation({ pipelines });
+
+      const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
+
+      // Worst case scenario, if the tags are not set properly, redirect to the agents list page
+      history.push(agentId ? `/agents/${agentId}` : '/agents');
     },
   });
 
@@ -78,7 +117,7 @@ export const CreateAgentHTTP = () => {
             <form.AppField name="description">
               {(field) => <field.TextField label="Description" placeholder="Enter agent description" />}
             </form.AppField>
-            <form.AppField name="sourceTopic">
+            <form.AppField name="TOPIC">
               {(field) => (
                 <field.SingleSelectField
                   label="Source topic"
@@ -87,7 +126,7 @@ export const CreateAgentHTTP = () => {
                 />
               )}
             </form.AppField>
-            <form.AppField name="openaiApiCredential">
+            <form.AppField name="OPENAI_KEY">
               {(field) => (
                 <field.SingleSelectField
                   label="OpenAI API credential"
@@ -97,7 +136,7 @@ export const CreateAgentHTTP = () => {
               )}
             </form.AppField>
 
-            <form.AppField name="postgresConnectionUri">
+            <form.AppField name="POSTGRES_DSN">
               {(field) => (
                 <field.SingleSelectField
                   label="Postgres Connection URI"
@@ -120,7 +159,7 @@ export const CreateAgentHTTP = () => {
             </Text>
 
             <VStack spacing={4} align="stretch">
-              <form.AppField name="username">
+              <form.AppField name="USERNAME">
                 {(field) => (
                   <field.SingleSelectField
                     label="Username"
@@ -130,7 +169,7 @@ export const CreateAgentHTTP = () => {
                   />
                 )}
               </form.AppField>
-              <form.AppField name="password">
+              <form.AppField name="KAFKA_PASSWORD">
                 {(field) => (
                   <field.SingleSelectField
                     label="Password"
@@ -140,7 +179,7 @@ export const CreateAgentHTTP = () => {
                   />
                 )}
               </form.AppField>
-              <form.AppField name="saslMechanism">
+              <form.AppField name="SASL_MECHANISM">
                 {(field) => (
                   <field.RadioGroupField
                     label="SASL mechanism"

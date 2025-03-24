@@ -3,17 +3,17 @@ import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs'
 import { runInAction } from 'mobx';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect } from 'react';
-import { REDPANDA_AI_AGENT_PIPELINE_PREFIX, useGetPipelineQuery } from 'react-query/api/pipeline';
-import { useHistory, useParams } from 'react-router-dom';
+import { type Agent, useGetAgentQuery } from 'react-query/api/agent';
+import { useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
+import { capitalizeFirst } from 'utils/utils';
 import { DeleteAgentModal } from '../delete-agent-modal';
 import { AgentPipelineTab } from './agent-pipeline-tab';
 import { AgentChatTab } from './chat/agent-chat-tab';
-import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
 
 // Hack for MobX to ensure we don't need to use observables
-export const updatePageTitle = ({ agent }: { agent: Pipeline | undefined }) => {
-  const nameWithoutPrefix = agent?.displayName.replace(REDPANDA_AI_AGENT_PIPELINE_PREFIX, '') ?? '';
+export const updatePageTitle = ({ agent }: { agent: Agent | undefined }) => {
+  const nameWithoutPrefix = agent?.displayName ?? '';
   runInAction(() => {
     uiState.pageTitle = `Agent ${nameWithoutPrefix}`;
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the agent title is used without previous page breadcrumb being shown
@@ -27,9 +27,7 @@ export const updatePageTitle = ({ agent }: { agent: Pipeline | undefined }) => {
 
 export const AgentDetailsPage = () => {
   const { agentId } = useParams<{ agentId: Pipeline['id'] }>();
-  const { data: agentData, isLoading: isAgentDataLoading } = useGetPipelineQuery({ id: agentId });
-
-  const agent = agentData?.response?.pipeline;
+  const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery({ id: agentId });
 
   const {
     isOpen: isDeleteAgentModalOpen,
@@ -38,47 +36,42 @@ export const AgentDetailsPage = () => {
   } = useDisclosure();
 
   useEffect(() => {
-    updatePageTitle({ agent });
-  }, [agent]);
-
-  const history = useHistory();
+    updatePageTitle({ agent: agentData?.agent });
+  }, [agentData?.agent]);
 
   if (isAgentDataLoading) {
-    <Flex justifyContent="center" padding={8}>
-      <Spinner size="lg" />
-    </Flex>;
+    return (
+      <Flex justifyContent="center" padding={8}>
+        <Spinner size="lg" />
+      </Flex>
+    );
   }
 
   const tabs: TabsItemProps[] = [
     {
       key: 'chat',
       name: 'Chat',
-      component: <AgentChatTab agent={agent} />,
+      component: (
+        <AgentChatTab
+          agent={agentData?.agent?.pipelines?.find(
+            (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'chat',
+          )}
+        />
+      ),
     },
-    // TODO: Update once pipelines are grouped together by tag
-    {
-      key: 'agent',
-      name: 'Agent',
-      component: <AgentPipelineTab agent={agent} />,
-    },
+    ...(agentData?.agent?.pipelines ?? []).map((pipeline) => ({
+      key: pipeline?.id ?? '',
+      name: capitalizeFirst(pipeline?.displayName ?? ''),
+      component: <AgentPipelineTab pipeline={pipeline} />,
+    })),
   ];
 
   return (
     <>
       <Stack spacing={8}>
         <Stack spacing={4}>
-          <Text>{agent?.description}</Text>
+          <Text>{agentData?.agent?.description}</Text>
           <ButtonGroup>
-            <Button
-              variant="solid"
-              onClick={() => {
-                history.push(`/rp-connect/${agentId}/edit`);
-              }}
-              data-testid="edit-agent-button"
-            >
-              Edit
-            </Button>
-            <TogglePipelineStateButton agent={agent} />
             <Button
               variant="outline-delete"
               onClick={() => {
@@ -92,12 +85,7 @@ export const AgentDetailsPage = () => {
         </Stack>
         <Tabs items={tabs} />
       </Stack>
-      <DeleteAgentModal
-        isOpen={isDeleteAgentModalOpen}
-        onClose={onDeleteAgentModalClose}
-        agentId={agentId}
-        agentName={agent?.displayName ?? ''}
-      />
+      <DeleteAgentModal isOpen={isDeleteAgentModalOpen} onClose={onDeleteAgentModalClose} agent={agentData?.agent} />
     </>
   );
 };

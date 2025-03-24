@@ -33,6 +33,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   @observable editorContent = undefined as unknown as string;
   @observable isUpdating = false;
   @observable secrets: string[] = [];
+  // TODO: Actually show this within the pipeline edit page
+  @observable tags = {} as Record<string, string>;
 
   constructor(p: any) {
     super(p);
@@ -157,12 +159,14 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         pipelineId,
         new PipelineUpdate({
           displayName: this.displayName,
-          tags: {},
           configYaml: this.editorContent,
           description: this.description,
           resources: {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
+          },
+          tags: {
+            ...this.tags,
           },
         }),
       )

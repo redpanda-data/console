@@ -3,25 +3,25 @@ import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v
 import { useStartPipelineMutationWithToast, useStopPipelineMutationWithToast } from 'react-query/api/pipeline';
 
 interface TogglePipelineStateButtonProps {
-  agent?: Pipeline;
+  pipeline?: Pipeline;
 }
 
-export const TogglePipelineStateButton = ({ agent }: TogglePipelineStateButtonProps) => {
-  const { mutateAsync: stopAgent, isPending: isStopAgentPending } = useStopPipelineMutationWithToast();
-  const { mutateAsync: startAgent, isPending: isStartAgentPending } = useStartPipelineMutationWithToast();
+export const TogglePipelineStateButton = ({ pipeline }: TogglePipelineStateButtonProps) => {
+  const { mutateAsync: stopPipeline, isPending: isStopPipelinePending } = useStopPipelineMutationWithToast();
+  const { mutateAsync: startPipeline, isPending: isStartPipelinePending } = useStartPipelineMutationWithToast();
 
-  const isPending = isStopAgentPending || isStartAgentPending;
-  const isTransitioning = agent?.state === Pipeline_State.STOPPING || agent?.state === Pipeline_State.STARTING;
+  const isPending = isStopPipelinePending || isStartPipelinePending;
+  const isTransitioning = pipeline?.state === Pipeline_State.STOPPING || pipeline?.state === Pipeline_State.STARTING;
 
   const getButtonText = () => {
-    if (isStopAgentPending) {
+    if (isStopPipelinePending) {
       return 'Stopping';
     }
-    if (isStartAgentPending) {
+    if (isStartPipelinePending) {
       return 'Starting';
     }
 
-    switch (agent?.state) {
+    switch (pipeline?.state) {
       case Pipeline_State.STOPPING:
         return 'Stopping';
       case Pipeline_State.STARTING:
@@ -43,20 +43,20 @@ export const TogglePipelineStateButton = ({ agent }: TogglePipelineStateButtonPr
     <Button
       variant="outline"
       onClick={async () => {
-        switch (agent?.state) {
+        switch (pipeline?.state) {
           case Pipeline_State.RUNNING: {
-            await stopAgent({ request: { id: agent?.id } });
+            await stopPipeline({ request: { id: pipeline?.id } });
             break;
           }
 
           case Pipeline_State.STOPPED: {
-            await startAgent({ request: { id: agent?.id } });
+            await startPipeline({ request: { id: pipeline?.id } });
             break;
           }
         }
       }}
       isDisabled={isPending || isTransitioning}
-      data-testid="toggle-start-stop-agent-button"
+      data-testid="toggle-start-stop-pipeline-button"
     >
       <HStack spacing={1}>
         {(isPending || isTransitioning) && <Spinner size="sm" />}

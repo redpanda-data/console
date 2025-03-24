@@ -55,6 +55,9 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
+  // TODO: Actually show this within the pipeline create page
+  @observable tags = {} as Record<string, string>;
+
   constructor(p: any) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
@@ -175,6 +178,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           resources: {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
+          },
+          tags: {
+            ...this.tags,
+            __redpanda_cloud_pipeline_type: 'pipeline',
           },
         }),
       )

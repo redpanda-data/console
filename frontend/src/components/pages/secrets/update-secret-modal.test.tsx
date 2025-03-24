@@ -150,8 +150,8 @@ describe('UpdateSecretModal', () => {
     render(<UpdateSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
 
     await waitFor(() => {
-      expect(screen.getByTestId('secret-in-use-alert')).toBeVisible();
-      expect(within(screen.getByTestId('secret-in-use-alert')).getByText(pipeline.id)).toBeVisible();
+      expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();
+      expect(within(screen.getByTestId('resource-in-use-alert')).getByText(pipeline.id)).toBeVisible();
     });
   });
 });
