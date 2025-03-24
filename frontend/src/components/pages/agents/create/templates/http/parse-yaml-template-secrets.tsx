@@ -1,4 +1,4 @@
-import { parse, stringify } from 'yaml';
+import { stringify } from 'yaml';
 
 type YamlTemplate = Record<string, any>;
 interface ParseYamlTemplateSecretsParams {

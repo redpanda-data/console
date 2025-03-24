@@ -21,7 +21,7 @@ import { secretSchema } from './form/secret-schema';
 
 interface CreateSecretModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (createdSecretId?: string) => void;
 }
 
 export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) => {
@@ -56,7 +56,7 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
       });
 
       await createSecret({ request });
-      onClose();
+      onClose(value.id);
     },
   });
 
@@ -124,7 +124,13 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
                   loadingText="Creating"
                 />
 
-                <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>
+                <Button
+                  variant="ghost"
+                  data-testid="cancel-button"
+                  onClick={() => {
+                    onClose(undefined);
+                  }}
+                >
                   Cancel
                 </Button>
               </ButtonGroup>
