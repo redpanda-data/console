@@ -119,7 +119,7 @@ const createAgentPipelinesPromises = async ({
     const connectError = ConnectError.from(error);
     showToast({
       id: TOASTS.AGENT.CREATE_PIPELINES.ERROR,
-      title: formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'agent pipelines' }),
+      title: formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'agent pipelines' }),
       status: 'error',
     });
   }
