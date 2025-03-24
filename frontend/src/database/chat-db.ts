@@ -14,6 +14,7 @@ import type { Table } from 'dexie';
 
 export interface ChatMessage {
   id: string;
+  agentId: string;
   content: string;
   sender: 'user' | 'system';
   timestamp: Date;
@@ -24,21 +25,21 @@ class ChatDatabase extends Dexie {
 
   constructor() {
     super('ChatDatabase');
-    this.version(1).stores({
-      messages: 'id, sender, timestamp',
+    this.version(2).stores({
+      messages: 'id, agentId, sender, timestamp',
     });
   }
 
-  async getAllMessages(): Promise<ChatMessage[]> {
-    return this.messages.orderBy('timestamp').toArray();
+  async getAllMessages(agentId: string): Promise<ChatMessage[]> {
+    return this.messages.where('agentId').equals(agentId).sortBy('timestamp');
   }
 
   async addMessage(message: ChatMessage): Promise<string> {
     return this.messages.add(message);
   }
 
-  async clearAllMessages(): Promise<void> {
-    return this.messages.clear();
+  async clearAllMessages(agentId: string): Promise<void> {
+    await this.messages.where('agentId').equals(agentId).delete();
   }
 }
 
