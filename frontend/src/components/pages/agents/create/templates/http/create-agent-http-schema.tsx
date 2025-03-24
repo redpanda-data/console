@@ -2,7 +2,7 @@ import { formOptions } from '@tanstack/react-form';
 import { z } from 'zod';
 
 export const createAgentHttpSchema = z.object({
-  name: z.string().min(3, 'Agent name must be at least 3 characters'),
+  name: z.string().min(1, 'Agent name is required'),
   description: z.string(),
   TOPIC: z.string().min(1, 'Source topic is required'),
   OPENAI_KEY: z.string().min(1, 'OpenAI API credential is required'),

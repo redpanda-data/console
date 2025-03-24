@@ -1,4 +1,5 @@
-import { createFormHook } from '@tanstack/react-form';
+import { type DeepKeys, createFormHook } from '@tanstack/react-form';
+import { CheckboxField } from './checkbox/checkbox-field';
 import { fieldContext, formContext } from './form-hook-contexts';
 import { KeyValueField } from './key-value/key-value-field';
 import { PasswordField } from './password/password-field';
@@ -16,8 +17,17 @@ export const { useAppForm, withForm } = createFormHook({
     KeyValueField,
     RadioGroupField,
     SingleSelectField,
+    CheckboxField,
   },
   formComponents: {
     SubscribeButton,
   },
 });
+
+type PrefixFromDepth<T extends string | number, TDepth extends any[]> = TDepth['length'] extends 0 ? T : `.${T}`;
+
+export type PrefixObjectAccessor<T extends object, TDepth extends any[]> = {
+  [K in keyof T]-?: K extends string | number
+    ? PrefixFromDepth<K, TDepth> | `${PrefixFromDepth<K, TDepth>}${DeepKeys<T[K], [TDepth]>}`
+    : never;
+}[keyof T];

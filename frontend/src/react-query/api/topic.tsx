@@ -9,7 +9,7 @@ import {
 import { config } from 'config';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
-  type CreateTopicRequest_Topic,
+  type CreateTopicRequest,
   ListTopicsRequest,
   type ListTopicsResponse,
   ListTopicsResponse_Topic,
@@ -123,13 +123,20 @@ export const useLegacyCreateTopicMutationWithToast = () => {
   const queryClient = useQueryClient();
 
   return useTanstackMutation({
-    mutationFn: async (topic: CreateTopicRequest_Topic) => {
+    mutationFn: async (request: CreateTopicRequest) => {
+      const legacyRequestBody = {
+        topicName: request.topic?.name, // Need to map to topicName for legacy API
+        partitionCount: request.topic?.partitionCount,
+        replicationFactor: request.topic?.replicationFactor,
+        configs: request.topic?.configs,
+      };
       const response = await fetch(`${config.restBasePath}/topics`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${config.jwt}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(topic),
+        body: JSON.stringify(legacyRequestBody),
       });
 
       const data = await response.json();
@@ -149,7 +156,7 @@ export const useLegacyCreateTopicMutationWithToast = () => {
 
       showToast({
         id: TOASTS.TOPIC.CREATE.SUCCESS,
-        resourceName: variables?.name,
+        resourceName: variables?.topic?.name,
         title: 'Topic created successfully',
         status: 'success',
       });
@@ -158,7 +165,7 @@ export const useLegacyCreateTopicMutationWithToast = () => {
       const connectError = ConnectError.from(error);
       showToast({
         id: TOASTS.TOPIC.CREATE.ERROR,
-        resourceName: variables?.name,
+        resourceName: variables?.topic?.name,
         title: formatToastErrorMessageGRPC({
           error: connectError,
           action: 'create',
