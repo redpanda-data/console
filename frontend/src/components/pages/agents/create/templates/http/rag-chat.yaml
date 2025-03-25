@@ -1,7 +1,8 @@
 input:
-  rpingress:
-    address: 0.0.0.0:4196
+  gateway:
     path: /
+    sync_response:
+      status: "200"
 pipeline:
   processors:
     - openai_chat_completion:

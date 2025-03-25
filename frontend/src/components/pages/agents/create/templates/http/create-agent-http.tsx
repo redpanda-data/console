@@ -6,10 +6,52 @@ import { useHistory } from 'react-router-dom';
 import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
+// import { GitDetailsForm } from './git-details-form';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
+// import gitPipeline from './rag-git.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
+
+export const getPipelineName = (pipelineKey: string) => {
+  switch (pipelineKey) {
+    case 'agent':
+      return 'Agent';
+    case 'RAG':
+      return 'RAG';
+    case 'GIT':
+      return 'Git';
+    default:
+      return 'Unknown';
+  }
+};
+
+export const getPipelineDescription = (pipelineKey: string) => {
+  switch (pipelineKey) {
+    case 'agent':
+      return 'Chat';
+    case 'RAG':
+      return 'Chat API';
+    case 'GIT':
+      return 'Git ingest';
+    default:
+      return 'Unknown';
+  }
+};
+
+export const getPipelinePurpose = (pipelineKey: string) => {
+  switch (pipelineKey) {
+    case 'agent':
+      return 'chat';
+    case 'RAG':
+      return 'indexing';
+    case 'GIT':
+      return 'git';
+    default:
+      return 'unknown';
+  }
+};
+
 export const CreateAgentHTTP = () => {
   const history = useHistory();
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
@@ -25,12 +67,16 @@ export const CreateAgentHTTP = () => {
         yamlTemplates: {
           agent: ragChatPipeline,
           RAG: ragIndexingPipeline,
+          // GIT: gitPipeline,
         },
         envVars: {
           TOPIC: value.TOPIC,
           SASL_MECHANISM: value.SASL_MECHANISM,
           USERNAME: value.USERNAME,
           POSTGRES_COMPATIBLE_TOPIC_NAME: value.TOPIC,
+          REDPANDA_BROKERS: '${REDPANDA_BROKERS}', // To ensure REDPANDA_BROKERS are set for now
+          // REPOSITORY_URL: value.REPOSITORY_URL,
+          // REPOSITORY_BRANCH: value.REPOSITORY_BRANCH,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,
@@ -41,13 +87,13 @@ export const CreateAgentHTTP = () => {
       const pipelines = Object.entries(parsedPipelines).map(
         ([key, pipeline]) =>
           new PipelineCreate({
-            displayName: key,
-            description: key === 'agent' ? 'Chat' : 'Chat API', // TODO: Consider providing description for each pipeline
+            displayName: getPipelineName(key),
+            description: getPipelineDescription(key),
             configYaml: pipeline,
             tags: {
               __redpanda_cloud_agent_name: value.name,
               __redpanda_cloud_agent_description: value.description,
-              __redpanda_cloud_pipeline_purpose: key === 'agent' ? 'chat' : 'indexing', // TODO: Discuss if accurate
+              __redpanda_cloud_pipeline_purpose: getPipelinePurpose(key),
             },
           }),
       );
@@ -69,17 +115,30 @@ export const CreateAgentHTTP = () => {
       }}
     >
       <form.AppForm>
-        <Grid templateColumns={{ base: '1fr' }} gap={6}>
-          <GridItem display="flex" alignItems="center" justifyContent="center">
-            <Box borderRadius="md" overflow="hidden" boxShadow="md">
-              <Image src={agentIllustration} alt="AI Agent Illustration" maxWidth="1000px" />
+        <Grid gap={8}>
+          <GridItem display="flex" alignItems="center" justifyContent="center" width="100%">
+            <Box borderRadius="md" overflow="hidden" boxShadow="md" width="100%" maxWidth="1000px" mx="auto">
+              <Image
+                src={agentIllustration}
+                alt="AI Agent Illustration"
+                width="100%"
+                height="auto"
+                objectFit="contain"
+                fallbackSrc="https://via.placeholder.com/800x450?text=AI+Agent"
+              />
             </Box>
           </GridItem>
-          <GridItem maxWidth="800px">
+          <GridItem maxWidth={{ base: '100%', lg: '800px' }} mx="auto" width="100%">
             <VStack spacing={6} align="stretch">
               <AgentDetailsForm form={form} title="Create AI agent" description="Description of agent ..." />
               <Divider my={4} />
               <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
+              {/* <Divider my={4} />
+              <GitDetailsForm
+                form={form}
+                title="Git information"
+                description="Enter the Git repository URL and branch to use for the agent"
+              /> */}
               <Flex justifyContent="flex-start" pt={6}>
                 <ButtonGroup isDisabled={isCreateAgentPending}>
                   <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />

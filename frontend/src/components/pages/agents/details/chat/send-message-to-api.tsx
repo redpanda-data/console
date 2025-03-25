@@ -1,7 +1,5 @@
+import { config } from 'config';
 import type { ChatMessage } from 'database/chat-db';
-import fetchWithTimeout from 'utils/fetchWithTimeout';
-
-const API_TIMEOUT = 15 * 1_000; // 15 seconds
 
 interface ChatApiResponse {
   message: string;
@@ -47,11 +45,14 @@ export const sendMessageToApi = async ({
       history: formattedHistory,
     };
 
-    const response = await fetchWithTimeout(`${agentUrl}/post/chat`, API_TIMEOUT, {
+    const response = await fetch(`${agentUrl}`, {
       method: 'POST',
       headers: {
+        Authorization: `Bearer ${config.jwt}`,
         'Content-Type': 'application/json',
         // 'Access-Control-Allow-Origin': '*',
+        // 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        // 'Access-Control-Allow-Headers': 'Content-Type',
       },
       body: JSON.stringify(payload),
     });

@@ -7,9 +7,9 @@ input:
     tls:
       enabled: true
     sasl:
-      - mechanism: ${SASL_MECHANISM}
-        username: ${USERNAME}
-        password: "${secrets.KAFKA_PASSWORD}"
+      - username: ${USERNAME}
+        password: ${secrets.KAFKA_PASSWORD}
+        mechanism: ${SASL_MECHANISM}
 pipeline:
   processors:
   - mapping: |
