@@ -14,6 +14,7 @@ interface AgentChatTabProps {
 /**
  * This component is using Dexie to listen for message changes in the database.
  * It is also using Tailwind CSS under the hood for styling instead of Chakra UI.
+ * Each agent has its own separate conversation history.
  * @see https://github.com/dexie/Dexie.js
  */
 export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
@@ -21,6 +22,8 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   const [shouldScroll, setShouldScroll] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const id = agent?.id ?? null;
 
   // Update scroll position when shouldScroll changes
   useEffect(() => {
@@ -33,14 +36,16 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
-      const storedMessages = await chatDb.getAllMessages();
+      if (!id) return [];
+      const storedMessages = await chatDb.getAllMessages(id);
       setShouldScroll(true);
       return storedMessages;
-    }, []) || [];
+    }, [id]) || [];
 
   const handleClearChat = async () => {
     try {
-      await chatDb.clearAllMessages();
+      if (!id) return;
+      await chatDb.clearAllMessages(id);
     } catch (error) {
       console.error('Error clearing messages:', error);
     }
@@ -50,11 +55,23 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
     return <ChatLoadingIndicator />;
   }
 
+  if (!id) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)] w-full px-4">
+        <div className="text-gray-500">Agent is not available right now.</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-200px)] w-full px-4">
-      <ChatClearButton onClear={handleClearChat} />
-      <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
-      <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} />
+      <div className="flex-1 flex flex-col min-h-0">
+        <ChatClearButton onClear={handleClearChat} />
+        <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
+      </div>
+      <div className="flex-shrink-0 sticky bottom-0 bg-white">
+        <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} agentId={id} />
+      </div>
     </div>
   );
 };
