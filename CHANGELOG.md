@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.8.5 / 2025-03-25
+
+- [SECURITY] Address [CVE-2025-30204](https://nvd.nist.gov/vuln/detail/CVE-2025-30204) by updating the github.com/golang-jwt/jwt library.
+
 ## v2.8.4 / 2025-03-13
 
 - [CHANGE] Move to bun package manager for frontend builds.
