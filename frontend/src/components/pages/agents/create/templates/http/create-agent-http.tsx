@@ -1,15 +1,15 @@
-import { Button, ButtonGroup, Divider, Flex, VStack } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, VStack } from '@redpanda-data/ui';
 import { useAppForm } from 'components/form/form';
 import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useHistory } from 'react-router-dom';
+import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
-
 export const CreateAgentHTTP = () => {
   const history = useHistory();
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
@@ -69,19 +69,28 @@ export const CreateAgentHTTP = () => {
       }}
     >
       <form.AppForm>
-        <VStack spacing={6} align="stretch">
-          <AgentDetailsForm form={form} title="Create AI agent" description="Description of agent ..." />
-          <Divider my={4} />
-          <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
-          <Flex justifyContent="flex-start" pt={6}>
-            <ButtonGroup isDisabled={isCreateAgentPending}>
-              <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
-              <Button variant="link" onClick={() => history.goBack()}>
-                Cancel
-              </Button>
-            </ButtonGroup>
-          </Flex>
-        </VStack>
+        <Grid templateColumns={{ base: '1fr' }} gap={6}>
+          <GridItem display="flex" alignItems="center" justifyContent="center">
+            <Box borderRadius="md" overflow="hidden" boxShadow="md">
+              <Image src={agentIllustration} alt="AI Agent Illustration" maxWidth="1000px" />
+            </Box>
+          </GridItem>
+          <GridItem maxWidth="800px">
+            <VStack spacing={6} align="stretch">
+              <AgentDetailsForm form={form} title="Create AI agent" description="Description of agent ..." />
+              <Divider my={4} />
+              <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
+              <Flex justifyContent="flex-start" pt={6}>
+                <ButtonGroup isDisabled={isCreateAgentPending}>
+                  <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
+                  <Button variant="link" onClick={() => history.goBack()}>
+                    Cancel
+                  </Button>
+                </ButtonGroup>
+              </Flex>
+            </VStack>
+          </GridItem>
+        </Grid>
       </form.AppForm>
     </form>
   );
