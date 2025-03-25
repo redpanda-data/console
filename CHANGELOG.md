@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.8.5 / 2025-03-25
+
+- [SECURITY] Update github.com/golang-jwt/jwt/v5 module to address security issue.
+- [SECURITY] Update github.com/golang-jwt/jwt/v4 module to address security issue.
+
 ## v2.8.4 / 2025-03-13
 
 - [CHANGE] Move to bun package manager for frontend builds.
