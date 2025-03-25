@@ -5,11 +5,11 @@ import { AiOutlineExclamationCircle } from 'react-icons/ai';
 interface ResourceInUseAlertProps {
   resource: string;
   usedBy: string;
-  pipelines: Pipeline[];
+  pipelines?: Pipeline[];
 }
 
 export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUseAlertProps) => {
-  if (pipelines.length === 0) {
+  if (pipelines?.length === 0) {
     return null;
   }
 

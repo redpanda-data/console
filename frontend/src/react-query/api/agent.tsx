@@ -25,6 +25,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { useHistory } from 'react-router-dom';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -292,14 +293,18 @@ interface DeleteAgentPipelineParams {
 export const useDeleteAgentPipelinesMutation = () => {
   const queryClient = useQueryClient();
   const deletePipelineMutation = useMutation(deletePipeline);
+  const history = useHistory();
 
   return {
     ...deletePipelineMutation,
     mutate: async ({ pipelines }: DeleteAgentPipelineParams) => {
-      return deleteAgentPipelinesPromises({ queryClient, deletePipelineMutation, pipelines });
+      await deleteAgentPipelinesPromises({ queryClient, deletePipelineMutation, pipelines });
+      history.push('/agents');
     },
+    // For compatibility with both mutate and mutateAsync
     mutateAsync: async ({ pipelines }: DeleteAgentPipelineParams) => {
-      return deleteAgentPipelinesPromises({ queryClient, deletePipelineMutation, pipelines });
+      await deleteAgentPipelinesPromises({ queryClient, deletePipelineMutation, pipelines });
+      history.push('/agents');
     },
   };
 };
