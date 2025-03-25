@@ -53,7 +53,6 @@ export const AgentDetailsPage = () => {
       name: 'Chat',
       component: (
         <AgentChatTab
-          id={agentData?.agent?.id ?? ''}
           agent={agentData?.agent?.pipelines?.find(
             (pipeline) =>
               pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'chat' ||
