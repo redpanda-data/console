@@ -48,24 +48,23 @@ export const AgentDetailsPage = () => {
     );
   }
 
-  const tabs: TabsItemProps[] = [
-    {
-      key: 'chat',
-      name: 'Chat',
-      component: (
-        <AgentChatTab
-          agent={agentData?.agent?.pipelines?.find(
-            (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'chat',
-          )}
-        />
-      ),
-    },
-    ...(agentData?.agent?.pipelines ?? []).map((pipeline) => ({
-      key: pipeline?.id ?? '',
-      name: capitalizeFirst(pipeline?.displayName ?? ''),
-      component: <AgentPipelineTab pipeline={pipeline} />,
-    })),
-  ];
+  const matchingPipeline = agentData?.agent?.pipelines?.find(
+    (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'chat',
+  );
+
+  const chatTab = {
+    key: 'chat',
+    name: 'Chat',
+    component: <AgentChatTab agent={matchingPipeline} />,
+  };
+
+  const pipelineTabs = (agentData?.agent?.pipelines ?? []).map((pipeline) => ({
+    key: pipeline?.id ?? '',
+    name: capitalizeFirst(pipeline?.displayName ?? ''),
+    component: <AgentPipelineTab pipeline={pipeline} />,
+  }));
+
+  const tabs: TabsItemProps[] = matchingPipeline ? [chatTab, ...pipelineTabs] : pipelineTabs;
 
   return (
     <>
