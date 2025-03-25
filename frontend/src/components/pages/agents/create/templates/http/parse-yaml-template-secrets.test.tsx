@@ -1,10 +1,37 @@
-import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
+import { parseYamlTemplateSecrets, toPostgresTableName } from './parse-yaml-template-secrets';
+
+describe('toPostgresTableName', () => {
+  test('should convert invalid characters to underscores', () => {
+    expect(toPostgresTableName('topic-with-dashes')).toBe('topic_with_dashes');
+    expect(toPostgresTableName('topic.with.dots')).toBe('topic_with_dots');
+    expect(toPostgresTableName('topic/with/slashes')).toBe('topic_with_slashes');
+    expect(toPostgresTableName('topic with spaces')).toBe('topic_with_spaces');
+  });
+
+  test('should ensure the name starts with a letter or underscore', () => {
+    expect(toPostgresTableName('123-topic')).toBe('_123_topic');
+    expect(toPostgresTableName('_valid-topic')).toBe('_valid_topic');
+    expect(toPostgresTableName('validTopic')).toBe('validtopic');
+  });
+
+  test('should truncate names longer than 63 characters', () => {
+    const longName = 'extremely_long_topic_name_that_exceeds_postgres_maximum_identifier_length_limit';
+    expect(toPostgresTableName(longName).length).toBe(63);
+    expect(toPostgresTableName(longName)).toBe(longName.substring(0, 63));
+  });
+
+  test('should convert to lowercase for consistency', () => {
+    expect(toPostgresTableName('MixedCASE_Topic')).toBe('mixedcase_topic');
+    expect(toPostgresTableName('UPPERCASE_TOPIC')).toBe('uppercase_topic');
+  });
+});
 
 describe('parseYamlTemplateSecrets', () => {
   // Define test environment variables
   const testEnvVars = {
     REDPANDA_BROKERS: 'broker-1:9092,broker-2:9092',
     TOPIC: 'test-topic',
+    POSTGRES_COMPATIBLE_TOPIC_NAME: 'test-topic-with-dashes',
     SASL_MECHANISM: 'SCRAM-SHA-256',
     USERNAME: 'test-user',
     KAFKA_USERNAME: 'kafka-user',
@@ -35,6 +62,22 @@ describe('parseYamlTemplateSecrets', () => {
     expect(result['some-template']).toContain('topic: test-topic');
     expect(result['some-template']).toContain('mechanism: SCRAM-SHA-256');
     expect(result['some-template']).toContain('username: test-user');
+  });
+
+  test('should handle POSTGRES_COMPATIBLE_TOPIC_NAME variables correctly', () => {
+    const yamlWithPostgresCompatibleVar = `
+      table: "\${POSTGRES_COMPATIBLE_TOPIC_NAME}"
+      create_statement: |
+        CREATE TABLE IF NOT EXISTS \${POSTGRES_COMPATIBLE_TOPIC_NAME} (key text PRIMARY KEY, data jsonb);
+    `;
+
+    const result = parseYamlTemplateSecrets({
+      yamlTemplates: { 'postgres-template': { template: yamlWithPostgresCompatibleVar } },
+      envVars: testEnvVars,
+      secretMappings: testSecretMappings,
+    });
+
+    expect(result['postgres-template']).toContain('CREATE TABLE IF NOT EXISTS test_topic_with_dashes');
   });
 
   test('should replace secret values with mapped format', () => {
@@ -134,7 +177,7 @@ pipeline:
                   driver: "postgres"
                   dsn: "\${secrets.POSTGRES_DSN}"
                   query: |
-                    SELECT document FROM "\${TOPIC}" ORDER BY embeddings <-> $1 LIMIT 5
+                    SELECT document FROM "\${POSTGRES_COMPATIBLE_TOPIC_NAME}" ORDER BY embeddings <-> $1 LIMIT 5
                   args_mapping: "[ this.vector() ]"
 output:
   sync_response: {}
@@ -170,10 +213,10 @@ output:
   sql_insert:
     driver: "postgres"
     dsn: "\${secrets.POSTGRES_DSN}"
-    table: "\${TOPIC}"
+    table: "\${POSTGRES_COMPATIBLE_TOPIC_NAME}"
     init_statement: |
       CREATE EXTENSION IF NOT EXISTS vector;
-      CREATE TABLE IF NOT EXISTS \${TOPIC} (key text PRIMARY KEY, document text, embeddings vector(768));
+      CREATE TABLE IF NOT EXISTS \${POSTGRES_COMPATIBLE_TOPIC_NAME} (key text PRIMARY KEY, document text, embeddings vector(768));
 `;
 
     const result = parseYamlTemplateSecrets({
@@ -188,7 +231,7 @@ output:
     // Validate rag-chat template
     expect(result['rag-chat']).toContain('${secrets.USER_DEFINED_OPENAI_KEY}');
     expect(result['rag-chat']).toContain('${secrets.USER_DEFINED_POSTGRES_DSN}');
-    expect(result['rag-chat']).toContain('SELECT document FROM "test-topic"');
+    expect(result['rag-chat']).toContain('SELECT document FROM "test_topic_with_dashes"');
 
     // Validate rag-indexing template
     expect(result['rag-indexing']).toContain('broker-1:9092,broker-2:9092');
@@ -199,7 +242,7 @@ output:
     expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_KAFKA_PASSWORD}');
     expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_OPENAI_KEY}');
     expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_POSTGRES_DSN}');
-    expect(result['rag-indexing']).toContain('table: "test-topic"');
-    expect(result['rag-indexing']).toContain('CREATE TABLE IF NOT EXISTS test-topic');
+    expect(result['rag-indexing']).toContain('table: "test_topic_with_dashes"');
+    expect(result['rag-indexing']).toContain('CREATE TABLE IF NOT EXISTS test_topic_with_dashes');
   });
 });
