@@ -65,9 +65,11 @@ const connectQueryWrapper = (
 
   return {
     wrapper: ({ children }) => (
-      <TransportProvider transport={transport}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </TransportProvider>
+      <MemoryRouter>
+        <TransportProvider transport={transport}>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </TransportProvider>
+      </MemoryRouter>
     ),
     queryClient,
     transport,

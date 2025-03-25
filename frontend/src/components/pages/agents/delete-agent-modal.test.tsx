@@ -7,7 +7,7 @@ import {
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Agent } from 'react-query/api/agent';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { fireEvent, renderWithRouter, screen, waitFor } from 'test-utils';
 import { DeleteAgentModal } from './delete-agent-modal';
 
 describe('DeleteAgentModal', () => {
@@ -26,7 +26,7 @@ describe('DeleteAgentModal', () => {
       rpc(deletePipeline, deletePipelineMock);
     });
 
-    render(<DeleteAgentModal agent={agent} isOpen onClose={() => {}} />, { transport });
+    renderWithRouter(<DeleteAgentModal agent={agent} isOpen onClose={() => {}} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('delete-agent-button')).toBeVisible();
