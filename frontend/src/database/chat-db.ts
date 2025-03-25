@@ -18,6 +18,7 @@ export interface ChatMessage {
   content: string;
   sender: 'user' | 'system';
   timestamp: Date;
+  failure: boolean;
 }
 
 class ChatDatabase extends Dexie {
