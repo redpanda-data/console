@@ -2,8 +2,7 @@
 
 ## v2.8.5 / 2025-03-25
 
-- [SECURITY] Update github.com/golang-jwt/jwt/v5 module to address security issue.
-- [SECURITY] Update github.com/golang-jwt/jwt/v4 module to address security issue.
+- [SECURITY] Address [CVE-2025-30204](https://nvd.nist.gov/vuln/detail/CVE-2025-30204) by updating the github.com/golang-jwt/jwt library.
 
 ## v2.8.4 / 2025-03-13
 
