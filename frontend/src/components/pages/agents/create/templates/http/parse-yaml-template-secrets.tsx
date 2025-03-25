@@ -11,6 +11,30 @@ interface ParseYamlTemplateSecretsParams {
 const whitelistedVars = ['REDPANDA_BROKERS'];
 
 /**
+ * Converts a topic name to a valid PostgreSQL table name
+ * Follows PostgreSQL identifier naming rules:
+ * - Starts with letter or underscore
+ * - Contains only letters, numbers, and underscores
+ * - Max length of 63 characters
+ * - Lowercase for consistency
+ */
+export const toPostgresTableName = (originalString: string): string => {
+  // Replace invalid characters with underscores
+  let validName = originalString.replace(/[^a-zA-Z0-9_]/g, '_');
+
+  // Ensure name starts with letter or underscore
+  if (!/^[a-zA-Z_]/.test(validName)) {
+    validName = `_${validName}`;
+  }
+
+  // Truncate to PostgreSQL max identifier length (63 bytes)
+  validName = validName.substring(0, 63);
+
+  // Convert to lowercase for consistency
+  return validName.toLowerCase();
+};
+
+/**
  * Processes one or more YAML templates by replacing environment variables with their values
  * and standardizing secret references using provided mappings
  */
@@ -109,6 +133,12 @@ export const parseYamlTemplateSecrets = ({
     // Replace environment variables with their actual values
     processedYamlString = processedYamlString.replace(envVarRegex, (_match: string, envVarName: string) => {
       const envValue = envVars?.[envVarName] || '';
+
+      // Handle special case for Postgres compatible topic name
+      if (envVarName === 'POSTGRES_COMPATIBLE_TOPIC_NAME') {
+        return toPostgresTableName(envValue);
+      }
+
       return envValue;
     });
 

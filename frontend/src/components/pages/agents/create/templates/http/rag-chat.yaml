@@ -1,8 +1,7 @@
 input:
-  http_server:
-    path: /post/chat
-    allowed_verbs:
-      - POST
+  rpingress:
+    address: 0.0.0.0:4196
+    path: /
 pipeline:
   processors:
     - openai_chat_completion:
@@ -33,7 +32,7 @@ pipeline:
                   driver: "postgres"
                   dsn: "${secrets.POSTGRES_DSN}"
                   query: |
-                    SELECT document FROM "${TOPIC}" ORDER BY embeddings <-> $1 LIMIT 5
+                    SELECT document FROM "${POSTGRES_COMPATIBLE_TOPIC_NAME}" ORDER BY embeddings <-> $1 LIMIT 5
                   args_mapping: "[ this.vector() ]"
               - mapping: |
                   "Searching the vector database resulted in the following results: \n" + this.map_each(row -> row.document).join("\n\n")
