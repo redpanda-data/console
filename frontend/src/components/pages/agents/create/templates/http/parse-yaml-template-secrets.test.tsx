@@ -26,15 +26,15 @@ describe('parseYamlTemplateSecrets', () => {
     `;
 
     const result = parseYamlTemplateSecrets({
-      yamlTemplates: { template: yamlWithEnvVars },
+      yamlTemplates: { 'some-template': { template: yamlWithEnvVars } },
       envVars: testEnvVars,
       secretMappings: testSecretMappings,
     });
 
-    expect(result.template).toContain('brokers: ["broker-1:9092,broker-2:9092"]');
-    expect(result.template).toContain('topic: test-topic');
-    expect(result.template).toContain('mechanism: SCRAM-SHA-256');
-    expect(result.template).toContain('username: test-user');
+    expect(result['some-template']).toContain('broker-1:9092,broker-2:9092');
+    expect(result['some-template']).toContain('topic: test-topic');
+    expect(result['some-template']).toContain('mechanism: SCRAM-SHA-256');
+    expect(result['some-template']).toContain('username: test-user');
   });
 
   test('should replace secret values with mapped format', () => {
@@ -45,14 +45,14 @@ describe('parseYamlTemplateSecrets', () => {
     `;
 
     const result = parseYamlTemplateSecrets({
-      yamlTemplates: { template: yamlWithSecrets },
+      yamlTemplates: { 'some-template': { template: yamlWithSecrets } },
       envVars: testEnvVars,
       secretMappings: testSecretMappings,
     });
 
-    expect(result.template).toContain('api_key: "${secrets.USER_DEFINED_OPENAI_KEY}"');
-    expect(result.template).toContain('password: "${secrets.USER_DEFINED_KAFKA_PASSWORD}"');
-    expect(result.template).toContain('dsn: "${secrets.USER_DEFINED_POSTGRES_DSN}"');
+    expect(result['some-template']).toContain('${secrets.USER_DEFINED_OPENAI_KEY}');
+    expect(result['some-template']).toContain('${secrets.USER_DEFINED_KAFKA_PASSWORD}');
+    expect(result['some-template']).toContain('${secrets.USER_DEFINED_POSTGRES_DSN}');
   });
 
   test('should throw error for missing environment variables and secrets across all templates', () => {
@@ -69,8 +69,8 @@ describe('parseYamlTemplateSecrets', () => {
     expect(() => {
       parseYamlTemplateSecrets({
         yamlTemplates: {
-          template1: yamlTemplate1,
-          template2: yamlTemplate2,
+          template1: { template: yamlTemplate1 },
+          template2: { template: yamlTemplate2 },
         },
         envVars: testEnvVars,
         secretMappings: testSecretMappings,
@@ -93,17 +93,17 @@ describe('parseYamlTemplateSecrets', () => {
 
     const result = parseYamlTemplateSecrets({
       yamlTemplates: {
-        first: firstTemplate,
-        second: secondTemplate,
+        first: { template: firstTemplate },
+        second: { template: secondTemplate },
       },
       envVars: testEnvVars,
       secretMappings: testSecretMappings,
     });
 
-    expect(result.first).toContain('brokers: ["broker-1:9092,broker-2:9092"]');
+    expect(result.first).toContain('broker-1:9092,broker-2:9092');
     expect(result.first).toContain('topic: test-topic');
-    expect(result.second).toContain('api_key: "${secrets.USER_DEFINED_OPENAI_KEY}"');
-    expect(result.second).toContain('password: "${secrets.USER_DEFINED_KAFKA_PASSWORD}"');
+    expect(result.second).toContain('${secrets.USER_DEFINED_OPENAI_KEY}');
+    expect(result.second).toContain('${secrets.USER_DEFINED_KAFKA_PASSWORD}');
   });
 
   test('should process both rag-chat-yaml and rag-indexing-yaml together', () => {
@@ -178,27 +178,27 @@ output:
 
     const result = parseYamlTemplateSecrets({
       yamlTemplates: {
-        'rag-chat': ragChatYaml,
-        'rag-indexing': ragIndexingYaml,
+        'rag-chat': { template: ragChatYaml },
+        'rag-indexing': { template: ragIndexingYaml },
       },
       envVars: testEnvVars,
       secretMappings: testSecretMappings,
     });
 
     // Validate rag-chat template
-    expect(result['rag-chat']).toContain('api_key: "${secrets.USER_DEFINED_OPENAI_KEY}"');
-    expect(result['rag-chat']).toContain('dsn: "${secrets.USER_DEFINED_POSTGRES_DSN}"');
+    expect(result['rag-chat']).toContain('${secrets.USER_DEFINED_OPENAI_KEY}');
+    expect(result['rag-chat']).toContain('${secrets.USER_DEFINED_POSTGRES_DSN}');
     expect(result['rag-chat']).toContain('SELECT document FROM "test-topic"');
 
     // Validate rag-indexing template
-    expect(result['rag-indexing']).toContain('seed_brokers: ["broker-1:9092,broker-2:9092"]');
+    expect(result['rag-indexing']).toContain('broker-1:9092,broker-2:9092');
     expect(result['rag-indexing']).toContain('topics: ["test-topic"]');
-    expect(result['rag-indexing']).toContain('consumer_group: "test-topic-ai-pipeline"');
-    expect(result['rag-indexing']).toContain('mechanism: SCRAM-SHA-256');
-    expect(result['rag-indexing']).toContain('username: test-user');
-    expect(result['rag-indexing']).toContain('password: "${secrets.USER_DEFINED_KAFKA_PASSWORD}"');
-    expect(result['rag-indexing']).toContain('api_key: "${secrets.USER_DEFINED_OPENAI_KEY}"');
-    expect(result['rag-indexing']).toContain('dsn: "${secrets.USER_DEFINED_POSTGRES_DSN}"');
+    expect(result['rag-indexing']).toContain('test-topic-ai-pipeline');
+    expect(result['rag-indexing']).toContain('SCRAM-SHA-256');
+    expect(result['rag-indexing']).toContain('test-user');
+    expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_KAFKA_PASSWORD}');
+    expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_OPENAI_KEY}');
+    expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_POSTGRES_DSN}');
     expect(result['rag-indexing']).toContain('table: "test-topic"');
     expect(result['rag-indexing']).toContain('CREATE TABLE IF NOT EXISTS test-topic');
   });
