@@ -30,6 +30,7 @@ export const CreateAgentHTTP = () => {
           TOPIC: value.TOPIC,
           SASL_MECHANISM: value.SASL_MECHANISM,
           USERNAME: value.USERNAME,
+          POSTGRES_COMPATIBLE_TOPIC_NAME: value.TOPIC,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,
