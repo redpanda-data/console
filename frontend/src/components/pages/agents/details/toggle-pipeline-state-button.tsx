@@ -39,6 +39,10 @@ export const TogglePipelineStateButton = ({ pipeline }: TogglePipelineStateButto
     }
   };
 
+  if (pipeline?.state === Pipeline_State.UNSPECIFIED) {
+    return null;
+  }
+
   return (
     <Button
       variant="outline"
