@@ -55,10 +55,10 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
     return <ChatLoadingIndicator />;
   }
 
-  if (!id) {
+  if (!id || !agent?.url) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)] w-full px-4">
-        <div className="text-gray-500">Agent is not available right now.</div>
+        <div className="text-gray-500">Chat is not available right now.</div>
       </div>
     );
   }
