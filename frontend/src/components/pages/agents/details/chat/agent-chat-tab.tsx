@@ -8,7 +8,6 @@ import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
 
 interface AgentChatTabProps {
-  id: string;
   agent?: Pipeline;
 }
 
@@ -18,11 +17,13 @@ interface AgentChatTabProps {
  * Each agent has its own separate conversation history.
  * @see https://github.com/dexie/Dexie.js
  */
-export const AgentChatTab = ({ id, agent }: AgentChatTabProps) => {
+export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const id = agent?.id ?? null;
 
   // Update scroll position when shouldScroll changes
   useEffect(() => {
@@ -35,6 +36,7 @@ export const AgentChatTab = ({ id, agent }: AgentChatTabProps) => {
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
+      if (!id) return [];
       const storedMessages = await chatDb.getAllMessages(id);
       setShouldScroll(true);
       return storedMessages;
@@ -42,6 +44,7 @@ export const AgentChatTab = ({ id, agent }: AgentChatTabProps) => {
 
   const handleClearChat = async () => {
     try {
+      if (!id) return;
       await chatDb.clearAllMessages(id);
     } catch (error) {
       console.error('Error clearing messages:', error);
@@ -50,6 +53,14 @@ export const AgentChatTab = ({ id, agent }: AgentChatTabProps) => {
 
   if (!messages) {
     return <ChatLoadingIndicator />;
+  }
+
+  if (!id) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)] w-full px-4">
+        <div className="text-gray-500">Agent is not available right now.</div>
+      </div>
+    );
   }
 
   return (
