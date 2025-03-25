@@ -12,13 +12,12 @@ import { AgentPipelineTab } from './agent-pipeline-tab';
 import { AgentChatTab } from './chat/agent-chat-tab';
 
 // Hack for MobX to ensure we don't need to use observables
-export const updatePageTitle = ({ agent }: { agent: Agent | undefined }) => {
-  const nameWithoutPrefix = agent?.displayName ?? '';
+export const updatePageTitle = ({ agent }: { agent: Agent }) => {
   runInAction(() => {
-    uiState.pageTitle = `Agent ${nameWithoutPrefix}`;
+    uiState.pageTitle = `Agent ${agent?.displayName}`;
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the agent title is used without previous page breadcrumb being shown
     uiState.pageBreadcrumbs.push({
-      title: `Agent ${nameWithoutPrefix}`,
+      title: `Agent ${agent?.displayName}`,
       linkTo: `/agents/${agent?.id}`,
       heading: 'Agent Details',
     });
@@ -36,7 +35,9 @@ export const AgentDetailsPage = () => {
   } = useDisclosure();
 
   useEffect(() => {
-    updatePageTitle({ agent: agentData?.agent });
+    if (agentData?.agent) {
+      updatePageTitle({ agent: agentData?.agent });
+    }
   }, [agentData?.agent]);
 
   if (isAgentDataLoading) {
@@ -54,9 +55,7 @@ export const AgentDetailsPage = () => {
       component: (
         <AgentChatTab
           agent={agentData?.agent?.pipelines?.find(
-            (pipeline) =>
-              pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'chat' ||
-              pipeline?.displayName.toLowerCase().includes('chat'), // TODO: Remove this once we use tags properly
+            (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'chat',
           )}
         />
       ),
