@@ -322,7 +322,7 @@ export const useLegacyCreateACLMutationWithToast = () => {
 
       return data;
     },
-    onSuccess: async (_data) => {
+    onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
         queryKey: [listACLs.service.typeName],
         exact: false,
