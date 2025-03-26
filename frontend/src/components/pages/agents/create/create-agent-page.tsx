@@ -1,17 +1,6 @@
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Flex,
-  Grid,
-  Heading,
-  Icon,
-  Text,
-  VStack,
-  useColorModeValue,
-} from '@redpanda-data/ui';
+import { Box, Flex, Grid, Heading, Icon, Text, VStack, useColorModeValue } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { AiOutlineSlack } from 'react-icons/ai';
 import { MdNewspaper } from 'react-icons/md';
 import { useHistory } from 'react-router-dom';
