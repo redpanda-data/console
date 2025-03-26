@@ -61,7 +61,24 @@ export const sendMessageToApi = async ({
       throw new Error(`API responded with status: ${response.status}`);
     }
 
-    return (await response.json()) as ChatApiResponse;
+    const reader = response.body?.getReader();
+    const { value } = (await reader?.read()) || {};
+    const text = new TextDecoder().decode(value);
+
+    try {
+      const parsedResponse = JSON.parse(text);
+      return {
+        message: parsedResponse.message,
+        success: true,
+      } as ChatApiResponse;
+    } catch (err) {
+      console.error('Error parsing API response:', err);
+      return {
+        success: false,
+        message: 'Failed to parse server response',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
   } catch (error) {
     console.error('Error sending message to API:', error);
     return {
