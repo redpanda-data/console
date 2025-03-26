@@ -58,7 +58,6 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
   const { data: secretList } = useListSecretsQuery();
   const { data: legacyUserList } = useLegacyListUsersQuery();
 
-  // Secret creation mutation
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
   const { mutateAsync: createUser, isPending: isCreateUserPending } = useLegacyCreateUserMutationWithToast();
 
@@ -104,6 +103,8 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
     }
   }, [isOpen, form]);
 
+  const isPending = isCreateSecretPending || isCreateUserPending;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
@@ -128,7 +129,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
                     <field.TextField
                       label="Username"
                       helperText="Must not contain any whitespace. Dots, hyphens and underscores may be used."
-                      placeholder="username"
+                      placeholder="Username"
                       data-testid="username-field"
                     />
                   )}
@@ -138,7 +139,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
                     <field.PasswordField
                       label="Password"
                       helperText="Must be at least 4 characters and should not exceed 64 characters."
-                      placeholder="password"
+                      placeholder="Password"
                       data-testid="password-field"
                     />
                   )}
@@ -158,25 +159,6 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
                     />
                   )}
                 </form.AppField>
-                <form.AppField
-                  name="SECRET_ID"
-                  validators={{
-                    onChange: ({ value }: { value: string }) =>
-                      secretList?.secrets?.some((secret) => secret?.id === value)
-                        ? { message: 'Secret ID is already in use', path: 'id' }
-                        : undefined,
-                  }}
-                >
-                  {(field) => (
-                    <field.TextField
-                      label="Secret ID for password"
-                      helperText="Secret ID must use uppercase letters, numbers, and underscores only."
-                      placeholder="SECRET_ID"
-                      transform={(value: string) => value.toUpperCase()}
-                      data-testid="secret-id-field"
-                    />
-                  )}
-                </form.AppField>
                 <form.AppField name="SASL_MECHANISM">
                   {(field) => (
                     <field.RadioGroupField
@@ -188,11 +170,30 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
                     />
                   )}
                 </form.AppField>
+                <form.AppField
+                  name="SECRET_ID"
+                  validators={{
+                    onChange: ({ value }: { value: string }) =>
+                      secretList?.secrets?.some((secret) => secret?.id === value)
+                        ? { message: 'Secret ID is already in use', path: 'id' }
+                        : undefined,
+                  }}
+                >
+                  {(field) => (
+                    <field.TextField
+                      label="Secret ID"
+                      helperText="Secret ID must use uppercase letters, numbers, and underscores only."
+                      placeholder="SECRET_ID"
+                      transform={(value: string) => value.toUpperCase()}
+                      data-testid="secret-id-field"
+                    />
+                  )}
+                </form.AppField>
               </Stack>
             </ModalBody>
 
             <ModalFooter>
-              <ButtonGroup isDisabled={isCreateSecretPending || isCreateUserPending}>
+              <ButtonGroup isDisabled={isPending}>
                 <form.SubscribeButton
                   label="Create"
                   variant="brand"
