@@ -53,7 +53,7 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
       // Send message to API along with chat history
       const apiResponse = await sendMessageToApi({
         message: userMessage.content,
-        chatHistory: [...messages, userMessage].filter((message) => !message.failure),
+        chatHistory: messages.filter((message) => !message.failure),
         agentUrl,
       });
 
