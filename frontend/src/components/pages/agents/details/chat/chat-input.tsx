@@ -118,6 +118,9 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
           <textarea
             id="chat-input"
             className="w-full rounded-md outline-none focus:outline-none focus:ring-0 border-none resize-none min-h-[80px] text-sm"
+            style={{
+              resize: 'none',
+            }}
             placeholder="Type your message here..."
             value={inputValue}
             onChange={handleInputChange}
