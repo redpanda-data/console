@@ -9,7 +9,6 @@ import { ChatMessageContainer } from './chat-message-container';
 import { proto3 } from '@bufbuild/protobuf';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Alert, AlertIcon, Spinner } from '@redpanda-data/ui';
-import { MdFrontLoader } from 'react-icons/md';
 
 interface AgentChatTabProps {
   agent?: Pipeline;
