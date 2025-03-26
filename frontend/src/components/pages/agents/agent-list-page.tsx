@@ -113,15 +113,15 @@ export const AgentListPage = () => {
                 size: Number.POSITIVE_INFINITY,
               },
               {
+                header: 'Status',
+                id: 'status',
+                cell: ({ row: { original } }) => <AgentStateDisplayValue state={original?.state} />,
+              },
+              {
                 header: 'Description',
                 cell: ({ row: { original } }) => (
                   <Text data-testid={`agent-description-${original?.id}`}>{original?.description}</Text>
                 ),
-              },
-              {
-                header: 'Status',
-                id: 'status',
-                cell: ({ row: { original } }) => <AgentStateDisplayValue state={original?.state} />,
               },
               {
                 header: '',
