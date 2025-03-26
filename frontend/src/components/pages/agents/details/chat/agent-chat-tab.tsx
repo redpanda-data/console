@@ -6,6 +6,7 @@ import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
 import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
+import { Alert, AlertIcon } from '@redpanda-data/ui';
 
 interface AgentChatTabProps {
   agent?: Pipeline;
@@ -57,15 +58,18 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
 
   if (!id || !agent?.url) {
     return (
-      <div className="flex items-center justify-center h-full w-full px-4">
-        <div className="text-gray-500">Chat is not available right now.</div>
+      <div className="p-4">
+        <Alert status="error" variant="subtle">
+          <AlertIcon />
+          Chat is not available right now.
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col w-full px-4 max-w-screen-xl mx-auto">
-      <h2 className="text-2xl pt-4 font-bold text-gray-900 mb-4">Test your AI agent</h2>
+      <h2 className="text-2xl pt-4 font-bold text-gray-900 mb-">Test your AI agent</h2>
       <div className="flex flex-col min-h-0">
         <ChatClearButton onClear={handleClearChat} />
         <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
