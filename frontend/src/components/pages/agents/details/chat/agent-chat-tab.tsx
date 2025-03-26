@@ -6,7 +6,6 @@ import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
 import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
-import { Alert, AlertIcon } from '@redpanda-data/ui';
 
 interface AgentChatTabProps {
   agent?: Pipeline;
