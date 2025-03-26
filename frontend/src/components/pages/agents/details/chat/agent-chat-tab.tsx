@@ -1,6 +1,9 @@
+import { proto3 } from '@bufbuild/protobuf';
+import { Alert, AlertIcon, Spinner } from '@redpanda-data/ui';
 import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
@@ -56,7 +59,22 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   }
 
   if (!id || !agent?.url) {
-    return <div className="p-4">Chat is not available right now.</div>;
+    return (
+      <div className="p-4">
+        {agent?.state === Pipeline_State.STARTING ? (
+          <div className="flex items-center">
+            <Spinner size="sm" mr={2} />
+            The pipeline is starting. Chat is not available right now.
+          </div>
+        ) : (
+          <Alert status="warning">
+            <AlertIcon />
+            Chat is not available right now. Pipeline is in state:{' '}
+            {proto3.getEnumType(Pipeline_State).findNumber(agent?.state ?? Pipeline_State.UNSPECIFIED)?.name}
+          </Alert>
+        )}
+      </div>
+    );
   }
 
   return (
