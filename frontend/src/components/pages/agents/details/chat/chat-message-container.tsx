@@ -10,7 +10,7 @@ interface ChatMessageContainerProps {
 
 export const ChatMessageContainer = ({ messages, isTyping, messagesEndRef }: ChatMessageContainerProps) => (
   <div
-    className="overflow-y-auto max-h-[calc(50vh)] rounded-md p-4 mb-4 border bg-slate-50"
+    className="overflow-y-auto max-h-[calc(50vh)] rounded-md mb-4 border bg-slate-50"
     aria-label="Chat messages"
     role="log"
   >
