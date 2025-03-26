@@ -6,6 +6,10 @@ import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
 import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
+import { proto3 } from '@bufbuild/protobuf';
+import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { Alert, AlertIcon, Spinner } from '@redpanda-data/ui';
+import { MdFrontLoader } from 'react-icons/md';
 
 interface AgentChatTabProps {
   agent?: Pipeline;
@@ -56,7 +60,22 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   }
 
   if (!id || !agent?.url) {
-    return <div className="p-4">Chat is not available right now.</div>;
+    return (
+      <div className="p-4">
+        {agent?.state === Pipeline_State.STARTING ? (
+          <div className="flex items-center">
+            <Spinner size="sm" mr={2} />
+            The pipeline is starting. Chat is not available right now.
+          </div>
+        ) : (
+          <Alert status="warning">
+            <AlertIcon />
+            Chat is not available right now. Pipeline is in state:{' '}
+            {proto3.getEnumType(Pipeline_State).findNumber(agent?.state ?? 0)?.name}
+          </Alert>
+        )}
+      </div>
+    );
   }
 
   return (
