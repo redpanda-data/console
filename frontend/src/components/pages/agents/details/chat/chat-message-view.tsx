@@ -6,7 +6,7 @@ interface ChatMessageViewProps {
 
 export const ChatMessageView = ({ message }: ChatMessageViewProps) => {
   return (
-    <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div key={message.id} className={`flex p-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`p-3 rounded-lg max-w-[80%] ${
           message.sender === 'user' ? 'bg-blue-100 text-blue-900' : 'bg-white text-slate-900 border border-slate-200'
