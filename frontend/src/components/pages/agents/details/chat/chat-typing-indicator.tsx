@@ -5,7 +5,7 @@ interface ChatTypingIndicatorProps {
 }
 
 export const ChatTypingIndicator = ({ text }: ChatTypingIndicatorProps) => (
-  <div className="flex justify-start">
+  <div className="flex justify-start p-4">
     <div className="p-3 rounded-lg bg-white text-slate-900 border border-slate-200 max-w-[80%]">
       <div className="flex items-center space-x-1">
         <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-75" />
