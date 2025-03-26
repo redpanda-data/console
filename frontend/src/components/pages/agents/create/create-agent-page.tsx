@@ -48,22 +48,17 @@ export const CreateAgentPage = () => {
       title: 'New web request',
       subtitle: 'HTTP Server',
       description: 'Description',
-      isSelected: true,
+      isSelected: true, // hardcoded as we only have 1 template for now
     },
     {
       type: 'slack',
       icon: <Icon as={AiOutlineSlack} width={8} height={8} />,
-      title: 'New event in slack',
+      title: 'New event in Slack',
       subtitle: 'Slack',
       description: 'Description',
       isDisabled: true,
     },
   ];
-
-  const [selectedAgentType, setSelectedAgentType] = useState<string>('http');
-  const handleAgentSelect = (agentType: string) => {
-    setSelectedAgentType(agentType);
-  };
 
   const textColor = useColorModeValue('rgba(0, 0, 0, 0.8)', 'rgba(255, 255, 255, 0.8)');
 
@@ -96,24 +91,16 @@ export const CreateAgentPage = () => {
               title={agent.title}
               subtitle={agent.subtitle}
               description={agent.description}
-              isSelected={selectedAgentType === agent.type}
-              onSelect={() => handleAgentSelect(agent.type)}
               url={agent.url}
+              isSelected={agent.isSelected}
               isDisabled={agent.isDisabled}
+              onSelect={() => {
+                history.push(`/agents/create/${agent.type}`);
+              }}
             />
           ))}
         </Grid>
       </Box>
-      <ButtonGroup>
-        <Button
-          variant="outline"
-          onClick={() => {
-            history.push(`/agents/create/${selectedAgentType}`);
-          }}
-        >
-          Continue
-        </Button>
-      </ButtonGroup>
     </Flex>
   );
 };
