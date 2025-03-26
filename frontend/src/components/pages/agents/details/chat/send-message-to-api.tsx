@@ -8,12 +8,7 @@ interface ChatApiResponse {
 }
 
 interface ChatApiRequest {
-  message: string;
-  history: {
-    content: string;
-    sender: 'user' | 'system';
-    timestamp: string;
-  }[];
+  question: string;
 }
 
 // Limit chat history to last 30 messages
@@ -33,16 +28,8 @@ export const sendMessageToApi = async ({
   try {
     const recentHistory = chatHistory.slice(-CHAT_HISTORY_MESSAGE_LIMIT);
 
-    // Format chat history for the API request
-    const formattedHistory = recentHistory.map((msg) => ({
-      content: msg.content,
-      sender: msg.sender,
-      timestamp: msg.timestamp.toISOString(),
-    }));
-
     const payload: ChatApiRequest = {
-      message,
-      history: formattedHistory,
+      question: message,
     };
 
     const response = await fetch(`${agentUrl}`, {
@@ -66,9 +53,8 @@ export const sendMessageToApi = async ({
     const text = new TextDecoder().decode(value);
 
     try {
-      const parsedResponse = JSON.parse(text);
       return {
-        message: parsedResponse.message,
+        message: text,
         success: true,
       } as ChatApiResponse;
     } catch (err) {
