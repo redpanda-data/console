@@ -67,6 +67,12 @@ export const TOASTS = {
       ERROR: 'USER_CREATE_ERROR',
     },
   },
+  ACL: {
+    CREATE: {
+      SUCCESS: 'ACL_CREATE_SUCCESS',
+      ERROR: 'ACL_CREATE_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
