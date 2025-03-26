@@ -57,14 +57,7 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   }
 
   if (!id || !agent?.url) {
-    return (
-      <div className="p-4">
-        <Alert status="error" variant="subtle">
-          <AlertIcon />
-          Chat is not available right now.
-        </Alert>
-      </div>
-    );
+    return <div className="p-4">Chat is not available right now.</div>;
   }
 
   return (
