@@ -35,8 +35,8 @@ import {
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { uiState } from '../../../state/uiState';
 import { uiSettings } from '../../../state/ui';
+import { uiState } from '../../../state/uiState';
 import { Label } from '../../../utils/tsxUtils';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
 import KowlEditor from '../../misc/KowlEditor';
@@ -233,7 +233,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     req.compression = data.compressionType;
 
     uiState.topicSettings.produceRecordCompression = data.compressionType;
-    
+
     // Headers
     for (const h of data.headers) {
       if (!h.value && !h.value) {
