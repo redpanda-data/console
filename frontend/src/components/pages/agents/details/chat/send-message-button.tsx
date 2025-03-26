@@ -10,18 +10,15 @@ interface SendMessageButtonProps {
 export const SendMessageButton = ({ inputValue, isSending, onClick }: SendMessageButtonProps) => {
   return (
     <Button
-      variant="ghost"
+      variant="primary"
       position="absolute"
       bottom="3"
       right="3"
-      colorScheme="blue"
       size="sm"
       type="submit"
       aria-label="Send message"
       isDisabled={!inputValue.trim() || isSending}
       height="auto"
-      py="2"
-      px="4"
       isLoading={isSending}
       loadingText="Sending"
       onClick={onClick}
