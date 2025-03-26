@@ -1,5 +1,11 @@
-import { License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import {
+  License,
+  License_Source,
+  License_Type,
+  type ListEnterpriseFeaturesResponse_Feature,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import {
+  coreHasEnterpriseFeatures,
   getPrettyTimeToExpiration,
   licenseIsExpired,
   licenseSoonToExpire,
@@ -9,6 +15,58 @@ import {
   resolveEnterpriseCTALink,
 } from './licenseUtils';
 import '../../utils/arrayExtensions';
+import { vi } from 'vitest';
+import { renderWithRouter } from '../../../tests/test-utils';
+import { api } from '../../state/backendApi';
+import { LicenseNotification } from './LicenseNotification';
+
+/**
+ * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
+ * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
+ *
+ * @param daysOffset - The number of days to offset (default is 0).
+ * @returns Unix timestamp in seconds.
+ */
+const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
+  return Math.floor(Date.now() / 1000) + daysOffset * 86400;
+};
+
+vi.mock('../../state/backendApi', () => {
+  return {
+    api: {
+      get isAdminApiConfigured() {
+        return true;
+      },
+      enterpriseFeaturesUsed: [
+        { name: 'rbac', enabled: true },
+        { name: 'datalake_iceberg', enabled: false },
+        { name: 'audit_logging' },
+        { name: 'core_balancing_continuous' },
+        { name: 'schema_id_validation' },
+        { name: 'cloud_storage' },
+        { name: 'gssapi' },
+        { name: 'leadership_pinning' },
+        { name: 'partition_auto_balancing_continuous' },
+        { name: 'oidc' },
+        { name: 'fips' },
+      ],
+      licensesLoaded: true,
+      licenseViolation: false,
+      licenses: [
+        {
+          source: License_Source.REDPANDA_CORE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: undefined,
+        },
+        {
+          source: License_Source.REDPANDA_CONSOLE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: undefined,
+        },
+      ],
+    },
+  };
+});
 
 describe('licenseUtils', () => {
   const origDate = Date.prototype.toLocaleDateString;
@@ -29,6 +87,17 @@ describe('licenseUtils', () => {
     });
   });
 
+  beforeEach(() => {
+    // api.licensesLoaded = true;
+    // api.licenseViolation = false;
+    // api.licenses = [];
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+    // vi.restoreAllMocks();
+  });
+
   const mockLicenseCommunity: License = new License({
     type: License_Type.COMMUNITY,
     expiresAt: BigInt(20413210650),
@@ -45,6 +114,31 @@ describe('licenseUtils', () => {
     type: License_Type.ENTERPRISE,
     expiresAt: BigInt(Math.floor(Date.now() / 1000) - 60 * 60 * 24), // expired yesterday
     source: License_Source.REDPANDA_CONSOLE,
+  });
+
+  describe('coreHasEnterpriseFeatures', () => {
+    test('should return true when at least one feature is enabled', () => {
+      const features: ListEnterpriseFeaturesResponse_Feature[] = [
+        { name: 'rbac', enabled: true },
+        { name: 'datalake_iceberg', enabled: false },
+        { name: 'audit_logging' },
+      ];
+      expect(coreHasEnterpriseFeatures(features)).toBe(true);
+    });
+
+    test('should return false when no features are enabled', () => {
+      const features: ListEnterpriseFeaturesResponse_Feature[] = [
+        { name: 'rbac', enabled: false },
+        { name: 'datalake_iceberg', enabled: false },
+        { name: 'audit_logging' },
+      ];
+      expect(coreHasEnterpriseFeatures(features)).toBe(false);
+    });
+
+    test('should return false for an empty list of features', () => {
+      const features: ListEnterpriseFeaturesResponse_Feature[] = [];
+      expect(coreHasEnterpriseFeatures(features)).toBe(false);
+    });
   });
 
   describe('licenseIsExpired', () => {
@@ -183,6 +277,61 @@ describe('licenseUtils', () => {
     test('should handle kafka platform correctly', () => {
       const result = resolveEnterpriseCTALink('upgrade', '12345-uuid', false);
       expect(result).toContain('platform=2');
+    });
+  });
+
+  describe('LicenseNotification Banner', () => {
+    test('render null on routes related to licensing', async () => {
+      const uploadLicenseScreen = renderWithRouter(<LicenseNotification />, {
+        route: '/admin/upload-license',
+      });
+      expect(uploadLicenseScreen.queryByTestId('license-notification')).not.toBeInTheDocument();
+
+      const trialExpiredScreen = renderWithRouter(<LicenseNotification />, {
+        route: '/trial-expired',
+      });
+      expect(trialExpiredScreen.queryByTestId('license-notification')).not.toBeInTheDocument();
+    });
+
+    test('render null if license information is not loaded yet', () => {
+      api.licensesLoaded = undefined;
+      const screen = renderWithRouter(<LicenseNotification />, {
+        route: '/overview',
+      });
+      expect(screen.queryByTestId('license-notification')).not.toBeInTheDocument();
+    });
+
+    test('render information about license that expires in > 15 days but less than 30 days, blue notification banner is displayed', () => {
+      api.licenseViolation = false;
+      api.licenses = [
+        {
+          source: License_Source.REDPANDA_CORE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: getUnixTimestampWithExpiration(28),
+        },
+        {
+          source: License_Source.REDPANDA_CONSOLE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: getUnixTimestampWithExpiration(28),
+        },
+      ];
+      const screen = renderWithRouter(<LicenseNotification />, {
+        route: '/overview',
+      });
+
+      // Check that user is informed about a license that will expire.
+      expect(screen.getByText(/Your Redpanda Enterprise license will expire in 27 days/)).toBeInTheDocument();
+      // Check for the color of the notification banner
+      expect(screen.queryByTestId('license-alert')).toHaveAttribute('data-status', 'info');
+      // Check for CTAs
+      expect(screen.getAllByRole('link').find((el) => el.textContent === 'Request a license')).toHaveAttribute(
+        'href',
+        'https://support.redpanda.com/',
+      );
+      expect(screen.getAllByRole('link').find((el) => el.textContent === 'Upload license')).toHaveAttribute(
+        'href',
+        '/admin/upload-license',
+      );
     });
   });
 });
