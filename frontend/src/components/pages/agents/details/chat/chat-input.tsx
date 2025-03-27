@@ -1,6 +1,6 @@
 import { type ChatMessage, chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { SendMessageButton } from './send-message-button';
 import { sendMessageToApi } from './send-message-to-api';
 
@@ -13,6 +13,7 @@ interface ChatInputProps {
 export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Use live query to listen for message changes in the database
   const messages =
@@ -46,6 +47,9 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
       // Add to database
       await chatDb.addMessage(userMessage);
       setInputValue('');
+
+      // Maintain focus on the textarea
+      textareaRef.current?.focus();
 
       // Show typing indicator while waiting for response
       setIsTyping(true);
@@ -116,6 +120,7 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
       >
         <div className="relative">
           <textarea
+            ref={textareaRef}
             id="chat-input"
             className="w-full rounded-md outline-none focus:outline-none focus:ring-0 border-none resize-none min-h-[80px] text-sm"
             style={{
@@ -129,7 +134,6 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
             spellCheck="false"
             autoCorrect="off"
             autoCapitalize="off"
-            disabled={isSending}
           />
           <SendMessageButton inputValue={inputValue} isSending={isSending} onClick={handleSendMessage} />
         </div>
