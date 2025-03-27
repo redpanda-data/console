@@ -52,6 +52,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
 
     const handleCreateSecretModalClose = (createdSecretId?: string) => {
       if (createdSecretId && fieldToUpdate) {
+        form.resetField(fieldToUpdate);
         form.setFieldValue(fieldToUpdate, createdSecretId);
         setFieldToUpdate(undefined);
         setCustomSecretSchema(undefined);
@@ -61,6 +62,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
 
     const handleCreateUserWithSecretPasswordModalClose = (createdUser?: CreatedUser) => {
       if (createdUser) {
+        form.resetField('USERNAME');
+        form.resetField('KAFKA_PASSWORD');
+        form.resetField('SASL_MECHANISM');
         form.setFieldValue('USERNAME', createdUser?.username);
         form.setFieldValue('KAFKA_PASSWORD', createdUser?.secretId);
         form.setFieldValue('SASL_MECHANISM', createdUser?.saslMechanism);

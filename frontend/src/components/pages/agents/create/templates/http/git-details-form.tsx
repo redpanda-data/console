@@ -33,6 +33,7 @@ export const GitDetailsForm = withForm({
 
     const handleCreateSecretModalClose = (updatedValue?: string) => {
       if (updatedValue && fieldToUpdate) {
+        form.resetField(fieldToUpdate);
         form.setFieldValue(fieldToUpdate, updatedValue);
         setFieldToUpdate(undefined);
         setCustomSecretSchema(undefined);
