@@ -38,7 +38,7 @@ export const AgentDetailsForm = withForm({
       onClose: onCreateTopicModalClose,
     } = useDisclosure();
 
-    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues> | undefined>(
+    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
       undefined,
     );
 
