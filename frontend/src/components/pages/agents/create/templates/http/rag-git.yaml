@@ -4,7 +4,7 @@ input:
     branch: '${REPOSITORY_BRANCH}'
     poll_interval: '10s'
     include_patterns:
-      - '**/*.adoc'
+      - '${GLOB_PATTERN}'
 pipeline: {}
 output:
   kafka_franz:

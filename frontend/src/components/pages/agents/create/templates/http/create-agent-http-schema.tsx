@@ -12,6 +12,10 @@ export const createAgentHttpSchema = z.object({
   SASL_MECHANISM: z.enum(['SCRAM-SHA-256', 'SCRAM-SHA-512']),
   REPOSITORY_URL: z.string().min(1, 'Repository URL is required').url('Invalid repository URL'),
   REPOSITORY_BRANCH: z.string(),
+  GLOB_PATTERN: z
+    .string()
+    .min(1, 'Glob pattern is required')
+    .regex(/^[*?[\]{}()|!@#$%^&\w./,-]+$/, 'Invalid glob pattern. Use patterns like "**", "**/*.js", or "src/**/*"'),
 });
 
 export const createAgentHttpFormOpts = formOptions({
@@ -26,5 +30,6 @@ export const createAgentHttpFormOpts = formOptions({
     SASL_MECHANISM: 'SCRAM-SHA-256',
     REPOSITORY_URL: '',
     REPOSITORY_BRANCH: 'main',
+    GLOB_PATTERN: '**',
   },
 });
