@@ -4,6 +4,7 @@ import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import type { z } from 'zod';
 import {
   type CreateAgentHttpFormValues,
   createAgentHttpFormOpts,
