@@ -1,4 +1,5 @@
 import { formOptions } from '@tanstack/react-form';
+import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { z } from 'zod';
 
 export const usernameSchema = z
@@ -62,7 +63,7 @@ export const createAgentHttpSchema = z
     description: z
       .string()
       .regex(nameDescriptionPattern, 'Description can only contain letters, numbers, spaces, and _.:/=+-@'),
-    TOPIC: z.string().min(1, 'Source topic is required'),
+    TOPIC: z.string().min(1, 'Redpanda topic is required'),
     OPENAI_KEY: z.string().min(1, 'OpenAI API credential is required'),
     POSTGRES_DSN: z.string().min(1, 'Postgres Connection URI is required'),
     USERNAME: usernameSchema,
@@ -90,20 +91,23 @@ export const createAgentHttpSchema = z
     },
   );
 
-export const createAgentHttpFormOpts = formOptions({
-  defaultValues: {
-    name: '',
-    description: '',
-    TOPIC: '',
-    OPENAI_KEY: '',
-    POSTGRES_DSN: '',
-    USERNAME: '',
-    KAFKA_PASSWORD: '',
-    SASL_MECHANISM: 'SCRAM-SHA-256',
-    REPOSITORY_URL: '',
-    REPOSITORY_BRANCH: 'main',
-    isPrivateRepository: false,
-    GLOB_PATTERN: '**',
-    PERSONAL_ACCESS_TOKEN: '',
-  },
-});
+export const createAgentHttpFormOpts = (secretList?: (Secret | undefined)[]) =>
+  formOptions({
+    defaultValues: {
+      name: '',
+      description: '',
+      TOPIC: '',
+      OPENAI_KEY: secretList?.find((secret) => secret?.id.toLowerCase().includes('openai'))?.id ?? '',
+      POSTGRES_DSN: secretList?.find((secret) => secret?.id.toLowerCase().includes('postgres'))?.id ?? '',
+      USERNAME: secretList?.find((secret) => secret?.id.toLowerCase().includes('username'))?.id ?? '',
+      KAFKA_PASSWORD: secretList?.find((secret) => secret?.id.toLowerCase().includes('password'))?.id ?? '',
+      SASL_MECHANISM: 'SCRAM-SHA-256',
+      REPOSITORY_URL: '',
+      REPOSITORY_BRANCH: 'main',
+      isPrivateRepository: false,
+      GLOB_PATTERN: '**',
+      PERSONAL_ACCESS_TOKEN: secretList?.find((secret) => secret?.id.toLowerCase().includes('personal'))?.id ?? '',
+    },
+  });
+
+export type CreateAgentHttpFormValues = ReturnType<typeof createAgentHttpFormOpts>['defaultValues'];

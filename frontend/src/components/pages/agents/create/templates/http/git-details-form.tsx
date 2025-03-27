@@ -4,10 +4,14 @@ import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { createAgentHttpFormOpts, personalAccessTokenSchema } from './create-agent-http-schema';
+import {
+  type CreateAgentHttpFormValues,
+  createAgentHttpFormOpts,
+  personalAccessTokenSchema,
+} from './create-agent-http-schema';
 
 export const GitDetailsForm = withForm({
-  ...createAgentHttpFormOpts,
+  ...createAgentHttpFormOpts(),
   props: {
     title: 'Git information',
     description: 'Enter the Git repository URL and branch to use for the agent',
@@ -27,9 +31,9 @@ export const GitDetailsForm = withForm({
       onClose: onCreateSecretModalClose,
     } = useDisclosure();
 
-    const [fieldToUpdate, setFieldToUpdate] = useState<
-      PrefixObjectAccessor<typeof createAgentHttpFormOpts.defaultValues, []> | undefined
-    >(undefined);
+    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
+      undefined,
+    );
 
     const handleCreateSecretModalClose = (updatedValue?: string) => {
       if (updatedValue && fieldToUpdate) {
