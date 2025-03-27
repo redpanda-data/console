@@ -47,7 +47,7 @@ export const AgentDetailsPage = () => {
       </Flex>
     );
   }
-  
+
   const matchingPipeline = agentData?.agent?.pipelines?.find(
     (pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_purpose === 'gateway-chat-api' || pipeline?.url !== '',
   );
