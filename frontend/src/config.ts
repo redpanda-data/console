@@ -23,7 +23,7 @@ import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
 import memoizeOne from 'memoize-one';
-import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
+import { DEFAULT_API_BASE } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
 import { ClusterStatusService } from './protogen/redpanda/api/console/v1alpha1/cluster_status_connect';
@@ -45,8 +45,6 @@ declare const __webpack_public_path__: string;
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
 const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
-
-const getApiBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_HOST;
 
 const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (req: UnaryRequest | StreamRequest) => {
   if (config.jwt) req.header.append('Authorization', `Bearer ${config.jwt}`);
@@ -117,7 +115,7 @@ export interface Breadcrumb {
 
 interface Config {
   restBasePath: string;
-  apiBasePath: string;
+  grpcBasePath: string;
   authenticationClient?: PromiseClient<typeof AuthenticationService>;
   licenseClient?: PromiseClient<typeof LicenseService>;
   consoleClient?: PromiseClient<typeof ConsoleService>;
@@ -142,7 +140,7 @@ interface Config {
 // unexpected behaviour
 export const config: Config = observable({
   restBasePath: getRestBasePath(),
-  apiBasePath: getApiBasePath(),
+  grpcBasePath: getGrpcBasePath(),
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
@@ -175,7 +173,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     jwt,
     isServerless,
     restBasePath: getRestBasePath(urlOverride?.rest),
-    apiBasePath: getApiBasePath(urlOverride?.grpc),
+    grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     fetch: fetch ?? window.fetch.bind(window),
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
