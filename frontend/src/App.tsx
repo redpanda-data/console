@@ -30,6 +30,7 @@ import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/u
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { CustomFeatureFlagProvider, useBooleanFlagValue } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
 import queryClient from 'queryClient';
 import { BrowserRouter } from 'react-router-dom';
@@ -51,7 +52,13 @@ import { uiSettings } from './state/ui';
 import { getBasePath } from './utils/env';
 
 const AppSidebar = observer(() => {
-  const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
+  const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
+
+  const APP_ROUTES_WITHOUT_AI_AGENTS = APP_ROUTES.filter((route) => !route.path.includes('/agents'));
+  const FINAL_APP_ROUTES = isAiAgentsEnabled ? APP_ROUTES : APP_ROUTES_WITHOUT_AI_AGENTS;
+
+  const sidebarItems = createVisibleSidebarItems(FINAL_APP_ROUTES);
+
   return (
     <Sidebar items={sidebarItems} isCollapsed={!uiSettings.sideBarOpen}>
       <UserProfile />
@@ -67,31 +74,34 @@ const App = () => {
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   });
 
+  // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
-    <BrowserRouter basename={getBasePath()}>
-      <HistorySetter />
-      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
-        <TransportProvider transport={transport}>
-          <QueryClientProvider client={queryClient}>
-            <ErrorBoundary>
-              <RequireAuth>
-                {isEmbedded() ? (
-                  <AppContent />
-                ) : (
-                  <Grid templateColumns="auto 1fr" minH="100vh">
-                    <AppSidebar />
-                    <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
-                      <AppContent />
-                    </Container>
-                  </Grid>
-                )}
-              </RequireAuth>
-            </ErrorBoundary>
-            <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production'} />
-          </QueryClientProvider>
-        </TransportProvider>
-      </ChakraProvider>
-    </BrowserRouter>
+    <CustomFeatureFlagProvider initialFlags={{}}>
+      <BrowserRouter basename={getBasePath()}>
+        <HistorySetter />
+        <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
+          <TransportProvider transport={transport}>
+            <QueryClientProvider client={queryClient}>
+              <ErrorBoundary>
+                <RequireAuth>
+                  {isEmbedded() ? (
+                    <AppContent />
+                  ) : (
+                    <Grid templateColumns="auto 1fr" minH="100vh">
+                      <AppSidebar />
+                      <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
+                        <AppContent />
+                      </Container>
+                    </Grid>
+                  )}
+                </RequireAuth>
+              </ErrorBoundary>
+              <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production'} />
+            </QueryClientProvider>
+          </TransportProvider>
+        </ChakraProvider>
+      </BrowserRouter>
+    </CustomFeatureFlagProvider>
   );
 };
 

@@ -21,7 +21,7 @@ import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
 import memoizeOne from 'memoize-one';
-import { DEFAULT_API_BASE } from './components/constants';
+import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
 import { ClusterStatusService } from './protogen/redpanda/api/console/v1alpha1/cluster_status_connect';
@@ -96,6 +96,7 @@ export interface SetConfigArguments {
   setSidebarItems?: (items: SidebarItem[]) => void;
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
+  featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
 }
 
 export interface SidebarItem {
@@ -130,6 +131,7 @@ interface Config {
   setSidebarItems: (items: SidebarItem[]) => void;
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
+  featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 }
 
 // Config object is an mobx observable, always make sure you call it from
@@ -144,9 +146,10 @@ export const config: Config = observable({
   setSidebarItems: () => {},
   setBreadcrumbs: () => {},
   isServerless: false,
+  featureFlags: FEATURE_FLAGS,
 });
 
-const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfigArguments) => {
+const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...args }: SetConfigArguments) => {
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
@@ -181,6 +184,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     clusterStatusClient: clusterStatusGrpcClient,
+    featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
   return config;
@@ -237,6 +241,15 @@ setTimeout(() => {
 
 export function isEmbedded() {
   return config.jwt != null;
+}
+
+/**
+ * @description use in non-functional components if you must
+ * @param featureFlag feature flag key to track
+ * @returns feature flag value, false if no feature flag with that key exists, false if the feature flags are not loaded.
+ */
+export function isFeatureFlagEnabled(featureFlag: keyof typeof FEATURE_FLAGS) {
+  return config.featureFlags?.[featureFlag] ?? false;
 }
 
 export function isServerless() {

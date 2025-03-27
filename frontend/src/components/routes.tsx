@@ -25,7 +25,8 @@ import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
 import { Switch } from 'react-router-dom';
-import { isEmbedded, isServerless } from '../config';
+import { appGlobal } from 'state/appGlobal';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backendApi';
 import type { UserPermissions } from '../state/restInterfaces';
 import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
@@ -183,6 +184,20 @@ interface MenuItemState {
   disabledReasons: DisabledReasons[];
 }
 
+/**
+ * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.
+ */
+const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
+  const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
+
+  if (!isAgentFeatureEnabled && path.includes('/agents')) {
+    appGlobal.history.push('/overview', { replace: true });
+    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+  }
+
+  return <>{children}</>;
+};
+
 function MakeRoute<TRouteParams>(
   path: string,
   page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
@@ -220,7 +235,12 @@ function MakeRoute<TRouteParams>(
         } as PageProps<TRouteParams>;
 
         uiState.currentRoute = route;
-        return <route.pageType {...pageProps} />;
+
+        return (
+          <ProtectedRoute path={route.path}>
+            <route.pageType {...pageProps} />
+          </ProtectedRoute>
+        );
       }}
     />
   );
@@ -331,17 +351,15 @@ export const APP_ROUTES: IRouteEntry[] = [
     HiOutlinePuzzlePiece,
     true,
     routeVisibility(
-      () => isEmbedded(), // Pass a function reference instead of executing it immediately
+      () => isEmbedded() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
       [],
     ),
   ),
-
-  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents'),
-  MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents'),
-
-  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents'),
+  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents', undefined, true, undefined),
+  MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents', undefined, true, undefined),
+  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents', undefined, true, undefined),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
