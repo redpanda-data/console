@@ -1,7 +1,7 @@
 import type { PartialMessage } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useMutation } from '@connectrpc/connect-query';
-import { type Query, type QueryClient, type UseMutationResult, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, type UseMutationResult, useQueryClient, type Query } from '@tanstack/react-query';
 import {
   createPipeline,
   deletePipeline,
@@ -23,7 +23,6 @@ import {
   PipelineCreate,
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useEffect, useState } from 'react';
 import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
@@ -140,6 +139,7 @@ export const useGetAgentQuery = ({ id }: { id: string }) => {
     data: {
       agent,
     },
+    queryKey: [listPipelines.service.typeName], // Return queryKey for manual invalidation
   };
 };
 
