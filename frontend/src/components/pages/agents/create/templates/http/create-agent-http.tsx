@@ -6,10 +6,10 @@ import { useHistory } from 'react-router-dom';
 import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
-// import { GitDetailsForm } from './git-details-form';
+import { GitDetailsForm } from './git-details-form';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
-// import gitPipeline from './rag-git.yaml';
+import gitPipeline from './rag-git.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
 
@@ -67,7 +67,7 @@ export const CreateAgentHTTP = () => {
         yamlTemplates: {
           agent: ragChatPipeline,
           RAG: ragIndexingPipeline,
-          // GIT: gitPipeline,
+          GIT: gitPipeline,
         },
         envVars: {
           TOPIC: value.TOPIC,
@@ -75,8 +75,8 @@ export const CreateAgentHTTP = () => {
           USERNAME: value.USERNAME,
           POSTGRES_COMPATIBLE_TOPIC_NAME: value.TOPIC,
           REDPANDA_BROKERS: '${REDPANDA_BROKERS}', // To ensure REDPANDA_BROKERS are set for now
-          // REPOSITORY_URL: value.REPOSITORY_URL,
-          // REPOSITORY_BRANCH: value.REPOSITORY_BRANCH,
+          REPOSITORY_URL: value.REPOSITORY_URL,
+          REPOSITORY_BRANCH: value.REPOSITORY_BRANCH,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,
@@ -95,7 +95,7 @@ export const CreateAgentHTTP = () => {
               __redpanda_cloud_agent_description: value.description,
               __redpanda_cloud_pipeline_purpose: getPipelinePurpose(key),
             },
-          })
+          }),
       );
 
       const agentPipelines = await createAgentPipelinesMutation({ pipelines });
@@ -137,12 +137,12 @@ export const CreateAgentHTTP = () => {
               />
               <Divider my={4} />
               <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
-              {/* <Divider my={4} />
+              <Divider my={4} />
               <GitDetailsForm
                 form={form}
                 title="Git information"
                 description="Enter the Git repository URL and branch to use for the agent"
-              /> */}
+              />
               <Flex justifyContent="flex-start" pt={6}>
                 <ButtonGroup isDisabled={isCreateAgentPending}>
                   <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
