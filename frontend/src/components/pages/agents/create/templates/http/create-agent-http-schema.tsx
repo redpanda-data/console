@@ -47,8 +47,8 @@ export const postgresConnectionUriSchema = z
   .string()
   .min(1, 'Postgres connection URI is required')
   .regex(
-    /^postgres:\/\/(.+):(.+)@([a-zA-Z0-9.-]+):([0-9]{4})\/([a-zA-Z0-9_]+)$/,
-    'Invalid Postgres Connection URI format. Expected: postgres://{user}:{password}@{hostname}:{port}/{database-name}',
+    /^postgres:\/\/(.+):(.+)@([a-zA-Z0-9.-]+):([0-9]+)\/([a-zA-Z0-9_]+)$/,
+    'Invalid Postgres Connection URI format. Expected: postgres://user:password@hostname:port/database',
   );
 
 const nameDescriptionPattern = /^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$/u;
