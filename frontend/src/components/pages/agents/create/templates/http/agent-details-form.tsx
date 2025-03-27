@@ -12,7 +12,7 @@ import { createAgentHttpFormOpts } from './create-agent-http-schema';
 export const AgentDetailsForm = withForm({
   ...createAgentHttpFormOpts,
   props: {
-    title: 'Create AI agent',
+    title: 'New Support',
     description: 'Description of agent ...',
   },
   render: ({ title, description, form }) => {
@@ -90,7 +90,7 @@ export const AgentDetailsForm = withForm({
           <form.AppField name="TOPIC">
             {(field) => (
               <field.SingleSelectField
-                label="Source topic"
+                label="Redpanda topic"
                 helperText={
                   <Text>
                     Topic that ... All topics can be found under{' '}
@@ -111,10 +111,10 @@ export const AgentDetailsForm = withForm({
           <form.AppField name="OPENAI_KEY">
             {(field) => (
               <field.SingleSelectField
-                label="OpenAI API credential"
+                label="OpenAI API Token"
                 helperText={
                   <Text>
-                    Credentials for OpenAI to ... All credentials are securely stored in{' '}
+                    Credentials for OpenAI to ... All credentials are securely stored in your{' '}
                     <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
                       Secret Store
                     </Link>

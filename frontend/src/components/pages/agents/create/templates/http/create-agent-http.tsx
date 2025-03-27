@@ -18,7 +18,7 @@ export const getPipelineName = (pipelineKey: string) => {
     case 'agent':
       return 'Agent';
     case 'RAG':
-      return 'RAG';
+      return 'RAG Indexing';
     case 'GIT':
       return 'Git';
     default:
@@ -29,11 +29,11 @@ export const getPipelineName = (pipelineKey: string) => {
 export const getPipelineDescription = (pipelineKey: string) => {
   switch (pipelineKey) {
     case 'agent':
-      return 'Chat';
+      return 'Provide an authentication protected HTTP API for a chat application.';
     case 'RAG':
-      return 'Chat API';
+      return 'Ingest all data from a Redpanda topic into a Postgres vector database.';
     case 'GIT':
-      return 'Git ingest';
+      return 'Git Input';
     default:
       return 'Unknown';
   }
@@ -42,11 +42,11 @@ export const getPipelineDescription = (pipelineKey: string) => {
 export const getPipelinePurpose = (pipelineKey: string) => {
   switch (pipelineKey) {
     case 'agent':
-      return 'chat';
+      return 'gateway-chat-api';
     case 'RAG':
-      return 'indexing';
+      return 'rag-indexing-from-kafka';
     case 'GIT':
-      return 'git';
+      return 'git-input';
     default:
       return 'unknown';
   }
@@ -95,7 +95,7 @@ export const CreateAgentHTTP = () => {
               __redpanda_cloud_agent_description: value.description,
               __redpanda_cloud_pipeline_purpose: getPipelinePurpose(key),
             },
-          }),
+          })
       );
 
       const agentPipelines = await createAgentPipelinesMutation({ pipelines });
@@ -130,7 +130,11 @@ export const CreateAgentHTTP = () => {
           </GridItem>
           <GridItem maxWidth={{ base: '100%', lg: '800px' }} mx="auto" width="100%">
             <VStack spacing={6} align="stretch">
-              <AgentDetailsForm form={form} title="Create AI agent" description="Description of agent ..." />
+              <AgentDetailsForm
+                form={form}
+                title="New Support Agent"
+                description="This agent connects to a GitHub repository and ingests all text-based content (e.g., Markdown, plaintext, code) into a vector database you provide. The content becomes part of a Retrieval-Augmented Generation (RAG) pipeline that enhances the agent’s ability to respond accurately and contextually via a chat API."
+              />
               <Divider my={4} />
               <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
               {/* <Divider my={4} />
