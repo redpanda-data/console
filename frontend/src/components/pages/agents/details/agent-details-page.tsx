@@ -26,19 +26,29 @@ export const updatePageTitle = ({ agent }: { agent: Agent }) => {
   });
 };
 
+export const AGENT_POLLING_INTERVAL = 5_000; // 5 seconds
+
 export const AgentDetailsPage = () => {
   const { agentId } = useParams<{ agentId: Pipeline['id'] }>();
-  const [shouldPoll, setShouldPoll] = useState(true);
+  const [agentIsRunning, setAgentIsRunning] = useState(false);
 
-  const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery({
-    id: agentId,
-    shouldPoll,
-  });
+  const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery(
+    {
+      id: agentId,
+    },
+    {
+      refetchInterval: agentIsRunning ? false : AGENT_POLLING_INTERVAL,
+      refetchIntervalInBackground: true,
+      refetchOnWindowFocus: 'always',
+    },
+  );
 
-  // Update polling state based on agent state
+
   useEffect(() => {
-    setShouldPoll(agentData?.agent?.state === Pipeline_State.STARTING);
-  }, [agentData?.agent?.state]);
+    if (!agentIsRunning && agentData?.agent?.state === Pipeline_State.RUNNING) {
+      setAgentIsRunning(true);
+    }
+  }, [agentData?.agent?.state, agentIsRunning]);
 
   const {
     isOpen: isDeleteAgentModalOpen,
