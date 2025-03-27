@@ -6,36 +6,42 @@ input:
 pipeline:
   processors:
     - openai_chat_completion:
-        api_key: "${secrets.OPENAI_KEY}"
-        model: "gpt-4o"
-        system_prompt: |
+        api_key: ${secrets.OPENAI_KEY}
+        model: gpt-4o
+        system_prompt: >
           You are a helpful question answering AI agent.
+
           You answer questions and have available a tool to search a document store
+
           for semantically relevant content to answer questions.
-        prompt: "${!this.question}"
+        prompt: ${!this.question}
         response_format: text
         tools:
           - name: SearchVectorDB
-            description: 'Retrieve documents from the vector database to help answer questions'
+            description: Retrieve documents from the vector database to help answer
+              questions
             parameters:
-              required: ["question"]
+              required:
+                - question
               properties:
                 question:
                   type: string
-                  description: "the text to compute embeddings for and search for similar vectors"
+                  description: the text to compute embeddings for and search for similar vectors
             processors:
               - openai_embeddings:
-                  api_key: "${secrets.OPENAI_KEY}"
+                  api_key: ${secrets.OPENAI_KEY}
                   model: text-embedding-3-small
-                  text_mapping: "this.question"
+                  text_mapping: this.question
                   dimensions: 768
               - sql_raw:
-                  driver: "postgres"
-                  dsn: "${secrets.POSTGRES_DSN}"
-                  query: |
-                    SELECT document FROM "${POSTGRES_COMPATIBLE_TOPIC_NAME}" ORDER BY embeddings <-> $1 LIMIT 5
+                  driver: postgres
+                  dsn: ${secrets.POSTGRES_DSN}
+                  query: >
+                    SELECT document FROM "${POSTGRES_COMPATIBLE_TOPIC_NAME}" ORDER BY
+                    embeddings <-> $1 LIMIT 5
                   args_mapping: "[ this.vector() ]"
-              - mapping: |
-                  "Searching the vector database resulted in the following results: \n" + this.map_each(row -> row.document).join("\n\n")
+              - mapping: >
+                  "Searching the vector database resulted in the following results: \n" +
+                  this.map_each(row -> row.document).join("\n\n")
 output:
   sync_response: {}
