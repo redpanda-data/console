@@ -1,7 +1,7 @@
 import type { PartialMessage } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useMutation } from '@connectrpc/connect-query';
-import { type QueryClient, type UseMutationResult, useQueryClient, type Query } from '@tanstack/react-query';
+import { type QueryClient, type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import {
   createPipeline,
   deletePipeline,
