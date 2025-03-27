@@ -1,5 +1,16 @@
-import { Button, Flex, FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  Icon,
+  Input,
+  type InputProps,
+} from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
+import { AiOutlineDelete } from 'react-icons/ai';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
@@ -71,31 +82,48 @@ const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
     parentField.handleChange(updatedLabels);
   };
 
+  const handleDelete = () => {
+    const updatedLabels = [...parentField.state.value];
+    updatedLabels.splice(index, 1);
+    parentField.handleChange(updatedLabels);
+  };
+
   const isKeyError = currentLabel.value && !currentLabel.key;
   const isValueError = currentLabel.key && !currentLabel.value;
 
   return (
     <Flex gap={2} mb={2}>
-      <FormControl isInvalid={!!isKeyError}>
-        <Input
-          placeholder="Key"
-          value={currentLabel.key}
-          onChange={(e) => handleKeyChange(e.target.value)}
-          {...rest}
-          data-testid={rest['data-testid'] ? `${rest['data-testid']}-key-${index}` : undefined}
-        />
-        <ErrorInfoField field={parentField} />
-      </FormControl>
-      <FormControl isInvalid={!!isValueError}>
-        <Input
-          placeholder="Value"
-          value={currentLabel.value}
-          onChange={(e) => handleValueChange(e.target.value)}
-          {...rest}
-          data-testid={rest['data-testid'] ? `${rest['data-testid']}-value-${index}` : undefined}
-        />
-        <ErrorInfoField field={parentField} />
-      </FormControl>
+      <Box display="flex" width="100%" alignItems="flex-start">
+        <FormControl isInvalid={!!isKeyError} flexBasis="50%">
+          <Input
+            placeholder="Key"
+            value={currentLabel.key}
+            onChange={(e) => handleKeyChange(e.target.value)}
+            {...rest}
+            data-testid={rest['data-testid'] ? `${rest['data-testid']}-key-${index}` : undefined}
+          />
+          <ErrorInfoField field={parentField} />
+        </FormControl>
+        <FormControl isInvalid={!!isValueError} flexBasis="50%" ml={2}>
+          <Input
+            placeholder="Value"
+            value={currentLabel.value}
+            onChange={(e) => handleValueChange(e.target.value)}
+            {...rest}
+            data-testid={rest['data-testid'] ? `${rest['data-testid']}-value-${index}` : undefined}
+          />
+          <ErrorInfoField field={parentField} />
+        </FormControl>
+        <Flex alignItems="center" ml={2} height="40px">
+          <Icon
+            as={AiOutlineDelete}
+            onClick={handleDelete}
+            cursor="pointer"
+            aria-label="Delete key-value pair"
+            data-testid={rest['data-testid'] ? `${rest['data-testid']}-delete-${index}` : undefined}
+          />
+        </Flex>
+      </Box>
     </Flex>
   );
 };

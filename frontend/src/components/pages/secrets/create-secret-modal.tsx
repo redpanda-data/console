@@ -38,7 +38,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema }: Creat
     defaultValues: {
       id: '',
       value: '',
-      labels: [{ key: '', value: '' }],
+      labels: [],
     },
     validators: {
       onChange: finalSchema,
