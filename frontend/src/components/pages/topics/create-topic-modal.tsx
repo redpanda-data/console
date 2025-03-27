@@ -23,7 +23,11 @@ import { useLegacyCreateTopicMutationWithToast, useLegacyListTopicsQuery } from 
 import { z } from 'zod';
 
 export const topicSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z
+    .string()
+    .min(1, 'Topic name is required')
+    .max(255, 'Topic name must not exceed 255 characters')
+    .regex(/^[a-z0-9.]+$/, 'Topic name must only contain lowercase letters, numbers, and dots'),
 });
 
 interface CreateTopicModalProps {
