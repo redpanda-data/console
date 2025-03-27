@@ -9,8 +9,10 @@ import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-h
 import { GitDetailsForm } from './git-details-form';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
+import gitPrivatePipeline from './rag-git-private.yaml';
 import gitPipeline from './rag-git.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
+
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
 
 export const getPipelineName = (pipelineKey: string) => {
@@ -67,7 +69,7 @@ export const CreateAgentHTTP = () => {
         yamlTemplates: {
           agent: ragChatPipeline,
           RAG: ragIndexingPipeline,
-          GIT: gitPipeline,
+          GIT: value.isPrivateRepository ? gitPrivatePipeline : gitPipeline,
         },
         envVars: {
           TOPIC: value.TOPIC,
@@ -77,11 +79,13 @@ export const CreateAgentHTTP = () => {
           REDPANDA_BROKERS: '${REDPANDA_BROKERS}', // To ensure REDPANDA_BROKERS are set for now
           REPOSITORY_URL: value.REPOSITORY_URL,
           REPOSITORY_BRANCH: value.REPOSITORY_BRANCH,
+          GLOB_PATTERN: value.GLOB_PATTERN,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,
           OPENAI_KEY: value.OPENAI_KEY,
           POSTGRES_DSN: value.POSTGRES_DSN,
+          PERSONAL_ACCESS_TOKEN: value.PERSONAL_ACCESS_TOKEN,
         },
       });
       const pipelines = Object.entries(parsedPipelines).map(

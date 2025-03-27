@@ -5,6 +5,9 @@ input:
     poll_interval: 10s
     include_patterns:
       - ${GLOB_PATTERN}
+    auth:
+      token:
+        value: ${secrets.PERSONAL_ACCESS_TOKEN}
 pipeline: {}
 output:
   kafka_franz:
