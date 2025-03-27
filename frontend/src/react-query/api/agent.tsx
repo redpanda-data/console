@@ -129,8 +129,18 @@ const createAgentPipelinesPromises = async ({
  * @description WORKAROUND: There is no "Agent" service, so we need to list all pipelines, filter them by a correct tag, and finally construct our own "Agent" object
  * Consider creating a dedicated "Agent" service in the future
  */
-export const useGetAgentQuery = ({ id }: { id: string }) => {
-  const listAgentsResult = useListAgentsQuery();
+const usePollingAgentQuery = ({
+  id,
+  shouldPoll = false,
+  pollingInterval = 5000,
+}: {
+  id: string;
+  shouldPoll?: boolean;
+  pollingInterval?: number;
+}) => {
+  const listAgentsResult = useListAgentsQuery(undefined, {
+    refetchInterval: shouldPoll ? pollingInterval : false,
+  });
 
   const agent = listAgentsResult?.data?.agents?.find((agent) => agent?.id === id);
 
@@ -139,8 +149,19 @@ export const useGetAgentQuery = ({ id }: { id: string }) => {
     data: {
       agent,
     },
-    queryKey: [listPipelines.service.typeName], // Return queryKey for manual invalidation
   };
+};
+
+export const useGetAgentQuery = ({
+  id,
+  shouldPoll = false,
+  pollingInterval = 5000,
+}: {
+  id: string;
+  shouldPoll?: boolean;
+  pollingInterval?: number;
+}) => {
+  return usePollingAgentQuery({ id, shouldPoll, pollingInterval });
 };
 
 /**
@@ -149,7 +170,9 @@ export const useGetAgentQuery = ({ id }: { id: string }) => {
  */
 export const useListAgentsQuery = (
   input?: PartialMessage<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse>,
+  options?: QueryOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
+    refetchInterval?: number | false;
+  },
 ) => {
   const listPipelinesRequestDataPlane = new ListPipelinesRequestDataPlane({
     pageSize: MAX_PAGE_SIZE,
@@ -172,6 +195,7 @@ export const useListAgentsQuery = (
   const listAgentsResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     pageParamKey: 'request',
     enabled: options?.enabled,
+    refetchInterval: options?.refetchInterval,
   });
 
   const allRetrievedPipelines = listAgentsResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);

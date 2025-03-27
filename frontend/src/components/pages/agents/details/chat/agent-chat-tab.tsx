@@ -31,24 +31,6 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
 
   const id = agent?.id ?? null;
 
-  // Set up polling when pipeline is starting
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    if (agent?.state === Pipeline_State.STARTING) {
-      intervalId = setInterval(() => {
-        queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
-      }, 5000); // Poll every 5 seconds
-    }
-
-    // Cleanup interval on unmount or when state changes
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [agent?.state, queryClient]);
-
   // Update scroll position when shouldScroll changes
   useEffect(() => {
     if (shouldScroll && messagesEndRef.current) {
