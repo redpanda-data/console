@@ -19,9 +19,8 @@ import {
   ScaleIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/outline';
-import { Badge, Text } from '@redpanda-data/ui';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import React, { Fragment, type ReactNode, type FunctionComponent } from 'react';
+import React, { Fragment, type FunctionComponent } from 'react';
 import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
@@ -84,7 +83,7 @@ import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 type IRouteEntry = PageDefinition<any>;
 
 export interface PageDefinition<TRouteParams = {}> {
-  title: ReactNode;
+  title: string;
   path: string;
   pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
   routeJsx: JSX.Element;
@@ -102,7 +101,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       if (!entry.icon) return null; // items without icon do not appear in the sidebar
 
       let isEnabled = true;
-      let disabledText: JSX.Element = <Fragment key={entry.path} />;
+      let disabledText: JSX.Element = <Fragment key={entry.title} />;
       if (entry.visibilityCheck) {
         const visibility = entry.visibilityCheck();
         if (!visibility.visible) return null;
@@ -202,7 +201,7 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
 function MakeRoute<TRouteParams>(
   path: string,
   page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
-  title: ReactNode,
+  title: string,
   icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
   exact = true,
   showCallback?: () => MenuItemState,
@@ -358,19 +357,7 @@ export const APP_ROUTES: IRouteEntry[] = [
       [],
     ),
   ),
-  MakeRoute<{}>(
-    '/agents/create',
-    CreateAgentPage,
-    <>
-      <Text>AI Agents</Text>
-      <Badge fontSize="12px" mt={-4} px={2} variant="info">
-        Coming soon
-      </Badge>
-    </>,
-    undefined,
-    true,
-    undefined,
-  ),
+  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents', undefined, true, undefined),
   MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents', undefined, true, undefined),
   MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents', undefined, true, undefined),
 

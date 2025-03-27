@@ -79,7 +79,6 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
 
   return (
     <div className="flex flex-col w-full px-4 max-w-screen-xl mx-auto">
-      <h2 className="text-2xl pt-4 font-bold text-gray-900 mb-">Test your AI agent</h2>
       <div className="flex flex-col min-h-0">
         <ChatClearButton onClear={handleClearChat} />
         <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
