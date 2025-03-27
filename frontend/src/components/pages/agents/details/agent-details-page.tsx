@@ -1,7 +1,7 @@
 import { Button, ButtonGroup, Flex, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { runInAction } from 'mobx';
-import { Pipeline_State, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useState } from 'react';
 import { type Agent, useGetAgentQuery } from 'react-query/api/agent';
 import { useParams } from 'react-router-dom';
