@@ -13,6 +13,7 @@ import {
   Text,
   useDisclosure,
 } from '@redpanda-data/ui';
+import ErrorResult from 'components/misc/ErrorResult';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
@@ -43,7 +44,12 @@ export const AgentListPage = () => {
     onOpen: onDeleteAgentModalOpen,
     onClose: onDeleteAgentModalClose,
   } = useDisclosure();
-  const { data: agentList, isLoading: isAgentListLoading, isError: isAgentListError } = useListAgentsQuery();
+  const {
+    data: agentList,
+    isLoading: isAgentListLoading,
+    isError: isAgentListError,
+    error: agentListError,
+  } = useListAgentsQuery();
 
   useEffect(() => {
     updatePageTitle();
@@ -55,7 +61,7 @@ export const AgentListPage = () => {
   };
 
   if (isAgentListError) {
-    return <Empty />;
+    return <ErrorResult error={agentListError} title="Error loading agents" message="Please try again later." />;
   }
 
   return (
