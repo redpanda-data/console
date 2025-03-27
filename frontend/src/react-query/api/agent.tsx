@@ -23,9 +23,10 @@ import {
   PipelineCreate,
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type QueryObserverOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { isUuid } from 'utils/uuid.utils';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -125,21 +126,19 @@ const createAgentPipelinesPromises = async ({
   }
 };
 
-/**
- * @description WORKAROUND: There is no "Agent" service, so we need to list all pipelines, filter them by a correct tag, and finally construct our own "Agent" object
- * Consider creating a dedicated "Agent" service in the future
- */
-const usePollingAgentQuery = ({
-  id,
-  shouldPoll = false,
-  pollingInterval = 5000,
-}: {
-  id: string;
-  shouldPoll?: boolean;
-  pollingInterval?: number;
-}) => {
+export const useGetAgentQuery = (
+  {
+    id,
+  }: {
+    id: string;
+  },
+  options: QueryObserverOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
+    refetchInterval?: number | false; // TODO: Fix, current workaround for refetching infinite query options for list endpoints
+  },
+) => {
   const listAgentsResult = useListAgentsQuery(undefined, {
-    refetchInterval: shouldPoll ? pollingInterval : false,
+    refetchInterval: options.refetchInterval,
+    enabled: options.enabled || (id !== '' && isUuid(id)),
   });
 
   const agent = listAgentsResult?.data?.agents?.find((agent) => agent?.id === id);
@@ -152,25 +151,13 @@ const usePollingAgentQuery = ({
   };
 };
 
-export const useGetAgentQuery = ({
-  id,
-  shouldPoll = false,
-  pollingInterval = 5000,
-}: {
-  id: string;
-  shouldPoll?: boolean;
-  pollingInterval?: number;
-}) => {
-  return usePollingAgentQuery({ id, shouldPoll, pollingInterval });
-};
-
 /**
  * @description WORKAROUND: There is no "Agent" service, so we need to list all pipelines, filter them by a correct tag, and finally construct our own "Agent" object
  * Consider creating a dedicated "Agent" service in the future
  */
 export const useListAgentsQuery = (
   input?: PartialMessage<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
+  options?: QueryObserverOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
     refetchInterval?: number | false;
   },
 ) => {
@@ -231,23 +218,23 @@ export const useListAgentsQuery = (
 };
 
 const getAgentState = (pipelineStates: Pipeline_State[]) => {
+  if (pipelineStates.some((pipelineState) => pipelineState === Pipeline_State.STARTING)) {
+    return Pipeline_State.STARTING;
+  }
   if (pipelineStates.every((pipelineState) => pipelineState === Pipeline_State.RUNNING)) {
     return Pipeline_State.RUNNING;
+  }
+  if (pipelineStates.some((pipelineState) => pipelineState === Pipeline_State.STOPPING)) {
+    return Pipeline_State.STOPPING;
   }
   if (pipelineStates.every((pipelineState) => pipelineState === Pipeline_State.STOPPED)) {
     return Pipeline_State.STOPPED;
   }
-
   if (pipelineStates.some((pipelineState) => pipelineState === Pipeline_State.ERROR)) {
     return Pipeline_State.ERROR;
   }
-
-  if (pipelineStates.some((pipelineState) => pipelineState === Pipeline_State.STARTING)) {
-    return Pipeline_State.STARTING;
-  }
-
-  if (pipelineStates.some((pipelineState) => pipelineState === Pipeline_State.STOPPING)) {
-    return Pipeline_State.STOPPING;
+  if (pipelineStates.every((pipelineState) => pipelineState === Pipeline_State.COMPLETED)) {
+    return Pipeline_State.COMPLETED;
   }
 
   return Pipeline_State.UNSPECIFIED;

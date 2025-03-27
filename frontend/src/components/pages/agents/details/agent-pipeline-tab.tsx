@@ -20,7 +20,7 @@ export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
         {QuickTable(
           [
             pipeline?.id && { key: 'ID', value: pipeline?.id },
-            pipeline?.state && { key: 'Status', value: <AgentStateDisplayValue state={pipeline?.state} /> },
+            { key: 'Status', value: <AgentStateDisplayValue state={pipeline?.state} /> },
             pipeline?.displayName && { key: 'Name', value: pipeline?.displayName },
             pipeline?.description && { key: 'Description', value: pipeline?.description ?? '' },
             pipeline?.url && { key: 'URL', value: pipeline?.url },
