@@ -1,9 +1,7 @@
 import { proto3 } from '@bufbuild/protobuf';
 import { Alert, AlertIcon, Spinner } from '@redpanda-data/ui';
-import { useQueryClient } from '@tanstack/react-query';
 import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
@@ -25,7 +23,6 @@ interface AgentChatTabProps {
 export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
-  const queryClient = useQueryClient();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
