@@ -28,3 +28,13 @@ export interface QueryOptions<I extends Message<I>, O extends Message<O>, P exte
    */
   refetchIntervalInBackground?: boolean;
 }
+
+export interface QueryObserverOptions<I extends Message<I>, O extends Message<O>, P extends Message<P>>
+  extends Omit<CreateQueryOptions<I, O, P>, 'transport'> {
+  enabled?: boolean;
+  refetchInterval?:
+    | number
+    | false
+    | ((query: Query<O, ConnectError, O, ConnectQueryKey<I>>) => number | false | undefined);
+  refetchIntervalInBackground?: boolean;
+}
