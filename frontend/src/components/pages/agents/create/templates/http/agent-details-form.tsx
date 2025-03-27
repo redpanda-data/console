@@ -8,10 +8,15 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
-import { createAgentHttpFormOpts, openAiApiTokenSchema, postgresConnectionUriSchema } from './create-agent-http-schema';
+import {
+  type CreateAgentHttpFormValues,
+  createAgentHttpFormOpts,
+  openAiApiTokenSchema,
+  postgresConnectionUriSchema,
+} from './create-agent-http-schema';
 
 export const AgentDetailsForm = withForm({
-  ...createAgentHttpFormOpts,
+  ...createAgentHttpFormOpts(),
   props: {
     title: 'New Support',
     description: 'Description of agent ...',
@@ -33,9 +38,9 @@ export const AgentDetailsForm = withForm({
       onClose: onCreateTopicModalClose,
     } = useDisclosure();
 
-    const [fieldToUpdate, setFieldToUpdate] = useState<
-      PrefixObjectAccessor<typeof createAgentHttpFormOpts.defaultValues, []> | undefined
-    >(undefined);
+    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues> | undefined>(
+      undefined,
+    );
 
     const { data: secretList } = useListSecretsQuery();
     const secretListOptions =

@@ -5,16 +5,17 @@ import { useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import type { z } from 'zod';
 import {
   CreateUserWithSecretPasswordModal,
   type CreatedUser,
 } from '../../../../users/create-user-with-secret-password-modal';
-import { createAgentHttpFormOpts, passwordSchema } from './create-agent-http-schema';
+import { type CreateAgentHttpFormValues, createAgentHttpFormOpts, passwordSchema } from './create-agent-http-schema';
 
 export const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 
 export const RedpandaUserAndPermissionsForm = withForm({
-  ...createAgentHttpFormOpts,
+  ...createAgentHttpFormOpts(),
   props: {
     title: 'Redpanda user and permissions',
   },
@@ -30,9 +31,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
       onClose: onCreateUserWithSecretPasswordModalClose,
     } = useDisclosure();
 
-    const [fieldToUpdate, setFieldToUpdate] = useState<
-      PrefixObjectAccessor<typeof createAgentHttpFormOpts.defaultValues, []> | undefined
-    >(undefined);
+    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
+      undefined,
+    );
 
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
 
