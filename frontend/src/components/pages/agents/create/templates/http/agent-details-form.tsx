@@ -7,7 +7,8 @@ import { useListAgentsQuery } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { createAgentHttpFormOpts } from './create-agent-http-schema';
+import type { z } from 'zod';
+import { createAgentHttpFormOpts, openAiApiTokenSchema, postgresConnectionUriSchema } from './create-agent-http-schema';
 
 export const AgentDetailsForm = withForm({
   ...createAgentHttpFormOpts,
@@ -23,6 +24,8 @@ export const AgentDetailsForm = withForm({
       onOpen: onCreateSecretModalOpen,
       onClose: onCreateSecretModalClose,
     } = useDisclosure();
+
+    const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
 
     const {
       isOpen: isCreateTopicModalOpen,
@@ -60,6 +63,7 @@ export const AgentDetailsForm = withForm({
       if (updatedValue && fieldToUpdate) {
         form.setFieldValue(fieldToUpdate, updatedValue);
         setFieldToUpdate(undefined);
+        setCustomSecretSchema(undefined);
       }
       onCreateSecretModalClose();
     };
@@ -124,6 +128,7 @@ export const AgentDetailsForm = withForm({
                 showCreateNewOption
                 onCreateNewOptionClick={() => {
                   setFieldToUpdate('OPENAI_KEY');
+                  setCustomSecretSchema(openAiApiTokenSchema);
                   onCreateSecretModalOpen();
                 }}
               />
@@ -145,13 +150,18 @@ export const AgentDetailsForm = withForm({
                 showCreateNewOption
                 onCreateNewOptionClick={() => {
                   setFieldToUpdate('POSTGRES_DSN');
+                  setCustomSecretSchema(postgresConnectionUriSchema);
                   onCreateSecretModalOpen();
                 }}
               />
             )}
           </form.AppField>
         </VStack>
-        <CreateSecretModal isOpen={isCreateSecretModalOpen} onClose={handleCreateSecretModalClose} />
+        <CreateSecretModal
+          isOpen={isCreateSecretModalOpen}
+          onClose={handleCreateSecretModalClose}
+          customSecretSchema={customSecretSchema}
+        />
         <CreateTopicModal isOpen={isCreateTopicModalOpen} onClose={handleCreateTopicModalClose} />
       </>
     );

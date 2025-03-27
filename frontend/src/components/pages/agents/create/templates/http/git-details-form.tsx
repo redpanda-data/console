@@ -4,7 +4,7 @@ import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { createAgentHttpFormOpts } from './create-agent-http-schema';
+import { createAgentHttpFormOpts, personalAccessTokenSchema } from './create-agent-http-schema';
 
 export const GitDetailsForm = withForm({
   ...createAgentHttpFormOpts,
@@ -14,6 +14,7 @@ export const GitDetailsForm = withForm({
   },
   render: ({ title, description, form }) => {
     const { data: secretList } = useListSecretsQuery();
+    const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
     const secretListOptions =
       secretList?.secrets?.map((secret) => ({
         value: secret?.id,
@@ -34,6 +35,7 @@ export const GitDetailsForm = withForm({
       if (updatedValue && fieldToUpdate) {
         form.setFieldValue(fieldToUpdate, updatedValue);
         setFieldToUpdate(undefined);
+        setCustomSecretSchema(undefined);
       }
       onCreateSecretModalClose();
     };
@@ -83,15 +85,19 @@ export const GitDetailsForm = withForm({
                   showCreateNewOption
                   onCreateNewOptionClick={() => {
                     setFieldToUpdate('PERSONAL_ACCESS_TOKEN');
+                    setCustomSecretSchema(personalAccessTokenSchema);
                     onCreateSecretModalOpen();
                   }}
                 />
               )}
-              {/* {(field) => <field.TextField label="Personal access token" placeholder="Enter personal access token" />} */}
             </form.AppField>
           )}
         </VStack>
-        <CreateSecretModal isOpen={isCreateSecretModalOpen} onClose={handleCreateSecretModalClose} />
+        <CreateSecretModal
+          isOpen={isCreateSecretModalOpen}
+          onClose={handleCreateSecretModalClose}
+          customSecretSchema={customSecretSchema}
+        />
       </>
     );
   },

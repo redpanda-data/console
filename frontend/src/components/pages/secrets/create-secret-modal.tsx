@@ -17,18 +17,22 @@ import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/s
 import { useEffect } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+import type { z } from 'zod';
 import { secretSchema } from './form/secret-schema';
 
 interface CreateSecretModalProps {
   isOpen: boolean;
   onClose: (createdSecretId?: string) => void;
+  customSecretSchema?: z.ZodTypeAny;
 }
 
-export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) => {
+export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema }: CreateSecretModalProps) => {
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
+
+  const finalSchema = secretSchema(customSecretSchema);
 
   const formOpts = formOptions({
     defaultValues: {
@@ -37,7 +41,7 @@ export const CreateSecretModal = ({ isOpen, onClose }: CreateSecretModalProps) =
       labels: [{ key: '', value: '' }],
     },
     validators: {
-      onChange: secretSchema,
+      onChange: finalSchema,
     },
     onSubmit: async ({ value }) => {
       const labelsMap: { [key: string]: string } = {};
