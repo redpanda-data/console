@@ -27,7 +27,7 @@ export const updatePageTitle = () => {
   runInAction(() => {
     uiState.pageTitle = 'Agents';
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the agent title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({ title: 'Agents', linkTo: '/agents', heading: 'Agents' });
+    uiState.pageBreadcrumbs.push({ title: 'AI Agents', linkTo: '/agents', heading: 'AI Agents' });
   });
 };
 
@@ -62,7 +62,11 @@ export const AgentListPage = () => {
     <>
       <Stack spacing={8}>
         <Stack spacing={4}>
-          <Text>Manage your AI agents.</Text>
+          <Text>
+            AI Agents are autonomous, general-purpose assistants that combine language understanding with the ability to
+            take action. You can enrich them with your own proprietary data, connect them to tools, and let them reason
+            through complex problems — iterating toward the best solution.
+          </Text>
           <ButtonGroup>
             <Button
               variant="outline"

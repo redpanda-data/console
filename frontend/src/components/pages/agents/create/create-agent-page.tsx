@@ -3,6 +3,7 @@ import { runInAction } from 'mobx';
 import type { ReactNode } from 'react';
 import { AiOutlineSlack } from 'react-icons/ai';
 import { MdNewspaper } from 'react-icons/md';
+import { FaGithub } from 'react-icons/fa';
 import { useHistory } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { CreateAgentCard } from './create-agent-card';
@@ -33,18 +34,19 @@ export const CreateAgentPage = () => {
   const templateListData: AgentOption[] = [
     {
       type: 'http',
-      icon: <Icon as={MdNewspaper} width={8} height={8} />,
-      title: 'New web request',
-      subtitle: 'HTTP Server',
-      description: 'Description',
+      icon: <Icon as={FaGithub} width={8} height={8} />,
+      title: 'New HTTP request',
+      subtitle: 'Support Agent',
+      description:
+        'Connect a GitHub repository to ingest your proprietary knowledge and make it accessible through a chat API.',
       isSelected: true, // hardcoded as we only have 1 template for now
     },
     {
       type: 'slack',
       icon: <Icon as={AiOutlineSlack} width={8} height={8} />,
       title: 'New event in Slack',
-      subtitle: 'Slack',
-      description: 'Description',
+      subtitle: 'Coming soon',
+      description: 'More agents will launch in the future.',
       isDisabled: true,
     },
   ];
@@ -58,8 +60,9 @@ export const CreateAgentPage = () => {
           Create an AI Agent
         </Heading>
         <Text fontSize={{ base: '14px', md: '14px' }} lineHeight="1.4em" color={textColor}>
-          AI agents description lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam blandit, augue at posuere
-          pharetra, turpis tellus porttitor leo, ac luctus libero dui et turpis.
+          Select the type of agent you want to create. Right now, you can get started with the Support Agent, designed
+          to help you query, reason, and respond based on your proprietary knowledge. More agent types will be available
+          soon.
         </Text>
       </VStack>
 
