@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Flex, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { NotFoundPage } from 'components/misc/not-found-page';
 import { runInAction } from 'mobx';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { type Agent, useGetAgentQuery } from 'react-query/api/agent';
 import { useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { capitalizeFirst } from 'utils/utils';
+import { isUuid } from 'utils/uuid.utils';
 import { DeleteAgentModal } from '../delete-agent-modal';
 import { AgentPipelineTab } from './agent-pipeline-tab';
 import { AgentChatTab } from './chat/agent-chat-tab';
@@ -56,6 +58,10 @@ export const AgentDetailsPage = () => {
         <Spinner size="lg" />
       </Flex>
     );
+  }
+
+  if (!agentData?.agent || !isUuid(agentId)) {
+    return <NotFoundPage />;
   }
 
   const matchingPipeline = agentData?.agent?.pipelines?.find(
