@@ -57,6 +57,7 @@ import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals
 class GroupDetails extends PageComponent<{ groupId: string }> {
   @observable edittingOffsets: GroupOffset[] | null = null;
   @observable editedTopic: string | null = null;
+  @observable editedPartition: number | null = null;
 
   @observable deletingMode: GroupDeletingMode = 'group';
   @observable deletingOffsets: GroupOffset[] | null = null;
@@ -125,6 +126,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           onEditOffsets={(g) => {
             this.editGroup();
             this.editedTopic = g[0].topicName;
+            if (g.length === 1) {
+              this.editedPartition = g[0].partitionId;
+            } else {
+              this.editedPartition = null;
+            }
           }}
           quickSearch={this.quickSearch}
           onDeleteOffsets={(offsets, mode) => {
@@ -206,11 +212,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         {/* Modals */}
         <EditOffsetsModal
-          key={this.editedTopic}
+          key={`${this.editedTopic ?? ''}-${this.editedPartition ?? ''}`}
           group={group}
           offsets={this.edittingOffsets}
           onClose={() => (this.edittingOffsets = null)}
           initialTopic={this.editedTopic}
+          initialPartition={this.editedPartition}
         />
       </PageContent>
     );
@@ -231,6 +238,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     if (!groupOffsets) return;
 
     this.editedTopic = null;
+    this.editedPartition = null;
     this.edittingOffsets = groupOffsets;
   }
 

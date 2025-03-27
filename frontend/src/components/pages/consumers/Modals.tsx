@@ -94,6 +94,7 @@ export class EditOffsetsModal extends Component<{
   offsets: GroupOffset[] | null;
   onClose: () => void;
   initialTopic: string | null;
+  initialPartition: number | null;
 }> {
   lastOffsets: GroupOffset[];
   lastVisible = false;
@@ -106,6 +107,7 @@ export class EditOffsetsModal extends Component<{
   @observable page: 0 | 1 = 0;
   @observable selectedOption: EditOptions = 'startOffset';
   @observable selectedTopic: string | null = null;
+  @observable selectedPartition: number | null = null;
   @observable timestampUtcMs: number = new Date().valueOf();
   @observable customOffsetValue = 0;
 
@@ -123,6 +125,7 @@ export class EditOffsetsModal extends Component<{
 
   componentDidMount() {
     this.selectedTopic = this.props.initialTopic;
+    this.selectedPartition = this.props.initialPartition;
   }
 
   render() {
@@ -189,6 +192,29 @@ export class EditOffsetsModal extends Component<{
               ]}
             />
           </Box>
+          {
+            this.selectedTopic !== null && (
+              <Box>
+                <FormLabel>Partition</FormLabel>
+                <SingleSelect
+                  options={[
+                    {
+                      value: null,
+                      label: 'All Partitions',
+                    },
+                    ...this.props.offsets?.filter((x) => x.topicName === this.selectedTopic)
+                    ?.sort((a, b) => a.partitionId - b.partitionId)
+                    ?.map((x: GroupOffset) => ({
+                      value: x.partitionId,
+                      label: x.partitionId.toString(),
+                    })) ?? [],
+                  ]}
+                  value={this.selectedPartition}
+                  onChange={action((v: number | null) => { this.selectedPartition = v })}
+                />
+              </Box>
+            )
+          }
           <Box>
             <FormLabel>Strategy</FormLabel>
             <SingleSelect
@@ -390,18 +416,27 @@ export class EditOffsetsModal extends Component<{
       if (this.props.offsets == null) return;
       const op = this.selectedOption;
 
+
+      // reset all newOffset
+      for (const x of this.props.offsets) {
+        x.newOffset = undefined;
+      }
+
+      // filter selected offsets to be edited
+      const selectedOffsets = this.props.offsets.filter((x) => this.selectedPartition === null || x.partitionId === this.selectedPartition);
+
       if (op === 'startOffset') {
         // Earliest
-        for (const x of this.props.offsets) {
+        for (const x of selectedOffsets) {
           x.newOffset = -2;
         }
       } else if (op === 'endOffset') {
         // Latest
-        for (const x of this.props.offsets) {
+        for (const x of selectedOffsets) {
           x.newOffset = -1;
         }
       } else if (op === 'shiftBy') {
-        for (const x of this.props.offsets) {
+        for (const x of selectedOffsets) {
           if (x.offset) {
             x.newOffset = x.offset + this.customOffsetValue;
           }
@@ -411,12 +446,11 @@ export class EditOffsetsModal extends Component<{
         // for (const x of this.props.offsets) {
         //   x.newOffset = new Date(this.timestampUtcMs) as any;
         // }
-        for (const x of this.props.offsets) {
+        for (const x of selectedOffsets) {
           x.newOffset = 'fetching offsets...' as any;
         }
-        const requiredTopics = this.props.offsets.map((x) => x.topicName).distinct();
+        const requiredTopics = selectedOffsets.map((x) => x.topicName).distinct();
 
-        const propOffsets = this.props.offsets;
         // Fetch offset for each partition
         setTimeout(async () => {
           const toastMsg = 'Fetching offsets for timestamp';
@@ -451,7 +485,7 @@ export class EditOffsetsModal extends Component<{
             return;
           }
 
-          for (const x of propOffsets) {
+          for (const x of selectedOffsets) {
             const responseOffset = offsetsForTimestamp
               .first((t) => t.topicName === x.topicName)
               ?.partitions.first((p) => p.partitionId === x.partitionId);
@@ -475,7 +509,7 @@ export class EditOffsetsModal extends Component<{
 
           //
           // Copy offsets that exist in the current group from the other group
-          for (const x of this.props.offsets) x.newOffset = getOffset(x.topicName, x.partitionId);
+          for (const x of selectedOffsets) x.newOffset = getOffset(x.topicName, x.partitionId);
 
           //
           // Extend our offsets with any offsets that our group currently doesn't have
@@ -601,7 +635,9 @@ export class EditOffsetsModal extends Component<{
     const group = this.props.group;
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     const offsets = this.props.offsets!.filter(
-      ({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic,
+      ({ topicName, partitionId }) =>
+        (this.selectedTopic === null || topicName === this.selectedTopic)
+        && (this.selectedPartition === null || partitionId === this.selectedPartition),
     );
 
     this.isApplyingEdit = true;
