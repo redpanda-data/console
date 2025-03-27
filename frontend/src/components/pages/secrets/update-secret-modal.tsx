@@ -53,7 +53,7 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
       labels: existingLabels.length > 0 ? existingLabels : [{ key: '', value: '' }],
     },
     validators: {
-      onChange: secretSchema,
+      onChange: secretSchema(),
     },
     onSubmit: async ({ value }) => {
       const labelsMap: { [key: string]: string } = {};

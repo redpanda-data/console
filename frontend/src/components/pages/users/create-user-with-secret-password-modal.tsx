@@ -21,20 +21,12 @@ import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-que
 import { getSASLMechanism, useLegacyCreateUserMutationWithToast, useLegacyListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
+import { passwordSchema, usernameSchema } from '../agents/create/templates/http/create-agent-http-schema';
 import { SASL_MECHANISM_OPTIONS } from '../agents/create/templates/http/redpanda-user-and-permissions-form';
 
 export const createUserWithSecretPasswordSchema = z.object({
-  USERNAME: z
-    .string()
-    .min(1, 'Username is required')
-    .regex(
-      /^[a-zA-Z0-9._@-]+$/,
-      'Username may contain only letters, numbers, dots, underscores, at symbols, and hyphens.',
-    ),
-  PASSWORD: z
-    .string()
-    .min(4, 'Password must be at least 4 characters')
-    .max(64, 'Password must not exceed 64 characters'),
+  USERNAME: usernameSchema,
+  PASSWORD: passwordSchema,
   GENERATE_WITH_SPECIAL_CHARACTERS: z.boolean().optional(),
   SECRET_ID: z
     .string()

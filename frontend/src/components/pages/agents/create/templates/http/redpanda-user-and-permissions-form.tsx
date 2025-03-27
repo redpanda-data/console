@@ -9,7 +9,7 @@ import {
   CreateUserWithSecretPasswordModal,
   type CreatedUser,
 } from '../../../../users/create-user-with-secret-password-modal';
-import { createAgentHttpFormOpts } from './create-agent-http-schema';
+import { createAgentHttpFormOpts, passwordSchema } from './create-agent-http-schema';
 
 export const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 
@@ -34,6 +34,8 @@ export const RedpandaUserAndPermissionsForm = withForm({
       PrefixObjectAccessor<typeof createAgentHttpFormOpts.defaultValues, []> | undefined
     >(undefined);
 
+    const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
+
     const { data: legacyUserList } = useLegacyListUsersQuery();
     const legacyUserListOptions =
       legacyUserList?.users?.map((user) => ({
@@ -52,6 +54,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
       if (createdSecretId && fieldToUpdate) {
         form.setFieldValue(fieldToUpdate, createdSecretId);
         setFieldToUpdate(undefined);
+        setCustomSecretSchema(undefined);
       }
       onCreateSecretModalClose();
     };
@@ -110,6 +113,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
                   showCreateNewOption
                   onCreateNewOptionClick={() => {
                     setFieldToUpdate('KAFKA_PASSWORD');
+                    setCustomSecretSchema(passwordSchema);
                     onCreateSecretModalOpen();
                   }}
                 />
@@ -128,7 +132,11 @@ export const RedpandaUserAndPermissionsForm = withForm({
             </form.AppField>
           </VStack>
         </Box>
-        <CreateSecretModal isOpen={isCreateSecretModalOpen} onClose={handleCreateSecretModalClose} />
+        <CreateSecretModal
+          isOpen={isCreateSecretModalOpen}
+          onClose={handleCreateSecretModalClose}
+          customSecretSchema={customSecretSchema}
+        />
         <CreateUserWithSecretPasswordModal
           isOpen={isCreateUserWithSecretPasswordModalOpen}
           onClose={handleCreateUserWithSecretPasswordModalClose}
