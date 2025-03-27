@@ -50,7 +50,7 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
     defaultValues: {
       id: secretId,
       value: '',
-      labels: existingLabels.length > 0 ? existingLabels : [{ key: '', value: '' }],
+      labels: existingLabels.length > 0 ? existingLabels : [],
     },
     validators: {
       onChange: secretSchema(),
