@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, VStack } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, Spinner, VStack } from '@redpanda-data/ui';
 import { useAppForm } from 'components/form/form';
 import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
@@ -13,6 +13,7 @@ import gitPrivatePipeline from './rag-git-private.yaml';
 import gitPipeline from './rag-git.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
 
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
 
 export const getPipelineName = (pipelineKey: string) => {
@@ -59,8 +60,10 @@ export const CreateAgentHTTP = () => {
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
     useCreateAgentPipelinesMutation();
 
+  const { data: secretList, isLoading: isSecretListLoading } = useListSecretsQuery();
+
   const form = useAppForm({
-    ...createAgentHttpFormOpts,
+    ...createAgentHttpFormOpts(secretList?.secrets),
     validators: {
       onChange: createAgentHttpSchema,
     },
@@ -110,6 +113,14 @@ export const CreateAgentHTTP = () => {
       history.push(agentId ? `/agents/${agentId}` : '/agents');
     },
   });
+
+  if (isSecretListLoading) {
+    return (
+      <Flex justifyContent="center" padding={8}>
+        <Spinner size="lg" />
+      </Flex>
+    );
+  }
 
   return (
     <form
