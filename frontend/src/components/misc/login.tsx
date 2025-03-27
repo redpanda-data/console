@@ -185,7 +185,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
   }),
   [AuthenticationMethod.OIDC]: () => (
     <div>
-      <Button variant="brand" as="a" href={`${appConfig.apiBasePath}/auth/login/oidc`} width="full">
+      <Button variant="brand" as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} width="full">
         Log in with OIDC
       </Button>
     </div>
