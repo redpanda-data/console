@@ -10,8 +10,8 @@ export const createAgentHttpSchema = z.object({
   USERNAME: z.string().min(1, 'Username is required'),
   KAFKA_PASSWORD: z.string().min(1, 'Password is required'),
   SASL_MECHANISM: z.enum(['SCRAM-SHA-256', 'SCRAM-SHA-512']),
-  // REPOSITORY_URL: z.string().min(1, 'Repository URL is required').url('Invalid repository URL'),
-  // REPOSITORY_BRANCH: z.string(),
+  REPOSITORY_URL: z.string().min(1, 'Repository URL is required').url('Invalid repository URL'),
+  REPOSITORY_BRANCH: z.string(),
 });
 
 export const createAgentHttpFormOpts = formOptions({
@@ -24,7 +24,7 @@ export const createAgentHttpFormOpts = formOptions({
     USERNAME: '',
     KAFKA_PASSWORD: '',
     SASL_MECHANISM: 'SCRAM-SHA-256',
-    // REPOSITORY_URL: '',
-    // REPOSITORY_BRANCH: 'main',
+    REPOSITORY_URL: '',
+    REPOSITORY_BRANCH: 'main',
   },
 });
