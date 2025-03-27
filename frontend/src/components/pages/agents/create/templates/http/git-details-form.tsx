@@ -25,6 +25,9 @@ export const GitDetailsForm = withForm({
         <form.AppField name="REPOSITORY_BRANCH">
           {(field) => <field.TextField label="Repository branch" placeholder="Enter repository branch" />}
         </form.AppField>
+        <form.AppField name="GLOB_PATTERN">
+          {(field) => <field.TextField label="Glob pattern" placeholder="Enter glob pattern" />}
+        </form.AppField>
       </VStack>
     </>
   ),
