@@ -7,9 +7,6 @@ interface ParseYamlTemplateSecretsParams {
   secretMappings: Record<string, string>;
 }
 
-// These vars are already predefined
-const whitelistedVars = ['REDPANDA_BROKERS'];
-
 /**
  * Converts a topic name to a valid PostgreSQL table name
  * Follows PostgreSQL identifier naming rules:
@@ -19,18 +16,11 @@ const whitelistedVars = ['REDPANDA_BROKERS'];
  * - Lowercase for consistency
  */
 export const toPostgresTableName = (originalString: string): string => {
-  // Replace invalid characters with underscores
   let validName = originalString.replace(/[^a-zA-Z0-9_]/g, '_');
-
-  // Ensure name starts with letter or underscore
   if (!/^[a-zA-Z_]/.test(validName)) {
     validName = `_${validName}`;
   }
-
-  // Truncate to PostgreSQL max identifier length (63 bytes)
   validName = validName.substring(0, 63);
-
-  // Convert to lowercase for consistency
   return validName.toLowerCase();
 };
 
@@ -58,25 +48,20 @@ export const parseYamlTemplateSecrets = ({
       continue;
     }
 
-    // Convert YAML object to string for processing
     const processedYamlString = stringify(yamlTemplate);
 
-    // Find all environment variables and secrets in the template
     const envVarRegex = /\${([A-Za-z0-9_]+)}/g;
     const secretsRegex = /\${secrets\.([A-Za-z0-9_]+)}/g;
 
-    // Collect all environment variables referenced in the template
     const envVarsInTemplate = new Set<string>();
     let match: RegExpExecArray | null;
 
-    // Reset regex lastIndex to ensure we find all matches
     envVarRegex.lastIndex = 0;
     while ((match = envVarRegex.exec(processedYamlString)) !== null) {
       const envVarName = match[1];
       envVarsInTemplate.add(envVarName);
     }
 
-    // Collect all secrets referenced in the template
     const secretsInTemplate = new Set<string>();
     secretsRegex.lastIndex = 0;
     while ((match = secretsRegex.exec(processedYamlString)) !== null) {
@@ -84,14 +69,9 @@ export const parseYamlTemplateSecrets = ({
       secretsInTemplate.add(secretName);
     }
 
-    // Find missing environment variables and secrets
-    const missingEnvVars = Array.from(envVarsInTemplate).filter(
-      (varName) => !(varName in envVars) && !whitelistedVars.includes(varName),
-    );
-
+    const missingEnvVars = Array.from(envVarsInTemplate).filter((varName) => !(varName in envVars));
     const missingSecrets = Array.from(secretsInTemplate).filter((secretName) => !(secretName in secretMappings));
 
-    // Collect all missing values
     for (const varName of missingEnvVars) {
       allMissingEnvVars.add(varName);
     }
@@ -101,7 +81,6 @@ export const parseYamlTemplateSecrets = ({
     }
   }
 
-  // Throw error if any environment variables or secrets are missing
   if (allMissingEnvVars.size > 0 || allMissingSecrets.size > 0) {
     const errorParts = [];
 
@@ -116,25 +95,20 @@ export const parseYamlTemplateSecrets = ({
     throw new Error(errorParts.join('. '));
   }
 
-  // Now that we've validated all templates, process each one
   for (const [templateKey, yamlTemplate] of Object.entries(yamlTemplates)) {
     if (!yamlTemplate) {
       result[templateKey] = stringify({});
       continue;
     }
 
-    // Convert YAML object to string for processing
     let processedYamlString = stringify(yamlTemplate);
 
-    // Reset regex for replacements
     const envVarRegex = /\${([A-Za-z0-9_]+)}/g;
     const secretsRegex = /\${secrets\.([A-Za-z0-9_]+)}/g;
 
-    // Replace environment variables with their actual values
     processedYamlString = processedYamlString.replace(envVarRegex, (_match: string, envVarName: string) => {
       const envValue = envVars?.[envVarName] || '';
 
-      // Handle special case for Postgres compatible topic name
       if (envVarName === 'POSTGRES_COMPATIBLE_TOPIC_NAME') {
         return toPostgresTableName(envValue);
       }
@@ -142,13 +116,11 @@ export const parseYamlTemplateSecrets = ({
       return envValue;
     });
 
-    // Replace secret values with a standardized format based on provided mappings
     processedYamlString = processedYamlString.replace(secretsRegex, (_match: string, secretName: string) => {
       const mappedName = secretMappings?.[secretName] || '';
       return `\${secrets.${mappedName}}`;
     });
 
-    // Store the processed YAML string directly
     result[templateKey] = processedYamlString;
   }
 
