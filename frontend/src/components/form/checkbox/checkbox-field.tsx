@@ -11,9 +11,13 @@ export const CheckboxField = ({ label, ...rest }: CheckboxFieldProps) => {
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      <HStack spacing={2}>
+      <HStack spacing={2} alignItems="center">
         <Checkbox isChecked={field.state.value} onChange={(e) => field.handleChange(e.target.checked)} {...rest} />
-        {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
+        {label && (
+          <FormLabel fontWeight="medium" mb={0}>
+            {label}
+          </FormLabel>
+        )}
       </HStack>
       <ErrorInfoField field={field} />
     </FormControl>
