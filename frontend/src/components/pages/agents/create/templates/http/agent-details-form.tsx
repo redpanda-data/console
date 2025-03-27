@@ -53,6 +53,7 @@ export const AgentDetailsForm = withForm({
 
     const handleCreateTopicModalClose = (createdTopicId?: string) => {
       if (createdTopicId && fieldToUpdate) {
+        form.resetField(fieldToUpdate);
         form.setFieldValue(fieldToUpdate, createdTopicId);
         setFieldToUpdate(undefined);
       }
@@ -61,6 +62,7 @@ export const AgentDetailsForm = withForm({
 
     const handleCreateSecretModalClose = (updatedValue?: string) => {
       if (updatedValue && fieldToUpdate) {
+        form.resetField(fieldToUpdate);
         form.setFieldValue(fieldToUpdate, updatedValue);
         setFieldToUpdate(undefined);
         setCustomSecretSchema(undefined);
