@@ -2,7 +2,6 @@ import { Box, Flex, Grid, Heading, Icon, Text, VStack, useColorModeValue } from 
 import { runInAction } from 'mobx';
 import type { ReactNode } from 'react';
 import { AiOutlineSlack } from 'react-icons/ai';
-import { MdNewspaper } from 'react-icons/md';
 import { FaGithub } from 'react-icons/fa';
 import { useHistory } from 'react-router-dom';
 import { uiState } from 'state/uiState';

@@ -1,4 +1,4 @@
-import { Box, Heading, Text } from '@redpanda-data/ui';
+import { Box, Heading, Text, VStack } from '@redpanda-data/ui';
 import { withForm } from 'components/form/form';
 import { createAgentHttpFormOpts } from './create-agent-http-schema';
 
@@ -8,7 +8,7 @@ export const GitDetailsForm = withForm({
     title: 'Git information',
     description: 'Enter the Git repository URL and branch to use for the agent',
   },
-  render: ({ title, description }) => (
+  render: ({ title, description, form }) => (
     <>
       <Box>
         <Heading size="md" mb={1}>
@@ -18,14 +18,14 @@ export const GitDetailsForm = withForm({
           {description}
         </Text>
       </Box>
-      {/* <VStack spacing={4} align="stretch">
+      <VStack spacing={4} align="stretch">
         <form.AppField name="REPOSITORY_URL">
           {(field) => <field.TextField label="Repository URL" placeholder="Enter repository URL" />}
         </form.AppField>
         <form.AppField name="REPOSITORY_BRANCH">
           {(field) => <field.TextField label="Repository branch" placeholder="Enter repository branch" />}
         </form.AppField>
-      </VStack> */}
+      </VStack>
     </>
   ),
 });
