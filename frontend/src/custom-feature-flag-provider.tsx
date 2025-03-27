@@ -1,4 +1,4 @@
-import type { FEATURE_FLAGS } from 'components/constants';
+import { FEATURE_FLAGS } from 'components/constants';
 import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 interface FeatureFlags {
@@ -22,7 +22,10 @@ interface CustomFeatureFlagProviderProps {
   initialFlags?: FeatureFlags;
 }
 
-export const CustomFeatureFlagProvider = ({ children, initialFlags = {} }: CustomFeatureFlagProviderProps) => {
+export const CustomFeatureFlagProvider = ({
+  children,
+  initialFlags = FEATURE_FLAGS,
+}: CustomFeatureFlagProviderProps) => {
   const [flags, setFlags] = useState<FeatureFlags>(initialFlags);
 
   const setFlag = useCallback((key: string, value: boolean) => {
