@@ -1,8 +1,8 @@
 import { Button, ButtonGroup, Flex, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { runInAction } from 'mobx';
-import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useEffect } from 'react';
+import { Pipeline_State, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useEffect, useState } from 'react';
 import { type Agent, useGetAgentQuery } from 'react-query/api/agent';
 import { useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
@@ -26,7 +26,17 @@ export const updatePageTitle = ({ agent }: { agent: Agent }) => {
 
 export const AgentDetailsPage = () => {
   const { agentId } = useParams<{ agentId: Pipeline['id'] }>();
-  const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery({ id: agentId });
+  const [shouldPoll, setShouldPoll] = useState(true);
+
+  const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery({
+    id: agentId,
+    shouldPoll,
+  });
+
+  // Update polling state based on agent state
+  useEffect(() => {
+    setShouldPoll(agentData?.agent?.state === Pipeline_State.STARTING);
+  }, [agentData?.agent?.state]);
 
   const {
     isOpen: isDeleteAgentModalOpen,
