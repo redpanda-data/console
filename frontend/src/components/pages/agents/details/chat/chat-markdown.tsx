@@ -125,11 +125,11 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
             return (
               <Box py={1}>
                 <CodeBlock
-                  theme="light"
+                  theme="dark"
                   language={match?.[1] ?? ''}
                   codeString={String(children).replace(/\n$/, '')}
                   showLineNumbers={false}
-                  showCopyButton={false}
+                  showCopyButton
                 />
               </Box>
             );
