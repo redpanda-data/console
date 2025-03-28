@@ -73,6 +73,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       this.description = pipeline.description;
       this.tasks = cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS;
       this.editorContent = pipeline.configYaml;
+      this.tags = pipeline.tags;
     }
 
     const isNameEmpty = !this.displayName;
