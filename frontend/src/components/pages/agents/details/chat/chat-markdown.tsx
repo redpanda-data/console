@@ -120,15 +120,22 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         // Code blocks
         code({ className, children }) {
           const match = /language-(\w+)/.exec(className || '');
-          return (
-            <CodeBlock
-              theme="light"
-              language={match?.[1] ?? ''}
-              codeString={String(children).replace(/\n$/, '')}
-              showLineNumbers={false}
-              showCopyButton={false}
-            />
-          );
+
+          if (match) {
+            return (
+              <Box py={1}>
+                <CodeBlock
+                  theme="light"
+                  language={match?.[1] ?? ''}
+                  codeString={String(children).replace(/\n$/, '')}
+                  showLineNumbers={false}
+                  showCopyButton={false}
+                />
+              </Box>
+            );
+          }
+
+          return <code className={className}>{children}</code>;
         },
 
         // Table elements

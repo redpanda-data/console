@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Flex, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
+import { Button, ButtonGroup, Flex, HStack, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { NotFoundPage } from 'components/misc/not-found-page';
 import { runInAction } from 'mobx';
@@ -11,6 +11,7 @@ import { capitalizeFirst } from 'utils/utils';
 import { isUuid } from 'utils/uuid.utils';
 import { DeleteAgentModal } from '../delete-agent-modal';
 import { AgentPipelineTab } from './agent-pipeline-tab';
+import { AgentStateDisplayValue } from './agent-state-display-value';
 import { AgentChatTab } from './chat/agent-chat-tab';
 
 // Hack for MobX to ensure we don't need to use observables
@@ -42,7 +43,6 @@ export const AgentDetailsPage = () => {
       refetchOnWindowFocus: 'always',
     },
   );
-
 
   useEffect(() => {
     if (!agentIsRunning && agentData?.agent?.state === Pipeline_State.RUNNING) {
@@ -97,6 +97,11 @@ export const AgentDetailsPage = () => {
       <Stack spacing={8}>
         <Stack spacing={4}>
           <Text>{agentData?.agent?.description}</Text>
+          <AgentStateDisplayValue state={matchingPipeline?.state} />
+          <HStack spacing={2}>
+            <Text fontWeight="bold">URL</Text>
+            <Text>{matchingPipeline?.url}</Text>
+          </HStack>
           <ButtonGroup>
             <Button
               variant="outline-delete"

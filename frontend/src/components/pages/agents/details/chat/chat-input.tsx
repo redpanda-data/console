@@ -8,10 +8,12 @@ interface ChatInputProps {
   setIsTyping: (isTyping: boolean) => void;
   agentUrl?: string;
   agentId: string;
+  initialValue?: string;
+  onInputChange?: () => void;
 }
 
-export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) => {
-  const [inputValue, setInputValue] = useState('');
+export const ChatInput = ({ setIsTyping, agentUrl, agentId, initialValue, onInputChange }: ChatInputProps) => {
+  const [inputValue, setInputValue] = useState(initialValue || '');
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -24,6 +26,9 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId }: ChatInputProps) =>
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
+    if (onInputChange) {
+      onInputChange();
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
