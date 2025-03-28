@@ -1,4 +1,4 @@
-import { stringify } from 'yaml';
+import { Scalar, stringify } from 'yaml';
 
 type YamlTemplate = Record<string, any>;
 interface ParseYamlTemplateSecretsParams {
@@ -25,6 +25,16 @@ export const toPostgresTableName = (originalString: string): string => {
 };
 
 /**
+ * Wraps glob pattern strings in double quotes to preserve their syntax
+ */
+const wrapGlobPattern = (value: string): string => {
+  if (value === '**' || value.includes('/**') || value.includes('**/')) {
+    return `"${value}"`;
+  }
+  return value;
+};
+
+/**
  * Processes one or more YAML templates by replacing environment variables with their values
  * and standardizing secret references using provided mappings
  */
@@ -48,7 +58,9 @@ export const parseYamlTemplateSecrets = ({
       continue;
     }
 
-    const processedYamlString = stringify(yamlTemplate);
+    const processedYamlString = stringify(yamlTemplate, {
+      defaultStringType: Scalar.PLAIN,
+    });
 
     const envVarRegex = /\${([A-Za-z0-9_]+)}/g;
     const secretsRegex = /\${secrets\.([A-Za-z0-9_]+)}/g;
@@ -101,7 +113,9 @@ export const parseYamlTemplateSecrets = ({
       continue;
     }
 
-    let processedYamlString = stringify(yamlTemplate);
+    let processedYamlString = stringify(yamlTemplate, {
+      defaultStringType: Scalar.PLAIN,
+    });
 
     const envVarRegex = /\${([A-Za-z0-9_]+)}/g;
     const secretsRegex = /\${secrets\.([A-Za-z0-9_]+)}/g;
@@ -113,7 +127,8 @@ export const parseYamlTemplateSecrets = ({
         return toPostgresTableName(envValue);
       }
 
-      return envValue;
+      // Special handling for glob patterns in environment variables
+      return wrapGlobPattern(envValue);
     });
 
     processedYamlString = processedYamlString.replace(secretsRegex, (_match: string, secretName: string) => {

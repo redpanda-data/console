@@ -1,18 +1,18 @@
 input:
   git:
     repository_url: ${REPOSITORY_URL}
-    branch: ${REPOSITORY_BRANCH}
-    poll_interval: 10s
+    branch: "${REPOSITORY_BRANCH}"
+    poll_interval: "10s"
     include_patterns:
-      - ${GLOB_PATTERN}
+      - '${GLOB_PATTERN}'
     auth:
       token:
         value: ${secrets.PERSONAL_ACCESS_TOKEN}
 pipeline: {}
+
 output:
   kafka_franz:
-    seed_brokers:
-      - ${REDPANDA_BROKERS}
+    seed_brokers: ["${REDPANDA_BROKERS}"]
     sasl:
       - username: ${USERNAME}
         password: ${secrets.KAFKA_PASSWORD}
@@ -22,5 +22,4 @@ output:
     topic: ${TOPIC}
     key: ${!meta("git_file_path")}
     metadata:
-      include_patterns:
-        - .*
+      include_patterns: [".*"]
