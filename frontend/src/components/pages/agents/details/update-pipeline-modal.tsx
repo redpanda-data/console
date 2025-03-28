@@ -14,7 +14,6 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { PipelineEditor } from 'components/pages/rp-connect/Pipelines.Create';
 import { MAX_TASKS, MIN_TASKS, cpuToTasks, tasksToCPU } from 'components/pages/rp-connect/tasks';
-import { UpdatePipelineRequest } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   Pipeline_Resources,
   UpdatePipelineRequest as UpdatePipelineRequestDataPlane,
