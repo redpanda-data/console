@@ -81,7 +81,7 @@ export const AgentDetailsPage = () => {
   const chatTab = {
     key: 'chat',
     name: 'Chat',
-    component: <AgentChatTab agent={matchingPipeline} />,
+    component: <AgentChatTab pipeline={matchingPipeline} />,
   };
 
   const pipelineTabs = (agentData?.agent?.pipelines ?? []).map((pipeline) => ({
