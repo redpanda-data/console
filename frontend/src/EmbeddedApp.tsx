@@ -33,6 +33,7 @@ import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-d
 import { QueryClientProvider } from '@tanstack/react-query';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
+import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'queryClient';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
@@ -92,6 +93,9 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
   const transport = createConnectTransport({
     baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    jsonOptions: {
+      typeRegistry: protobufRegistry,
+    },
   });
 
   if (!p.isConsoleReadyToMount) {

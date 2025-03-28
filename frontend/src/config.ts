@@ -21,6 +21,7 @@ import memoizeOne from 'memoize-one';
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
+import { protobufRegistry } from 'protobuf-registry';
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
@@ -150,6 +151,9 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const transport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    jsonOptions: {
+      typeRegistry: protobufRegistry,
+    },
   });
 
   const licenseGrpcClient = createClient(LicenseService, transport);
