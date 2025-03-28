@@ -32,6 +32,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CustomFeatureFlagProvider, useBooleanFlagValue } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
+import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'queryClient';
 import { BrowserRouter } from 'react-router-dom';
 import RequireAuth from './components/RequireAuth';
@@ -72,6 +73,9 @@ const App = () => {
   const transport = createConnectTransport({
     baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    jsonOptions: {
+      typeRegistry: protobufRegistry,
+    },
   });
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp

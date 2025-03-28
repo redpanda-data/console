@@ -21,6 +21,7 @@ import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
 import memoizeOne from 'memoize-one';
+import { protobufRegistry } from 'protobuf-registry';
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
@@ -157,6 +158,9 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const transport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    jsonOptions: {
+      typeRegistry: protobufRegistry,
+    },
   });
 
   const licenseGrpcClient = createPromiseClient(LicenseService, transport);
