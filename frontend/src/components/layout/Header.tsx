@@ -121,12 +121,6 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
-
-  if (schemaCreateMatch) return false;
-
-  if (topicProduceRecordMatch) return false;
-
   const secretsMatch = useRouteMatch({
     path: '/secrets',
     strict: false,
@@ -134,7 +128,38 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
+  const agentsMatch = useRouteMatch({
+    path: '/agents',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
+  const agentDetailsMatch = useRouteMatch({
+    path: '/agents/:agentId',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
+  const createAgentMatch = useRouteMatch({
+    path: '/agents/create',
+    strict: false,
+    sensitive: true,
+    exact: false,
+  });
+
+  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
+
+  if (schemaCreateMatch) return false;
+
+  if (topicProduceRecordMatch) return false;
+
   if (secretsMatch) return false;
+
+  if (agentsMatch) return false;
+  if (agentDetailsMatch) return false;
+  if (createAgentMatch) return false;
 
   return true;
 }

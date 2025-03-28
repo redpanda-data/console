@@ -1,3 +1,4 @@
+import yaml from '@rollup/plugin-yaml';
 import react from '@vitejs/plugin-react';
 import { loadEnv } from 'vite';
 import envCompatible from 'vite-plugin-env-compatible';
@@ -54,6 +55,7 @@ export default defineConfig(({ mode }) => {
       tsconfigPaths({
         ignoreConfigErrors: true,
       }),
+      yaml(),
     ],
     resolve: {
       preserveSymlinks: true,

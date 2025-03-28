@@ -1,10 +1,11 @@
 import { FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
-import { ErrorInfoField } from './error-info-field';
-import { useFieldContext } from './form-hook-contexts';
+import type { ReactNode } from 'react';
+import { ErrorInfoField } from '../error-info/error-info-field';
+import { useFieldContext } from '../form-hook-contexts';
 
 interface TextFieldProps extends Omit<InputProps, 'transform'> {
-  label?: string;
-  helperText?: string;
+  label?: ReactNode;
+  helperText?: ReactNode;
   placeholder?: string;
   transform?: (value: string) => string;
   isDisabled?: boolean;
@@ -16,7 +17,7 @@ export const TextField = ({ label, helperText, placeholder, transform, isDisable
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
       {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
-      {helperText && <FormHelperText mb={2}>{helperText}</FormHelperText>}
+      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
       <Input
         value={field.state.value}
         onChange={(e) => {

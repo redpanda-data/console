@@ -159,18 +159,20 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   render() {
     if (!pipelinesApi.pipelines) return DefaultSkeleton;
 
-    const filteredPipelines = (pipelinesApi.pipelines ?? []).filter((u) => {
-      const filter = uiSettings.pipelinesList.quickSearch;
-      if (!filter) return true;
-      try {
-        const quickSearchRegExp = new RegExp(filter, 'i');
-        if (u.id.match(quickSearchRegExp)) return true;
-        if (u.displayName.match(quickSearchRegExp)) return true;
-        return false;
-      } catch {
-        return false;
-      }
-    });
+    const filteredPipelines = (pipelinesApi.pipelines ?? [])
+      ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
+      .filter((u) => {
+        const filter = uiSettings.pipelinesList.quickSearch;
+        if (!filter) return true;
+        try {
+          const quickSearchRegExp = new RegExp(filter, 'i');
+          if (u.id.match(quickSearchRegExp)) return true;
+          if (u.displayName.match(quickSearchRegExp)) return true;
+          return false;
+        } catch {
+          return false;
+        }
+      });
 
     return (
       <PageContent>

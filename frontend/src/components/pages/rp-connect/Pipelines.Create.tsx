@@ -55,6 +55,9 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
+  // TODO: Actually show this within the pipeline create page
+  @observable tags = {} as Record<string, string>;
+
   constructor(p: any) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
@@ -176,7 +179,10 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
-          tags: {},
+          tags: {
+            ...this.tags,
+            __redpanda_cloud_pipeline_type: 'pipeline',
+          },
         }),
       )
       .then(async () => {
@@ -397,7 +403,7 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
     'errors.log.enable',
   ];
 
-  const matchCount = kafkaConfigKeys.filter((key) => key in json).length;
+  const matchCount = kafkaConfigKeys.filter((key) => Object.keys(json).includes(key)).length;
 
   return matchCount > 0;
 };
