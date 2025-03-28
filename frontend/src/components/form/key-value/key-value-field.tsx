@@ -37,7 +37,7 @@ export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps
       <FormLabel fontWeight="medium">{label}</FormLabel>
       {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
 
-      {field.state.value.map((_, index) => (
+      {field?.state?.value?.map((_, index) => (
         <KeyValuePairField key={index} index={index} {...rest} />
       ))}
 

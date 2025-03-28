@@ -5,6 +5,7 @@ import {
   createPipeline,
   deletePipeline,
   getPipeline,
+  getPipelinesBySecrets,
   getPipelinesForSecret,
   listPipelines,
   startPipeline,
@@ -13,6 +14,7 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
   GetPipelineRequest,
+  GetPipelinesBySecretsRequest,
   GetPipelinesForSecretRequest,
   ListPipelinesRequest,
   type ListPipelinesResponse,
@@ -20,6 +22,7 @@ import {
 import {
   GetPipelineRequest as GetPipelineRequestDataPlane,
   type GetPipelineResponse,
+  GetPipelinesBySecretsRequest as GetPipelinesBySecretsRequestDataPlane,
   GetPipelinesForSecretRequest as GetPipelinesForSecretRequestDataPlane,
   ListPipelinesRequest as ListPipelinesRequestDataPlane,
   type Pipeline,
@@ -213,4 +216,15 @@ export const useGetPipelinesForSecretQuery = ({ secretId }: { secretId: Secret['
   return useQuery(getPipelinesForSecret, getPipelinesForSecretRequest, {
     enabled: secretId !== '',
   });
+};
+
+export const useGetPipelinesBySecretsQuery = () => {
+  const getPipelinesBySecretsRequestDataPlane = new GetPipelinesBySecretsRequestDataPlane({
+    secretId: '',
+  });
+
+  const getPipelinesBySecretsRequest = new GetPipelinesBySecretsRequest({
+    request: getPipelinesBySecretsRequestDataPlane,
+  });
+  return useQuery(getPipelinesBySecrets, getPipelinesBySecretsRequest);
 };

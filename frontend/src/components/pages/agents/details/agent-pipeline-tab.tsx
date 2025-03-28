@@ -1,19 +1,23 @@
-import { Button, ButtonGroup, Grid, GridItem, Stack, Text } from '@redpanda-data/ui';
+import { Button, ButtonGroup, Grid, GridItem, Stack, Text, useDisclosure } from '@redpanda-data/ui';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode } from 'react';
 import { useGetPipelineQuery } from 'react-query/api/pipeline';
-import { useHistory } from 'react-router-dom';
 import { AGENT_POLLING_INTERVAL } from './agent-details-page';
 import { AgentPipelineTabLogs } from './agent-pipeline-tab-logs';
 import { AgentStateDisplayValue } from './agent-state-display-value';
 import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
+import { UpdatePipelineModal } from './update-pipeline-modal';
 
 interface AgentPipelineTabProps {
   pipeline?: Pipeline;
 }
 
 export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
-  const history = useHistory();
+  const {
+    isOpen: isUpdatePipelineModalOpen,
+    onOpen: onUpdatePipelineModalOpen,
+    onClose: onUpdatePipelineModalClose,
+  } = useDisclosure();
 
   const { data: pipelineData } = useGetPipelineQuery(
     {
@@ -52,35 +56,44 @@ export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
   ].filter(Boolean) as { title: string; value: ReactNode }[];
 
   return (
-    <Stack spacing={8}>
-      <Grid templateColumns="100px 2fr" gap={1}>
-        {items.map((item) => (
-          <Fragment key={item?.title}>
-            <GridItem>
-              <Text fontWeight="bold">{item?.title}</Text>
-            </GridItem>
-            <GridItem>
-              <Text wordBreak="break-word" whiteSpace="pre-wrap">
-                {item?.value}
-              </Text>
-            </GridItem>
-          </Fragment>
-        ))}
-      </Grid>
+    <>
+      <Stack spacing={8}>
+        <Grid templateColumns="100px 2fr" gap={1}>
+          {items.map((item) => (
+            <Fragment key={item?.title}>
+              <GridItem>
+                <Text fontWeight="bold">{item?.title}</Text>
+              </GridItem>
+              <GridItem>
+                <Text wordBreak="break-word" whiteSpace="pre-wrap">
+                  {item?.value}
+                </Text>
+              </GridItem>
+            </Fragment>
+          ))}
+        </Grid>
 
-      <ButtonGroup>
-        <Button
-          variant="outline"
-          onClick={() => {
-            history.push(`/rp-connect/${pipeline?.id}/edit`);
-          }}
-          data-testid="edit-pipeline-button"
-        >
-          Edit
-        </Button>
-        <TogglePipelineStateButton pipeline={pipeline} />
-      </ButtonGroup>
-      <AgentPipelineTabLogs pipeline={pipeline} />
-    </Stack>
+        <ButtonGroup>
+          <Button
+            variant="outline"
+            onClick={() => {
+              onUpdatePipelineModalOpen();
+            }}
+            data-testid="edit-pipeline-button"
+          >
+            Edit
+          </Button>
+          <TogglePipelineStateButton pipeline={pipeline} />
+        </ButtonGroup>
+        <AgentPipelineTabLogs pipeline={pipeline} />
+      </Stack>
+      {pipeline?.id && (
+        <UpdatePipelineModal
+          isOpen={isUpdatePipelineModalOpen}
+          onClose={onUpdatePipelineModalClose}
+          pipelineId={pipeline?.id}
+        />
+      )}
+    </>
   );
 };
