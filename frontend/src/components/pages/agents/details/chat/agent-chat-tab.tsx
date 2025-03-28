@@ -1,10 +1,10 @@
-import { proto3 } from '@bufbuild/protobuf';
-import { Alert, AlertIcon, Spinner } from '@redpanda-data/ui';
+import { Spinner } from '@redpanda-data/ui';
 import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
+import { AgentStateDisplayValue } from '../agent-state-display-value';
+import { AgentChatNotification } from './agent-chat-notification';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
 import { ChatLoadingIndicator } from './chat-loading-indicator';
@@ -21,8 +21,10 @@ interface AgentChatTabProps {
  * @see https://github.com/dexie/Dexie.js
  */
 export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,12 +38,19 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
     }
   }, [shouldScroll]);
 
+  // Handle selection of a question
+  const handleSelectQuestion = (question: string) => {
+    setSelectedQuestion(question);
+  };
+
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
       if (!id) return [];
+      setIsLoadingMessages(true);
       const storedMessages = await chatDb.getAllMessages(id);
       setShouldScroll(true);
+      setIsLoadingMessages(false);
       return storedMessages;
     }, [id]) || [];
 
@@ -54,36 +63,44 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
     }
   };
 
-  if (!messages) {
-    return <ChatLoadingIndicator />;
+  if (!id || !pipeline?.url || pipeline?.state === Pipeline_State.STARTING) {
+    return (
+      <AgentChatNotification
+        notification={
+          <>
+            <Spinner size="sm" mr={2} />
+            <span>Chat is not available right now. Pipeline state: </span>
+            <AgentStateDisplayValue state={pipeline?.state} />
+          </>
+        }
+      />
+    );
   }
 
-  if (!id || !pipeline?.url) {
-    return (
-      <div className="p-4">
-        {pipeline?.state === Pipeline_State.STARTING ? (
-          <div className="flex items-center">
-            <Spinner size="sm" mr={2} />
-            The pipeline is starting. Chat is not available right now.
-          </div>
-        ) : (
-          <Alert status="warning">
-            <AlertIcon />
-            Chat is not available right now. Pipeline is in state:{' '}
-            {proto3.getEnumType(Pipeline_State).findNumber(pipeline?.state ?? Pipeline_State.UNSPECIFIED)?.name}
-          </Alert>
-        )}
-      </div>
-    );
+  if (!messages) {
+    return <ChatLoadingIndicator />;
   }
 
   return (
     <div className="flex flex-col w-full px-4 max-w-screen-xl mx-auto">
       <div className="flex flex-col min-h-0">
-        <ChatClearButton onClear={handleClearChat} />
-        <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
+        {messages?.length > 0 && <ChatClearButton onClear={handleClearChat} />}
+        {!isLoadingMessages && (
+          <ChatMessageContainer
+            messages={messages}
+            isTyping={isTyping}
+            messagesEndRef={messagesEndRef}
+            onSelectQuestion={handleSelectQuestion}
+          />
+        )}
       </div>
-      <ChatInput setIsTyping={setIsTyping} agentUrl={pipeline?.url} agentId={id} />
+      <ChatInput
+        setIsTyping={setIsTyping}
+        agentUrl={pipeline?.url}
+        agentId={id}
+        initialValue={selectedQuestion ?? undefined}
+        onInputChange={() => setSelectedQuestion(null)}
+      />
     </div>
   );
 };
