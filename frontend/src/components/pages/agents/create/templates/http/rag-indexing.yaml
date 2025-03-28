@@ -43,7 +43,7 @@ output:
       dsn: ${secrets.POSTGRES_DSN}
       init_statement: >
         CREATE EXTENSION IF NOT EXISTS vector;
-        CREATE TABLE IF NOT EXISTS ${TOPIC} (
+        CREATE TABLE IF NOT EXISTS ${POSTGRES_COMPATIBLE_TOPIC_NAME} (
           key text,
           chunk_id integer,
           document text,
@@ -52,11 +52,11 @@ output:
         );
       queries:
         - query: |
-            DELETE FROM redpanda_public_docs WHERE key = $1
+            DELETE FROM ${POSTGRES_COMPATIBLE_TOPIC_NAME} WHERE key = $1
           args_mapping: |
             root = [ @kafka_key ]
         - query: |
-            INSERT INTO ${TOPIC} (key, chunk_id, document, embeddings)
+            INSERT INTO ${POSTGRES_COMPATIBLE_TOPIC_NAME} (key, chunk_id, document, embeddings)
             SELECT $1, (chunk->>'chunk_id')::INT, chunk->>'document', (chunk->>'embeddings')::text::vector
             FROM jsonb_array_elements($2) AS chunk
           args_mapping: |
