@@ -19,6 +19,7 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   GetPipelineRequest as GetPipelineRequestDataPlane,
+  type GetPipelineResponse,
   GetPipelinesForSecretRequest as GetPipelinesForSecretRequestDataPlane,
   ListPipelinesRequest as ListPipelinesRequestDataPlane,
   type Pipeline,
@@ -32,10 +33,22 @@ export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 
-export const useGetPipelineQuery = ({ id }: { id: Pipeline['id'] }) => {
+export const useGetPipelineQuery = (
+  { id }: { id: Pipeline['id'] },
+  options?: QueryOptions<GetPipelineRequest, GetPipelineResponse, GetPipelineResponse> & {
+    refetchInterval?: number | false;
+    refetchIntervalInBackground?: boolean;
+    refetchOnWindowFocus?: 'always' | boolean;
+  },
+) => {
   const getPipelineRequestDataPlane = new GetPipelineRequestDataPlane({ id });
   const getPipelineRequest = new GetPipelineRequest({ request: getPipelineRequestDataPlane });
-  return useQuery(getPipeline, getPipelineRequest);
+  return useQuery(getPipeline, getPipelineRequest, {
+    enabled: options?.enabled,
+    refetchInterval: options?.refetchInterval,
+    refetchIntervalInBackground: options?.refetchIntervalInBackground,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus,
+  });
 };
 
 export const useListPipelinesQuery = (

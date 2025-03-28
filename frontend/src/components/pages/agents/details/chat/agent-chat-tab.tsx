@@ -11,22 +11,22 @@ import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
 
 interface AgentChatTabProps {
-  agent?: Pipeline;
+  pipeline?: Pipeline;
 }
 
 /**
  * This component is using Dexie to listen for message changes in the database.
  * It is also using Tailwind CSS under the hood for styling instead of Chakra UI.
- * Each agent has its own separate conversation history.
+ * Each agent has its own separate chat conversation history.
  * @see https://github.com/dexie/Dexie.js
  */
-export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
+export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const id = agent?.id ?? null;
+  const id = pipeline?.id ?? null;
 
   // Update scroll position when shouldScroll changes
   useEffect(() => {
@@ -58,10 +58,10 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
     return <ChatLoadingIndicator />;
   }
 
-  if (!id || !agent?.url) {
+  if (!id || !pipeline?.url) {
     return (
       <div className="p-4">
-        {agent?.state === Pipeline_State.STARTING ? (
+        {pipeline?.state === Pipeline_State.STARTING ? (
           <div className="flex items-center">
             <Spinner size="sm" mr={2} />
             The pipeline is starting. Chat is not available right now.
@@ -70,7 +70,7 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
           <Alert status="warning">
             <AlertIcon />
             Chat is not available right now. Pipeline is in state:{' '}
-            {proto3.getEnumType(Pipeline_State).findNumber(agent?.state ?? Pipeline_State.UNSPECIFIED)?.name}
+            {proto3.getEnumType(Pipeline_State).findNumber(pipeline?.state ?? Pipeline_State.UNSPECIFIED)?.name}
           </Alert>
         )}
       </div>
@@ -83,7 +83,7 @@ export const AgentChatTab = ({ agent }: AgentChatTabProps) => {
         <ChatClearButton onClear={handleClearChat} />
         <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
       </div>
-      <ChatInput setIsTyping={setIsTyping} agentUrl={agent?.url} agentId={id} />
+      <ChatInput setIsTyping={setIsTyping} agentUrl={pipeline?.url} agentId={id} />
     </div>
   );
 };

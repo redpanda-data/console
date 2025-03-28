@@ -134,6 +134,8 @@ export const useGetAgentQuery = (
   },
   options: QueryObserverOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
     refetchInterval?: number | false; // TODO: Fix, current workaround for refetching infinite query options for list endpoints
+    refetchIntervalInBackground?: boolean;
+    refetchOnWindowFocus?: 'always' | boolean;
   },
 ) => {
   const listAgentsResult = useListAgentsQuery(undefined, {
