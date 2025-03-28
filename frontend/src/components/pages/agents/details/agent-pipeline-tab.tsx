@@ -1,8 +1,9 @@
-import { Box, ButtonGroup, Stack } from '@redpanda-data/ui';
-import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-
+import { Button, ButtonGroup, Grid, GridItem, Stack, Text } from '@redpanda-data/ui';
+import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { Fragment, type ReactNode } from 'react';
+import { useGetPipelineQuery } from 'react-query/api/pipeline';
 import { useHistory } from 'react-router-dom';
-import { Button, QuickTable } from 'utils/tsxUtils';
+import { AGENT_POLLING_INTERVAL } from './agent-details-page';
 import { AgentPipelineTabLogs } from './agent-pipeline-tab-logs';
 import { AgentStateDisplayValue } from './agent-state-display-value';
 import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
@@ -14,20 +15,59 @@ interface AgentPipelineTabProps {
 export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
   const history = useHistory();
 
+  const { data: pipelineData } = useGetPipelineQuery(
+    {
+      id: pipeline?.id ?? '',
+    },
+    {
+      refetchInterval: pipeline?.state === Pipeline_State.RUNNING ? false : AGENT_POLLING_INTERVAL,
+      refetchIntervalInBackground: true,
+      refetchOnWindowFocus: 'always',
+    },
+  );
+
+  const polledPipeline = pipelineData?.response?.pipeline;
+
+  const items = [
+    {
+      title: 'ID',
+      value: polledPipeline?.id,
+    },
+    {
+      title: 'State',
+      value: <AgentStateDisplayValue state={polledPipeline?.state} />,
+    },
+    {
+      title: 'Name',
+      value: polledPipeline?.displayName,
+    },
+    {
+      title: 'Description',
+      value: polledPipeline?.description,
+    },
+    polledPipeline?.url && {
+      title: 'URL',
+      value: polledPipeline?.url,
+    },
+  ].filter(Boolean) as { title: string; value: ReactNode }[];
+
   return (
-    <Stack spacing={8} mt={4}>
-      <Box>
-        {QuickTable(
-          [
-            pipeline?.id && { key: 'ID', value: pipeline?.id },
-            { key: 'Status', value: <AgentStateDisplayValue state={pipeline?.state} /> },
-            pipeline?.displayName && { key: 'Name', value: pipeline?.displayName },
-            pipeline?.description && { key: 'Description', value: pipeline?.description ?? '' },
-            pipeline?.url && { key: 'URL', value: pipeline?.url },
-          ],
-          { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } },
-        )}
-      </Box>
+    <Stack spacing={8}>
+      <Grid templateColumns="100px 2fr" gap={1}>
+        {items.map((item) => (
+          <Fragment key={item?.title}>
+            <GridItem>
+              <Text fontWeight="bold">{item?.title}</Text>
+            </GridItem>
+            <GridItem>
+              <Text wordBreak="break-word" whiteSpace="pre-wrap">
+                {item?.value}
+              </Text>
+            </GridItem>
+          </Fragment>
+        ))}
+      </Grid>
+
       <ButtonGroup>
         <Button
           variant="outline"
