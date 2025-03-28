@@ -481,16 +481,20 @@ message ListPipelinesRequest {
     string name_contains = 1 [
       (buf.validate.field).ignore_empty = true,
       (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
-      (buf.validate.field).string.max_len = 128
+      (buf.validate.field).string.max_len = 128,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Any pipelines that partially match this name will be returned."}
     ];
 
     // Filter pipelines that contain all of these key/value pairs.
-    map<string, string> tags = 2 [(buf.validate.field).map = {
-      max_pairs: 16
-      values: {
-        string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-      }
-    }];
+    map<string, string> tags = 2 [
+      (buf.validate.field).map = {
+        max_pairs: 16
+        values: {
+          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+        }
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Pipelines that match all the provided tags will be returned."}
+    ];
   }
 }
 

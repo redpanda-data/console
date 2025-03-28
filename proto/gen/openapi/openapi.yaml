@@ -891,12 +891,12 @@ components:
     ListPipelinesRequest.Filter:
       properties:
         name_contains:
-          description: Substring match on pipeline name. Case-sensitive.
+          description: Any pipelines that partially match this name will be returned.
           type: string
         tags[string]:
           additionalProperties:
             type: string
-          description: Filter pipelines that contain all of these key/value pairs.
+          description: Pipelines that match all the provided tags will be returned.
           type: object
       type: object
     ListPipelinesResponse:
@@ -3343,7 +3343,7 @@ paths:
       description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
       operationId: PipelineService_ListPipelines
       parameters:
-        - description: Substring match on pipeline name. Case-sensitive.
+        - description: Any pipelines that partially match this name will be returned.
           in: query
           name: filter.name_contains
           schema:
@@ -4574,7 +4574,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
