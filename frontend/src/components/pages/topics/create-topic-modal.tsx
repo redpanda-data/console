@@ -27,7 +27,7 @@ export const topicSchema = z.object({
     .string()
     .min(1, 'Topic name is required')
     .max(255, 'Topic name must not exceed 255 characters')
-    .regex(/^[a-z0-9.]+$/, 'Topic name must only contain lowercase letters, numbers, and dots'),
+    .regex(/^[a-z0-9._-]+$/, 'Topic name must only contain lowercase letters, numbers, dots, underscores, and hyphens'),
 });
 
 interface CreateTopicModalProps {
