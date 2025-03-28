@@ -1,6 +1,6 @@
 import { type ChatMessage, chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SendMessageButton } from './send-message-button';
 import { sendMessageToApi } from './send-message-to-api';
 
@@ -16,6 +16,15 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId, initialValue, onInpu
   const [inputValue, setInputValue] = useState(initialValue || '');
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Update input value when initialValue prop changes
+  useEffect(() => {
+    if (initialValue) {
+      setInputValue(initialValue);
+      // Focus the textarea when a question is selected
+      textareaRef.current?.focus();
+    }
+  }, [initialValue]);
 
   // Use live query to listen for message changes in the database
   const messages =
