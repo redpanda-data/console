@@ -21,6 +21,7 @@ import memoizeOne from 'memoize-one';
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
+import { getAgentSidebarItemTitle } from 'components/pages/agents/agent-list-page';
 import { protobufRegistry } from 'protobuf-registry';
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
@@ -261,7 +262,17 @@ const routesIgnoredInServerless = [
 
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
-    return APP_ROUTES.filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
+    return APP_ROUTES.map((route) => {
+      if (route.path === '/agents') {
+        return {
+          ...route,
+          // Needed because we cannot use JSX in this file
+          title: getAgentSidebarItemTitle({ route }),
+        };
+      }
+      return route;
+    })
+      .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
       .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
       .filter((x) => {
         if (x.visibilityCheck) {

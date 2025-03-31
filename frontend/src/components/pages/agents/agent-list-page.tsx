@@ -1,4 +1,5 @@
 import {
+  Badge,
   Button,
   ButtonGroup,
   Link as ChakraLink,
@@ -14,14 +15,26 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/ErrorResult';
+import type { IRouteEntry } from 'components/routes';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
 import { uiState } from 'state/uiState';
+import { SidebarItemBadge } from '../../misc/sidebar-item-badge';
 import { DeleteAgentModal } from './delete-agent-modal';
 import { AgentStateDisplayValue } from './details/agent-state-display-value';
+interface AgentSidebarItemTitleProps {
+  route: IRouteEntry;
+}
+
+export const getAgentSidebarItemTitle = ({ route }: AgentSidebarItemTitleProps) => (
+  <Stack spacing={2} key={`${route.path}-title`}>
+    <Text>{route.title}</Text>
+    <SidebarItemBadge>Technical Preview</SidebarItemBadge>
+  </Stack>
+);
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = () => {
@@ -66,6 +79,9 @@ export const AgentListPage = () => {
 
   return (
     <>
+      <Badge variant="outline" mb={4} textTransform="uppercase" fontWeight="bold">
+        Technical Preview
+      </Badge>
       <Stack spacing={8}>
         <Stack spacing={4}>
           <Text>
