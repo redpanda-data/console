@@ -17,7 +17,7 @@ import {
 import ErrorResult from 'components/misc/ErrorResult';
 import type { IRouteEntry } from 'components/routes';
 import { runInAction } from 'mobx';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
@@ -25,6 +25,7 @@ import { uiState } from 'state/uiState';
 import { SidebarItemBadge } from '../../misc/sidebar-item-badge';
 import { DeleteAgentModal } from './delete-agent-modal';
 import { AgentStateDisplayValue } from './details/agent-state-display-value';
+
 interface AgentSidebarItemTitleProps {
   route: IRouteEntry;
 }
@@ -44,6 +45,32 @@ export const updatePageTitle = () => {
     uiState.pageBreadcrumbs.push({ title: 'AI Agents', linkTo: '/agents', heading: 'AI Agents' });
   });
 };
+
+interface CellLinkProps {
+  agentId: string;
+  children: ReactNode;
+}
+
+/**
+ * @description Workaround because DataTable does not let us mark the whole row as a link
+ * @see https://tanstack.com/table/v8/docs/guide/row-selection for proper implementation
+ * TODO: Remove this and use @tanstack/react-table properly, for example use div instead of span to wrap the text
+ *
+ */
+const CellLink = ({ agentId, children }: CellLinkProps) => (
+  <ChakraLink
+    as={ReactRouterLink}
+    to={`/agents/${agentId}`}
+    textDecoration="none"
+    _hover={{
+      textDecoration: 'none',
+    }}
+    width="100%"
+    display="block"
+  >
+    {children}
+  </ChakraLink>
+);
 
 export const AgentListPage = () => {
   const history = useHistory();
@@ -125,28 +152,26 @@ export const AgentListPage = () => {
               {
                 header: 'Name',
                 cell: ({ row: { original } }) => (
-                  <ChakraLink
-                    as={ReactRouterLink}
-                    to={`/agents/${original?.id}`}
-                    textDecoration="none"
-                    _hover={{
-                      textDecoration: 'none',
-                    }}
-                  >
+                  <CellLink agentId={original?.id ?? ''}>
                     <Text data-testid={`agent-name-${original?.id}`}>{original?.displayName}</Text>
-                  </ChakraLink>
+                  </CellLink>
                 ),
-                size: Number.POSITIVE_INFINITY,
               },
               {
                 header: 'Status',
                 id: 'status',
-                cell: ({ row: { original } }) => <AgentStateDisplayValue state={original?.state} />,
+                cell: ({ row: { original } }) => (
+                  <CellLink agentId={original?.id ?? ''}>
+                    <AgentStateDisplayValue state={original?.state} />
+                  </CellLink>
+                ),
               },
               {
                 header: 'Description',
                 cell: ({ row: { original } }) => (
-                  <Text data-testid={`agent-description-${original?.id}`}>{original?.description}</Text>
+                  <CellLink agentId={original?.id ?? ''}>
+                    <Text data-testid={`agent-description-${original?.id}`}>{original?.description}</Text>
+                  </CellLink>
                 ),
               },
               {
