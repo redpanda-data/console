@@ -170,6 +170,7 @@ export const AgentPipelineTabLogs = observer(({ pipeline }: AgentPipelineTabLogs
             columns={messageTableColumns}
             sorting={(uiState as any).agentDetails.sorting ?? []}
             isLoading={!state.isComplete}
+            loadingText="Loading... This can take several seconds."
             onSortingChange={(sorting) => {
               runInAction(() => {
                 (uiState as any).agentDetails.sorting =
