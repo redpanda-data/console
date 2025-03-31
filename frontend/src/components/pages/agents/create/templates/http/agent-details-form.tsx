@@ -2,14 +2,18 @@ import { Box, Heading, Link, Text, VStack, useDisclosure } from '@redpanda-data/
 import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
 import {
+  AGENT_DESCRIPTION_DESCRIPTION,
+  AGENT_NAME_DESCRIPTION,
   type CreateAgentHttpFormValues,
+  OPEN_AI_API_TOKEN_DESCRIPTION,
+  POSTGRES_CONNECTION_URI_DESCRIPTION,
   createAgentHttpFormOpts,
   openAiApiTokenSchema,
   postgresConnectionUriSchema,
@@ -41,6 +45,7 @@ export const AgentDetailsForm = withForm({
     const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
       undefined,
     );
+    const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
 
     const { data: secretList } = useListSecretsQuery();
     const secretListOptions =
@@ -71,6 +76,7 @@ export const AgentDetailsForm = withForm({
         form.setFieldValue(fieldToUpdate, updatedValue);
         setFieldToUpdate(undefined);
         setCustomSecretSchema(undefined);
+        setHelperText(undefined);
       }
       onCreateSecretModalClose();
     };
@@ -93,10 +99,18 @@ export const AgentDetailsForm = withForm({
                   : undefined,
             }}
           >
-            {(field) => <field.TextField label="Name" placeholder="Enter agent name" />}
+            {(field) => (
+              <field.TextField label="Name" placeholder="Enter agent name" helperText={AGENT_NAME_DESCRIPTION} />
+            )}
           </form.AppField>
           <form.AppField name="description">
-            {(field) => <field.TextField label="Description" placeholder="Enter agent description" />}
+            {(field) => (
+              <field.TextField
+                label="Description"
+                placeholder="Enter agent description"
+                helperText={AGENT_DESCRIPTION_DESCRIPTION}
+              />
+            )}
           </form.AppField>
           <form.AppField name="TOPIC">
             {(field) => (
@@ -104,9 +118,9 @@ export const AgentDetailsForm = withForm({
                 label="Redpanda topic"
                 helperText={
                   <Text>
-                    Topic that ... All topics can be found under{' '}
+                    All topics can be found in{' '}
                     <Link as={ReactRouterLink} to="/topics" target="_blank" rel="noopener noreferrer">
-                      Topics tab
+                      Topics
                     </Link>
                   </Text>
                 }
@@ -125,7 +139,7 @@ export const AgentDetailsForm = withForm({
                 label="OpenAI API Token"
                 helperText={
                   <Text>
-                    Credentials for OpenAI to ... All credentials are securely stored in your{' '}
+                    All credentials are securely stored in your{' '}
                     <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
                       Secret Store
                     </Link>
@@ -136,6 +150,7 @@ export const AgentDetailsForm = withForm({
                 onCreateNewOptionClick={() => {
                   setFieldToUpdate('OPENAI_KEY');
                   setCustomSecretSchema(openAiApiTokenSchema);
+                  setHelperText(OPEN_AI_API_TOKEN_DESCRIPTION);
                   onCreateSecretModalOpen();
                 }}
               />
@@ -147,7 +162,7 @@ export const AgentDetailsForm = withForm({
                 label="Postgres Connection URI"
                 helperText={
                   <Text>
-                    Credentials for the Postgres database that ... All credentials are securely stored in{' '}
+                    All credentials are securely stored in{' '}
                     <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
                       Secret Store
                     </Link>
@@ -158,6 +173,7 @@ export const AgentDetailsForm = withForm({
                 onCreateNewOptionClick={() => {
                   setFieldToUpdate('POSTGRES_DSN');
                   setCustomSecretSchema(postgresConnectionUriSchema);
+                  setHelperText(POSTGRES_CONNECTION_URI_DESCRIPTION);
                   onCreateSecretModalOpen();
                 }}
               />
@@ -168,6 +184,7 @@ export const AgentDetailsForm = withForm({
           isOpen={isCreateSecretModalOpen}
           onClose={handleCreateSecretModalClose}
           customSecretSchema={customSecretSchema}
+          helperText={helperText}
         />
         <CreateTopicModal isOpen={isCreateTopicModalOpen} onClose={handleCreateTopicModalClose} />
       </>

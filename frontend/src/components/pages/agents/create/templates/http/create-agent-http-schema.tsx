@@ -2,8 +2,11 @@ import { formOptions } from '@tanstack/react-form';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { z } from 'zod';
 
+export const USERNAME_DESCRIPTION = 'Username must be alphanumeric with dots, underscores, at symbols, and hyphens.';
+
 export const usernameSchema = z
   .string()
+  .describe(USERNAME_DESCRIPTION)
   .min(1, 'Username is required')
   .max(128, 'Username must not exceed 128 characters')
   .regex(
@@ -11,32 +14,46 @@ export const usernameSchema = z
     'Username may contain only letters, numbers, dots, underscores, at symbols, and hyphens.',
   );
 
+export const PASSWORD_DESCRIPTION = 'Password must be between 3 and 128 characters long.';
+
 export const passwordSchema = z
   .string()
+  .describe(PASSWORD_DESCRIPTION)
   .min(3, 'Password must be at least 3 characters long')
   .max(128, 'Password must not exceed 128 characters');
+
+export const KAFKA_PASSWORD_DESCRIPTION = 'Password for the Redpanda user.';
+
+export const PERSONAL_ACCESS_TOKEN_DESCRIPTION =
+  'Use ghp_ prefix for classic personal access tokens, or github_pat_ prefix for fine-grained personal access tokens.';
 
 /**
  * @see https://gist.github.com/magnetikonline/073afe7909ffdd6f10ef06a00bc3bc88#github-token-validation-regular-expressions
  */
-export const personalAccessTokenSchema = z.string().refine(
-  (val) => {
-    if (val.length === 0) return true;
-    if (val.startsWith('ghp_')) return /^ghp_[a-zA-Z0-9]{36}$/.test(val); // Classic token
-    if (val.startsWith('github_pat_')) return /^github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}$/.test(val); // Fine-grained token
-    return false;
-  },
-  (val) => {
-    if (val.length === 0) return { message: '' };
-    if (val.startsWith('ghp_')) return { message: 'Classic token must be 40 characters with prefix "ghp_"' };
-    if (val.startsWith('github_pat_'))
-      return { message: 'Fine-grained token must be 93 characters with prefix "github_pat_"' };
-    return { message: 'Invalid token format. Must start with "ghp_" or "github_pat_"' };
-  },
-);
+export const personalAccessTokenSchema = z
+  .string()
+  .describe(PERSONAL_ACCESS_TOKEN_DESCRIPTION)
+  .refine(
+    (val) => {
+      if (val.length === 0) return true;
+      if (val.startsWith('ghp_')) return /^ghp_[a-zA-Z0-9]{36}$/.test(val); // Classic token
+      if (val.startsWith('github_pat_')) return /^github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}$/.test(val); // Fine-grained token
+      return false;
+    },
+    (val) => {
+      if (val.length === 0) return { message: '' };
+      if (val.startsWith('ghp_')) return { message: 'Classic token must be 40 characters with prefix "ghp_"' };
+      if (val.startsWith('github_pat_'))
+        return { message: 'Fine-grained token must be 93 characters with prefix "github_pat_"' };
+      return { message: 'Invalid token format. Must start with "ghp_" or "github_pat_"' };
+    },
+  );
+
+export const OPEN_AI_API_TOKEN_DESCRIPTION = 'OpenAI API token must use "sk-" prefix and be 20 characters long.';
 
 export const openAiApiTokenSchema = z
   .string()
+  .describe(OPEN_AI_API_TOKEN_DESCRIPTION)
   .min(1, 'OpenAI API token is required')
   .regex(
     /^sk-[a-zA-Z0-9_-]+$/,
@@ -44,8 +61,12 @@ export const openAiApiTokenSchema = z
   )
   .min(20, 'OpenAI API token is too short');
 
+export const POSTGRES_CONNECTION_URI_DESCRIPTION =
+  'Postgres connection URI must be in the format: postgres://user:password@hostname:port/database';
+
 export const postgresConnectionUriSchema = z
   .string()
+  .describe(POSTGRES_CONNECTION_URI_DESCRIPTION)
   .min(1, 'Postgres connection URI is required')
   .regex(
     /^postgres:\/\/(.+):(.+)@([a-zA-Z0-9.-]+):([0-9]+)\/([a-zA-Z0-9_]+)$/,
@@ -54,14 +75,23 @@ export const postgresConnectionUriSchema = z
 
 const nameDescriptionPattern = /^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$/u;
 
+export const AGENT_NAME_DESCRIPTION = 'Name can only contain letters, numbers, spaces, and special characters _.:/=+-@';
+export const AGENT_DESCRIPTION_DESCRIPTION =
+  'Description can only contain letters, numbers, spaces, and special characters _.:/=+-@';
+
+const GLOB_PATTERN_REGEX = /^[a-zA-Z0-9*?\[\]{}!@#$%^&()|_+\-./,()]+$/;
+export const GLOB_PATTERN_DESCRIPTION = 'Use patterns like **, **/*.adoc, or src/**/*';
+
 export const createAgentHttpSchema = z
   .object({
     name: z
       .string()
+      .describe(AGENT_NAME_DESCRIPTION)
       .min(1, 'Agent name is required')
       .regex(nameDescriptionPattern, 'Name can only contain letters, numbers, spaces, and _.:/=+-@'),
     description: z
       .string()
+      .describe(AGENT_DESCRIPTION_DESCRIPTION)
       .regex(nameDescriptionPattern, 'Description can only contain letters, numbers, spaces, and _.:/=+-@'),
     TOPIC: z.string().min(1, 'Redpanda topic is required'),
     OPENAI_KEY: z.string().min(1, 'OpenAI API credential is required'),
@@ -72,10 +102,27 @@ export const createAgentHttpSchema = z
     REPOSITORY_URL: z.string().min(1, 'Repository URL is required').url('Invalid repository URL'),
     REPOSITORY_BRANCH: z.string(),
     isPrivateRepository: z.boolean(),
+    /**
+     * @see https://man7.org/linux/man-pages/man7/glob.7.html
+     */
     GLOB_PATTERN: z
       .string()
-      .min(1, 'Glob pattern is required')
-      .regex(/^[*?[\]{}()|!@#$%^&\w./,-]+$/, 'Invalid glob pattern. Use patterns like "**", "**/*.js", or "src/**/*"'),
+      .describe(GLOB_PATTERN_DESCRIPTION)
+      .min(1, 'Glob pattern is required. Use ** for all files.')
+      .refine(
+        (value) => {
+          const patterns = value.split(',').map((pattern) => pattern.trim());
+          return patterns.every((pattern) => GLOB_PATTERN_REGEX.test(pattern));
+        },
+        (value) => {
+          const patterns = value.split(',').map((pattern) => pattern.trim());
+          const invalidPattern = patterns.find((pattern) => !GLOB_PATTERN_REGEX.test(pattern));
+          if (invalidPattern) {
+            return { message: `Invalid glob pattern: "${invalidPattern}" contains unsupported characters.` };
+          }
+          return { message: 'Invalid glob pattern.' };
+        },
+      ),
     PERSONAL_ACCESS_TOKEN: z.string(),
   })
   .refine(

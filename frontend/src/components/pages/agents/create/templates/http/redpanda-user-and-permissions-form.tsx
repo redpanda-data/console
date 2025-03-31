@@ -1,7 +1,7 @@
 import { Box, Heading, Link, Text, VStack, useDisclosure } from '@redpanda-data/ui';
 import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
@@ -10,7 +10,12 @@ import {
   CreateUserWithSecretPasswordModal,
   type CreatedUser,
 } from '../../../../users/create-user-with-secret-password-modal';
-import { type CreateAgentHttpFormValues, createAgentHttpFormOpts, passwordSchema } from './create-agent-http-schema';
+import {
+  type CreateAgentHttpFormValues,
+  KAFKA_PASSWORD_DESCRIPTION,
+  createAgentHttpFormOpts,
+  passwordSchema,
+} from './create-agent-http-schema';
 
 export const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 
@@ -18,8 +23,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
     title: 'Redpanda user and permissions',
+    description: 'Enter the Kafka user credentials',
   },
-  render: ({ title, form }) => {
+  render: ({ title, description, form }) => {
     const {
       isOpen: isCreateSecretModalOpen,
       onOpen: onCreateSecretModalOpen,
@@ -36,7 +42,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
     );
 
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
-
+    const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
     const { data: legacyUserList } = useLegacyListUsersQuery();
     const legacyUserListOptions =
       legacyUserList?.users?.map((user) => ({
@@ -57,6 +63,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
         form.setFieldValue(fieldToUpdate, createdSecretId);
         setFieldToUpdate(undefined);
         setCustomSecretSchema(undefined);
+        setHelperText(undefined);
       }
       onCreateSecretModalClose();
     };
@@ -79,8 +86,8 @@ export const RedpandaUserAndPermissionsForm = withForm({
           <Heading size="md" mb={1}>
             {title}
           </Heading>
-          <Text color="gray.600" fontSize="sm" mb={4}>
-            User with permissions to .... View or create users
+          <Text color="gray.500" fontSize="sm" mb={4}>
+            {description}
           </Text>
 
           <VStack spacing={4} align="stretch">
@@ -90,9 +97,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
                   label="Username"
                   helperText={
                     <Text>
-                      Username for the Redpanda user ... All users can be found under{' '}
+                      All users can be found in{' '}
                       <Link as={ReactRouterLink} to="/security/users" target="_blank" rel="noopener noreferrer">
-                        Security tab
+                        Security
                       </Link>
                     </Text>
                   }
@@ -108,7 +115,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
                   label="Password"
                   helperText={
                     <Text>
-                      Password for the Redpanda user ... All credentials are securely stored in{' '}
+                      All credentials are securely stored in{' '}
                       <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
                         Secret Store
                       </Link>
@@ -119,6 +126,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
                   onCreateNewOptionClick={() => {
                     setFieldToUpdate('KAFKA_PASSWORD');
                     setCustomSecretSchema(passwordSchema);
+                    setHelperText(KAFKA_PASSWORD_DESCRIPTION);
                     onCreateSecretModalOpen();
                   }}
                 />
@@ -141,6 +149,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
           isOpen={isCreateSecretModalOpen}
           onClose={handleCreateSecretModalClose}
           customSecretSchema={customSecretSchema}
+          helperText={helperText}
         />
         <CreateUserWithSecretPasswordModal
           isOpen={isCreateUserWithSecretPasswordModalOpen}

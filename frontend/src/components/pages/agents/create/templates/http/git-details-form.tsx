@@ -2,11 +2,13 @@ import { Box, Heading, Text, VStack, useDisclosure } from '@redpanda-data/ui';
 import { useStore } from '@tanstack/react-form';
 import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import type { z } from 'zod';
 import {
   type CreateAgentHttpFormValues,
+  GLOB_PATTERN_DESCRIPTION,
+  PERSONAL_ACCESS_TOKEN_DESCRIPTION,
   createAgentHttpFormOpts,
   personalAccessTokenSchema,
 } from './create-agent-http-schema';
@@ -20,6 +22,7 @@ export const GitDetailsForm = withForm({
   render: ({ title, description, form }) => {
     const { data: secretList } = useListSecretsQuery();
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
+    const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
     const secretListOptions =
       secretList?.secrets?.map((secret) => ({
         value: secret?.id,
@@ -42,6 +45,7 @@ export const GitDetailsForm = withForm({
         form.setFieldValue(fieldToUpdate, updatedValue);
         setFieldToUpdate(undefined);
         setCustomSecretSchema(undefined);
+        setHelperText(undefined);
       }
       onCreateSecretModalClose();
     };
@@ -79,7 +83,13 @@ export const GitDetailsForm = withForm({
             {(field) => <field.CheckboxField label="Private repository" />}
           </form.AppField>
           <form.AppField name="GLOB_PATTERN">
-            {(field) => <field.TextField label="Glob pattern" placeholder="Enter glob pattern" />}
+            {(field) => (
+              <field.TextField
+                label="Glob pattern"
+                placeholder="Enter glob pattern"
+                helperText={GLOB_PATTERN_DESCRIPTION}
+              />
+            )}
           </form.AppField>
           {isPrivateRepository && (
             <form.AppField name="PERSONAL_ACCESS_TOKEN">
@@ -92,6 +102,7 @@ export const GitDetailsForm = withForm({
                   onCreateNewOptionClick={() => {
                     setFieldToUpdate('PERSONAL_ACCESS_TOKEN');
                     setCustomSecretSchema(personalAccessTokenSchema);
+                    setHelperText(PERSONAL_ACCESS_TOKEN_DESCRIPTION);
                     onCreateSecretModalOpen();
                   }}
                 />
@@ -103,6 +114,7 @@ export const GitDetailsForm = withForm({
           isOpen={isCreateSecretModalOpen}
           onClose={handleCreateSecretModalClose}
           customSecretSchema={customSecretSchema}
+          helperText={helperText}
         />
       </>
     );
