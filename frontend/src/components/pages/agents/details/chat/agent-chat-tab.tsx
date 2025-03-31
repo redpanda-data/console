@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
 import { AgentStateDisplayValue } from '../agent-state-display-value';
+import { AgentChatBlankState } from './agent-chat-blank-state';
 import { AgentChatNotification } from './agent-chat-notification';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
@@ -86,12 +87,7 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
       <div className="flex flex-col min-h-0">
         {messages?.length > 0 && <ChatClearButton onClear={handleClearChat} />}
         {!isLoadingMessages && (
-          <ChatMessageContainer
-            messages={messages}
-            isTyping={isTyping}
-            messagesEndRef={messagesEndRef}
-            onSelectQuestion={handleSelectQuestion}
-          />
+          <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
         )}
       </div>
       <ChatInput
@@ -102,6 +98,7 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
         onInputChange={() => setSelectedQuestion(null)}
         messagesEndRef={messagesEndRef}
       />
+      {messages?.length === 0 && <AgentChatBlankState onSelectQuestion={handleSelectQuestion} />}
     </div>
   );
 };

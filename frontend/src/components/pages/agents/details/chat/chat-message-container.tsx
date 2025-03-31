@@ -1,5 +1,4 @@
 import type { ChatMessage } from 'database/chat-db';
-import { AgentChatBlankState } from './agent-chat-blank-state';
 import { ChatMessageView } from './chat-message-view';
 import { ChatTypingIndicator } from './chat-typing-indicator';
 
@@ -7,19 +6,9 @@ interface ChatMessageContainerProps {
   messages: ChatMessage[];
   isTyping: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-  onSelectQuestion?: (question: string) => void;
 }
 
-export const ChatMessageContainer = ({
-  messages,
-  isTyping,
-  messagesEndRef,
-  onSelectQuestion,
-}: ChatMessageContainerProps) => {
-  if (messages.length === 0) {
-    return <AgentChatBlankState onSelectQuestion={onSelectQuestion} />;
-  }
-
+export const ChatMessageContainer = ({ messages, isTyping, messagesEndRef }: ChatMessageContainerProps) => {
   return (
     <div
       className="overflow-y-auto max-h-[calc(50vh)] rounded-md mb-4 border bg-slate-50"
