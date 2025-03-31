@@ -185,7 +185,7 @@ const CreateUserModal = observer(
       }
 
       if (userAlreadyExists) {
-        return 'User already exist';
+        return 'User already exists';
       }
     }, [isValidUsername, userAlreadyExists]);
 
