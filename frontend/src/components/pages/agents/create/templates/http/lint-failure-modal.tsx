@@ -123,7 +123,6 @@ export const LintFailureModal = ({
   ...rest
 }: LintFailureModalProps) => {
   if (!invalidLintConfigList || invalidLintConfigList.length === 0) return null;
-  console.log('LintFailureModal invalidLintConfigList: ', invalidLintConfigList);
 
   const handleCreateSupportTicket = () => window.open(REDPANDA_SUPPORT_SUBMIT_REQUEST_LINK);
 

@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Grid, GridItem, Stack, Text, useDisclosure } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Grid, GridItem, Stack, Text, useDisclosure } from '@redpanda-data/ui';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode } from 'react';
 import { useGetPipelineQuery } from 'react-query/api/pipeline';
@@ -34,44 +34,40 @@ export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
 
   const items = [
     {
-      title: 'ID',
+      label: 'ID',
       value: polledPipeline?.id,
     },
     {
-      title: 'State',
+      label: 'State',
       value: <AgentStateDisplayValue state={polledPipeline?.state} />,
     },
     {
-      title: 'Name',
+      label: 'Name',
       value: polledPipeline?.displayName,
     },
     {
-      title: 'Description',
+      label: 'Description',
       value: polledPipeline?.description,
     },
     polledPipeline?.url && {
-      title: 'URL',
+      label: 'URL',
       value: polledPipeline?.url,
     },
-  ].filter(Boolean) as { title: string; value: ReactNode }[];
+  ].filter(Boolean) as { label: string; value: ReactNode }[];
 
   return (
     <>
       <Stack spacing={8}>
-        <Grid templateColumns="100px 2fr" gap={1}>
-          {items.map((item) => (
-            <Fragment key={item?.title}>
-              <GridItem>
-                <Text fontWeight="bold">{item?.title}</Text>
-              </GridItem>
-              <GridItem>
-                <Text wordBreak="break-word" whiteSpace="pre-wrap">
-                  {item?.value}
-                </Text>
-              </GridItem>
-            </Fragment>
-          ))}
-        </Grid>
+        <Box maxWidth="400px">
+          <Grid gridTemplateColumns="1fr 3fr" gap={2}>
+            {items.map((item) => (
+              <Fragment key={item.label}>
+                <Text as="b">{item.label}</Text>
+                <Box>{item.value}</Box>
+              </Fragment>
+            ))}
+          </Grid>
+        </Box>
 
         <ButtonGroup>
           <Button
