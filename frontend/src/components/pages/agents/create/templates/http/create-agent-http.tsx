@@ -1,19 +1,34 @@
-import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, Spinner, VStack } from '@redpanda-data/ui';
+import {
+  Box,
+  Button,
+  ButtonGroup,
+  Divider,
+  Flex,
+  Grid,
+  GridItem,
+  Image,
+  Spinner,
+  VStack,
+  useDisclosure,
+} from '@redpanda-data/ui';
 import { useAppForm } from 'components/form/form';
 import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useState } from 'react';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
+import type { LintConfigWithPipelineInfo } from 'react-query/api/redpanda-connect';
+import { useLintConfigsMutation } from 'react-query/api/redpanda-connect';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { useHistory } from 'react-router-dom';
 import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
 import { GitDetailsForm } from './git-details-form';
+import { LintFailureModal } from './lint-failure-modal';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
 import gitPrivatePipeline from './rag-git-private.yaml';
 import gitPipeline from './rag-git.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
-
-import { useListSecretsQuery } from 'react-query/api/secret';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
 
 export const getPipelineName = (pipelineKey: string) => {
@@ -59,6 +74,15 @@ export const CreateAgentHTTP = () => {
   const history = useHistory();
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
     useCreateAgentPipelinesMutation();
+  const { mutateAsync: lintConfigsMutation, isPending: isLintConfigsPending } = useLintConfigsMutation();
+  const {
+    isOpen: isLintFailureModalOpen,
+    onOpen: onLintFailureModalOpen,
+    onClose: onLintFailureModalClose,
+  } = useDisclosure();
+  const [invalidLintConfigList, setInvalidLintConfigList] = useState<LintConfigWithPipelineInfo[] | undefined>(
+    undefined,
+  );
 
   const { data: secretList, isLoading: isSecretListLoading } = useListSecretsQuery();
 
@@ -105,12 +129,17 @@ export const CreateAgentHTTP = () => {
           }),
       );
 
-      const agentPipelines = await createAgentPipelinesMutation({ pipelines });
-
-      const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
-
-      // Worst case scenario, if the tags are not set properly, redirect to the agents list page
-      history.push(agentId ? `/agents/${agentId}` : '/agents');
+      const lintConfigsListResponse = await lintConfigsMutation({ pipelines });
+      if (lintConfigsListResponse?.every((lintConfig) => lintConfig.valid)) {
+        const agentPipelines = await createAgentPipelinesMutation({ pipelines });
+        const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
+        // Worst case scenario, if the tags are not set properly or something else goes wrong, redirect to the agents list page
+        history.push(agentId ? `/agents/${agentId}` : '/agents');
+      } else {
+        const invalidLintConfigs = lintConfigsListResponse?.filter((lintConfig) => !lintConfig.valid) || [];
+        setInvalidLintConfigList(invalidLintConfigs);
+        onLintFailureModalOpen();
+      }
     },
   });
 
@@ -123,53 +152,64 @@ export const CreateAgentHTTP = () => {
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-    >
-      <form.AppForm>
-        <Grid gap={8}>
-          <GridItem display="flex" alignItems="center" justifyContent="center" width="100%">
-            <Box borderRadius="md" overflow="hidden" boxShadow="md" width="100%" maxWidth="1000px" mx="auto">
-              <Image
-                src={agentIllustration}
-                alt="AI Agent Illustration"
-                width="100%"
-                height="auto"
-                objectFit="contain"
-                fallbackSrc="https://via.placeholder.com/800x450?text=AI+Agent"
-              />
-            </Box>
-          </GridItem>
-          <GridItem maxWidth={{ base: '100%', lg: '800px' }} mx="auto" width="100%">
-            <VStack spacing={6} align="stretch">
-              <AgentDetailsForm
-                form={form}
-                title="New Support Agent"
-                description="This agent connects to a GitHub repository and ingests all text-based content (e.g., Markdown, plaintext, code) into a vector database you provide. The content becomes part of a Retrieval-Augmented Generation (RAG) pipeline that enhances the agent’s ability to respond accurately and contextually via a chat API."
-              />
-              <Divider my={4} />
-              <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
-              <Divider my={4} />
-              <GitDetailsForm
-                form={form}
-                title="Git information"
-                description="Enter the Git repository URL and branch to use for the agent"
-              />
-              <Flex justifyContent="flex-start" pt={6}>
-                <ButtonGroup isDisabled={isCreateAgentPending}>
-                  <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
-                  <Button variant="link" onClick={() => history.goBack()}>
-                    Cancel
-                  </Button>
-                </ButtonGroup>
-              </Flex>
-            </VStack>
-          </GridItem>
-        </Grid>
-      </form.AppForm>
-    </form>
+    <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <form.AppForm>
+          <Grid gap={8}>
+            <GridItem display="flex" alignItems="center" justifyContent="center" width="100%">
+              <Box borderRadius="md" overflow="hidden" boxShadow="md" width="100%" maxWidth="1000px" mx="auto">
+                <Image
+                  src={agentIllustration}
+                  alt="AI Agent Illustration"
+                  width="100%"
+                  height="auto"
+                  objectFit="contain"
+                  fallbackSrc="https://via.placeholder.com/800x450?text=AI+Agent"
+                />
+              </Box>
+            </GridItem>
+            <GridItem maxWidth={{ base: '100%', lg: '800px' }} mx="auto" width="100%">
+              <VStack spacing={6} align="stretch">
+                <AgentDetailsForm
+                  form={form}
+                  title="New Support Agent"
+                  description="This agent connects to a GitHub repository and ingests all text-based content (e.g., Markdown, plaintext, code) into a vector database you provide. The content becomes part of a Retrieval-Augmented Generation (RAG) pipeline that enhances the agent's ability to respond accurately and contextually via a chat API."
+                />
+                <Divider my={4} />
+                <RedpandaUserAndPermissionsForm form={form} title="Redpanda user and permissions" />
+                <Divider my={4} />
+                <GitDetailsForm
+                  form={form}
+                  title="Git information"
+                  description="Enter the Git repository URL and branch to use for the agent"
+                />
+                <Flex justifyContent="flex-start" pt={6}>
+                  <ButtonGroup isDisabled={isCreateAgentPending || isLintConfigsPending}>
+                    <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
+                    <Button variant="link" onClick={() => history.goBack()}>
+                      Cancel
+                    </Button>
+                  </ButtonGroup>
+                </Flex>
+              </VStack>
+            </GridItem>
+          </Grid>
+        </form.AppForm>
+      </form>
+      <LintFailureModal
+        size="2xl"
+        show={isLintFailureModalOpen}
+        onHide={() => {
+          setInvalidLintConfigList(undefined);
+          onLintFailureModalClose();
+        }}
+        invalidLintConfigList={invalidLintConfigList}
+      />
+    </>
   );
 };
