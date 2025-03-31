@@ -45,8 +45,7 @@ interface CreateAgentPipelineParams {
 }
 
 /**
- * Custom hook that creates multiple pipelines in parallel from YAML templates
- * Each key in the pipelines object becomes the display name for that pipeline
+ * @description Custom hook that creates multiple pipelines in parallel from YAML templates
  */
 export const useCreateAgentPipelinesMutation = () => {
   const queryClient = useQueryClient();
