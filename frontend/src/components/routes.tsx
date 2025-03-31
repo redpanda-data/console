@@ -46,7 +46,7 @@ import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
-import { AgentListPage } from './pages/agents/agent-list-page';
+import { AgentListPage, getAgentSidebarItemTitle } from './pages/agents/agent-list-page';
 import { CreateAgentPage } from './pages/agents/create/create-agent-page';
 import { CreateAgentHTTP } from './pages/agents/create/templates/http/create-agent-http';
 import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
@@ -80,7 +80,7 @@ import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 //
 //	Route Types
 //
-type IRouteEntry = PageDefinition<any>;
+export type IRouteEntry = PageDefinition<any>;
 
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
@@ -111,8 +111,11 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
+      // Handle AI Agents route with Technical Preview badge
+      const title = entry.path === '/agents' ? getAgentSidebarItemTitle({ route: entry }) : entry.title;
+
       return {
-        title: entry.title as string,
+        title: title as string | JSX.Element,
         to: entry.path as string,
         icon: entry.icon as any,
         isDisabled: isDisabled as boolean,
@@ -157,8 +160,9 @@ export const RouteView = () => (
 
 enum DisabledReasons {
   notSupported = 0, // kafka cluster version too low
-  noPermission = 1, // user doesn't have permissions to use the feature
+  noPermission = 1, // user doesn't have permissions to use the feature,
   enterpriseFeature = 2,
+  notSupportedServerless = 3, // This feature is not supported in serverless mode
 }
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
@@ -177,6 +181,7 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
     </span>
   ),
   [DisabledReasons.enterpriseFeature]: <span>This feature requires an enterprise license.</span>,
+  [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
 interface MenuItemState {
