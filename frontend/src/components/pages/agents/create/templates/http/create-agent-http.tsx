@@ -1,21 +1,7 @@
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Divider,
-  Flex,
-  Grid,
-  GridItem,
-  Image,
-  Spinner,
-  VStack,
-  useDisclosure,
-} from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, Spinner, VStack } from '@redpanda-data/ui';
 import { useAppForm } from 'components/form/form';
 import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useState } from 'react';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
-import type { LintConfigWithPipelineInfo } from 'react-query/api/redpanda-connect';
 import { useLintConfigsMutation } from 'react-query/api/redpanda-connect';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useHistory } from 'react-router-dom';
@@ -23,7 +9,6 @@ import agentIllustration from '../../../../../../assets/agent-illustration-http.
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
 import { GitDetailsForm } from './git-details-form';
-import { LintFailureModal } from './lint-failure-modal';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
 import gitPrivatePipeline from './rag-git-private.yaml';
@@ -75,14 +60,6 @@ export const CreateAgentHTTP = () => {
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
     useCreateAgentPipelinesMutation();
   const { mutateAsync: lintConfigsMutation, isPending: isLintConfigsPending } = useLintConfigsMutation();
-  const {
-    isOpen: isLintFailureModalOpen,
-    onOpen: onLintFailureModalOpen,
-    onClose: onLintFailureModalClose,
-  } = useDisclosure();
-  const [invalidLintConfigList, setInvalidLintConfigList] = useState<LintConfigWithPipelineInfo[] | undefined>(
-    undefined,
-  );
 
   const { data: secretList, isLoading: isSecretListLoading } = useListSecretsQuery();
 
@@ -128,18 +105,6 @@ export const CreateAgentHTTP = () => {
             },
           }),
       );
-
-      // const lintConfigsListResponse = await lintConfigsMutation({ pipelines });
-      // if (lintConfigsListResponse?.every((lintConfig) => lintConfig.valid)) {
-      //   const agentPipelines = await createAgentPipelinesMutation({ pipelines });
-      //   const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
-      //   // Worst case scenario, if the tags are not set properly or something else goes wrong, redirect to the agents list page
-      //   history.push(agentId ? `/agents/${agentId}` : '/agents');
-      // } else {
-      //   const invalidLintConfigs = lintConfigsListResponse?.filter((lintConfig) => !lintConfig.valid) || [];
-      //   setInvalidLintConfigList(invalidLintConfigs);
-      //   onLintFailureModalOpen();
-      // }
 
       await lintConfigsMutation({ pipelines });
       const agentPipelines = await createAgentPipelinesMutation({ pipelines });
@@ -210,15 +175,6 @@ export const CreateAgentHTTP = () => {
           </Grid>
         </form.AppForm>
       </form>
-      <LintFailureModal
-        size="2xl"
-        show={isLintFailureModalOpen}
-        onHide={() => {
-          setInvalidLintConfigList(undefined);
-          onLintFailureModalClose();
-        }}
-        invalidLintConfigList={invalidLintConfigList}
-      />
     </>
   );
 };

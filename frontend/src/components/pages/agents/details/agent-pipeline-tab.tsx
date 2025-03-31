@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, Grid, GridItem, Stack, Text, useDisclosure } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Grid, Stack, Text, useDisclosure } from '@redpanda-data/ui';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode } from 'react';
 import { useGetPipelineQuery } from 'react-query/api/pipeline';
