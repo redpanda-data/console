@@ -10,6 +10,7 @@ interface ErrorInfoFieldProps {
  * This component needs to be used inside a FormControl component.
  * It will display all error messages in a list format for a given form field.
  * The form field needs the `isInvalid` prop set to true and it had to be touched by the user.
+ * If there are multiple errors, "required" errors will be filtered out.
  * @see https://v2.chakra-ui.com/docs/components/form-control#error-message
  */
 export const ErrorInfoField = ({ field }: ErrorInfoFieldProps) => {
@@ -17,10 +18,20 @@ export const ErrorInfoField = ({ field }: ErrorInfoFieldProps) => {
     return null;
   }
 
+  const errors = field.state.meta.errors;
+  const isRequiredError = (error: { message: string }) => error.message.toLowerCase().includes('is required');
+
+  // If there are multiple errors, filter out "is required" errors
+  const filteredErrors = errors.length > 1 ? errors.filter((error) => !isRequiredError(error)) : errors;
+
+  if (filteredErrors.length === 0) {
+    return null;
+  }
+
   return (
     <FormErrorMessage>
       <UnorderedList>
-        {field.state.meta.errors.map((error, index) => (
+        {filteredErrors.map((error, index) => (
           <ListItem key={`${field.name}-${index}`}>
             <Text>{error.message}</Text>
           </ListItem>
