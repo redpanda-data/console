@@ -43,12 +43,17 @@ export const CreateAgentCard = ({
   );
 
   const borderWidth = isSelected ? '2px' : '1px';
+  const backgroundColor = useColorModeValue(
+    isSelected ? 'gray.50' : 'transparent',
+    isSelected ? 'whiteAlpha.100' : 'transparent',
+  );
 
   return (
     <Card
       variant="outline"
       borderColor={borderColor}
       borderWidth={borderWidth}
+      backgroundColor={backgroundColor}
       p={4}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
