@@ -16,13 +16,14 @@ import { useAppForm } from 'components/form/form';
 import { generatePassword } from 'components/pages/acls/UserCreate';
 import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { CreateUserRequest, CreateUserRequest_User } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { getSASLMechanism, useLegacyCreateUserMutationWithToast, useLegacyListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 import { passwordSchema, usernameSchema } from '../agents/create/templates/http/create-agent-http-schema';
 import { SASL_MECHANISM_OPTIONS } from '../agents/create/templates/http/redpanda-user-and-permissions-form';
+import { CreateUserConfirmationModal } from './create-user-confirmation-modal';
 
 export const createUserWithSecretPasswordSchema = z.object({
   USERNAME: usernameSchema,
@@ -41,6 +42,10 @@ export interface CreatedUser {
   saslMechanism: (typeof SASL_MECHANISM_OPTIONS)[number];
 }
 
+export interface CreatedUserWithPassword extends CreatedUser {
+  password: string;
+}
+
 interface CreateUserWithSecretPasswordModalProps {
   isOpen: boolean;
   onClose: (createdUser?: CreatedUser) => void;
@@ -52,6 +57,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
 
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
   const { mutateAsync: createUser, isPending: isCreateUserPending } = useLegacyCreateUserMutationWithToast();
+  const [finalFormValues, setFinalFormValues] = useState<CreatedUserWithPassword | undefined>(undefined);
 
   const formOpts = formOptions({
     defaultValues: {
@@ -80,9 +86,14 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
         }),
       });
 
-      await Promise.all([createSecret({ request: createSecretRequest }), createUser(createUserRequest)]);
-
-      onClose({ username: value.USERNAME, secretId: value.SECRET_ID, saslMechanism: value.SASL_MECHANISM });
+      await Promise.all([createSecret({ request: createSecretRequest }), createUser(createUserRequest)]).then(() => {
+        setFinalFormValues({
+          username: value.USERNAME,
+          secretId: value.SECRET_ID,
+          password: value.PASSWORD,
+          saslMechanism: value.SASL_MECHANISM,
+        });
+      });
     },
   });
 
@@ -96,6 +107,27 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
   }, [isOpen, form]);
 
   const isPending = isCreateSecretPending || isCreateUserPending;
+
+  if (finalFormValues) {
+    const { username, secretId, saslMechanism, password } = finalFormValues;
+
+    return (
+      <CreateUserConfirmationModal
+        isOpen={!!finalFormValues}
+        onClose={() => {
+          setFinalFormValues(undefined);
+          onClose({
+            username,
+            secretId,
+            saslMechanism: saslMechanism as 'SCRAM-SHA-256' | 'SCRAM-SHA-512',
+          });
+        }}
+        username={username}
+        password={password}
+        saslMechanism={saslMechanism}
+      />
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
