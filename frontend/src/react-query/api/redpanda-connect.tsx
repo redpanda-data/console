@@ -32,6 +32,14 @@ export const useLintConfigMutation = () => {
   });
 };
 
+export interface LintConfigWithPipelineInfo extends LintConfigResponse {
+  pipelineName?: string;
+  pipelineDescription?: string;
+  pipelinePurpose?: string;
+  pipelineKey?: string;
+  pipelineTags?: Record<string, string>;
+}
+
 /**
  * @description Custom hook that lints multiple pipelines in parallel from YAML templates
  */
@@ -66,7 +74,18 @@ const lintConfigsPromises = async ({ queryClient, lintConfigMutation, pipelines 
 
     for (const pipeline of pipelines) {
       if (pipeline?.configYaml) {
-        const lintConfigPromise = lintConfigMutation.mutateAsync({ yamlConfig: pipeline?.configYaml });
+        const pipelineInfo = {
+          pipelineName: pipeline.displayName || 'Unknown',
+          pipelineDescription: pipeline.description || '',
+          pipelineTags: pipeline.tags || {},
+          pipelineKey: pipeline.tags?.__redpanda_cloud_pipeline_purpose?.split('-')[0]?.toUpperCase() || 'Unknown',
+          pipelinePurpose: pipeline.tags?.__redpanda_cloud_pipeline_purpose || '',
+        };
+
+        const lintConfigPromise = lintConfigMutation
+          .mutateAsync({ yamlConfig: pipeline?.configYaml })
+          .then((result) => ({ ...result, ...pipelineInfo }));
+
         lintConfigPromises.push(lintConfigPromise);
       }
     }
@@ -75,7 +94,7 @@ const lintConfigsPromises = async ({ queryClient, lintConfigMutation, pipelines 
 
     await queryClient.invalidateQueries({ queryKey: [lintConfig.service.typeName] });
 
-    return results;
+    return results as LintConfigWithPipelineInfo[];
   } catch (error) {
     const connectError = ConnectError.from(error);
 
