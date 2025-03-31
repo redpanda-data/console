@@ -154,7 +154,8 @@ export const useLegacyCreateUserMutationWithToast = () => {
       });
 
       /**
-       * We need to do this to ensure the user list is updated once you create a user with legacy API.
+       * We need to do this to try and update the user list is updated once you create a user with legacy API.
+       * It's still not consistent because sometimes the user may be created but won't be returned in the list endpoint until some time.
        * TODO: Remove once Console v3 is released.
        */
       await refetchLegacyUserList();

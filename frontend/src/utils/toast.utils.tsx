@@ -73,6 +73,12 @@ export const TOASTS = {
       ERROR: 'ACL_CREATE_ERROR',
     },
   },
+  REDPANDA_CONNECT: {
+    LINT_CONFIG: {
+      SUCCESS: 'REDPANDA_CONNECT_LINT_CONFIG_SUCCESS',
+      ERROR: 'REDPANDA_CONNECT_LINT_CONFIG_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
