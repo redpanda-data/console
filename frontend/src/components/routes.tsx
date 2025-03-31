@@ -352,7 +352,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     HiOutlinePuzzlePiece,
     true,
     routeVisibility(
-      () => isEmbedded() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
+      // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
+      () => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
       [],
