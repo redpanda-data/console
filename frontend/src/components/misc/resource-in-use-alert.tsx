@@ -35,7 +35,7 @@ export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUs
             The {resource} that you are about to delete is still in use by the following {usedBy}:
             <UnorderedList>
               {pipelines?.map((pipeline) => (
-                <ListItem key={pipeline.id} mt={2} color="red.600" whiteSpace="pre-line">
+                <ListItem key={pipeline.id} color="red.600" whiteSpace="pre-line">
                   {pipeline.displayName || pipeline.id}
                 </ListItem>
               ))}
