@@ -10,9 +10,17 @@ interface ChatInputProps {
   agentId: string;
   initialValue?: string;
   onInputChange?: () => void;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
-export const ChatInput = ({ setIsTyping, agentUrl, agentId, initialValue, onInputChange }: ChatInputProps) => {
+export const ChatInput = ({
+  setIsTyping,
+  agentUrl,
+  agentId,
+  messagesEndRef,
+  initialValue,
+  onInputChange,
+}: ChatInputProps) => {
   const [inputValue, setInputValue] = useState(initialValue || '');
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -77,6 +85,9 @@ export const ChatInput = ({ setIsTyping, agentUrl, agentId, initialValue, onInpu
 
       // Hide typing indicator
       setIsTyping(false);
+
+      // Scroll to the bottom of the chat messages when response is received
+      messagesEndRef?.current?.scrollIntoView({ behavior: 'smooth' });
 
       // Create system message from API response
       const systemMessage: ChatMessage = {

@@ -100,6 +100,7 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
         agentId={id}
         initialValue={selectedQuestion ?? undefined}
         onInputChange={() => setSelectedQuestion(null)}
+        messagesEndRef={messagesEndRef}
       />
     </div>
   );
