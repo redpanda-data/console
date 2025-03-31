@@ -14,7 +14,7 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import type { z } from 'zod';
@@ -24,9 +24,10 @@ interface CreateSecretModalProps {
   isOpen: boolean;
   onClose: (createdSecretId?: string) => void;
   customSecretSchema?: z.ZodTypeAny;
+  helperText?: ReactNode;
 }
 
-export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema }: CreateSecretModalProps) => {
+export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperText }: CreateSecretModalProps) => {
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
@@ -105,7 +106,9 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema }: Creat
                   )}
                 </form.AppField>
                 <form.AppField name="value">
-                  {(field) => <field.PasswordField label="Value" data-testid="secret-value-field" />}
+                  {(field) => (
+                    <field.PasswordField label="Value" data-testid="secret-value-field" helperText={helperText} />
+                  )}
                 </form.AppField>
                 <form.AppField name="labels" mode="array">
                   {(field) => (
