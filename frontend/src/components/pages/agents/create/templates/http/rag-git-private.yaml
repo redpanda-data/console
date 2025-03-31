@@ -5,10 +5,17 @@ input:
     poll_interval: "10s"
     include_patterns:
       - '${GLOB_PATTERN}'
+    max_file_size: 1048576
     auth:
       token:
         value: ${secrets.PERSONAL_ACCESS_TOKEN}
-pipeline: {}
+
+pipeline:
+  processors:
+    - mapping: |
+        root = if @git_is_binary == true {
+          deleted()
+        }
 
 output:
   kafka_franz:

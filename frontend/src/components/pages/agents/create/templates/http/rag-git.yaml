@@ -5,7 +5,14 @@ input:
     poll_interval: "10s"
     include_patterns:
       - '${GLOB_PATTERN}'
-pipeline: {}
+    max_file_size: 1048576
+
+pipeline:
+  processors:
+    - mapping: |
+        root = if @git_is_binary == true {
+          deleted()
+        }
 
 output:
   kafka_franz:
