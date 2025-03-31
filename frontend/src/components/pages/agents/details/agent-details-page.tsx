@@ -1,9 +1,9 @@
-import { Button, ButtonGroup, Flex, HStack, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
+import { Box, Button, ButtonGroup, Flex, Grid, Spinner, Stack, Tabs, Text, useDisclosure } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { NotFoundPage } from 'components/misc/not-found-page';
 import { runInAction } from 'mobx';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { type Agent, useGetAgentQuery } from 'react-query/api/agent';
 import { useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
@@ -17,7 +17,7 @@ import { AgentChatTab } from './chat/agent-chat-tab';
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = ({ agent }: { agent: Agent }) => {
   runInAction(() => {
-    uiState.pageTitle = `Agent ${agent?.displayName}`;
+    uiState.pageTitle = agent?.displayName ? `${agent?.displayName}` : 'Agent';
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the agent title is used without previous page breadcrumb being shown
     uiState.pageBreadcrumbs.push({
       title: `Agent ${agent?.displayName}`,
@@ -27,7 +27,7 @@ export const updatePageTitle = ({ agent }: { agent: Agent }) => {
   });
 };
 
-export const AGENT_POLLING_INTERVAL = 5_000; // 5 seconds
+export const AGENT_POLLING_INTERVAL = 2_000; // 2 seconds
 
 export const AgentDetailsPage = () => {
   const { agentId } = useParams<{ agentId: Pipeline['id'] }>();
@@ -96,12 +96,29 @@ export const AgentDetailsPage = () => {
     <>
       <Stack spacing={8}>
         <Stack spacing={4}>
-          <Text>{agentData?.agent?.description}</Text>
-          <AgentStateDisplayValue state={matchingPipeline?.state} />
-          <HStack spacing={2}>
-            <Text fontWeight="bold">URL</Text>
-            <Text>{matchingPipeline?.url}</Text>
-          </HStack>
+          <Box maxWidth="400px">
+            <Grid gridTemplateColumns="1fr 3fr" gap={2} mt={6}>
+              {[
+                {
+                  label: 'Description',
+                  value: agentData?.agent?.description,
+                },
+                {
+                  label: 'State',
+                  value: <AgentStateDisplayValue state={agentData?.agent?.state} />,
+                },
+                {
+                  label: 'Chat URL',
+                  value: matchingPipeline?.url,
+                },
+              ].map((item) => (
+                <Fragment key={item.label}>
+                  <Text as="b">{item.label}</Text>
+                  <Box>{item.value}</Box>
+                </Fragment>
+              ))}
+            </Grid>
+          </Box>
           <ButtonGroup>
             <Button
               variant="outline-delete"
