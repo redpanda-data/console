@@ -129,17 +129,22 @@ export const CreateAgentHTTP = () => {
           }),
       );
 
-      const lintConfigsListResponse = await lintConfigsMutation({ pipelines });
-      if (lintConfigsListResponse?.every((lintConfig) => lintConfig.valid)) {
-        const agentPipelines = await createAgentPipelinesMutation({ pipelines });
-        const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
-        // Worst case scenario, if the tags are not set properly or something else goes wrong, redirect to the agents list page
-        history.push(agentId ? `/agents/${agentId}` : '/agents');
-      } else {
-        const invalidLintConfigs = lintConfigsListResponse?.filter((lintConfig) => !lintConfig.valid) || [];
-        setInvalidLintConfigList(invalidLintConfigs);
-        onLintFailureModalOpen();
-      }
+      // const lintConfigsListResponse = await lintConfigsMutation({ pipelines });
+      // if (lintConfigsListResponse?.every((lintConfig) => lintConfig.valid)) {
+      //   const agentPipelines = await createAgentPipelinesMutation({ pipelines });
+      //   const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
+      //   // Worst case scenario, if the tags are not set properly or something else goes wrong, redirect to the agents list page
+      //   history.push(agentId ? `/agents/${agentId}` : '/agents');
+      // } else {
+      //   const invalidLintConfigs = lintConfigsListResponse?.filter((lintConfig) => !lintConfig.valid) || [];
+      //   setInvalidLintConfigList(invalidLintConfigs);
+      //   onLintFailureModalOpen();
+      // }
+
+      await lintConfigsMutation({ pipelines });
+      const agentPipelines = await createAgentPipelinesMutation({ pipelines });
+      const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
+      history.push(agentId ? `/agents/${agentId}` : '/agents');
     },
   });
 
