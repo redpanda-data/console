@@ -58,10 +58,6 @@ export const CreateAgentCard = ({
       aria-disabled={isDisabled}
       height="100%"
       transition="all 0.2s"
-      _hover={{
-        transform: isDisabled ? 'none' : 'translateY(-2px)',
-        boxShadow: isDisabled ? 'none' : 'md',
-      }}
       opacity={isDisabled ? 0.6 : 1}
       cursor={isDisabled ? 'not-allowed' : 'pointer'}
     >
