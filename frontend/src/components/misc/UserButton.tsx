@@ -73,8 +73,8 @@ export const UserProfile = observer(() => {
               w="full"
               justifyContent="start"
               variant="ghost"
-              onClick={() => {
-                void api.logout();
+              onClick={async () => {
+                await api.logout();
                 window.location.reload();
               }}
             >
