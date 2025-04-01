@@ -154,7 +154,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     return (
       <PageContent className="groupDetails">
         <Flex gap={2}>
-          <Button variant="outline" onClick={() => this.editGroup()}>
+          <Button
+            variant="outline"
+            onClick={() => this.editGroup()}
+            disabledReason={cannotEditGroupReason(group)}
+          >
             Edit Group
           </Button>
           <DeleteOffsetsModal
