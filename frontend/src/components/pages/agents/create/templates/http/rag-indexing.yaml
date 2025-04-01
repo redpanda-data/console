@@ -6,7 +6,7 @@ input:
       - ${TOPIC}
     consumer_group: ${TOPIC}-ai-agent-rag-indexing
     tls:
-      enabled: true
+      enabled: false
     sasl:
       - username: ${USERNAME}
         password: ${secrets.KAFKA_PASSWORD}
@@ -37,34 +37,38 @@ pipeline:
         - archive:
             format: json_array
 output:
-  reject_errored:
-    sql_raw:
-      driver: postgres
-      dsn: ${secrets.POSTGRES_DSN}
-      init_statement: >
-        CREATE EXTENSION IF NOT EXISTS vector;
-        CREATE TABLE IF NOT EXISTS ${POSTGRES_COMPATIBLE_TOPIC_NAME} (
-          key text,
-          chunk_id integer,
-          document text,
-          embeddings vector(768),
-          PRIMARY KEY(key, chunk_id)
-        );
-      queries:
-        - query: |
-            DELETE FROM ${POSTGRES_COMPATIBLE_TOPIC_NAME} WHERE key = $1
-          args_mapping: |
-            root = [ @kafka_key ]
-        - query: |
-            INSERT INTO ${POSTGRES_COMPATIBLE_TOPIC_NAME} (key, chunk_id, document, embeddings)
-            SELECT $1, (chunk->>'chunk_id')::INT, chunk->>'document', (chunk->>'embeddings')::text::vector
-            FROM jsonb_array_elements($2) AS chunk
-          args_mapping: |
-            root = [
-              @kafka_key,
-              this.format_json(no_indent: true, escape_html: false),
-            ]
-      max_in_flight: 8
-      batching:
-        count: 64
-        period: 30s
+  fallback:
+    - reject_errored:
+        sql_raw:
+          driver: postgres
+          dsn: ${secrets.POSTGRES_DSN}
+          init_statement: >
+            CREATE EXTENSION IF NOT EXISTS vector;
+            CREATE TABLE IF NOT EXISTS ${POSTGRES_COMPATIBLE_TOPIC_NAME} (
+              key text,
+              chunk_id integer,
+              document text,
+              embeddings vector(768),
+              PRIMARY KEY(key, chunk_id)
+            );
+          queries:
+            - query: |
+                DELETE FROM ${POSTGRES_COMPATIBLE_TOPIC_NAME} WHERE key = $1
+              args_mapping: |
+                root = [ @kafka_key ]
+            - query: |
+                INSERT INTO ${POSTGRES_COMPATIBLE_TOPIC_NAME} (key, chunk_id, document, embeddings)
+                SELECT $1, (chunk->>'chunk_id')::INT, chunk->>'document', (chunk->>'embeddings')::text::vector
+                FROM jsonb_array_elements($2) AS chunk
+              args_mapping: |
+                root = [
+                  @kafka_key,
+                  this.format_json(no_indent: true, escape_html: false),
+                ]
+          max_in_flight: 8
+          batching:
+            count: 64
+            period: 30s
+    - reject: 'error ${!@fallback_error}, processing document: ${!content().string()}'
+http:
+  enabled: false
