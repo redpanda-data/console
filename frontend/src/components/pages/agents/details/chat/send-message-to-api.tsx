@@ -8,7 +8,7 @@ interface ChatApiResponse {
 }
 
 // Limit chat history to last 30 messages
-export const CHAT_HISTORY_MESSAGE_LIMIT = 30;
+export const CHAT_HISTORY_MESSAGE_LIMIT = 15;
 
 interface SendMessageToApiProps {
   message: string;
@@ -24,9 +24,14 @@ export const sendMessageToApi = async ({
   try {
     const recentHistory = chatHistory.slice(-CHAT_HISTORY_MESSAGE_LIMIT);
 
-    const messageWithHistoryIncluded = `
-Previous messages: ${recentHistory.map((message) => message.content).join('\n')}
-New message: ${message}`;
+    const body = {
+      question: message,
+      history: recentHistory.map((msg) => ({
+        // Map 'system' to 'assistant' to match the new API’s expected roles
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.content,
+      })),
+    };
 
     const response = await fetch(`${agentUrl}`, {
       method: 'POST',
@@ -34,9 +39,7 @@ New message: ${message}`;
         Authorization: `Bearer ${config.jwt}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        question: messageWithHistoryIncluded,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
