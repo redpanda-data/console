@@ -109,7 +109,7 @@ export class EditOffsetsModal extends Component<{
   @observable selectedTopic: string | null = null;
   @observable selectedPartition: number | null = null;
   @observable timestampUtcMs: number = new Date().valueOf();
-  @observable customOffsetValue = 0;
+  @observable offsetShiftByValue = 0;
 
   @observable otherConsumerGroups: GroupDescription[] = [];
   @observable selectedGroup: string | undefined = undefined;
@@ -274,7 +274,7 @@ export class EditOffsetsModal extends Component<{
 
         {this.selectedOption === 'shiftBy' && (
           <Box mt={2}>
-            <FormLabel>Custom offset value</FormLabel>
+            <FormLabel>Shift by</FormLabel>
             <NumberInput
               value={this.customOffsetValue}
               onChange={(_, valueAsNumber) => (this.customOffsetValue = valueAsNumber)}
@@ -438,7 +438,7 @@ export class EditOffsetsModal extends Component<{
       } else if (op === 'shiftBy') {
         for (const x of selectedOffsets) {
           if (x.offset) {
-            x.newOffset = x.offset + this.customOffsetValue;
+            x.newOffset = x.offset + this.offsetShiftByValue;
           }
         }
       } else if (op === 'time') {
