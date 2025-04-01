@@ -31,9 +31,9 @@ interface AgentSidebarItemTitleProps {
 }
 
 export const getAgentSidebarItemTitle = ({ route }: AgentSidebarItemTitleProps) => (
-  <Stack spacing={2} key={`${route.path}-title`}>
+  <Stack direction="row" spacing={5} key={`${route.path}-title`}>
     <Text>{route.title}</Text>
-    <SidebarItemBadge>Technical Preview</SidebarItemBadge>
+    <SidebarItemBadge>Beta</SidebarItemBadge>
   </Stack>
 );
 
@@ -107,7 +107,7 @@ export const AgentListPage = () => {
   return (
     <>
       <Badge variant="outline" mb={4} textTransform="uppercase" fontWeight="bold">
-        Technical Preview
+        Beta
       </Badge>
       <Stack spacing={8}>
         <Stack spacing={4}>
