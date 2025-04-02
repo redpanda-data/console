@@ -19,6 +19,7 @@ input:
     branch: "${REPOSITORY_BRANCH}"
     poll_interval: "10s"
     include_patterns: ["${INCLUDE_GLOB_PATTERN}"]
+    exclude_patterns: ["${EXCLUDE_GLOB_PATTERN}"]
     max_file_size: 1048576
     checkpoint_cache: "postgres_cache"
     checkpoint_key: "${AGENT_ID}/${REPOSITORY_URL}/${REPOSITORY_BRANCH}"

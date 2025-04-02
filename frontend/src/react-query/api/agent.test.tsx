@@ -61,7 +61,9 @@ describe('Agent API wrapper', () => {
       connectQueryWrapper({}, transport),
     );
 
-    result.current.mutateAsync({ pipelines });
+    const agentId = 'agent-id';
+
+    result.current.mutateAsync({ pipelines, agentId });
 
     await waitFor(() => {
       expect(createPipelineMock).toHaveBeenCalledTimes(pipelines.length);
@@ -73,7 +75,7 @@ describe('Agent API wrapper', () => {
               ...firstPipeline,
               tags: {
                 ...firstPipeline.tags,
-                __redpanda_cloud_agent_id: expect.any(String),
+                __redpanda_cloud_agent_id: agentId,
                 __redpanda_cloud_pipeline_type: 'agent',
               },
             },
@@ -89,7 +91,7 @@ describe('Agent API wrapper', () => {
               ...secondPipeline,
               tags: {
                 ...secondPipeline.tags,
-                __redpanda_cloud_agent_id: expect.any(String),
+                __redpanda_cloud_agent_id: agentId,
                 __redpanda_cloud_pipeline_type: 'agent',
               },
             },
@@ -101,13 +103,16 @@ describe('Agent API wrapper', () => {
   });
 
   test('useDeleteAgentPipelinesMutation should delete multiple pipelines for the agent', async () => {
+    const agentId = 'agent-id';
+
     const firstPipeline = new Pipeline({
       id: 'id-1',
       displayName: 'firstPipeline',
       state: Pipeline_State.RUNNING,
       configYaml: 'firstPipeline',
       tags: {
-        __redpanda_cloud_agent_id: 'agent-id',
+        __redpanda_cloud_agent_id: agentId,
+        __redpanda_cloud_pipeline_type: 'agent',
       },
     });
     const secondPipeline = new Pipeline({
@@ -116,7 +121,8 @@ describe('Agent API wrapper', () => {
       state: Pipeline_State.RUNNING,
       configYaml: 'secondPipeline',
       tags: {
-        __redpanda_cloud_agent_id: 'agent-id',
+        __redpanda_cloud_agent_id: agentId,
+        __redpanda_cloud_pipeline_type: 'agent',
       },
     });
 

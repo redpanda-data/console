@@ -350,5 +350,33 @@ output:
         "
       `);
     });
+
+    test('should handle exclude patterns correctly', () => {
+      const yamlTemplates = {
+        'rag-git': {
+          input: {
+            git: {
+              exclude_patterns: ['${EXCLUDE_GLOB_PATTERN}'],
+            },
+          },
+        },
+      };
+
+      const envVars = {
+        EXCLUDE_GLOB_PATTERN: '',
+      };
+
+      const result = parseYamlTemplateSecrets({
+        yamlTemplates,
+        envVars,
+        secretMappings: {},
+      });
+
+      expect(result['rag-git']).toMatchInlineSnapshot(`
+        "input:
+          git: {}
+        "
+      `);
+    });
   });
 });
