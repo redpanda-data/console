@@ -12,24 +12,23 @@ export interface SidebarItemBadgeProps {
  */
 export const SidebarItemBadge = ({ children }: SidebarItemBadgeProps) => (
   <Badge
-    variant="outline"
+    variant="inverted"
     style={{
       display: 'inline-block',
       whiteSpace: 'nowrap',
       verticalAlign: 'middle',
       WebkitPaddingStart: 'var(--chakra-space-1)',
-      paddingInlineStart: 'var(--chakra-space-1)',
       WebkitPaddingEnd: 'var(--chakra-space-1)',
+      paddingInlineStart: 'var(--chakra-space-1)',
       paddingInlineEnd: 'var(--chakra-space-1)',
-      textTransform: 'uppercase',
-      fontSize: '10px',
+      textTransform: 'inherit',
+      fontSize: '12px',
       borderRadius: 'var(--chakra-radii-sm)',
-      fontWeight: 'var(--chakra-fontWeights-bold)',
-      background: 'var(--chakra-colors-transparent)',
-      color: 'var(--chakra-colors-gray-100)',
+      fontWeight: 'var(--chakra-fontWeights-medium)',
+      background: 'var(--chakra-colors-gray-500)',
       boxShadow: 'var(--chakra-shadows-none)',
-      borderWidth: '1px',
       borderColor: 'var(--chakra-colors-gray-200)',
+      color: 'var(--chakra-colors-gray-100)',
     }}
   >
     {children}

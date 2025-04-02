@@ -31,10 +31,10 @@ interface AgentSidebarItemTitleProps {
 }
 
 export const getAgentSidebarItemTitle = ({ route }: AgentSidebarItemTitleProps) => (
-  <Stack direction="row" spacing={5} key={`${route.path}-title`}>
+  <HStack spacing="12px" key={`${route.path}-title`}>
     <Text>{route.title}</Text>
-    <SidebarItemBadge>Beta</SidebarItemBadge>
-  </Stack>
+    <SidebarItemBadge>beta</SidebarItemBadge>
+  </HStack>
 );
 
 // Hack for MobX to ensure we don't need to use observables
@@ -106,9 +106,6 @@ export const AgentListPage = () => {
 
   return (
     <>
-      <Badge variant="outline" mb={4} textTransform="uppercase" fontWeight="bold">
-        Beta
-      </Badge>
       <Stack spacing={8}>
         <Stack spacing={4}>
           <Text>
