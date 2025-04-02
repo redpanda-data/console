@@ -35,6 +35,23 @@ const wrapGlobPattern = (value: string): string => {
 };
 
 /**
+ * Processes comma-separated glob patterns into an array of patterns
+ * for YAML include_patterns or exclude_patterns
+ */
+const processGlobPatterns = (patternsString: string): string[] => {
+  // If there are no commas, return a single item array with the trimmed pattern
+  if (!patternsString.includes(',')) {
+    return [patternsString.trim()];
+  }
+
+  // Split by comma, trim each pattern, and filter out empty entries
+  return patternsString
+    .split(',')
+    .map((pattern) => pattern.trim())
+    .filter((pattern) => pattern.length > 0);
+};
+
+/**
  * Processes one or more YAML templates by replacing environment variables with their values
  * and standardizing secret references using provided mappings
  */
@@ -113,6 +130,17 @@ export const parseYamlTemplateSecrets = ({
       continue;
     }
 
+    // Special handling for INCLUDE_GLOB_PATTERN in include_patterns
+    if (
+      envVars?.INCLUDE_GLOB_PATTERN &&
+      yamlTemplate.input?.git?.include_patterns?.[0] &&
+      typeof yamlTemplate.input?.git?.include_patterns?.[0] === 'string' &&
+      yamlTemplate.input?.git?.include_patterns?.[0].includes('${INCLUDE_GLOB_PATTERN}')
+    ) {
+      const patterns = processGlobPatterns(envVars.INCLUDE_GLOB_PATTERN);
+      yamlTemplate.input.git.include_patterns = patterns;
+    }
+
     let processedYamlString = stringify(yamlTemplate, {
       defaultStringType: Scalar.PLAIN,
     });
@@ -125,6 +153,11 @@ export const parseYamlTemplateSecrets = ({
 
       if (envVarName === 'POSTGRES_COMPATIBLE_TOPIC_NAME') {
         return toPostgresTableName(envValue);
+      }
+
+      // Skip INCLUDE_GLOB_PATTERN when it appears in include_patterns as it's handled separately
+      if (envVarName === 'INCLUDE_GLOB_PATTERN' && processedYamlString.includes('include_patterns:')) {
+        return envValue;
       }
 
       // Special handling for glob patterns in environment variables

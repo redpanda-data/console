@@ -3,8 +3,7 @@ input:
     repository_url: ${REPOSITORY_URL}
     branch: "${REPOSITORY_BRANCH}"
     poll_interval: "10s"
-    include_patterns:
-      - '${GLOB_PATTERN}'
+    include_patterns: ["${INCLUDE_GLOB_PATTERN}"]
     max_file_size: 1048576
 
 pipeline:

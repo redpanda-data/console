@@ -1,3 +1,4 @@
+import { parse } from 'yaml';
 import { parseYamlTemplateSecrets, toPostgresTableName } from './parse-yaml-template-secrets';
 
 describe('toPostgresTableName', () => {
@@ -244,5 +245,110 @@ output:
     expect(result['rag-indexing']).toContain('${secrets.USER_DEFINED_POSTGRES_DSN}');
     expect(result['rag-indexing']).toContain('table: "test_topic_with_dashes"');
     expect(result['rag-indexing']).toContain('CREATE TABLE IF NOT EXISTS test_topic_with_dashes');
+  });
+
+  describe('Glob pattern matching', () => {
+    test('should correctly process comma-separated glob patterns', () => {
+      const yamlTemplates = {
+        'rag-git': {
+          input: {
+            git: {
+              repository_url: '${REPOSITORY_URL}',
+              branch: '${REPOSITORY_BRANCH}',
+              poll_interval: '10s',
+              include_patterns: ['${INCLUDE_GLOB_PATTERN}'],
+              max_file_size: 1048576,
+            },
+          },
+        },
+      };
+
+      const envVars = {
+        REPOSITORY_URL: 'https://github.com/example/repo.git',
+        REPOSITORY_BRANCH: 'main',
+        INCLUDE_GLOB_PATTERN: '**/*.adoc, **/*.tsx',
+      };
+
+      const result = parseYamlTemplateSecrets({
+        yamlTemplates,
+        envVars,
+        secretMappings: {},
+      });
+
+      expect(result['rag-git']).toMatchInlineSnapshot(`
+        "input:
+          git:
+            repository_url: https://github.com/example/repo.git
+            branch: main
+            poll_interval: 10s
+            include_patterns:
+              - "**/*.adoc"
+              - "**/*.tsx"
+            max_file_size: 1048576
+        "
+      `);
+    });
+
+    test('should correctly handle a single glob pattern', () => {
+      const yamlTemplates = {
+        'rag-git': {
+          input: {
+            git: {
+              include_patterns: ['${INCLUDE_GLOB_PATTERN}'],
+            },
+          },
+        },
+      };
+
+      const envVars = {
+        INCLUDE_GLOB_PATTERN: '**/*.md',
+      };
+
+      const result = parseYamlTemplateSecrets({
+        yamlTemplates,
+        envVars,
+        secretMappings: {},
+      });
+
+      expect(result['rag-git']).toMatchInlineSnapshot(`
+        "input:
+          git:
+            include_patterns:
+              - "**/*.md"
+        "
+      `);
+    });
+
+    test('should handle whitespace in glob patterns correctly', () => {
+      const yamlTemplates = {
+        'rag-git': {
+          input: {
+            git: {
+              include_patterns: ['${INCLUDE_GLOB_PATTERN}'],
+            },
+          },
+        },
+      };
+
+      const envVars = {
+        INCLUDE_GLOB_PATTERN: '  **/*.js,  **/*.ts  , **/*.jsx  ',
+      };
+
+      const result = parseYamlTemplateSecrets({
+        yamlTemplates,
+        envVars,
+        secretMappings: {},
+      });
+
+      expect(result['rag-git']).toMatchInlineSnapshot(`
+        "input:
+          git:
+            include_patterns:
+              - "**/*.js"
+              - "**/*.ts"
+              - "**/*.jsx"
+        "
+      `);
+    });
   });
 });

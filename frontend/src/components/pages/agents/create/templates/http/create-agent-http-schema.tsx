@@ -105,16 +105,36 @@ export const createAgentHttpSchema = z
     /**
      * @see https://man7.org/linux/man-pages/man7/glob.7.html
      */
-    GLOB_PATTERN: z
+    INCLUDE_GLOB_PATTERN: z
       .string()
       .describe(GLOB_PATTERN_DESCRIPTION)
-      .min(1, 'Glob pattern is required. Use ** for all files.')
+      .min(1, 'Include glob pattern is required. Use ** to include all files.')
       .refine(
         (value) => {
           const patterns = value.split(',').map((pattern) => pattern.trim());
           return patterns.every((pattern) => GLOB_PATTERN_REGEX.test(pattern));
         },
         (value) => {
+          const patterns = value.split(',').map((pattern) => pattern.trim());
+          const invalidPattern = patterns.find((pattern) => !GLOB_PATTERN_REGEX.test(pattern));
+          if (invalidPattern) {
+            return { message: `Invalid glob pattern: "${invalidPattern}" contains unsupported characters.` };
+          }
+          return { message: 'Invalid glob pattern.' };
+        },
+      ),
+    EXCLUDE_GLOB_PATTERN: z
+      .string()
+      .optional()
+      .describe(GLOB_PATTERN_DESCRIPTION)
+      .refine(
+        (value) => {
+          if (!value) return true;
+          const patterns = value.split(',').map((pattern) => pattern.trim());
+          return patterns.every((pattern) => GLOB_PATTERN_REGEX.test(pattern));
+        },
+        (value) => {
+          if (!value) return { message: '' };
           const patterns = value.split(',').map((pattern) => pattern.trim());
           const invalidPattern = patterns.find((pattern) => !GLOB_PATTERN_REGEX.test(pattern));
           if (invalidPattern) {
@@ -152,7 +172,8 @@ export const createAgentHttpFormOpts = (secretList?: (Secret | undefined)[]) =>
       REPOSITORY_URL: '',
       REPOSITORY_BRANCH: 'main',
       isPrivateRepository: false,
-      GLOB_PATTERN: '**',
+      INCLUDE_GLOB_PATTERN: '**',
+      EXCLUDE_GLOB_PATTERN: undefined,
       PERSONAL_ACCESS_TOKEN: secretList?.find((secret) => secret?.id.toLowerCase().includes('personal'))?.id ?? '',
     },
   });
