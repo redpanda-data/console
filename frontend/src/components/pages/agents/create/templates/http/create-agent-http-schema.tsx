@@ -99,7 +99,10 @@ export const createAgentHttpSchema = z
     USERNAME: usernameSchema,
     KAFKA_PASSWORD: z.string().min(1, 'Password is required'),
     SASL_MECHANISM: z.enum(['SCRAM-SHA-256', 'SCRAM-SHA-512']),
-    REPOSITORY_URL: z.string().min(1, 'Repository URL is required').url('Invalid repository URL'),
+    REPOSITORY_URL: z
+      .string()
+      .min(1, 'Repository URL is required')
+      .regex(/^https?:\/\/.*\.git$/, 'Repository URL must start with http:// or https:// and end with .git'),
     REPOSITORY_BRANCH: z.string(),
     isPrivateRepository: z.boolean(),
     /**
