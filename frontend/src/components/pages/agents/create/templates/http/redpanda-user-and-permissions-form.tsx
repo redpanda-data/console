@@ -24,9 +24,8 @@ export const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as cons
 export const RedpandaUserAndPermissionsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
-    title: 'Redpanda user and permissions',
-    description:
-      'The credentials will be used to clone the Git repository and produce one record for each GitHub document',
+    title: '',
+    description: '',
   },
   render: ({ title, description, form }) => {
     const {

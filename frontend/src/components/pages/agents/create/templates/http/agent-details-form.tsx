@@ -10,9 +10,8 @@ import {
 export const AgentDetailsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
-    title: 'New Support Agent',
-    description:
-      "This agent connects to a GitHub repository and ingests all text-based content (e.g., Markdown, plaintext, code) into a vector database you provide. The content becomes part of a Retrieval-Augmented Generation (RAG) pipeline that enhances the agent's ability to respond accurately and contextually via a chat API.",
+    title: '',
+    description: '',
   },
   render: ({ title, description, form }) => {
     const { data: agentList } = useListAgentsQuery();
