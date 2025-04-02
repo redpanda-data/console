@@ -141,6 +141,28 @@ export const parseYamlTemplateSecrets = ({
       yamlTemplate.input.git.include_patterns = patterns;
     }
 
+    // Special handling for EXCLUDE_GLOB_PATTERN in exclude_patterns
+    if (
+      envVars?.EXCLUDE_GLOB_PATTERN !== undefined &&
+      yamlTemplate.input?.git?.exclude_patterns?.[0] &&
+      typeof yamlTemplate.input?.git?.exclude_patterns?.[0] === 'string' &&
+      yamlTemplate.input?.git?.exclude_patterns?.[0].includes('${EXCLUDE_GLOB_PATTERN}')
+    ) {
+      const trimmedPattern = envVars.EXCLUDE_GLOB_PATTERN.trim();
+
+      // If EXCLUDE_GLOB_PATTERN is empty after trimming, remove exclude_patterns from YAML
+      if (trimmedPattern === '') {
+        yamlTemplate.input.git.exclude_patterns = undefined;
+      } else {
+        const patterns = processGlobPatterns(trimmedPattern);
+        if (patterns.length > 0) {
+          yamlTemplate.input.git.exclude_patterns = patterns;
+        } else {
+          yamlTemplate.input.git.exclude_patterns = undefined;
+        }
+      }
+    }
+
     let processedYamlString = stringify(yamlTemplate, {
       defaultStringType: Scalar.PLAIN,
     });
@@ -157,6 +179,11 @@ export const parseYamlTemplateSecrets = ({
 
       // Skip INCLUDE_GLOB_PATTERN when it appears in include_patterns as it's handled separately
       if (envVarName === 'INCLUDE_GLOB_PATTERN' && processedYamlString.includes('include_patterns:')) {
+        return envValue;
+      }
+
+      // Skip EXCLUDE_GLOB_PATTERN when it appears in exclude_patterns as it's handled separately
+      if (envVarName === 'EXCLUDE_GLOB_PATTERN' && processedYamlString.includes('exclude_patterns:')) {
         return envValue;
       }
 

@@ -128,16 +128,15 @@ export const createAgentHttpSchema = z
       ),
     EXCLUDE_GLOB_PATTERN: z
       .string()
-      .optional()
       .describe(GLOB_PATTERN_DESCRIPTION)
       .refine(
         (value) => {
-          if (!value) return true;
+          if (!value || value === '') return true;
           const patterns = value.split(',').map((pattern) => pattern.trim());
           return patterns.every((pattern) => GLOB_PATTERN_REGEX.test(pattern));
         },
         (value) => {
-          if (!value) return { message: '' };
+          if (!value || value === '') return { message: '' };
           const patterns = value.split(',').map((pattern) => pattern.trim());
           const invalidPattern = patterns.find((pattern) => !GLOB_PATTERN_REGEX.test(pattern));
           if (invalidPattern) {
@@ -176,7 +175,7 @@ export const createAgentHttpFormOpts = (secretList?: (Secret | undefined)[]) =>
       REPOSITORY_BRANCH: 'main',
       isPrivateRepository: false,
       INCLUDE_GLOB_PATTERN: '**',
-      EXCLUDE_GLOB_PATTERN: undefined,
+      EXCLUDE_GLOB_PATTERN: '',
       PERSONAL_ACCESS_TOKEN: secretList?.find((secret) => secret?.id.toLowerCase().includes('personal'))?.id ?? '',
     },
   });
