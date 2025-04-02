@@ -95,7 +95,7 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
                 <form.AppField
                   name="name"
                   validators={{
-                    onChange: ({ value }: { value: string }) =>
+                    onChange: ({ value }) =>
                       topicList?.topics?.some((topic) => topic?.name === value)
                         ? { message: 'Name is already in use', path: 'name' }
                         : undefined,

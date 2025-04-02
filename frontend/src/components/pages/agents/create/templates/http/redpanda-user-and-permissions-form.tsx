@@ -1,8 +1,10 @@
-import { Box, Heading, Link, Text, VStack, useDisclosure } from '@redpanda-data/ui';
+import { Heading, Link, Stack, Text, useDisclosure } from '@redpanda-data/ui';
 import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
+import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
 import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
@@ -23,7 +25,8 @@ export const RedpandaUserAndPermissionsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
     title: 'Redpanda user and permissions',
-    description: 'Enter the Kafka user credentials',
+    description:
+      'The credentials will be used to clone the Git repository and produce one record for each GitHub document',
   },
   render: ({ title, description, form }) => {
     const {
@@ -35,6 +38,11 @@ export const RedpandaUserAndPermissionsForm = withForm({
       isOpen: isCreateUserWithSecretPasswordModalOpen,
       onOpen: onCreateUserWithSecretPasswordModalOpen,
       onClose: onCreateUserWithSecretPasswordModalClose,
+    } = useDisclosure();
+    const {
+      isOpen: isCreateTopicModalOpen,
+      onOpen: onCreateTopicModalOpen,
+      onClose: onCreateTopicModalClose,
     } = useDisclosure();
 
     const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
@@ -55,6 +63,13 @@ export const RedpandaUserAndPermissionsForm = withForm({
       secretList?.secrets?.map((secret) => ({
         value: secret?.id,
         label: secret?.id,
+      })) ?? [];
+
+    const { data: legacyTopicList } = useLegacyListTopicsQuery();
+    const legacyTopicListOptions =
+      legacyTopicList?.topics?.map((topic) => ({
+        value: topic?.name,
+        label: topic?.name,
       })) ?? [];
 
     const handleCreateSecretModalClose = (createdSecretId?: string) => {
@@ -80,17 +95,46 @@ export const RedpandaUserAndPermissionsForm = withForm({
       onCreateUserWithSecretPasswordModalClose();
     };
 
+    const handleCreateTopicModalClose = (createdTopicId?: string) => {
+      if (createdTopicId && fieldToUpdate) {
+        form.resetField(fieldToUpdate);
+        form.setFieldValue(fieldToUpdate, createdTopicId);
+        setFieldToUpdate(undefined);
+      }
+      onCreateTopicModalClose();
+    };
+
     return (
       <>
-        <Box>
-          <Heading size="md" mb={1}>
-            {title}
-          </Heading>
-          <Text color="gray.500" fontSize="sm" mb={4}>
-            {description}
-          </Text>
-
-          <VStack spacing={4} align="stretch">
+        <Stack spacing={4}>
+          <Stack spacing={1}>
+            <Heading size="md">{title}</Heading>
+            <Text color="gray.500" fontSize="sm">
+              {description}
+            </Text>
+          </Stack>
+          <Stack spacing={4} align="stretch">
+            <form.AppField name="TOPIC">
+              {(field) => (
+                <field.SingleSelectField
+                  label="Redpanda Topic"
+                  helperText={
+                    <Text>
+                      All topics can be found in{' '}
+                      <Link as={ReactRouterLink} to="/topics" target="_blank" rel="noopener noreferrer">
+                        Topics
+                      </Link>
+                    </Text>
+                  }
+                  options={legacyTopicListOptions}
+                  showCreateNewOption
+                  onCreateNewOptionClick={() => {
+                    setFieldToUpdate('TOPIC');
+                    onCreateTopicModalOpen();
+                  }}
+                />
+              )}
+            </form.AppField>
             <form.AppField name="USERNAME">
               {(field) => (
                 <field.SingleSelectField
@@ -143,8 +187,8 @@ export const RedpandaUserAndPermissionsForm = withForm({
                 />
               )}
             </form.AppField>
-          </VStack>
-        </Box>
+          </Stack>
+        </Stack>
         <CreateSecretModal
           isOpen={isCreateSecretModalOpen}
           onClose={handleCreateSecretModalClose}
@@ -155,6 +199,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
           isOpen={isCreateUserWithSecretPasswordModalOpen}
           onClose={handleCreateUserWithSecretPasswordModalClose}
         />
+        <CreateTopicModal isOpen={isCreateTopicModalOpen} onClose={handleCreateTopicModalClose} />
       </>
     );
   },

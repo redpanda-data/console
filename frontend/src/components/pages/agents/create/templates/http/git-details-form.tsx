@@ -1,4 +1,4 @@
-import { Box, Heading, Text, VStack, useDisclosure } from '@redpanda-data/ui';
+import { Heading, Stack, useDisclosure } from '@redpanda-data/ui';
 import { useStore } from '@tanstack/react-form';
 import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
@@ -16,10 +16,9 @@ import {
 export const GitDetailsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
-    title: 'Git information',
-    description: 'Enter the Git repository URL and branch to use for the agent',
+    title: 'Git repository with your knowledge',
   },
-  render: ({ title, description, form }) => {
+  render: ({ title, form }) => {
     const { data: secretList } = useListSecretsQuery();
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
     const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
@@ -54,71 +53,66 @@ export const GitDetailsForm = withForm({
 
     return (
       <>
-        <Box>
-          <Heading size="md" mb={1}>
-            {title}
-          </Heading>
-          <Text color="gray.500" fontSize="sm">
-            {description}
-          </Text>
-        </Box>
-        <VStack spacing={4} align="stretch">
-          <form.AppField name="REPOSITORY_URL">
-            {(field) => <field.TextField label="Repository URL" placeholder="Enter repository URL" />}
-          </form.AppField>
-          <form.AppField name="REPOSITORY_BRANCH">
-            {(field) => <field.TextField label="Repository branch" placeholder="Enter repository branch" />}
-          </form.AppField>
-          <form.AppField
-            name="isPrivateRepository"
-            validators={{
-              onChangeListenTo: ['PERSONAL_ACCESS_TOKEN'],
-              onChange: ({ value }) => {
-                if (!value) {
-                  form.setFieldValue('PERSONAL_ACCESS_TOKEN', '');
-                }
-              },
-            }}
-          >
-            {(field) => <field.CheckboxField label="Private repository" />}
-          </form.AppField>
-          <form.AppField name="INCLUDE_GLOB_PATTERN">
-            {(field) => (
-              <field.TextField
-                label="Include glob pattern"
-                placeholder="Enter glob pattern"
-                helperText={GLOB_PATTERN_DESCRIPTION}
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="EXCLUDE_GLOB_PATTERN">
-            {(field) => (
-              <field.TextField
-                label="Exclude glob pattern (optional)"
-                placeholder="Enter glob pattern"
-                helperText={GLOB_PATTERN_DESCRIPTION}
-              />
-            )}
-          </form.AppField>
-          {isPrivateRepository && (
-            <form.AppField name="PERSONAL_ACCESS_TOKEN">
+        <Stack spacing={4}>
+          <Heading size="md">{title}</Heading>
+          <Stack spacing={4} align="stretch">
+            <form.AppField name="REPOSITORY_URL">
+              {(field) => <field.TextField label="Repository URL" placeholder="Enter repository URL" />}
+            </form.AppField>
+            <form.AppField name="REPOSITORY_BRANCH">
+              {(field) => <field.TextField label="Repository branch" placeholder="Enter repository branch" />}
+            </form.AppField>
+            <form.AppField
+              name="isPrivateRepository"
+              validators={{
+                onChangeListenTo: ['PERSONAL_ACCESS_TOKEN'],
+                onChange: ({ value }) => {
+                  if (!value) {
+                    form.resetField('PERSONAL_ACCESS_TOKEN');
+                  }
+                },
+              }}
+            >
+              {(field) => <field.CheckboxField label="Private repository" />}
+            </form.AppField>
+            <form.AppField name="INCLUDE_GLOB_PATTERN">
               {(field) => (
-                <field.SingleSelectField
-                  label="Personal access token"
-                  placeholder="Enter personal access token"
-                  options={secretListOptions}
-                  showCreateNewOption
-                  onCreateNewOptionClick={() => {
-                    setFieldToUpdate('PERSONAL_ACCESS_TOKEN');
-                    setCustomSecretSchema(personalAccessTokenSchema);
-                    setHelperText(PERSONAL_ACCESS_TOKEN_DESCRIPTION);
-                    onCreateSecretModalOpen();
-                  }}
+                <field.TextField
+                  label="Include glob pattern"
+                  placeholder="Enter glob pattern"
+                  helperText={GLOB_PATTERN_DESCRIPTION}
                 />
               )}
             </form.AppField>
-          )}
-        </VStack>
+            <form.AppField name="EXCLUDE_GLOB_PATTERN">
+              {(field) => (
+                <field.TextField
+                  label="Exclude glob pattern (optional)"
+                  placeholder="Enter glob pattern"
+                  helperText={GLOB_PATTERN_DESCRIPTION}
+                />
+              )}
+            </form.AppField>
+            {isPrivateRepository && (
+              <form.AppField name="PERSONAL_ACCESS_TOKEN">
+                {(field) => (
+                  <field.SingleSelectField
+                    label="Personal access token"
+                    placeholder="Enter personal access token"
+                    options={secretListOptions}
+                    showCreateNewOption
+                    onCreateNewOptionClick={() => {
+                      setFieldToUpdate('PERSONAL_ACCESS_TOKEN');
+                      setCustomSecretSchema(personalAccessTokenSchema);
+                      setHelperText(PERSONAL_ACCESS_TOKEN_DESCRIPTION);
+                      onCreateSecretModalOpen();
+                    }}
+                  />
+                )}
+              </form.AppField>
+            )}
+          </Stack>
+        </Stack>
         <CreateSecretModal
           isOpen={isCreateSecretModalOpen}
           onClose={handleCreateSecretModalClose}

@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
+import { ExternalDependenciesForm } from './external-dependencies-form';
 import { GitDetailsForm } from './git-details-form';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
@@ -159,14 +160,12 @@ export const CreateAgentHTTP = () => {
                 <RedpandaUserAndPermissionsForm
                   form={form}
                   title="Redpanda user and permissions"
-                  description="Enter the Kafka user credentials"
+                  description="The credentials will be used to clone the Git repository and produce one record for each GitHub document"
                 />
                 <Divider my={1} />
-                <GitDetailsForm
-                  form={form}
-                  title="Git information"
-                  description="Enter the Git repository URL and branch to use for the agent"
-                />
+                <GitDetailsForm form={form} title="Git repository with your knowledge" />
+                <Divider my={1} />
+                <ExternalDependenciesForm form={form} title="External Dependencies" />
                 <Flex justifyContent="flex-start" pt={6}>
                   <ButtonGroup isDisabled={isCreateAgentPending || isLintConfigsPending}>
                     <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
