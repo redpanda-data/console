@@ -1,4 +1,4 @@
-import { FormControl, FormHelperText, FormLabel, HStack, Icon, Text } from '@redpanda-data/ui';
+import { FormControl, FormHelperText, FormLabel, HStack, Icon, Stack, Text } from '@redpanda-data/ui';
 import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
 import type { ReactNode } from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
@@ -53,8 +53,18 @@ export const SingleSelectField = ({
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
-      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
+      <Stack spacing={0.5}>
+        {label && (
+          <FormLabel fontWeight="medium" mb={0}>
+            {label}
+          </FormLabel>
+        )}
+        {helperText && (
+          <FormHelperText mt={0} mb={1}>
+            {helperText}
+          </FormHelperText>
+        )}
+      </Stack>
       <SingleSelect
         options={selectOptions}
         onChange={handleChange}

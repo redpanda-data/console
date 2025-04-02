@@ -8,6 +8,7 @@ import {
   Icon,
   Input,
   type InputProps,
+  Stack,
 } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
@@ -34,9 +35,18 @@ export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps
 
   return (
     <FormControl mb={4}>
-      <FormLabel fontWeight="medium">{label}</FormLabel>
-      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
-
+      <Stack spacing={0.5}>
+        {label && (
+          <FormLabel fontWeight="medium" mb={0}>
+            {label}
+          </FormLabel>
+        )}
+        {helperText && (
+          <FormHelperText mt={0} mb={1}>
+            {helperText}
+          </FormHelperText>
+        )}
+      </Stack>
       {field?.state?.value?.map((_, index) => (
         <KeyValuePairField key={index} index={index} {...rest} />
       ))}

@@ -1,4 +1,4 @@
-import { FormControl, FormHelperText, FormLabel, Input, type InputProps } from '@redpanda-data/ui';
+import { FormControl, FormHelperText, FormLabel, Input, type InputProps, Stack } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
@@ -16,8 +16,18 @@ export const TextField = ({ label, helperText, placeholder, transform, isDisable
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
-      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
+      <Stack spacing={0.5}>
+        {label && (
+          <FormLabel fontWeight="medium" mb={0}>
+            {label}
+          </FormLabel>
+        )}
+        {helperText && (
+          <FormHelperText mt={0} mb={1}>
+            {helperText}
+          </FormHelperText>
+        )}
+      </Stack>
       <Input
         value={field.state.value}
         onChange={(e) => {

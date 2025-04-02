@@ -8,6 +8,7 @@ import {
   InputGroup,
   type InputProps,
   InputRightElement,
+  Stack,
   useBoolean,
 } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
@@ -26,8 +27,18 @@ export const PasswordField = ({ label, helperText, ...rest }: PasswordFieldProps
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
-      {helperText && <FormHelperText mb={1}>{helperText}</FormHelperText>}
+      <Stack spacing={0.5}>
+        {label && (
+          <FormLabel fontWeight="medium" mb={0}>
+            {label}
+          </FormLabel>
+        )}
+        {helperText && (
+          <FormHelperText mt={0} mb={1}>
+            {helperText}
+          </FormHelperText>
+        )}
+      </Stack>
       <InputGroup>
         <Input
           type={showValue ? 'text' : 'password'}

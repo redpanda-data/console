@@ -1,5 +1,5 @@
-import { FormControl, FormLabel, Stack, type StackDirection } from '@redpanda-data/ui';
-import { useId } from 'react';
+import { FormControl, FormHelperText, FormLabel, Stack, type StackDirection } from '@redpanda-data/ui';
+import { type ReactNode, useId } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 import { RadioCard, type Sizes } from './radio-card';
@@ -12,19 +12,38 @@ interface RadioGroupOption {
 }
 
 interface RadioGroupFieldProps {
-  label?: string;
+  label?: ReactNode;
+  helperText?: ReactNode;
   options: RadioGroupOption[];
   direction?: StackDirection;
   size?: Sizes;
 }
 
-export const RadioGroupField = ({ label, options, size = 'md', direction = 'row', ...rest }: RadioGroupFieldProps) => {
+export const RadioGroupField = ({
+  label,
+  helperText,
+  options,
+  size = 'md',
+  direction = 'row',
+  ...rest
+}: RadioGroupFieldProps) => {
   const field = useFieldContext<string>();
   const id = useId();
 
   return (
     <FormControl isInvalid={!!field.state.meta.errors?.length}>
-      {label && <FormLabel fontWeight="medium">{label}</FormLabel>}
+      <Stack spacing={0.5}>
+        {label && (
+          <FormLabel fontWeight="medium" mb={0}>
+            {label}
+          </FormLabel>
+        )}
+        {helperText && (
+          <FormHelperText mt={0} mb={1}>
+            {helperText}
+          </FormHelperText>
+        )}
+      </Stack>
       <Stack
         direction={direction}
         spacing={2}
