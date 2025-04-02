@@ -1,3 +1,18 @@
+cache_resources:
+  - label: "postgres_cache"
+    sql:
+      driver: "postgres"
+      dsn: ${secrets.POSTGRES_DSN}
+      table: "checkpoint_git_input"
+      key_column: "key"
+      value_column: "commit_sha"
+      init_statement: |
+        CREATE TABLE IF NOT EXISTS checkpoint_git_input (
+          key TEXT PRIMARY KEY,
+          commit_sha TEXT
+        )
+      set_suffix: ON CONFLICT (key) DO UPDATE SET commit_sha=EXCLUDED.commit_sha
+
 input:
   git:
     repository_url: ${REPOSITORY_URL}
@@ -6,6 +21,8 @@ input:
     include_patterns:
       - '${GLOB_PATTERN}'
     max_file_size: 1048576
+    checkpoint_cache: "postgres_cache"
+    checkpoint_key: "${AGENT_ID}/${REPOSITORY_URL}/${REPOSITORY_BRANCH}"
     auth:
       token:
         value: ${secrets.PERSONAL_ACCESS_TOKEN}
