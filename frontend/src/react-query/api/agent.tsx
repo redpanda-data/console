@@ -19,6 +19,7 @@ import {
   CreatePipelineRequest as CreatePipelineRequestDataPlane,
   DeletePipelineRequest as DeletePipelineRequestDataPlane,
   ListPipelinesRequest as ListPipelinesRequestDataPlane,
+  ListPipelinesRequest_Filter,
   type Pipeline,
   PipelineCreate,
   Pipeline_State,
@@ -165,15 +166,13 @@ export const useListAgentsQuery = (
   const listPipelinesRequestDataPlane = new ListPipelinesRequestDataPlane({
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
-    // TODO: Use once nameContains is not required anymore
-    // filter: new ListPipelinesRequest_Filter({
-    //   ...input?.filter,
-    //   tags: {
-    //     ...input?.filter?.tags,
-    //     __redpanda_cloud_pipeline_type: 'agent',
-    //   },
-    // }),
-    ...input,
+    filter: new ListPipelinesRequest_Filter({
+      tags: {
+        __redpanda_cloud_pipeline_type: 'agent',
+        // TODO: Ensure this tag can do partial matching of the name
+        __redpanda_cloud_agent_name: input?.filter?.nameContains ?? '',
+      },
+    }),
   });
 
   const listPipelinesRequest = new ListPipelinesRequest({
@@ -188,9 +187,13 @@ export const useListAgentsQuery = (
 
   const allRetrievedPipelines = listAgentsResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
 
-  // // TODO: Remove once nameContains is not required anymore
+  // TODO: Remove once tags are properly used for filtering
   const filteredAgentPipelines = allRetrievedPipelines?.filter(
-    (agent) => agent?.tags?.__redpanda_cloud_pipeline_type === 'agent',
+    (agent) =>
+      agent?.tags?.__redpanda_cloud_pipeline_type === 'agent' &&
+      agent?.tags?.__redpanda_cloud_agent_name
+        ?.toLowerCase()
+        .includes(input?.filter?.nameContains?.toLowerCase() ?? ''),
   );
 
   const uniqueAgentIds = [
