@@ -1,5 +1,4 @@
 import {
-  Badge,
   Button,
   ButtonGroup,
   Link as ChakraLink,
@@ -17,6 +16,7 @@ import {
 import ErrorResult from 'components/misc/ErrorResult';
 import type { IRouteEntry } from 'components/routes';
 import { runInAction } from 'mobx';
+import { ListPipelinesRequest as ListPipelinesRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type ReactNode, useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { useListAgentsQuery } from 'react-query/api/agent';
@@ -89,7 +89,13 @@ export const AgentListPage = () => {
     isLoading: isAgentListLoading,
     isError: isAgentListError,
     error: agentListError,
-  } = useListAgentsQuery();
+  } = useListAgentsQuery(
+    new ListPipelinesRequestDataPlane({
+      filter: {
+        nameContains,
+      },
+    }),
+  );
 
   useEffect(() => {
     updatePageTitle();
