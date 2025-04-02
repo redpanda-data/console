@@ -17,7 +17,7 @@ import {
 export const ExternalDependenciesForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
-    title: 'External Dependencies',
+    title: '',
   },
   render: ({ title, form }) => {
     const {

@@ -16,7 +16,7 @@ import {
 export const GitDetailsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
-    title: 'Git repository with your knowledge',
+    title: '',
   },
   render: ({ title, form }) => {
     const { data: secretList } = useListSecretsQuery();
