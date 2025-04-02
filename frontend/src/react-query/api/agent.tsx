@@ -28,7 +28,6 @@ import { MAX_PAGE_SIZE, type QueryObserverOptions } from 'react-query/react-quer
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { isUuid } from 'utils/uuid.utils';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * @description This is a custom type piggybacking on top of the Pipeline. It is used to represent a wrapper around an AI agent and its pipelines.
@@ -43,6 +42,7 @@ export interface Agent {
 
 interface CreateAgentPipelineParams {
   pipelines: PartialMessage<PipelineCreate>[];
+  agentId: string;
 }
 
 /**
@@ -54,11 +54,11 @@ export const useCreateAgentPipelinesMutation = () => {
 
   return {
     ...createPipelineMutation,
-    mutate: async ({ pipelines }: CreateAgentPipelineParams) => {
-      return createAgentPipelinesPromises({ queryClient, createPipelineMutation, pipelines });
+    mutate: async ({ pipelines, agentId }: CreateAgentPipelineParams) => {
+      return createAgentPipelinesPromises({ queryClient, createPipelineMutation, pipelines, agentId });
     },
-    mutateAsync: async ({ pipelines }: CreateAgentPipelineParams) => {
-      return createAgentPipelinesPromises({ queryClient, createPipelineMutation, pipelines });
+    mutateAsync: async ({ pipelines, agentId }: CreateAgentPipelineParams) => {
+      return createAgentPipelinesPromises({ queryClient, createPipelineMutation, pipelines, agentId });
     },
   };
 };
@@ -72,15 +72,15 @@ interface CreateAgentPipelinesPromisesProps {
     unknown
   >;
   pipelines: PartialMessage<PipelineCreate>[];
+  agentId: string;
 }
 
 const createAgentPipelinesPromises = async ({
   queryClient,
   createPipelineMutation,
   pipelines,
+  agentId,
 }: CreateAgentPipelinesPromisesProps) => {
-  const agentId = uuidv4();
-
   try {
     const createPipelinePromises = [];
 

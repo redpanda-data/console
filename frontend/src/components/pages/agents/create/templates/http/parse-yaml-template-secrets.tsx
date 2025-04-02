@@ -3,8 +3,8 @@ import { Scalar, stringify } from 'yaml';
 type YamlTemplate = Record<string, any>;
 interface ParseYamlTemplateSecretsParams {
   yamlTemplates: Record<string, YamlTemplate>;
-  envVars: Record<string, string>;
-  secretMappings: Record<string, string>;
+  envVars: Record<string, string | undefined>;
+  secretMappings: Record<string, string | undefined>;
 }
 
 /**

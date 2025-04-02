@@ -5,6 +5,7 @@ import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useLintConfigsMutation } from 'react-query/api/redpanda-connect';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useHistory } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
@@ -69,6 +70,8 @@ export const CreateAgentHTTP = () => {
       onChange: createAgentHttpSchema,
     },
     onSubmit: async ({ value }) => {
+      const agentId = uuidv4();
+
       const parsedPipelines = parseYamlTemplateSecrets({
         yamlTemplates: {
           agent: ragChatPipeline,
@@ -85,6 +88,7 @@ export const CreateAgentHTTP = () => {
           REPOSITORY_BRANCH: value.REPOSITORY_BRANCH,
           INCLUDE_GLOB_PATTERN: value.INCLUDE_GLOB_PATTERN,
           EXCLUDE_GLOB_PATTERN: value.EXCLUDE_GLOB_PATTERN,
+          AGENT_ID: agentId,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,
@@ -108,9 +112,9 @@ export const CreateAgentHTTP = () => {
       );
 
       await lintConfigsMutation({ pipelines });
-      const agentPipelines = await createAgentPipelinesMutation({ pipelines });
-      const agentId = agentPipelines?.[0]?.response?.pipeline?.tags?.__redpanda_cloud_agent_id;
-      history.push(agentId ? `/agents/${agentId}` : '/agents');
+      await createAgentPipelinesMutation({ pipelines, agentId }).then(() => {
+        history.push(`/agents/${agentId}`);
+      });
     },
   });
 
