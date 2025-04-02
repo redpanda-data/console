@@ -83,7 +83,8 @@ export const CreateAgentHTTP = () => {
           REDPANDA_BROKERS: '${REDPANDA_BROKERS}', // To ensure REDPANDA_BROKERS are set for now
           REPOSITORY_URL: value.REPOSITORY_URL,
           REPOSITORY_BRANCH: value.REPOSITORY_BRANCH,
-          GLOB_PATTERN: value.GLOB_PATTERN,
+          INCLUDE_GLOB_PATTERN: value.INCLUDE_GLOB_PATTERN,
+          EXCLUDE_GLOB_PATTERN: value.EXCLUDE_GLOB_PATTERN,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,

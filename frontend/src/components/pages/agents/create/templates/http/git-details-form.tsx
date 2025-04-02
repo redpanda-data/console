@@ -82,10 +82,19 @@ export const GitDetailsForm = withForm({
           >
             {(field) => <field.CheckboxField label="Private repository" />}
           </form.AppField>
-          <form.AppField name="GLOB_PATTERN">
+          <form.AppField name="INCLUDE_GLOB_PATTERN">
             {(field) => (
               <field.TextField
-                label="Glob pattern"
+                label="Include glob pattern"
+                placeholder="Enter glob pattern"
+                helperText={GLOB_PATTERN_DESCRIPTION}
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="EXCLUDE_GLOB_PATTERN">
+            {(field) => (
+              <field.TextField
+                label="Exclude glob pattern (optional)"
                 placeholder="Enter glob pattern"
                 helperText={GLOB_PATTERN_DESCRIPTION}
               />
