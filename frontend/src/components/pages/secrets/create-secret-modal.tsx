@@ -89,7 +89,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                 <form.AppField
                   name="id"
                   validators={{
-                    onChange: ({ value }: { value: string }) =>
+                    onChange: ({ value }) =>
                       secretList?.secrets?.some((secret) => secret?.id === value)
                         ? { message: 'ID is already in use', path: 'id' }
                         : undefined,
