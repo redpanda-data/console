@@ -21,11 +21,17 @@ export enum Scope {
    * @generated from enum value: SCOPE_REDPANDA_CONNECT = 1;
    */
   REDPANDA_CONNECT = 1,
+
+  /**
+   * @generated from enum value: SCOPE_REDPANDA_CLUSTER = 2;
+   */
+  REDPANDA_CLUSTER = 2,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Scope)
 proto3.util.setEnumType(Scope, "redpanda.api.dataplane.v1.Scope", [
   { no: 0, name: "SCOPE_UNSPECIFIED" },
   { no: 1, name: "SCOPE_REDPANDA_CONNECT" },
+  { no: 2, name: "SCOPE_REDPANDA_CLUSTER" },
 ]);
 
 /**
