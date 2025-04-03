@@ -1,9 +1,9 @@
-import { FormControl, FormHelperText, FormLabel, Input, type InputProps, Stack } from '@redpanda-data/ui';
+import { FormControl, FormHelperText, FormLabel, Stack, Textarea, type TextareaProps } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface TextFieldProps extends Omit<InputProps, 'transform'> {
+interface TextAreaFieldProps extends Omit<TextareaProps, 'transform'> {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;
@@ -11,7 +11,14 @@ interface TextFieldProps extends Omit<InputProps, 'transform'> {
   isDisabled?: boolean;
 }
 
-export const TextField = ({ label, helperText, placeholder, transform, isDisabled, ...rest }: TextFieldProps) => {
+export const TextAreaField = ({
+  label,
+  helperText,
+  placeholder,
+  transform,
+  isDisabled,
+  ...rest
+}: TextAreaFieldProps) => {
   const field = useFieldContext<string>();
 
   return (
@@ -28,7 +35,7 @@ export const TextField = ({ label, helperText, placeholder, transform, isDisable
           </FormHelperText>
         )}
       </Stack>
-      <Input
+      <Textarea
         value={field.state.value}
         onChange={(e) => {
           field.handleChange(transform ? transform(e.target.value) : e.target.value);

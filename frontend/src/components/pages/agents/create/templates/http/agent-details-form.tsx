@@ -4,6 +4,7 @@ import { useListAgentsQuery } from 'react-query/api/agent';
 import {
   AGENT_DESCRIPTION_DESCRIPTION,
   AGENT_NAME_DESCRIPTION,
+  SYSTEM_PROMPT_DESCRIPTION,
   createAgentHttpFormOpts,
 } from './create-agent-http-schema';
 
@@ -42,6 +43,15 @@ export const AgentDetailsForm = withForm({
                 label="Agent description"
                 placeholder="Enter agent description"
                 helperText={AGENT_DESCRIPTION_DESCRIPTION}
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="SYSTEM_PROMPT">
+            {(field) => (
+              <field.TextAreaField
+                label="System prompt"
+                placeholder="Enter system prompt"
+                helperText={SYSTEM_PROMPT_DESCRIPTION}
               />
             )}
           </form.AppField>
