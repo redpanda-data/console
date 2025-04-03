@@ -1,5 +1,5 @@
 export const MIN_TASKS = 1,
-  MAX_TASKS = 90;
+  MAX_TASKS = 72;
 
 const milliValueRegex = /^(\d+(\.\d+)?)(m?)$/;
 

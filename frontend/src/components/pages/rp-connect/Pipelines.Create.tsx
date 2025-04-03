@@ -25,6 +25,8 @@ import {
   NumberInput,
   Text,
   useDisclosure,
+  useToast,
+  CreateToastFnReturn,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -41,9 +43,7 @@ import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
-import { MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-
-const { ToastContainer, toast } = createStandaloneToast();
+import { MAX_TASKS, MIN_TASKS, tasksToCPU, cpuToTasks } from './tasks';
 
 const exampleContent = `
 `;
@@ -88,10 +88,24 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     const alreadyExists = pipelinesApi.pipelines.any((x) => x.id === this.fileName);
     const isNameEmpty = this.fileName.trim().length === 0;
 
+    const CreateButton = () => {
+      const toast = useToast();
+
+      return (
+        <Button
+          variant="solid"
+          isDisabled={alreadyExists || isNameEmpty || this.isCreating}
+          loadingText="Creating..."
+          isLoading={this.isCreating}
+          onClick={action(() => this.createPipeline(toast))}
+        >
+          Create
+        </Button>
+      )
+    }
+
     return (
       <PageContent>
-        <ToastContainer />
-
         <Box my="2">
           For help creating your pipeline, see our{' '}
           <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>
@@ -132,7 +146,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           </FormField>
           <FormField
             label="Compute Units"
-            description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines. For pipelines that include the AI Ollama components, one AI compute unit is equivalent to 1 GPU. This can have cost implications."
+            description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
             w={500}
           >
             <NumberInput
@@ -150,15 +164,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         </Box>
 
         <Flex alignItems="center" gap="4">
-          <Button
-            variant="solid"
-            isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-            loadingText="Creating..."
-            isLoading={this.isCreating}
-            onClick={action(() => this.createPipeline())}
-          >
-            Create
-          </Button>
+          <CreateButton />
           <Link to="/connect-clusters">
             <Button variant="link">Cancel</Button>
           </Link>
@@ -167,7 +173,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
-  async createPipeline() {
+  async createPipeline(toast: CreateToastFnReturn) {
     this.isCreating = true;
 
     pipelinesApi
@@ -186,13 +192,22 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           },
         }),
       )
-      .then(async () => {
+      .then(async (r) => {
         toast({
           status: 'success',
           duration: 4000,
           isClosable: false,
           title: 'Pipeline created',
         });
+        const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+        if (retUnits && this.tasks !== retUnits) {
+          toast({
+            status: 'warning',
+            duration: 6000,
+            isClosable: false,
+            title: `Pipeline has been resized to use ${retUnits} compute units`,
+          });
+        }
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush('/connect-clusters');
       })
