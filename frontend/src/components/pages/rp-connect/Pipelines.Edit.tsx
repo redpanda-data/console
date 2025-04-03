@@ -14,11 +14,12 @@ import {
   Box,
   Button,
   Link as ChLink,
-  createStandaloneToast,
   Flex,
   FormField,
   Input,
   NumberInput,
+  useToast,
+  CreateToastFnReturn,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -32,8 +33,6 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
 import { PipelineEditor } from './Pipelines.Create';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
 class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
@@ -88,10 +87,24 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
     const isNameEmpty = !this.displayName;
 
+    const UpdateButton = () => {
+      const toast = useToast();
+
+      return (
+        <Button
+          variant="solid"
+          isDisabled={isNameEmpty || this.isUpdating}
+          loadingText="Updating..."
+          isLoading={this.isUpdating}
+          onClick={action(() => this.updatePipeline(toast))}
+        >
+          Update
+        </Button>
+      )
+    }
+
     return (
       <PageContent>
-        <ToastContainer />
-
         <Box my="2">
           For help creating your pipeline, see our{' '}
           <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>
@@ -144,15 +157,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         </Box>
 
         <Flex alignItems="center" gap="4">
-          <Button
-            variant="solid"
-            isDisabled={isNameEmpty || this.isUpdating}
-            loadingText="Updating..."
-            isLoading={this.isUpdating}
-            onClick={action(() => this.updatePipeline())}
-          >
-            Update
-          </Button>
+          <UpdateButton />
           <Link to={`/rp-connect/${pipelineId}`}>
             <Button variant="link">Cancel</Button>
           </Link>
@@ -161,7 +166,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     );
   }
 
-  async updatePipeline() {
+  async updatePipeline(toast: CreateToastFnReturn) {
     this.isUpdating = true;
     const pipelineId = this.props.pipelineId;
 
@@ -181,13 +186,22 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           },
         }),
       )
-      .then(async () => {
+      .then(async (r) => {
         toast({
           status: 'success',
           duration: 4000,
           isClosable: false,
           title: 'Pipeline updated',
         });
+        const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+        if (retUnits && this.tasks !== retUnits) {
+          toast({
+            status: 'warning',
+            duration: 6000,
+            isClosable: false,
+            title: `Pipeline has been resized to use ${retUnits} compute units`,
+          });
+        }
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(`/rp-connect/${pipelineId}`);
       })
