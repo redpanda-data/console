@@ -1317,6 +1317,7 @@ components:
       description: Defines the scope of a secret.
       enum:
         - SCOPE_REDPANDA_CONNECT
+        - SCOPE_REDPANDA_CLUSTER
       type: string
     Secret:
       description: Defines the secret resource.
@@ -2897,6 +2898,7 @@ paths:
             items:
               enum:
                 - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
               type: string
             type: array
         - description: |-
@@ -3641,6 +3643,7 @@ paths:
             items:
               enum:
                 - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
               type: string
             type: array
         - description: |-
