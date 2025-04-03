@@ -31,24 +31,23 @@ export const AGENT_POLLING_INTERVAL = 2_000; // 2 seconds
 
 export const AgentDetailsPage = () => {
   const { agentId } = useParams<{ agentId: Pipeline['id'] }>();
-  const [agentIsRunning, setAgentIsRunning] = useState(false);
-
+  const [shouldPollForChat, setShouldPollForChat] = useState(true);
   const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery(
     {
       id: agentId,
     },
     {
-      refetchInterval: agentIsRunning ? false : AGENT_POLLING_INTERVAL,
+      refetchInterval: shouldPollForChat ? AGENT_POLLING_INTERVAL : false,
       refetchIntervalInBackground: true,
       refetchOnWindowFocus: 'always',
     },
   );
 
   useEffect(() => {
-    if (!agentIsRunning && agentData?.agent?.state === Pipeline_State.RUNNING) {
-      setAgentIsRunning(true);
+    if (shouldPollForChat && agentData?.agent?.state === Pipeline_State.RUNNING) {
+      setShouldPollForChat(false);
     }
-  }, [agentData?.agent?.state, agentIsRunning]);
+  }, [agentData?.agent?.state, shouldPollForChat]);
 
   const {
     isOpen: isDeleteAgentModalOpen,
