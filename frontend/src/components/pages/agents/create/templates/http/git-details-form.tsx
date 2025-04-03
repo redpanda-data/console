@@ -75,6 +75,25 @@ export const GitDetailsForm = withForm({
             >
               {(field) => <field.CheckboxField label="Private repository" />}
             </form.AppField>
+            {isPrivateRepository && (
+              <form.AppField name="PERSONAL_ACCESS_TOKEN">
+                {(field) => (
+                  <field.SingleSelectField
+                    label="Personal access token"
+                    helperText={PERSONAL_ACCESS_TOKEN_DESCRIPTION}
+                    placeholder="Enter personal access token"
+                    options={secretListOptions}
+                    showCreateNewOption
+                    onCreateNewOptionClick={() => {
+                      setFieldToUpdate('PERSONAL_ACCESS_TOKEN');
+                      setCustomSecretSchema(personalAccessTokenSchema);
+                      setHelperText(PERSONAL_ACCESS_TOKEN_DESCRIPTION);
+                      onCreateSecretModalOpen();
+                    }}
+                  />
+                )}
+              </form.AppField>
+            )}
             <form.AppField name="INCLUDE_GLOB_PATTERN">
               {(field) => (
                 <field.TextField
@@ -93,24 +112,6 @@ export const GitDetailsForm = withForm({
                 />
               )}
             </form.AppField>
-            {isPrivateRepository && (
-              <form.AppField name="PERSONAL_ACCESS_TOKEN">
-                {(field) => (
-                  <field.SingleSelectField
-                    label="Personal access token"
-                    placeholder="Enter personal access token"
-                    options={secretListOptions}
-                    showCreateNewOption
-                    onCreateNewOptionClick={() => {
-                      setFieldToUpdate('PERSONAL_ACCESS_TOKEN');
-                      setCustomSecretSchema(personalAccessTokenSchema);
-                      setHelperText(PERSONAL_ACCESS_TOKEN_DESCRIPTION);
-                      onCreateSecretModalOpen();
-                    }}
-                  />
-                )}
-              </form.AppField>
-            )}
           </Stack>
         </Stack>
         <CreateSecretModal
