@@ -184,7 +184,7 @@ function useShouldShowBetaBadge() {
     path: '/agents',
     strict: false,
     sensitive: true,
-    exact: true,
+    exact: false,
   });
 
   return agentsMatch;
