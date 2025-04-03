@@ -10,9 +10,7 @@ pipeline:
             api_key: ${secrets.OPENAI_KEY}
             model: gpt-4o
             system_prompt: >
-              You are a helpful question answering AI agent.
-              You answer questions and have available a tool to search a document store
-              for semantically relevant content to answer questions.
+              ${SYSTEM_PROMPT}
             prompt: ${!this.question}
             history: root = this.history | []
             response_format: text

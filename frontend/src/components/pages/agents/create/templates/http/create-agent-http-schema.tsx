@@ -79,6 +79,8 @@ export const AGENT_NAME_DESCRIPTION =
   'A name for your agent. Can include letters, numbers, spaces, and special characters like _.:/=+-@';
 export const AGENT_DESCRIPTION_DESCRIPTION =
   'A short description of what this agent does. Useful for documentation and easy identification.';
+export const SYSTEM_PROMPT_DESCRIPTION =
+  'A system prompt that guides the behavior of the AI assistant. This defines how the assistant should respond to user queries.';
 
 const GLOB_PATTERN_REGEX = /^[a-zA-Z0-9*?\[\]{}!@#$%^&()|_+\-./,()]+$/;
 export const INCLUDE_GLOB_PATTERN_DESCRIPTION =
@@ -97,6 +99,7 @@ export const createAgentHttpSchema = z
       .string()
       .describe(AGENT_DESCRIPTION_DESCRIPTION)
       .regex(nameDescriptionPattern, 'Description can only contain letters, numbers, spaces, and _.:/=+-@'),
+    SYSTEM_PROMPT: z.string().describe(SYSTEM_PROMPT_DESCRIPTION).min(1, 'System prompt is required'),
     TOPIC: z.string().min(1, 'Redpanda topic is required'),
     OPENAI_KEY: z.string().min(1, 'OpenAI API credential is required'),
     POSTGRES_DSN: z.string().min(1, 'Postgres Connection URI is required'),
@@ -169,6 +172,9 @@ export const createAgentHttpFormOpts = (secretList?: (Secret | undefined)[]) =>
     defaultValues: {
       name: '',
       description: '',
+      SYSTEM_PROMPT: `You are a helpful question answering AI agent.
+You answer questions and have available a tool to search
+a document store for semantically relevant content to answer questions.`,
       TOPIC: '',
       OPENAI_KEY: secretList?.find((secret) => secret?.id.toLowerCase().includes('openai'))?.id ?? '',
       POSTGRES_DSN: secretList?.find((secret) => secret?.id.toLowerCase().includes('postgres'))?.id ?? '',

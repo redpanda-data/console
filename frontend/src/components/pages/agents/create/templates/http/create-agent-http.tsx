@@ -73,6 +73,8 @@ export const CreateAgentHTTP = () => {
     onSubmit: async ({ value }) => {
       const agentId = uuidv4();
 
+      const inlinePrompt = value.SYSTEM_PROMPT?.replace(/\s+/g, ' ').trim();
+
       const parsedPipelines = parseYamlTemplateSecrets({
         yamlTemplates: {
           agent: ragChatPipeline,
@@ -90,6 +92,7 @@ export const CreateAgentHTTP = () => {
           INCLUDE_GLOB_PATTERN: value.INCLUDE_GLOB_PATTERN,
           EXCLUDE_GLOB_PATTERN: value.EXCLUDE_GLOB_PATTERN,
           AGENT_ID: agentId,
+          SYSTEM_PROMPT: inlinePrompt,
         },
         secretMappings: {
           KAFKA_PASSWORD: value.KAFKA_PASSWORD,
