@@ -1,3 +1,4 @@
+import { cx } from '@emotion/css';
 import {
   Button,
   ButtonGroup,
@@ -15,6 +16,9 @@ import {
 } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/ErrorResult';
 import type { IRouteEntry } from 'components/routes';
+import { config } from 'config';
+import { useBooleanFlagValue } from 'custom-feature-flag-provider';
+import { type JwtPayload, jwtDecode } from 'jwt-decode';
 import { runInAction } from 'mobx';
 import { ListPipelinesRequest as ListPipelinesRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type ReactNode, useEffect, useState } from 'react';
@@ -25,6 +29,25 @@ import { uiState } from 'state/uiState';
 import { SidebarItemBadge } from '../../misc/sidebar-item-badge';
 import { DeleteAgentModal } from './delete-agent-modal';
 import { AgentStateDisplayValue } from './details/agent-state-display-value';
+import HubspotModal from './hubspot-modal';
+import { buttonCss, errorCss, errorMessageCss } from './hubspot-styles';
+import { HUBSPOT_AI_AGENTS_FORM_ID, HUBSPOT_PORTAL_ID, HUBSPOT_REGION } from './hubspot.helper';
+
+export interface TokenPayload extends JwtPayload {
+  'https://cloud.redpanda.com/client_organization_id': string;
+  'https://cloud.redpanda.com/user_type': string;
+  'https://cloud.redpanda.com/email': string;
+  'https://cloud.redpanda.com/organization_id': string;
+  'https://cloud.redpanda.com/first_login': boolean;
+  'https://cloud.redpanda.com/account_id'?: string;
+  scope: string;
+  org_id: string;
+  permissions: string[];
+}
+
+export const AI_AGENTS_SUMMARY = `AI Agents are autonomous, general-purpose assistants that combine language understanding with the ability to
+take action. You can enrich them with your own proprietary data, connect them to tools, and let them reason
+through complex problems — iterating toward the best solution.`;
 
 interface AgentSidebarItemTitleProps {
   route: IRouteEntry;
@@ -73,6 +96,10 @@ const CellLink = ({ agentId, children }: CellLinkProps) => (
 );
 
 export const AgentListPage = () => {
+  const [isHubspotAIAgentsModalOpen, setIsHubspotAIAgentsModalOpen] = useState(false);
+  const [isHubspotAIAgentsFormSubmitted, setIsHubspotAIAgentsFormSubmitted] = useState(false);
+
+  const isAiAgentsPreviewEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUiPreview');
   const history = useHistory();
 
   const [nameContains, setNameContains] = useState('');
@@ -106,19 +133,84 @@ export const AgentListPage = () => {
     onDeleteAgentModalOpen();
   };
 
+  const handleRequestAccess = async () => {
+    console.log('window: ', window);
+    /**
+     * @see https://legacydocs.hubspot.com/docs/methods/forms/advanced_form_options
+     */
+    // Need to cast as any because otherwise we would need to declare a custom global window TS interface.
+    await (window as any)?.hbspt?.forms.create({
+      region: HUBSPOT_REGION,
+      portalId: HUBSPOT_PORTAL_ID,
+      formId: HUBSPOT_AI_AGENTS_FORM_ID,
+      target: '#hubspot-modal',
+      submitButtonClass: `chakra-button ${cx(buttonCss)}`,
+      errorClass: cx(errorCss),
+      errorMessageClass: cx(errorMessageCss),
+      onFormReady: () => {
+        if (config.jwt) {
+          const decoded = jwtDecode<TokenPayload>(config.jwt);
+
+          const emailInput = document.getElementById(`email-${HUBSPOT_AI_AGENTS_FORM_ID}`) as HTMLInputElement | null;
+          const firstNameInput = document.getElementById(
+            `firstname-${HUBSPOT_AI_AGENTS_FORM_ID}`,
+          ) as HTMLInputElement | null;
+
+          if (emailInput) {
+            emailInput.value = decoded?.['https://cloud.redpanda.com/email'];
+
+            /**
+             * This is a hack to ensure all browsers follow the same behavior.
+             * In some cases, the input's new value gets defered despite being set.
+             * It means it can only be submitted after the field has already been touched.
+             * We focus on the email field so that it does not have to be touched anymore.
+             */
+            emailInput.focus();
+            if (firstNameInput) {
+              firstNameInput.focus();
+            } else {
+              emailInput.blur();
+            }
+          }
+        }
+      },
+      onFormSubmitted: () => {
+        setIsHubspotAIAgentsFormSubmitted(true);
+      },
+    });
+
+    setIsHubspotAIAgentsModalOpen(true);
+  };
+
   if (isAgentListError) {
     return <ErrorResult error={agentListError} title="Error loading agents" message="Please try again later." />;
+  }
+
+  if (!isAiAgentsPreviewEnabled) {
+    return (
+      <>
+        <Stack spacing={4}>
+          <Text>{AI_AGENTS_SUMMARY}</Text>
+          <ButtonGroup>
+            <Button variant="outline" onClick={handleRequestAccess} data-testid="create-agent-button">
+              {isAiAgentsPreviewEnabled ? 'Create agent' : 'Request access'}
+            </Button>
+          </ButtonGroup>
+        </Stack>
+        <HubspotModal
+          isOpen={isHubspotAIAgentsModalOpen}
+          isSubmitted={isHubspotAIAgentsFormSubmitted}
+          onClose={() => setIsHubspotAIAgentsModalOpen(false)}
+        />
+      </>
+    );
   }
 
   return (
     <>
       <Stack spacing={8}>
         <Stack spacing={4}>
-          <Text>
-            AI Agents are autonomous, general-purpose assistants that combine language understanding with the ability to
-            take action. You can enrich them with your own proprietary data, connect them to tools, and let them reason
-            through complex problems — iterating toward the best solution.
-          </Text>
+          <Text>{AI_AGENTS_SUMMARY}</Text>
           <ButtonGroup>
             <Button
               variant="outline"
