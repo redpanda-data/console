@@ -279,9 +279,10 @@ const registerSecretsAutocomplete = async (
 export const PipelineEditor = observer(
   (p: {
     yaml: string;
-    onChange: (newYaml: string) => void;
+    onChange?: (newYaml: string) => void;
     secrets?: string[];
     quickActions?: React.FunctionComponent;
+    isDisabled?: boolean;
   }) => {
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
@@ -317,16 +318,21 @@ export const PipelineEditor = observer(
                     path="config.yaml"
                     value={p.yaml}
                     onChange={(e) => {
-                      if (e) p.onChange(e);
+                      if (e) p.onChange?.(e);
                     }}
                     language="yaml"
+                    options={{
+                      readOnly: p.isDisabled,
+                    }}
                     onMount={async (editor, monaco) => {
                       setMonaco(monaco);
                       setEditorInstance(editor);
                       await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                     }}
                   />
-                  <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                  {!p.isDisabled && (
+                    <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                  )}
                 </Flex>
                 {isKafkaConnectPipeline(p.yaml) && (
                   <Alert status="error" my={2}>
