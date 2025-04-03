@@ -127,7 +127,7 @@ export const AgentListPage = () => {
               }}
               data-testid="create-agent-button"
             >
-              Create new Agent
+              Create agent
             </Button>
           </ButtonGroup>
         </Stack>

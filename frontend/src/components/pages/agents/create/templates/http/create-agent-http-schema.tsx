@@ -25,7 +25,7 @@ export const passwordSchema = z
 export const KAFKA_PASSWORD_DESCRIPTION = 'Password for the Redpanda user.';
 
 export const PERSONAL_ACCESS_TOKEN_DESCRIPTION =
-  'Use ghp_ prefix for classic personal access tokens, or github_pat_ prefix for fine-grained personal access tokens.';
+  'A GitHub Personal Access Token with access to read repository contents, used to clone and pull private repositories.';
 
 /**
  * @see https://gist.github.com/magnetikonline/073afe7909ffdd6f10ef06a00bc3bc88#github-token-validation-regular-expressions
@@ -75,12 +75,16 @@ export const postgresConnectionUriSchema = z
 
 const nameDescriptionPattern = /^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$/u;
 
-export const AGENT_NAME_DESCRIPTION = 'Name can only contain letters, numbers, spaces, and special characters _.:/=+-@';
+export const AGENT_NAME_DESCRIPTION =
+  'A name for your agent. Can include letters, numbers, spaces, and special characters like _.:/=+-@';
 export const AGENT_DESCRIPTION_DESCRIPTION =
-  'Description can only contain letters, numbers, spaces, and special characters _.:/=+-@';
+  'A short description of what this agent does. Useful for documentation and easy identification.';
 
 const GLOB_PATTERN_REGEX = /^[a-zA-Z0-9*?\[\]{}!@#$%^&()|_+\-./,()]+$/;
-export const GLOB_PATTERN_DESCRIPTION = 'Use patterns like **, **/*.adoc, or src/**/*';
+export const INCLUDE_GLOB_PATTERN_DESCRIPTION =
+  'Define which files to include using glob patterns (e.g., **/*.md, docs/**/*.txt). This helps limit indexing to relevant files.';
+export const EXCLUDE_GLOB_PATTERN_DESCRIPTION =
+  'Optionally exclude specific files or folders using glob patterns (e.g., **/test/**, README.md).';
 
 export const createAgentHttpSchema = z
   .object({
@@ -110,7 +114,7 @@ export const createAgentHttpSchema = z
      */
     INCLUDE_GLOB_PATTERN: z
       .string()
-      .describe(GLOB_PATTERN_DESCRIPTION)
+      .describe(INCLUDE_GLOB_PATTERN_DESCRIPTION)
       .min(1, 'Include glob pattern is required. Use ** to include all files.')
       .refine(
         (value) => {
@@ -128,7 +132,7 @@ export const createAgentHttpSchema = z
       ),
     EXCLUDE_GLOB_PATTERN: z
       .string()
-      .describe(GLOB_PATTERN_DESCRIPTION)
+      .describe(EXCLUDE_GLOB_PATTERN_DESCRIPTION)
       .refine(
         (value) => {
           if (!value || value === '') return true;
@@ -174,7 +178,7 @@ export const createAgentHttpFormOpts = (secretList?: (Secret | undefined)[]) =>
       REPOSITORY_URL: '',
       REPOSITORY_BRANCH: 'main',
       isPrivateRepository: false,
-      INCLUDE_GLOB_PATTERN: '**',
+      INCLUDE_GLOB_PATTERN: '**/*.md,**/*.adoc',
       EXCLUDE_GLOB_PATTERN: '',
       PERSONAL_ACCESS_TOKEN: secretList?.find((secret) => secret?.id.toLowerCase().includes('personal'))?.id ?? '',
     },

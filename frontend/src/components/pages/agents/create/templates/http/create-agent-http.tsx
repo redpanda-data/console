@@ -160,10 +160,14 @@ export const CreateAgentHTTP = () => {
                 <RedpandaUserAndPermissionsForm
                   form={form}
                   title="Redpanda user and permissions"
-                  description="The credentials will be used to clone the Git repository and produce one record for each GitHub document"
+                  description="The agent needs to connect to Redpanda in order to stream GitHub documents as records into a Kafka topic. These credentials allow it to authenticate and produce messages securely. The user must posses ACLs for writing and reading the configured topic."
                 />
                 <Divider my={1} />
-                <GitDetailsForm form={form} title="Git repository with your knowledge" />
+                <GitDetailsForm
+                  form={form}
+                  title="Git repository with your knowledge"
+                  description="Tell the agent where to find your knowledge base. It will clone the specified GitHub repository, extract relevant files, and ingest them into your vector database for AI-powered querying."
+                />
                 <Divider my={1} />
                 <ExternalDependenciesForm form={form} title="External Dependencies" />
                 <Flex justifyContent="flex-start" pt={6}>

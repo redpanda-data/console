@@ -116,7 +116,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
             <form.AppField name="TOPIC">
               {(field) => (
                 <field.SingleSelectField
-                  label="Redpanda Topic"
+                  label="Redpanda topic"
                   helperText={
                     <Text>
                       All topics can be found in{' '}
@@ -158,9 +158,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
                   label="Password"
                   helperText={
                     <Text>
-                      All credentials are securely stored in{' '}
+                      All credentials are securely stored in your{' '}
                       <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
-                        Secret Store
+                        Secrets Store
                       </Link>
                     </Text>
                   }

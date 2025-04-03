@@ -33,13 +33,13 @@ export const AgentDetailsForm = withForm({
             }}
           >
             {(field) => (
-              <field.TextField label="Agent Name" placeholder="Enter agent name" helperText={AGENT_NAME_DESCRIPTION} />
+              <field.TextField label="Agent name" placeholder="Enter agent name" helperText={AGENT_NAME_DESCRIPTION} />
             )}
           </form.AppField>
           <form.AppField name="description">
             {(field) => (
               <field.TextField
-                label="Agent Description"
+                label="Agent description"
                 placeholder="Enter agent description"
                 helperText={AGENT_DESCRIPTION_DESCRIPTION}
               />

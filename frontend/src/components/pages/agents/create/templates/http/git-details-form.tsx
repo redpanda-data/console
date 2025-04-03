@@ -1,4 +1,4 @@
-import { Heading, Stack, useDisclosure } from '@redpanda-data/ui';
+import { Heading, Stack, Text, useDisclosure } from '@redpanda-data/ui';
 import { useStore } from '@tanstack/react-form';
 import { type PrefixObjectAccessor, withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
@@ -7,7 +7,8 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import type { z } from 'zod';
 import {
   type CreateAgentHttpFormValues,
-  GLOB_PATTERN_DESCRIPTION,
+  EXCLUDE_GLOB_PATTERN_DESCRIPTION,
+  INCLUDE_GLOB_PATTERN_DESCRIPTION,
   PERSONAL_ACCESS_TOKEN_DESCRIPTION,
   createAgentHttpFormOpts,
   personalAccessTokenSchema,
@@ -17,8 +18,9 @@ export const GitDetailsForm = withForm({
   ...createAgentHttpFormOpts(),
   props: {
     title: '',
+    description: '',
   },
-  render: ({ title, form }) => {
+  render: ({ title, description, form }) => {
     const { data: secretList } = useListSecretsQuery();
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
     const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
@@ -54,7 +56,12 @@ export const GitDetailsForm = withForm({
     return (
       <>
         <Stack spacing={4}>
-          <Heading size="md">{title}</Heading>
+          <Stack spacing={1}>
+            <Heading size="md">{title}</Heading>
+            <Text color="gray.500" fontSize="sm">
+              {description}
+            </Text>
+          </Stack>
           <Stack spacing={4} align="stretch">
             <form.AppField name="REPOSITORY_URL">
               {(field) => <field.TextField label="Repository URL" placeholder="Enter repository URL" />}
@@ -99,7 +106,7 @@ export const GitDetailsForm = withForm({
                 <field.TextField
                   label="Include glob pattern"
                   placeholder="Enter glob pattern"
-                  helperText={GLOB_PATTERN_DESCRIPTION}
+                  helperText={INCLUDE_GLOB_PATTERN_DESCRIPTION}
                 />
               )}
             </form.AppField>
@@ -108,7 +115,7 @@ export const GitDetailsForm = withForm({
                 <field.TextField
                   label="Exclude glob pattern (optional)"
                   placeholder="Enter glob pattern"
-                  helperText={GLOB_PATTERN_DESCRIPTION}
+                  helperText={EXCLUDE_GLOB_PATTERN_DESCRIPTION}
                 />
               )}
             </form.AppField>

@@ -59,12 +59,14 @@ export const ExternalDependenciesForm = withForm({
             <form.AppField name="POSTGRES_DSN">
               {(field) => (
                 <field.SingleSelectField
-                  label="Vector DB"
+                  label="PostgreSQL vector database"
                   helperText={
                     <Text>
-                      All credentials are securely stored in{' '}
+                      A PostgreSQL connection string (DSN) for a database with the pgvector extension preinstalled. This
+                      is where document embeddings will be stored and queried. All credentials are securely stored in
+                      your{' '}
                       <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
-                        Secret Store
+                        Secrets Store
                       </Link>
                     </Text>
                   }
@@ -82,12 +84,13 @@ export const ExternalDependenciesForm = withForm({
             <form.AppField name="OPENAI_KEY">
               {(field) => (
                 <field.SingleSelectField
-                  label="OpenAI Key"
+                  label="OpenAI API key"
                   helperText={
                     <Text>
-                      All credentials are securely stored in your{' '}
+                      Your OpenAI API key used to generate embeddings and chat responses. Ensure the key has access to
+                      the required models. All credentials are securely stored in your{' '}
                       <Link as={ReactRouterLink} to="/secrets" target="_blank" rel="noopener noreferrer">
-                        Secret Store
+                        Secrets Store
                       </Link>
                     </Text>
                   }
