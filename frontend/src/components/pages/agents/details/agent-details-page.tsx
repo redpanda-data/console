@@ -108,15 +108,17 @@ export const AgentDetailsPage = () => {
                   value: <AgentStateDisplayValue state={agentData?.agent?.state} />,
                 },
                 {
-                  label: 'Chat URL',
+                  label: 'URL',
                   value: matchingPipeline?.url,
                 },
-              ].map((item) => (
-                <Fragment key={item.label}>
-                  <Text as="b">{item.label}</Text>
-                  <Box>{item.value}</Box>
-                </Fragment>
-              ))}
+              ]
+                .filter((item) => item.value !== '')
+                .map((item) => (
+                  <Fragment key={item.label}>
+                    <Text as="b">{item.label}</Text>
+                    <Box>{item.value}</Box>
+                  </Fragment>
+                ))}
             </Grid>
           </Box>
           <ButtonGroup>
