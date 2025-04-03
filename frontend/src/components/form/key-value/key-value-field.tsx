@@ -23,9 +23,10 @@ interface KeyValuePair {
 interface KeyValueFieldProps extends InputProps {
   label: ReactNode;
   helperText?: ReactNode;
+  showAddButton?: boolean;
 }
 
-export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps) => {
+export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest }: KeyValueFieldProps) => {
   const field = useFieldContext<Array<KeyValuePair>>();
 
   // Add a new label
@@ -51,16 +52,18 @@ export const KeyValueField = ({ label, helperText, ...rest }: KeyValueFieldProps
         <KeyValuePairField key={index} index={index} {...rest} />
       ))}
 
-      <Button
-        mt={2}
-        size="sm"
-        variant="outline"
-        onClick={addLabel}
-        data-testid="add-label-button"
-        leftIcon={<span>+</span>}
-      >
-        Add label
-      </Button>
+      {showAddButton && (
+        <Button
+          mt={2}
+          size="sm"
+          variant="outline"
+          onClick={addLabel}
+          data-testid="add-label-button"
+          leftIcon={<span>+</span>}
+        >
+          Add label
+        </Button>
+      )}
     </FormControl>
   );
 };

@@ -6,7 +6,7 @@ import { AGENT_POLLING_INTERVAL } from './agent-details-page';
 import { AgentPipelineTabLogs } from './agent-pipeline-tab-logs';
 import { AgentStateDisplayValue } from './agent-state-display-value';
 import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
-import { UpdatePipelineModal } from './update-pipeline-modal';
+import { ViewPipelineModal } from './view-pipeline-modal';
 
 interface AgentPipelineTabProps {
   pipeline?: Pipeline;
@@ -14,9 +14,9 @@ interface AgentPipelineTabProps {
 
 export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
   const {
-    isOpen: isUpdatePipelineModalOpen,
-    onOpen: onUpdatePipelineModalOpen,
-    onClose: onUpdatePipelineModalClose,
+    isOpen: isViewPipelineModalOpen,
+    onOpen: onViewPipelineModalOpen,
+    onClose: onViewPipelineModalClose,
   } = useDisclosure();
 
   const { data: pipelineData } = useGetPipelineQuery(
@@ -73,20 +73,20 @@ export const AgentPipelineTab = ({ pipeline }: AgentPipelineTabProps) => {
           <Button
             variant="outline"
             onClick={() => {
-              onUpdatePipelineModalOpen();
+              onViewPipelineModalOpen();
             }}
-            data-testid="edit-pipeline-button"
+            data-testid="view-pipeline-button"
           >
-            Edit
+            View
           </Button>
           <TogglePipelineStateButton pipeline={pipeline} />
         </ButtonGroup>
         <AgentPipelineTabLogs pipeline={pipeline} />
       </Stack>
       {pipeline?.id && (
-        <UpdatePipelineModal
-          isOpen={isUpdatePipelineModalOpen}
-          onClose={onUpdatePipelineModalClose}
+        <ViewPipelineModal
+          isOpen={isViewPipelineModalOpen}
+          onClose={onViewPipelineModalClose}
           pipelineId={pipeline?.id}
         />
       )}
