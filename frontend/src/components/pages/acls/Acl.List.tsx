@@ -108,7 +108,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   async refreshData() {
-    await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles()]);
+    await Promise.allSettled([api.refreshServiceAccounts(), rolesApi.refreshRoles(), api.refreshUserData()]);
     await rolesApi.refreshRoleMembers(); // must be after refreshRoles is completed, otherwise the function couldn't know the names of the roles to refresh
   }
 

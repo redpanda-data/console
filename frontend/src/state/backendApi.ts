@@ -113,6 +113,7 @@ import { uiState } from './uiState';
 
 import { proto3 } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
+import { Code } from '@connectrpc/connect';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -508,7 +509,35 @@ const apiStore = {
       })
       .catch((err) => {
         this.userData = null;
-        if (err.code === 7) {
+
+        if (isEmbedded()) {
+          // Create a mocked empty userData with all permissions set to false
+          this.userData = {
+            displayName: '',
+            avatarUrl: '',
+            authenticationMethod: AuthenticationMethod.UNSPECIFIED,
+            canListAcls: false,
+            canListQuotas: false,
+            canPatchConfigs: false,
+            canReassignPartitions: false,
+            canCreateRoles: false,
+            canViewPermissionsList: false,
+            canManageLicense: false,
+            canManageUsers: false,
+            canCreateSchemas: false,
+            canDeleteSchemas: false,
+            canManageSchemaRegistry: false,
+            canViewSchemas: false,
+            canListTransforms: false,
+            canCreateTransforms: false,
+            canDeleteTransforms: false,
+            canViewDebugBundle: false,
+            canViewConsoleUsers: false,
+          };
+          return;
+        }
+
+        if (err.code === Code.PermissionDenied) {
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
           appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}`);
@@ -1782,7 +1811,9 @@ const apiStore = {
       .catch((err: WrappedApiError) => {
         this.serviceAccountsError = err;
       })
-      .finally(() => (this.serviceAccountsLoading = false));
+      .finally(() => {
+        this.serviceAccountsLoading = false;
+      });
   },
 
   async createServiceAccount(request: CreateUserRequest): Promise<void> {
