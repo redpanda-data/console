@@ -33,6 +33,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   @observable editorContent = undefined as unknown as string;
   @observable isUpdating = false;
   @observable secrets: string[] = [];
+  // TODO: Actually show this within the pipeline edit page
+  @observable tags = {} as Record<string, string>;
 
   constructor(p: any) {
     super(p);
@@ -71,6 +73,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       this.description = pipeline.description;
       this.tasks = cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS;
       this.editorContent = pipeline.configYaml;
+      this.tags = pipeline.tags;
     }
 
     const isNameEmpty = !this.displayName;
@@ -163,7 +166,9 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
-          tags: {},
+          tags: {
+            ...this.tags,
+          },
         }),
       )
       .then(async () => {

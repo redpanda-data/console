@@ -2,8 +2,14 @@ import { Alert, AlertDescription, AlertTitle, Box, Flex, Icon, ListItem, Unorder
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 
-export const SecretInUseAlert = ({ pipelines }: { pipelines: Pipeline[] }) => {
-  if (pipelines.length === 0) {
+interface ResourceInUseAlertProps {
+  resource: string;
+  usedBy: string;
+  pipelines?: Pipeline[];
+}
+
+export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUseAlertProps) => {
+  if (pipelines?.length === 0) {
     return null;
   }
 
@@ -17,19 +23,19 @@ export const SecretInUseAlert = ({ pipelines }: { pipelines: Pipeline[] }) => {
       borderColor="red.200"
       bg="white"
       p={4}
-      data-testid="secret-in-use-alert"
+      data-testid="resource-in-use-alert"
     >
       <Flex gap="12px">
         <Icon as={AiOutlineExclamationCircle} boxSize={4} color="red.600" />
         <Box>
           <AlertTitle fontSize="16px" fontWeight="500" color="red.600" lineHeight="1em" mb="4px">
-            Secret is in use
+            Resource is in use
           </AlertTitle>
           <AlertDescription fontSize="14px" fontWeight="400" color="red.600" lineHeight="1.71em">
-            The secret that you are about to delete is still in use for the following Redpanda Connect pipelines:
+            The {resource} that you are about to delete is still in use by the following {usedBy}:
             <UnorderedList>
-              {pipelines.map((pipeline) => (
-                <ListItem key={pipeline.id} mt={2} color="red.600" whiteSpace="pre-line">
+              {pipelines?.map((pipeline) => (
+                <ListItem key={pipeline.id} color="red.600" whiteSpace="pre-line">
                   {pipeline.displayName || pipeline.id}
                 </ListItem>
               ))}

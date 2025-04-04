@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Breadcrumbs, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Badge, Box, Breadcrumbs, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { useRouteMatch } from 'react-router-dom';
@@ -21,6 +21,7 @@ import DataRefreshButton from '../misc/buttons/data-refresh/Component';
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
+  const showBetaBadge = useShouldShowBetaBadge();
 
   const breadcrumbItems = computed(() => {
     const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
@@ -74,6 +75,7 @@ const AppPageHeader = observer(() => {
               {lastBreadcrumb.title}
             </Text>
           )}
+          {showBetaBadge && <Badge ml={2}>beta</Badge>}
           {lastBreadcrumb && (
             <Box>
               {lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}
@@ -121,12 +123,6 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
-
-  if (schemaCreateMatch) return false;
-
-  if (topicProduceRecordMatch) return false;
-
   const secretsMatch = useRouteMatch({
     path: '/secrets',
     strict: false,
@@ -134,7 +130,49 @@ function useShouldShowRefresh() {
     exact: true,
   });
 
+  const agentsMatch = useRouteMatch({
+    path: '/agents',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
+  const agentDetailsMatch = useRouteMatch({
+    path: '/agents/:agentId',
+    strict: false,
+    sensitive: true,
+    exact: true,
+  });
+
+  const createAgentMatch = useRouteMatch({
+    path: '/agents/create',
+    strict: false,
+    sensitive: true,
+    exact: false,
+  });
+
+  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
+
+  if (schemaCreateMatch) return false;
+
+  if (topicProduceRecordMatch) return false;
+
   if (secretsMatch) return false;
 
+  if (agentsMatch) return false;
+  if (agentDetailsMatch) return false;
+  if (createAgentMatch) return false;
+
   return true;
+}
+
+function useShouldShowBetaBadge() {
+  const agentsMatch = useRouteMatch({
+    path: '/agents',
+    strict: false,
+    sensitive: true,
+    exact: false,
+  });
+
+  return agentsMatch;
 }

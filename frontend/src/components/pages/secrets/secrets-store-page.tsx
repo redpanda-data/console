@@ -123,7 +123,7 @@ export const SecretsStorePage = () => {
           </Text>
           <ButtonGroup>
             <Button variant="outline" onClick={onCreateSecretModalOpen} data-testid="create-secret-button">
-              Create new Secret
+              Create secret
             </Button>
           </ButtonGroup>
         </Stack>
