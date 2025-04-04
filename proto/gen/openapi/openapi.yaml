@@ -1412,6 +1412,7 @@ components:
       description: Defines the scope of a secret.
       enum:
         - SCOPE_REDPANDA_CONNECT
+        - SCOPE_REDPANDA_CLUSTER
       type: string
     Secret:
       description: Defines the secret resource.
@@ -3061,6 +3062,7 @@ paths:
             items:
               enum:
                 - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
               type: string
             type: array
         - description: |-
@@ -3787,6 +3789,7 @@ paths:
             items:
               enum:
                 - SCOPE_REDPANDA_CONNECT
+                - SCOPE_REDPANDA_CLUSTER
               type: string
             type: array
         - description: |-
@@ -4574,7 +4577,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
