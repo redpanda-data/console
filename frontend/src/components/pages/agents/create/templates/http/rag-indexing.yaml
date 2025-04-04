@@ -6,7 +6,7 @@ input:
       - ${TOPIC}
     consumer_group: ${TOPIC}-ai-agent-rag-indexing
     tls:
-      enabled: false
+      enabled: true
     sasl:
       - username: ${USERNAME}
         password: ${secrets.KAFKA_PASSWORD}
