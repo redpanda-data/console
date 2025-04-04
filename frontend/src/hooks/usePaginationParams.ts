@@ -26,7 +26,7 @@ const usePaginationParams = (
   return useMemo(() => {
     const searchParams = new URLSearchParams(search);
     const pageSize = searchParams.has('pageSize') ? Number(searchParams.get('pageSize')) : defaultPageSize;
-    const pageIndex = searchParams.has('page') ? Number(searchParams.get('page')) : 0;
+    const pageIndex = searchParams.has('page') ? Number.parseInt(searchParams.get('page') || '0', 10) || 0 : 0;
     const totalPages = Math.ceil(totalDataLength / pageSize);
 
     const boundedPageIndex = Math.max(0, Math.min(pageIndex, totalPages - 1));
