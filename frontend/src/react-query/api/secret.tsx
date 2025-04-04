@@ -66,7 +66,7 @@ export const useCreateSecretMutationWithToast = () => {
       });
 
       showToast({
-        id: TOASTS.SECRET.UPDATE.SUCCESS,
+        id: TOASTS.SECRET.CREATE.SUCCESS,
         resourceName: variables?.request?.id,
         title: 'Secret created successfully',
         status: 'success',

@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
+import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
@@ -20,6 +21,7 @@ export default defineConfig({
     }),
     pluginSvgr({ mixedImport: true }),
     pluginSass(),
+    pluginYaml(),
   ],
   moduleFederation: {
     options: moduleFederationConfig,

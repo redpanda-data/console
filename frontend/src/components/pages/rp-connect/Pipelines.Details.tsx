@@ -94,6 +94,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
               { key: 'Description', value: pipeline.description ?? '' },
               { key: 'Status', value: <PipelineStatus status={pipeline.state} /> },
               { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
+              pipeline.url && { key: 'URL', value: pipeline.url },
             ],
             { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } },
           )}

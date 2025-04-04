@@ -21,13 +21,14 @@ import memoizeOne from 'memoize-one';
 import { autorun, configure, observable, when } from 'mobx';
 import * as monaco from 'monaco-editor';
 
-import { DEFAULT_API_BASE } from './components/constants';
+import { getAgentSidebarItemTitle } from 'components/pages/agents/agent-list-page';
+import { protobufRegistry } from 'protobuf-registry';
+import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
 import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
 import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
 import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { PipelineService as PipelineServiceV2 } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
 import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secrets_connect';
 import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
 import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
@@ -95,6 +96,7 @@ export interface SetConfigArguments {
   setSidebarItems?: (items: SidebarItem[]) => void;
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
+  featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
 }
 
 export interface SidebarItem {
@@ -116,7 +118,6 @@ interface Config {
   debugBundleClient?: Client<typeof DebugBundleService>;
   securityClient?: Client<typeof SecurityService>;
   pipelinesClient?: Client<typeof PipelineService>;
-  pipelinesClientV2?: Client<typeof PipelineServiceV2>;
   rpcnSecretsClient?: Client<typeof RPCNSecretService>;
   transformsClient?: Client<typeof TransformService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
@@ -126,6 +127,7 @@ interface Config {
   setSidebarItems: (items: SidebarItem[]) => void;
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
+  featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 }
 
 // Config object is an mobx observable, always make sure you call it from
@@ -139,9 +141,10 @@ export const config: Config = observable({
   setSidebarItems: () => {},
   setBreadcrumbs: () => {},
   isServerless: false,
+  featureFlags: FEATURE_FLAGS,
 });
 
-const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfigArguments) => {
+const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...args }: SetConfigArguments) => {
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
@@ -149,6 +152,9 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const transport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    jsonOptions: {
+      typeRegistry: protobufRegistry,
+    },
   });
 
   const licenseGrpcClient = createClient(LicenseService, transport);
@@ -156,7 +162,6 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
   const debugBundleGrpcClient = createClient(DebugBundleService, transport);
   const securityGrpcClient = createClient(SecurityService, transport);
   const pipelinesGrpcClient = createClient(PipelineService, transport);
-  const pipelinesV2GrpcClient = createClient(PipelineServiceV2, transport);
   const secretGrpcClient = createClient(RPCNSecretService, transport);
   const transformClient = createClient(TransformService, transport);
   Object.assign(config, {
@@ -170,9 +175,9 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfig
     debugBundleClient: debugBundleGrpcClient,
     securityClient: securityGrpcClient,
     pipelinesClient: pipelinesGrpcClient,
-    pipelinesClientV2: pipelinesV2GrpcClient,
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
+    featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
   return config;
@@ -231,6 +236,15 @@ export function isEmbedded() {
   return config.jwt != null;
 }
 
+/**
+ * @description use in non-functional components if you must
+ * @param featureFlag feature flag key to track
+ * @returns feature flag value, false if no feature flag with that key exists, false if the feature flags are not loaded.
+ */
+export function isFeatureFlagEnabled(featureFlag: keyof typeof FEATURE_FLAGS) {
+  return config.featureFlags?.[featureFlag] ?? false;
+}
+
 export function isServerless() {
   return config.isServerless;
 }
@@ -248,7 +262,17 @@ const routesIgnoredInServerless = [
 
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
-    return APP_ROUTES.filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
+    return APP_ROUTES.map((route) => {
+      if (route.path === '/agents') {
+        return {
+          ...route,
+          // Needed because we cannot use JSX in this file
+          title: getAgentSidebarItemTitle({ route }),
+        };
+      }
+      return route;
+    })
+      .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
       .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
       .filter((x) => {
         if (x.visibilityCheck) {
