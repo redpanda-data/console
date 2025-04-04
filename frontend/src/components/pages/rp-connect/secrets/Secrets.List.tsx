@@ -18,7 +18,7 @@ import {
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import SittingPanda from '../../../../assets/redpanda/SittingPanda.svg';
-import { DeleteSecretRequest, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import { DeleteSecretRequest, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { Features } from '../../../../state/supportedFeatures';
