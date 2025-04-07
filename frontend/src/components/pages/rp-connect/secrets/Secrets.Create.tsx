@@ -1,7 +1,7 @@
 import { Button, ButtonGroup, Flex, FormField, Input, PasswordInput, createStandaloneToast } from '@redpanda-data/ui';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { CreateSecretRequest, Scope } from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import { CreateSecretRequest, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { DefaultSkeleton } from '../../../../utils/tsxUtils';
