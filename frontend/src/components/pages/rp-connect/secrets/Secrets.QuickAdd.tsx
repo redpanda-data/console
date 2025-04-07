@@ -20,7 +20,7 @@ import {
   CreateSecretRequest,
   Scope,
   type Secret,
-} from '../../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+} from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';
