@@ -346,7 +346,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Secrets Store',
     MdKey,
     true,
-    routeVisibility(true, [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
 
   MakeRoute<{}>(
