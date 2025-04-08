@@ -172,7 +172,7 @@ func updateSecurity(doc3 *openapi3.T) {
 					Extensions: map[string]any{
 						"x-client-id": "dQjapNIAHhF7EQqQToRla3yEII9sUSap",
 					},
-					AuthorizationURL: "https://prod-cloudv2.us.auth0.com/oauth/authorize",
+					AuthorizationURL: "https://auth.prd.cloud.redpanda.com/oauth/authorize",
 					Scopes:           map[string]string{},
 				},
 			},
