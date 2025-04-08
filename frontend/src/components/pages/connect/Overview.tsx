@@ -14,7 +14,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { isServerless } from '../../../config';
-import { ListSecretScopesRequest } from '../../../protogen/redpanda/api/dataplane/v1alpha2/secret_pb';
+import { ListSecretScopesRequest } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rpcnSecretManagerApi } from '../../../state/backendApi';
 import type { ClusterConnectorInfo, ClusterConnectorTaskInfo, ClusterConnectors } from '../../../state/restInterfaces';
