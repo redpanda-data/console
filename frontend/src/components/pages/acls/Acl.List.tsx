@@ -147,7 +147,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
         name: 'Roles',
         component: <RolesTab data-testid="roles-tab" />,
         isDisabled:
-          (!Features.createUser && "Your cluster doesn't support this feature.") ||
+          (!Features.rolesApi && "Your cluster doesn't support this feature.") ||
           (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
       {
