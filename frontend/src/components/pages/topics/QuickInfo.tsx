@@ -18,6 +18,8 @@ import { MdInfoOutline } from 'react-icons/md';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import type { CleanupPolicyType } from './types';
+import { numberToThousandsString } from '../../../utils/tsxUtils';
+import { ReactNode } from 'react';
 
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
@@ -26,14 +28,15 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   // Messages
   const partitions = api.topicPartitions.get(topic.topicName);
 
-  let messageSum: null | string;
+  let messageSum: ReactNode;
 
   if (partitions === undefined) {
     messageSum = '...'; // no response yet
   } else if (partitions === null) {
     messageSum = 'N/A'; // explicit null -> not allowed
   } else {
-    messageSum = partitions.sum((p) => p.waterMarkHigh - p.waterMarkLow).toString();
+    const sum = partitions.sum((p) => p.waterMarkHigh - p.waterMarkLow);
+    messageSum = numberToThousandsString(sum);
   }
 
   // Config Entries / Separator
