@@ -103,6 +103,7 @@ export const DEFAULT_SEARCH_PARAMS = {
   page: 0,
   pageSize: 10,
   sorting: [] as SortingState,
+  quickSearch: '',
 
   filtersEnabled: false,
   filters: [] as FilterEntry[],

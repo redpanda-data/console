@@ -28,6 +28,7 @@ import type { TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
   type ColumnList,
+  DEFAULT_SEARCH_PARAMS,
   type DataColumnKey,
   FilterEntry,
   PartitionOffsetOrigin,
@@ -168,14 +169,6 @@ type TopicMessageParams = {
   quickSearch: string;
 };
 
-// Default values when no URL parameters are present
-const DEFAULT_PARAMS: TopicMessageParams = {
-  partitionID: -1,
-  maxResults: 20,
-  startOffset: -1,
-  quickSearch: '',
-};
-
 type ParamConfig = {
   key: keyof TopicMessageParams;
   transform: (value: string) => number | string;
@@ -190,7 +183,7 @@ const PARAM_MAPPING = {
 
 function parseUrlParams(): TopicMessageParams {
   const query = new URLSearchParams(window.location.search);
-  const params = { ...DEFAULT_PARAMS };
+  const params = { ...DEFAULT_SEARCH_PARAMS };
 
   // First apply defaults from local storage (last used params)
   const lastUsedParams = uiState.topicSettings.searchParams;
@@ -530,7 +523,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                       <RemovableFilter
                         onRemove={() => {
                           uiState.topicSettings.dynamicFilters.remove('partition');
-                          this.currentParams.partitionID = DEFAULT_PARAMS.partitionID;
+                          this.currentParams.partitionID = DEFAULT_SEARCH_PARAMS.partitionID;
                           updateUrlParams({ partitionID: this.currentParams.partitionID });
                         }}
                       >
