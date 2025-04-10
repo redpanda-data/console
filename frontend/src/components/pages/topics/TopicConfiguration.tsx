@@ -372,7 +372,7 @@ function isTopicConfigEdittable(
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
 
   if (isServerless()) {
-    const edittableEntries = ['retention.ms', 'retention.bytes'];
+    const edittableEntries = ['retention.ms', 'retention.bytes', 'cleanup.policy', 'write.caching', 'max.message.bytes', 'unclean.leader.election.enable', 'min.insync.replicas'];
 
     if (edittableEntries.includes(entry.name)) {
       return { canEdit: true };
