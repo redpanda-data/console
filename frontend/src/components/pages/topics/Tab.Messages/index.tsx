@@ -28,7 +28,6 @@ import type { TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
   type ColumnList,
-  DEFAULT_SEARCH_PARAMS,
   type DataColumnKey,
   FilterEntry,
   PartitionOffsetOrigin,
@@ -208,8 +207,10 @@ function parseUrlParams(): TopicMessageParams {
       if (key === 'startOffset') {
         const numValue = Number(transformed);
         params[key] = Number.isNaN(numValue) ? lastUsedParams.startOffset : numValue;
+      } else if (key === 'quickSearch') {
+        params[key] = transformed as string;
       } else {
-        params[key] = transformed as TopicMessageParams[keyof TopicMessageParams];
+        params[key] = transformed as number;
       }
     }
   }
