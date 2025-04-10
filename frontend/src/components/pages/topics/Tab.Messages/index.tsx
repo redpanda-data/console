@@ -161,6 +161,79 @@ interface TopicMessageViewProps {
   refreshTopicData: (force: boolean) => void;
 }
 
+// Add these type definitions and helper functions at the top of the file
+type TopicMessageParams = {
+  partitionID: number;
+  maxResults: number;
+  startOffset: number;
+  quickSearch: string;
+};
+
+// Default values when no URL parameters are present
+const DEFAULT_PARAMS: TopicMessageParams = {
+  partitionID: -1,
+  maxResults: 20,
+  startOffset: -1,
+  quickSearch: '',
+};
+
+type ParamConfig = {
+  key: keyof TopicMessageParams;
+  transform: (value: string) => number | string;
+};
+
+const PARAM_MAPPING = {
+  p: { key: 'partitionID', transform: Number } as ParamConfig,
+  s: { key: 'maxResults', transform: Number } as ParamConfig,
+  o: { key: 'startOffset', transform: Number } as ParamConfig,
+  q: { key: 'quickSearch', transform: String } as ParamConfig,
+};
+
+function parseUrlParams(): TopicMessageParams {
+  const query = new URLSearchParams(window.location.search);
+  const params = { ...DEFAULT_PARAMS };
+
+  // First apply defaults from local storage (last used params)
+  const lastUsedParams = uiState.topicSettings.searchParams;
+  params.partitionID = lastUsedParams.partitionID;
+  params.maxResults = lastUsedParams.maxResults;
+  params.startOffset = lastUsedParams.startOffset;
+  params.quickSearch = uiState.topicSettings.quickSearch;
+
+  // Then override with URL parameters if they exist
+  for (const [urlParam, { key, transform }] of Object.entries(PARAM_MAPPING)) {
+    const value = query.get(urlParam);
+    if (value !== null) {
+      const transformed = transform(value);
+      if (key === 'startOffset') {
+        const numValue = Number(transformed);
+        params[key] = Number.isNaN(numValue) ? lastUsedParams.startOffset : numValue;
+      } else {
+        params[key] = transformed as TopicMessageParams[keyof TopicMessageParams];
+      }
+    }
+  }
+
+  return params;
+}
+
+function updateUrlParams(params: Partial<TopicMessageParams>) {
+  editQuery((query: Record<string, string | null | undefined>) => {
+    for (const [urlParam, { key }] of Object.entries(PARAM_MAPPING)) {
+      const value = params[key as keyof TopicMessageParams];
+      if (value !== undefined && value !== null) {
+        query[urlParam] = String(value);
+      }
+    }
+  });
+
+  // Update local storage with the new params
+  if (params.partitionID !== undefined) uiState.topicSettings.searchParams.partitionID = params.partitionID;
+  if (params.maxResults !== undefined) uiState.topicSettings.searchParams.maxResults = params.maxResults;
+  if (params.startOffset !== undefined) uiState.topicSettings.searchParams.startOffset = params.startOffset;
+  if (params.quickSearch !== undefined) uiState.topicSettings.quickSearch = params.quickSearch;
+}
+
 /*
     TODO:
         - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
@@ -230,7 +303,7 @@ const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['cha
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
   @observable previewDisplay: string[] = [];
-  // @observable allCurrentKeys: string[];
+  @observable currentParams: TopicMessageParams;
 
   @observable showColumnSettingsModal = false;
   @observable showPreviewFieldsModal = false;
@@ -243,6 +316,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   autoSearchReaction: IReactionDisposer | null = null;
   quickSearchReaction: IReactionDisposer | null = null;
+  urlParamsReaction: IReactionDisposer | null = null;
 
   currentSearchRun: string | null = null;
 
@@ -251,24 +325,30 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   constructor(props: TopicMessageViewProps) {
     super(props);
+    this.currentParams = parseUrlParams();
     this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
 
     makeObservable(this);
   }
 
   componentDidMount() {
-    // unpack query parameters (if any)
-    const searchParams = uiState.topicSettings.searchParams;
-    const query = new URLSearchParams(window.location.search);
-    // console.debug("parsing query: " + toJson(query));
-    if (query.has('p')) searchParams.partitionID = Number(query.get('p'));
-    if (query.has('s')) searchParams.maxResults = Number(query.get('s'));
-    if (query.has('o')) {
-      searchParams.startOffset = Number(query.get('o'));
-      searchParams.offsetOrigin =
-        searchParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : searchParams.startOffset;
-    }
-    if (query.has('q')) uiState.topicSettings.quickSearch = String(query.get('q'));
+    // Initialize params from URL and/or defaults
+    this.currentParams = parseUrlParams();
+
+    // Always update URL with current params to ensure consistency
+    updateUrlParams(this.currentParams);
+
+    // Watch for URL parameter changes
+    this.urlParamsReaction = autorun(
+      () => {
+        const urlParams = parseUrlParams();
+        transaction(() => {
+          this.currentParams = urlParams;
+          this.messageSource.filterText = urlParams.quickSearch;
+        });
+      },
+      { name: 'sync url parameters' },
+    );
 
     // Auto search when parameters change
     this.autoSearchReaction = autorun(() => this.searchFunc('auto'), {
@@ -279,22 +359,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     // Quick search -> url
     this.quickSearchReaction = autorun(
       () => {
-        editQuery((query) => {
-          if (uiState.topicSettings.quickSearch) query.q = uiState.topicSettings.quickSearch;
-          else query.q = undefined;
-        });
+        updateUrlParams({ quickSearch: this.currentParams.quickSearch });
       },
       { name: 'update query string' },
     );
 
-    this.messageSource.filterText = uiState.topicSettings.quickSearch;
-
+    this.messageSource.filterText = this.currentParams.quickSearch;
     appGlobal.searchMessagesFunc = this.searchFunc;
   }
+
   componentWillUnmount() {
     this.messageSource.dispose();
     if (this.autoSearchReaction) this.autoSearchReaction();
     if (this.quickSearchReaction) this.quickSearchReaction();
+    if (this.urlParamsReaction) this.urlParamsReaction();
 
     this.messageSearch.stopSearch();
 
@@ -332,7 +410,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     );
   }
   SearchControlsBar = observer(() => {
-    const searchParams = uiState.topicSettings.searchParams;
     const topic = this.props.topic;
     const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
     const [customStartOffsetValue, setCustomStartOffsetValue] = useState(0 as number | string);
@@ -355,7 +432,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         label: (
           <Flex gap={2} alignItems="center">
             <MdOutlineQuickreply />
-            <span data-testid="start-offset-newest">{`Newest - ${String(searchParams.maxResults)}`}</span>
+            <span data-testid="start-offset-newest">{`Newest - ${String(this.currentParams.maxResults)}`}</span>
           </Flex>
         ),
       },
@@ -388,6 +465,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       },
     ];
 
+    // Determine the current offset origin based on startOffset
+    const currentOffsetOrigin =
+      this.currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : this.currentParams.startOffset;
+
     return (
       <React.Fragment>
         <Grid my={4} gap={3} gridTemplateColumns="auto 1fr" width="full">
@@ -395,41 +476,47 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <Label text="Start Offset">
               <Flex gap={3}>
                 <SingleSelect<PartitionOffsetOrigin>
-                  value={searchParams.offsetOrigin}
+                  value={currentOffsetOrigin}
                   data-testid="start-offset-dropdown"
                   onChange={(e) => {
-                    searchParams.offsetOrigin = e;
-                    if (searchParams.offsetOrigin === PartitionOffsetOrigin.Custom) {
-                      if (searchParams.startOffset < 0) searchParams.startOffset = 0;
+                    if (e === PartitionOffsetOrigin.Custom) {
+                      if (this.currentParams.startOffset < 0) this.currentParams.startOffset = 0;
                     } else {
-                      searchParams.startOffset = searchParams.offsetOrigin;
+                      this.currentParams.startOffset = e;
                     }
+                    updateUrlParams({ startOffset: this.currentParams.startOffset });
                   }}
                   options={startOffsetOptions}
                   chakraStyles={defaultSelectChakraStyles}
                 />
-                {searchParams.offsetOrigin === PartitionOffsetOrigin.Custom && (
+                {currentOffsetOrigin === PartitionOffsetOrigin.Custom && (
                   <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
                     <Input
                       style={{ width: '7.5em' }}
                       maxLength={20}
-                      isDisabled={searchParams.offsetOrigin !== PartitionOffsetOrigin.Custom}
+                      isDisabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
                       value={customStartOffsetValue}
                       onChange={(e) => {
                         setCustomStartOffsetValue(e.target.value);
-                        if (!Number.isNaN(Number(e.target.value))) searchParams.startOffset = Number(e.target.value);
+                        if (!Number.isNaN(Number(e.target.value))) {
+                          this.currentParams.startOffset = Number(e.target.value);
+                          updateUrlParams({ startOffset: this.currentParams.startOffset });
+                        }
                       }}
                     />
                   </Tooltip>
                 )}
-                {searchParams.offsetOrigin === PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
+                {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && <StartOffsetDateTimePicker />}
               </Flex>
             </Label>
 
             <Label text="Max Results">
               <SingleSelect<number>
-                value={searchParams.maxResults}
-                onChange={(c) => (searchParams.maxResults = c)}
+                value={this.currentParams.maxResults}
+                onChange={(c) => {
+                  this.currentParams.maxResults = c;
+                  updateUrlParams({ maxResults: c });
+                }}
                 options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
               />
             </Label>
@@ -442,13 +529,17 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                       <RemovableFilter
                         onRemove={() => {
                           uiState.topicSettings.dynamicFilters.remove('partition');
-                          searchParams.partitionID = DEFAULT_SEARCH_PARAMS.partitionID;
+                          this.currentParams.partitionID = DEFAULT_PARAMS.partitionID;
+                          updateUrlParams({ partitionID: this.currentParams.partitionID });
                         }}
                       >
                         <SingleSelect<number>
-                          value={searchParams.partitionID}
+                          value={this.currentParams.partitionID}
                           chakraStyles={inlineSelectChakraStyles}
-                          onChange={(c) => (searchParams.partitionID = c)}
+                          onChange={(c) => {
+                            this.currentParams.partitionID = c;
+                            updateUrlParams({ partitionID: c });
+                          }}
                           options={[
                             {
                               value: -1,
@@ -504,10 +595,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) && (
               <StatusIndicator
                 identityKey="messageSearch"
-                fillFactor={(this.messageSearch.messages?.length ?? 0) / searchParams.maxResults}
+                fillFactor={(this.messageSearch.messages?.length ?? 0) / this.currentParams.maxResults}
                 // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                 statusText={this.messageSearch.searchPhase!}
-                progressText={`${this.messageSearch.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                progressText={`${this.messageSearch.messages?.length ?? 0} / ${this.currentParams.maxResults}`}
                 bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
                 messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
               />
@@ -639,8 +730,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   searchFunc = (source: 'auto' | 'manual') => {
     // need to do this first, so we trigger mobx
-    const params = uiState.topicSettings.searchParams;
-    const searchParams = `${params.offsetOrigin} ${params.maxResults} ${params.partitionID} ${params.startOffset} ${params.startTimestamp} ${params.keyDeserializer} ${params.valueDeserializer}`;
+    const searchParams = `${this.currentParams.startOffset} ${this.currentParams.maxResults} ${this.currentParams.partitionID} ${uiState.topicSettings.searchParams.startTimestamp} ${uiState.topicSettings.searchParams.keyDeserializer} ${uiState.topicSettings.searchParams.valueDeserializer}`;
 
     untracked(() => {
       const phase = this.messageSearch.searchPhase;
@@ -1061,22 +1151,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   }
 
   async executeMessageSearch(): Promise<TopicMessage[]> {
-    const searchParams = uiState.topicSettings.searchParams;
     const canUseFilters =
       (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
-
-    editQuery((query) => {
-      query.p = String(searchParams.partitionID); // p = partition
-      query.s = String(searchParams.maxResults); // s = size
-      query.o = String(searchParams.startOffset); // o = offset
-    });
 
     let filterCode = '';
     if (canUseFilters) {
       const functionNames: string[] = [];
       const functions: string[] = [];
 
-      const filteredSearchParams = searchParams.filters.filter(
+      const filteredSearchParams = uiState.topicSettings.searchParams.filters.filter(
         (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode,
       );
 
@@ -1096,19 +1179,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     const request = {
       topicName: this.props.topic.topicName,
-      partitionId: searchParams.partitionID,
-      startOffset: searchParams.startOffset,
-      startTimestamp: searchParams.startTimestamp,
-      maxResults: searchParams.maxResults,
+      partitionId: this.currentParams.partitionID,
+      startOffset: this.currentParams.startOffset,
+      startTimestamp: uiState.topicSettings.searchParams.startTimestamp,
+      maxResults: this.currentParams.maxResults,
       filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
       includeRawPayload: true,
-
-      keyDeserializer: searchParams.keyDeserializer,
-      valueDeserializer: searchParams.valueDeserializer,
+      keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
+      valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
     } as MessageSearchRequest;
-
-    // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
-    //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
 
     return transaction(async () => {
       try {
