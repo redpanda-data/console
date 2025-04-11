@@ -71,6 +71,9 @@ export default defineConfig({
       config.resolve.symlinks = false;
 
       config.output.publicPath = 'auto';
+      config.experiments = {
+        parallelCodeSplitting: true,
+      };
 
       const plugins = [
         new NodePolyfillPlugin({
