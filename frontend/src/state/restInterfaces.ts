@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ConnectError } from '@connectrpc/connect';
 import type { AuthenticationMethod } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import type {
   GetConsoleInfoResponse,
@@ -1387,6 +1388,7 @@ export interface CreateSecretResponse {
 
 export interface ClusterOverview {
   kafkaAuthorizerInfo: GetKafkaAuthorizerInfoResponse | null;
+  kafkaAuthorizerError?: ConnectError | null;
   kafka: GetKafkaInfoResponse | null;
   redpanda: GetRedpandaInfoResponse | null;
   console: GetConsoleInfoResponse | null;

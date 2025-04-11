@@ -371,7 +371,15 @@ const apiStore = {
   // Data
   endpointCompatibility: null as EndpointCompatibility | null,
 
-  clusterOverview: null as ClusterOverview | null,
+  clusterOverview: {
+    kafkaAuthorizerInfo: null,
+    kafkaAuthorizerError: null,
+    kafka: null,
+    redpanda: null,
+    console: null,
+    kafkaConnect: null,
+    schemaRegistry: null,
+  } as ClusterOverview,
   brokers: null as BrokerWithConfigAndStorage[] | null,
 
   clusters: ['A', 'B', 'C'],
@@ -884,6 +892,7 @@ const apiStore = {
 
     const requests: Array<Promise<any>> = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
+        this.clusterOverview.kafkaAuthorizerError = e;
         console.error(e);
         return null;
       }),
@@ -927,6 +936,7 @@ const apiStore = {
     ] = responses;
 
     this.clusterOverview = {
+      ...this.clusterOverview,
       kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse,
       console: consoleInfoResponse,
       kafka: kafkaResponse,

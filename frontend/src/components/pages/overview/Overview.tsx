@@ -321,7 +321,9 @@ function ClusterDetails() {
 
   const serviceAccounts = overview.redpanda?.userCount ?? 'Admin API not configured';
 
-  const aclCount = overview.kafkaAuthorizerInfo?.aclCount ?? 'Authorizer not configured';
+  const aclCount = overview.kafkaAuthorizerInfo
+    ? overview.kafkaAuthorizerInfo.aclCount
+    : (overview.kafkaAuthorizerError?.message ?? 'Authorizer not configured');
 
   const formatStatus = (overviewStatus?: ComponentStatus): React.ReactNode => {
     if (!overviewStatus) {
@@ -394,7 +396,7 @@ function ClusterDetails() {
           title="ACLs"
           content={[
             [
-              <Link key={0} as={ReactRouterLink} to="/security/acls/">
+              <Link key={0} as={ReactRouterLink} to="/security/acls/" wordBreak="break-word">
                 {aclCount}
               </Link>,
             ],
