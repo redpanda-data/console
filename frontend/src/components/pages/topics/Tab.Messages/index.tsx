@@ -190,7 +190,8 @@ function parseUrlParams(): TopicMessageParams {
   params.partitionID = lastUsedParams.partitionID;
   params.maxResults = lastUsedParams.maxResults;
   params.startOffset = lastUsedParams.startOffset;
-  params.quickSearch = uiState.topicSettings.quickSearch;
+  // Initialize quickSearch as empty string instead of loading from local storage
+  params.quickSearch = '';
 
   // Then override with URL parameters if they exist
   for (const [urlParam, { key, transform }] of Object.entries(PARAM_MAPPING)) {
@@ -306,7 +307,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   @observable fetchError = null as any | null;
 
   messageSearch = createMessageSearch();
-  messageSource = new FilterableDataSource<TopicMessage>(() => this.messageSearch.messages, this.isFilterMatch, 16);
+  messageSource = new FilterableDataSource<TopicMessage>(
+    () => this.messageSearch.messages,
+    (_, m) => this.isFilterMatch('', m),
+    16,
+  );
 
   autoSearchReaction: IReactionDisposer | null = null;
   quickSearchReaction: IReactionDisposer | null = null;
@@ -321,6 +326,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     super(props);
     this.currentParams = parseUrlParams();
     this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
+    this.isFilterMatch = this.isFilterMatch.bind(this);
 
     makeObservable(this);
   }
@@ -338,7 +344,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const urlParams = parseUrlParams();
         transaction(() => {
           this.currentParams = urlParams;
-          this.messageSource.filterText = urlParams.quickSearch;
         });
       },
       { name: 'sync url parameters' },
@@ -354,11 +359,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     this.quickSearchReaction = autorun(
       () => {
         updateUrlParams({ quickSearch: this.currentParams.quickSearch });
+        // Also update the local storage value to keep it in sync
+        uiState.topicSettings.quickSearch = this.currentParams.quickSearch;
       },
       { name: 'update query string' },
     );
 
-    this.messageSource.filterText = this.currentParams.quickSearch;
     appGlobal.searchMessagesFunc = this.searchFunc;
   }
 
@@ -676,8 +682,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <Input
               px={4}
               placeholder="Filter table content ..."
-              value={uiState.topicSettings.quickSearch}
-              onChange={(x) => (uiState.topicSettings.quickSearch = x.target.value)}
+              value={this.currentParams.quickSearch}
+              onChange={(x) => {
+                this.currentParams.quickSearch = x.target.value;
+                updateUrlParams({ quickSearch: x.target.value });
+              }}
             />
             <Flex gap={2} fontSize="sm" whiteSpace="nowrap" alignItems="center">
               {this.messageSearch.searchPhase === null || this.messageSearch.searchPhase === 'Done' ? (
@@ -767,11 +776,14 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   cancelSearch = () => this.messageSearch.stopSearch();
 
-  isFilterMatch(str: string, m: TopicMessage) {
-    str = uiState.topicSettings.quickSearch.toLowerCase();
-    if (m.offset.toString().toLowerCase().includes(str)) return true;
-    if (m.keyJson?.toLowerCase().includes(str)) return true;
-    if (m.valueJson?.toLowerCase().includes(str)) return true;
+  isFilterMatch(_str: string, m: TopicMessage) {
+    const searchStr = this.currentParams.quickSearch.toLowerCase();
+    // If search string is empty, show all messages
+    if (!searchStr) return true;
+
+    if (m.offset.toString().toLowerCase().includes(searchStr)) return true;
+    if (m.keyJson?.toLowerCase().includes(searchStr)) return true;
+    if (m.valueJson?.toLowerCase().includes(searchStr)) return true;
     return false;
   }
 
