@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.0.0 / 2025-04-07
+
+**Note:** This release contains breaking config changes. You can find the migration doc here: https://docs.redpanda.com/current/upgrade/migrate/console-v3/
+
+**⚠️ This release contains breaking config changes**
+
+- [CHANGE] Multiple config properties have been renamed, moved or removed.
+- [IMPROVEMENT] Lazily load all schemas from the schema registry rather than polling all schemas into memory.
+- [IMPROVEMENT] Update Consumer Groups page layout.
+- [IMPROVEMENT] Ability to edit consumer group offsets by shifting the committed offsets.
+- [BUFGIX] Fix deletion of subject compatibility levels to reset to the default.
+
 ## v2.8.5 / 2025-03-25
 
 - [SECURITY] Address [CVE-2025-30204](https://nvd.nist.gov/vuln/detail/CVE-2025-30204) by updating the github.com/golang-jwt/jwt library.
