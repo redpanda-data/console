@@ -22,243 +22,324 @@
 # kafka.tls.caFilepath => KAFKA_TLS_CAFILEPATH
 #
 # --- Note
-# Commented config settings are optional and show the defaults
+# This is an example configuration file for Redpanda Console v3.x.x
 ###################################################################
+
+#----------------------------------------------------------------------------
+# Kafka configuration
+#----------------------------------------------------------------------------
 kafka:
+  # Brokers is a list of bootstrap servers with ports.
   brokers:
-    - broker-0.mycompany.com:19092
-    - broker-1.mycompany.com:19092
-    - broker-2.mycompany.com:19092
-  # clientId: console
-  # rackId: # In multi zone Kafka clusters you can reduce traffic costs by consuming messages from replica brokers in the same zone
+    - "broker-0.mycompany.com:19092"
+    - "broker-1.mycompany.com:19092"
+    - "broker-2.mycompany.com:19092"
+  # Optional: Client ID used to identify Console to the Kafka cluster.
+  # clientId: "console"
+  # Optional: Rack identifier to optimize message consumption in multi-zone clusters.
+  # rackId: "zone-a"
   # sasl:
-  #   enabled: false
-  #   username:
-  #   password: # This can be set via the --kafka.sasl.password flag as well
-  #   mechanism: PLAIN # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI, OAUTHBEARER and AWS_MSK_IAM are supported
-  #   gssapi:
-  #     authType:
-  #     keyTabPath:
-  #     kerberosConfigPath:
-  #     serviceName:
-  #     username:
-  #     password: # can be set via the --kafka.sasl.gssapi.password flag as well
-  #     realm:
-  #     enableFast: true
-  #   oauth:
-  #     token: # can be set via the --kafka.sasl.oauth.token flag as well. Will be used as a long living token if no token-endpoint is specified
-  #     clientId: # can be set via the --kafka.sasl.oauth.clientId flag as well
-  #     clientSecret: # can be set via the --kafka.sasl.oauth.clientSecret flag as well
-  #     tokenEndpoint: # can be set via the --kafka.sasl.oauth.tokenEndpoint flag as well. Will be used to fetch a short living token if specified
-  #     scope: # can be set via the --kafka.sasl.oauth.scope flag as well
-  #     extensions: # Extensions are key value pairs to add to the authentication request
-  #       - key:
-  #         value:
-  #   awsMskIam: # either set both accessKey and secretKey or leave both empty to use default AWS configuration in your environment
-  #     accessKey:
-  #     secretKey: # can be set via the --kafka.sasl.aws-msk-iam.secret-key flag as well
-  #     sessionToken: # can be set via the --kafka.sasl.aws-msk-iam.session-token flag as well
-  #     userAgent:
-  #     region: # AWS region to send the API requests to
-  #     clientTimeout: # duration for AWS API client. Default is 10 seconds. Can be set via the --kafka.sasl.aws-msk-iam.client-timeout flag as well
+    # enabled: true
+    # Supported mechanisms include:
+    # - OAUTHBEARER (OIDC)
+    # - SCRAM-SHA-256 or SCRAM-SHA-512 (basic authentication)
+    # - GSSAPI (Kerberos); if using Kerberos, ensure impersonateUser is false.
+    # - AWS_MSK_IAM (AWS MSK IAM)
+    # mechanism: SCRAM-SHA-256
+    # impersonateUser: false
+    # oauth:
+      # token: "example-oauth-token"
+      # clientId: "example-client-id"
+      # clientSecret: "example-client-secret"
+      # tokenEndpoint: "https://accounts.google.com/token"
+      # scope: "openid"
+    # Example for basic authentication (uncomment to use):
+    # username: "your-username"
+    # password: "your-password"
+    # Example for GSSAPI (Kerberos) - impersonateUser must be false:
+    # gssapi:
+    #   authType: KEYTAB_AUTH
+    #   keyTabPath: "/path/to/keytab"
+    #   kerberosConfigPath: "/path/to/krb5.conf"
+    #   serviceName: "kafka"
+    #   username: "your-username"
+    #   password: "your-password"
+    #   realm: "MY.REALM"
+    #   enableFast: true
   # tls:
-  #   enabled: false
-  #   caFilepath:
-  #   certFilepath:
-  #   keyFilepath:
-  #   passphrase: # This can be set via the --kafka.tls.passphrase flag as well
-  #   insecureSkipTlsVerify: false
-  # schemaRegistry:
-  #   enabled: false
-  #   urls: [] # Url with scheme is required, e.g. ["http://localhost:8081"]
-  #   username: # Basic auth username
-  #   password: # Basic auth password. This can be set via the --schema.registry.password flag as well
-  #   bearerToken: # This can be set via the --schema.registry.token flag as well
-  #   tls:
-  #     enabled: false # Enable Client certificate connexion to the schemaRegistry
-  #     caFilepath: # Path to a custom CA file. If not specified the system's / trusted root ca is used.
-  #     certFilepath:
-  #     keyFilepath:  # key should not be encrypted by a passphrase
-  #     insecureSkipTlsVerify: false
-  # protobuf:
-  #   enabled: false
-  #   mappings: []
-  #     # Map the proto type names for each of your topics. These proto types will be used for deserialization
-  #     # - topicName: xy
-  #     #   valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
-  #     #   keyProtoType: package.Type
-  #   # SchemaRegistry does not require any mappings to be specified. The schema registry client configured on the kafka level will be reused.
-  #   schemaRegistry:
-  #     enabled: false
-  #     refreshInterval: 5m
-  #   # FileSystem can be configured if you want Console to search the local file system for the .proto files
-  #   fileSystem:
-  #     enabled: false
-  #     paths: []
-  #     refreshInterval: 5m
-  #     # Set true if you want Console to skip the hidden files and directories while searching the local file system 
-  #     skipHiddenFiles: false
-  #   importPaths is a list of paths from which to import Proto files into Redpanda Console.
-  #   Paths are relative to the root directory.
-  #   The `git` configuration must be enabled to use this feature.
-  #   importPaths: []
-  #   # Git is where the .proto files come from, in the future there might be additional options
-  #   git:
-  #     enabled: false
-  #     repository:
-  #       url:
-  #       branch: (defaults to primary/default branch)
-  #       baseDirectory: (defaults to the root directory of the repo/branch above)
-  #       maxDepth: 15
-  #     # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
-  #     refreshInterval: 1m
-  #     # Basic Auth
-  #     # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
-  #     basicAuth:
-  #       enabled: true
-  #       username: token
-  #       password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
-  #     # SSH Auth
-  #     # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
-  #     ssh:
-  #       enabled: false
-  #       username:
-  #       privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
-  #       privateKeyFilepath:
-  #       passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
-  # messagePack:
-  #   enabled: false
-  #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
-  # cbor:
-  #   enabled: false
-  #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
+    # enabled: false
+    # Uncomment and set the following paths if TLS is required:
+    # caFilepath: "/path/to/ca-cert.pem"
+    # certFilepath: "/path/to/client-cert.pem"
+    # keyFilepath: "/path/to/client-key.pem"
+    # insecureSkipTlsVerify: false
   # Startup is a configuration block to specify how often and with what delays
-  # we should try to connect to the Kafka service. If all attempts have failed the
-  # application will exit with code 1.
+  # we should try to connect to the Kafka service. If all attempts fail the
+  # application exits with code 1.
   # startup:
-  #   maxRetries: 5
-  #   retryInterval: 1s
-  #   maxRetryInterval 60s
-  #   backoffMultiplier: 2
+    # maxRetries: 5
+    # retryInterval: 1s
+    # maxRetryInterval 60s
+    # backoffMultiplier: 2
 
-# redpanda:
-#   adminApi:
-#     enabled: false
-#     urls: []
-#     username: ""
-#     password: ""
-#     tls:
-#       enabled: false
-#       caFilepath: ""
-#       certFilepath: ""
-#       keyFilepath: ""
+#----------------------------------------------------------------------------
+# Schema Registry configuration (top-level)
+#----------------------------------------------------------------------------
+schemaRegistry:
+  enabled: true
+  urls:
+    - "http://schema-registry.mycompany.com:8081"
+  # Optional: Authentication for Schema Registry.
+  # authentication:
+  #   basic:
+  #     username: "example-user"
+  #     password: "example-password"
+  #   bearerToken: "example-bearer-token"
+  tls:
+    enabled: false
+    # Uncomment and configure if TLS is required:
+    # caFilepath: "/path/to/ca-cert.pem"
+    # certFilepath: "/path/to/client-cert.pem"
+    # keyFilepath: "/path/to/client-key.pem"
+    # insecureSkipTlsVerify: false
 
-# connect:
-#   enabled: false
-#   # An empty array for clusters is the default, but you have to specify at least one cluster, as soon as
-#   # you enable Kafka connect. Otherwise you'll not be able to start Console.
-#   clusters: []
-#     - name: xy
-#       url: http://my-cluster:8083
-#       tls:
-#         enabled: false # Trusted certificates are still allowed if TLS is not enabled.
-#         # caFilepath:
-#         # certFilepath:
-#         # keyFilepath:
-#         # insecureSkipTlsVerify: false
-#       username:
-#       password: # This can be set via the via the --connect.clusters.i.password flag as well (i to be replaced with the array index)
-#       token: # This can be set via the via the --connect.clusters.i.token flag as well (i to be replaced with the array index)
-#   connectTimeout: 15s # used to test cluster connectivity
-#   readTimeout: 60s    # overall REST timeout
-#   requestTimeout: 6s  # timeout for REST requests
+#----------------------------------------------------------------------------
+# Console authentication
+#----------------------------------------------------------------------------
+authentication:
+  jwtSigningSecret: "secret-value"
+  useSecureCookies: true
+  # Optionally enable cookie chunking if cookie size is an issue.
+  # useCookieChunking: false
+  # OIDC configuration (if using OIDC):
+  # oidc:
+  #   enabled: true
+  #   issuerUrl: "https://accounts.google.com"
+  #   clientId: "your-oidc-client-id"
+  #   clientSecret: "your-oidc-client-secret"
+  #   redirectUrl: "http://localhost:9090/auth/callbacks/oidc"
+  #   successfulLoginRedirectUrl: "http://localhost:3000"
+  #   accessType: "offline"
+  #   prompt: "consent"
+  #   issuerTls:
+    #   enabled: true
+    #   caFilepath: "/path/to/ca.pem"
+    #   certFilepath: "/path/to/issuer-cert.pem"
+    #   keyFilepath: "/path/to/issuer-key.pem"
+    #   insecureSkipTlsVerify: false
 
-# console:
-#   # Max deserialization determines the maximum payload size for record payloads (key/value/headers)
-#   # that are sent to the frontend when listing messages. Payloads that exceed this value will be
-#   # omitted. If you try to inspect very large messages on the frontend, this will crash the frontend
-#   # application due to resource constraints in the browser. To avoid these crashes, you can limit
-#   # the size here. Records can still be downloaded using the "Save to file" action regardless of this size.
-#   maxDeserializationPayloadSize: 20480
-#   # Config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
-#   topicDocumentation:
-#     enabled: false
-#     # Git is where the topic documentation can come from, in the future there might be additional options
-#     git:
-#       enabled: false
-#       repository:
-#         url:
-#         branch: (defaults to primary/default branch)
-#         baseDirectory: .
-#         maxDepth: 15
-#       # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
-#       refreshInterval: 1m
-#       # Basic Auth
-#       # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
-#       basicAuth:
-#         enabled: true
-#         username: token
-#         password: #  This can be set via the via the --console.topic-documentation.git.basic-auth.password flag as well
-#       # SSH Auth
-#       # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
-#       ssh:
-#         enabled: false
-#         username:
-#         privateKey: # This can be set via the via the --console.topic-documentation.git.ssh.private-key flag as well
-#         privateKeyFilepath:
-#         passphrase: # This can be set via the via the --console.topic-documentation.git.ssh.passphrase flag as well
+  # Basic authentication is supported by default.
 
-# analytics configures the telemetry service that sends anonymized usage statistics to Redpanda.
-# Redpanda uses these statistics to evaluate feature usage.
-# analytics:
-#   enabled: true
+#----------------------------------------------------------------------------
+# Console authorization and role bindings
+#----------------------------------------------------------------------------
+authorization:
+  roleBindings:
+    - roleName: admin
+      users:
+        - loginType: OIDC
+          name: "admin@mycompany.com"
+    - roleName: viewer
+      users:
+        - loginType: basic
+          name: "user@mycompany.com"
 
-# server:
-#   listenAddress:
-#   listenPort: 8080
-#   # HTTPSListenPort and HTTPListenPort are separate so that we can listen
-#   # on both and redirect users to the HTTPS url.
-#   httpsListenPort: 8081
-#   # AdvertisedHTTPSListenPort is the HTTPS port that will be used for
-#	# redirecting the user in the browser. If your application is serving
-#	# the TLS port on 8081 but some LoadBalancer between the user and your
-#	# Go application remaps this to 443 you want to set this port to
-#	# 443 as well. Otherwise, users will be redirected to your httpsListenPort.
-#   advertisedHttpsListenPort:
-#   gracefulShutdownTimeout: 30s
-#   listenPort: 8080
-#   readTimeout: 30s
-#   writeTimeout: 30s
-#   idleTimeout: 30s
-#   compressionLevel: 4
-#   basePath: # Sub-path under which Console is hosted. See 'docs/features/hosting.md' for more information
-#   setBasePathFromXForwardedPrefix: true # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'
-#   stripPrefix: true # Whether or not Console should strip the prefix internally
-#   # TLS contains the configuration properties for the HTTP
-#   # TLS configuration. If enabled, the HTTP server will serve on
-#   # HTTPS and terminate TLS. Additional to the TLS server Console
-#   # will start an HTTP server that is in charge of redirecting HTTP
-#   # requests to the HTTPS version.
-#   tls:
-#     enabled: false
-#     certFilepath:
-#     keyFilepath:
-#   # AllowedOrigins is a list of origins that can send requests from a browser to the Console
-#   # API. By default, a same-site policy is enforced to prevent CSRF-attacks.
-#   # Only in very specific deployment models you may need to change the secure default.
-#   allowedOrigins: []
-#   # Debug allows to configure the pprof debug handler options. The pprof handler is exposed
-#   # by default in the /debug path and only served through the system loopback interface,
-#   # e.g. '127.0.0.1' or '::1'.
-#   debug:
-#     enabled: true # allows to toggle the debug endpoint
-#     forceLoopback: true # binds the debug endpoint only to the host's loopback interface
+#----------------------------------------------------------------------------
+# Redpanda Admin API configuration
+#----------------------------------------------------------------------------
+redpanda:
+  adminApi:
+    enabled: true
+    urls:
+      - "admin-0.mycompany.com:9644"
+      - "admin-1.mycompany.com:9644"
+    authentication:
+      impersonateUser: true
+    # If impersonateUser is false, configure static credentials here:
+    # authentication:
+    #   basic:
+    #     username: "example-user"
+    #     password: "example-password"
+    startup:
+      establishConnectionEagerly: true
+      maxRetries: 5
+      retryInterval: 1s
+      maxRetryInterval: 60s
+      backoffMultiplier: 2
+    tls:
+      enabled: true
+      caFilepath: "/path/to/ca-cert.pem"
+      certFilepath: "/path/to/client-cert.pem"
+      keyFilepath: "/path/to/client-key.pem"
+      insecureSkipTlsVerify: false
 
-# logger:
-#   level: info # Valid values are: debug, info, warn, error, fatal
+#----------------------------------------------------------------------------
+# Kafka Connect configuration (optional)
+#----------------------------------------------------------------------------
+kafkaConnect:
+  enabled: false
+  # connectTimeout: 15s
+  # readTimeout: 60s
+  # requestTimeout: 6s
+  clusters: []
+  # Example:
+  # clusters:
+  #   - name: my-connect-cluster
+  #     url: "http://connect.mycompany.com:8083"
+  #     tls:
+  #       enabled: false
+  #     username: "connect-user"
+  #     password: "connect-password"
+  #     token: "optional-token"
 
-# Only relevant for developers, who might want to run the frontend separately
+#----------------------------------------------------------------------------
+# Enterprise License configuration (optional)
+#----------------------------------------------------------------------------
+# To mount an enterprise license, set either license or licenseFilepath.
+# This is only required if you want to use an enterprise feature
+# such as SSO or RBAC.
+
+# Filepath to your redpanda.license file
+# licenseFilepath: ""
+
+# License string.
+# license: ""
+
+#----------------------------------------------------------------------------
+# Serde settings
+#----------------------------------------------------------------------------
+
+serde:
+  maxDeserializationPayloadSize: 20480
+  # protobuf:
+    # enabled: false
+    # mappings: []
+      # Map the Proto type names for each of your topics.
+      # These Proto types will be used for deserialization.
+      # - topicName: xy
+       # You can specify the Proto type for the record key
+       # and/or value (just one will work too)
+       # valueProtoType: fake_model.Order
+       # keyProtoType: package.Type
+    # Configure the fileSystem if you want Redpanda Console to
+    # search the local file system for the Proto files
+    # fileSystem:
+      # enabled: false
+      # paths: []
+      # refreshInterval: 5m
+    # importPaths is a list of paths from which to import Proto files into Redpanda Console.
+    # Paths are relative to the root directory.
+    # The `git` configuration must be enabled to use this feature.
+    #importPaths: []
+    # Git is where the Proto files come from.
+    # git:
+      # enabled: false
+      # repository:
+        # url:
+        # branch: (defaults to primary/default branch)
+        # baseDirectory: (defaults to the root directory of the repo/branch above)
+        # How often Redpanda Console pulls the repository to look for new files.
+        # Set to 0 to disable periodic pulls.
+        # refreshInterval: 5m
+      # To use GitHub's personal access tokens, use `token`
+      # as username and pass the token as password.
+      # basicAuth:
+        # enabled: true
+        # username: token
+        # Password can also be set using the via the --git.basic-auth.password flag.
+        # password:
+      # You can pass the private key file directly using a flag on the command line, or you can specify it in the
+      # yaml configuration file. Another alternative is to provide the filepath to a mounted key
+      # file in this configuration block.
+      # ssh:
+        # enabled: false
+        # username:
+        # privateKey can also be set using the --git.ssh.private-key flag.
+        # privateKey:
+        # privateKeyFilepath:
+        # Passphrase can also be set using the --git.ssh.passphrase flag.
+        # passphrase:
+  # messagePack:
+    # enabled: false
+    # List of topic name regexes, defaults to /.*/
+    # topicNames: ["/.*/"]
+
+
+#----------------------------------------------------------------------------
+# Console settings
+#----------------------------------------------------------------------------
+console:
+  topicDocumentation:
+    enabled: false
+    # git:
+      # enabled: false
+      # repository:
+        # url:
+        # branch: (defaults to primary/default branch)
+        # baseDirectory: .
+      # How often Console pulls the repository to look for new files.
+      # Set to 0 to disable periodic pulls.
+      # refreshInterval: 1m
+      # To use GitHub's personal access tokens, use `token`
+      # for the username and pass the token as password.
+      # basicAuth:
+        # enabled: true
+        # username: token
+        # password:
+      # ssh:
+        # enabled: false
+        # username:
+        # privateKey:
+        # privateKeyFilepath:
+        # passphrase:
+
+#----------------------------------------------------------------------------
+# Server settings
+#----------------------------------------------------------------------------
+server:
+  listenAddress: "0.0.0.0"
+  listenPort: 8080
+  httpsListenPort: 8081
+  advertisedHttpsListenPort: 443
+  gracefulShutdownTimeout: 30s
+  readTimeout: 30s
+  writeTimeout: 30s
+  idleTimeout: 30s
+  compressionLevel: 4
+  basePath: ""
+  setBasePathFromXForwardedPrefix: true
+  stripPrefix: true
+  tls:
+    enabled: false
+    # Uncomment and configure if HTTPS is required:
+    # certFilepath: "/path/to/https-cert.pem"
+    # keyFilepath: "/path/to/https-key.pem"
+  allowedOrigins: []
+
+#----------------------------------------------------------------------------
+# Logger settings
+#----------------------------------------------------------------------------
+logger:
+  level: info
+
+#----------------------------------------------------------------------------
+# Developer settings
+#----------------------------------------------------------------------------
+
+# Only relevant for developers who want to run the frontend separately.
+# Uncomment the following line to serve the frontend separately.
 # serveFrontend: true
 
-# Prefix for all exported prometheus metrics
-# metricsNamespace: console
+#----------------------------------------------------------------------------
+# Metrics settings
+#----------------------------------------------------------------------------
+
+# Prefix for all exported Prometheus metrics.
+# Uncomment and set your metrics namespace.
+# metricsNamespace: "console"
+
+#----------------------------------------------------------------------------
+# Analytics / telemetry (optional)
+#----------------------------------------------------------------------------
+analytics:
+  enabled: true
