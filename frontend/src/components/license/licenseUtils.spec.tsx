@@ -2,7 +2,7 @@ import {
   License,
   License_Source,
   License_Type,
-  type ListEnterpriseFeaturesResponse_Feature,
+  ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import {
   coreHasEnterpriseFeatures,
@@ -88,14 +88,14 @@ describe('licenseUtils', () => {
   });
 
   beforeEach(() => {
-    // api.licensesLoaded = true;
-    // api.licenseViolation = false;
-    // api.licenses = [];
+    api.licensesLoaded = undefined;
+    api.licenseViolation = false;
+    api.licenses = [];
   });
 
   afterEach(() => {
     vi.resetAllMocks();
-    // vi.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   const mockLicenseCommunity: License = new License({
@@ -119,18 +119,18 @@ describe('licenseUtils', () => {
   describe('coreHasEnterpriseFeatures', () => {
     test('should return true when at least one feature is enabled', () => {
       const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        { name: 'rbac', enabled: true },
-        { name: 'datalake_iceberg', enabled: false },
-        { name: 'audit_logging' },
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'rbac', enabled: true }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'datalake_iceberg', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'audit_logging' }),
       ];
       expect(coreHasEnterpriseFeatures(features)).toBe(true);
     });
 
     test('should return false when no features are enabled', () => {
       const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        { name: 'rbac', enabled: false },
-        { name: 'datalake_iceberg', enabled: false },
-        { name: 'audit_logging' },
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'rbac', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'datalake_iceberg', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'audit_logging' }),
       ];
       expect(coreHasEnterpriseFeatures(features)).toBe(false);
     });
@@ -303,17 +303,31 @@ describe('licenseUtils', () => {
 
     test('render information about license that expires in > 15 days but less than 30 days, blue notification banner is displayed', () => {
       api.licenseViolation = false;
+      api.licensesLoaded = 'loaded';
+      api.enterpriseFeaturesUsed = [
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'rbac', enabled: true }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'datalake_iceberg', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'audit_logging', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'core_balancing_continuous', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'schema_id_validation', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'cloud_storage', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'gssapi', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'leadership_pinning', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'partition_auto_balancing_continuous', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'oidc', enabled: false }),
+        new ListEnterpriseFeaturesResponse_Feature({ name: 'fips', enabled: false }),
+      ];
       api.licenses = [
-        {
+        new License({
           source: License_Source.REDPANDA_CORE,
           type: License_Type.ENTERPRISE,
-          expiresAt: getUnixTimestampWithExpiration(28),
-        },
-        {
+          expiresAt: BigInt(getUnixTimestampWithExpiration(28)),
+        }),
+        new License({
           source: License_Source.REDPANDA_CONSOLE,
           type: License_Type.ENTERPRISE,
-          expiresAt: getUnixTimestampWithExpiration(28),
-        },
+          expiresAt: BigInt(getUnixTimestampWithExpiration(28)),
+        }),
       ];
       const screen = renderWithRouter(<LicenseNotification />, {
         route: '/overview',
@@ -330,7 +344,7 @@ describe('licenseUtils', () => {
       );
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Upload license')).toHaveAttribute(
         'href',
-        '/admin/upload-license',
+        '/upload-license',
       );
     });
   });
