@@ -66,7 +66,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     } finally {
       this.isDeleting = false;
     }
-    appGlobal.history.push('/security/roles/');
+    appGlobal.historyPush('/security/roles/');
   }
 
   render() {
@@ -94,7 +94,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
             <Button
               variant="outline"
               onClick={() => {
-                appGlobal.history.push(`/security/roles/${this.props.roleName}/edit`);
+                appGlobal.historyPush(`/security/roles/${this.props.roleName}/edit`);
               }}
             >
               Edit

@@ -55,7 +55,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
         { header: 'Lag', accessorKey: 'summedLag' },
       ]}
       onRow={(row) => {
-        appGlobal.history.push(`/groups/${encodeURIComponent(row.original.groupId)}`);
+        appGlobal.historyPush(`/groups/${encodeURIComponent(row.original.groupId)}`);
       }}
     />
   );

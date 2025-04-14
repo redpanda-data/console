@@ -101,7 +101,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     //     const clusters = api.connectConnectors.clusters;
     //     if (clusters?.length == 1) {
     //         const cluster = clusters[0];
-    //         appGlobal.history.replace(`/connect-clusters/${cluster.clusterName}`);
+    //         appGlobal.historyReplace(`/connect-clusters/${cluster.clusterName}`);
     //     }
     // }
   }
@@ -204,7 +204,7 @@ class TabClusters extends Component {
                 <span
                   className="hoverLink"
                   style={{ display: 'inline-block', width: '100%' }}
-                  onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
+                  onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
                 >
                   {r.clusterName}
                 </span>
@@ -288,7 +288,7 @@ const TabConnectors = observer(() => {
                   className="hoverLink"
                   style={{ display: 'inline-block', width: '100%' }}
                   onClick={() =>
-                    appGlobal.history.push(
+                    appGlobal.historyPush(
                       `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`,
                     )
                   }
@@ -368,7 +368,7 @@ class TabTasks extends Component {
                 whiteSpace="break-spaces"
                 className="hoverLink"
                 onClick={() =>
-                  appGlobal.history.push(
+                  appGlobal.historyPush(
                     `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`,
                   )
                 }

@@ -4,6 +4,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
@@ -20,10 +21,8 @@ export default defineConfig({
     }),
     pluginSvgr({ mixedImport: true }),
     pluginSass(),
+    pluginModuleFederation(moduleFederationConfig),
   ],
-  moduleFederation: {
-    options: moduleFederationConfig,
-  },
   dev: {
     hmr: true,
   },

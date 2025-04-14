@@ -82,7 +82,7 @@ const authenticationApi = observable({
         mechanism,
       } as LoginSaslScramRequest)
       .then(() => {
-        appGlobal.history.push('/overview');
+        appGlobal.historyPush('/overview');
       });
 
     console.log({ response });
@@ -92,7 +92,7 @@ const authenticationApi = observable({
 const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
   [AuthenticationMethod.NONE]: observer(() => {
     useEffect(() => {
-      appGlobal.history.push('/overview');
+      appGlobal.historyPush('/overview');
     }, []);
     return null;
   }),

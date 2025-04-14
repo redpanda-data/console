@@ -308,7 +308,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         ),
         duration: 3000,
       });
-      appGlobal.history.push(`/topics/${encodeURIComponent(topicName)}`);
+      appGlobal.historyPush(`/topics/${encodeURIComponent(topicName)}`);
     }
   };
 

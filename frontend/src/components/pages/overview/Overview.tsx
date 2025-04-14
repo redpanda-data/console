@@ -196,7 +196,7 @@ class Overview extends PageComponent {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => appGlobal.history.push(`/overview/${broker.brokerId}`)}
+                            onClick={() => appGlobal.historyPush(`/overview/${broker.brokerId}`)}
                           >
                             View
                           </Button>

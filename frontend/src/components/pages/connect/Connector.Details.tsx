@@ -305,7 +305,7 @@ const KafkaConnectorMain = observer(
           onOk={async (c) => {
             connectClusterStore.getConnectorStore(c.connectorName);
             await connectClusterStore.updateConnnector(c.connectorName);
-            appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
+            appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
             await refreshData(true);
           }}
         />
@@ -347,7 +347,7 @@ const KafkaConnectorMain = observer(
           onOk={async (_connectorName) => {
             await connectClusterStore.deleteConnector(connectorName);
             await refreshData(true);
-            appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
+            appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
           }}
         />
       </>
@@ -488,7 +488,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
           </ModalBody>
           <ModalFooter gap={2}>
             {hasConnectorLogs && (
-              <Button onClick={() => appGlobal.history.push(`/topics/${LOGS_TOPIC_NAME}`)} mr="auto">
+              <Button onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)} mr="auto">
                 Show Logs
               </Button>
             )}

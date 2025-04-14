@@ -10,30 +10,29 @@
  */
 
 /* start global stylesheets */
-import './globals.scss';
-import './index.scss';
-import './index-cloud-integration.scss';
-import './assets/fonts/open-sans.css';
-import './assets/fonts/poppins.css';
-import './assets/fonts/quicksand.css';
-import './assets/fonts/kumbh-sans.css';
-import './assets/fonts/inter.css';
+import "./globals.scss";
+import "./index.scss";
+import "./index-cloud-integration.scss";
+import "./assets/fonts/open-sans.css";
+import "./assets/fonts/poppins.css";
+import "./assets/fonts/quicksand.css";
+import "./assets/fonts/kumbh-sans.css";
+import "./assets/fonts/inter.css";
 /* end global styles */
 
-import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/ui';
-import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
-import { BrowserRouter } from 'react-router-dom';
-import RequireAuth from './components/RequireAuth';
-import AppContent from './components/layout/Content';
-import { ErrorBoundary } from './components/misc/ErrorBoundary';
-import HistorySetter from './components/misc/HistorySetter';
-import { UserProfile } from './components/misc/UserButton';
-import { createVisibleSidebarItems } from './components/routes';
-import { APP_ROUTES } from './components/routes';
-import { isEmbedded, setup } from './config';
-import { uiSettings } from './state/ui';
-import { getBasePath } from './utils/env';
+import { Container, Grid, Sidebar, redpandaToastOptions } from "@redpanda-data/ui";
+import { ChakraProvider, redpandaTheme } from "@redpanda-data/ui";
+import { observer } from "mobx-react";
+import { BrowserRouter } from "react-router-dom";
+import RequireAuth from "./components/RequireAuth";
+import AppContent from "./components/layout/Content";
+import { ErrorBoundary } from "./components/misc/ErrorBoundary";
+import { UserProfile } from "./components/misc/UserButton";
+import { createVisibleSidebarItems } from "./components/routes";
+import { APP_ROUTES } from "./components/routes";
+import { isEmbedded, setup } from "./config";
+import { uiSettings } from "./state/ui";
+import { getBasePath } from "./utils/env";
 
 const AppSidebar = observer(() => {
   const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
@@ -48,7 +47,6 @@ const App = () => {
   setup({});
   return (
     <BrowserRouter basename={getBasePath()}>
-      <HistorySetter />
       <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
         <ErrorBoundary>
           <RequireAuth>

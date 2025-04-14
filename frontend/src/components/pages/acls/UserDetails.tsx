@@ -84,7 +84,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           <Flex gap="4">
             <Button
               variant="outline"
-              onClick={() => appGlobal.history.push(`/security/users/${userName}/edit`)}
+              onClick={() => appGlobal.historyPush(`/security/users/${userName}/edit`)}
               isDisabled={!canEdit}
             >
               Edit
@@ -107,7 +107,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                   await Promise.allSettled(promises);
                   await api.refreshServiceAccounts();
                   await rolesApi.refreshRoleMembers();
-                  appGlobal.history.push('/security/users/');
+                  appGlobal.historyPush('/security/users/');
                 }}
                 buttonEl={
                   <Button variant="outline-delete" isDisabled={!isServiceAccount}>

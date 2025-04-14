@@ -1,11 +1,14 @@
 import { observer } from 'mobx-react';
-import { type RouteComponentProps, withRouter } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { appGlobal } from '../../state/appGlobal';
 
-const HistorySetter = withRouter((p: RouteComponentProps) => {
-  appGlobal.history = p.history;
+const HistorySetter = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  appGlobal.navigate = navigate;
+  appGlobal.location = location;
   return <></>;
-});
+};
 
 export default observer(HistorySetter);

@@ -75,7 +75,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   render() {
     if (!transformsApi.transforms) return DefaultSkeleton;
     if (transformsApi.transforms.length === 0) {
-      appGlobal.history.replace('/transforms-setup');
+      appGlobal.historyReplace('/transforms-setup');
       return null;
     }
 
