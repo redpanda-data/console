@@ -7,12 +7,12 @@ import {
   getSecret,
   listSecrets,
   updateSecret,
-} from 'protogen/redpanda/api/console/v1alpha1/secrets-SecretService_connectquery';
+} from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
   GetSecretRequest,
   ListSecretsRequest,
   type ListSecretsResponse,
-} from 'protogen/redpanda/api/console/v1alpha1/secrets_pb';
+} from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { GetSecretRequest as GetSecretRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ListSecretsRequest as ListSecretsRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
