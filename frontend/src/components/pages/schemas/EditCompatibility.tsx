@@ -89,8 +89,8 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
           onClose={() => {
             // Navigate back to the "caller" of the page, depending on what
             // variant of the editCompatibility page we are on(can be global, or subject)
-            if (subjectName) appGlobal.history.replace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
-            else appGlobal.history.replace('/schema-registry');
+            if (subjectName) appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+            else appGlobal.historyReplace('/schema-registry');
           }}
         />
       </PageContent>

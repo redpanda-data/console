@@ -172,7 +172,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                       title: 'Pipeline deleted',
                     });
                     pipelinesApi.refreshPipelines(true);
-                    appGlobal.history.push('/connect-clusters');
+                    appGlobal.historyPush('/connect-clusters');
                   })
                   .catch((err) => {
                     toast({

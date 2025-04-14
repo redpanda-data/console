@@ -75,7 +75,7 @@ const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (r
               // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
               detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
             ) {
-              appGlobal.history.replace('/trial-expired');
+              appGlobal.historyReplace('/trial-expired');
             }
           }
         }

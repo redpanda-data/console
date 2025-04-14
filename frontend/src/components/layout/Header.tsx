@@ -12,8 +12,7 @@
 import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
-import { useRouteMatch } from 'react-router-dom';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { useMatch, Link as ReactRouterLink } from 'react-router-dom';
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
@@ -113,25 +112,22 @@ export default AppPageHeader;
  * @returns {boolean} Indicates whether the refresh button should be shown (true/false).
  */
 function useShouldShowRefresh() {
-  const connectClusterMatch = useRouteMatch<{ clusterName: string; connectorName: string }>({
+  const connectClusterMatch = useMatch({
     path: '/connect-clusters/:clusterName/:connectorName',
-    strict: false,
-    sensitive: true,
-    exact: true,
+    end: false,
+    caseSensitive: true,
   });
 
-  const schemaCreateMatch = useRouteMatch({
+  const schemaCreateMatch = useMatch({
     path: '/schema-registry/create',
-    strict: false,
-    sensitive: true,
-    exact: true,
+    end: false,
+    caseSensitive: true,
   });
 
-  const topicProduceRecordMatch = useRouteMatch({
+  const topicProduceRecordMatch = useMatch({
     path: '/topics/:topicName/produce-record',
-    strict: false,
-    sensitive: true,
-    exact: true,
+    end: false,
+    caseSensitive: true,
   });
 
   if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;

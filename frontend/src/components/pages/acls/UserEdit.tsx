@@ -88,7 +88,7 @@ class UserEditPage extends PageComponent<{ userName: string }> {
       this.selectedRoles = [...this.originalRoles.values()];
     }
 
-    const onCancel = () => appGlobal.history.push(`/security/users/${userName}/details`);
+    const onCancel = () => appGlobal.historyPush(`/security/users/${userName}/details`);
 
     // Check if there are any roles removed, added, or replaced
     // only then will the save button be enabled
@@ -124,7 +124,7 @@ class UserEditPage extends PageComponent<{ userName: string }> {
           status: 'success',
           title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`,
         });
-        appGlobal.history.push(`/security/users/${userName}/details`);
+        appGlobal.historyPush(`/security/users/${userName}/details`);
       } catch (err) {
         toast({
           status: 'error',
