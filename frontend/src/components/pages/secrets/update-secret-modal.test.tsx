@@ -1,8 +1,8 @@
 import { createRouterTransport } from '@connectrpc/connect';
 import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { GetPipelinesForSecretResponse } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { listSecrets, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secrets-SecretService_connectquery';
-import { UpdateSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secrets_pb';
+import { listSecrets, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import { UpdateSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   GetPipelinesForSecretRequest as GetPipelinesForSecretRequestDataPlane,
   GetPipelinesForSecretResponse as GetPipelinesForSecretResponseDataPlane,

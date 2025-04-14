@@ -1,6 +1,6 @@
 import { createRouterTransport } from '@connectrpc/connect';
-import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secrets-SecretService_connectquery';
-import { CreateSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secrets_pb';
+import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import { CreateSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequest as CreateSecretRequestDataPlane,
   ListSecretsRequest as ListSecretsRequestDataPlane,
