@@ -31,9 +31,12 @@ const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
   return Math.floor(Date.now() / 1000) + daysOffset * 86400;
 };
 
-vi.mock('../../state/backendApi', () => {
+vi.mock('../../state/backendApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../state/backendApi')>();
   return {
+    ...actual,
     api: {
+      ...actual.api,
       get isAdminApiConfigured() {
         return true;
       },
