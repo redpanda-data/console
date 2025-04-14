@@ -14,12 +14,12 @@ import { api } from '../../../state/backendApi';
 import type { ConfigEntry, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
+import type { ReactNode } from 'react';
 import { MdInfoOutline } from 'react-icons/md';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
+import { numberToThousandsString } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import type { CleanupPolicyType } from './types';
-import { numberToThousandsString } from '../../../utils/tsxUtils';
-import { ReactNode } from 'react';
 
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {

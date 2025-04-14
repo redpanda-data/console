@@ -43,6 +43,7 @@ const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRend
 
 interface RenderWithRouterOptions extends ExtendedRenderOptions {
   route?: string;
+  history?: ReturnType<typeof createMemoryHistory>;
 }
 
 const renderWithRouter = (
@@ -60,4 +61,4 @@ const renderWithRouter = (
 };
 
 // override render method
-export { renderWithRouter, customRender as render, connectQueryWrapper };
+export { renderWithRouter, customRender as render };
