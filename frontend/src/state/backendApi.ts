@@ -2172,14 +2172,6 @@ export const pipelinesApi = observable({
   pipelines: undefined as undefined | Pipeline[],
   pipelinesError: null as ConnectError | null,
 
-  // async lintConfig(config: string): Promise<LintConfigResponse> {
-  //     const client = appConfig.pipelinesClient;
-  //     if (!client) throw new Error('pipelines client is not initialized');
-  //
-  //     const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
-  //     return r;
-  // },
-
   async refreshPipelines(_force: boolean): Promise<void> {
     const client = appConfig.pipelinesClient;
     if (!client) throw new Error('pipelines client is not initialized');

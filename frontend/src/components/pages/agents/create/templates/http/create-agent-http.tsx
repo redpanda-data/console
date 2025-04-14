@@ -2,7 +2,6 @@ import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, Spinner
 import { useAppForm } from 'components/form/form';
 import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
-import { useLintConfigsMutation } from 'react-query/api/redpanda-connect';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useHistory } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -61,7 +60,6 @@ export const CreateAgentHTTP = () => {
   const history = useHistory();
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
     useCreateAgentPipelinesMutation();
-  const { mutateAsync: lintConfigsMutation, isPending: isLintConfigsPending } = useLintConfigsMutation();
 
   const { data: secretList, isLoading: isSecretListLoading } = useListSecretsQuery();
 
@@ -114,8 +112,6 @@ export const CreateAgentHTTP = () => {
             },
           }),
       );
-
-      await lintConfigsMutation({ pipelines });
       await createAgentPipelinesMutation({ pipelines, agentId }).then(() => {
         history.push(`/agents/${agentId}`);
       });
@@ -174,7 +170,7 @@ export const CreateAgentHTTP = () => {
                 <Divider my={1} />
                 <ExternalDependenciesForm form={form} title="External Dependencies" />
                 <Flex justifyContent="flex-start" pt={6}>
-                  <ButtonGroup isDisabled={isCreateAgentPending || isLintConfigsPending}>
+                  <ButtonGroup isDisabled={isCreateAgentPending}>
                     <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
                     <Button variant="link" onClick={() => history.goBack()}>
                       Cancel
