@@ -122,7 +122,6 @@ interface Config {
   debugBundleClient?: PromiseClient<typeof DebugBundleService>;
   securityClient?: PromiseClient<typeof SecurityService>;
   pipelinesClient?: PromiseClient<typeof PipelineService>;
-  pipelinesClientV2?: PromiseClient<typeof PipelineServiceV2>;
   rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
   transformsClient?: PromiseClient<typeof TransformService>;
   clusterStatusClient?: PromiseClient<typeof ClusterStatusService>;
