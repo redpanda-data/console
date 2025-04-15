@@ -80,11 +80,10 @@ const { ToastContainer, toast } = createStandaloneToast({
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 const getCreateUserButtonProps = () => ({
-  isDisabled: !Features.createUser || api.userData?.canManageUsers === false || !api.isAdminApiConfigured,
+  isDisabled: !Features.createUser || api.userData?.canManageUsers === false,
   tooltip: [
     !Features.createUser && "Your cluster doesn't support this feature.",
     api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    !api.isAdminApiConfigured && 'You need to enable Admin API.',
   ]
     .filter(Boolean)
     .join(' '),
@@ -486,11 +485,10 @@ const RolesTab = observer(() => {
           variant="outline"
           onClick={() => appGlobal.history.push('/security/roles/create')}
           {...getCreateUserButtonProps()}
-          isDisabled={api.userData?.canCreateRoles === false || !api.isAdminApiConfigured}
+          isDisabled={api.userData?.canCreateRoles === false}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
-            !api.isAdminApiConfigured && 'You need to enable Admin API.',
           ]
             .filter(Boolean)
             .join(' ')}
