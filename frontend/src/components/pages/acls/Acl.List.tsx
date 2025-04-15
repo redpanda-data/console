@@ -159,7 +159,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
       {
         key: 'permissions-list' as AclListTab,
         name: 'Permissions list',
-        component: <PermissionsListTab />,
+        component: <PermissionsListTab data-testid="permissions-list-tab" />,
         isDisabled: api.userData?.canViewPermissionsList
           ? false
           : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
