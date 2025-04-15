@@ -484,7 +484,6 @@ const RolesTab = observer(() => {
           data-testid="create-role-button"
           variant="outline"
           onClick={() => appGlobal.history.push('/security/roles/create')}
-          {...getCreateUserButtonProps()}
           isDisabled={api.userData?.canCreateRoles === false || !Features.rolesApi}
           tooltip={[
             api.userData?.canCreateRoles === false &&
