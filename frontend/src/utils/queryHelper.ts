@@ -39,7 +39,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
 
   if (window.location.search !== newQuery) {
     //console.log(`changing search: (${window.location.search}) -> (${search})`);
-    appGlobal.history.location.search = newQuery;
-    appGlobal.history.replace(appGlobal.history.location);
+    appGlobal.location.search = newQuery;
+    appGlobal.historyReplace(appGlobal.location.pathname); // TOD @Draho
   }
 }

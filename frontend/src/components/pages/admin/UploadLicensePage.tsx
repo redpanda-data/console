@@ -118,7 +118,7 @@ const UploadLicenseForm: FC<{
           <Button
             onClick={() => {
               // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
-              appGlobal.history.push('/overview');
+              appGlobal.historyPush('/overview');
             }}
             variant="outline"
           >
@@ -169,7 +169,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                     <Button
                       onClick={() => {
                         // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
-                        appGlobal.history.push('/overview');
+                        appGlobal.historyPush('/overview');
                       }}
                       variant="solid"
                     >

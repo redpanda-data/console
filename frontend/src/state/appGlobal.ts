@@ -10,26 +10,55 @@
  */
 
 import type { History } from 'history';
+import type { Location, NavigateFunction } from 'react-router-dom';
 import { api } from './backendApi';
 import { uiState } from './uiState';
 
 class AppGlobal {
-  private _history = null as unknown as History<any>;
-  get history() {
-    return this._history;
+  private _navigate = null as unknown as NavigateFunction;
+  private _location = null as unknown as Location;
+  // private _history = null as unknown as History<any>;
+  // get history() {
+  //   return this._history;
+  // }
+
+  // set history(h: History<any>) {
+  //   if (this._history === h || !h) return;
+  //   if (this._history) throw new Error('_history should not be overwritten');
+
+  //   this._history = h;
+
+  //   h.listen((location, _action) => {
+  //     api.errors = [];
+  //     uiState.pathName = location.pathname;
+  //   });
+  //   uiState.pathName = h.location.pathname;
+  // }
+
+  historyPush(path: string) {
+    uiState.pathName = path // TODO @Draho - ensure uiState is correct after the actual navigating finishes
+    return this._navigate(path);
+  }
+  historyReplace(path: string) {
+    uiState.pathName = path
+    return this._navigate(path, { replace: true });
+  }
+  historyLocation() {
+    return this._location;
   }
 
-  set history(h: History<any>) {
-    if (this._history === h || !h) return;
-    if (this._history) throw new Error('_history should not be overwritten');
+  set navigate(n: NavigateFunction) {
+    // if (this._navigate === n || !n) return;
+    // if (this._navigate) throw new Error('_navigate should not be overwritten');
 
-    this._history = h;
+    this._navigate = n;
+  }
 
-    h.listen((location, _action) => {
-      api.errors = [];
-      uiState.pathName = location.pathname;
-    });
-    uiState.pathName = h.location.pathname;
+  set location(l: Location) {
+    // if (this._location === l || !l) return;
+    // if (this._location) throw new Error('_location should not be overwritten');
+
+    this._location = l;
   }
 
   onRefresh: () => void = () => {

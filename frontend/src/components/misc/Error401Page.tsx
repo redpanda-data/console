@@ -33,7 +33,7 @@ import fetchWithTimeout from '../../utils/fetchWithTimeout';
 const ErrorPage = observer(() => {
   fetchWithTimeout(`${config.restBasePath}/console/endpoints`, 5 * 1000).then((r) => {
     if (r.ok) {
-      appGlobal.history.replace('/overview');
+      appGlobal.historyReplace('/overview');
       window.location.reload();
     }
   });
