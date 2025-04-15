@@ -485,10 +485,11 @@ const RolesTab = observer(() => {
           variant="outline"
           onClick={() => appGlobal.history.push('/security/roles/create')}
           {...getCreateUserButtonProps()}
-          isDisabled={api.userData?.canCreateRoles === false}
+          isDisabled={api.userData?.canCreateRoles === false || !Features.rolesApi}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
+            !Features.rolesApi && 'This feature is not enabled.',
           ]
             .filter(Boolean)
             .join(' ')}
