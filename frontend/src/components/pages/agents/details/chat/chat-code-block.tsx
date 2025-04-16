@@ -2,9 +2,9 @@ import { Box } from '@chakra-ui/react';
 import { CopyButton } from '@redpanda-data/ui';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import prism from 'react-syntax-highlighter/dist/cjs/styles/prism/prism';
-import { nightOwlTheme } from './night-owl-theme';
+import { nightOwlDarkThemeBackground, nightOwlTheme } from './night-owl-theme';
 
-export interface CodeBlockProps extends Omit<SyntaxHighlighterProps, 'children'> {
+export interface ChatCodeBlockProps extends Omit<SyntaxHighlighterProps, 'children'> {
   language: string;
   codeString: string;
   highlightLines?: [number, number];
@@ -18,7 +18,9 @@ export interface CodeBlockProps extends Omit<SyntaxHighlighterProps, 'children'>
   theme?: 'dark' | 'light';
 }
 
-export const CodeBlock = ({
+const lightThemeBackground = '#F5F2F0';
+
+export const ChatCodeBlock = ({
   language,
   codeString,
   highlightLines,
@@ -27,7 +29,7 @@ export const CodeBlock = ({
   showCopyButton = true,
   theme = 'dark',
   ...otherProps
-}: CodeBlockProps) => {
+}: ChatCodeBlockProps) => {
   const shouldHighlightLine = (index: number) => {
     if (!highlightLines) {
       return false;
@@ -37,7 +39,7 @@ export const CodeBlock = ({
     return inRange;
   };
 
-  const backgroundColor = theme === 'dark' ? '#011627' : '#F5F2F0';
+  const backgroundColor = theme === 'dark' ? nightOwlDarkThemeBackground : lightThemeBackground;
 
   return (
     <Box position="relative" zIndex="0">

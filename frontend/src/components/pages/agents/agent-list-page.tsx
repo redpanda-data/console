@@ -134,7 +134,6 @@ export const AgentListPage = () => {
   };
 
   const handleRequestAccess = async () => {
-    console.log('window: ', window);
     /**
      * @see https://legacydocs.hubspot.com/docs/methods/forms/advanced_form_options
      */

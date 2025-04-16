@@ -3,7 +3,7 @@ import type { ChatMessage } from 'database/chat-db';
 import ReactMarkdown from 'react-markdown';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
-import { CodeBlock } from './chat-code-block';
+import { ChatCodeBlock } from './chat-code-block';
 
 interface ChatMarkdownProps {
   message: ChatMessage;
@@ -124,7 +124,7 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
           if (match) {
             return (
               <Box py={1}>
-                <CodeBlock
+                <ChatCodeBlock
                   theme="light"
                   language={match?.[1] ?? ''}
                   codeString={String(children).replace(/\n$/, '')}

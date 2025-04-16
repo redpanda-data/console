@@ -3,6 +3,7 @@ import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Messages';
 import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
+import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
 import { REDPANDA_CONNECT_LOGS_TOPIC } from 'react-query/api/pipeline';
@@ -50,8 +51,8 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, ag
     filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
     includeRawPayload: false,
 
-    keyDeserializer: 0, // UNSPECIFIED
-    valueDeserializer: 0, // UNSPECIFIED
+    keyDeserializer: PayloadEncoding.UNSPECIFIED,
+    valueDeserializer: PayloadEncoding.UNSPECIFIED,
   };
 
   // Start the search with the configured parameters

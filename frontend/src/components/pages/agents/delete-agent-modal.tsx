@@ -15,7 +15,6 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useEffect } from 'react';
 import { type Agent, useDeleteAgentPipelinesMutation } from 'react-query/api/agent';
 import { useHistory } from 'react-router-dom';
 import { z } from 'zod';
@@ -39,6 +38,11 @@ export const DeleteAgentModal = ({ agent, isOpen, onClose }: DeleteAgentModalPro
   const { mutateAsync: deleteAgentPipelines, isPending: isDeleteAgentPipelinesPending } =
     useDeleteAgentPipelinesMutation();
 
+  const handleClose = () => {
+    onClose();
+    form.reset();
+  };
+
   const formOpts = formOptions({
     defaultValues: {
       confirmationText: '',
@@ -50,22 +54,15 @@ export const DeleteAgentModal = ({ agent, isOpen, onClose }: DeleteAgentModalPro
       await deleteAgentPipelines({
         pipelines: agent?.pipelines?.map((pipeline) => new Pipeline({ id: pipeline?.id })) ?? [],
       });
-      onClose();
+      handleClose();
       history.push('/agents');
     },
   });
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
-
   return (
-    <Modal size="lg" isOpen={isOpen} onClose={onClose} isCentered>
+    <Modal size="lg" isOpen={isOpen} onClose={handleClose} onEsc={handleClose} isCentered>
       <ModalOverlay />
       <ModalContent>
         <form>

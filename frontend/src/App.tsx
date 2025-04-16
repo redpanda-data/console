@@ -55,7 +55,7 @@ import { getBasePath } from './utils/env';
 const AppSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
 
-  const APP_ROUTES_WITHOUT_AI_AGENTS = APP_ROUTES.filter((route) => !route.path.includes('/agents'));
+  const APP_ROUTES_WITHOUT_AI_AGENTS = APP_ROUTES.filter((route) => !route.path.startsWith('/agents'));
   const FINAL_APP_ROUTES = isAiAgentsEnabled ? APP_ROUTES : APP_ROUTES_WITHOUT_AI_AGENTS;
 
   const sidebarItems = createVisibleSidebarItems(FINAL_APP_ROUTES);

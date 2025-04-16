@@ -12,7 +12,6 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
-import { useEffect } from 'react';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutationWithToast } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -38,6 +37,11 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
   // Get pipelines using this secret
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
+
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
 
   // Get existing labels from the secret
   const existingLabels = matchingSecret?.labels
@@ -72,22 +76,14 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
       });
 
       await updateSecret({ request });
-      form.reset();
-      onClose();
+      handleClose();
     },
   });
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="lg">
       <ModalOverlay />
       <ModalContent>
         <form>

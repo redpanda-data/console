@@ -14,7 +14,7 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { type ReactNode, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import type { z } from 'zod';
@@ -34,6 +34,11 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
 
   const finalSchema = secretSchema(customSecretSchema);
+
+  const handleClose = () => {
+    onClose(undefined);
+    form.reset();
+  };
 
   const formOpts = formOptions({
     defaultValues: {
@@ -61,21 +66,14 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
       });
 
       await createSecret({ request });
-      onClose(value.id);
+      handleClose();
     },
   });
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="lg">
       <ModalOverlay />
       <ModalContent>
         <form>

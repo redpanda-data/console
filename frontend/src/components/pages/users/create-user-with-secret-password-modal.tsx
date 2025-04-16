@@ -16,7 +16,7 @@ import { useAppForm } from 'components/form/form';
 import { generatePassword } from 'components/pages/acls/UserCreate';
 import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { CreateUserRequest, CreateUserRequest_User } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { getSASLMechanism, useLegacyCreateUserMutationWithToast, useLegacyListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -99,14 +99,12 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
-
   const isPending = isCreateSecretPending || isCreateUserPending;
+
+  const handleClose = () => {
+    form.reset();
+    onClose(undefined);
+  };
 
   if (finalFormValues) {
     const { username, secretId, saslMechanism, password } = finalFormValues;
@@ -121,6 +119,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
             secretId,
             saslMechanism: saslMechanism as 'SCRAM-SHA-256' | 'SCRAM-SHA-512',
           });
+          form.reset();
         }}
         username={username}
         password={password}
@@ -130,7 +129,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="lg">
       <ModalOverlay />
       <ModalContent>
         <form>

@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
 
+export const nightOwlDarkThemeBackground = '#011627';
+
 export const nightOwlTheme: {
   [key: string]: CSSProperties;
 } = {
@@ -41,7 +43,7 @@ export const nightOwlTheme: {
     padding: '1em',
     margin: '0.5em 0',
     overflow: 'auto',
-    background: '#011627',
+    background: nightOwlDarkThemeBackground,
   },
   'pre[class*="language-"]::-moz-selection': {
     textShadow: 'none',
@@ -77,7 +79,7 @@ export const nightOwlTheme: {
   },
   ':not(pre) > code[class*="language-"]': {
     color: 'white',
-    background: '#011627',
+    background: nightOwlDarkThemeBackground,
     padding: '0.1em',
     borderRadius: '0.3em',
     whiteSpace: 'normal',

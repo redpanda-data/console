@@ -14,7 +14,6 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { PipelineEditor } from 'components/pages/rp-connect/Pipelines.Create';
 import { MAX_TASKS, MIN_TASKS, cpuToTasks } from 'components/pages/rp-connect/tasks';
-import { useEffect } from 'react';
 import { useGetPipelineQuery, useGetPipelinesBySecretsQuery } from 'react-query/api/pipeline';
 import { z } from 'zod';
 
@@ -85,15 +84,13 @@ export const ViewPipelineModal = ({ isOpen, onClose, pipelineId }: ViewPipelineM
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+    <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="6xl">
       <ModalOverlay />
       <ModalContent>
         <form aria-disabled>

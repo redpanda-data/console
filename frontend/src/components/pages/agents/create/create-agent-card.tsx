@@ -38,7 +38,7 @@ export const CreateAgentCard = ({
   };
 
   const borderColor = useColorModeValue(
-    isSelected ? 'rgba(22, 31, 46, 0.7)' : 'rgba(22, 31, 46, 0.3)',
+    isSelected ? 'gray.500' : 'gray.300',
     isSelected ? 'whiteAlpha.700' : 'whiteAlpha.300',
   );
 

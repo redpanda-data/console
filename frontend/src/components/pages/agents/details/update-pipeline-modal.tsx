@@ -19,7 +19,6 @@ import {
   UpdatePipelineRequest as UpdatePipelineRequestDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { PipelineUpdate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useEffect } from 'react';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { useGetPipelineQuery, useGetPipelinesBySecretsQuery } from 'react-query/api/pipeline';
 import { useUpdatePipelineMutationWithToast } from 'react-query/api/pipeline';
@@ -80,6 +79,11 @@ export const UpdatePipelineModal = ({ isOpen, onClose, pipelineId }: UpdatePipel
 
   const tasks = cpuToTasks(pipelineToUpdate?.resources?.cpuShares) || MIN_TASKS;
 
+  const handleClose = () => {
+    onClose();
+    form.reset();
+  };
+
   const formOpts = formOptions({
     defaultValues: {
       id: pipelineId,
@@ -120,22 +124,14 @@ export const UpdatePipelineModal = ({ isOpen, onClose, pipelineId }: UpdatePipel
       console.log('request: ', request);
 
       await updatePipeline({ request });
-      form.reset();
-      onClose();
+      handleClose();
     },
   });
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+    <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="6xl">
       <ModalOverlay />
       <ModalContent>
         <form>

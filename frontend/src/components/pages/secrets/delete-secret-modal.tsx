@@ -14,7 +14,6 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
-import { useEffect } from 'react';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useDeleteSecretMutationWithToast } from 'react-query/api/secret';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
@@ -32,6 +31,11 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
 
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
+
   const formOpts = formOptions({
     defaultValues: {
       confirmationText: '',
@@ -43,22 +47,14 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
       await deleteSecret({
         request: { id: secretId },
       });
-      form.reset();
-      onClose();
+      handleClose();
     },
   });
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
-
   return (
-    <Modal size="lg" isOpen={isOpen} onClose={onClose} isCentered>
+    <Modal size="lg" isOpen={isOpen} onClose={handleClose} onEsc={handleClose} isCentered>
       <ModalOverlay />
       <ModalContent>
         <form>

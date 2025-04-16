@@ -38,7 +38,7 @@ export const CreateUserConfirmationModal = ({
   saslMechanism,
 }: CreateUserConfirmationModalProps) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} onEsc={onClose} size="lg">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Create new User</ModalHeader>

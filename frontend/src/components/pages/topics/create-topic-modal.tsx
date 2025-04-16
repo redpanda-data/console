@@ -18,7 +18,6 @@ import {
   CreateTopicRequest_Topic,
   CreateTopicRequest_Topic_Config,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { useEffect } from 'react';
 import { useLegacyCreateTopicMutationWithToast, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
 
@@ -73,15 +72,13 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
 
   const form = useAppForm({ ...formOpts });
 
-  // Reset form on modal open/close
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
+  const handleClose = () => {
+    form.reset();
+    onClose(undefined);
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="lg">
       <ModalOverlay />
       <ModalContent>
         <form>
