@@ -176,7 +176,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             cpuShares: tasksToCPU(this.tasks) || '0',
             memoryShares: '0', // still required by API but unused
           },
-        })
+        }),
       )
       .then(async () => {
         toast({
@@ -241,7 +241,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
 
 const registerSecretsAutocomplete = async (
   monaco: Monaco,
-  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
+  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>,
 ) => {
   await rpcnSecretManagerApi.refreshSecrets(true);
   const secrets = rpcnSecretManagerApi.secrets || [];
@@ -348,7 +348,7 @@ export const PipelineEditor = observer(
         ]}
       />
     );
-  }
+  },
 );
 
 /**
