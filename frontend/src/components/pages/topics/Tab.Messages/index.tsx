@@ -836,8 +836,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const toast = useToast();
     const breakpoint = useBreakpoint({ ssr: false });
     const paginationParams = usePaginationParams(
-      uiState.topicSettings.searchParams.pageSize,
       this.messageSource.data.length,
+      uiState.topicSettings.searchParams.pageSize,
     );
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
