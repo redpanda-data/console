@@ -1,3 +1,4 @@
+import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -9,8 +10,8 @@ import { useLocation } from 'react-router-dom';
  * 'pageSize' defaults to the value passed as an argument, or 10 if not provided.
  * 'pageIndex' defaults to 0 if not present in the URL.
  *
- * @param {number} [defaultPageSize=10] - The default number of items per page if not specified in the URL.
  * @param {number} totalDataLength - The total length of the data to paginate over.
+ * @param {number} [defaultPageSize=DEFAULT_TABLE_PAGE_SIZE] - The default number of items per page if not specified in the URL.
  * @returns {{ pageSize: number; pageIndex: number }} An object containing the pageSize and pageIndex.
  *
  * @example
@@ -18,8 +19,8 @@ import { useLocation } from 'react-router-dom';
  * const { pageSize, pageIndex } = usePaginationParams(20);
  */
 const usePaginationParams = (
-  defaultPageSize: number,
   totalDataLength: number,
+  defaultPageSize: number = DEFAULT_TABLE_PAGE_SIZE,
 ): { pageSize: number; pageIndex: number } => {
   const { search } = useLocation();
 

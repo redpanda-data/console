@@ -206,7 +206,7 @@ class TopicList extends PageComponent {
 export default TopicList;
 
 const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
-  const paginationParams = usePaginationParams(uiSettings.topicList.pageSize, topics.length);
+  const paginationParams = usePaginationParams(topics.length, uiSettings.topicList.pageSize);
 
   return (
     <DataTable<Topic>
