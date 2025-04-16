@@ -65,15 +65,20 @@ const connectQueryWrapper = (
 
   return {
     wrapper: ({ children }) => (
-      <TransportProvider transport={transport}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </TransportProvider>
+      <MemoryRouter>
+        <TransportProvider transport={transport}>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </TransportProvider>
+      </MemoryRouter>
     ),
     queryClient,
     transport,
     queryClientWrapper: ({ children }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
   };
 };
+
+// re-export everything
+export * from '@testing-library/react';
 
 // override render method
 export { renderWithRouter, customRender as render, connectQueryWrapper };

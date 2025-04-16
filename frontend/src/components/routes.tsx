@@ -21,10 +21,12 @@ import {
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent } from 'react';
-import { MdOutlineSmartToy } from 'react-icons/md';
+import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
+import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Redirect, Route } from 'react-router';
 import { Switch } from 'react-router-dom';
-import { isServerless } from '../config';
+import { appGlobal } from 'state/appGlobal';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backendApi';
 import type { UserPermissions } from '../state/restInterfaces';
 import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
@@ -44,6 +46,10 @@ import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
+import { AgentListPage, getAgentSidebarItemTitle } from './pages/agents/agent-list-page';
+import { CreateAgentPage } from './pages/agents/create/create-agent-page';
+import { CreateAgentHTTP } from './pages/agents/create/templates/http/create-agent-http';
+import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import CreateConnector from './pages/connect/CreateConnector';
@@ -63,6 +69,7 @@ import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/Schema.Create';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
 import SchemaList from './pages/schemas/Schema.List';
+import { SecretsStorePage } from './pages/secrets/secrets-store-page';
 import TopicDetails from './pages/topics/Topic.Details';
 import TopicList from './pages/topics/Topic.List';
 import { TopicProducePage } from './pages/topics/Topic.Produce';
@@ -73,7 +80,7 @@ import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 //
 //	Route Types
 //
-type IRouteEntry = PageDefinition<any>;
+export type IRouteEntry = PageDefinition<any>;
 
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
@@ -104,8 +111,11 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
+      // Handle AI Agents route with Technical Preview badge
+      const title = entry.path === '/agents' ? getAgentSidebarItemTitle({ route: entry }) : entry.title;
+
       return {
-        title: entry.title as string,
+        title: title as string | JSX.Element,
         to: entry.path as string,
         icon: entry.icon as any,
         isDisabled: isDisabled as boolean,
@@ -150,14 +160,15 @@ export const RouteView = () => (
 
 enum DisabledReasons {
   notSupported = 0, // kafka cluster version too low
-  noPermission = 1, // user doesn't have permissions to use the feature
+  noPermission = 1, // user doesn't have permissions to use the feature,
   enterpriseFeature = 2,
+  notSupportedServerless = 3, // This feature is not supported in serverless mode
 }
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.noPermission]: (
     <span>
-      You don't have premissions
+      You don't have permissions
       <br />
       to view this page.
     </span>
@@ -170,12 +181,27 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
     </span>
   ),
   [DisabledReasons.enterpriseFeature]: <span>This feature requires an enterprise license.</span>,
+  [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
 interface MenuItemState {
   visible: boolean;
   disabledReasons: DisabledReasons[];
 }
+
+/**
+ * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.
+ */
+const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
+  const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
+
+  if (!isAgentFeatureEnabled && path.includes('/agents')) {
+    appGlobal.history.push('/overview', { replace: true });
+    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+  }
+
+  return <>{children}</>;
+};
 
 function MakeRoute<TRouteParams>(
   path: string,
@@ -214,7 +240,12 @@ function MakeRoute<TRouteParams>(
         } as PageProps<TRouteParams>;
 
         uiState.currentRoute = route;
-        return <route.pageType {...pageProps} />;
+
+        return (
+          <ProtectedRoute path={route.path}>
+            <route.pageType {...pageProps} />
+          </ProtectedRoute>
+        );
       }}
     />
   );
@@ -308,6 +339,33 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(true, [Feature.ConsumerGroups]),
   ),
   MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
+
+  MakeRoute<{}>(
+    '/secrets',
+    SecretsStorePage,
+    'Secrets Store',
+    MdKey,
+    true,
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+  ),
+
+  MakeRoute<{}>(
+    '/agents',
+    AgentListPage,
+    'AI Agents',
+    HiOutlinePuzzlePiece,
+    true,
+    routeVisibility(
+      // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
+      () => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
+      [Feature.PipelineService],
+      [],
+      [],
+    ),
+  ),
+  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents', undefined, true, undefined),
+  MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents', undefined, true, undefined),
+  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents', undefined, true, undefined),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
