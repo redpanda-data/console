@@ -22,29 +22,21 @@ plugins:
       - paths=source_relative
       - require_unimplemented_servers=false
     out: backend/pkg/protogen
-  # Typescript plugins
-  - plugin: buf.build/bufbuild/es:v1.6.0
-    opt:
-      - target=ts
-      - import_extension=
-    out: frontend/src/protogen
-
-  - plugin: buf.build/connectrpc/es:v1.2.0
-    opt:
-      - target=ts
-      - import_extension=
-    out: frontend/src/protogen
   - plugin: buf.build/grpc-ecosystem/gateway:v2.18.0
     out: backend/pkg/protogen
     opt:
       - paths=source_relative
       - generate_unbound_methods=true
+  # Typescript plugins
+  - plugin: buf.build/bufbuild/es:v2.2.5
+    opt:
+      - target=ts
+    out: frontend/src/protogen
   - plugin: connect-gateway
     out: backend/pkg/protogen
     opt: paths=source_relative
-  - plugin: buf.build/connectrpc/query-es:v1.4.0
+  - plugin: buf.build/connectrpc/query-es:v2.0.1
     opt:
       - target=ts
-      - import_extension=
       - js_import_style=legacy_commonjs
     out: frontend/src/protogen
