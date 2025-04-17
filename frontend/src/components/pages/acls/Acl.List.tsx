@@ -599,11 +599,13 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
         effective permissions, including those granted through roles, refer to the Permissions List tab.
       </Box>
 
-      <Alert status="info" visibility={Features.rolesApi ? 'visible' : 'hidden'}>
-        <AlertIcon />
-        Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
-        hierarchies or large numbers of users.
-      </Alert>
+      {Features.rolesApi && (
+        <Alert status="info">
+          <AlertIcon />
+          Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
+          hierarchies or large numbers of users.
+        </Alert>
+      )}
 
       <SearchField
         width="300px"
