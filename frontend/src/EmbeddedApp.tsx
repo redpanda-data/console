@@ -23,14 +23,29 @@ import './assets/fonts/kumbh-sans.css';
 
 /* end global stylesheet */
 
-import { appGlobal } from './state/appGlobal';
+/* start tailwind styles */
+import './globals.css';
+/* end tailwind styles */
 
+import { TransportProvider } from '@connectrpc/connect-query';
+import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
+import { protobufRegistry } from 'protobuf-registry';
+import queryClient from 'queryClient';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
-import { type SetConfigArguments, setup } from './config';
+import {
+  type SetConfigArguments,
+  addBearerTokenInterceptor,
+  checkExpiredLicenseInterceptor,
+  getGrpcBasePath,
+  setup,
+} from './config';
+import { appGlobal } from './state/appGlobal';
 
 export interface EmbeddedProps extends SetConfigArguments {
   /**
@@ -52,6 +67,10 @@ export interface EmbeddedProps extends SetConfigArguments {
    * In the future we might decide to use memo() as well
    */
   isConsoleReadyToMount?: boolean;
+  /**
+   * LaunchDarkly feature flags to be used in console UI when in embedded mode.
+   */
+  featureFlags?: Record<string, boolean>;
 }
 
 function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
@@ -70,19 +89,34 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
 
   setup(p);
 
+  // This transport handles the grpc requests for the embedded app.
+  const transport = createConnectTransport({
+    baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
+    interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
+    jsonOptions: {
+      typeRegistry: protobufRegistry,
+    },
+  });
+
   if (!p.isConsoleReadyToMount) {
     return null;
   }
 
   return (
-    <BrowserRouter basename={basePath}>
-      <HistorySetter />
-      <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions}>
-        <ErrorBoundary>
-          <AppContent />
-        </ErrorBoundary>
-      </ChakraProvider>
-    </BrowserRouter>
+    <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
+      <BrowserRouter basename={basePath}>
+        <HistorySetter />
+        <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
+          <TransportProvider transport={transport}>
+            <QueryClientProvider client={queryClient}>
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </QueryClientProvider>
+          </TransportProvider>
+        </ChakraProvider>
+      </BrowserRouter>
+    </CustomFeatureFlagProvider>
   );
 }
 

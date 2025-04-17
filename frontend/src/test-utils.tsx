@@ -2,11 +2,10 @@ import type { Transport } from '@connectrpc/connect';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { type RenderOptions, render } from '@testing-library/react';
-import { createMemoryHistory } from 'history';
-import React, { type PropsWithChildren, type ReactElement } from 'react';
-import { Router } from 'react-router-dom';
+import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 
 // This type interface extends the default options for render from RTL, as well
 // as allows the user to specify other things such as initialState, store.
@@ -43,22 +42,43 @@ const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRend
 
 interface RenderWithRouterOptions extends ExtendedRenderOptions {
   route?: string;
-  history?: ReturnType<typeof createMemoryHistory>;
 }
 
-const renderWithRouter = (
-  ui: ReactElement,
-  {
-    route = '/',
-    history = createMemoryHistory({ initialEntries: [route] }),
-    ...renderOptions
-  }: RenderWithRouterOptions = {},
-) => {
+const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) => {
   return {
-    ...customRender(<Router history={history}>{ui}</Router>, renderOptions),
-    history,
+    ...customRender(<MemoryRouter>{ui}</MemoryRouter>, renderOptions),
   };
 };
 
+const connectQueryWrapper = (
+  config?: QueryClientConfig,
+  transport = createConnectTransport({
+    baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
+  }),
+): {
+  wrapper: JSXElementConstructor<PropsWithChildren>;
+  queryClient: QueryClient;
+  transport: Transport;
+  queryClientWrapper: JSXElementConstructor<PropsWithChildren>;
+} => {
+  const queryClient = new QueryClient(config);
+
+  return {
+    wrapper: ({ children }) => (
+      <MemoryRouter>
+        <TransportProvider transport={transport}>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </TransportProvider>
+      </MemoryRouter>
+    ),
+    queryClient,
+    transport,
+    queryClientWrapper: ({ children }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
+  };
+};
+
+// re-export everything
+export * from '@testing-library/react';
+
 // override render method
-export { renderWithRouter, customRender as render };
+export { renderWithRouter, customRender as render, connectQueryWrapper };

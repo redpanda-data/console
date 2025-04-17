@@ -2172,14 +2172,6 @@ export const pipelinesApi = observable({
   pipelines: undefined as undefined | Pipeline[],
   pipelinesError: null as ConnectError | null,
 
-  // async lintConfig(config: string): Promise<LintConfigResponse> {
-  //     const client = appConfig.pipelinesClient;
-  //     if (!client) throw new Error('pipelines client is not initialized');
-  //
-  //     const r = await client.lintConfig({ yamlConfig: config }, { timeoutMs: 3000 });
-  //     return r;
-  // },
-
   async refreshPipelines(_force: boolean): Promise<void> {
     const client = appConfig.pipelinesClient;
     if (!client) throw new Error('pipelines client is not initialized');
@@ -2312,7 +2304,7 @@ export const rpcnSecretManagerApi = observable({
     return isEnable;
   },
   async getPipelinesBySecret() {
-    const client = appConfig.pipelinesClientV2;
+    const client = appConfig.pipelinesClient;
     if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
 
     const pipelinesBySecrets = await client.getPipelinesBySecrets({ request: new GetPipelinesBySecretsRequest() });

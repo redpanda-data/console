@@ -6,7 +6,7 @@ import { capitalizeFirst } from 'utils/utils';
 import type { WrappedApiError } from '../../state/restInterfaces';
 
 interface ErrorResultProps {
-  error?: ConnectError | WrappedApiError;
+  error?: ConnectError | WrappedApiError | null;
   title?: string;
   message?: string;
 }
