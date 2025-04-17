@@ -31,6 +31,7 @@ import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CustomFeatureFlagProvider, useBooleanFlagValue } from 'custom-feature-flag-provider';
+import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'queryClient';
@@ -68,6 +69,7 @@ const AppSidebar = observer(() => {
 });
 
 const App = () => {
+  const developerView = useDeveloperView();
   setup({});
 
   const transport = createConnectTransport({
@@ -100,7 +102,7 @@ const App = () => {
                   )}
                 </RequireAuth>
               </ErrorBoundary>
-              <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production'} />
+              <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
             </QueryClientProvider>
           </TransportProvider>
         </ChakraProvider>
