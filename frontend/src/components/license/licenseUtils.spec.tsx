@@ -16,7 +16,7 @@ import {
 } from './licenseUtils';
 import '../../utils/arrayExtensions';
 import { vi } from 'vitest';
-import { renderWithRouter } from '../../../tests/test-utils';
+import { renderWithRouter } from '../../test-utils';
 import { api } from '../../state/backendApi';
 import { LicenseNotification } from './LicenseNotification';
 
