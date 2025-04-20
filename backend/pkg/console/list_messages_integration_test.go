@@ -916,7 +916,7 @@ func (o *GenericMatcher) String() string {
 	return ""
 }
 
-// MatchesOrder creates the Matcher
+// MatchesJSON creates the Matcher
 func MatchesJSON(expected map[string]map[string]any) gomock.Matcher {
 	return &GenericMatcher{expected: expected}
 }
