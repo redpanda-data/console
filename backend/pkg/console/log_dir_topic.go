@@ -132,7 +132,7 @@ func (p partitionInfo) Size() int64 {
 	return totalPartitionSize
 }
 
-// LogDirSizeByTopic returns a map where the topic name is the key.
+// logDirsByTopic returns a map where the topic name is the key.
 // It returns the log dir size for each topic.
 //
 //nolint:gocognit,cyclop // Complexity is indeed high, but ideally this will be solved by changing the API response
