@@ -182,9 +182,9 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 					Token:      cfg.SASL.OAUth.Token,
 					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 				}.AsMechanism()
-			} else if cfg.SASL.OAUth.TokenFilePath != "" {
+			} else if cfg.SASL.OAUth.TokenFilepath != "" {
 				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-					token, err := os.ReadFile(cfg.SASL.OAUth.TokenFilePath)
+					token, err := os.ReadFile(cfg.SASL.OAUth.TokenFilepath)
 					if err != nil {
 						return oauth.Auth{}, fmt.Errorf("failed to open token file: %w", err)
 					}
