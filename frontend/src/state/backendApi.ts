@@ -629,9 +629,10 @@ const apiStore = {
   },
 
   async deleteTopic(topicName: string) {
-    return rest(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}`, { method: 'DELETE' }).catch(
-      addError,
-    );
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}`, {
+      method: 'DELETE',
+    });
+    return parseOrUnwrap<any>(response, null);
   },
 
   async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
