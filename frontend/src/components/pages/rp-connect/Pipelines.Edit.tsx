@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { Box, Button, Flex, FormField, Input, NumberInput, createStandaloneToast } from '@redpanda-data/ui';
 import { Link as ChLink } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
-import { PipelineUpdate } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -158,7 +159,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     pipelinesApi
       .updatePipeline(
         pipelineId,
-        new PipelineUpdate({
+        create(PipelineUpdateSchema, {
           displayName: this.displayName,
           configYaml: this.editorContent,
           description: this.description,

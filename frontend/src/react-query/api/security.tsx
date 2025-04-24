@@ -1,22 +1,25 @@
-import type { PartialMessage } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import {
   listRoleMembers,
   listRoles,
 } from 'protogen/redpanda/api/console/v1alpha1/security-SecurityService_connectquery';
 import {
-  ListRoleMembersRequest,
+  type ListRoleMembersRequest,
+  ListRoleMembersRequestSchema,
   type ListRoleMembersResponse,
-  ListRolesRequest,
+  type ListRolesRequest,
+  ListRolesRequestSchema,
   type ListRolesResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
-import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 
 export const useListRolesQuery = (
-  input?: PartialMessage<ListRolesRequest>,
-  options?: QueryOptions<ListRolesRequest, ListRolesResponse, ListRolesResponse>,
+  input?: MessageInit<ListRolesRequest>,
+  options?: QueryOptions<GenMessage<ListRolesRequest>, ListRolesResponse>,
 ) => {
-  const listRolesRequest = new ListRolesRequest({
+  const listRolesRequest = create(ListRolesRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
     ...input,
@@ -25,6 +28,7 @@ export const useListRolesQuery = (
   const listRolesResult = useInfiniteQueryWithAllPages(listRoles, listRolesRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken,
   });
 
   const roles = listRolesResult?.data?.pages?.flatMap(({ roles }) => roles);
@@ -38,10 +42,10 @@ export const useListRolesQuery = (
 };
 
 export const useListRoleMembersQuery = (
-  input?: PartialMessage<ListRoleMembersRequest>,
-  options?: QueryOptions<ListRoleMembersRequest, ListRoleMembersResponse, ListRoleMembersResponse>,
+  input?: MessageInit<ListRoleMembersRequest>,
+  options?: QueryOptions<GenMessage<ListRoleMembersRequest>, ListRoleMembersResponse>,
 ) => {
-  const listRoleMembersRequest = new ListRoleMembersRequest({
+  const listRoleMembersRequest = create(ListRoleMembersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
     ...input,
@@ -50,6 +54,7 @@ export const useListRoleMembersQuery = (
   const listRoleMembersResult = useInfiniteQueryWithAllPages(listRoleMembers, listRoleMembersRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken,
   });
 
   const members = listRoleMembersResult?.data?.pages?.flatMap(({ members }) => members);

@@ -1,6 +1,7 @@
+import { create } from '@bufbuild/protobuf';
 import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, Spinner, VStack } from '@redpanda-data/ui';
 import { useAppForm } from 'components/form/form';
-import { PipelineCreate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useHistory } from 'react-router-dom';
@@ -99,18 +100,17 @@ export const CreateAgentHTTP = () => {
           PERSONAL_ACCESS_TOKEN: value.PERSONAL_ACCESS_TOKEN,
         },
       });
-      const pipelines = Object.entries(parsedPipelines).map(
-        ([key, pipeline]) =>
-          new PipelineCreate({
-            displayName: getPipelineName(key),
-            description: getPipelineDescription(key),
-            configYaml: pipeline,
-            tags: {
-              __redpanda_cloud_agent_name: value.name,
-              __redpanda_cloud_agent_description: value.description,
-              __redpanda_cloud_pipeline_purpose: getPipelinePurpose(key),
-            },
-          }),
+      const pipelines = Object.entries(parsedPipelines).map(([key, pipeline]) =>
+        create(PipelineCreateSchema, {
+          displayName: getPipelineName(key),
+          description: getPipelineDescription(key),
+          configYaml: pipeline,
+          tags: {
+            __redpanda_cloud_agent_name: value.name,
+            __redpanda_cloud_agent_description: value.description,
+            __redpanda_cloud_pipeline_purpose: getPipelinePurpose(key),
+          },
+        }),
       );
       await createAgentPipelinesMutation({ pipelines, agentId }).then(() => {
         history.push(`/agents/${agentId}`);

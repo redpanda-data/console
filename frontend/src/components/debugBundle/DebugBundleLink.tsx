@@ -1,3 +1,4 @@
+import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
 import { MdDeleteOutline } from 'react-icons/md';
 import { config } from '../../config';
@@ -75,7 +76,11 @@ const DebugBundleLink = ({
           </Tooltip>
         )}
       </Flex>
-      {showDatetime && <Text>Generated {statusWithFilename.createdAt?.toDate().toLocaleString()}</Text>}
+      {showDatetime && (
+        <Text>
+          Generated {statusWithFilename.createdAt && timestampDate(statusWithFilename.createdAt).toLocaleString()}
+        </Text>
+      )}
     </Box>
   );
 };

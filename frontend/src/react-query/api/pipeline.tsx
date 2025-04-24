@@ -1,4 +1,5 @@
-import type { PartialMessage } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,22 +14,26 @@ import {
   updatePipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
-  GetPipelineRequest,
-  GetPipelinesBySecretsRequest,
-  GetPipelinesForSecretRequest,
-  ListPipelinesRequest,
+  type GetPipelineRequest,
+  GetPipelineRequestSchema,
+  GetPipelinesBySecretsRequestSchema,
+  GetPipelinesForSecretRequestSchema,
+  type ListPipelinesRequest,
+  ListPipelinesRequestSchema,
   type ListPipelinesResponse,
+  PipelineService,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
-  GetPipelineRequest as GetPipelineRequestDataPlane,
+  GetPipelineRequestSchema as GetPipelineRequestSchemaDataPlane,
   type GetPipelineResponse,
-  GetPipelinesBySecretsRequest as GetPipelinesBySecretsRequestDataPlane,
-  GetPipelinesForSecretRequest as GetPipelinesForSecretRequestDataPlane,
-  ListPipelinesRequest as ListPipelinesRequestDataPlane,
+  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
+  GetPipelinesForSecretRequestSchema as GetPipelinesForSecretRequestSchemaDataPlane,
+  type ListPipelinesRequest as ListPipelinesRequestDataPlane,
+  ListPipelinesRequestSchema as ListPipelinesRequestSchemaDataPlane,
   type Pipeline,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
@@ -38,14 +43,14 @@ export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
-  options?: QueryOptions<GetPipelineRequest, GetPipelineResponse, GetPipelineResponse> & {
+  options?: QueryOptions<GenMessage<GetPipelineRequest>, GetPipelineResponse> & {
     refetchInterval?: number | false;
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
   },
 ) => {
-  const getPipelineRequestDataPlane = new GetPipelineRequestDataPlane({ id });
-  const getPipelineRequest = new GetPipelineRequest({ request: getPipelineRequestDataPlane });
+  const getPipelineRequestDataPlane = create(GetPipelineRequestSchemaDataPlane, { id });
+  const getPipelineRequest = create(GetPipelineRequestSchema, { request: getPipelineRequestDataPlane });
   return useQuery(getPipeline, getPipelineRequest, {
     enabled: options?.enabled,
     refetchInterval: options?.refetchInterval,
@@ -55,10 +60,10 @@ export const useGetPipelineQuery = (
 };
 
 export const useListPipelinesQuery = (
-  input?: PartialMessage<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse>,
+  input?: MessageInit<ListPipelinesRequestDataPlane>,
+  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>,
 ) => {
-  const listPipelinesRequestDataPlane = new ListPipelinesRequestDataPlane({
+  const listPipelinesRequestDataPlane = create(ListPipelinesRequestSchemaDataPlane, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
     // TODO: Use once nameContains is not required anymore
@@ -72,13 +77,14 @@ export const useListPipelinesQuery = (
     ...input,
   });
 
-  const listPipelinesRequest = new ListPipelinesRequest({
+  const listPipelinesRequest = create(ListPipelinesRequestSchema, {
     request: listPipelinesRequestDataPlane,
-  }) as PartialMessage<ListPipelinesRequest> & Required<Pick<PartialMessage<ListPipelinesRequest>, 'request'>>;
-
+  }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>;
   const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     pageParamKey: 'request',
     enabled: options?.enabled,
+    // Need to cast to ensure reflection works properly
+    getNextPageParam: (lastPage) => lastPage?.response?.nextPageToken as MessageInit<ListPipelinesRequestDataPlane>,
   });
 
   const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
@@ -101,7 +107,7 @@ export const useCreatePipelineMutationWithToast = () => {
 
   return useMutation(createPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
       showToast({
         id: TOASTS.PIPELINE.CREATE.SUCCESS,
         title: 'Pipeline created successfully',
@@ -123,7 +129,7 @@ export const useUpdatePipelineMutationWithToast = () => {
 
   return useMutation(updatePipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
       showToast({
         id: TOASTS.PIPELINE.UPDATE.SUCCESS,
         title: 'Pipeline updated successfully',
@@ -145,7 +151,7 @@ export const useStartPipelineMutationWithToast = () => {
 
   return useMutation(startPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
       showToast({
         id: TOASTS.PIPELINE.START.SUCCESS,
         title: 'Pipeline started successfully',
@@ -167,7 +173,7 @@ export const useStopPipelineMutationWithToast = () => {
 
   return useMutation(stopPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
       showToast({
         id: TOASTS.PIPELINE.STOP.SUCCESS,
         title: 'Pipeline stopped successfully',
@@ -189,7 +195,7 @@ export const useDeletePipelineMutationWithToast = () => {
 
   return useMutation(deletePipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
       showToast({
         id: TOASTS.PIPELINE.DELETE.SUCCESS,
         title: 'Pipeline deleted successfully',
@@ -207,9 +213,9 @@ export const useDeletePipelineMutationWithToast = () => {
 };
 
 export const useGetPipelinesForSecretQuery = ({ secretId }: { secretId: Secret['id'] }) => {
-  const getPipelinesForSecretRequestDataPlane = new GetPipelinesForSecretRequestDataPlane({ secretId });
+  const getPipelinesForSecretRequestDataPlane = create(GetPipelinesForSecretRequestSchemaDataPlane);
 
-  const getPipelinesForSecretRequest = new GetPipelinesForSecretRequest({
+  const getPipelinesForSecretRequest = create(GetPipelinesForSecretRequestSchema, {
     request: getPipelinesForSecretRequestDataPlane,
   });
 
@@ -219,11 +225,9 @@ export const useGetPipelinesForSecretQuery = ({ secretId }: { secretId: Secret['
 };
 
 export const useGetPipelinesBySecretsQuery = () => {
-  const getPipelinesBySecretsRequestDataPlane = new GetPipelinesBySecretsRequestDataPlane({
-    secretId: '',
-  });
+  const getPipelinesBySecretsRequestDataPlane = create(GetPipelinesBySecretsRequestSchemaDataPlane);
 
-  const getPipelinesBySecretsRequest = new GetPipelinesBySecretsRequest({
+  const getPipelinesBySecretsRequest = create(GetPipelinesBySecretsRequestSchema, {
     request: getPipelinesBySecretsRequestDataPlane,
   });
   return useQuery(getPipelinesBySecrets, getPipelinesBySecretsRequest);

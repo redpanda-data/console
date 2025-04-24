@@ -1,18 +1,22 @@
-import type { PartialMessage } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
-import { createConnectInfiniteQueryKey, useMutation } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMutation as useTanstackMutation, useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { config } from 'config';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import {
   type CreateUserRequest,
-  ListUsersRequest,
+  type ListUsersRequest,
+  ListUsersRequestSchema,
   type ListUsersResponse,
-  ListUsersResponse_User,
+  type ListUsersResponse_User,
+  ListUsersResponse_UserSchema,
   SASLMechanism,
+  UserService,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetUsersResponse } from 'state/restInterfaces';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
@@ -23,15 +27,20 @@ import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.util
  * TODO: Remove once Console v3 is released.
  */
 export const useLegacyListUsersQuery = (
-  _input?: PartialMessage<ListUsersRequest>,
-  options?: QueryOptions<ListUsersRequest, ListUsersResponse, ListUsersResponse>,
+  _input?: MessageInit<ListUsersRequest>,
+  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>,
 ) => {
-  const listUsersRequest = new ListUsersRequest({
+  const listUsersRequest = create(ListUsersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
   });
 
-  const infiniteQueryKey = createConnectInfiniteQueryKey(listUsers, listUsersRequest);
+  const infiniteQueryKey = createConnectQueryKey({
+    // transport: myTransportReference,
+    schema: listUsers,
+    input: listUsersRequest,
+    cardinality: 'infinite', // TODO: Check if we need to specify cardinality
+  });
 
   const legacyListUsersResult = useTanstackQuery<GetUsersResponse>({
     // We need to precisely match the query key provided by other parts of connect-query
@@ -52,12 +61,11 @@ export const useLegacyListUsersQuery = (
   });
 
   const users: ListUsersResponse_User[] =
-    legacyListUsersResult.data?.users.map(
-      (user) =>
-        new ListUsersResponse_User({
-          name: user,
-          mechanism: undefined, // Not reported by legacy API
-        }),
+    legacyListUsersResult.data?.users.map((user) =>
+      create(ListUsersResponse_UserSchema, {
+        name: user,
+        mechanism: undefined, // Not reported by legacy API
+      }),
     ) ?? [];
 
   return {
@@ -72,18 +80,20 @@ export const useLegacyListUsersQuery = (
  * WARNING: Only use once Console v3 is released.
  */
 export const useListUsersQuery = (
-  input?: PartialMessage<ListUsersRequest>,
-  options?: QueryOptions<ListUsersRequest, ListUsersResponse, ListUsersResponse>,
+  input?: MessageInit<ListUsersRequest>,
+  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>,
 ) => {
-  const listUsersRequest = new ListUsersRequest({
+  const listUsersRequest = create(ListUsersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
     ...input,
   });
+  // as Required<Pick<MessageInit<ListUsersRequest>, 'pageToken' | '$typeName' | 'pageSize'>>
 
   const listUsersResult = useInfiniteQueryWithAllPages(listUsers, listUsersRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken,
   });
 
   const allRetrievedUsers = listUsersResult?.data?.pages?.flatMap(({ users }) => users);
@@ -149,7 +159,7 @@ export const useLegacyCreateUserMutationWithToast = () => {
       const data = await response.json();
 
       await queryClient.invalidateQueries({
-        queryKey: [listUsers.service.typeName],
+        queryKey: [UserService.typeName],
         exact: false,
       });
 
@@ -164,7 +174,7 @@ export const useLegacyCreateUserMutationWithToast = () => {
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [listUsers.service.typeName],
+        queryKey: [UserService.typeName],
         exact: false,
       });
 
@@ -200,7 +210,7 @@ export const useCreateUserMutationWithToast = () => {
   return useMutation(createUser, {
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [listUsers.service.typeName],
+        queryKey: [UserService.typeName],
         exact: false,
       });
 

@@ -1,6 +1,7 @@
-import type { PartialMessage } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
-import { createConnectInfiniteQueryKey, useMutation } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import {
   useQueryClient,
   useMutation as useTanstackMutation,
@@ -10,11 +11,14 @@ import { config } from 'config';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   type CreateTopicRequest,
-  ListTopicsRequest,
+  type ListTopicsRequest,
+  ListTopicsRequestSchema,
   type ListTopicsResponse,
-  ListTopicsResponse_Topic,
+  type ListTopicsResponse_Topic,
+  ListTopicsResponse_TopicSchema,
+  TopicService,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { MAX_PAGE_SIZE, type QueryOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetTopicsResponse } from 'state/restInterfaces';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
@@ -25,16 +29,21 @@ import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.util
  * TODO: Remove once Console v3 is released.
  */
 export const useLegacyListTopicsQuery = (
-  _input?: PartialMessage<ListTopicsRequest>,
-  options?: QueryOptions<ListTopicsRequest, ListTopicsResponse, ListTopicsResponse>,
+  _input?: MessageInit<ListTopicsRequest>,
+  options?: QueryOptions<GenMessage<ListTopicsRequest>, ListTopicsResponse>,
   { includeInternalTopics = false }: { includeInternalTopics?: boolean } = {},
 ) => {
-  const listTopicsRequest = new ListTopicsRequest({
+  const listTopicsRequest = create(ListTopicsRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
   });
 
-  const infiniteQueryKey = createConnectInfiniteQueryKey(listTopics, listTopicsRequest);
+  const infiniteQueryKey = createConnectQueryKey({
+    // transport: myTransportReference,
+    schema: listTopics,
+    input: listTopicsRequest,
+    cardinality: 'infinite', // TODO: Check if we need to specify cardinality
+  });
 
   const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
     // We need to precisely match the query key provided by other parts of connect-query
@@ -55,14 +64,13 @@ export const useLegacyListTopicsQuery = (
   });
 
   const allRetrievedTopics: ListTopicsResponse_Topic[] =
-    legacyListTopicsResult.data?.topics.map(
-      (topic) =>
-        new ListTopicsResponse_Topic({
-          name: topic.topicName,
-          internal: topic.isInternal,
-          partitionCount: topic.partitionCount,
-          replicationFactor: topic.replicationFactor,
-        }),
+    legacyListTopicsResult.data?.topics.map((topic) =>
+      create(ListTopicsResponse_TopicSchema, {
+        name: topic.topicName,
+        internal: topic.isInternal,
+        partitionCount: topic.partitionCount,
+        replicationFactor: topic.replicationFactor,
+      }),
     ) ?? [];
 
   const topics = includeInternalTopics
@@ -85,11 +93,11 @@ interface ListTopicsExtraOptions {
  * WARNING: Only use once Console v3 is released.
  */
 export const useListTopicsQuery = (
-  input?: PartialMessage<ListTopicsRequest>,
-  options?: QueryOptions<ListTopicsRequest, ListTopicsResponse, ListTopicsResponse>,
+  input?: MessageInit<ListTopicsRequest>,
+  options?: QueryOptions<GenMessage<ListTopicsRequest>, ListTopicsResponse>,
   { hideInternalTopics = false }: ListTopicsExtraOptions = {},
 ) => {
-  const listTopicsRequest = new ListTopicsRequest({
+  const listTopicsRequest = create(ListTopicsRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
     ...input,
@@ -98,6 +106,7 @@ export const useListTopicsQuery = (
   const listTopicsResult = useInfiniteQueryWithAllPages(listTopics, listTopicsRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken,
   });
 
   const allRetrievedTopics = listTopicsResult?.data?.pages?.flatMap(({ topics }) => topics);
@@ -142,7 +151,7 @@ export const useLegacyCreateTopicMutationWithToast = () => {
       const data = await response.json();
 
       await queryClient.invalidateQueries({
-        queryKey: [listTopics.service.typeName],
+        queryKey: [TopicService.typeName],
         exact: false,
       });
 
@@ -150,7 +159,7 @@ export const useLegacyCreateTopicMutationWithToast = () => {
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [listTopics.service.typeName],
+        queryKey: [TopicService.typeName],
         exact: false,
       });
 
@@ -186,7 +195,7 @@ export const useCreateTopicMutationWithToast = () => {
   return useMutation(createTopic, {
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [listTopics.service.typeName],
+        queryKey: [TopicService.typeName],
         exact: false,
       });
 

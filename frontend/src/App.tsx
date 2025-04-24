@@ -76,7 +76,7 @@ const App = () => {
     baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
     jsonOptions: {
-      typeRegistry: protobufRegistry,
+      registry: protobufRegistry,
     },
   });
 

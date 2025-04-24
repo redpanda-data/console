@@ -21,7 +21,7 @@ import {
   type Pipeline,
   type Pipeline_Resources,
   Pipeline_State,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import {
   type MessageSearch,

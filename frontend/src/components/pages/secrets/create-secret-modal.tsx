@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Button,
   ButtonGroup,
@@ -18,7 +19,7 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
-import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { ReactNode } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -73,7 +74,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
         }
       }
 
-      const request = new CreateSecretRequest({
+      const request = create(CreateSecretRequestSchema, {
         id: value.id,
         // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),

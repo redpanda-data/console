@@ -1,6 +1,5 @@
 import { Code } from '@connectrpc/connect';
 import { ConnectError } from '@connectrpc/connect';
-import { defaultOptions } from '@connectrpc/connect-query';
 import { QueryClient } from '@tanstack/react-query';
 
 function isConnectError(error: Error | ConnectError): error is ConnectError {
@@ -9,9 +8,7 @@ function isConnectError(error: Error | ConnectError): error is ConnectError {
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    ...defaultOptions,
     queries: {
-      ...defaultOptions.queries,
       staleTime: 3 * 1000, // 3 seconds
       retry: (failureCount, error) => {
         if (failureCount > 3) return false;
