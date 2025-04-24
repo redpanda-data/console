@@ -167,8 +167,6 @@ class TransformsList extends PageComponent<{}> {
                   const partitionTransformStatus = r.statuses.first(
                     (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
                   )!;
-                  // const enumType = proto3.getEnumType(PartitionTransformStatus_PartitionStatus);
-                  // const entry = enumType.findNumber(s.status);
 
                   return (
                     <Flex alignItems="center">

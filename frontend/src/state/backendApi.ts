@@ -2578,8 +2578,7 @@ export function createMessageSearch() {
                       encoding: key?.encoding,
                       encodingName:
                         key?.encoding != null
-                          ? //  proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName
-                            PayloadEncodingSchema.values.find((value) => value.number === key.encoding)?.localName
+                          ? PayloadEncodingSchema.values.find((value) => value.number === key.encoding)?.localName
                           : undefined,
                       message: res,
                     });
@@ -2656,8 +2655,7 @@ export function createMessageSearch() {
                       encodingName:
                         val?.encoding != null
                           ? PayloadEncodingSchema.values.find((value) => value.number === val.encoding)?.localName
-                          : // ? proto3.getEnumType(PayloadEncoding).findNumber(val.encoding)?.localName
-                            undefined,
+                          : undefined,
                       message: res,
                     });
                 }
