@@ -16,6 +16,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
@@ -175,13 +177,22 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 						Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 					}, err
 				})
-			} else {
+			} else if cfg.SASL.OAUth.Token != "" {
 				mechanism = oauth.Auth{
 					Token:      cfg.SASL.OAUth.Token,
 					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 				}.AsMechanism()
+			} else if cfg.SASL.OAUth.TokenFilePath != "" {
+				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+					token, err := os.ReadFile(cfg.SASL.OAUth.TokenFilePath)
+					if err != nil {
+						return oauth.Auth{}, fmt.Errorf("failed to open token file: %w", err)
+					}
+					return oauth.Auth{
+						Token: strings.TrimSpace(string(token)),
+					}, nil
+				})
 			}
-
 			opts = append(opts, kgo.SASL(mechanism))
 		}
 
