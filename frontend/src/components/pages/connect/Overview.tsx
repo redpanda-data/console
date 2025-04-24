@@ -29,7 +29,6 @@ import Tabs, { type Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
-import RpConnectSecretsList from '../rp-connect/secrets/Secrets.List';
 import {
   ConnectorClass,
   ConnectorsColumn,
@@ -124,7 +123,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
                 Learn more.
               </Link>
             </Text>
-            <TabRedpandaConnect defaultView={getDefaultView(this.props.defaultView).redpandaConnectTab} />
+            {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
           </Box>
         ),
       },
@@ -419,48 +418,6 @@ const TabKafkaConnect = observer((_p: {}) => {
         <Tabs tabs={connectTabs} onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} />
       </Section>
     </Stack>
-  );
-});
-
-const TabRedpandaConnect = observer((_p: { defaultView: ConnectView }) => {
-  if (!Features.pipelinesApi)
-    // If the backend doesn't support pipelines, show the intro page
-    return <RedpandaConnectIntro />;
-
-  const tabs = [
-    {
-      key: 'pipelines',
-      title: (
-        <Box minWidth="180px" data-testid={'tab-rpcn-connect'}>
-          Pipelines
-        </Box>
-      ),
-      content: <RpConnectPipelinesList matchedPath="/rp-connect" />,
-    },
-    {
-      key: 'secrets',
-      title: (
-        <Box minWidth="180px" data-testid={'tab-rpcn-secret'}>
-          Secrets
-        </Box>
-      ),
-      content: <RpConnectSecretsList matchedPath="/rp-connect/secrets" />,
-    },
-  ] as Tab[];
-
-  /**
-   * Verify if the RPCN secret is enabled. Unlike the pipeline, this feature checks
-   * the result endpoint rather than the endpoint itself.
-   */
-  if (!rpcnSecretManagerApi.isEnable) {
-    return <RpConnectPipelinesList matchedPath="/rp-connect" />;
-  }
-
-  return (
-    <Tabs
-      tabs={tabs}
-      defaultSelectedTabKey={_p.defaultView === ConnectView.RedpandaConnectSecret ? 'secrets' : 'pipelines'}
-    />
   );
 });
 

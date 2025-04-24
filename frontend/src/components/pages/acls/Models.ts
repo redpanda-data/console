@@ -361,8 +361,6 @@ export const principalGroupsView = observable(
       for (const { items } of g) {
         const { principal, host } = items[0];
 
-        console.log("principal>>>>>", principal);
-
         let principalType: PrincipalType;
         let principalName: string;
         if (principal?.includes(":")) {

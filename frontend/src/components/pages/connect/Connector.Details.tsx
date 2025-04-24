@@ -684,7 +684,7 @@ const LogsTab = observer(
       }
     };
 
-    const paginationParams = usePaginationParams(10, state.messages.length);
+    const paginationParams = usePaginationParams(state.messages.length, 10);
     const messageTableColumns: ColumnDef<TopicMessage>[] = [
       {
         header: 'Timestamp',

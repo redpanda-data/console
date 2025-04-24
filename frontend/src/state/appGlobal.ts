@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import type { History } from "history";
 import type { Location, NavigateFunction } from "react-router-dom";
 import { api } from "./backendApi";
 import { uiState } from "./uiState";

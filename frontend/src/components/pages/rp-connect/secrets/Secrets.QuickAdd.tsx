@@ -16,11 +16,7 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { useState } from 'react';
-import {
-  CreateSecretRequest,
-  Scope,
-  type Secret,
-} from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { CreateSecretRequest, Scope, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';

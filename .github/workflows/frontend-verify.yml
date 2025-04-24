@@ -13,32 +13,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Run lint
         working-directory: frontend
-        run: npm run lint
+        run: bun run lint
       - name: Run typecheck
         working-directory: frontend
-        run: npm run type:check
+        run: bun run type:check
       - name: Run build frontend
         working-directory: frontend
         run: |
@@ -46,7 +30,7 @@ jobs:
           REACT_APP_CONSOLE_GIT_REF=$GITHUB_REF_NAME
           REACT_APP_BUILD_TIMESTAMP=$(date +%s)
           REACT_APP_DEV_HINT=true
-          npm run build
+          bun run build
   integration-test:
     needs: "lint-and-compile"
     timeout-minutes: 15
@@ -54,49 +38,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Run integration tests
         working-directory: frontend
-        run: npm run test
+        run: bun run test
   e2e-test:
     needs: "lint-and-compile"
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+      - uses: oven-sh/setup-bun@v2
       - name: Docker compose up
         working-directory: frontend
         run: /usr/bin/docker compose --file tests/config/docker-compose.yaml up --detach
@@ -105,16 +61,12 @@ jobs:
         with:
           go-version: '1.22'
           cache-dependency-path: backend/go.sum
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Install Playwright browsers
         working-directory: frontend
-        run: npm run install:browsers
+        run: bun run install:chromium
       - name: Install Go dependencies
         working-directory: backend/cmd/api
         run: go get .
@@ -143,11 +95,11 @@ jobs:
         run: docker logs connect
       - name: Run Playwright tests
         working-directory: frontend
-        run: npm run e2e-test
+        run: bun run e2e-test
       - name: Upload Playwright report artifact
         uses: actions/upload-artifact@v4
         if: ${{ failure() }}
         with:
           name: playwright-report
           path: frontend/playwright-report/
-          retention-days: 1
+          retention-days: 2

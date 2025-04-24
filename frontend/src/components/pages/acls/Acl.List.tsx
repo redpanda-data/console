@@ -80,11 +80,10 @@ const { ToastContainer, toast } = createStandaloneToast({
 export type AclListTab = 'users' | 'roles' | 'acls' | 'permissions-list';
 
 const getCreateUserButtonProps = () => ({
-  isDisabled: !Features.createUser || api.userData?.canManageUsers === false || !api.isAdminApiConfigured,
+  isDisabled: !Features.createUser || api.userData?.canManageUsers === false,
   tooltip: [
     !Features.createUser && "Your cluster doesn't support this feature.",
     api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
-    !api.isAdminApiConfigured && 'You need to enable Admin API.',
   ]
     .filter(Boolean)
     .join(' '),
@@ -159,7 +158,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
       {
         key: 'permissions-list' as AclListTab,
         name: 'Permissions list',
-        component: <PermissionsListTab />,
+        component: <PermissionsListTab data-testid="permissions-list-tab" />,
         isDisabled: api.userData?.canViewPermissionsList
           ? false
           : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
@@ -170,7 +169,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
     const activeTab = tabs.findIndex((x) => x.key === this.props.tab);
     if (activeTab === -1) {
       // No tab selected, default to users
-      appGlobal.historyReplace('/security/users');
+      appGlobal.historyPush('/security/users');
     }
 
     return (
@@ -485,12 +484,11 @@ const RolesTab = observer(() => {
           data-testid="create-role-button"
           variant="outline"
           onClick={() => appGlobal.historyPush('/security/roles/create')}
-          {...getCreateUserButtonProps()}
-          isDisabled={api.userData?.canCreateRoles === false || !api.isAdminApiConfigured}
+          isDisabled={api.userData?.canCreateRoles === false || !Features.rolesApi}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
-            !api.isAdminApiConfigured && 'You need to enable Admin API.',
+            !Features.rolesApi && 'This feature is not enabled.',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -601,11 +599,13 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
         effective permissions, including those granted through roles, refer to the Permissions List tab.
       </Box>
 
-      <Alert status="info">
-        <AlertIcon />
-        Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
-        hierarchies or large numbers of users.
-      </Alert>
+      {Features.rolesApi && (
+        <Alert status="info">
+          <AlertIcon />
+          Roles are a more flexible and efficient way to manage user permissions, especially with complex organizational
+          hierarchies or large numbers of users.
+        </Alert>
+      )}
 
       <SearchField
         width="300px"

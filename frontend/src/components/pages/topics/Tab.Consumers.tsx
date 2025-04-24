@@ -36,7 +36,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
     consumers = [];
   }
 
-  const paginationParams = usePaginationParams(uiState.topicSettings.consumerPageSize, consumers.length);
+  const paginationParams = usePaginationParams(consumers.length, uiState.topicSettings.consumerPageSize);
 
   return (
     <DataTable<TopicConsumer>

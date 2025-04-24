@@ -29,7 +29,7 @@ type TopicPartitionsProps = {
 
 export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) => {
   const partitions = api.topicPartitions.get(topic.topicName);
-  const paginationParams = usePaginationParams(uiState.topicSettings.partitionPageSize, partitions?.length ?? 0);
+  const paginationParams = usePaginationParams(partitions?.length ?? 0, uiState.topicSettings.partitionPageSize);
 
   if (partitions === undefined) return DefaultSkeleton;
   if (partitions === null) {

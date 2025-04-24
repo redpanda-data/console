@@ -16,19 +16,20 @@ import (
 
 // Proto has all configuration options for decoding proto-serialized Kafka records.
 type Proto struct {
-	Enabled bool `json:"enabled"`
+	// Enabled enables protobuf deserialization for other sources than schema registry.
+	Enabled bool `yaml:"enabled"`
 
-	// The required proto definitions can be provided via SchemaRegistry, Git or Filesystem
-	Git        Git        `json:"git"`
-	FileSystem Filesystem `json:"fileSystem"`
+	// The required proto definitions can be provided via Git or Filesystem
+	Git        Git        `yaml:"git"`
+	FileSystem Filesystem `yaml:"fileSystem"`
 
 	// Mappings define what proto types shall be used for each Kafka topic. If SchemaRegistry is used, no mappings are required.
-	Mappings []ProtoTopicMapping `json:"mappings"`
+	Mappings []ProtoTopicMapping `yaml:"mappings"`
 
 	// Proto import paths. By default, the baseDir/root is used. Set import paths
 	// if multiple import paths relative to the baseDir shall be used. The
 	// behavior is similar to the `-I` flag of protoc.
-	ImportPaths []string `json:"importPaths"`
+	ImportPaths []string `yaml:"importPaths"`
 }
 
 // RegisterFlags registers all nested config flags.

@@ -9,28 +9,29 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
-import { computed } from 'mobx';
-import { observer } from 'mobx-react';
-import { useMatch, Link as ReactRouterLink } from 'react-router-dom';
-import { isEmbedded } from '../../config';
-import { api } from '../../state/backendApi';
-import { type BreadcrumbEntry, uiState } from '../../state/uiState';
-import { IsDev } from '../../utils/env';
-import { UserPreferencesButton } from '../misc/UserPreferences';
-import DataRefreshButton from '../misc/buttons/data-refresh/Component';
+import { Badge, Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from "@redpanda-data/ui";
+import { computed } from "mobx";
+import { observer } from "mobx-react";
+import { useMatch, Link as ReactRouterLink } from "react-router-dom";
+import { isEmbedded } from "../../config";
+import { api } from "../../state/backendApi";
+import { type BreadcrumbEntry, uiState } from "../../state/uiState";
+import { IsDev } from "../../utils/env";
+import { UserPreferencesButton } from "../misc/UserPreferences";
+import DataRefreshButton from "../misc/buttons/data-refresh/Component";
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
+  const showBetaBadge = useShouldShowBetaBadge();
 
   const breadcrumbItems = computed(() => {
     const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
 
     if (!isEmbedded() && uiState.selectedClusterName) {
       items.unshift({
-        heading: '',
-        title: 'Cluster',
-        linkTo: '/',
+        heading: "",
+        title: "Cluster",
+        linkTo: "/",
       });
     }
 
@@ -65,33 +66,22 @@ const AppPageHeader = observer(() => {
               mr={2}
               {...(lastBreadcrumb.options?.canBeTruncated
                 ? {
-                    wordBreak: 'break-all',
-                    whiteSpace: 'break-spaces',
+                    wordBreak: "break-all",
+                    whiteSpace: "break-spaces",
                   }
                 : {
-                    whiteSpace: 'nowrap',
+                    whiteSpace: "nowrap",
                   })}
             >
               {lastBreadcrumb.title}
             </Text>
           )}
-          {lastBreadcrumb && (
-            <Box>
-              {lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}
-            </Box>
-          )}
+          {showBetaBadge && <Badge ml={2}>beta</Badge>}
+          {lastBreadcrumb && <Box>{lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}</Box>}
           {showRefresh && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>
-          <Button
-            as={ReactRouterLink}
-            to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
-            variant="ghost"
-            isDisabled={!api.userData?.canViewDebugBundle}
-            tooltip={
-              !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
-            }
-          >
+          <Button as={ReactRouterLink} to={api.userData?.canViewDebugBundle ? "/debug-bundle" : undefined} variant="ghost" isDisabled={!api.userData?.canViewDebugBundle} tooltip={!api.userData?.canViewDebugBundle ? "You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission" : null}>
             Debug bundle
           </Button>
           <UserPreferencesButton />
@@ -113,28 +103,56 @@ export default AppPageHeader;
  */
 function useShouldShowRefresh() {
   const connectClusterMatch = useMatch({
-    path: '/connect-clusters/:clusterName/:connectorName',
+    path: "/connect-clusters/:clusterName/:connectorName",
     end: false,
-    caseSensitive: true,
   });
 
   const schemaCreateMatch = useMatch({
-    path: '/schema-registry/create',
+    path: "/schema-registry/create",
     end: false,
-    caseSensitive: true,
   });
 
   const topicProduceRecordMatch = useMatch({
-    path: '/topics/:topicName/produce-record',
+    path: "/topics/:topicName/produce-record",
     end: false,
-    caseSensitive: true,
   });
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
+  const secretsMatch = useMatch({
+    path: "/secrets",
+    end: true,
+  });
 
+  const agentsMatch = useMatch({
+    path: "/agents",
+    end: true,
+  });
+
+  const agentDetailsMatch = useMatch({
+    path: "/agents/:agentId",
+    end: true,
+  });
+
+  const createAgentMatch = useMatch({
+    path: "/agents/create",
+    end: false,
+  });
+
+  if (connectClusterMatch && connectClusterMatch.params.connectorName === "create-connector") return false;
   if (schemaCreateMatch) return false;
-
   if (topicProduceRecordMatch) return false;
+  if (secretsMatch) return false;
+  if (agentsMatch) return false;
+  if (agentDetailsMatch) return false;
+  if (createAgentMatch) return false;
 
   return true;
+}
+
+function useShouldShowBetaBadge() {
+  const agentsMatch = useMatch({
+    path: "/agents",
+    end: false,
+  });
+
+  return agentsMatch !== null;
 }

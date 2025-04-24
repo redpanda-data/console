@@ -3,14 +3,15 @@ import { defineConfig, loadEnv } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
+import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
-import moduleFederationConfig from './module-federation';
+import moduleFederationConfig from "./module-federation";
 
-const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
+const { publicVars, rawPublicVars } = loadEnv({ prefixes: ["REACT_APP_"] });
 
 export default defineConfig({
   plugins: [
@@ -21,6 +22,7 @@ export default defineConfig({
     }),
     pluginSvgr({ mixedImport: true }),
     pluginSass(),
+    pluginYaml(),
     pluginModuleFederation(moduleFederationConfig),
   ],
   dev: {

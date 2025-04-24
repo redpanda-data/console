@@ -57,7 +57,7 @@ type LogDirPartition struct {
 	SizeBytes   int64 `json:"sizeBytes"`
 }
 
-// LogDirSizeByBroker returns a map where the BrokerID is the key and the summed bytes of all log dirs of
+// logDirsByBroker returns a map where the BrokerID is the key and the summed bytes of all log dirs of
 // the respective broker is the value.
 func (s *Service) logDirsByBroker(ctx context.Context, cl *kgo.Client) map[int32]LogDirsByBroker {
 	// 1. Describe log dirs for all topics, so that we can sum the size per broker
