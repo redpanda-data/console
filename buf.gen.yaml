@@ -21,3 +21,4 @@ plugins:
   - remote: buf.build/bufbuild/es:v2.2.5
     out: frontend/src/protogen
     opt: target=ts
+    include_imports: true
