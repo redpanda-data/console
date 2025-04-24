@@ -441,9 +441,15 @@ function ConfirmDeletionModal({
                 if (topicToDelete?.topicName) {
                   setDeletionPending(true);
                   api
-                    .deleteTopic(topicToDelete?.topicName) // modal is not shown when topic is null
+                    .deleteTopic(topicToDelete?.topicName)
                     .then(finish)
-                    .catch(setError)
+                    .catch((err) => {
+                      toast({
+                        title: 'Failed to delete topic',
+                        description: <Text as="span">{err.message}</Text>,
+                        status: 'error',
+                      });
+                    })
                     .finally(() => {
                       setDeletionPending(false);
                     });
