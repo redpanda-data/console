@@ -1,4 +1,3 @@
-import { parse } from 'yaml';
 import { parseYamlTemplateSecrets, toPostgresTableName } from './parse-yaml-template-secrets';
 
 describe('toPostgresTableName', () => {

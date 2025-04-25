@@ -1,12 +1,14 @@
+import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
-import { CreateSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
-  CreateSecretRequest as CreateSecretRequestDataPlane,
-  ListSecretsRequest as ListSecretsRequestDataPlane,
-  ListSecretsResponse as ListSecretsResponseDataPlane,
+  CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
+  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane,
+  SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { Scope, Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -14,7 +16,7 @@ import { CreateSecretModal } from './create-secret-modal';
 
 describe('CreateSecretModal', () => {
   test('should let the user create a secret', async () => {
-    const secret = new Secret({
+    const secret = create(SecretSchema, {
       id: 'SECRET_ID',
       labels: {
         key: 'value',
@@ -23,7 +25,7 @@ describe('CreateSecretModal', () => {
     });
 
     const listSecretsMock = vi.fn().mockReturnValue({
-      response: new ListSecretsResponseDataPlane({
+      response: create(ListSecretsResponseSchemaDataPlane, {
         secrets: [secret],
       }),
     });
@@ -42,7 +44,7 @@ describe('CreateSecretModal', () => {
       expect(listSecretsMock).toHaveBeenCalledTimes(1);
       expect(listSecretsMock).toHaveBeenCalledWith(
         {
-          request: new ListSecretsRequestDataPlane({
+          request: create(ListSecretsRequestSchemaDataPlane, {
             pageSize: MAX_PAGE_SIZE,
             pageToken: '',
           }),
@@ -76,8 +78,8 @@ describe('CreateSecretModal', () => {
     await waitFor(() => {
       expect(createSecretMock).toHaveBeenCalledTimes(1);
       expect(createSecretMock).toHaveBeenCalledWith(
-        new CreateSecretRequest({
-          request: new CreateSecretRequestDataPlane({
+        create(CreateSecretRequestSchema, {
+          request: create(CreateSecretRequestSchemaDataPlane, {
             id: secretId,
             // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(secretValue)),
@@ -94,7 +96,7 @@ describe('CreateSecretModal', () => {
   });
 
   test('should not allow creating secrets with duplicate secret IDs', async () => {
-    const secret = new Secret({
+    const secret = create(SecretSchema, {
       id: 'SECRET_ID',
       labels: {
         key: 'value',
@@ -103,7 +105,7 @@ describe('CreateSecretModal', () => {
     });
 
     const listSecretsMock = vi.fn().mockReturnValue({
-      response: new ListSecretsResponseDataPlane({
+      response: create(ListSecretsResponseSchemaDataPlane, {
         secrets: [secret],
       }),
     });
@@ -122,7 +124,7 @@ describe('CreateSecretModal', () => {
       expect(listSecretsMock).toHaveBeenCalledTimes(1);
       expect(listSecretsMock).toHaveBeenCalledWith(
         {
-          request: new ListSecretsRequestDataPlane({
+          request: create(ListSecretsRequestSchemaDataPlane, {
             pageSize: MAX_PAGE_SIZE,
             pageToken: '',
           }),

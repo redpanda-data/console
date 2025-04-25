@@ -160,6 +160,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                     </FormField>
                   )}
                 </form.AppField>
+                {/* @ts-ignore - labels is a valid field name, @tanstack/form needs updating to infer deeply nested form field types */}
                 <form.AppField name="labels" mode="array">
                   {(field) => (
                     <field.KeyValueField

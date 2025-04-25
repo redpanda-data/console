@@ -2010,7 +2010,7 @@
   resolved "https://registry.npmjs.org/@tanstack/query-devtools/-/query-devtools-5.74.6.tgz"
   integrity sha512-djaFT11mVCOW3e0Ezfyiq7T6OoHy2LRI1fUFQvj+G6+/4A1FkuRMNUhQkdP1GXlx8id0f1/zd5fgDpIy5SU/Iw==
 
-"@tanstack/react-form@^1.1.2":
+"@tanstack/react-form@^1.6.3":
   version "1.6.3"
   resolved "https://registry.npmjs.org/@tanstack/react-form/-/react-form-1.6.3.tgz"
   integrity sha512-JuooyQ1bqIn3zC0wWCJB4n1UTyFZAF1Z4IWduUt6l356CoT78KTD56umRYLv3CirJqvYoa9kWOQKyjrVTmTNqw==
@@ -9340,7 +9340,7 @@ typescript@5.4.5:
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.4.5.tgz"
   integrity sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==
 
-typescript@*, typescript@>=2.7, typescript@>=4.9.5, "typescript@^4.9.0 || ^5.0.0", typescript@^5.0.0, typescript@^5.7.2:
+typescript@*, typescript@>=2.7, typescript@>=4.9.5, "typescript@^4.9.0 || ^5.0.0", typescript@^5.0.0, typescript@^5.8.3:
   version "5.8.3"
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.8.3.tgz"
   integrity sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==

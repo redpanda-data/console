@@ -1,11 +1,12 @@
+import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
-  ListSecretsFilter,
-  ListSecretsRequest as ListSecretsRequestDataPlane,
-  ListSecretsResponse as ListSecretsResponseDataPlane,
+  ListSecretsFilterSchema,
+  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane,
   Scope,
-  Secret,
+  SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
@@ -13,7 +14,7 @@ import { SecretsStorePage } from './secrets-store-page';
 
 describe('SecretsStorePage', () => {
   test('should list secrets with labels and scope and let user filter/search the data table view', async () => {
-    const existingSecret = new Secret({
+    const existingSecret = create(SecretSchema, {
       id: 'SECRET_ID',
       labels: {
         key: 'value',
@@ -22,7 +23,7 @@ describe('SecretsStorePage', () => {
     });
 
     const listSecretsMock = vi.fn().mockReturnValue({
-      response: new ListSecretsResponseDataPlane({
+      response: create(ListSecretsResponseSchemaDataPlane, {
         secrets: [existingSecret],
       }),
     });
@@ -36,7 +37,7 @@ describe('SecretsStorePage', () => {
     await waitFor(() => {
       expect(listSecretsMock).toHaveBeenCalledWith(
         {
-          request: new ListSecretsRequestDataPlane({
+          request: create(ListSecretsRequestSchemaDataPlane, {
             pageSize: MAX_PAGE_SIZE,
             pageToken: '',
           }),
@@ -57,8 +58,8 @@ describe('SecretsStorePage', () => {
     await waitFor(() => {
       expect(listSecretsMock).toHaveBeenCalledWith(
         {
-          request: new ListSecretsRequestDataPlane({
-            filter: new ListSecretsFilter({
+          request: create(ListSecretsRequestSchemaDataPlane, {
+            filter: create(ListSecretsFilterSchema, {
               nameContains,
             }),
           }),

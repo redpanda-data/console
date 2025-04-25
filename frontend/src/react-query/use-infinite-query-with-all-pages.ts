@@ -79,8 +79,6 @@ export function useInfiniteQueryWithAllPages<
     infiniteQueryResult.fetchNextPage,
   ]);
 
-  console.log('infiniteQueryResult: ', infiniteQueryResult);
-
   return {
     ...infiniteQueryResult,
     isLoading: infiniteQueryResult?.isLoading || infiniteQueryResult?.hasNextPage,
