@@ -178,11 +178,6 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 						Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 					}, err
 				})
-			case cfg.SASL.OAUth.Token != "":
-				mechanism = oauth.Auth{
-					Token:      cfg.SASL.OAUth.Token,
-					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
-				}.AsMechanism()
 			case cfg.SASL.OAUth.TokenFilepath != "":
 				mechanism = oauth.Oauth(func(_ context.Context) (oauth.Auth, error) {
 					token, err := os.ReadFile(cfg.SASL.OAUth.TokenFilepath)
@@ -193,6 +188,11 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 						Token: strings.TrimSpace(string(token)),
 					}, nil
 				})
+			default:
+				mechanism = oauth.Auth{
+					Token:      cfg.SASL.OAUth.Token,
+					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
+				}.AsMechanism()
 			}
 			opts = append(opts, kgo.SASL(mechanism))
 		}
