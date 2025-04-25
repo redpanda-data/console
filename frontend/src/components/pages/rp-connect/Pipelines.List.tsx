@@ -258,7 +258,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                     height="16px"
                     color="gray.500"
                     // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
 
