@@ -169,7 +169,8 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 		// OAuth Bearer
 		if cfg.SASL.Mechanism == config.SASLMechanismOAuthBearer {
 			var mechanism sasl.Mechanism
-			if cfg.SASL.OAUth.TokenEndpoint != "" {
+			switch {
+			case cfg.SASL.OAUth.TokenEndpoint != "":
 				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 					shortToken, err := cfg.SASL.OAUth.AcquireToken(ctx)
 					return oauth.Auth{
@@ -177,13 +178,13 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 						Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 					}, err
 				})
-			} else if cfg.SASL.OAUth.Token != "" {
+			case cfg.SASL.OAUth.Token != "":
 				mechanism = oauth.Auth{
 					Token:      cfg.SASL.OAUth.Token,
 					Extensions: kafkaSASLOAuthExtensionsToStrMap(cfg.SASL.OAUth.Extensions),
 				}.AsMechanism()
-			} else if cfg.SASL.OAUth.TokenFilepath != "" {
-				mechanism = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+			case cfg.SASL.OAUth.TokenFilepath != "":
+				mechanism = oauth.Oauth(func(_ context.Context) (oauth.Auth, error) {
 					token, err := os.ReadFile(cfg.SASL.OAUth.TokenFilepath)
 					if err != nil {
 						return oauth.Auth{}, fmt.Errorf("failed to open token file: %w", err)
