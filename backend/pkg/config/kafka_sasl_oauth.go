@@ -29,6 +29,7 @@ type KafkaSASLOAuthBearer struct {
 	TokenEndpoint string                    `yaml:"tokenEndpoint"`
 	Scope         string                    `yaml:"scope"`
 	Extensions    []KafkaSASLOAuthExtension `yaml:"extensions"`
+	TokenFilepath string                    `yaml:"tokenFilepath"`
 }
 
 // KafkaSASLOAuthExtension is the struct for the SASL OAuth extension support(custom key-value pairs)
@@ -52,8 +53,8 @@ func (c *KafkaSASLOAuthBearer) Validate() error {
 		if c.ClientID == "" || c.ClientSecret == "" {
 			return fmt.Errorf("OAuth Bearer client credentials must be set")
 		}
-	} else if c.Token == "" {
-		return fmt.Errorf("OAuth Bearer token must be set")
+	} else if c.Token == "" && c.TokenFilepath == "" {
+		return fmt.Errorf("OAuth Bearer token or token file path must be set")
 	}
 
 	return nil
