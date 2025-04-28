@@ -48,6 +48,8 @@ export const getScopeDisplayValue = (scope: Scope) => {
   switch (scope) {
     case Scope.REDPANDA_CONNECT:
       return 'RP Connect';
+    case Scope.REDPANDA_CLUSTER:
+      return 'Cluster';
     case Scope.UNSPECIFIED:
       return 'Unspecified';
     default:
@@ -186,7 +188,7 @@ export const SecretsStorePage = () => {
                 header: 'Scope',
                 id: 'scope',
                 cell: ({ row: { original } }) =>
-                  original?.scopes.map((scope) => <Text key={scope}>{getScopeDisplayValue(scope)}</Text>),
+                  original?.scopes.map((scope) => getScopeDisplayValue(scope)).join(', ') ?? 'No scopes',
                 size: 50,
               },
               {

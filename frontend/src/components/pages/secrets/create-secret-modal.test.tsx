@@ -57,7 +57,9 @@ describe('CreateSecretModal', () => {
     fireEvent.change(screen.getByTestId('secret-id-field'), { target: { value: secretId } });
     fireEvent.change(screen.getByTestId('secret-value-field'), { target: { value: secretValue } });
 
-    fireEvent.click(screen.getByTestId('add-label-button'));
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+    await fireEvent.click(screen.getByText('Redpanda Connect'));
 
     fireEvent.change(screen.getByTestId('secret-labels-field-key-0'), { target: { value: 'environment' } });
     fireEvent.change(screen.getByTestId('secret-labels-field-value-0'), { target: { value: 'production' } });
