@@ -96,6 +96,10 @@ describe('UpdateSecretModal', () => {
 
     fireEvent.change(screen.getByTestId('secret-value-field'), { target: { value: updatedSecretValue } });
 
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+    await fireEvent.click(screen.getByText('Redpanda Connect'));
+
     fireEvent.click(screen.getByTestId('add-label-button'));
 
     fireEvent.change(screen.getByTestId('secret-labels-field-key-1'), { target: { value: 'environment' } });
