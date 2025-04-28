@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
-import { useMutation } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { type QueryClient, type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import {
   createPipeline,
@@ -113,7 +113,12 @@ const createAgentPipelinesPromises = async ({
 
     const results = await Promise.all(createPipelinePromises);
 
-    await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: PipelineService.method.listPipelines,
+        cardinality: 'infinite',
+      }),
+    });
 
     // Show success toast
     showToast({
@@ -191,7 +196,14 @@ export const useListAgentsQuery = (
     pageParamKey: 'request',
     enabled: options?.enabled,
     refetchInterval: options?.refetchInterval,
-    getNextPageParam: (lastPage) => lastPage?.response?.nextPageToken as MessageInit<ListPipelinesRequestDataPlane>,
+    // Required because of protobuf v2 reflection - it does not accept foreign fields when nested under "request", so the format needs to be a dataplane schema
+    getNextPageParam: (lastPage) =>
+      lastPage?.response?.nextPageToken
+        ? {
+            ...listPipelinesRequestDataPlane,
+            pageToken: lastPage.response?.nextPageToken,
+          }
+        : undefined,
   });
 
   const allRetrievedPipelines = listAgentsResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
@@ -287,7 +299,12 @@ const deleteAgentPipelinesPromises = async ({
 
     const results = await Promise.all(deletePipelinePromises);
 
-    await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: PipelineService.method.listPipelines,
+        cardinality: 'infinite',
+      }),
+    });
 
     // Show success toast
     showToast({

@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { deleteSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { DeleteSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
@@ -17,7 +18,7 @@ describe('DeleteSecretModal', () => {
   test('should let the user delete a secret after entering confirmation text', async () => {
     const secretId = 'SECRET_ID';
 
-    const listPipelinesForSecretMock = vi.fn().mockReturnValue({
+    const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
       response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
         pipelinesForSecret: create(PipelinesForSecretSchema, {
           secretId,
@@ -26,6 +27,7 @@ describe('DeleteSecretModal', () => {
       }),
     });
 
+    const listPipelinesForSecretMock = vi.fn().mockReturnValue(pipelinesForSecretResponse);
     const deleteSecretMock = vi.fn().mockReturnValue({});
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -78,7 +80,7 @@ describe('DeleteSecretModal', () => {
       state: Pipeline_State.RUNNING,
     });
 
-    const listPipelinesForSecretMock = vi.fn().mockReturnValue({
+    const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
       response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
         pipelinesForSecret: create(PipelinesForSecretSchema, {
           secretId,
@@ -87,6 +89,7 @@ describe('DeleteSecretModal', () => {
       }),
     });
 
+    const listPipelinesForSecretMock = vi.fn().mockReturnValue(pipelinesForSecretResponse);
     const deleteSecretMock = vi.fn().mockReturnValue({});
 
     const transport = createRouterTransport(({ rpc }) => {

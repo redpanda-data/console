@@ -151,7 +151,10 @@ export const useLegacyCreateTopicMutationWithToast = () => {
       const data = await response.json();
 
       await queryClient.invalidateQueries({
-        queryKey: [TopicService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: TopicService.method.listTopics,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -159,7 +162,10 @@ export const useLegacyCreateTopicMutationWithToast = () => {
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [TopicService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: TopicService.method.listTopics,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -195,7 +201,10 @@ export const useCreateTopicMutationWithToast = () => {
   return useMutation(createTopic, {
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [TopicService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: TopicService.method.listTopics,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 

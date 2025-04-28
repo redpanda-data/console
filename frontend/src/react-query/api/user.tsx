@@ -88,12 +88,11 @@ export const useListUsersQuery = (
     pageToken: '',
     ...input,
   });
-  // as Required<Pick<MessageInit<ListUsersRequest>, 'pageToken' | '$typeName' | 'pageSize'>>
 
   const listUsersResult = useInfiniteQueryWithAllPages(listUsers, listUsersRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
-    getNextPageParam: (lastPage) => lastPage?.nextPageToken,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken,
   });
 
   const allRetrievedUsers = listUsersResult?.data?.pages?.flatMap(({ users }) => users);
@@ -159,7 +158,10 @@ export const useLegacyCreateUserMutationWithToast = () => {
       const data = await response.json();
 
       await queryClient.invalidateQueries({
-        queryKey: [UserService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -174,7 +176,10 @@ export const useLegacyCreateUserMutationWithToast = () => {
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [UserService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -210,7 +215,10 @@ export const useCreateUserMutationWithToast = () => {
   return useMutation(createUser, {
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [UserService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 

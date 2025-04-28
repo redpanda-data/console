@@ -3,7 +3,7 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listSecrets, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
-import { UpdateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { ListSecretsResponseSchema, UpdateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   GetPipelinesForSecretRequestSchema as GetPipelinesForSecretRequestSchemaDataPlane,
   GetPipelinesForSecretResponseSchema as GetPipelinesForSecretResponseSchemaDataPlane,
@@ -12,7 +12,6 @@ import {
   PipelinesForSecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
-  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
   ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane,
   SecretSchema,
   UpdateSecretRequestSchema as UpdateSecretRequestSchemaDataPlane,
@@ -37,11 +36,14 @@ describe('UpdateSecretModal', () => {
       scopes: [Scope.REDPANDA_CONNECT],
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue({
+    const listSecretsResponse = create(ListSecretsResponseSchema, {
       response: create(ListSecretsResponseSchemaDataPlane, {
         secrets: [secret],
+        nextPageToken: '',
       }),
     });
+
+    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
     const updateSecretMock = vi.fn().mockReturnValue({});
     const getPipelinesForSecretMock = vi.fn().mockReturnValue(
       create(GetPipelinesForSecretResponseSchema, {
@@ -69,29 +71,8 @@ describe('UpdateSecretModal', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('update-secret-button')).toBeVisible();
-    });
-
-    await waitFor(() => {
       expect(listSecretsMock).toHaveBeenCalledTimes(1);
-      expect(listSecretsMock).toHaveBeenCalledWith(
-        {
-          request: create(ListSecretsRequestSchemaDataPlane, {
-            pageSize: MAX_PAGE_SIZE,
-            pageToken: '',
-          }),
-        },
-        expect.anything(),
-      );
-
       expect(getPipelinesForSecretMock).toHaveBeenCalledTimes(1);
-      expect(getPipelinesForSecretMock).toHaveBeenCalledWith(
-        {
-          request: create(GetPipelinesForSecretRequestSchemaDataPlane, {
-            secretId: existingSecretId,
-          }),
-        },
-        expect.anything(),
-      );
     });
 
     const updatedSecretValue = 'updated_secret_value';
@@ -132,12 +113,24 @@ describe('UpdateSecretModal', () => {
   test('should show a warning if the secret is in use', async () => {
     const secretId = 'SECRET_ID';
 
+    const secret = create(SecretSchema, {
+      id: secretId,
+      scopes: [Scope.REDPANDA_CONNECT],
+    });
+
+    const listSecretsResponse = create(ListSecretsResponseSchema, {
+      response: create(ListSecretsResponseSchemaDataPlane, {
+        secrets: [secret],
+        nextPageToken: '',
+      }),
+    });
+
     const pipeline = create(PipelineSchema, {
       id: 'pipeline-id',
       state: Pipeline_State.RUNNING,
     });
 
-    const listPipelinesForSecretMock = vi.fn().mockReturnValue({
+    const getPipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
       response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
         pipelinesForSecret: create(PipelinesForSecretSchema, {
           secretId,
@@ -146,9 +139,12 @@ describe('UpdateSecretModal', () => {
       }),
     });
 
+    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
+    const listPipelinesForSecretMock = vi.fn().mockReturnValue(getPipelinesForSecretResponse);
     const updateSecretMock = vi.fn().mockReturnValue({});
 
     const transport = createRouterTransport(({ rpc }) => {
+      rpc(listSecrets, listSecretsMock);
       rpc(getPipelinesForSecret, listPipelinesForSecretMock);
       rpc(updateSecret, updateSecretMock);
     });

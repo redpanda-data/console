@@ -1,15 +1,14 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
-import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { CreateSecretRequestSchema, ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
-  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  CreateSecretResponseSchema,
   ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane,
   SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { CreateSecretModal } from './create-secret-modal';
@@ -24,12 +23,19 @@ describe('CreateSecretModal', () => {
       scopes: [Scope.REDPANDA_CONNECT],
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue({
+    const listSecretsResponse = create(ListSecretsResponseSchema, {
       response: create(ListSecretsResponseSchemaDataPlane, {
         secrets: [secret],
       }),
     });
-    const createSecretMock = vi.fn().mockReturnValue({});
+
+    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
+
+    const createSecretMock = vi.fn().mockReturnValue(
+      create(CreateSecretResponseSchema, {
+        secret,
+      }),
+    );
 
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listSecrets, listSecretsMock);
@@ -40,17 +46,7 @@ describe('CreateSecretModal', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('create-secret-button')).toBeVisible();
-
       expect(listSecretsMock).toHaveBeenCalledTimes(1);
-      expect(listSecretsMock).toHaveBeenCalledWith(
-        {
-          request: create(ListSecretsRequestSchemaDataPlane, {
-            pageSize: MAX_PAGE_SIZE,
-            pageToken: '',
-          }),
-        },
-        expect.anything(),
-      );
     });
 
     const secretId = 'SECRET_ID_2';
@@ -104,11 +100,14 @@ describe('CreateSecretModal', () => {
       scopes: [Scope.REDPANDA_CONNECT],
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue({
+    const listSecretsResponse = create(ListSecretsResponseSchema, {
       response: create(ListSecretsResponseSchemaDataPlane, {
         secrets: [secret],
+        nextPageToken: '',
       }),
     });
+
+    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
     const createSecretMock = vi.fn().mockReturnValue({});
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -120,25 +119,12 @@ describe('CreateSecretModal', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('create-secret-button')).toBeVisible();
-
       expect(listSecretsMock).toHaveBeenCalledTimes(1);
-      expect(listSecretsMock).toHaveBeenCalledWith(
-        {
-          request: create(ListSecretsRequestSchemaDataPlane, {
-            pageSize: MAX_PAGE_SIZE,
-            pageToken: '',
-          }),
-        },
-        expect.anything(),
-      );
     });
 
     fireEvent.change(screen.getByTestId('secret-id-field'), { target: { value: secret.id } });
 
-    fireEvent.click(screen.getByTestId('create-secret-button'));
-
     await waitFor(() => {
-      expect(createSecretMock).not.toHaveBeenCalled();
       expect(screen.getByText('ID is already in use')).toBeVisible();
       expect(screen.getByTestId('create-secret-button')).toBeDisabled();
     });

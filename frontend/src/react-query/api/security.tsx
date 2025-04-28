@@ -20,8 +20,8 @@ export const useListRolesQuery = (
   options?: QueryOptions<GenMessage<ListRolesRequest>, ListRolesResponse>,
 ) => {
   const listRolesRequest = create(ListRolesRequestSchema, {
-    pageSize: MAX_PAGE_SIZE,
     pageToken: '',
+    pageSize: MAX_PAGE_SIZE,
     ...input,
   });
 

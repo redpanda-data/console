@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import { useMutation, useQuery } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createPipeline,
@@ -80,11 +80,18 @@ export const useListPipelinesQuery = (
   const listPipelinesRequest = create(ListPipelinesRequestSchema, {
     request: listPipelinesRequestDataPlane,
   }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>;
+
   const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     pageParamKey: 'request',
     enabled: options?.enabled,
-    // Need to cast to ensure reflection works properly
-    getNextPageParam: (lastPage) => lastPage?.response?.nextPageToken as MessageInit<ListPipelinesRequestDataPlane>,
+    // Required because of protobuf v2 reflection - it does not accept foreign fields when nested under "request", so the format needs to be a dataplane schema
+    getNextPageParam: (lastPage) =>
+      lastPage?.response?.nextPageToken
+        ? {
+            ...listPipelinesRequestDataPlane,
+            pageToken: lastPage.response?.nextPageToken,
+          }
+        : undefined,
   });
 
   const allRetrievedPipelines = listPipelinesResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
@@ -107,7 +114,12 @@ export const useCreatePipelineMutationWithToast = () => {
 
   return useMutation(createPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.listPipelines,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.CREATE.SUCCESS,
         title: 'Pipeline created successfully',
@@ -129,7 +141,12 @@ export const useUpdatePipelineMutationWithToast = () => {
 
   return useMutation(updatePipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.listPipelines,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.UPDATE.SUCCESS,
         title: 'Pipeline updated successfully',
@@ -151,7 +168,12 @@ export const useStartPipelineMutationWithToast = () => {
 
   return useMutation(startPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.listPipelines,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.START.SUCCESS,
         title: 'Pipeline started successfully',
@@ -173,7 +195,12 @@ export const useStopPipelineMutationWithToast = () => {
 
   return useMutation(stopPipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.listPipelines,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.STOP.SUCCESS,
         title: 'Pipeline stopped successfully',
@@ -195,7 +222,12 @@ export const useDeletePipelineMutationWithToast = () => {
 
   return useMutation(deletePipeline, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [PipelineService.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: PipelineService.method.listPipelines,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.DELETE.SUCCESS,
         title: 'Pipeline deleted successfully',

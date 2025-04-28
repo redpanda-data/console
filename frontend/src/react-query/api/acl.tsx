@@ -321,7 +321,10 @@ export const useLegacyCreateACLMutationWithToast = () => {
       const data = await response.json();
 
       await queryClient.invalidateQueries({
-        queryKey: [ACLService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -329,7 +332,10 @@ export const useLegacyCreateACLMutationWithToast = () => {
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [ACLService.typeName],
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -364,7 +370,12 @@ export const useCreateACLMutationWithToast = () => {
 
   return useMutation(createACL, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [ACLService.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.CREATE.SUCCESS,
         title: 'ACL created successfully',
