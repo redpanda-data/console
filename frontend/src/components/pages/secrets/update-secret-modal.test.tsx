@@ -98,7 +98,7 @@ describe('UpdateSecretModal', () => {
 
     fireEvent.click(screen.getByRole('combobox'));
     fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
-    await fireEvent.click(screen.getByText('Redpanda Connect'));
+    fireEvent.click(screen.getByText('Redpanda Connect'));
 
     fireEvent.click(screen.getByTestId('add-label-button'));
 

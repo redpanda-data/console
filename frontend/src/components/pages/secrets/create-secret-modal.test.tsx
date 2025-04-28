@@ -61,6 +61,8 @@ describe('CreateSecretModal', () => {
     fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
     await fireEvent.click(screen.getByText('Redpanda Connect'));
 
+    fireEvent.click(screen.getByTestId('add-label-button'));
+
     fireEvent.change(screen.getByTestId('secret-labels-field-key-0'), { target: { value: 'environment' } });
     fireEvent.change(screen.getByTestId('secret-labels-field-value-0'), { target: { value: 'production' } });
 
