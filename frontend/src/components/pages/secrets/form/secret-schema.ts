@@ -25,4 +25,5 @@ export const secretSchema = (customValueSchema?: z.ZodTypeAny) =>
           return (label.key === '' && label.value === '') || (label.key !== '' && label.value !== '');
         });
       }, 'Both key and value must be provided for a label'),
+    scopes: z.array(z.number()).min(1, 'At least one scope is required'),
   });
