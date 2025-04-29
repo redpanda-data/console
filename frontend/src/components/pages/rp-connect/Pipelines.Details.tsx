@@ -58,7 +58,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
   initPage(p: PageInitHelper): void {
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
-    p.title = pipelineId;
+    const pipeline = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
+    p.title = pipeline?.displayName ?? pipelineId;
     p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
     p.addBreadcrumb(pipelineId, `/rp-connect/${pipelineId}`);
 
