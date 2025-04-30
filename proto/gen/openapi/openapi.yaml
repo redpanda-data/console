@@ -388,6 +388,12 @@ components:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
       type: object
+    CreateRoleResponse:
+      description: CreateRoleResponse is the response for CreateRole.
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+      type: object
     CreateSecretRequest:
       description: CreateSecretRequest is the request of CreateSecret.
       properties:
@@ -544,6 +550,9 @@ components:
     DeleteMountTaskResponse:
       type: object
     DeletePipelineResponse:
+      type: object
+    DeleteRoleResponse:
+      description: DeleteRoleResponse is the response for DeleteRole.
       type: object
     DeleteSecretResponse:
       description: DeleteSecretResponse is the response of DeleteSecret.
@@ -759,6 +768,17 @@ components:
         pipelines_for_secret:
           $ref: '#/components/schemas/PipelinesForSecret'
       type: object
+    GetRoleResponse:
+      description: GetRoleResponse is the response to GetRole.
+      properties:
+        members:
+          description: Members assigned to the role.
+          items:
+            $ref: '#/components/schemas/RoleMembership'
+          type: array
+        role:
+          $ref: '#/components/schemas/Role'
+      type: object
     GetSecretResponse:
       description: GetSecretResponse is the response of GetSecret.
       properties:
@@ -906,6 +926,53 @@ components:
         pipelines:
           items:
             $ref: '#/components/schemas/Pipeline'
+          type: array
+      type: object
+    ListRoleMembersRequest.Filter:
+      description: Filter options.
+      properties:
+        name_contains:
+          description: Filter results to only members with names which contain the string.
+          type: string
+      type: object
+    ListRoleMembersResponse:
+      description: ListRoleMembersResponse is the response for ListRoleMembers.
+      properties:
+        members:
+          description: Members assigned to the role.
+          items:
+            $ref: '#/components/schemas/RoleMembership'
+          type: array
+        next_page_token:
+          description: Token to retrieve the next page.
+          type: string
+        role_name:
+          description: The role name.
+          type: string
+      type: object
+    ListRolesRequest.Filter:
+      description: Filter options.
+      properties:
+        name_contains:
+          description: Filter results to only roles with names which contain the string.
+          type: string
+        name_prefix:
+          description: Filter results only roles named with the prefix.
+          type: string
+        principal:
+          description: Return only roles assigned to this principal.
+          type: string
+      type: object
+    ListRolesResponse:
+      description: ListRolesResponse is the response for ListRoles.
+      properties:
+        next_page_token:
+          description: Token to retrieve the next page.
+          type: string
+        roles:
+          description: The roles in the system.
+          items:
+            $ref: '#/components/schemas/Role'
           type: array
       type: object
     ListSecretScopesResponse:
@@ -1402,6 +1469,20 @@ components:
         - memory_shares
         - cpu_shares
       type: object
+    Role:
+      description: Role defines a role in the system.
+      properties:
+        name:
+          description: The name of the role.
+          type: string
+      type: object
+    RoleMembership:
+      description: RoleMembership is the role membership.
+      properties:
+        principal:
+          description: The name of the principal assigned to the role.
+          type: string
+      type: object
     SASLMechanism:
       description: SASL mechanism to use for authentication.
       enum:
@@ -1630,6 +1711,42 @@ components:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
+      type: object
+    UpdateRoleMembershipBody:
+      description: UpdateRoleMembershipRequest is the request to UpdateRoleMembership.
+      properties:
+        add:
+          description: Members to assign to the role.
+          items:
+            $ref: '#/components/schemas/RoleMembership'
+          type: array
+        create:
+          description: |-
+            Create the role if it doesn't already exist.
+            If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
+          type: boolean
+        remove:
+          description: Members to remove from the role.
+          items:
+            $ref: '#/components/schemas/RoleMembership'
+          type: array
+      type: object
+    UpdateRoleMembershipResponse:
+      description: UpdateRoleMembershipResponse is the response for UpdateRoleMembership.
+      properties:
+        added:
+          description: Members assigned to the role.
+          items:
+            $ref: '#/components/schemas/RoleMembership'
+          type: array
+        removed:
+          description: Members removed from the role.
+          items:
+            $ref: '#/components/schemas/RoleMembership'
+          type: array
+        role_name:
+          description: The role name.
+          type: string
       type: object
     UpdateSecretBody:
       description: UpdateSecretRequest is the request of UpdateSecret.
@@ -3735,6 +3852,307 @@ paths:
       summary: Stops a Redpanda Connect pipeline
       tags:
         - Redpanda Connect Pipeline
+  /v1/roles:
+    get:
+      description: 'List roles. Optional: filter based on role name and principal.'
+      operationId: SecurityService_ListRoles
+      parameters:
+        - description: Filter results only roles named with the prefix.
+          in: query
+          name: filter.name_prefix
+          schema:
+            type: string
+        - description: Filter results to only roles with names which contain the string.
+          in: query
+          name: filter.name_contains
+          schema:
+            type: string
+        - description: Return only roles assigned to this principal.
+          in: query
+          name: filter.principal
+          schema:
+            type: string
+        - description: Page size.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListRolesResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Roles
+      tags:
+        - Security
+    post:
+      description: Create a role.
+      operationId: SecurityService_CreateRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+        description: The role to create.
+        required: true
+        x-originalParamName: role
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRoleResponse'
+          description: Role created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create Role
+      tags:
+        - Security
+  /v1/roles/{role_name}:
+    delete:
+      description: Delete a Role.
+      operationId: SecurityService_DeleteRole
+      parameters:
+        - description: The role name.
+          in: path
+          name: role_name
+          required: true
+          schema:
+            type: string
+        - description: Whether to delete the ACLs bound to the role.
+          in: query
+          name: delete_acls
+          schema:
+            type: boolean
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Role deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete Role
+      tags:
+        - Security
+    get:
+      description: Get a role.
+      operationId: SecurityService_GetRole
+      parameters:
+        - description: The role name.
+          in: path
+          name: role_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetRoleResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Role
+      tags:
+        - Security
+    put:
+      description: Update a role.
+      operationId: SecurityService_UpdateRoleMembership
+      parameters:
+        - description: The role name.
+          in: path
+          name: role_name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleMembershipBody'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateRoleMembershipResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update Role
+      tags:
+        - Security
+  /v1/roles/{role_name}/members:
+    get:
+      description: List members assigned to a role.
+      operationId: SecurityService_ListRoleMembers
+      parameters:
+        - description: The role name.
+          in: path
+          name: role_name
+          required: true
+          schema:
+            type: string
+        - description: Filter results to only members with names which contain the string.
+          in: query
+          name: filter.name_contains
+          schema:
+            type: string
+        - description: Page size.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListRoleMembersResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Role Members
+      tags:
+        - Security
   /v1/secret-scopes:
     get:
       description: List supported secret scopes.
@@ -4989,6 +5407,8 @@ tags:
     name: Redpanda Connect Pipeline
   - description: Manage [secrets](https://docs.redpanda.com/redpanda-cloud/security/secrets) for Redpanda Cloud.
     name: Secrets
+  - description: Manage Redpanda roles.
+    name: Security
   - description: Manage Redpanda topics.
     name: Topics
   - description: Manage Redpanda users. To manage access, see the Data Plane [ACL endpoints](https://docs.redpanda.com/api/cloud-dataplane-api/#get-/v1/acls).

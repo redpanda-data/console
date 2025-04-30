@@ -175,6 +175,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.TransformServiceName:          transformSvcV1,
 			dataplanev1connect.KafkaConnectServiceName:       kafkaConnectSvcV1,
 			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
+			dataplanev1connect.SecurityServiceName:           dataplanev1connect.UnimplementedSecurityServiceHandler{},
 		},
 	})
 
@@ -283,6 +284,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	cloudStorageSvcPathV1, cloudStorageSvcHandlerV1 := dataplanev1connect.NewCloudStorageServiceHandler(
 		hookOutput.Services[dataplanev1connect.CloudStorageServiceName].(dataplanev1connect.CloudStorageServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	securitySvcPathV1, securitySvcHandlerV1 := dataplanev1connect.NewSecurityServiceHandler(
+		hookOutput.Services[dataplanev1connect.SecurityServiceName].(dataplanev1connect.SecurityServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
@@ -405,6 +409,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.SecretServiceName,
 			MountPath:   consoleSecretsServicePath,
 			Handler:     consoleSecretsServiceHandler,
+		},
+		{
+			ServiceName: dataplanev1connect.SecurityServiceName,
+			MountPath:   securitySvcPathV1,
+			Handler:     securitySvcHandlerV1,
 		},
 	}
 
