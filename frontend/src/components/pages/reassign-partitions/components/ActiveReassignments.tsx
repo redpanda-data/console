@@ -95,14 +95,18 @@ export class ActiveReassignments extends Component<{
         <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
           <span className="title">Current Reassignments</span>
 
-          <Button
-            variant="link"
-            size="sm"
-            style={{ fontSize: 'smaller', padding: '0px 8px' }}
-            onClick={() => (this.showThrottleDialog = true)}
-          >
-            {throttleText}
-          </Button>
+          {
+            // RedPand cluster throttles as needed, the api does not support setting the throttle manually
+            !api.isRedpanda && (
+              <Button
+                variant="link"
+                size="sm"
+                style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                onClick={() => (this.showThrottleDialog = true)}
+            >
+              {throttleText}
+            </Button>
+          )}
         </div>
 
         {/* Table */}
