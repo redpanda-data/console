@@ -14,7 +14,7 @@ import type { NavLinkProps } from "@redpanda-data/ui/dist/components/Nav/NavLink
 import React, { Fragment, type FunctionComponent, useEffect } from "react";
 import { HiOutlinePuzzlePiece } from "react-icons/hi2";
 import { MdKey, MdOutlineSmartToy } from "react-icons/md";
-import { Navigate, Route, Routes, useLocation, useParams, useMatch } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams, useMatch, useNavigate } from "react-router-dom";
 import { appGlobal } from "state/appGlobal";
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from "../config";
 import { api } from "../state/backendApi";
@@ -180,19 +180,53 @@ interface MenuItemState {
   disabledReasons: DisabledReasons[];
 }
 
+// Separate component to handle the route rendering logic
+const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ route }) => {
+  const matchedPath = useMatch(route.path) ?? '';
+  const params = useParams();
+
+  const pageProps: PageProps = {
+    matchedPath,
+    ...params,
+  } as PageProps;
+
+
+  useEffect(() => {
+    // Only update if we haven't already and the path has changed
+    if (uiState.currentRoute?.path !== route.path) {
+      // assign router without the routeJsx, otherwise it will cause MobX to overflow callstack
+      uiState.currentRoute = {
+        title: route.title,
+        path: route.path,
+        pageType: route.pageType,
+        icon: route.icon,
+        visibilityCheck: route.visibilityCheck,
+        routeJsx: null as unknown as JSX.Element,
+      } as PageDefinition<any>;
+      
+    }
+    
+  }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
+
+  console.log("route.path", route.path);
+
+  return <route.pageType key={route.path} {...pageProps} />;
+};
+
 /**
  * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.
  */
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const isAgentFeatureEnabled = isFeatureFlagEnabled("enableAiAgentsInConsoleUi");
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isAgentFeatureEnabled && path.includes("/agents") && location.pathname !== "/overview") {
       appGlobal.historyPush("/overview");
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-  }, [isAgentFeatureEnabled, path, location.pathname]);
+  }, [isAgentFeatureEnabled, path, location.pathname, navigate]);
 
   return children;
 };
@@ -214,7 +248,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
       key={title}
       element={
         <ProtectedRoute path={path}>
-          <RouteRenderer key={path} route={route} />
+          <RouteRenderer route={route} />
         </ProtectedRoute>
       }
     />
@@ -223,36 +257,6 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
   
   return route;
 }
-
-// Separate component to handle the route rendering logic
-const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ route }) => {
-  const matchedPath = useMatch(route.path) ?? '';
-  const params = useParams();
-
-  const pageProps: PageProps = {
-    matchedPath,
-    ...params,
-  } as PageProps;
-
-  useEffect(() => {
-    const currentPath = uiState.currentRoute?.path;
-    if (currentPath !== route.path) {
-      // assign router without the routeJsx, otherwise it will cause MobX to overflow callstack
-      uiState.currentRoute = {
-        title: route.title,
-        path: route.path,
-        pageType: route.pageType,
-        icon: route.icon,
-        visibilityCheck: route.visibilityCheck,
-        routeJsx: null as unknown as JSX.Element,
-      } as PageDefinition<any>;
-    }
-  }, [route.path]);
-
-  console.log("route renderer", route);
-
-  return <route.pageType {...pageProps} />;
-};
 
 function routeVisibility(visible: boolean | (() => boolean), requiredFeatures?: FeatureEntry[], requiredPermissions?: UserPermissions[], requiredAppFeatures?: AppFeature[]): () => MenuItemState {
   return () => {
@@ -303,7 +307,7 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>("/overview", Overview, "Overview", HomeIcon),
   MakeRoute<{ brokerId: string }>("/overview/:brokerId", BrokerDetails, "Broker Details"),
 
-  MakeRoute<{}>("/topics", TopicList, "Topics", CollectionIcon),
+  // MakeRoute<{}>("/topics", TopicList, "Topics", CollectionIcon), // TODO @Draho - this is causing infinite loop
   MakeRoute<{ topicName: string }>("/topics/:topicName", TopicDetails, "Topics"),
   MakeRoute<{ topicName: string }>("/topics/:topicName/produce-record", TopicProducePage, "Produce Record"),
 
