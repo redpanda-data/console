@@ -24,7 +24,7 @@ import { ListPipelinesRequest as ListPipelinesRequestDataPlane } from 'protogen/
 import { type ReactNode, useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { useListAgentsQuery } from 'react-query/api/agent';
-import { Link as ReactRouterLink, useHistory } from 'react-router-dom';
+import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { SidebarItemBadge } from '../../misc/sidebar-item-badge';
 import { DeleteAgentModal } from './delete-agent-modal';
@@ -100,7 +100,7 @@ export const AgentListPage = () => {
   const [isHubspotAIAgentsFormSubmitted, setIsHubspotAIAgentsFormSubmitted] = useState(false);
 
   const isAiAgentsPreviewEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUiPreview');
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [nameContains, setNameContains] = useState('');
 
@@ -214,7 +214,7 @@ export const AgentListPage = () => {
             <Button
               variant="outline"
               onClick={() => {
-                history.push('/agents/create');
+                navigate('/agents/create');
               }}
               data-testid="create-agent-button"
             >

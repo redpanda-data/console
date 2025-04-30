@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { SearchField } from '@redpanda-data/ui';
-import { type IReactionDisposer, autorun, transaction } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { Component } from 'react';
-import { AnimatePresence, MotionSpan, animProps_span_searchResult } from '../../utils/animationProps';
-import { FilterableDataSource } from '../../utils/filterableDataSource';
+import { SearchField } from "@redpanda-data/ui";
+import { type IReactionDisposer, autorun } from "mobx";
+import { observer } from "mobx-react";
+import React, { Component } from "react";
+import { AnimatePresence, MotionSpan, animProps_span_searchResult } from "../../utils/animationProps";
+import { FilterableDataSource } from "../../utils/filterableDataSource";
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
@@ -41,19 +41,12 @@ class SearchBar<TItem> extends Component<{
     super(p);
     this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
     this.filteredSource.filterText = this.props.filterText;
-
     this.onChange = this.onChange.bind(this);
   }
 
   componentDidMount() {
     this.autorunDisposer = autorun(() => {
-      const data = this.filteredSource.data;
-
-      transaction(() => {
-        setTimeout(() => {
-          this.props.onFilteredDataChanged(data);
-        });
-      });
+      this.props.onFilteredDataChanged(this.filteredSource.data);
     });
   }
 
@@ -69,7 +62,7 @@ class SearchBar<TItem> extends Component<{
 
   render() {
     return (
-      <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+      <div style={{ marginBottom: ".5rem", padding: "0", whiteSpace: "nowrap", display: "flex", alignItems: "center" }}>
         {/* <AutoComplete placeholder='Quick Search' size='large'
                 style={{ width: 'auto', padding: '0' }}
                 onChange={v => this.filteredSource.filterText = String(v)}
@@ -100,15 +93,15 @@ class SearchBar<TItem> extends Component<{
         <AnimatePresence>
           {searchSummary && (
             <MotionSpan
-              identityKey={searchSummary?.identity ?? 'null'} // identityKey={searchSummary?.identity ?? 'null'}
+              identityKey={searchSummary?.identity ?? "null"} // identityKey={searchSummary?.identity ?? 'null'}
               overrideAnimProps={animProps_span_searchResult}
             >
-              <span style={{ opacity: 0.8, paddingLeft: '1em' }}>{searchSummary?.node}</span>
+              <span style={{ opacity: 0.8, paddingLeft: "1em" }}>{searchSummary?.node}</span>
             </MotionSpan>
           )}
         </AnimatePresence>
       );
-    }).bind(this),
+    }).bind(this)
   );
 
   computeFilterSummary(): { identity: string; node: React.ReactNode } | null {
@@ -125,10 +118,10 @@ class SearchBar<TItem> extends Component<{
     const sourceLength = source.length;
     const resultLength = this.filteredSource.data.length;
 
-    if (sourceLength === resultLength) return { identity: 'all', node: <span>Filter matched everything</span> };
+    if (sourceLength === resultLength) return { identity: "all", node: <span>Filter matched everything</span> };
 
     return {
-      identity: 'r',
+      identity: "r",
       node: (
         <span>
           <span style={{ fontWeight: 600 }}>{this.filteredSource.data.length}</span> results

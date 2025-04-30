@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction } from 'mobx';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction, makeAutoObservable, runInAction } from "mobx";
 
 /*
     Intended use:
@@ -19,52 +19,56 @@ import { type IReactionDisposer, autorun, computed, makeObservable, observable, 
     and the result will be set to 'data' (which is observable as well of course)
 */
 export class FilterableDataSource<T> {
+  @observable filterText = "";
+  @observable private _lastFilterText = "";
+  @observable.ref private resultData: T[] = [];
+
   private reactionDisposer?: IReactionDisposer;
 
-  @observable filterText = ''; // set by the user (from an input field or so, can be read/write)
+  constructor(private readonly dataSource: () => T[] | undefined, private readonly filter: (filterText: string, item: T) => boolean, debounceMilliseconds: number = 100) {
+    makeObservable(this);
+    this.reactionDisposer = autorun(
+      () => {
+        this.update();
+      },
+      {
+        delay: debounceMilliseconds,
+        name: "FilterableDataSource",
+      }
+    );
+  }
 
-  @observable private _lastFilterText = '';
-  @computed get lastFilterText() {
+  @computed
+  get lastFilterText(): string {
     return this._lastFilterText;
   }
-  @observable.ref private resultData: T[] = []; // set by this class (so only exposed through computed prop)
-  @computed get data(): T[] {
+
+  @computed
+  get data(): T[] {
     return this.resultData;
   }
 
-  constructor(
-    private dataSource: () => T[] | undefined,
-    private filter: (filterText: string, item: T) => boolean,
-    debounceMilliseconds?: number,
-  ) {
-    if (!debounceMilliseconds) debounceMilliseconds = 100;
-    this.reactionDisposer = autorun(this.update.bind(this), {
-      delay: debounceMilliseconds,
-      name: 'FilterableDataSource',
-    });
-
-    makeObservable(this);
-  }
-
-  private update() {
-    transaction(() => {
-      const source = this.dataSource();
-      const filterText = this.filterText;
-      if (source) {
-        this.resultData = source.filter((x) => this.filter(filterText, x));
-        //console.log('updating filterableDataSource: ...');
-      } else {
+  private update(): void {
+    runInAction(() => {
+      const sourceData = this.dataSource();
+      if (!sourceData) {
         this.resultData = [];
-        //console.log('updating filterableDataSource: source == undefined|null');
+        return;
       }
+
+      if (!this.filterText) {
+        this.resultData = sourceData;
+        return;
+      }
+
       this._lastFilterText = this.filterText;
+      this.resultData = sourceData.filter((x: T) => this.filter(this.filterText, x));
     });
   }
 
-  dispose() {
+  dispose(): void {
     if (this.reactionDisposer) {
       this.reactionDisposer();
-      this.reactionDisposer = undefined;
     }
   }
 }

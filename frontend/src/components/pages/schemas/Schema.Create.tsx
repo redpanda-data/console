@@ -195,7 +195,7 @@ const SchemaPageButtons = observer(
               const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
               console.log('schema created', { response: r });
               console.log('navigating to details', { subjectName, latestVersion });
-              appGlobal.history.replace(
+              appGlobal.historyReplace(
                 `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`,
               );
             } catch (err) {
@@ -242,8 +242,8 @@ const SchemaPageButtons = observer(
           variant="link"
           onClick={() => {
             if (p.parentSubjectName)
-              appGlobal.history.replace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
-            else appGlobal.history.replace('/schema-registry');
+              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
+            else appGlobal.historyReplace('/schema-registry');
           }}
         >
           Cancel

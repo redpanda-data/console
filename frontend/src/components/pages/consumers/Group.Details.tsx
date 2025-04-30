@@ -350,7 +350,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
             <Button
               variant="link"
               size="sm"
-              onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(g.topicName)}`)}
+              onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(g.topicName)}`)}
             >
               Go to topic
             </Button>

@@ -1,13 +1,14 @@
-import { observer } from 'mobx-react';
-import { Component, type ReactNode } from 'react';
-import { Route, Switch } from 'react-router-dom';
-import { config as appConfig } from '../config';
-import { api } from '../state/backendApi';
-import { featureErrors } from '../state/supportedFeatures';
-import { uiState } from '../state/uiState';
-import { AppFeatures, IsDev, getBasePath } from '../utils/env';
-import LoginPage from './misc/login';
-import LoginCompletePage from './misc/login-complete';
+import { observer } from "mobx-react";
+import { Component, type ReactNode } from "react";
+import { Route, Routes } from "react-router-dom";
+import { config as appConfig } from "../config";
+import { api } from "../state/backendApi";
+import { featureErrors } from "../state/supportedFeatures";
+import { uiState } from "../state/uiState";
+import { AppFeatures, IsDev, getBasePath } from "../utils/env";
+import LoginPage from "./misc/login";
+import LoginCompletePage from "./misc/login-complete";
+import HistorySetter from "./misc/HistorySetter";
 
 @observer
 export default class RequireAuth extends Component<{ children: ReactNode }> {
@@ -17,17 +18,14 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
 
     return (
       <>
-        <Switch>
+        <HistorySetter />
+        <Routes>
           {/* Login (and callbacks) */}
-          <Route exact path="/login" component={LoginPage} />
-          <Route
-            path="/login/callbacks/:provider"
-            render={(p) => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}
-          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login/callbacks/:provider" element={<LoginCompletePage />} />
           {/* Default View */}
-          {this.props.children}
-          <Route path="*" />
-        </Switch>
+          <Route path="*" element={this.props.children} />
+        </Routes>
         <FeatureErrorCheck />
       </>
     );
@@ -36,25 +34,25 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
   loginHandling(): JSX.Element | null {
     if (!AppFeatures.SINGLE_SIGN_ON) return null;
 
-    const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
-    const path = window.location.pathname.removePrefix(getBasePath() ?? '');
+    const preLogin = <div style={{ background: "rgb(233, 233, 233)", height: "100vh" }} />;
+    const path = window.location.pathname.removePrefix(getBasePath() ?? "");
     const devPrint = (str: string) => {
       if (IsDev) console.log(`loginHandling (${path}): ${str}`);
     };
 
-    if (path.startsWith('/login')) return null; // already in login process, don't interrupt!
+    if (path.startsWith("/login")) return null; // already in login process, don't interrupt!
 
-    if (api.userData === null && !path.startsWith('/login')) {
-      devPrint('known not logged in, hard redirect');
+    if (api.userData === null && !path.startsWith("/login")) {
+      devPrint("known not logged in, hard redirect");
       window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
       return preLogin;
     }
 
     if (api.userData === undefined) {
-      devPrint('user is undefined (probably a fresh page load)');
+      devPrint("user is undefined (probably a fresh page load)");
 
       const client = appConfig.authenticationClient;
-      if (!client) throw new Error('security client is not initialized');
+      if (!client) throw new Error("security client is not initialized");
 
       void api.refreshUserData();
 
@@ -69,7 +67,7 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
 class FeatureErrorCheck extends Component {
   render() {
     if (featureErrors.length > 0) {
-      const allErrors = featureErrors.join(' ');
+      const allErrors = featureErrors.join(" ");
       throw new Error(allErrors);
     }
     return null;
