@@ -219,7 +219,7 @@ service SecurityService {
       }
     };
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_ADMIN
+      required_permission: PERMISSION_VIEW
       api: API_REDPANDA_ADMIN
     };
   }
@@ -274,7 +274,7 @@ service SecurityService {
       }
     };
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_ADMIN
+      required_permission: PERMISSION_VIEW
       api: API_REDPANDA_ADMIN
     };
   }
@@ -325,7 +325,7 @@ service SecurityService {
       }
     };
     option (redpanda.api.auth.v1.authorization) = {
-      required_permission: PERMISSION_ADMIN
+      required_permission: PERMISSION_VIEW
       api: API_REDPANDA_ADMIN
     };
   }
