@@ -282,11 +282,13 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvcPathV1, kafkaConnectSvcHandlerV1 := dataplanev1connect.NewKafkaConnectServiceHandler(
 		hookOutput.Services[dataplanev1connect.KafkaConnectServiceName].(dataplanev1connect.KafkaConnectServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
+	cloudStorageSvc := hookOutput.Services[dataplanev1connect.CloudStorageServiceName].(dataplanev1connect.CloudStorageServiceHandler)
 	cloudStorageSvcPathV1, cloudStorageSvcHandlerV1 := dataplanev1connect.NewCloudStorageServiceHandler(
-		hookOutput.Services[dataplanev1connect.CloudStorageServiceName].(dataplanev1connect.CloudStorageServiceHandler),
+		cloudStorageSvc,
 		connect.WithInterceptors(hookOutput.Interceptors...))
+	securitySvc := hookOutput.Services[dataplanev1connect.SecurityServiceName].(dataplanev1connect.SecurityServiceHandler)
 	securitySvcPathV1, securitySvcHandlerV1 := dataplanev1connect.NewSecurityServiceHandler(
-		hookOutput.Services[dataplanev1connect.SecurityServiceName].(dataplanev1connect.SecurityServiceHandler),
+		securitySvc,
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
@@ -451,6 +453,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1connect.RegisterSecurityServiceHandlerGatewayServer(gwMux, securitySvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	// mount
 
