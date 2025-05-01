@@ -1,4 +1,5 @@
-import type { PartialMessage } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import {
@@ -9,17 +10,19 @@ import {
 import { config } from 'config';
 import { createACL, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import {
+  ACLService,
   ACL_Operation,
   ACL_PermissionType,
   ACL_ResourcePatternType,
   ACL_ResourceType,
   type CreateACLRequest,
-  ListACLsRequest,
+  type ListACLsRequest,
+  ListACLsRequestSchema,
   type ListACLsResponse,
-  ListACLsResponse_Policy,
-  ListACLsResponse_Resource,
+  ListACLsResponse_PolicySchema,
+  ListACLsResponse_ResourceSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import type { QueryOptions } from 'react-query/react-query.utils';
+import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import type {
   AclStrOperation,
   AclStrResourcePatternType,
@@ -110,15 +113,19 @@ const getACLResourcePatternTypeLegacy = (resourcePatternType: AclStrResourcePatt
  * TODO: Remove once Console v3 is released.
  */
 export const useLegacyListACLsQuery = (
-  input?: PartialMessage<ListACLsRequest>,
-  options?: QueryOptions<ListACLsRequest, ListACLsResponse, ListACLsResponse>,
+  input?: MessageInit<ListACLsRequest>,
+  options?: QueryOptions<GenMessage<ListACLsRequest>, ListACLsResponse>,
 ) => {
-  const listACLsRequest = new ListACLsRequest({
+  const listACLsRequest = create(ListACLsRequestSchema, {
     ...input,
   });
 
-  // There is no pagination for this request, so we can just use regular non-infinite connect query key.
-  const infiniteQueryKey = createConnectQueryKey(listACLs, listACLsRequest);
+  const infiniteQueryKey = createConnectQueryKey({
+    // transport: myTransportReference,
+    schema: listACLs,
+    input: listACLsRequest,
+    cardinality: 'finite', // There is no pagination for this request, so we can just use regular finite connect query key.
+  });
 
   const legacyListACLsResult = useTanstackQuery<GetAclOverviewResponse>({
     // We need to precisely match the query key provided by other parts of connect-query
@@ -139,21 +146,19 @@ export const useLegacyListACLsQuery = (
   });
 
   const allRetrievedACLs =
-    legacyListACLsResult.data?.aclResources.map(
-      (aclResource) =>
-        new ListACLsResponse_Resource({
-          resourceType: getACLResourceTypeLegacy(aclResource.resourceType),
-          resourceName: aclResource.resourceName,
-          resourcePatternType: getACLResourcePatternTypeLegacy(aclResource.resourcePatternType),
-          acls: aclResource.acls.map(
-            (acl) =>
-              new ListACLsResponse_Policy({
-                principal: acl.principal,
-                host: acl.host,
-                operation: getACLOperationLegacy(acl.operation),
-              }),
-          ),
-        }),
+    legacyListACLsResult.data?.aclResources.map((aclResource) =>
+      create(ListACLsResponse_ResourceSchema, {
+        resourceType: getACLResourceTypeLegacy(aclResource.resourceType),
+        resourceName: aclResource.resourceName,
+        resourcePatternType: getACLResourcePatternTypeLegacy(aclResource.resourcePatternType),
+        acls: aclResource.acls.map((acl) =>
+          create(ListACLsResponse_PolicySchema, {
+            principal: acl.principal,
+            host: acl.host,
+            operation: getACLOperationLegacy(acl.operation),
+          }),
+        ),
+      }),
     ) ?? [];
 
   return {
@@ -169,10 +174,10 @@ export const useLegacyListACLsQuery = (
  * WARNING: Only use once Console v3 is released.
  */
 export const useListACLsQuery = (
-  input?: PartialMessage<ListACLsRequest>,
-  options?: QueryOptions<ListACLsRequest, ListACLsResponse, ListACLsResponse>,
+  input?: MessageInit<ListACLsRequest>,
+  options?: QueryOptions<GenMessage<ListACLsRequest>, ListACLsResponse>,
 ) => {
-  const listACLsRequest = new ListACLsRequest({
+  const listACLsRequest = create(ListACLsRequestSchema, {
     ...input,
   });
 
@@ -316,7 +321,10 @@ export const useLegacyCreateACLMutationWithToast = () => {
       const data = await response.json();
 
       await queryClient.invalidateQueries({
-        queryKey: [listACLs.service.typeName],
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -324,7 +332,10 @@ export const useLegacyCreateACLMutationWithToast = () => {
     },
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
-        queryKey: [listACLs.service.typeName],
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'infinite',
+        }),
         exact: false,
       });
 
@@ -359,7 +370,12 @@ export const useCreateACLMutationWithToast = () => {
 
   return useMutation(createACL, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [listACLs.service.typeName] });
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: ACLService.method.listACLs,
+          cardinality: 'infinite',
+        }),
+      });
       showToast({
         id: TOASTS.PIPELINE.CREATE.SUCCESS,
         title: 'ACL created successfully',

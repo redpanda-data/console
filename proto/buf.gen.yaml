@@ -1,50 +1,47 @@
-version: v1
+version: v2
 managed:
   enabled: true
-  go_package_prefix:
-    default: github.com/redpanda-data/console/backend/pkg/protogen
-    except:
-      - buf.build/googleapis/googleapis
-      - buf.build/grpc-ecosystem/grpc-gateway
-      - buf.build/bufbuild/protovalidate
-      - buf.build/envoyproxy/protoc-gen-validate
-      - buf.build/redpandadata/common
+  disable:
+    - file_option: go_package
+      module: buf.build/googleapis/googleapis
+    - file_option: go_package
+      module: buf.build/grpc-ecosystem/grpc-gateway
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+    - file_option: go_package
+      module: buf.build/envoyproxy/protoc-gen-validate
+    - file_option: go_package
+      module: buf.build/redpandadata/common
+  override:
+    - file_option: go_package_prefix
+      value: github.com/redpanda-data/console/backend/pkg/protogen
 plugins:
-  # Go Plugins
-  - plugin: buf.build/protocolbuffers/go:v1.36.0
-    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/go:v1.36.0
     out: backend/pkg/protogen
-  - plugin: buf.build/grpc/go:v1.5.1
     opt: paths=source_relative
+  - remote: buf.build/grpc/go:v1.5.1
     out: backend/pkg/protogen
-  - plugin: buf.build/connectrpc/go:v1.17.0
+    opt: paths=source_relative
+  - remote: buf.build/connectrpc/go:v1.17.0
+    out: backend/pkg/protogen
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
-    out: backend/pkg/protogen
-  # Typescript plugins
-  - plugin: buf.build/bufbuild/es:v1.6.0
-    opt:
-      - target=ts
-      - import_extension=
-    out: frontend/src/protogen
-
-  - plugin: buf.build/connectrpc/es:v1.2.0
-    opt:
-      - target=ts
-      - import_extension=
-    out: frontend/src/protogen
-  - plugin: buf.build/grpc-ecosystem/gateway:v2.18.0
+  - remote: buf.build/grpc-ecosystem/gateway:v2.18.0
     out: backend/pkg/protogen
     opt:
       - paths=source_relative
       - generate_unbound_methods=true
-  - plugin: connect-gateway
+  - remote: buf.build/bufbuild/es:v2.2.5
+    out: frontend/src/protogen
+    opt: target=ts
+    include_imports: true
+  - local: protoc-gen-connect-gateway
     out: backend/pkg/protogen
     opt: paths=source_relative
-  - plugin: buf.build/connectrpc/query-es:v1.4.0
+  - remote: buf.build/connectrpc/query-es:v2.0.1
+    out: frontend/src/protogen
     opt:
       - target=ts
-      - import_extension=
       - js_import_style=legacy_commonjs
-    out: frontend/src/protogen
+    include_imports: true

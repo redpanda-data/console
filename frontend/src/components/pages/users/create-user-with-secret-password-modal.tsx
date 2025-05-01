@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Button,
   ButtonGroup,
@@ -14,8 +15,8 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { generatePassword } from 'components/pages/acls/UserCreate';
-import { CreateSecretRequest, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { CreateUserRequest, CreateUserRequest_User } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { CreateUserRequestSchema, CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
 import { getSASLMechanism, useLegacyCreateUserMutationWithToast, useLegacyListUsersQuery } from 'react-query/api/user';
@@ -71,15 +72,15 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
       onChange: createUserWithSecretPasswordSchema,
     },
     onSubmit: async ({ value }) => {
-      const createSecretRequest = new CreateSecretRequest({
+      const createSecretRequest = create(CreateSecretRequestSchema, {
         id: value.SECRET_ID,
         // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.PASSWORD)),
         scopes: [Scope.REDPANDA_CONNECT],
       });
 
-      const createUserRequest = new CreateUserRequest({
-        user: new CreateUserRequest_User({
+      const createUserRequest = create(CreateUserRequestSchema, {
+        user: create(CreateUserRequest_UserSchema, {
           name: value.USERNAME,
           password: value.PASSWORD,
           mechanism: getSASLMechanism(value.SASL_MECHANISM),

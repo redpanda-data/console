@@ -20,7 +20,7 @@ import { MdOutlineQuestionMark } from 'react-icons/md';
 import { MdRefresh } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
-import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi } from '../../../state/backendApi';
 import { Features } from '../../../state/supportedFeatures';
@@ -258,7 +258,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                     height="16px"
                     color="gray.500"
                     // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
 

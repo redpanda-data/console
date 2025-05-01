@@ -1,3 +1,4 @@
+import { keyframes } from '@emotion/css';
 import {
   Box,
   Button,
@@ -8,7 +9,6 @@ import {
   Heading,
   Text,
   VStack,
-  keyframes,
   usePrefersReducedMotion,
 } from '@redpanda-data/ui';
 import { useEffect, useState } from 'react';

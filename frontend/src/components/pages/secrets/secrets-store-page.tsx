@@ -1,4 +1,4 @@
-import { proto3 } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
 import {
   Badge,
   Button,
@@ -16,8 +16,12 @@ import {
 } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/ErrorResult';
 import { runInAction } from 'mobx';
-import { ListSecretsFilter, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { ListSecretsRequest as ListSecretsRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import {
+  ListSecretsFilterSchema,
+  ListSecretsRequestSchema,
+  Scope,
+  ScopeSchema,
+} from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -53,7 +57,7 @@ export const getScopeDisplayValue = (scope: Scope) => {
     case Scope.UNSPECIFIED:
       return 'Unspecified';
     default:
-      return proto3.getEnumType(Scope).findNumber(scope)?.name;
+      return ScopeSchema.values.find((value) => value.number === scope)?.name;
   }
 };
 
@@ -88,8 +92,8 @@ export const SecretsStorePage = () => {
     isError: isSecretListError,
     error: secretListError,
   } = useListSecretsQuery(
-    new ListSecretsRequestDataPlane({
-      filter: new ListSecretsFilter({
+    create(ListSecretsRequestSchema, {
+      filter: create(ListSecretsFilterSchema, {
         nameContains,
       }),
     }),

@@ -210,7 +210,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                 {modalState === 'normal' && (
                   <Button
                     variant="ghost"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       state.modalProps?.onCancel?.(e);
                     }}
                   >
@@ -223,7 +223,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                   isLoading={state.loading}
                   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
                   isDisabled={!options.isOkEnabled?.(userState!)}
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                     state.modalProps?.onOk?.(e);
                   }}
                 >

@@ -1,67 +1,68 @@
-import type { Message, PartialMessage } from '@bufbuild/protobuf';
-import type { Transport } from '@connectrpc/connect';
-import {
-  type DisableQuery,
-  type MethodUnaryDescriptor,
-  useTransport as connectQueryUseTransport,
-} from '@connectrpc/connect-query';
-import { useInfiniteQuery as tanStackUseInfiniteQuery } from '@tanstack/react-query';
+import type { DescMessage, DescMethodUnary, MessageInitShape, MessageShape } from '@bufbuild/protobuf';
+import type { ConnectError, Transport } from '@connectrpc/connect';
+import { useInfiniteQuery } from '@connectrpc/connect-query';
+import type { ConnectInfiniteQueryOptions, ConnectQueryKey } from '@connectrpc/connect-query-core';
+import type {
+  InfiniteData,
+  SkipToken,
+  UseInfiniteQueryOptions as TanStackUseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
+} from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { type CreateInfiniteQueryOptions, createUseInfiniteQueryOptions } from './create-use-infinite-query-options';
 
 /**
- * Query the method provided. Maps to useInfiniteQuery on tanstack/react-query
- *
- * @param methodSig
- * @returns
+ * Options for useInfiniteQueryWithAllPages
+ */
+export type UseInfiniteQueryWithAllPagesOptions<
+  I extends DescMessage,
+  O extends DescMessage,
+  ParamKey extends keyof MessageInitShape<I>,
+> = Omit<
+  TanStackUseInfiniteQueryOptions<
+    MessageShape<O>,
+    ConnectError,
+    InfiniteData<MessageShape<O>>,
+    MessageShape<O>,
+    ConnectQueryKey,
+    MessageInitShape<I>[ParamKey]
+  >,
+  'initialPageParam' | 'queryFn' | 'queryKey'
+> &
+  ConnectInfiniteQueryOptions<I, O, ParamKey> & {
+    /** The transport to be used for the fetching. */
+    transport?: Transport;
+  };
+
+/**
+ * Enhanced version of useInfiniteQuery that automatically fetches all pages
+ * incrementally when the query is executed. This uses the ConnectRPC
+ * package's useInfiniteQuery hook but adds automatic pagination by monitoring
+ * the hasNextPage property and triggering fetchNextPage when appropriate.
  */
 export function useInfiniteQueryWithAllPages<
-  I extends Message<I>,
-  O extends Message<O>,
-  ParamKey extends keyof PartialMessage<I>,
+  I extends DescMessage,
+  O extends DescMessage,
+  ParamKey extends keyof MessageInitShape<I>,
 >(
-  methodSig: MethodUnaryDescriptor<I, O>,
-  input: DisableQuery | (PartialMessage<I> & Required<Pick<PartialMessage<I>, ParamKey>>),
-  {
-    transport,
-    callOptions,
-    pageParamKey,
-    ...options
-  }: Omit<CreateInfiniteQueryOptions<I, O, ParamKey>, 'transport'> & {
-    transport?: Transport;
-  },
-) {
-  const transportFromCtx = connectQueryUseTransport();
-  const baseOptions = createUseInfiniteQueryOptions(methodSig, input, {
-    transport: transport ?? transportFromCtx,
-    pageParamKey,
-    callOptions,
-  });
-  // The query cannot be enabled if the base options are disabled, regardless of
-  // incoming query options.
-  const enabled = baseOptions.enabled && (options.enabled ?? true);
-
-  const infiniteQueryResult = tanStackUseInfiniteQuery({
-    ...options,
-    ...baseOptions,
-    enabled,
-  });
+  schema: DescMethodUnary<I, O>,
+  input: SkipToken | (MessageInitShape<I> & Required<Pick<MessageInitShape<I>, ParamKey>>),
+  options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>,
+): UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError> {
+  // Use the standard ConnectRPC useInfiniteQuery hook
+  const queryResult = useInfiniteQuery(schema, input, options);
 
   useEffect(() => {
-    if (!infiniteQueryResult.isFetching && !infiniteQueryResult.isFetchingNextPage && infiniteQueryResult.hasNextPage) {
-      infiniteQueryResult.fetchNextPage();
+    if (!queryResult.isFetching && !queryResult.isFetchingNextPage && queryResult.hasNextPage) {
+      queryResult.fetchNextPage();
     }
-  }, [
-    infiniteQueryResult.hasNextPage,
-    infiniteQueryResult.isFetching,
-    infiniteQueryResult.isFetchingNextPage,
-    infiniteQueryResult.fetchNextPage,
-  ]);
+  }, [queryResult.hasNextPage, queryResult.isFetching, queryResult.isFetchingNextPage, queryResult.fetchNextPage]);
 
   return {
-    ...infiniteQueryResult,
-    isLoading: infiniteQueryResult?.isLoading || infiniteQueryResult?.hasNextPage,
-    isFetching: infiniteQueryResult?.isFetching || infiniteQueryResult?.isFetchingNextPage,
-    isError: infiniteQueryResult?.isError || infiniteQueryResult?.isFetchNextPageError,
-  };
+    ...queryResult,
+    isLoading: queryResult?.isLoading || queryResult?.hasNextPage,
+    isFetching: queryResult?.isFetching || queryResult?.isFetchingNextPage,
+    isError: queryResult?.isError || queryResult?.isFetchNextPageError,
+  } as UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError>;
+
+  // If you want the data to stream in, you can return queryResult directly, but it will cause layout shift in the UI as more data is getting retrieved.
 }

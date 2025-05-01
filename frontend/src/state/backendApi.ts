@@ -11,9 +11,61 @@
 
 /*eslint block-scoped-var: "error"*/
 
+import { type Registry, create } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
+import { Code } from '@connectrpc/connect';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
+import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
 import { config as appConfig, isEmbedded } from '../config';
+import {
+  AuthenticationMethod,
+  type GetIdentityResponse,
+  KafkaAclOperation,
+  RedpandaCapability,
+  SchemaRegistryCapability,
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import {
+  PayloadEncoding,
+  PayloadEncodingSchema,
+  CompressionType as ProtoCompressionType,
+} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import {
+  type CreateDebugBundleRequest,
+  type CreateDebugBundleResponse,
+  type DebugBundleStatus,
+  DebugBundleStatus_Status,
+  type GetClusterHealthResponse,
+  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
+} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import type {
+  License,
+  ListEnterpriseFeaturesResponse_Feature,
+  SetLicenseRequest,
+  SetLicenseResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import type {
+  PublishMessageRequest,
+  PublishMessageResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
+import {
+  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import {
+  type CreateSecretRequest,
+  type DeleteSecretRequest,
+  type ListSecretScopesRequest,
+  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  Scope,
+  type Secret,
+  type UpdateSecretRequest,
+} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { LazyMap } from '../utils/LazyMap';
 import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
@@ -109,61 +161,9 @@ import {
   WrappedApiError,
   isApiError,
 } from './restInterfaces';
-import { uiState } from './uiState';
-
-import { proto3 } from '@bufbuild/protobuf';
-import type { ConnectError } from '@connectrpc/connect';
-import { Code } from '@connectrpc/connect';
-import {
-  AuthenticationMethod,
-  type GetIdentityResponse,
-  KafkaAclOperation,
-  RedpandaCapability,
-  SchemaRegistryCapability,
-} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import {
-  PayloadEncoding,
-  CompressionType as ProtoCompressionType,
-} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import {
-  type CreateDebugBundleRequest,
-  type CreateDebugBundleResponse,
-  type DebugBundleStatus,
-  DebugBundleStatus_Status,
-  type GetClusterHealthResponse,
-  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
-} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import type {
-  License,
-  ListEnterpriseFeaturesResponse_Feature,
-  SetLicenseRequest,
-  SetLicenseResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { ListMessagesRequest } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
-import type {
-  PublishMessageRequest,
-  PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
-import {
-  GetPipelinesBySecretsRequest,
-  type Pipeline,
-  type PipelineCreate,
-  type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import {
-  type CreateSecretRequest,
-  type DeleteSecretRequest,
-  type ListSecretScopesRequest,
-  ListSecretsRequest,
-  Scope,
-  type Secret,
-  type UpdateSecretRequest,
-} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
-import type { TransformMetadata } from '../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
+import { uiState } from './uiState';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -172,6 +172,8 @@ const { toast } = createStandaloneToast({
   theme: redpandaTheme,
   defaultOptions: redpandaToastOptions.defaultOptions,
 });
+
+declare const registry: Registry;
 
 /*
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
@@ -2253,7 +2255,7 @@ export const rpcnSecretManagerApi = observable({
     let nextPageToken = '';
     while (true) {
       const res = await client.listSecrets({
-        request: new ListSecretsRequest({
+        request: create(ListSecretsRequestSchemaDataPlane, {
           pageToken: nextPageToken,
           pageSize: 100,
         }),
@@ -2308,7 +2310,9 @@ export const rpcnSecretManagerApi = observable({
     const client = appConfig.pipelinesClient;
     if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
 
-    const pipelinesBySecrets = await client.getPipelinesBySecrets({ request: new GetPipelinesBySecretsRequest() });
+    const pipelinesBySecrets = await client.getPipelinesBySecrets({
+      request: create(GetPipelinesBySecretsRequestSchemaDataPlane),
+    });
     return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => {
       return {
         secretId: secretId,
@@ -2426,7 +2430,7 @@ export function createMessageSearch() {
       const messageSearchAbortController = (this.abortController = new AbortController());
 
       // do it
-      const req = new ListMessagesRequest();
+      const req = create(ListMessagesRequestSchema);
       req.topic = searchRequest.topicName;
       req.startOffset = BigInt(searchRequest.startOffset);
       req.startTimestamp = BigInt(searchRequest.startTimestamp);
@@ -2574,7 +2578,7 @@ export function createMessageSearch() {
                       encoding: key?.encoding,
                       encodingName:
                         key?.encoding != null
-                          ? proto3.getEnumType(PayloadEncoding).findNumber(key.encoding)?.localName
+                          ? PayloadEncodingSchema.values.find((value) => value.number === key.encoding)?.localName
                           : undefined,
                       message: res,
                     });
@@ -2650,7 +2654,7 @@ export function createMessageSearch() {
                       encoding: val?.encoding,
                       encodingName:
                         val?.encoding != null
-                          ? proto3.getEnumType(PayloadEncoding).findNumber(val.encoding)?.localName
+                          ? PayloadEncodingSchema.values.find((value) => value.number === val.encoding)?.localName
                           : undefined,
                       message: res,
                     });

@@ -1,8 +1,9 @@
 import {
-  License,
+  LicenseSchema,
   License_Source,
   License_Type,
-  ListEnterpriseFeaturesResponse_Feature,
+  type ListEnterpriseFeaturesResponse_Feature,
+  ListEnterpriseFeaturesResponse_FeatureSchema,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import {
   coreHasEnterpriseFeatures,
@@ -15,6 +16,7 @@ import {
   resolveEnterpriseCTALink,
 } from './licenseUtils';
 import '../../utils/arrayExtensions';
+import { create } from '@bufbuild/protobuf';
 import { vi } from 'vitest';
 import { api } from '../../state/backendApi';
 import { renderWithRouter } from '../../test-utils';
@@ -101,19 +103,19 @@ describe('licenseUtils', () => {
     vi.restoreAllMocks();
   });
 
-  const mockLicenseCommunity: License = new License({
+  const mockLicenseCommunity = create(LicenseSchema, {
     type: License_Type.COMMUNITY,
     expiresAt: BigInt(20413210650),
     source: License_Source.REDPANDA_CONSOLE,
   });
 
-  const mockLicenseEnterprise: License = new License({
+  const mockLicenseEnterprise = create(LicenseSchema, {
     type: License_Type.ENTERPRISE,
     expiresAt: BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30), // expires in 30 days
     source: License_Source.REDPANDA_CORE,
   });
 
-  const expiredLicense: License = new License({
+  const expiredLicense = create(LicenseSchema, {
     type: License_Type.ENTERPRISE,
     expiresAt: BigInt(Math.floor(Date.now() / 1000) - 60 * 60 * 24), // expired yesterday
     source: License_Source.REDPANDA_CONSOLE,
@@ -122,18 +124,18 @@ describe('licenseUtils', () => {
   describe('coreHasEnterpriseFeatures', () => {
     test('should return true when at least one feature is enabled', () => {
       const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'rbac', enabled: true }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'datalake_iceberg', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'audit_logging' }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
       ];
       expect(coreHasEnterpriseFeatures(features)).toBe(true);
     });
 
     test('should return false when no features are enabled', () => {
       const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'rbac', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'datalake_iceberg', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'audit_logging' }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
       ];
       expect(coreHasEnterpriseFeatures(features)).toBe(false);
     });
@@ -164,7 +166,7 @@ describe('licenseUtils', () => {
     });
 
     test('should return false for a license not expiring soon', () => {
-      const licenseNotExpiringSoon: License = new License({
+      const licenseNotExpiringSoon = create(LicenseSchema, {
         ...mockLicenseEnterprise,
         expiresAt: BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 60), // expires in 60 days
       });
@@ -213,12 +215,12 @@ describe('licenseUtils', () => {
   describe('licensesToSimplifiedPreview', () => {
     test('should group multiple licenses of the same type and show the earliest expiration', () => {
       const licenses = [
-        new License({
+        create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
           expiresAt: BigInt(2041321065),
           source: License_Source.REDPANDA_CONSOLE,
         }),
-        new License({
+        create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
           expiresAt: BigInt(4813575088),
           source: License_Source.REDPANDA_CORE,
@@ -231,12 +233,12 @@ describe('licenseUtils', () => {
 
     test('should handle licenses with different types separately', () => {
       const licenses = [
-        new License({
+        create(LicenseSchema, {
           type: License_Type.COMMUNITY,
           expiresAt: BigInt(2041321065),
           source: License_Source.REDPANDA_CONSOLE,
         }),
-        new License({
+        create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
           expiresAt: BigInt(4813575088),
           source: License_Source.REDPANDA_CORE,
@@ -308,25 +310,28 @@ describe('licenseUtils', () => {
       api.licenseViolation = false;
       api.licensesLoaded = 'loaded';
       api.enterpriseFeaturesUsed = [
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'rbac', enabled: true }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'datalake_iceberg', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'audit_logging', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'core_balancing_continuous', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'schema_id_validation', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'cloud_storage', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'gssapi', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'leadership_pinning', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'partition_auto_balancing_continuous', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'oidc', enabled: false }),
-        new ListEnterpriseFeaturesResponse_Feature({ name: 'fips', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'core_balancing_continuous', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'schema_id_validation', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'cloud_storage', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'gssapi', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'leadership_pinning', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'partition_auto_balancing_continuous',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'oidc', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'fips', enabled: false }),
       ];
       api.licenses = [
-        new License({
+        create(LicenseSchema, {
           source: License_Source.REDPANDA_CORE,
           type: License_Type.ENTERPRISE,
           expiresAt: BigInt(getUnixTimestampWithExpiration(28)),
         }),
-        new License({
+        create(LicenseSchema, {
           source: License_Source.REDPANDA_CONSOLE,
           type: License_Type.ENTERPRISE,
           expiresAt: BigInt(getUnixTimestampWithExpiration(28)),

@@ -1,40 +1,77 @@
-import type { Message } from '@bufbuild/protobuf';
+import type { DescMessage, Message, MessageShape } from '@bufbuild/protobuf';
+import type { ScalarValue } from '@bufbuild/protobuf/reflect';
 import type { ConnectError } from '@connectrpc/connect';
-import type { ConnectQueryKey } from '@connectrpc/connect-query';
-import type { CreateQueryOptions } from '@connectrpc/connect-query/dist/cjs/create-use-query-options';
+import type { ConnectQueryKey, UseQueryOptions } from '@connectrpc/connect-query';
 import type { Query } from '@tanstack/react-query';
 
 export const MAX_PAGE_SIZE = 500;
 
-export interface QueryOptions<I extends Message<I>, O extends Message<O>, P extends Message<P>>
-  extends Omit<CreateQueryOptions<I, O, P>, 'transport'> {
-  /**
-   * Set this to `false` to disable automatic refetching when the query mounts or changes query keys.
-   * To refetch the query, use the `refetch` method returned from the `useQuery` instance.
-   * Defaults to `true`.
-   */
+/**
+ * This is a type that comes from bufbuild package.
+ * It extracts the init type from a message descriptor.
+ * It is needed to initialize custom query hooks and is accepted by the function create().
+ */
+export type MessageInit<T extends Message> =
+  | T
+  | {
+      [P in keyof T as P extends '$unknown' ? never : P]?: P extends '$typeName' ? never : FieldInit<T[P]>;
+    };
+type FieldInit<F> = F extends Date | Uint8Array | bigint | boolean | string | number
+  ? F
+  : F extends Array<infer U>
+    ? Array<FieldInit<U>>
+    : F extends ReadonlyArray<infer U>
+      ? ReadonlyArray<FieldInit<U>>
+      : F extends Message
+        ? MessageInit<F>
+        : F extends OneofSelectedMessage<infer C, infer V>
+          ? {
+              case: C;
+              value: MessageInit<V>;
+            }
+          : F extends OneofADT
+            ? F
+            : F extends MapWithMessage<infer V>
+              ? {
+                  [key: string | number]: MessageInit<V>;
+                }
+              : F;
+type MapWithMessage<V extends Message> = {
+  [key: string | number]: V;
+};
+type OneofSelectedMessage<K extends string, M extends Message> = {
+  case: K;
+  value: M;
+};
+type OneofADT =
+  | {
+      case: undefined;
+      value?: undefined;
+    }
+  | {
+      case: string;
+      value: Message | ScalarValue;
+    };
+
+/**
+ * Need to create a custom QueryOptions type in order to control enabled flag/refetch mechanism, including infinite queries that fetch all pages.
+ */
+export interface QueryOptions<O extends DescMessage, SelectOutData = MessageShape<O>>
+  extends Omit<UseQueryOptions<O, SelectOutData>, 'transport'> {
   enabled?: boolean;
-  /**
-   * Optional
-   * If set to a number, all queries will continuously refetch at this frequency in milliseconds
-   * If set to a function, the function will be executed with the query to compute a frequency
-   */
   refetchInterval?:
     | number
     | false
-    | ((query: Query<O, ConnectError, O, ConnectQueryKey<I>>) => number | false | undefined);
-  /**
-   * If set to true, queries that are set to continuously refetch with a refetchInterval will continue to refetch while their tab/window is in the background
-   */
+    | ((query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey>) => number | false | undefined);
   refetchIntervalInBackground?: boolean;
 }
 
-export interface QueryObserverOptions<I extends Message<I>, O extends Message<O>, P extends Message<P>>
-  extends Omit<CreateQueryOptions<I, O, P>, 'transport'> {
-  enabled?: boolean;
-  refetchInterval?:
-    | number
-    | false
-    | ((query: Query<O, ConnectError, O, ConnectQueryKey<I>>) => number | false | undefined);
-  refetchIntervalInBackground?: boolean;
-}
+// export interface QueryObserverOptions<O extends DescMessage, SelectOutData = MessageShape<O>>
+//   extends Omit<UseQueryOptions<O, SelectOutData>, 'transport'> {
+//   enabled?: boolean;
+//   refetchInterval?:
+//     | number
+//     | false
+//     | ((query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey>) => number | false | undefined);
+//   refetchIntervalInBackground?: boolean;
+// }

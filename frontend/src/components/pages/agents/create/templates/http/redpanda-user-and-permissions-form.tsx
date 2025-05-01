@@ -1,5 +1,5 @@
 import { Heading, Link, Stack, Text, useDisclosure } from '@redpanda-data/ui';
-import { type PrefixObjectAccessor, withForm } from 'components/form/form';
+import { withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
 import { type ReactNode, useState } from 'react';
@@ -44,9 +44,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
       onClose: onCreateTopicModalClose,
     } = useDisclosure();
 
-    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
-      undefined,
-    );
+    const [fieldToUpdate, setFieldToUpdate] = useState<keyof CreateAgentHttpFormValues | undefined>(undefined);
 
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
     const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);

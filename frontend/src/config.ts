@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 import {
+  type Client,
   Code,
   ConnectError,
   type Interceptor as ConnectRpcInterceptor,
-  type PromiseClient,
-  createPromiseClient,
+  createClient,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { type Monaco, loader } from '@monaco-editor/react';
@@ -23,17 +23,17 @@ import * as monaco from 'monaco-editor';
 import { getAgentSidebarItemTitle } from 'components/pages/agents/agent-list-page';
 import memoizeOne from 'memoize-one';
 import { protobufRegistry } from 'protobuf-registry';
+import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { ClusterStatusService } from 'protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
+import { DebugBundleService } from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { LicenseService } from 'protogen/redpanda/api/console/v1alpha1/license_pb';
+import { PipelineService } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
+import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
-import { AuthenticationService } from './protogen/redpanda/api/console/v1alpha1/authentication_connect';
-import { ClusterStatusService } from './protogen/redpanda/api/console/v1alpha1/cluster_status_connect';
-import { ConsoleService } from './protogen/redpanda/api/console/v1alpha1/console_service_connect';
-import { DebugBundleService } from './protogen/redpanda/api/console/v1alpha1/debug_bundle_connect';
-import { LicenseService } from './protogen/redpanda/api/console/v1alpha1/license_connect';
-import { PipelineService } from './protogen/redpanda/api/console/v1alpha1/pipeline_connect';
-import { SecretService as RPCNSecretService } from './protogen/redpanda/api/console/v1alpha1/secret_connect';
-import { SecurityService } from './protogen/redpanda/api/console/v1alpha1/security_connect';
-import { TransformService } from './protogen/redpanda/api/console/v1alpha1/transform_connect';
 import { appGlobal } from './state/appGlobal';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
@@ -116,15 +116,15 @@ export interface Breadcrumb {
 interface Config {
   restBasePath: string;
   grpcBasePath: string;
-  authenticationClient?: PromiseClient<typeof AuthenticationService>;
-  licenseClient?: PromiseClient<typeof LicenseService>;
-  consoleClient?: PromiseClient<typeof ConsoleService>;
-  debugBundleClient?: PromiseClient<typeof DebugBundleService>;
-  securityClient?: PromiseClient<typeof SecurityService>;
-  pipelinesClient?: PromiseClient<typeof PipelineService>;
-  rpcnSecretsClient?: PromiseClient<typeof RPCNSecretService>;
-  transformsClient?: PromiseClient<typeof TransformService>;
-  clusterStatusClient?: PromiseClient<typeof ClusterStatusService>;
+  authenticationClient?: Client<typeof AuthenticationService>;
+  licenseClient?: Client<typeof LicenseService>;
+  consoleClient?: Client<typeof ConsoleService>;
+  debugBundleClient?: Client<typeof DebugBundleService>;
+  securityClient?: Client<typeof SecurityService>;
+  pipelinesClient?: Client<typeof PipelineService>;
+  rpcnSecretsClient?: Client<typeof SecretService>;
+  transformsClient?: Client<typeof TransformService>;
+  clusterStatusClient?: Client<typeof ClusterStatusService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -159,19 +159,19 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
     jsonOptions: {
-      typeRegistry: protobufRegistry,
+      registry: protobufRegistry,
     },
   });
 
-  const licenseGrpcClient = createPromiseClient(LicenseService, transport);
-  const consoleGrpcClient = createPromiseClient(ConsoleService, transport);
-  const debugBundleGrpcClient = createPromiseClient(DebugBundleService, transport);
-  const securityGrpcClient = createPromiseClient(SecurityService, transport);
-  const pipelinesGrpcClient = createPromiseClient(PipelineService, transport);
-  const secretGrpcClient = createPromiseClient(RPCNSecretService, transport);
-  const authenticationGrpcClient = createPromiseClient(AuthenticationService, transport);
-  const transformClient = createPromiseClient(TransformService, transport);
-  const clusterStatusGrpcClient = createPromiseClient(ClusterStatusService, transport);
+  const licenseGrpcClient = createClient(LicenseService, transport);
+  const consoleGrpcClient = createClient(ConsoleService, transport);
+  const debugBundleGrpcClient = createClient(DebugBundleService, transport);
+  const securityGrpcClient = createClient(SecurityService, transport);
+  const pipelinesGrpcClient = createClient(PipelineService, transport);
+  const secretGrpcClient = createClient(SecretService, transport);
+  const authenticationGrpcClient = createClient(AuthenticationService, transport);
+  const transformClient = createClient(TransformService, transport);
+  const clusterStatusGrpcClient = createClient(ClusterStatusService, transport);
   Object.assign(config, {
     jwt,
     isServerless,

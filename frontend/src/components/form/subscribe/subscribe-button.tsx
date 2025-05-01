@@ -22,7 +22,7 @@ export const SubscribeButton = ({
           isLoading={isSubmitting}
           isDisabled={!canSubmit || isSubmitting}
           loadingText={loadingText}
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
