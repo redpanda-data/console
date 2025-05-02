@@ -15,10 +15,8 @@ import {
 import {
   type ListRoleMembersRequest as ListRoleMembersRequestDataPlane,
   ListRoleMembersRequestSchema as ListRoleMembersRequestSchemaDataPlane,
-  type ListRoleMembersResponse as ListRoleMembersResponseDataPlane,
   type ListRolesRequest as ListRolesRequestDataPlane,
   ListRolesRequestSchema as ListRolesRequestSchemaDataPlane,
-  type ListRolesResponse as ListRolesResponseDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
