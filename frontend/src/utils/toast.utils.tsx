@@ -111,6 +111,20 @@ export const TOASTS = {
       ERROR: 'ROLE_UPDATE_MEMBERSHIP_ERROR',
     },
   },
+  DEBUG_BUNDLE: {
+    CREATE: {
+      SUCCESS: 'DEBUG_BUNDLE_CREATE_SUCCESS',
+      ERROR: 'DEBUG_BUNDLE_CREATE_ERROR',
+    },
+    CANCEL: {
+      SUCCESS: 'DEBUG_BUNDLE_CANCEL_SUCCESS',
+      ERROR: 'DEBUG_BUNDLE_CANCEL_ERROR',
+    },
+    DELETE: {
+      SUCCESS: 'DEBUG_BUNDLE_DELETE_SUCCESS',
+      ERROR: 'DEBUG_BUNDLE_DELETE_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
