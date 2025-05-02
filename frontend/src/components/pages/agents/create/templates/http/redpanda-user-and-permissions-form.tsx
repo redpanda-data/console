@@ -4,7 +4,7 @@ import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal'
 import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
 import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
@@ -62,9 +62,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
         label: secret?.id,
       })) ?? [];
 
-    const { data: legacyTopicList } = useLegacyListTopicsQuery();
-    const legacyTopicListOptions =
-      legacyTopicList?.topics?.map((topic) => ({
+    const { data: topicList } = useListTopicsQuery();
+    const topicListOptions =
+      topicList?.topics?.map((topic) => ({
         value: topic?.name,
         label: topic?.name,
       })) ?? [];
