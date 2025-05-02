@@ -19,7 +19,7 @@ import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplan
 import { CreateUserRequestSchema, CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
 import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
-import { getSASLMechanism, useLegacyCreateUserMutationWithToast, useLegacyListUsersQuery } from 'react-query/api/user';
+import { getSASLMechanism, useCreateUserMutationWithToast, useListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 import { passwordSchema, usernameSchema } from '../agents/create/templates/http/create-agent-http-schema';
@@ -54,10 +54,10 @@ interface CreateUserWithSecretPasswordModalProps {
 
 export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUserWithSecretPasswordModalProps) => {
   const { data: secretList } = useListSecretsQuery();
-  const { data: legacyUserList } = useLegacyListUsersQuery();
+  const { data: userList } = useListUsersQuery();
 
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
-  const { mutateAsync: createUser, isPending: isCreateUserPending } = useLegacyCreateUserMutationWithToast();
+  const { mutateAsync: createUser, isPending: isCreateUserPending } = useCreateUserMutationWithToast();
   const [finalFormValues, setFinalFormValues] = useState<CreatedUserWithPassword | undefined>(undefined);
 
   const formOpts = formOptions({
@@ -144,7 +144,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
                   name="USERNAME"
                   validators={{
                     onChange: ({ value }: { value: string }) =>
-                      legacyUserList?.users?.some((user) => user?.name === value)
+                      userList?.users?.some((user) => user?.name === value)
                         ? { message: 'Username is already in use', path: 'USERNAME' }
                         : undefined,
                   }}
