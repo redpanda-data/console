@@ -247,7 +247,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	switch version {
 	case SchemaVersionsAll:
 		grp.Go(func() error {
-			subjectSchemas, err := srClient.Schemas(ctx, subjectName)
+			subjectSchemas, err := srClient.Schemas(sr.WithParams(ctx, sr.ShowDeleted), subjectName)
 			if err != nil {
 				return fmt.Errorf("failed to retrieve all sch versions for subject %q: %w", subjectName, err)
 			}
@@ -265,7 +265,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 			if err != nil {
 				return fmt.Errorf("failed to parse version %q: %w", version, err)
 			}
-			subjectSchema, err := srClient.SchemaByVersion(ctx, subjectName, versionInt)
+			subjectSchema, err := srClient.SchemaByVersion(sr.WithParams(ctx, sr.ShowDeleted), subjectName, versionInt)
 			if err != nil {
 				return fmt.Errorf("failed to retrieve schema by version %q: %w", subjectName, err)
 			}
@@ -443,7 +443,7 @@ func (s *Service) GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subje
 		return nil, err
 	}
 
-	schemaRefs, err := srClient.SchemaReferences(ctx, subjectName, version)
+	schemaRefs, err := srClient.SchemaReferences(sr.WithParams(ctx, sr.ShowDeleted), subjectName, version)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +454,7 @@ func (s *Service) GetSchemaRegistrySchemaReferencedBy(ctx context.Context, subje
 	for _, subjectSchema := range schemaRefs {
 		schemaIDCpy := subjectSchema.ID
 		grp.Go(func() error {
-			subjectVersions, err := srClient.SchemaUsagesByID(grpCtx, schemaIDCpy)
+			subjectVersions, err := srClient.SchemaUsagesByID(sr.WithParams(grpCtx, sr.ShowDeleted), schemaIDCpy)
 			if err != nil {
 				ch <- SchemaReference{
 					Error: err.Error(),
