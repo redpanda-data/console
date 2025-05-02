@@ -97,6 +97,20 @@ export const TOASTS = {
       ERROR: 'MESSAGE_PUBLISH_ERROR',
     },
   },
+  ROLE: {
+    CREATE: {
+      SUCCESS: 'ROLE_CREATE_SUCCESS',
+      ERROR: 'ROLE_CREATE_ERROR',
+    },
+    DELETE: {
+      SUCCESS: 'ROLE_DELETE_SUCCESS',
+      ERROR: 'ROLE_DELETE_ERROR',
+    },
+    UPDATE_MEMBERSHIP: {
+      SUCCESS: 'ROLE_UPDATE_MEMBERSHIP_SUCCESS',
+      ERROR: 'ROLE_UPDATE_MEMBERSHIP_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
