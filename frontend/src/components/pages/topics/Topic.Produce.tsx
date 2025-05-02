@@ -1,4 +1,4 @@
-import { proto3 } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
 import {
   Alert,
   Box,
@@ -26,12 +26,13 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
-  KafkaRecordHeader,
+  CompressionTypeSchema,
+  KafkaRecordHeaderSchema,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
-  PublishMessagePayloadOptions,
-  PublishMessageRequest,
+  PublishMessagePayloadOptionsSchema,
+  PublishMessageRequestSchema,
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -178,10 +179,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
   const showValueSchemaSelection =
     valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF;
 
-  const compressionTypes = proto3
-    .getEnumType(CompressionType)
-    .values.filter((x) => x.no !== CompressionType.UNSPECIFIED)
-    .map((x) => ({ label: x.localName, value: x.no as CompressionType }));
+  const compressionTypes = CompressionTypeSchema.values
+    .filter((value) => value.number !== CompressionType.UNSPECIFIED)
+    .map((value) => ({ label: value.localName, value: value.number as CompressionType }));
 
   const availablePartitions = computed(() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
@@ -227,7 +227,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
   const valueSchemaName = watch('value.schemaName');
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    const req = new PublishMessageRequest();
+    const req = create(PublishMessageRequestSchema);
     req.topic = topicName;
     req.partitionId = data.partition;
     req.compression = data.compressionType;
@@ -239,7 +239,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       if (!h.value && !h.value) {
         continue;
       }
-      const kafkaHeader = new KafkaRecordHeader();
+      const kafkaHeader = create(KafkaRecordHeaderSchema);
       kafkaHeader.key = h.key;
       // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       kafkaHeader.value = new TextEncoder().encode(h.value);
@@ -259,7 +259,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
     // Key
     if (data.key.encoding !== PayloadEncoding.NULL) {
-      req.key = new PublishMessagePayloadOptions();
+      req.key = create(PublishMessagePayloadOptionsSchema);
       try {
         // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.key.data = encodeData(data.key.data, data.key.encoding);
@@ -277,7 +277,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
     // Value
     if (data.value.encoding !== PayloadEncoding.NULL) {
-      req.value = new PublishMessagePayloadOptions();
+      req.value = create(PublishMessagePayloadOptionsSchema);
       try {
         // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.value.data = encodeData(data.value.data, data.value.encoding);

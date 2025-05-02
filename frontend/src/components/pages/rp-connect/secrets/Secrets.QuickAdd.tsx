@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Button,
   Flex,
@@ -16,7 +17,11 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { useState } from 'react';
-import { CreateSecretRequest, Scope, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import {
+  CreateSecretRequestSchema,
+  Scope,
+  type Secret,
+} from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';
@@ -48,7 +53,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
       setIsCreating(true);
       const result = await rpcnSecretManagerApi
         .create(
-          new CreateSecretRequest({
+          create(CreateSecretRequestSchema, {
             id: id,
             // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(secret)),

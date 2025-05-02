@@ -21,7 +21,7 @@ import {
   type Pipeline,
   type Pipeline_Resources,
   Pipeline_State,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha2/pipeline_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import {
   type MessageSearch,
@@ -58,7 +58,8 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
 
   initPage(p: PageInitHelper): void {
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
-    p.title = pipelineId;
+    const pipeline = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
+    p.title = pipeline?.displayName ?? pipelineId;
     p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
     p.addBreadcrumb(pipelineId, `/rp-connect/${pipelineId}`);
 

@@ -1,20 +1,24 @@
+import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import {
   startPipeline,
   stopPipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-import { StartPipelineRequest, StopPipelineRequest } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
-  StartPipelineRequest as StartPipelineRequestDataPlane,
-  StopPipelineRequest as StopPipelineRequestDataPlane,
+  StartPipelineRequestSchema,
+  StopPipelineRequestSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { PipelineSchema, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import {
+  StartPipelineRequestSchema as StartPipelineRequestSchemaDataPlane,
+  StopPipelineRequestSchema as StopPipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
 
 describe('TogglePipelineStateButton', () => {
   test('should start the pipeline', async () => {
-    const pipeline = new Pipeline({
+    const pipeline = create(PipelineSchema, {
       id: 'pipeline-id',
       displayName: 'pipeline-name',
       state: Pipeline_State.STOPPED,
@@ -41,8 +45,8 @@ describe('TogglePipelineStateButton', () => {
     await waitFor(() => {
       expect(startPipelineMock).toHaveBeenCalled();
       expect(startPipelineMock).toHaveBeenCalledWith(
-        new StartPipelineRequest({
-          request: new StartPipelineRequestDataPlane({
+        create(StartPipelineRequestSchema, {
+          request: create(StartPipelineRequestSchemaDataPlane, {
             id: pipeline.id,
           }),
         }),
@@ -52,7 +56,7 @@ describe('TogglePipelineStateButton', () => {
   });
 
   test('should stop the pipeline', async () => {
-    const pipeline = new Pipeline({
+    const pipeline = create(PipelineSchema, {
       id: 'pipeline-id',
       displayName: 'pipeline-name',
       state: Pipeline_State.RUNNING,
@@ -79,8 +83,8 @@ describe('TogglePipelineStateButton', () => {
     await waitFor(() => {
       expect(stopPipelineMock).toHaveBeenCalled();
       expect(stopPipelineMock).toHaveBeenCalledWith(
-        new StopPipelineRequest({
-          request: new StopPipelineRequestDataPlane({
+        create(StopPipelineRequestSchema, {
+          request: create(StopPipelineRequestSchemaDataPlane, {
             id: pipeline.id,
           }),
         }),

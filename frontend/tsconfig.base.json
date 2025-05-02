@@ -27,7 +27,7 @@
     "noImplicitOverride": false
   },
   "include": ["src", "./vitest.setup.ts"],
-  "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts"],
+  "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts", "src/protogen"],
 
   "watchOptions": {
     "watchFile": "useFsEvents",

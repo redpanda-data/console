@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Button,
   ButtonGroup,
@@ -14,9 +15,9 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import {
-  CreateTopicRequest,
-  CreateTopicRequest_Topic,
-  CreateTopicRequest_Topic_Config,
+  CreateTopicRequestSchema,
+  CreateTopicRequest_TopicSchema,
+  CreateTopicRequest_Topic_ConfigSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useLegacyCreateTopicMutationWithToast, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
@@ -51,13 +52,13 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
       onChange: topicSchema,
     },
     onSubmit: async ({ value }) => {
-      const request = new CreateTopicRequest({
-        topic: new CreateTopicRequest_Topic({
+      const request = create(CreateTopicRequestSchema, {
+        topic: create(CreateTopicRequest_TopicSchema, {
           name: value.name,
           partitionCount: DEFAULT_TOPIC_PARTITION_COUNT,
           replicationFactor: DEFAULT_TOPIC_REPLICATION_FACTOR,
           configs: [
-            new CreateTopicRequest_Topic_Config({
+            create(CreateTopicRequest_Topic_ConfigSchema, {
               name: 'cleanup.policy',
               value: 'delete',
             }),

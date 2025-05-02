@@ -1,3 +1,4 @@
+import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, List, ListItem, Spinner, Stack, Text } from '@redpanda-data/ui';
 import React, { type FC, useEffect } from 'react';
 import { MdCheckCircle, MdError } from 'react-icons/md';
@@ -46,7 +47,8 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                       </Text>
                       <Text display="inline">
                         {' '}
-                        started at {status.value.value.createdAt?.toDate().toLocaleString()}
+                        started at{' '}
+                        {status.value.value.createdAt && timestampDate(status.value.value.createdAt).toLocaleString()}
                       </Text>
                     </Box>
                     <Text color="gray.500" fontSize="sm">

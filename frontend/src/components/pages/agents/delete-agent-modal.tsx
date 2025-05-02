@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Box,
   Button,
@@ -14,7 +15,7 @@ import {
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
-import { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Pipeline, PipelineSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type Agent, useDeleteAgentPipelinesMutation } from 'react-query/api/agent';
 import { useHistory } from 'react-router-dom';
 import { z } from 'zod';
@@ -52,7 +53,7 @@ export const DeleteAgentModal = ({ agent, isOpen, onClose }: DeleteAgentModalPro
     },
     onSubmit: async () => {
       await deleteAgentPipelines({
-        pipelines: agent?.pipelines?.map((pipeline) => new Pipeline({ id: pipeline?.id })) ?? [],
+        pipelines: agent?.pipelines?.map((pipeline) => create(PipelineSchema, { id: pipeline?.id })) ?? [],
       });
       handleClose();
       history.push('/agents');

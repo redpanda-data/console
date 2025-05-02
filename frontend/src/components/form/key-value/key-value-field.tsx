@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  ButtonGroup,
   Flex,
   FormControl,
   FormHelperText,
@@ -53,16 +54,18 @@ export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest
       ))}
 
       {showAddButton && (
-        <Button
-          mt={2}
-          size="sm"
-          variant="outline"
-          onClick={addLabel}
-          data-testid="add-label-button"
-          leftIcon={<span>+</span>}
-        >
-          Add label
-        </Button>
+        <ButtonGroup>
+          <Button
+            mt={2}
+            size="sm"
+            variant="outline"
+            onClick={addLabel}
+            data-testid="add-label-button"
+            leftIcon={<span>+</span>}
+          >
+            Add label
+          </Button>
+        </ButtonGroup>
       )}
     </FormControl>
   );

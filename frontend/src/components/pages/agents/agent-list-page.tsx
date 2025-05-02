@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import { cx } from '@emotion/css';
 import {
   Button,
@@ -20,7 +21,7 @@ import { config } from 'config';
 import { useBooleanFlagValue } from 'custom-feature-flag-provider';
 import { type JwtPayload, jwtDecode } from 'jwt-decode';
 import { runInAction } from 'mobx';
-import { ListPipelinesRequest as ListPipelinesRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { ListPipelinesRequestSchema as ListPipelinesRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type ReactNode, useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { useListAgentsQuery } from 'react-query/api/agent';
@@ -117,7 +118,7 @@ export const AgentListPage = () => {
     isError: isAgentListError,
     error: agentListError,
   } = useListAgentsQuery(
-    new ListPipelinesRequestDataPlane({
+    create(ListPipelinesRequestSchemaDataPlane, {
       filter: {
         nameContains,
       },

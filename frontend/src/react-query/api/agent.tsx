@@ -1,6 +1,7 @@
-import type { PartialMessage } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
-import { useMutation } from '@connectrpc/connect-query';
+import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { type QueryClient, type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import {
   createPipeline,
@@ -8,23 +9,29 @@ import {
   listPipelines,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
-  CreatePipelineRequest,
+  type CreatePipelineRequest,
+  CreatePipelineRequestSchema,
   type CreatePipelineResponse,
-  DeletePipelineRequest,
+  type DeletePipelineRequest,
+  DeletePipelineRequestSchema,
   type DeletePipelineResponse,
-  ListPipelinesRequest,
+  type ListPipelinesRequest,
+  ListPipelinesRequestSchema,
   type ListPipelinesResponse,
+  PipelineService,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
-  CreatePipelineRequest as CreatePipelineRequestDataPlane,
-  DeletePipelineRequest as DeletePipelineRequestDataPlane,
-  ListPipelinesRequest as ListPipelinesRequestDataPlane,
-  ListPipelinesRequest_Filter,
+  CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
+  DeletePipelineRequestSchema as DeletePipelineRequestSchemaDataPlane,
+  type ListPipelinesRequest as ListPipelinesRequestDataPlane,
+  ListPipelinesRequestSchema as ListPipelinesRequestSchemaDataPlane,
+  ListPipelinesRequest_FilterSchema,
   type Pipeline,
-  PipelineCreate,
+  type PipelineCreate,
+  PipelineCreateSchema,
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { MAX_PAGE_SIZE, type QueryObserverOptions } from 'react-query/react-query.utils';
+import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { isUuid } from 'utils/uuid.utils';
@@ -41,7 +48,7 @@ export interface Agent {
 }
 
 interface CreateAgentPipelineParams {
-  pipelines: PartialMessage<PipelineCreate>[];
+  pipelines: MessageInit<PipelineCreate>[];
   agentId: string;
 }
 
@@ -68,10 +75,10 @@ interface CreateAgentPipelinesPromisesProps {
   createPipelineMutation: UseMutationResult<
     CreatePipelineResponse,
     ConnectError,
-    PartialMessage<CreatePipelineRequest>,
+    MessageInit<CreatePipelineRequest>,
     unknown
   >;
-  pipelines: PartialMessage<PipelineCreate>[];
+  pipelines: MessageInit<PipelineCreate>[];
   agentId: string;
 }
 
@@ -87,9 +94,9 @@ const createAgentPipelinesPromises = async ({
     // Use for loop instead of .map() to ensure the Promises are registered properly
     for (const pipeline of pipelines) {
       const createPipelinePromise = createPipelineMutation.mutateAsync(
-        new CreatePipelineRequest({
-          request: new CreatePipelineRequestDataPlane({
-            pipeline: new PipelineCreate({
+        create(CreatePipelineRequestSchema, {
+          request: create(CreatePipelineRequestSchemaDataPlane, {
+            pipeline: create(PipelineCreateSchema, {
               ...pipeline,
               tags: {
                 ...pipeline.tags,
@@ -106,7 +113,12 @@ const createAgentPipelinesPromises = async ({
 
     const results = await Promise.all(createPipelinePromises);
 
-    await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: PipelineService.method.listPipelines,
+        cardinality: 'infinite',
+      }),
+    });
 
     // Show success toast
     showToast({
@@ -132,7 +144,7 @@ export const useGetAgentQuery = (
   }: {
     id: string;
   },
-  options: QueryObserverOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
+  options: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
     refetchInterval?: number | false; // TODO: Fix, current workaround for refetching infinite query options for list endpoints
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
@@ -158,15 +170,16 @@ export const useGetAgentQuery = (
  * Consider creating a dedicated "Agent" service in the future
  */
 export const useListAgentsQuery = (
-  input?: PartialMessage<ListPipelinesRequestDataPlane>,
-  options?: QueryObserverOptions<ListPipelinesRequestDataPlane, ListPipelinesResponse, ListPipelinesResponse> & {
+  input?: MessageInit<ListPipelinesRequestDataPlane>,
+  // TODO: Use QueryObserverOptions?
+  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
     refetchInterval?: number | false;
   },
 ) => {
-  const listPipelinesRequestDataPlane = new ListPipelinesRequestDataPlane({
+  const listPipelinesRequestDataPlane = create(ListPipelinesRequestSchemaDataPlane, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
-    filter: new ListPipelinesRequest_Filter({
+    filter: create(ListPipelinesRequest_FilterSchema, {
       tags: {
         __redpanda_cloud_pipeline_type: 'agent',
         // TODO: Ensure this tag can do partial matching of the name
@@ -175,14 +188,22 @@ export const useListAgentsQuery = (
     }),
   });
 
-  const listPipelinesRequest = new ListPipelinesRequest({
+  const listPipelinesRequest = create(ListPipelinesRequestSchema, {
     request: listPipelinesRequestDataPlane,
-  }) as PartialMessage<ListPipelinesRequest> & Required<Pick<PartialMessage<ListPipelinesRequest>, 'request'>>;
+  }) as MessageInit<ListPipelinesRequest> & Required<Pick<MessageInit<ListPipelinesRequest>, 'request'>>;
 
   const listAgentsResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     pageParamKey: 'request',
     enabled: options?.enabled,
     refetchInterval: options?.refetchInterval,
+    // Required because of protobuf v2 reflection - it does not accept foreign fields when nested under "request", so the format needs to be a dataplane schema
+    getNextPageParam: (lastPage) =>
+      lastPage?.response?.nextPageToken
+        ? {
+            ...listPipelinesRequestDataPlane,
+            pageToken: lastPage.response?.nextPageToken,
+          }
+        : undefined,
   });
 
   const allRetrievedPipelines = listAgentsResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
@@ -249,10 +270,10 @@ interface DeleteAgentPipelinesPromisesProps {
   deletePipelineMutation: UseMutationResult<
     DeletePipelineResponse,
     ConnectError,
-    PartialMessage<DeletePipelineRequest>,
+    MessageInit<DeletePipelineRequest>,
     unknown
   >;
-  pipelines: PartialMessage<Pipeline>[];
+  pipelines: MessageInit<Pipeline>[];
 }
 
 const deleteAgentPipelinesPromises = async ({
@@ -266,8 +287,8 @@ const deleteAgentPipelinesPromises = async ({
     // Use for loop instead of .map() to ensure the Promises are registered properly
     for (const pipeline of pipelines) {
       const deletePipelinePromise = deletePipelineMutation.mutateAsync(
-        new DeletePipelineRequest({
-          request: new DeletePipelineRequestDataPlane({
+        create(DeletePipelineRequestSchema, {
+          request: create(DeletePipelineRequestSchemaDataPlane, {
             id: pipeline.id,
           }),
         }),
@@ -278,7 +299,12 @@ const deleteAgentPipelinesPromises = async ({
 
     const results = await Promise.all(deletePipelinePromises);
 
-    await queryClient.invalidateQueries({ queryKey: [listPipelines.service.typeName] });
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: PipelineService.method.listPipelines,
+        cardinality: 'infinite',
+      }),
+    });
 
     // Show success toast
     showToast({
@@ -299,7 +325,7 @@ const deleteAgentPipelinesPromises = async ({
 };
 
 interface DeleteAgentPipelineParams {
-  pipelines: PartialMessage<Pipeline>[];
+  pipelines: MessageInit<Pipeline>[];
 }
 
 /**

@@ -1,5 +1,5 @@
 import { Heading, Link, Stack, Text, useDisclosure } from '@redpanda-data/ui';
-import { type PrefixObjectAccessor, withForm } from 'components/form/form';
+import { withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -28,9 +28,7 @@ export const ExternalDependenciesForm = withForm({
 
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
 
-    const [fieldToUpdate, setFieldToUpdate] = useState<PrefixObjectAccessor<CreateAgentHttpFormValues, []> | undefined>(
-      undefined,
-    );
+    const [fieldToUpdate, setFieldToUpdate] = useState<keyof CreateAgentHttpFormValues | undefined>(undefined);
     const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
 
     const { data: secretList } = useListSecretsQuery();

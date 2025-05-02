@@ -1,18 +1,22 @@
+import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import {
   createPipeline,
   deletePipeline,
   listPipelines,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-import { CreatePipelineRequest, DeletePipelineRequest } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
-  CreatePipelineRequest as CreatePipelineRequestDataPlane,
-  CreatePipelineResponse,
-  DeletePipelineRequest as DeletePipelineRequestDataPlane,
-  DeletePipelineResponse,
-  ListPipelinesResponse,
-  Pipeline,
-  PipelineCreate,
+  CreatePipelineRequestSchema,
+  CreatePipelineResponseSchema,
+  DeletePipelineRequestSchema,
+  DeletePipelineResponseSchema,
+  ListPipelinesResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import {
+  CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
+  DeletePipelineRequestSchema as DeletePipelineRequestSchemaDataPlane,
+  PipelineCreateSchema,
+  PipelineSchema,
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { connectQueryWrapper, renderHook, waitFor } from 'test-utils';
@@ -20,7 +24,7 @@ import { useCreateAgentPipelinesMutation, useDeleteAgentPipelinesMutation } from
 
 describe('Agent API wrapper', () => {
   test('useCreateAgentPipelinesMutation should create multiple pipelines for the agent and add internal tags', async () => {
-    const firstPipeline = new PipelineCreate({
+    const firstPipeline = create(PipelineCreateSchema, {
       displayName: 'firstPipeline',
       description: 'firstPipelineDescription',
       configYaml: 'firstPipeline',
@@ -29,7 +33,7 @@ describe('Agent API wrapper', () => {
         __redpanda_cloud_agent_description: 'description',
       },
     });
-    const secondPipeline = new PipelineCreate({
+    const secondPipeline = create(PipelineCreateSchema, {
       displayName: 'secondPipeline',
       description: 'secondPipelineDescription',
       configYaml: 'secondPipeline',
@@ -41,10 +45,10 @@ describe('Agent API wrapper', () => {
 
     const pipelines = [firstPipeline, secondPipeline];
 
-    const createPipelineMock = vi.fn().mockReturnValue(new CreatePipelineResponse({}));
+    const createPipelineMock = vi.fn().mockReturnValue(create(CreatePipelineResponseSchema));
 
     const listPipelinesMock = vi.fn().mockReturnValue(
-      new ListPipelinesResponse({
+      create(ListPipelinesResponseSchema, {
         pipelines,
       }),
     );
@@ -69,8 +73,8 @@ describe('Agent API wrapper', () => {
       expect(createPipelineMock).toHaveBeenCalledTimes(pipelines.length);
       expect(createPipelineMock).toHaveBeenNthCalledWith(
         1,
-        new CreatePipelineRequest({
-          request: new CreatePipelineRequestDataPlane({
+        create(CreatePipelineRequestSchema, {
+          request: create(CreatePipelineRequestSchemaDataPlane, {
             pipeline: {
               ...firstPipeline,
               tags: {
@@ -85,8 +89,8 @@ describe('Agent API wrapper', () => {
       );
       expect(createPipelineMock).toHaveBeenNthCalledWith(
         2,
-        new CreatePipelineRequest({
-          request: new CreatePipelineRequestDataPlane({
+        create(CreatePipelineRequestSchema, {
+          request: create(CreatePipelineRequestSchemaDataPlane, {
             pipeline: {
               ...secondPipeline,
               tags: {
@@ -105,7 +109,7 @@ describe('Agent API wrapper', () => {
   test('useDeleteAgentPipelinesMutation should delete multiple pipelines for the agent', async () => {
     const agentId = 'agent-id';
 
-    const firstPipeline = new Pipeline({
+    const firstPipeline = create(PipelineSchema, {
       id: 'id-1',
       displayName: 'firstPipeline',
       state: Pipeline_State.RUNNING,
@@ -115,7 +119,7 @@ describe('Agent API wrapper', () => {
         __redpanda_cloud_pipeline_type: 'agent',
       },
     });
-    const secondPipeline = new Pipeline({
+    const secondPipeline = create(PipelineSchema, {
       id: 'id-2',
       displayName: 'secondPipeline',
       state: Pipeline_State.RUNNING,
@@ -128,10 +132,10 @@ describe('Agent API wrapper', () => {
 
     const pipelines = [firstPipeline, secondPipeline];
 
-    const deletePipelineMock = vi.fn().mockReturnValue(new DeletePipelineResponse({}));
+    const deletePipelineMock = vi.fn().mockReturnValue(create(DeletePipelineResponseSchema));
 
     const listPipelinesMock = vi.fn().mockReturnValue(
-      new ListPipelinesResponse({
+      create(ListPipelinesResponseSchema, {
         pipelines,
       }),
     );
@@ -154,15 +158,15 @@ describe('Agent API wrapper', () => {
       expect(deletePipelineMock).toHaveBeenCalledTimes(pipelines.length);
       expect(deletePipelineMock).toHaveBeenNthCalledWith(
         1,
-        new DeletePipelineRequest({
-          request: new DeletePipelineRequestDataPlane({ id: firstPipeline.id }),
+        create(DeletePipelineRequestSchema, {
+          request: create(DeletePipelineRequestSchemaDataPlane, { id: firstPipeline.id }),
         }),
         expect.anything(),
       );
       expect(deletePipelineMock).toHaveBeenNthCalledWith(
         2,
-        new DeletePipelineRequest({
-          request: new DeletePipelineRequestDataPlane({ id: secondPipeline.id }),
+        create(DeletePipelineRequestSchema, {
+          request: create(DeletePipelineRequestSchemaDataPlane, { id: secondPipeline.id }),
         }),
         expect.anything(),
       );
