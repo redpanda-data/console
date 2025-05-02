@@ -91,6 +91,12 @@ export const TOASTS = {
       ERROR: 'LICENSE_SET_ERROR',
     },
   },
+  MESSAGE: {
+    PUBLISH: {
+      SUCCESS: 'MESSAGE_PUBLISH_SUCCESS',
+      ERROR: 'MESSAGE_PUBLISH_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
