@@ -123,7 +123,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
                       </Link>
                     </Text>
                   }
-                  options={legacyTopicListOptions}
+                  options={topicListOptions}
                   showCreateNewOption
                   onCreateNewOptionClick={() => {
                     setFieldToUpdate('TOPIC');
@@ -144,7 +144,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
                       </Link>
                     </Text>
                   }
-                  options={legacyUserListOptions}
+                  options={userListOptions}
                   showCreateNewOption
                   onCreateNewOptionClick={onCreateUserWithSecretPasswordModalOpen}
                 />

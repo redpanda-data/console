@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
-import { QueryObserverOptions, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   listEnterpriseFeatures,
   listLicenses,
