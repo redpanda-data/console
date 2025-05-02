@@ -79,6 +79,12 @@ export const TOASTS = {
       ERROR: 'REDPANDA_CONNECT_LINT_CONFIG_ERROR',
     },
   },
+  TRANSFORM: {
+    DELETE: {
+      SUCCESS: 'TRANSFORM_DELETE_SUCCESS',
+      ERROR: 'TRANSFORM_DELETE_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
