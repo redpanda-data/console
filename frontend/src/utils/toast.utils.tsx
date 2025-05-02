@@ -85,6 +85,12 @@ export const TOASTS = {
       ERROR: 'TRANSFORM_DELETE_ERROR',
     },
   },
+  LICENSE: {
+    SET: {
+      SUCCESS: 'LICENSE_SET_SUCCESS',
+      ERROR: 'LICENSE_SET_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
