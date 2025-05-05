@@ -125,6 +125,12 @@ export const TOASTS = {
       ERROR: 'DEBUG_BUNDLE_DELETE_ERROR',
     },
   },
+  AUTH: {
+    LOGIN: {
+      SUCCESS: 'AUTH_LOGIN_SUCCESS',
+      ERROR: 'AUTH_LOGIN_ERROR',
+    },
+  },
 };
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
