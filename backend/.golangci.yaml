@@ -88,11 +88,11 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - stylecheck
-    - tenv
     - typecheck
     - unconvert
     - unparam
     - usestdlibvars
+    - usetesting
     - wastedassign
     - whitespace
 linters-settings:
