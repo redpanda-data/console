@@ -163,7 +163,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 	time.Sleep(2 * time.Second)
 
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
 
 		// delete connector

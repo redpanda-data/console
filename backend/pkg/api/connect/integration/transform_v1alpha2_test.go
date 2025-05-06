@@ -67,7 +67,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 		require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 		t.Cleanup(func() {
-			cleanupCtx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 			defer cancel()
 			assert.NoError(deleteTransform(cleanupCtx, s.redpandaAdminClient, tfName))
 			assert.NoError(deleteKafkaTopic(cleanupCtx, s.kafkaAdminClient, inputTopicName))
@@ -370,7 +370,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 	require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 	t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer cancel()
 		assert.NoError(deleteKafkaTopic(cleanupCtx, s.kafkaAdminClient, inputTopicName))
 		assert.NoError(deleteKafkaTopic(cleanupCtx, s.kafkaAdminClient, outputTopicName))
@@ -388,7 +388,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 	assert.Equal([]string{outputTopicName}, r.OutputTopics)
 
 	t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer cancel()
 		assert.NoError(deleteTransform(cleanupCtx, s.redpandaAdminClient, tfName))
 	})
@@ -475,7 +475,7 @@ func (s *APISuite) TestGetTransform_v1alpha2() {
 		}, identityTransform)
 		require.NoError(err)
 		t.Cleanup(func() {
-			cleanupCtx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			assert.NoError(deleteTransform(cleanupCtx, s.redpandaAdminClient, transformNameWithSpecialChars))
 		})
@@ -589,7 +589,7 @@ func (s *APISuite) TestListTransforms_v1alpha2() {
 	assert.Equal([]string{outputTopicName}, r2.OutputTopics)
 
 	t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer cancel()
 		assert.NoError(deleteTransform(cleanupCtx, s.redpandaAdminClient, tfNameOne))
 		assert.NoError(deleteTransform(cleanupCtx, s.redpandaAdminClient, tfNameTwo))
@@ -693,7 +693,7 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 	require.NoError(createKafkaTopic(ctx, s.kafkaAdminClient, outputTopicName, 3))
 
 	t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer cancel()
 		assert.NoError(deleteKafkaTopic(cleanupCtx, s.kafkaAdminClient, inputTopicName))
 		assert.NoError(deleteKafkaTopic(cleanupCtx, s.kafkaAdminClient, outputTopicName))

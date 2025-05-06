@@ -50,7 +50,7 @@ func (s *APISuite) TestListTopics_v1() {
 
 	t.Cleanup(func() {
 		for topic := range createdTopics {
-			deleteKafkaTopic(t.Context(), s.kafkaAdminClient, topic)
+			deleteKafkaTopic(context.Background(), s.kafkaAdminClient, topic)
 		}
 	})
 

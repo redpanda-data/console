@@ -92,7 +92,6 @@ linters:
     - unconvert
     - unparam
     - usestdlibvars
-    - usetesting
     - wastedassign
     - whitespace
 linters-settings:
