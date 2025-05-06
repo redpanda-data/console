@@ -44,7 +44,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	testNetwork, err := network.New(ctx, network.WithAttachable())
 	require.NoError(err)
 	t.Cleanup(func() {
-		assert.NoError(testNetwork.Remove(ctx))
+		assert.NoError(testNetwork.Remove(context.Background()))
 	})
 
 	redpandaContainer, err := redpanda.Run(ctx,
@@ -102,8 +102,8 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	}()
 
 	t.Cleanup(func() {
-		assert.NoError(connectContainer.Terminate(t.Context()))
-		assert.NoError(redpandaContainer.Terminate(t.Context()))
+		assert.NoError(connectContainer.Terminate(context.Background()))
+		assert.NoError(redpandaContainer.Terminate(context.Background()))
 	})
 
 	t.Run("happy path", func(t *testing.T) {
