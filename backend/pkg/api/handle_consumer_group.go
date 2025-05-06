@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -79,7 +80,7 @@ type patchConsumerGroupRequest struct {
 
 func (p *patchConsumerGroupRequest) OK() error {
 	if len(p.Topics) == 0 {
-		return fmt.Errorf("at least one topic and partition must be set")
+		return errors.New("at least one topic and partition must be set")
 	}
 	for _, topic := range p.Topics {
 		if len(topic.Partitions) == 0 {
@@ -151,7 +152,7 @@ type deleteConsumerGroupRequest struct {
 
 func (p *deleteConsumerGroupRequest) OK() error {
 	if len(p.Topics) == 0 {
-		return fmt.Errorf("at least one topic and partition must be set")
+		return errors.New("at least one topic and partition must be set")
 	}
 	for _, topic := range p.Topics {
 		if len(topic.Partitions) == 0 {

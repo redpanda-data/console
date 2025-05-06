@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -132,7 +133,7 @@ func (s *Service) GetTopicConfigs(ctx context.Context, topicName string, configN
 	if val, exists := response[topicName]; exists {
 		if val.Error != nil && val.Error.Code == kerr.UnknownTopicOrPartition.Code {
 			return nil, &rest.Error{
-				Err:      fmt.Errorf("the requested topic does not exist"),
+				Err:      errors.New("the requested topic does not exist"),
 				Status:   http.StatusNotFound,
 				Message:  fmt.Sprintf("Could not fetch topic config because the requested topic '%v' does not exist.", topicName),
 				IsSilent: false,

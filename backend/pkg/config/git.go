@@ -10,8 +10,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 	"time"
 )
 
@@ -55,10 +55,10 @@ func (c *Git) Validate() error {
 		return nil
 	}
 	if c.RefreshInterval == 0 {
-		return fmt.Errorf("git config is enabled but refresh interval is set to 0 (disabled)")
+		return errors.New("git config is enabled but refresh interval is set to 0 (disabled)")
 	}
 	if c.MaxFileSize <= 0 {
-		return fmt.Errorf("git config is enabled but file max size is <= 0")
+		return errors.New("git config is enabled but file max size is <= 0")
 	}
 
 	return c.Repository.Validate()

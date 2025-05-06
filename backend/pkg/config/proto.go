@@ -10,8 +10,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 )
 
 // Proto has all configuration options for decoding proto-serialized Kafka records.
@@ -44,11 +44,11 @@ func (c *Proto) Validate() error {
 	}
 
 	if !c.Git.Enabled && !c.FileSystem.Enabled {
-		return fmt.Errorf("protobuf deserializer is enabled, at least one source provider for proto files must be configured")
+		return errors.New("protobuf deserializer is enabled, at least one source provider for proto files must be configured")
 	}
 
 	if len(c.Mappings) == 0 {
-		return fmt.Errorf("protobuf deserializer is enabled, but no topic mappings have been configured")
+		return errors.New("protobuf deserializer is enabled, but no topic mappings have been configured")
 	}
 
 	return nil

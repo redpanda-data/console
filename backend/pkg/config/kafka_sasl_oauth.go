@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -51,10 +52,10 @@ func (c *KafkaSASLOAuthBearer) RegisterFlags(f *flag.FlagSet) {
 func (c *KafkaSASLOAuthBearer) Validate() error {
 	if c.TokenEndpoint != "" {
 		if c.ClientID == "" || c.ClientSecret == "" {
-			return fmt.Errorf("OAuth Bearer client credentials must be set")
+			return errors.New("OAuth Bearer client credentials must be set")
 		}
 	} else if c.Token == "" && c.TokenFilepath == "" {
-		return fmt.Errorf("OAuth Bearer token or token file path must be set")
+		return errors.New("OAuth Bearer token or token file path must be set")
 	}
 
 	return nil
@@ -110,7 +111,7 @@ func (c *KafkaSASLOAuthBearer) AcquireToken(ctx context.Context) (string, error)
 
 	accessToken, ok := tokenResponse["access_token"].(string)
 	if !ok {
-		return "", fmt.Errorf("access_token not found in token response")
+		return "", errors.New("access_token not found in token response")
 	}
 
 	return accessToken, nil

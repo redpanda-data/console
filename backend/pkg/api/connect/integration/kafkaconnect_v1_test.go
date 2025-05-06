@@ -34,7 +34,7 @@ func (s *APISuite) TestListConnectors_V1() {
 	t.Run("list Connectors with invalid Request (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		client := v1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
@@ -50,7 +50,7 @@ func (s *APISuite) TestListConnectors_V1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		client := v1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
@@ -70,7 +70,7 @@ func (s *APISuite) TestListConnectClusters_v1() {
 	t.Run("list connect clusters request (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		client := v1connect.NewKafkaConnectServiceClient(http.DefaultClient, s.httpAddress())
@@ -86,7 +86,7 @@ func (s *APISuite) TestListConnectClusters_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		type listConnectClustersResponse struct {
@@ -127,7 +127,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 	t := s.T()
 	requireT := require.New(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Minute)
 	defer cancel()
 
 	// Run HTTPBin container
@@ -163,7 +163,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 	time.Sleep(2 * time.Second)
 
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Minute)
 		defer cancel()
 
 		// delete connector
@@ -184,7 +184,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		res, err := client.GetConnector(ctx, connect.NewRequest(
@@ -202,7 +202,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		type getConnectorResponse struct {
@@ -235,7 +235,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		res, err := client.GetConnectorStatus(ctx, connect.NewRequest(
@@ -252,7 +252,7 @@ func (s *APISuite) TestGetConnectorAndStatus_v1() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		type getConnectorStatusResponse struct {

@@ -36,12 +36,12 @@ func (SmileSerde) DeserializePayload(_ context.Context, record *kgo.Record, payl
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return &RecordPayload{}, errors.New("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithSmile := len(payload) > 3 && payload[0] == ':' && payload[1] == ')' && payload[2] == '\n'
 	if !startsWithSmile {
-		return &RecordPayload{}, fmt.Errorf("first bytes indicate this it not valid Smile format")
+		return &RecordPayload{}, errors.New("first bytes indicate this it not valid Smile format")
 	}
 
 	obj, err := smile.DecodeToObject(payload)

@@ -795,7 +795,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	svc, err := NewService(&cfg, log, kafkaFactory, schemaFactory, nil, cacheFn, nil)
 	require.NoError(t, err)
 
-	err = svc.Start(context.Background())
+	err = svc.Start(t.Context())
 	require.NoError(t, err)
 
 	return svc

@@ -11,6 +11,7 @@ package connect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,7 +31,7 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 	className, ok := req.Config["connector.class"].(string)
 	if !ok || className == "" {
 		return con.ConnectorInfo{}, &rest.Error{
-			Err:      fmt.Errorf("connector class is not set"),
+			Err:      errors.New("connector class is not set"),
 			Status:   http.StatusBadRequest,
 			Message:  "Connector class is not set",
 			IsSilent: false,

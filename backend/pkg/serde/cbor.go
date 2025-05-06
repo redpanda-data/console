@@ -44,7 +44,7 @@ func (d CborSerde) DeserializePayload(_ context.Context, record *kgo.Record, pay
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) == 0 {
-		return &RecordPayload{}, fmt.Errorf("payload is empty")
+		return &RecordPayload{}, errors.New("payload is empty")
 	}
 
 	var obj any
@@ -84,7 +84,7 @@ func (CborSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 
 		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if !startsWithJSON {
-			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+			return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 		}
 
 		var nativeObj any

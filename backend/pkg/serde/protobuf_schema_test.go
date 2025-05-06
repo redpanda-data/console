@@ -243,7 +243,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(context.Background(), test.record, test.payloadType)
+			payload, err := serde.DeserializePayload(t.Context(), test.record, test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}
@@ -375,7 +375,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 		serde := ProtobufSchemaSerde{}
 
-		actualData, err := serde.SerializeObject(context.Background(), msg, PayloadTypeValue)
+		actualData, err := serde.SerializeObject(t.Context(), msg, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		expectData, err := proto.Marshal(msg)
@@ -419,7 +419,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 		serde := ProtobufSchemaSerde{}
 
-		actualData, err := serde.SerializeObject(context.Background(), msg, PayloadTypeValue)
+		actualData, err := serde.SerializeObject(t.Context(), msg, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
@@ -453,7 +453,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -466,7 +466,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(1001))
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
@@ -499,7 +499,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -510,7 +510,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(1001))
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
@@ -520,7 +520,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			data := `notjson`
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.Error(t, err)
 			assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
 			assert.Nil(t, actualData)
@@ -553,7 +553,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -564,7 +564,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 
 			serde := ProtobufSchemaSerde{schemaClient: schemaCachedClient}
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(1001))
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)
@@ -598,7 +598,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			data, err := protojson.Marshal(msg)
 			require.NoError(t, err)
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(5000))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(5000))
 			assert.NoError(t, err)
 
 			assert.Equal(t, expectData, actualData)
@@ -614,7 +614,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			data, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue)
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue)
 			assert.Error(t, err)
 			assert.Equal(t, "no schema id specified", err.Error())
 			assert.Nil(t, actualData)
@@ -630,7 +630,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 			data, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			actualData, err := serde.SerializeObject(context.Background(), data, PayloadTypeValue, WithSchemaID(1001))
+			actualData, err := serde.SerializeObject(t.Context(), data, PayloadTypeValue, WithSchemaID(1001))
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "Schema 1001 not found")
 			assert.Nil(t, actualData)

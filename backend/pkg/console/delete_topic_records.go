@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -40,7 +41,7 @@ func (s *Service) DeleteTopicRecords(ctx context.Context, deleteReq kmsg.DeleteR
 
 	if len(res.Topics) != 1 {
 		return DeleteTopicRecordsResponse{}, &rest.Error{
-			Err:      fmt.Errorf("topics array in response is empty"),
+			Err:      errors.New("topics array in response is empty"),
 			Status:   http.StatusServiceUnavailable,
 			Message:  "Unexpected Kafka response: No topics set in the response",
 			IsSilent: false,

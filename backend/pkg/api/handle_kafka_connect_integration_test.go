@@ -38,7 +38,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	assert := assert.New(t)
 
 	// setup
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// create one common network that all containers will share
 	testNetwork, err := network.New(ctx, network.WithAttachable())
@@ -102,12 +102,12 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	}()
 
 	t.Cleanup(func() {
-		assert.NoError(connectContainer.Terminate(context.Background()))
-		assert.NoError(redpandaContainer.Terminate(context.Background()))
+		assert.NoError(connectContainer.Terminate(t.Context()))
+		assert.NoError(redpandaContainer.Terminate(t.Context()))
 	})
 
 	t.Run("happy path", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		input := &createConnectorRequest{

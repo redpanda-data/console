@@ -34,7 +34,7 @@ func (*Service) handleKafkaTopicError(kafkaErrorCode int16, errorMessage *string
 	case errors.Is(kafkaErr, kerr.UnknownTopicOrPartition):
 		return apierrors.NewConnectError(
 			connect.CodeNotFound,
-			fmt.Errorf("the requested topic does not exist"),
+			errors.New("the requested topic does not exist"),
 			apierrors.NewErrorInfo(
 				commonv1alpha2.Reason_REASON_RESOURCE_NOT_FOUND.String(),
 			))

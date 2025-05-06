@@ -10,7 +10,7 @@
 package api
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
@@ -28,22 +28,22 @@ type createTopicRequest struct {
 // OK validates the individual fields.
 func (c *createTopicRequest) OK() error {
 	if c.TopicName == "" {
-		return fmt.Errorf("topic name must be set")
+		return errors.New("topic name must be set")
 	}
 	if !isValidKafkaTopicName(c.TopicName) {
-		return fmt.Errorf("valid characters for Kafka topics are the ASCII alphanumeric characters and '.', '_', '-'")
+		return errors.New("valid characters for Kafka topics are the ASCII alphanumeric characters and '.', '_', '-'")
 	}
 
 	// Value -1 means that the partition count shall be inherited from the defaults (supported in req v4+).
 	isValidPartitionCount := c.PartitionCount == -1 || c.PartitionCount >= 1
 	if !isValidPartitionCount {
-		return fmt.Errorf("you must create a topic with at least one partition")
+		return errors.New("you must create a topic with at least one partition")
 	}
 
 	// Value -1 means that the replication factor shall be inherited from the defaults (supported in req v4+).
 	isValidReplicationFactor := c.ReplicationFactor == -1 || c.ReplicationFactor >= 1
 	if !isValidReplicationFactor {
-		return fmt.Errorf("replication factor must be 1 or more")
+		return errors.New("replication factor must be 1 or more")
 	}
 
 	return nil
@@ -74,7 +74,7 @@ type createTopicRequestConfig struct {
 // OK validates the struct fields.
 func (c *createTopicRequestConfig) OK() error {
 	if c.Name == "" {
-		return fmt.Errorf("a config name must be set")
+		return errors.New("a config name must be set")
 	}
 
 	return nil

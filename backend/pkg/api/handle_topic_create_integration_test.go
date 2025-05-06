@@ -44,7 +44,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 	t.Run("happy path", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		input := &createTopicRequest{
@@ -94,7 +94,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("happy path multi partition", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		input := &createTopicRequest{
@@ -146,7 +146,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("no partition", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		input := &createTopicRequest{
@@ -172,7 +172,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("no replication", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		input := &createTopicRequest{
@@ -198,7 +198,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("invalid topic name", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		input := &createTopicRequest{
@@ -283,7 +283,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		}()
 
 		// make the request
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		input := &createTopicRequest{

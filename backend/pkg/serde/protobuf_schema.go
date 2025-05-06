@@ -42,17 +42,17 @@ func (ProtobufSchemaSerde) Name() PayloadEncoding {
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.schemaClient == nil {
-		return &RecordPayload{}, fmt.Errorf("schema registry client is not configured")
+		return &RecordPayload{}, errors.New("schema registry client is not configured")
 	}
 
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return &RecordPayload{}, fmt.Errorf("payload size is <= 5")
+		return &RecordPayload{}, errors.New("payload size is <= 5")
 	}
 
 	if payload[0] != byte(0) {
-		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for protobuf schema")
+		return &RecordPayload{}, errors.New("incorrect magic byte for protobuf schema")
 	}
 
 	var srSerde sr.Serde
@@ -75,7 +75,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		return &RecordPayload{}, fmt.Errorf("failed decoding protobuf index path (unexpected arr length): %w", err)
 	}
 	if arrLength > 128 || arrLength < 0 {
-		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
+		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
 	indexPath, binaryPayload, err := srSerde.DecodeIndex(remainingData, int(arrLength))
@@ -175,7 +175,7 @@ func (d ProtobufSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Pay
 			return nil, err
 		}
 		if !startsWithJSON {
-			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+			return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 		}
 
 		return d.jsonToProtobufWire(ctx, []byte(trimmed), int(so.schemaID), so.index)

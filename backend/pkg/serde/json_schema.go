@@ -39,11 +39,11 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return &RecordPayload{}, fmt.Errorf("payload size is < 5 for json schema")
+		return &RecordPayload{}, errors.New("payload size is < 5 for json schema")
 	}
 
 	if payload[0] != byte(0) {
-		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for json schema")
+		return &RecordPayload{}, errors.New("incorrect magic byte for json schema")
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])
@@ -67,7 +67,7 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 //nolint:cyclop // complex logic
 func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	if d.schemaClient == nil {
-		return nil, fmt.Errorf("schema registry client is not configured")
+		return nil, errors.New("schema registry client is not configured")
 	}
 
 	so := serdeCfg{}
@@ -99,7 +99,7 @@ func (d JSONSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Payload
 	}
 
 	if !startsWithJSON {
-		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+		return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 	}
 
 	schema, err := d.schemaClient.SchemaByID(ctx, int(so.schemaID))
