@@ -175,6 +175,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.TransformServiceName:          transformSvcV1,
 			dataplanev1connect.KafkaConnectServiceName:       kafkaConnectSvcV1,
 			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
+			dataplanev1connect.SecurityServiceName:           dataplanev1connect.UnimplementedSecurityServiceHandler{},
 		},
 	})
 
@@ -260,8 +261,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvcPathV1Alpha2, kafkaConnectSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewKafkaConnectServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.KafkaConnectServiceName].(dataplanev1alpha2connect.KafkaConnectServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
+	cloudStorageSvcV1Alpha2 := hookOutput.Services[dataplanev1alpha2connect.CloudStorageServiceName].(dataplanev1alpha2connect.CloudStorageServiceHandler) //nolint:revive // we control the map
 	cloudStorageSvcPathV1Alpha2, cloudStorageSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewCloudStorageServiceHandler(
-		hookOutput.Services[dataplanev1alpha2connect.CloudStorageServiceName].(dataplanev1alpha2connect.CloudStorageServiceHandler),
+		cloudStorageSvcV1Alpha2,
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	// v1
@@ -281,8 +283,13 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvcPathV1, kafkaConnectSvcHandlerV1 := dataplanev1connect.NewKafkaConnectServiceHandler(
 		hookOutput.Services[dataplanev1connect.KafkaConnectServiceName].(dataplanev1connect.KafkaConnectServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
+	cloudStorageSvcV1 := hookOutput.Services[dataplanev1connect.CloudStorageServiceName].(dataplanev1connect.CloudStorageServiceHandler) //nolint:revive // we control the map
 	cloudStorageSvcPathV1, cloudStorageSvcHandlerV1 := dataplanev1connect.NewCloudStorageServiceHandler(
-		hookOutput.Services[dataplanev1connect.CloudStorageServiceName].(dataplanev1connect.CloudStorageServiceHandler),
+		cloudStorageSvcV1,
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	securitySvcV1 := hookOutput.Services[dataplanev1connect.SecurityServiceName].(dataplanev1connect.SecurityServiceHandler) //nolint:revive // we control the map
+	securitySvcPathV1, securitySvcHandlerV1 := dataplanev1connect.NewSecurityServiceHandler(
+		securitySvcV1,
 		connect.WithInterceptors(hookOutput.Interceptors...))
 
 	ossServices := []ConnectService{
@@ -406,6 +413,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			MountPath:   consoleSecretsServicePath,
 			Handler:     consoleSecretsServiceHandler,
 		},
+		{
+			ServiceName: dataplanev1connect.SecurityServiceName,
+			MountPath:   securitySvcPathV1,
+			Handler:     securitySvcHandlerV1,
+		},
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.
@@ -434,6 +446,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1alpha2connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha2connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha2connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1alpha2connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1Alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	// v1
 
@@ -442,6 +455,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1connect.RegisterSecurityServiceHandlerGatewayServer(gwMux, securitySvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	// mount
 
