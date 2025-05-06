@@ -120,7 +120,7 @@ func TestNewConnectErrorFromRedpandaAdminAPIError(t *testing.T) {
 		{
 			name: "Any other error",
 			inputError: func() error {
-				return fmt.Errorf("some random error message")
+				return errors.New("some random error message")
 			}(),
 			inputMsgPrefix: "listing transforms failed: ",
 			expectedResult: NewConnectError(

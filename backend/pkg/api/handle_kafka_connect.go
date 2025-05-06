@@ -114,7 +114,7 @@ type putConnectorConfigRequest struct {
 
 func (c *putConnectorConfigRequest) OK() error {
 	if len(c.Config) == 0 {
-		return fmt.Errorf("you must at least put one config item into the config")
+		return errors.New("you must at least put one config item into the config")
 	}
 	return nil
 }
@@ -288,7 +288,7 @@ func (api *API) handleRestartConnectorTask() http.HandlerFunc {
 		taskID, err := strconv.Atoi(taskIDstr)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("failed to parse task id as number"),
+				Err:      errors.New("failed to parse task id as number"),
 				Status:   http.StatusBadRequest,
 				Message:  "Invalid TaskID given. TaskID must be a number.",
 				IsSilent: false,

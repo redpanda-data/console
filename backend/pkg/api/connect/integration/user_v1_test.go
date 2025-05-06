@@ -35,7 +35,7 @@ func (s *APISuite) TestListUsers_v1() {
 		assert := assert.New(t)
 
 		// 1. Create some users in Redpanda
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// Helper function to create a user
@@ -86,7 +86,7 @@ func (s *APISuite) TestListUsers_v1() {
 		assert := assert.New(t)
 
 		// 1. Create some users in Redpanda
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// Helper function to create a user
@@ -150,7 +150,7 @@ func (s *APISuite) TestListUsers_v1() {
 		assert := assert.New(t)
 
 		// 1. Create some users in Redpanda
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 		defer cancel()
 
 		// Helper function to create a user

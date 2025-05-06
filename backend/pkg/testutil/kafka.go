@@ -194,7 +194,7 @@ func produceOrdersWithSchemas(t *testing.T, ctx context.Context, kafkaCl *kgo.Cl
 	protoFile, err := os.ReadFile(filepath.Clean(absProtoPath))
 	require.NoError(t, err)
 
-	ss, err := rcl.CreateSchema(context.Background(), topic+"-value", sr.Schema{
+	ss, err := rcl.CreateSchema(t.Context(), topic+"-value", sr.Schema{
 		Schema: string(protoFile),
 		Type:   sr.TypeProtobuf,
 	})

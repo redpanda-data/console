@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -147,7 +148,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 			highWaterMarks, ok := partitionInfoByIDAndTopic[topic]
 			if !ok {
 				childLogger.Error("no partition watermark for the group's topic available")
-				return nil, fmt.Errorf("no partition watermark for the group's topic available")
+				return nil, errors.New("no partition watermark for the group's topic available")
 			}
 
 			// Take note, it's possible that a consumer group does not have active offsets for all partitions, let's make that transparent!

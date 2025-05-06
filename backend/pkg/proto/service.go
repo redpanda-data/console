@@ -12,6 +12,7 @@ package proto
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -201,7 +202,7 @@ func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*des
 	var messageDescriptor *desc.MessageDescriptor
 	for _, idx := range index {
 		if idx > len(messageTypes) {
-			return nil, fmt.Errorf("message index is larger than the message types array length")
+			return nil, errors.New("message index is larger than the message types array length")
 		}
 		messageDescriptor = messageTypes[idx]
 		messageTypes = messageDescriptor.GetNestedMessageTypes()
@@ -329,7 +330,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 		return nil, fmt.Errorf("failed to read magic byte: %w", err)
 	}
 	if magicByte != byte(0) {
-		return nil, fmt.Errorf("magic byte is not 0")
+		return nil, errors.New("magic byte is not 0")
 	}
 
 	var schemaID uint32
@@ -349,7 +350,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 	// before allocating the slice. We assume to not have more than 128 types in
 	// a single message
 	if arrLength > 128 || arrLength < 0 {
-		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
+		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
 	msgTypeIDs := make([]int, arrLength)

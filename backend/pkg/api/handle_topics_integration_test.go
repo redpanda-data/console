@@ -38,24 +38,24 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 	assert := assert.New(t)
 
 	// create some test topics
-	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
+	testutil.CreateTestData(t, t.Context(), s.kafkaClient, s.kafkaAdminClient,
 		testutil.TopicNameForTest("get_topics_0"))
 
-	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
+	testutil.CreateTestData(t, t.Context(), s.kafkaClient, s.kafkaAdminClient,
 		testutil.TopicNameForTest("get_topics_1"))
 
-	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
+	testutil.CreateTestData(t, t.Context(), s.kafkaClient, s.kafkaAdminClient,
 		testutil.TopicNameForTest("get_topics_2"))
 
 	defer func() {
-		s.kafkaAdminClient.DeleteTopics(context.Background(),
+		s.kafkaAdminClient.DeleteTopics(t.Context(),
 			testutil.TopicNameForTest("get_topics_0"),
 			testutil.TopicNameForTest("get_topics_1"),
 			testutil.TopicNameForTest("get_topics_2"))
 	}()
 
 	t.Run("happy path", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
@@ -91,13 +91,13 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
 		// create fake data
-		testutil.CreateTestData(t, context.Background(), fakeClient, fakeAdminClient,
+		testutil.CreateTestData(t, t.Context(), fakeClient, fakeAdminClient,
 			testutil.TopicNameForTest("get_topics_0"))
 
-		testutil.CreateTestData(t, context.Background(), fakeClient, fakeAdminClient,
+		testutil.CreateTestData(t, t.Context(), fakeClient, fakeAdminClient,
 			testutil.TopicNameForTest("get_topics_1"))
 
-		testutil.CreateTestData(t, context.Background(), fakeClient, fakeAdminClient,
+		testutil.CreateTestData(t, t.Context(), fakeClient, fakeAdminClient,
 			testutil.TopicNameForTest("get_topics_2"))
 
 		defer func() {
@@ -163,7 +163,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		})
 
 		// make the request
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
@@ -188,13 +188,13 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
 		// create fake data
-		testutil.CreateTestData(t, context.Background(), fakeClient, fakeAdminClient,
+		testutil.CreateTestData(t, t.Context(), fakeClient, fakeAdminClient,
 			testutil.TopicNameForTest("get_topics_0"))
 
-		testutil.CreateTestData(t, context.Background(), fakeClient, fakeAdminClient,
+		testutil.CreateTestData(t, t.Context(), fakeClient, fakeAdminClient,
 			testutil.TopicNameForTest("get_topics_1"))
 
-		testutil.CreateTestData(t, context.Background(), fakeClient, fakeAdminClient,
+		testutil.CreateTestData(t, t.Context(), fakeClient, fakeAdminClient,
 			testutil.TopicNameForTest("get_topics_2"))
 
 		defer func() {
@@ -274,7 +274,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		})
 
 		// make the request
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)

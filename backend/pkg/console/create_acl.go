@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -43,7 +44,7 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 
 	if len(res.Results) != 1 {
 		return &rest.Error{
-			Err:          fmt.Errorf("unexpected number of results in create ACL response"),
+			Err:          errors.New("unexpected number of results in create ACL response"),
 			Status:       http.StatusInternalServerError,
 			Message:      fmt.Sprintf("Failed to execute delete topic command: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.Int("results_length", len(res.Results))},

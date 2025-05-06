@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"unicode/utf8"
 
@@ -35,16 +36,16 @@ func (UTF8Serde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return &RecordPayload{}, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return &RecordPayload{}, errors.New("after trimming whitespaces there were no characters left")
 	}
 
 	isUTF8 := utf8.Valid(payload)
 	if !isUTF8 {
-		return &RecordPayload{}, fmt.Errorf("payload is not UTF8")
+		return &RecordPayload{}, errors.New("payload is not UTF8")
 	}
 
 	if !containsControlChars(payload) {
-		return &RecordPayload{}, fmt.Errorf("payload does not contain UTF8 control characters")
+		return &RecordPayload{}, errors.New("payload does not contain UTF8 control characters")
 	}
 
 	return &RecordPayload{
@@ -78,16 +79,16 @@ func (UTF8Serde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 	trimmed := bytes.TrimLeft(byteData, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return nil, errors.New("after trimming whitespaces there were no characters left")
 	}
 
 	isUTF8 := utf8.Valid(byteData)
 	if !isUTF8 {
-		return nil, fmt.Errorf("payload is not UTF8")
+		return nil, errors.New("payload is not UTF8")
 	}
 
 	if !containsControlChars(byteData) {
-		return nil, fmt.Errorf("payload does not contain UTF8 control characters")
+		return nil, errors.New("payload does not contain UTF8 control characters")
 	}
 
 	return byteData, nil

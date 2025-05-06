@@ -150,7 +150,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 	topicMetadata, exist := metadata.Topics[listReq.TopicName]
 	if !exist {
-		return fmt.Errorf("metadata response did not contain requested topic")
+		return errors.New("metadata response did not contain requested topic")
 	}
 	if topicMetadata.Err != nil {
 		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, topicMetadata.Err)
@@ -241,7 +241,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	isCancelled := ctx.Err() != nil
 	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled)
 	if isCancelled {
-		return fmt.Errorf("request was cancelled while waiting for messages")
+		return errors.New("request was cancelled while waiting for messages")
 	}
 
 	return nil

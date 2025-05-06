@@ -10,8 +10,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 )
 
 // ConsoleTopicDocumentation declares the configuration properties that allow you to pull
@@ -34,7 +34,7 @@ func (c *ConsoleTopicDocumentation) Validate() error {
 		return nil
 	}
 	if c.Enabled && !c.Git.Enabled {
-		return fmt.Errorf("topic documentation is enabled, but git service is disabled. At least one source for topic documentations must be configured")
+		return errors.New("topic documentation is enabled, but git service is disabled. At least one source for topic documentations must be configured")
 	}
 
 	return c.Git.Validate()

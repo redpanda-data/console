@@ -13,6 +13,7 @@ package httptypes
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -34,19 +35,19 @@ type ListMessagesRequest struct {
 // OK validates the user input for the list messages request.
 func (l *ListMessagesRequest) OK() error {
 	if l.TopicName == "" {
-		return fmt.Errorf("topic name is required")
+		return errors.New("topic name is required")
 	}
 
 	if l.StartOffset < -4 {
-		return fmt.Errorf("start offset is smaller than -4")
+		return errors.New("start offset is smaller than -4")
 	}
 
 	if l.PartitionID < -1 {
-		return fmt.Errorf("partitionID is smaller than -1")
+		return errors.New("partitionID is smaller than -1")
 	}
 
 	if l.MaxResults <= 0 || l.MaxResults > 500 {
-		return fmt.Errorf("max results must be between 1 and 500")
+		return errors.New("max results must be between 1 and 500")
 	}
 
 	if _, err := l.DecodeInterpreterCode(); err != nil {

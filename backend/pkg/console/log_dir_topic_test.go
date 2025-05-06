@@ -200,7 +200,7 @@ func TestLogDirsByTopic(t *testing.T) {
 			}
 		})
 
-		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 		defer cancel()
 
 		_, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
@@ -216,7 +216,7 @@ func TestLogDirsByTopic(t *testing.T) {
 			logger:             zap.NewNop(),
 		}
 
-		logDirsByTopic, err := consoleSvc.logDirsByTopic(context.Background())
+		logDirsByTopic, err := consoleSvc.logDirsByTopic(t.Context())
 		require.NoError(t, err)
 		require.Len(t, logDirsByTopic, 1)
 		require.NotNil(t, logDirsByTopic[topicName])
@@ -276,7 +276,7 @@ func TestLogDirsByTopic(t *testing.T) {
 			}
 		})
 
-		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 		defer cancel()
 
 		_, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
@@ -292,7 +292,7 @@ func TestLogDirsByTopic(t *testing.T) {
 			logger:             zap.NewNop(),
 		}
 
-		logDirsByTopic, err := consoleSvc.logDirsByTopic(context.Background())
+		logDirsByTopic, err := consoleSvc.logDirsByTopic(t.Context())
 		require.NoError(t, err)
 		require.Len(t, logDirsByTopic, 1)
 		require.NotNil(t, logDirsByTopic[topicName])

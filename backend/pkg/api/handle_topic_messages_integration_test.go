@@ -50,7 +50,7 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	assert := assert.New(t)
 
 	// setup
-	ctx := context.Background()
+	ctx := t.Context()
 
 	client := v1ac.NewConsoleServiceClient(
 		http.DefaultClient,
@@ -59,16 +59,16 @@ func (s *APIIntegrationTestSuite) TestListMessages() {
 	)
 
 	topicName := testutil.TopicNameForTest("list_messages_0")
-	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
+	testutil.CreateTestData(t, t.Context(), s.kafkaClient, s.kafkaAdminClient,
 		topicName)
 
 	topicNameBig := testutil.TopicNameForTest("list_messages_big_0")
-	testutil.CreateTestData(t, context.Background(), s.kafkaClient, s.kafkaAdminClient,
+	testutil.CreateTestData(t, t.Context(), s.kafkaClient, s.kafkaAdminClient,
 		topicNameBig)
 
 	defer func() {
-		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
-		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
+		s.kafkaAdminClient.DeleteTopics(t.Context(), topicName)
+		s.kafkaAdminClient.DeleteTopics(t.Context(), topicName)
 	}()
 
 	// produce too big of a message
@@ -720,7 +720,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 	assert := assert.New(t)
 
 	// setup
-	ctx := context.Background()
+	ctx := t.Context()
 
 	client := v1ac.NewConsoleServiceClient(
 		http.DefaultClient,
@@ -744,9 +744,9 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 	assert.NoError(err)
 
 	defer func() {
-		s.kafkaAdminClient.DeleteTopics(context.Background(), topicName)
-		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoPlain)
-		s.kafkaAdminClient.DeleteTopics(context.Background(), topicNameProtoSR)
+		s.kafkaAdminClient.DeleteTopics(t.Context(), topicName)
+		s.kafkaAdminClient.DeleteTopics(t.Context(), topicNameProtoPlain)
+		s.kafkaAdminClient.DeleteTopics(t.Context(), topicNameProtoSR)
 	}()
 
 	t.Run("JSON message", func(t *testing.T) {
@@ -775,7 +775,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Equal(int32(0), res.Msg.GetPartitionId())
 		assert.Equal(int64(0), res.Msg.GetOffset())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(topicName)
@@ -833,7 +833,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Equal(int32(0), res.Msg.GetPartitionId())
 		assert.Equal(int64(0), res.Msg.GetOffset())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(topicNameProtoPlain)
@@ -934,7 +934,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		protoFile, err := os.ReadFile(filepath.Clean(absProtoPath))
 		require.NoError(err)
 
-		ss, err := s.kafkaSRClient.CreateSchema(context.Background(), topicNameProtoSR+"-value", sr.Schema{
+		ss, err := s.kafkaSRClient.CreateSchema(t.Context(), topicNameProtoSR+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -975,7 +975,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Equal(int32(0), res.Msg.GetPartitionId())
 		assert.Equal(int64(0), res.Msg.GetOffset())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(topicNameProtoSR)

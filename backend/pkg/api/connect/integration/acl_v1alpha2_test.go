@@ -71,7 +71,7 @@ func (s *APISuite) TestCreateACL_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create ACL via Connect API call
@@ -89,7 +89,7 @@ func (s *APISuite) TestCreateACL_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -120,7 +120,7 @@ func (s *APISuite) TestCreateACL_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create one ACL via HTTP API
@@ -157,7 +157,7 @@ func (s *APISuite) TestCreateACL_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -187,7 +187,7 @@ func (s *APISuite) TestCreateACL_v1alpha2() {
 	t.Run("create bad ACL create request (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// Send incomplete ACL create request via HTTP API
@@ -233,7 +233,7 @@ func (s *APISuite) TestCreateACL_v1alpha2() {
 		assert.Contains(errResponse, "resource_type")
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -248,7 +248,7 @@ func (s *APISuite) TestListACLs_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		// 1. Seed some ACLs
@@ -278,7 +278,7 @@ func (s *APISuite) TestListACLs_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -333,7 +333,7 @@ func (s *APISuite) TestListACLs_v1alpha2() {
 	t.Run("list ACLs with invalid filter (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		client := v1alpha2connect.NewACLServiceClient(http.DefaultClient, s.httpAddress())
@@ -351,7 +351,7 @@ func (s *APISuite) TestListACLs_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		// 1. Seed some ACLs
@@ -381,7 +381,7 @@ func (s *APISuite) TestListACLs_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -425,7 +425,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		// 1. Seed some ACLs
@@ -453,7 +453,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -481,7 +481,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 	t.Run("delete ACLs with invalid filter (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		// The ACL filter for deletions must be complete (all fields must be set)
@@ -501,7 +501,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		// 1. Seed some ACLs
@@ -529,7 +529,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.DeleteAllACLs_v1alpha2(ctx)
 			assert.NoError(err, "failed to delete all ACLs")
@@ -563,7 +563,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 	t.Run("delete ACLs with missing filter (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		// 1. Try to delete ACLs via HTTP API by not setting any filter at all
@@ -594,7 +594,7 @@ func (s *APISuite) TestDeleteACLs_v1alpha2() {
 	t.Run("delete ACLs with an invalid filter (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
 		var plainResponse string

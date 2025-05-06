@@ -114,7 +114,7 @@ func (s *SerdeIntegrationTestSuite) SetupSuite() {
 	t := s.T()
 	require := require.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda:v23.3.18")
 	redpandaContainer, err := redpanda.Run(ctx, "redpandadata/redpanda-unstable:v24.2.1-rc5")
@@ -137,7 +137,7 @@ func (s *SerdeIntegrationTestSuite) TearDownSuite() {
 	t := s.T()
 	assert := require.New(t)
 
-	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
+	assert.NoError(s.redpandaContainer.Terminate(t.Context()))
 }
 
 func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
@@ -146,7 +146,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cfg := s.createBaseConfig()
 
@@ -199,13 +199,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: recordTimeStamp,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -231,7 +231,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check value
@@ -318,13 +318,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: recordTimeStamp,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -350,7 +350,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{
 			Troubleshoot:   true,
 			IncludeRawData: true,
 			ValueEncoding:  PayloadEncodingJSON,
@@ -439,13 +439,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: recordTimeStamp,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -471,7 +471,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{
 			Troubleshoot:   true,
 			IncludeRawData: true,
 			ValueEncoding:  PayloadEncodingProtobuf,
@@ -580,13 +580,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -612,7 +612,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check value
@@ -803,13 +803,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -835,7 +835,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -988,7 +988,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -1025,13 +1025,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -1058,7 +1058,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1160,7 +1160,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/common/common.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -1218,13 +1218,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: messageCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 5*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -1251,7 +1251,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1318,7 +1318,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -1367,13 +1367,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -1400,7 +1400,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1518,7 +1518,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -1567,13 +1567,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -1600,7 +1600,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -1677,7 +1677,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/" + addressProto)
 		require.NoError(err)
 
-		ssAddress, err := rcl.CreateSchema(context.Background(), addressProto, sr.Schema{
+		ssAddress, err := rcl.CreateSchema(t.Context(), addressProto, sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -1689,7 +1689,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err = os.ReadFile("testdata/proto/" + customerProto)
 		require.NoError(err)
 
-		ssCustomer, err := rcl.CreateSchema(context.Background(), customerProto, sr.Schema{
+		ssCustomer, err := rcl.CreateSchema(t.Context(), customerProto, sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -1700,7 +1700,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err = os.ReadFile("testdata/proto/shop/v2/order.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 			References: []sr.SchemaReference{
@@ -1814,13 +1814,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -1847,7 +1847,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -2002,7 +2002,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -2039,13 +2039,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: orderCreatedAt,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 6*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 6*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -2072,7 +2072,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -2097,7 +2097,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		protoFile, err = os.ReadFile("testdata/proto_update/shop/v1/order.proto")
 		require.NoError(err)
 
-		ss2, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss2, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -2125,13 +2125,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Timestamp: order2CreatedAt,
 		}
 
-		produceCtx, produceCancel = context.WithTimeout(context.Background(), 3*time.Second)
+		produceCtx, produceCancel = context.WithTimeout(t.Context(), 3*time.Second)
 		defer produceCancel()
 
 		results = s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel = context.WithTimeout(context.Background(), 2*time.Second)
+		consumeCtx, consumeCancel = context.WithTimeout(t.Context(), 2*time.Second)
 		defer consumeCancel()
 
 		// create a new client to get the records again
@@ -2183,7 +2183,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			cr := cr
 
 			if string(cr.Key) == msg.Id {
-				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc2.DeserializeRecord(t.Context(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				// check value
@@ -2197,7 +2197,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("222", obj["id"])
 			} else if string(cr.Key) == msg2ID {
-				dr := serdeSvc2.DeserializeRecord(context.Background(), cr, DeserializationOptions{Troubleshoot: true})
+				dr := serdeSvc2.DeserializeRecord(t.Context(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
 				obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
@@ -2256,13 +2256,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 7*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 7*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -2288,7 +2288,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check key
@@ -2340,13 +2340,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 6*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 6*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -2372,7 +2372,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true, IncludeRawData: true})
 		require.NotNil(dr)
 
 		// check key
@@ -2446,7 +2446,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NotEmpty(eventDataSchema)
 
-		ssEventData, err := rcl.CreateSchema(context.Background(), "io.test.event.schema.EventData", sr.Schema{
+		ssEventData, err := rcl.CreateSchema(t.Context(), "io.test.event.schema.EventData", sr.Schema{
 			Schema: eventDataSchemaStr,
 			Type:   sr.TypeAvro,
 		})
@@ -2478,7 +2478,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NotEmpty(userSchema)
 
-		ssUser, err := rcl.CreateSchema(context.Background(), "io.test.user.schema.User", sr.Schema{
+		ssUser, err := rcl.CreateSchema(t.Context(), "io.test.user.schema.User", sr.Schema{
 			Schema: userSchemaStr,
 			Type:   sr.TypeAvro,
 			References: []sr.SchemaReference{
@@ -2525,7 +2525,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NotEmpty(orderSchema)
 
-		ssOrder, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ssOrder, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: orderSchemaStr,
 			Type:   sr.TypeAvro,
 			References: []sr.SchemaReference{
@@ -2632,13 +2632,13 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Topic: testTopicName,
 		}
 
-		produceCtx, produceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer produceCancel()
 
 		results := s.kafkaClient.ProduceSync(produceCtx, r)
 		require.NoError(results.FirstErr())
 
-		consumeCtx, consumeCancel := context.WithTimeout(context.Background(), 1*time.Second)
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer consumeCancel()
 
 		cl := s.consumerClientForTopic(testTopicName)
@@ -2665,7 +2665,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		require.NotEmpty(record)
 
-		dr := serdeSvc.DeserializeRecord(context.Background(), record, DeserializationOptions{Troubleshoot: true})
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{Troubleshoot: true})
 		require.NotNil(dr)
 
 		// check value
@@ -2743,7 +2743,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("plain JSON", func(t *testing.T) {
 		// create the topic
@@ -2778,7 +2778,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("123"),
@@ -2841,7 +2841,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("111"),
@@ -2915,7 +2915,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"version":1,"id":"444","createdAt":"2023-07-15T10:00:00Z","lastUpdatedAt":"2023-07-15T11:00:00Z","deliveredAt":"2023-07-15T12:00:00Z","completedAt":"2023-07-15T13:00:00Z","customer":{"version":1,"id":"customer_012345","firstName":"Zig","lastName":"Zag","gender":"","companyName":"Redpanda","email":"zigzag_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art_0","name":"line_0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art_1","name":"line_1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art_2","name":"line_2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_01234","method":"card"},"deliveryAddress":{"version":1,"id":"addr_01234","customer":{"customerId":"customer_012345","customerType":"business"},"type":"","firstName":"Zig","lastName":"Zag","state":"CA","houseNumber":"","city":"SomeCity","zip":"zzyzx","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-15T10:00:00Z","revision":1},"revision":1}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("444"),
@@ -3028,7 +3028,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3079,7 +3079,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"id":"222","createdAt":"2023-07-11T13:00:00Z"}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("222"),
@@ -3122,7 +3122,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/common/common.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3193,7 +3193,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"id":"432","decVal":{"value":"-2.50"},"color":{"red":0.2,"green":0.3,"blue":0.4},"dow":"MONDAY","fraction":{"numerator":20,"denominator":30},"latlng":{"latitude":45.45,"longitude":12.34},"price":{"currencyCode":"USD","units":200},"month":"MARCH"}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("432"),
@@ -3240,7 +3240,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3305,7 +3305,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"identity":"gadget_0","gizmo":{"size":10,"item":{"name":"item_0","itemType":"ITEM_TYPE_PERSONAL"}},"widgets":[{"id":"wid_0"},{"id":"wid_1"}]}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("gadget_0"),
@@ -3348,7 +3348,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3413,7 +3413,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"size":11,"item":{"name":"item_10","itemType":"ITEM_TYPE_PERSONAL"}}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  nil,
@@ -3458,7 +3458,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/" + addressProto)
 		require.NoError(err)
 
-		ssAddress, err := rcl.CreateSchema(context.Background(), addressProto, sr.Schema{
+		ssAddress, err := rcl.CreateSchema(t.Context(), addressProto, sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3470,7 +3470,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err = os.ReadFile("testdata/proto/" + customerProto)
 		require.NoError(err)
 
-		ssCustomer, err := rcl.CreateSchema(context.Background(), customerProto, sr.Schema{
+		ssCustomer, err := rcl.CreateSchema(t.Context(), customerProto, sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3481,7 +3481,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err = os.ReadFile("testdata/proto/shop/v2/order.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 			References: []sr.SchemaReference{
@@ -3610,7 +3610,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"version":1,"id":"123456789","createdAt":"2023-07-12T13:00:00Z","lastUpdatedAt":"2023-07-12T14:00:00Z","deliveredAt":"2023-07-12T15:00:00Z","completedAt":"2023-07-12T16:00:00Z","customer":{"version":1,"id":"customer_0123","firstName":"Foo","lastName":"Bar","gender":"","companyName":"Redpanda","email":"foobar_test@redpanda.com","customerType":"CUSTOMER_TYPE_BUSINESS","revision":0},"orderValue":100,"lineItems":[{"articleId":"art0","name":"line0","quantity":2,"quantityUnit":"usd","unitPrice":10,"totalPrice":20},{"articleId":"art1","name":"line1","quantity":2,"quantityUnit":"usd","unitPrice":25,"totalPrice":50},{"articleId":"art2","name":"line2","quantity":3,"quantityUnit":"usd","unitPrice":10,"totalPrice":30}],"payment":{"paymentId":"pay_0123","method":"card"},"deliveryAddress":{"version":1,"id":"addr_0123","customer":{"customerId":"customer_0123","customerType":"business"},"type":"","firstName":"Foo","lastName":"Bar","state":"CA","houseNumber":"","city":"SomeCity","zip":"xyzyz","latitude":0,"longitude":0,"phone":"123-456-78990","additionalAddressInfo":"","createdAt":"2023-07-12T13:00:00Z","revision":1},"revision":1}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  map[string]any{"id": "123456789"},
@@ -3653,7 +3653,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		protoFile, err := os.ReadFile("testdata/proto/index/v1/data.proto")
 		require.NoError(err)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
@@ -3718,7 +3718,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"size":10,"item":{"itemType":"ITEM_TYPE_PERSONAL","name":"item_0"}}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  []byte("gadget_0"),
@@ -3777,7 +3777,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			"required": [ "productId", "productName" ]
 		}`
 
-		ssFull, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ssFull, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: fullSchema,
 			Type:   sr.TypeJSON,
 		})
@@ -3825,7 +3825,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
-		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		out, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  "11",
@@ -3899,27 +3899,27 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 			"required": [ "productId", "productName" ]
 		}`
 
-		ssID, err := rcl.CreateSchema(context.Background(), "product_id.json", sr.Schema{
+		ssID, err := rcl.CreateSchema(t.Context(), "product_id.json", sr.Schema{
 			Schema: productIDSchema,
 			Type:   sr.TypeJSON,
 		})
 		require.NoError(err)
 		require.NotNil(ssID)
 
-		ssName, err := rcl.CreateSchema(context.Background(), "product_name.json", sr.Schema{
+		ssName, err := rcl.CreateSchema(t.Context(), "product_name.json", sr.Schema{
 			Schema: productNameSchema,
 			Type:   sr.TypeJSON,
 		})
 		require.NoError(err)
 
-		ssPrice, err := rcl.CreateSchema(context.Background(), "product_price.json", sr.Schema{
+		ssPrice, err := rcl.CreateSchema(t.Context(), "product_price.json", sr.Schema{
 			Schema: productPriceSchema,
 			Type:   sr.TypeJSON,
 		})
 		require.NoError(err)
 		require.NotNil(ssPrice)
 
-		ss, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ss, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: schemaStr,
 			Type:   sr.TypeJSON,
 			References: []sr.SchemaReference{
@@ -3984,7 +3984,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		serdeSvc := NewService(schemaSvc, protoSvc, mspPackSvc)
 
-		out, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		out, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  "11",
@@ -4050,7 +4050,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NoError(err)
 		require.NotEmpty(eventDataSchema)
 
-		ssEventData, err := rcl.CreateSchema(context.Background(), "io.test.event.schema.EventData", sr.Schema{
+		ssEventData, err := rcl.CreateSchema(t.Context(), "io.test.event.schema.EventData", sr.Schema{
 			Schema: eventDataSchemaStr,
 			Type:   sr.TypeAvro,
 		})
@@ -4082,7 +4082,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NoError(err)
 		require.NotEmpty(userSchema)
 
-		ssUser, err := rcl.CreateSchema(context.Background(), "io.test.user.schema.User", sr.Schema{
+		ssUser, err := rcl.CreateSchema(t.Context(), "io.test.user.schema.User", sr.Schema{
 			Schema: userSchemaStr,
 			Type:   sr.TypeAvro,
 			References: []sr.SchemaReference{
@@ -4129,7 +4129,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		require.NoError(err)
 		require.NotEmpty(orderSchema)
 
-		ssOrder, err := rcl.CreateSchema(context.Background(), testTopicName+"-value", sr.Schema{
+		ssOrder, err := rcl.CreateSchema(t.Context(), testTopicName+"-value", sr.Schema{
 			Schema: orderSchemaStr,
 			Type:   sr.TypeAvro,
 			References: []sr.SchemaReference{
@@ -4189,7 +4189,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		inputData := `{"customer":{"email":"user1@example.com","metadata":{"event_type":"user","id":"user1_event_2345","version":"1"},"name":"user1"},"id":"order_1","metadata":{"event_type":"order","id":"order1_event_5432","version":"2"},"price":7.50,"quantity":7}`
 
-		serRes, err := serdeSvc.SerializeRecord(context.Background(), SerializeInput{
+		serRes, err := serdeSvc.SerializeRecord(t.Context(), SerializeInput{
 			Topic: testTopicName,
 			Key: RecordPayloadInput{
 				Payload:  map[string]interface{}{"id": "order_1"},

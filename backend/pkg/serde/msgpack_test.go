@@ -10,7 +10,6 @@
 package serde
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -120,7 +119,7 @@ func TestMsgPackSerde_DeserializePayload(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			payload, err := serde.DeserializePayload(context.Background(), test.record(), test.payloadType)
+			payload, err := serde.DeserializePayload(t.Context(), test.record(), test.payloadType)
 			test.validationFunc(t, *payload, err)
 		})
 	}
@@ -147,7 +146,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), `{"Foo":"bar"}`, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), `{"Foo":"bar"}`, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -157,14 +156,14 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal([]string{"foo", "bar"})
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), `["foo","bar"]`, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), `["foo","bar"]`, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("string invalid json", func(t *testing.T) {
-		actual, err := serde.SerializeObject(context.Background(), `foo`, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), `foo`, PayloadTypeValue)
 		require.Error(t, err)
 		assert.Equal(t, "first byte indicates this it not valid JSON, expected brackets", err.Error())
 		require.Nil(t, actual)
@@ -177,7 +176,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), `{"Foo":"bar"}`, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), `{"Foo":"bar"}`, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -190,7 +189,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), item, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), item, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -201,7 +200,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), item, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), item, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -212,7 +211,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), []byte(`{"Foo":"bar"}`), PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), []byte(`{"Foo":"bar"}`), PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -222,7 +221,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal([]string{"foo", "bar"})
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), []byte(`["foo","bar"]`), PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), []byte(`["foo","bar"]`), PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -235,7 +234,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		expected, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), []byte(`{"Foo":"bar"}`), PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), []byte(`{"Foo":"bar"}`), PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
@@ -249,7 +248,7 @@ func TestMsgPackSerde_SerializeObject(t *testing.T) {
 		input, err := msgpack.Marshal(item)
 		require.NoError(t, err)
 
-		actual, err := serde.SerializeObject(context.Background(), input, PayloadTypeValue)
+		actual, err := serde.SerializeObject(t.Context(), input, PayloadTypeValue)
 		assert.NoError(t, err)
 
 		assert.Equal(t, expected, actual)
