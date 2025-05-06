@@ -175,12 +175,11 @@ class SchemaList extends PageComponent<{}> {
 
     let filteredSubjects = api.schemaSubjects;
     if (uiSettings.schemaList.quickSearch) {
-      filteredSubjects = filteredSubjects
-        .filter(
-          (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
-        )
-        .filter((s) => this.isFilterMatch(uiSettings.schemaList.quickSearch, s));
+      filteredSubjects = filteredSubjects.filter((s) => this.isFilterMatch(uiSettings.schemaList.quickSearch, s));
     }
+    filteredSubjects = filteredSubjects.filter(
+      (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
+    );
 
     return (
       <PageContent key="b">
