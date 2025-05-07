@@ -1,6 +1,8 @@
 import {
   Button,
   ButtonGroup,
+  FormErrorMessage,
+  FormField,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -8,8 +10,11 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Select,
   Stack,
   Text,
+  UnorderedList,
+  isMultiValue,
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
@@ -35,12 +40,23 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
 
   const finalSchema = secretSchema(customSecretSchema);
 
+  // Form type
+  interface Secret {
+    id: string;
+    value: string;
+    labels: string[];
+    scopes: Scope[];
+  }
+
+  const defaultValues: Secret = {
+    id: '',
+    value: '',
+    labels: [],
+    scopes: [],
+  };
+
   const formOpts = formOptions({
-    defaultValues: {
-      id: '',
-      value: '',
-      labels: [],
-    },
+    defaultValues: defaultValues,
     validators: {
       onChange: finalSchema,
     },
@@ -56,7 +72,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
         id: value.id,
         // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
-        scopes: [Scope.REDPANDA_CONNECT],
+        scopes: value.scopes || [],
         labels: labelsMap,
       });
 
@@ -108,6 +124,41 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                 <form.AppField name="value">
                   {(field) => (
                     <field.PasswordField label="Value" data-testid="secret-value-field" helperText={helperText} />
+                  )}
+                </form.AppField>
+                <form.AppField name="scopes">
+                  {({ state, handleChange, handleBlur }) => (
+                    <FormField label="Scopes" errorText=" " isInvalid={state.meta.errors?.length > 0}>
+                      <Select
+                        placeholder="Select scopes"
+                        data-testid="secret-scopes-field"
+                        onChange={(nextValue) => {
+                          if (isMultiValue(nextValue) && nextValue) {
+                            handleChange(nextValue.map(({ value }) => value));
+                          }
+                        }}
+                        options={[
+                          { label: 'Redpanda Connect', value: Scope.REDPANDA_CONNECT },
+                          { label: 'Redpanda Cluster', value: Scope.REDPANDA_CLUSTER },
+                        ]}
+                        isMulti
+                        onBlur={handleBlur}
+                      />
+                      {
+                        // Display error messages like tanstack/react-form fields.
+                        state?.meta.errors?.length > 0 && (
+                          <FormErrorMessage>
+                            <UnorderedList>
+                              {state.meta.errors?.map((error) => (
+                                <li key={error.path}>
+                                  <Text color="red.500">{error.message}</Text>
+                                </li>
+                              ))}
+                            </UnorderedList>
+                          </FormErrorMessage>
+                        )
+                      }
+                    </FormField>
                   )}
                 </form.AppField>
                 <form.AppField name="labels" mode="array">
