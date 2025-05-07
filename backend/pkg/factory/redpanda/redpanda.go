@@ -39,11 +39,11 @@ type ClientOptions struct {
 // WithURLs lets the caller override the URLs that the client will use.
 // It requires at least one URL; otherwise it returns an error immediately.
 func WithURLs(urls ...string) ClientOption {
-	return func(_ *ClientOptions) error {
+	return func(o *ClientOptions) error {
 		if len(urls) == 0 {
 			return errors.New("WithURLs: at least one URL must be provided")
 		}
-
+		o.URLs = urls
 		return nil
 	}
 }
