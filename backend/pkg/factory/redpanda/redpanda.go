@@ -22,7 +22,28 @@ import (
 // ClientFactory defines the interface for creating and retrieving Redpanda API clients.
 type ClientFactory interface {
 	// GetRedpandaAPIClient retrieves a Redpanda admin API client based on the context.
-	GetRedpandaAPIClient(ctx context.Context) (AdminAPIClient, error)
+	GetRedpandaAPIClient(ctx context.Context, opts ...ClientOption) (AdminAPIClient, error)
+}
+
+// ClientOption is a function that configures ClientOptions.
+// It may return an error if the option is invalid.
+type ClientOption func(*ClientOptions) error
+
+// ClientOptions holds all configurable parameters for constructing an AdminAPIClient.
+type ClientOptions struct {
+	URLs []string
+}
+
+// WithURLs lets the caller override the URLs that the client will use.
+// It requires at least one URL; otherwise it returns an error immediately.
+func WithURLs(urls ...string) ClientOption {
+	return func(_ *ClientOptions) error {
+		if len(urls) == 0 {
+			return errors.New("WithURLs: at least one URL must be provided")
+		}
+
+		return nil
+	}
 }
 
 // AdminAPIClient defines an interface for the rpadmin.AdminAPI struct, so that
