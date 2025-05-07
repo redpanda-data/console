@@ -14,7 +14,9 @@ package redpanda
 
 import (
 	"context"
+	"errors"
 	"io"
+	"net/http"
 
 	"github.com/redpanda-data/common-go/rpadmin"
 )
@@ -102,10 +104,6 @@ type AdminAPIClient interface {
 	// true, Redpanda will delete ACLs bound to the role.
 	DeleteRole(ctx context.Context, name string, deleteACL bool) error
 
-	// GetDebugBundleStatus gets the current debug bundle process status on the specified broker node.
-	// This should be called using Host client to issue a request against a specific broker node.
-	GetDebugBundleStatus(ctx context.Context) (rpadmin.DebugBundleStatus, error)
-
 	// MountTopics mounts topics according to the provided configuration.
 	MountTopics(ctx context.Context, config rpadmin.MountConfiguration) (rpadmin.MigrationInfo, error)
 
@@ -142,4 +140,29 @@ type AdminAPIClient interface {
 
 	// GetEnterpriseFeatures reports enterprise features in use as well as the license status.
 	GetEnterpriseFeatures(ctx context.Context) (rpadmin.EnterpriseFeaturesResponse, error)
+
+	// CreateDebugBundle starts the debug bundle process. This should be called using
+	// the host client to issue a request against a specific broker node. jobID is
+	// the user-specified job UUID.
+	CreateDebugBundle(ctx context.Context, jobID string, opts ...rpadmin.DebugBundleOption) (rpadmin.DebugBundleStartResponse, error)
+
+	// GetDebugBundleStatus gets the current debug bundle process status on the
+	// specified broker node. This should be called using the host client to issue a
+	// request against a specific broker node.
+	GetDebugBundleStatus(ctx context.Context) (rpadmin.DebugBundleStatus, error)
+
+	// CancelDebugBundleProcess cancels the specific debug bundle process that's
+	// running. This should be called using the host client to issue a request against a
+	// specific broker node.
+	CancelDebugBundleProcess(ctx context.Context, jobID string) error
+
+	// DeleteDebugBundleFile deletes the specific debug bundle file on the specified
+	// broker node. This should be called using the host client to issue a request
+	// against a specific broker node.
+	DeleteDebugBundleFile(ctx context.Context, filename string) error
+
+	// DownloadDebugBundleFile gets the specific debug bundle file on the specified
+	// broker node. The caller must call close on the response returned as it does
+	// not yet have its body read.
+	DownloadDebugBundleFile(ctx context.Context, filename string) (*http.Response, error)
 }
