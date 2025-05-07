@@ -342,7 +342,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions ?? [], () => {
+            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
               return (this.deleteRecordsModalAlive = true);
             })}
           </Flex>

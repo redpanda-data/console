@@ -69,7 +69,6 @@ export const TopicActions = [
   'editConfig',
 ] as const;
 export type TopicAction = 'all' | (typeof TopicActions)[number];
-
 export interface Topic {
   topicName: string;
   isInternal: boolean;
@@ -78,7 +77,7 @@ export interface Topic {
   cleanupPolicy: string;
   documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
   logDirSummary: TopicLogDirSummary;
-  allowedActions: TopicAction[] | undefined;
+  allowedActions: TopicAction[] | undefined; // undefined means 'all'
 }
 
 export interface TopicLogDirSummary {
