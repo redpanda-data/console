@@ -42,9 +42,9 @@ export const useListRolesQuery = (
     ...input,
   });
 
-   const listRolesRequest = create(ListRolesRequestSchema, {
-      request: listRolesRequestDataPlane,
-    }) as MessageInit<ListRolesRequest> & Required<Pick<MessageInit<ListRolesRequest>, 'request'>>;
+  const listRolesRequest = create(ListRolesRequestSchema, {
+    request: listRolesRequestDataPlane,
+  }) as MessageInit<ListRolesRequest> & Required<Pick<MessageInit<ListRolesRequest>, 'request'>>;
 
   const listRolesResult = useInfiniteQueryWithAllPages(listRoles, listRolesRequest, {
     pageParamKey: 'request',
@@ -119,7 +119,7 @@ export const useCreateRoleMutationWithToast = () => {
 
       showToast({
         id: TOASTS.ROLE.CREATE.SUCCESS,
-        resourceName: variables?.role?.name,
+        resourceName: variables?.request?.role?.name,
         title: 'Role created successfully',
         status: 'success',
       });
@@ -127,7 +127,7 @@ export const useCreateRoleMutationWithToast = () => {
     onError: (error, variables) => {
       showToast({
         id: TOASTS.ROLE.CREATE.ERROR,
-        resourceName: variables?.role?.name,
+        resourceName: variables?.request?.role?.name,
         title: formatToastErrorMessageGRPC({
           error,
           action: 'create',
@@ -165,7 +165,7 @@ export const useDeleteRoleMutationWithToast = () => {
 
       showToast({
         id: TOASTS.ROLE.DELETE.SUCCESS,
-        resourceName: variables?.roleName,
+        resourceName: variables?.request?.roleName,
         title: 'Role deleted successfully',
         status: 'success',
       });
@@ -173,7 +173,7 @@ export const useDeleteRoleMutationWithToast = () => {
     onError: (error, variables) => {
       showToast({
         id: TOASTS.ROLE.DELETE.ERROR,
-        resourceName: variables?.roleName,
+        resourceName: variables?.request?.roleName,
         title: formatToastErrorMessageGRPC({
           error,
           action: 'delete',
@@ -209,7 +209,7 @@ export const useUpdateRoleMembershipMutationWithToast = () => {
 
       showToast({
         id: TOASTS.ROLE.UPDATE_MEMBERSHIP.SUCCESS,
-        resourceName: variables?.roleName,
+        resourceName: variables?.request?.roleName,
         title: 'Role membership updated successfully',
         status: 'success',
       });
@@ -217,7 +217,7 @@ export const useUpdateRoleMembershipMutationWithToast = () => {
     onError: (error, variables) => {
       showToast({
         id: TOASTS.ROLE.UPDATE_MEMBERSHIP.ERROR,
-        resourceName: variables?.roleName,
+        resourceName: variables?.request?.roleName,
         title: formatToastErrorMessageGRPC({
           error,
           action: 'update',

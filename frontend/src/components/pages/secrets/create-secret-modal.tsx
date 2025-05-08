@@ -36,8 +36,6 @@ interface CreateSecretModalProps {
 export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperText }: CreateSecretModalProps) => {
   const { data: secretList } = useListSecretsQuery();
 
-  console.log('CreateSecretModal secretList: ', secretList);
-
   // Secret creation mutation
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
 
