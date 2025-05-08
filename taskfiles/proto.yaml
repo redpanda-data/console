@@ -33,7 +33,7 @@ tasks:
     dir: "{{.ROOT_DIR}}/proto"
     cmds:
       - |
-        {{ .PATH_PREFIX }} buf push
+        {{ .PATH_PREFIX }} buf push --git-metadata
 
   generate:
     dir: "{{.ROOT_DIR}}"
