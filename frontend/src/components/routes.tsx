@@ -307,7 +307,7 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>("/overview", Overview, "Overview", HomeIcon),
   MakeRoute<{ brokerId: string }>("/overview/:brokerId", BrokerDetails, "Broker Details"),
 
-  // MakeRoute<{}>("/topics", TopicList, "Topics", CollectionIcon), // TODO @Draho - this is causing infinite loop
+  MakeRoute<{}>("/topics", TopicList, "Topics", CollectionIcon), // TODO @Draho - this is causing infinite loop
   MakeRoute<{ topicName: string }>("/topics/:topicName", TopicDetails, "Topics"),
   MakeRoute<{ topicName: string }>("/topics/:topicName/produce-record", TopicProducePage, "Produce Record"),
 
