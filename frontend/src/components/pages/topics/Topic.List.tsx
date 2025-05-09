@@ -33,7 +33,7 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
-import { type IReactionDisposer, autorun, computed, makeObservable, observable, runInAction } from 'mobx';
+import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type FC, useRef, useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
@@ -50,7 +50,6 @@ import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { renderLogDirSummary } from '../../misc/common';
@@ -133,7 +132,7 @@ class TopicList extends PageComponent {
         );
       }
     }
-    
+
     return topics;
   }
 
