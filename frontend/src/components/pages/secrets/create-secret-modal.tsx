@@ -21,7 +21,7 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import type { ReactNode } from 'react';
-import { useCreateSecretMutationWithToast, useListSecretsQuery } from 'react-query/api/secret';
+import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import type { z } from 'zod';
 import { secretSchema } from './form/secret-schema';
@@ -36,10 +36,8 @@ interface CreateSecretModalProps {
 export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperText }: CreateSecretModalProps) => {
   const { data: secretList } = useListSecretsQuery();
 
-  console.log('CreateSecretModal secretList: ', secretList);
-
   // Secret creation mutation
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutationWithToast();
+  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
 
   const finalSchema = secretSchema(customSecretSchema);
 

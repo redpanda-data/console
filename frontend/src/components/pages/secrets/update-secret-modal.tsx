@@ -20,7 +20,7 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
-import { useListSecretsQuery, useUpdateSecretMutationWithToast } from 'react-query/api/secret';
+import { useListSecretsQuery, useUpdateSecretMutation } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { Scope, UpdateSecretRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
@@ -34,7 +34,7 @@ interface UpdateSecretModalProps {
 
 export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretModalProps) => {
   // Secret update mutation
-  const { mutateAsync: updateSecret, isPending: isUpdateSecretPending } = useUpdateSecretMutationWithToast();
+  const { mutateAsync: updateSecret, isPending: isUpdateSecretPending } = useUpdateSecretMutation();
 
   // Get existing secret details (for labels)
   const { data: secretList } = useListSecretsQuery();

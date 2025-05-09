@@ -15,7 +15,7 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
-import { useDeleteSecretMutationWithToast } from 'react-query/api/secret';
+import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 import { deleteSecretSchema } from './form/delete-secret-schema';
 
@@ -27,7 +27,7 @@ export interface DeleteSecretModalProps {
 
 export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretModalProps) => {
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
-  const { mutateAsync: deleteSecret, isPending: isDeleteSecretPending } = useDeleteSecretMutationWithToast();
+  const { mutateAsync: deleteSecret, isPending: isDeleteSecretPending } = useDeleteSecretMutation();
 
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 

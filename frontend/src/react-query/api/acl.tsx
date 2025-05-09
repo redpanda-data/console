@@ -29,7 +29,7 @@ import type {
   AclStrResourceType,
   GetAclOverviewResponse,
 } from 'state/restInterfaces';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 /**
  * TODO: Remove once Console v3 is released.
@@ -295,7 +295,7 @@ export const getACLPermissionType = (permissionType: ACL_PermissionType) => {
  * because of authorization that is only possible with Console v3 and above.
  * TODO: Remove once Console v3 is released.
  */
-export const useLegacyCreateACLMutationWithToast = () => {
+export const useLegacyCreateACLMutation = () => {
   const queryClient = useQueryClient();
 
   return useTanstackMutation({
@@ -330,7 +330,7 @@ export const useLegacyCreateACLMutationWithToast = () => {
 
       return data;
     },
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: ACLService.method.listACLs,
@@ -338,25 +338,13 @@ export const useLegacyCreateACLMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.ACL.CREATE.SUCCESS,
-        resourceName: variables?.resourceName,
-        title: 'ACL created successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
+    onError: (error) => {
       const connectError = ConnectError.from(error);
-      showToast({
-        id: TOASTS.ACL.CREATE.ERROR,
-        resourceName: variables?.resourceName,
-        title: formatToastErrorMessageGRPC({
-          error: connectError,
-          action: 'create',
-          entity: 'acl',
-        }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error: connectError,
+        action: 'create',
+        entity: 'acl',
       });
     },
   });
@@ -365,7 +353,7 @@ export const useLegacyCreateACLMutationWithToast = () => {
 /**
  * WARNING: Only use once Console v3 is released.
  */
-export const useCreateACLMutationWithToast = () => {
+export const useCreateACLMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createACL, {
@@ -376,17 +364,12 @@ export const useCreateACLMutationWithToast = () => {
           cardinality: 'infinite',
         }),
       });
-      showToast({
-        id: TOASTS.PIPELINE.CREATE.SUCCESS,
-        title: 'ACL created successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.PIPELINE.CREATE.ERROR,
-        title: formatToastErrorMessageGRPC({ error, action: 'create', entity: 'ACL' }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'acl',
       });
     },
   });

@@ -22,7 +22,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { useGetPipelineQuery, useGetPipelinesBySecretsQuery } from 'react-query/api/pipeline';
-import { useUpdatePipelineMutationWithToast } from 'react-query/api/pipeline';
+import { useUpdatePipelineMutation } from 'react-query/api/pipeline';
 import { z } from 'zod';
 
 export const updatePipelineSchema = z.object({
@@ -60,7 +60,7 @@ interface UpdatePipelineModalProps {
 }
 
 export const UpdatePipelineModal = ({ isOpen, onClose, pipelineId }: UpdatePipelineModalProps) => {
-  const { mutateAsync: updatePipeline, isPending: isUpdatePipelinePending } = useUpdatePipelineMutationWithToast();
+  const { mutateAsync: updatePipeline, isPending: isUpdatePipelinePending } = useUpdatePipelineMutation();
 
   const { data: agentList } = useListAgentsQuery();
   const matchingAgentPipelines = agentList?.agents?.find((agent) =>

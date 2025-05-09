@@ -35,7 +35,7 @@ import {
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
@@ -109,7 +109,7 @@ export const useListPipelinesQuery = (
   };
 };
 
-export const useCreatePipelineMutationWithToast = () => {
+export const useCreatePipelineMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createPipeline, {
@@ -120,23 +120,18 @@ export const useCreatePipelineMutationWithToast = () => {
           cardinality: 'infinite',
         }),
       });
-      showToast({
-        id: TOASTS.PIPELINE.CREATE.SUCCESS,
-        title: 'Pipeline created successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.PIPELINE.CREATE.ERROR,
-        title: formatToastErrorMessageGRPC({ error, action: 'create', entity: 'pipeline' }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'pipeline',
       });
     },
   });
 };
 
-export const useUpdatePipelineMutationWithToast = () => {
+export const useUpdatePipelineMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(updatePipeline, {
@@ -147,23 +142,18 @@ export const useUpdatePipelineMutationWithToast = () => {
           cardinality: 'infinite',
         }),
       });
-      showToast({
-        id: TOASTS.PIPELINE.UPDATE.SUCCESS,
-        title: 'Pipeline updated successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.PIPELINE.UPDATE.ERROR,
-        title: formatToastErrorMessageGRPC({ error, action: 'update', entity: 'pipeline' }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'update',
+        entity: 'pipeline',
       });
     },
   });
 };
 
-export const useStartPipelineMutationWithToast = () => {
+export const useStartPipelineMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(startPipeline, {
@@ -174,23 +164,18 @@ export const useStartPipelineMutationWithToast = () => {
           cardinality: 'infinite',
         }),
       });
-      showToast({
-        id: TOASTS.PIPELINE.START.SUCCESS,
-        title: 'Pipeline started successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.PIPELINE.START.ERROR,
-        title: formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'start',
+        entity: 'pipeline',
       });
     },
   });
 };
 
-export const useStopPipelineMutationWithToast = () => {
+export const useStopPipelineMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(stopPipeline, {
@@ -201,23 +186,18 @@ export const useStopPipelineMutationWithToast = () => {
           cardinality: 'infinite',
         }),
       });
-      showToast({
-        id: TOASTS.PIPELINE.STOP.SUCCESS,
-        title: 'Pipeline stopped successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.PIPELINE.STOP.ERROR,
-        title: formatToastErrorMessageGRPC({ error, action: 'stop', entity: 'pipeline' }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'stop',
+        entity: 'pipeline',
       });
     },
   });
 };
 
-export const useDeletePipelineMutationWithToast = () => {
+export const useDeletePipelineMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deletePipeline, {
@@ -228,17 +208,12 @@ export const useDeletePipelineMutationWithToast = () => {
           cardinality: 'infinite',
         }),
       });
-      showToast({
-        id: TOASTS.PIPELINE.DELETE.SUCCESS,
-        title: 'Pipeline deleted successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.PIPELINE.DELETE.ERROR,
-        title: formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'pipeline' }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'pipeline',
       });
     },
   });

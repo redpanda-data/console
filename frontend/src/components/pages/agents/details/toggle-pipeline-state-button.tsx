@@ -1,14 +1,14 @@
 import { Button, HStack, Spinner, Text } from '@redpanda-data/ui';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useStartPipelineMutationWithToast, useStopPipelineMutationWithToast } from 'react-query/api/pipeline';
+import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 
 interface TogglePipelineStateButtonProps {
   pipeline?: Pipeline;
 }
 
 export const TogglePipelineStateButton = ({ pipeline }: TogglePipelineStateButtonProps) => {
-  const { mutateAsync: stopPipeline, isPending: isStopPipelinePending } = useStopPipelineMutationWithToast();
-  const { mutateAsync: startPipeline, isPending: isStartPipelinePending } = useStartPipelineMutationWithToast();
+  const { mutateAsync: stopPipeline, isPending: isStopPipelinePending } = useStopPipelineMutation();
+  const { mutateAsync: startPipeline, isPending: isStartPipelinePending } = useStartPipelineMutation();
 
   const isPending = isStopPipelinePending || isStartPipelinePending;
   const isTransitioning = pipeline?.state === Pipeline_State.STOPPING || pipeline?.state === Pipeline_State.STARTING;

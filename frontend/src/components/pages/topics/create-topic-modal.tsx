@@ -19,7 +19,7 @@ import {
   CreateTopicRequest_TopicSchema,
   CreateTopicRequest_Topic_ConfigSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { useLegacyCreateTopicMutationWithToast, useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useCreateTopicMutation, useListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
 
 export const topicSchema = z.object({
@@ -39,10 +39,8 @@ export const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 export const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
 export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => {
-  const { data: topicList } = useLegacyListTopicsQuery();
-
-  // Topic creation mutation
-  const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useLegacyCreateTopicMutationWithToast();
+  const { data: topicList } = useListTopicsQuery();
+  const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useCreateTopicMutation();
 
   const formOpts = formOptions({
     defaultValues: {

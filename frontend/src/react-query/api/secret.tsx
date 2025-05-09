@@ -27,7 +27,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListSecretsQuery = (
   input?: MessageInit<ListSecretsRequestDataPlane>,
@@ -77,11 +77,11 @@ export const useGetSecretQuery = (input?: MessageInit<GetSecretRequestDataPlane>
   return useQuery(getSecret, getSecretRequest);
 };
 
-export const useCreateSecretMutationWithToast = () => {
+export const useCreateSecretMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createSecret, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecretService.method.listSecrets,
@@ -89,34 +89,22 @@ export const useCreateSecretMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.SECRET.CREATE.SUCCESS,
-        resourceName: variables?.request?.id,
-        title: 'Secret created successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.SECRET.CREATE.ERROR,
-        resourceName: variables?.request?.id,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'create',
-          entity: 'secret',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'secret',
       });
     },
   });
 };
 
-export const useUpdateSecretMutationWithToast = () => {
+export const useUpdateSecretMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(updateSecret, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecretService.method.listSecrets,
@@ -124,34 +112,22 @@ export const useUpdateSecretMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.SECRET.UPDATE.SUCCESS,
-        resourceName: variables?.request?.id,
-        title: 'Secret updated successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.SECRET.UPDATE.ERROR,
-        resourceName: variables?.request?.id,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'update',
-          entity: 'secret',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'update',
+        entity: 'secret',
       });
     },
   });
 };
 
-export const useDeleteSecretMutationWithToast = () => {
+export const useDeleteSecretMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteSecret, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecretService.method.listSecrets,
@@ -159,24 +135,12 @@ export const useDeleteSecretMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.SECRET.DELETE.SUCCESS,
-        resourceName: variables?.request?.id,
-        title: 'Secret deleted successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.SECRET.DELETE.ERROR,
-        resourceName: variables?.request?.id,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'delete',
-          entity: 'secret',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'secret',
       });
     },
   });
