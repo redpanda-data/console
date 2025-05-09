@@ -21,7 +21,7 @@ import type {
   GetDebugBundleStatusResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useGetClusterHealthQuery = (
   options?: QueryOptions<GenMessage<GetClusterHealthRequest>, GetClusterHealthResponse>,
@@ -45,22 +45,12 @@ export const useCreateDebugBundleMutation = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.DEBUG_BUNDLE.CREATE.SUCCESS,
-        title: 'Debug bundle creation started successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.DEBUG_BUNDLE.CREATE.ERROR,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'create',
-          entity: 'debug bundle',
-        }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'debug bundle',
       });
     },
   });
@@ -79,11 +69,11 @@ export const useGetDebugBundleStatusQuery = (
   });
 };
 
-export const useCancelDebugBundleProcessMutationWithToast = () => {
+export const useCancelDebugBundleProcessMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(cancelDebugBundleProcess, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: DebugBundleService.method.getDebugBundleStatus,
@@ -91,30 +81,18 @@ export const useCancelDebugBundleProcessMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.DEBUG_BUNDLE.CANCEL.SUCCESS,
-        resourceName: variables?.jobId,
-        title: 'Debug bundle process cancelled successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.DEBUG_BUNDLE.CANCEL.ERROR,
-        resourceName: variables?.jobId,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'cancel',
-          entity: 'debug bundle process',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'cancel',
+        entity: 'debug bundle process',
       });
     },
   });
 };
 
-export const useDeleteDebugBundleFileMutationWithToast = () => {
+export const useDeleteDebugBundleFileMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteDebugBundleFile, {
@@ -126,22 +104,12 @@ export const useDeleteDebugBundleFileMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.DEBUG_BUNDLE.DELETE.SUCCESS,
-        title: 'Debug bundle file deleted successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.DEBUG_BUNDLE.DELETE.ERROR,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'delete',
-          entity: 'debug bundle file',
-        }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'debug bundle file',
       });
     },
   });

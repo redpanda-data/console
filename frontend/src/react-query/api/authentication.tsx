@@ -21,7 +21,7 @@ import {
   type ListConsoleUsersResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useLoginSaslScramMutation = () => {
   const queryClient = useQueryClient();
@@ -35,22 +35,12 @@ export const useLoginSaslScramMutation = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.AUTH.LOGIN.SUCCESS,
-        title: 'Logged in successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.AUTH.LOGIN.ERROR,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'authenticate',
-          entity: 'user',
-        }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'authenticate',
+        entity: 'user',
       });
     },
   });

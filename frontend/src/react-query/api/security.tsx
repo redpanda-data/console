@@ -30,7 +30,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListRolesQuery = (
   input?: MessageInit<ListRolesRequestDataPlane>,
@@ -104,11 +104,11 @@ export const useListRoleMembersQuery = (
   };
 };
 
-export const useCreateRoleMutationWithToast = () => {
+export const useCreateRoleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createRole, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecurityService.method.listRoles,
@@ -116,24 +116,12 @@ export const useCreateRoleMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.ROLE.CREATE.SUCCESS,
-        resourceName: variables?.request?.role?.name,
-        title: 'Role created successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.ROLE.CREATE.ERROR,
-        resourceName: variables?.request?.role?.name,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'create',
-          entity: 'role',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'role',
       });
     },
   });
@@ -150,11 +138,11 @@ export const useGetRoleQuery = (
   });
 };
 
-export const useDeleteRoleMutationWithToast = () => {
+export const useDeleteRoleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteRole, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecurityService.method.listRoles,
@@ -162,34 +150,22 @@ export const useDeleteRoleMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.ROLE.DELETE.SUCCESS,
-        resourceName: variables?.request?.roleName,
-        title: 'Role deleted successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.ROLE.DELETE.ERROR,
-        resourceName: variables?.request?.roleName,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'delete',
-          entity: 'role',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'role',
       });
     },
   });
 };
 
-export const useUpdateRoleMembershipMutationWithToast = () => {
+export const useUpdateRoleMembershipMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(updateRoleMembership, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       // Invalidate both role lists and role member lists
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -206,24 +182,12 @@ export const useUpdateRoleMembershipMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.ROLE.UPDATE_MEMBERSHIP.SUCCESS,
-        resourceName: variables?.request?.roleName,
-        title: 'Role membership updated successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.ROLE.UPDATE_MEMBERSHIP.ERROR,
-        resourceName: variables?.request?.roleName,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'update',
-          entity: 'role membership',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'update',
+        entity: 'role membership',
       });
     },
   });

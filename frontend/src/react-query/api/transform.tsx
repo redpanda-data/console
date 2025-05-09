@@ -24,7 +24,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListTransformsQuery = (
   input?: MessageInit<ListTransformsRequestDataPlane>,
@@ -79,11 +79,11 @@ export const useGetTransformQuery = (
   });
 };
 
-export const useDeleteTransformMutationWithToast = () => {
+export const useDeleteTransformMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteTransform, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: TransformService.method.listTransforms,
@@ -91,24 +91,12 @@ export const useDeleteTransformMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.TRANSFORM.DELETE.SUCCESS,
-        resourceName: variables?.request?.name,
-        title: 'Transform deleted successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.TRANSFORM.DELETE.ERROR,
-        resourceName: variables?.request?.name,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'delete',
-          entity: 'transform',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'delete',
+        entity: 'transform',
       });
     },
   });

@@ -8,32 +8,15 @@ import {
   PublishMessageRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import type { MessageInit } from 'react-query/react-query.utils';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-export const usePublishMessageMutationWithToast = () => {
+export const usePublishMessageMutation = () => {
   return useMutation(publishMessage, {
-    onSuccess: async (_data, variables) => {
-      // No need to invalidate queries as publishing a message
-      // doesn't change the structure of topics or other resources
-
-      showToast({
-        id: TOASTS.MESSAGE.PUBLISH.SUCCESS,
-        resourceName: variables?.topic,
-        title: 'Message published successfully',
-        status: 'success',
-        description: `Published to topic ${variables?.topic}`,
-      });
-    },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.MESSAGE.PUBLISH.ERROR,
-        resourceName: variables?.topic,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'publish',
-          entity: 'message',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'publish',
+        entity: 'message',
       });
     },
   });

@@ -17,7 +17,7 @@ import {
   type ListLicensesResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/license_pb';
 import type { QueryOptions } from 'react-query/react-query.utils';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListLicensesQuery = (options?: QueryOptions<GenMessage<ListLicensesRequest>, ListLicensesResponse>) => {
   const listLicensesRequest = create(ListLicensesRequestSchema);
@@ -27,7 +27,7 @@ export const useListLicensesQuery = (options?: QueryOptions<GenMessage<ListLicen
   });
 };
 
-export const useSetLicenseMutationWithToast = () => {
+export const useSetLicenseMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(setLicense, {
@@ -39,22 +39,12 @@ export const useSetLicenseMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.LICENSE.SET.SUCCESS,
-        title: 'License set successfully',
-        status: 'success',
-      });
     },
     onError: (error) => {
-      showToast({
-        id: TOASTS.LICENSE.SET.ERROR,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'set',
-          entity: 'license',
-        }),
-        status: 'error',
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'set',
+        entity: 'license',
       });
     },
   });

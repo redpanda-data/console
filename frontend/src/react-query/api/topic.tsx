@@ -11,7 +11,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 interface ListTopicsExtraOptions {
   hideInternalTopics?: boolean;
@@ -48,11 +48,11 @@ export const useListTopicsQuery = (
   };
 };
 
-export const useCreateTopicMutationWithToast = () => {
+export const useCreateTopicMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createTopic, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: TopicService.method.listTopics,
@@ -60,24 +60,12 @@ export const useCreateTopicMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.TOPIC.CREATE.SUCCESS,
-        resourceName: variables?.topic?.name,
-        title: 'Topic created successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.TOPIC.CREATE.ERROR,
-        resourceName: variables?.topic?.name,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'create',
-          entity: 'topic',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'topic',
       });
     },
   });

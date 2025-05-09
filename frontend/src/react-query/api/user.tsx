@@ -12,7 +12,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListUsersQuery = (
   input?: MessageInit<ListUsersRequest>,
@@ -49,11 +49,11 @@ export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512
   }
 };
 
-export const useCreateUserMutationWithToast = () => {
+export const useCreateUserMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(createUser, {
-    onSuccess: async (_data, variables) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: UserService.method.listUsers,
@@ -61,24 +61,12 @@ export const useCreateUserMutationWithToast = () => {
         }),
         exact: false,
       });
-
-      showToast({
-        id: TOASTS.USER.CREATE.SUCCESS,
-        resourceName: variables?.user?.name,
-        title: 'User created successfully',
-        status: 'success',
-      });
     },
-    onError: (error, variables) => {
-      showToast({
-        id: TOASTS.USER.CREATE.ERROR,
-        resourceName: variables?.user?.name,
-        title: formatToastErrorMessageGRPC({
-          error,
-          action: 'create',
-          entity: 'user',
-        }),
-        status: 'error',
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'create',
+        entity: 'user',
       });
     },
   });
