@@ -1,14 +1,16 @@
+import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { deleteSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
-import { DeleteSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { DeleteSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
-  GetPipelinesForSecretResponse as GetPipelinesForSecretResponseDataPlane,
-  Pipeline,
+  GetPipelinesForSecretResponseSchema as GetPipelinesForSecretResponseSchemaDataPlane,
+  PipelineSchema,
   Pipeline_State,
-  PipelinesForSecret,
+  PipelinesForSecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { DeleteSecretRequest as DeleteSecretRequestDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { DeleteSecretRequestSchema as DeleteSecretRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { DeleteSecretModal } from './delete-secret-modal';
 
@@ -16,15 +18,16 @@ describe('DeleteSecretModal', () => {
   test('should let the user delete a secret after entering confirmation text', async () => {
     const secretId = 'SECRET_ID';
 
-    const listPipelinesForSecretMock = vi.fn().mockReturnValue({
-      response: new GetPipelinesForSecretResponseDataPlane({
-        pipelinesForSecret: new PipelinesForSecret({
+    const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
+      response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
+        pipelinesForSecret: create(PipelinesForSecretSchema, {
           secretId,
           pipelines: [],
         }),
       }),
     });
 
+    const listPipelinesForSecretMock = vi.fn().mockReturnValue(pipelinesForSecretResponse);
     const deleteSecretMock = vi.fn().mockReturnValue({});
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -59,8 +62,8 @@ describe('DeleteSecretModal', () => {
     await waitFor(() => {
       expect(deleteSecretMock).toHaveBeenCalledTimes(1);
       expect(deleteSecretMock).toHaveBeenCalledWith(
-        new DeleteSecretRequest({
-          request: new DeleteSecretRequestDataPlane({
+        create(DeleteSecretRequestSchema, {
+          request: create(DeleteSecretRequestSchemaDataPlane, {
             id: secretId,
           }),
         }),
@@ -72,20 +75,21 @@ describe('DeleteSecretModal', () => {
   test('should show a warning if the secret is in use', async () => {
     const secretId = 'SECRET_ID';
 
-    const pipeline = new Pipeline({
+    const pipeline = create(PipelineSchema, {
       id: 'pipeline-id',
       state: Pipeline_State.RUNNING,
     });
 
-    const listPipelinesForSecretMock = vi.fn().mockReturnValue({
-      response: new GetPipelinesForSecretResponseDataPlane({
-        pipelinesForSecret: new PipelinesForSecret({
+    const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
+      response: create(GetPipelinesForSecretResponseSchemaDataPlane, {
+        pipelinesForSecret: create(PipelinesForSecretSchema, {
           secretId,
           pipelines: [pipeline],
         }),
       }),
     });
 
+    const listPipelinesForSecretMock = vi.fn().mockReturnValue(pipelinesForSecretResponse);
     const deleteSecretMock = vi.fn().mockReturnValue({});
 
     const transport = createRouterTransport(({ rpc }) => {

@@ -87,7 +87,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.50.0
+      BUF_VERSION: 1.52.1
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin
@@ -115,7 +115,7 @@ tasks:
       - :backend:install-go
     desc: install connect-gateway
     vars:
-      VERSION: 0.8.0
+      VERSION: 0.11.0
     cmds:
       - |
         {{ .PATH_PREFIX }} go install go.vallahaye.net/connect-gateway/cmd/protoc-gen-connect-gateway@v{{.VERSION}}
@@ -128,7 +128,7 @@ tasks:
       - :backend:install-go
     desc: Installs connectrpc.com/connect/cmd/protoc-gen-connect-go
     vars:
-      VERSION: 1.11.1
+      VERSION: 1.18.1
     run: once
     cmds:
       - '{{.PATH_PREFIX}} go install connectrpc.com/connect/cmd/protoc-gen-connect-go@v{{.VERSION}}'

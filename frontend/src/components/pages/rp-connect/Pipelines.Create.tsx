@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import type { Monaco } from '@monaco-editor/react';
 import {
   Alert,
@@ -28,9 +29,9 @@ import {
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { IDisposable, editor, languages } from 'monaco-editor';
+import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PipelineCreate } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -171,7 +172,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     pipelinesApi
       .createPipeline(
-        new PipelineCreate({
+        create(PipelineCreateSchema, {
           configYaml: this.editorContent,
           description: this.description,
           displayName: this.fileName,

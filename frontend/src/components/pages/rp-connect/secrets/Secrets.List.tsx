@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
@@ -18,7 +19,7 @@ import {
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import SittingPanda from '../../../../assets/redpanda/SittingPanda.svg';
-import { DeleteSecretRequest, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { DeleteSecretRequestSchema, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { Features } from '../../../../state/supportedFeatures';
@@ -81,11 +82,7 @@ class RpConnectSecretsList extends PageComponent {
   }
 
   async deleteSecret(id: string) {
-    await rpcnSecretManagerApi.delete(
-      new DeleteSecretRequest({
-        id,
-      }),
-    );
+    await rpcnSecretManagerApi.delete(create(DeleteSecretRequestSchema, { id }));
     this.refreshData(true);
   }
 
@@ -186,7 +183,7 @@ class RpConnectSecretsList extends PageComponent {
                           variant="icon"
                           height="16px"
                           color="gray.500"
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                             e.stopPropagation();
                             e.preventDefault();
                             appGlobal.historyPush(`/rp-connect/secrets/${r.id}/edit`);

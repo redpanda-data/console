@@ -1,6 +1,9 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Button,
   ButtonGroup,
+  FormErrorMessage,
+  FormField,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -8,14 +11,18 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Select,
   Stack,
+  Text,
+  UnorderedList,
+  isMultiValue,
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useListSecretsQuery, useUpdateSecretMutationWithToast } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
-import { Scope, UpdateSecretRequest } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { Scope, UpdateSecretRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 import { secretSchema } from './form/secret-schema';
 
@@ -54,6 +61,7 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
     defaultValues: {
       id: secretId,
       value: '',
+      scopes: matchingSecret?.scopes ?? [],
       labels: existingLabels.length > 0 ? existingLabels : [],
     },
     validators: {
@@ -67,11 +75,11 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
         }
       }
 
-      const request = new UpdateSecretRequest({
+      const request = create(UpdateSecretRequestSchema, {
         id: value.id,
         // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
-        scopes: [Scope.REDPANDA_CONNECT],
+        scopes: value.scopes || [],
         labels: labelsMap,
       });
 
@@ -81,6 +89,11 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
   });
 
   const form = useAppForm({ ...formOpts });
+
+  const scopeOptions = [
+    { label: 'Redpanda Connect', value: Scope.REDPANDA_CONNECT },
+    { label: 'Redpanda Cluster', value: Scope.REDPANDA_CLUSTER },
+  ];
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} onEsc={handleClose} size="lg">
@@ -100,6 +113,39 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
 
                 <form.AppField name="value">
                   {(field) => <field.PasswordField label="Value" data-testid="secret-value-field" />}
+                </form.AppField>
+
+                <form.AppField name="scopes">
+                  {({ state, handleChange, handleBlur }) => (
+                    <FormField label="Scopes" errorText=" " isInvalid={state.meta.errors?.length > 0}>
+                      <Select
+                        placeholder="Select scopes"
+                        onChange={(nextValue) => {
+                          if (isMultiValue(nextValue) && nextValue) {
+                            handleChange(nextValue.map(({ value }) => value));
+                          }
+                        }}
+                        options={scopeOptions}
+                        defaultValue={scopeOptions.filter((so) => matchingSecret?.scopes?.some((s) => so.value === s))}
+                        isMulti
+                        onBlur={handleBlur}
+                      />
+                      {
+                        // Display error messages like tanstack/react-form fields.
+                        state?.meta.errors?.length > 0 && (
+                          <FormErrorMessage>
+                            <UnorderedList>
+                              {state.meta.errors?.map((error) => (
+                                <li key={error.path}>
+                                  <Text color="red.500">{error.message}</Text>
+                                </li>
+                              ))}
+                            </UnorderedList>
+                          </FormErrorMessage>
+                        )
+                      }
+                    </FormField>
+                  )}
                 </form.AppField>
 
                 <form.AppField name="labels" mode="array">

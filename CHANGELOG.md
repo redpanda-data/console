@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.1.0 / 2025-04-28
+
+- [IMPROVEMENT] Add `tokenFilepath` support for providing SASL OAuth token via file.
+- [IMPROVEMENT] Add additional scopes to OIDC configuration.
+
+## v3.0.1 / 2025-04-24
+
+- [IMPROVEMENT] Add thousands separator on estimated messages and group lag display.
+- [IMPROVEMENT] Add support for CSV export in a message viewer.
+- [BUFGIX] Fix a bug that prevented proper protobuf configuration.
+- [BUFGIX] Show an error when topic deletion fails
+
 ## v3.0.0 / 2025-04-07
 
 **Note:** This release contains breaking config changes. You can find the migration doc here: https://docs.redpanda.com/current/upgrade/migrate/console-v3/

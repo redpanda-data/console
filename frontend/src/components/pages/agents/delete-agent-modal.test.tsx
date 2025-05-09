@@ -1,9 +1,10 @@
+import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { deletePipeline } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-import { DeletePipelineRequest } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { DeletePipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
-  DeletePipelineRequest as DeletePipelineRequestDataPlane,
-  Pipeline,
+  DeletePipelineRequestSchema as DeletePipelineRequestSchemaDataPlane,
+  PipelineSchema,
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Agent } from 'react-query/api/agent';
@@ -16,7 +17,7 @@ describe('DeleteAgentModal', () => {
       id: 'agent-id',
       displayName: 'agent-name',
       description: 'agent-description',
-      pipelines: [new Pipeline({ id: 'pipeline-id', state: Pipeline_State.RUNNING })],
+      pipelines: [create(PipelineSchema, { id: 'pipeline-id', state: Pipeline_State.RUNNING })],
       state: Pipeline_State.RUNNING,
     };
 
@@ -51,8 +52,8 @@ describe('DeleteAgentModal', () => {
     await waitFor(() => {
       expect(deletePipelineMock).toHaveBeenCalledTimes(1);
       expect(deletePipelineMock).toHaveBeenCalledWith(
-        new DeletePipelineRequest({
-          request: new DeletePipelineRequestDataPlane({
+        create(DeletePipelineRequestSchema, {
+          request: create(DeletePipelineRequestSchemaDataPlane, {
             id: agent.pipelines[0]?.id,
           }),
         }),

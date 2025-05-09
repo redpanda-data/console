@@ -21,7 +21,7 @@ import {
   type PartitionTransformStatus,
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import {
   type MessageSearch,
@@ -31,7 +31,6 @@ import {
   transformsApi,
 } from '../../../state/backendApi';
 import type { TopicMessage } from '../../../state/restInterfaces';
-// import { Box, Button, DataTable, SearchField, Text } from '@redpanda-data/ui';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
 import { sanitizeString } from '../../../utils/filterHelper';

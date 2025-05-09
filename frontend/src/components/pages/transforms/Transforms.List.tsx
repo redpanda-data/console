@@ -21,7 +21,7 @@ import { Link } from 'react-router-dom';
 import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha2/transform_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { transformsApi } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -167,8 +167,6 @@ class TransformsList extends PageComponent<{}> {
                   const partitionTransformStatus = r.statuses.first(
                     (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
                   )!;
-                  // const enumType = proto3.getEnumType(PartitionTransformStatus_PartitionStatus);
-                  // const entry = enumType.findNumber(s.status);
 
                   return (
                     <Flex alignItems="center">
@@ -202,7 +200,7 @@ class TransformsList extends PageComponent<{}> {
                     height="16px"
                     color="gray.500"
                     // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
 

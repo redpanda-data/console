@@ -1,7 +1,8 @@
+import { create } from '@bufbuild/protobuf';
 import { Button, ButtonGroup, Flex, FormField, Input, PasswordInput, createStandaloneToast } from '@redpanda-data/ui';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { CreateSecretRequest, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { CreateSecretRequestSchema, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backendApi';
 import { DefaultSkeleton } from '../../../../utils/tsxUtils';
@@ -49,7 +50,7 @@ class RpConnectSecretCreate extends PageComponent {
     this.id = this.id.toUpperCase();
     rpcnSecretManagerApi
       .create(
-        new CreateSecretRequest({
+        create(CreateSecretRequestSchema, {
           id: this.id,
           // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
           secretData: base64ToUInt8Array(encodeBase64(this.secret)),

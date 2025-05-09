@@ -22,7 +22,6 @@ import {
   Grid,
   GridItem,
   ListItem,
-  Skeleton,
   Tabs,
   UnorderedList,
   useToast,
@@ -73,8 +72,13 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     if (!prevProps) return;
 
     const prevName = decodeURIComponentPercents(prevProps.subjectName);
+    const currentName = decodeURIComponentPercents(this.props.subjectName);
+    const prevVersion = getVersionFromQuery();
+    const currentVersion = getVersionFromQuery();
 
-    if (prevName !== this.subjectNameRaw) {
+    if (prevName !== currentName || prevVersion !== currentVersion) {
+      this.subjectNameRaw = currentName;
+      this.subjectNameEncoded = encodeURIComponent(currentName);
       this.updateTitleAndBreadcrumbs();
       this.refreshData();
     }
@@ -639,12 +643,7 @@ const SchemaReferences = observer(
           {/* <Link as={ReactRouterLink} to="/home">Learn More</Link> */}
         </Text>
 
-        {!referencedBy ? (
-          <Flex gap="2" direction="column">
-            <Skeleton height="20px" />
-            <Skeleton height="20px" />
-          </Flex>
-        ) : referencedBy.length > 0 ? (
+        {!!referencedBy && referencedBy?.length > 0 ? (
           <UnorderedList>
             {referencedBy
               .flatMap((x) => x.usages)

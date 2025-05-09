@@ -183,7 +183,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                   }
                   value={group.coordinatorId}
                 />
-                <Statistic title="Total Lag" value={group.lagSum} />
+                <Statistic title="Total Lag" value={numberToThousandsString(group.lagSum)} />
               </Flex>
             </div>
           </Section>

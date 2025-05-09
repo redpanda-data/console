@@ -94,7 +94,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
     baseUrl: getGrpcBasePath(p.urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
     jsonOptions: {
-      typeRegistry: protobufRegistry,
+      registry: protobufRegistry,
     },
   });
 

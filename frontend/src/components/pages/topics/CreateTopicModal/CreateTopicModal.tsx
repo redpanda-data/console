@@ -465,7 +465,7 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
       <Button
         variant="outline"
         className="iconButton deleteButton"
-        onClick={(event) => {
+        onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
           event.stopPropagation();
           p.entries.remove(p.entry);
         }}

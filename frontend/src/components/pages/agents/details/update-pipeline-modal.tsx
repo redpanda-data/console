@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import {
   Button,
   ButtonGroup,
@@ -15,10 +16,10 @@ import { useAppForm } from 'components/form/form';
 import { PipelineEditor } from 'components/pages/rp-connect/Pipelines.Create';
 import { MAX_TASKS, MIN_TASKS, cpuToTasks, tasksToCPU } from 'components/pages/rp-connect/tasks';
 import {
-  Pipeline_Resources,
-  UpdatePipelineRequest as UpdatePipelineRequestDataPlane,
+  PipelineUpdateSchema,
+  Pipeline_ResourcesSchema,
+  UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { PipelineUpdate } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { useGetPipelineQuery, useGetPipelinesBySecretsQuery } from 'react-query/api/pipeline';
 import { useUpdatePipelineMutationWithToast } from 'react-query/api/pipeline';
@@ -106,22 +107,20 @@ export const UpdatePipelineModal = ({ isOpen, onClose, pipelineId }: UpdatePipel
         }
       }
 
-      const request = new UpdatePipelineRequestDataPlane({
+      const request = create(UpdatePipelineRequestSchemaDataPlane, {
         id: pipelineToUpdate?.id,
-        pipeline: new PipelineUpdate({
+        pipeline: create(PipelineUpdateSchema, {
           displayName: value.displayName,
           description: value.description,
           tags: tagsMap,
           configYaml: value.configYaml,
-          resources: new Pipeline_Resources({
+          resources: create(Pipeline_ResourcesSchema, {
             ...pipelineToUpdate?.resources,
             cpuShares: tasksToCPU(value.resources.cpuShares) || '0',
             memoryShares: '0', // still required by API but unused
           }),
         }),
       });
-
-      console.log('request: ', request);
 
       await updatePipeline({ request });
       handleClose();

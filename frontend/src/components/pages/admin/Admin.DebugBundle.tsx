@@ -13,7 +13,8 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { type FC, useEffect, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { Timestamp } from '@bufbuild/protobuf';
+import { create } from '@bufbuild/protobuf';
+import { timestampDate, timestampFromDate } from '@bufbuild/protobuf/wkt';
 import {
   Alert,
   AlertIcon,
@@ -37,8 +38,9 @@ import { makeObservable, observable } from 'mobx';
 import { MdDeleteOutline } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import {
-  CreateDebugBundleRequest,
-  LabelSelector,
+  type CreateDebugBundleRequest,
+  CreateDebugBundleRequestSchema,
+  LabelSelectorSchema,
   type SCRAMAuth,
   SCRAMAuth_Mechanism,
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
@@ -120,7 +122,10 @@ export class AdminDebugBundle extends PageComponent<{}> {
           >
             Bundle generation in progress...
           </Button>
-          <Text>Started {api.debugBundleStatus?.createdAt?.toDate().toLocaleString()}</Text>
+          <Text>
+            Started{' '}
+            {api.debugBundleStatus?.createdAt && timestampDate(api.debugBundleStatus?.createdAt).toLocaleString()}
+          </Text>
         </Box>
       );
     }
@@ -267,7 +272,7 @@ const NewDebugBundleForm: FC<{
   const generateNewDebugBundle = () => {
     onSubmit(
       advancedForm
-        ? new CreateDebugBundleRequest({
+        ? create(CreateDebugBundleRequestSchema, {
             authentication:
               formState.scramUsername || formState.scramPassword
                 ? {
@@ -282,17 +287,17 @@ const NewDebugBundleForm: FC<{
             brokerIds: formState.brokerIds,
             controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
             cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
-            logsSince: formState.logsSince ? Timestamp.fromDate(new Date(formState.logsSince)) : undefined,
+            logsSince: formState.logsSince ? timestampFromDate(new Date(formState.logsSince)) : undefined,
             logsSizeLimitBytes: formState.logsSizeLimitBytes * formState.logsSizeLimitUnit,
-            logsUntil: formState.logsUntil ? Timestamp.fromDate(new Date(formState.logsUntil)) : undefined,
+            logsUntil: formState.logsUntil ? timestampFromDate(new Date(formState.logsUntil)) : undefined,
             metricsIntervalSeconds: formState.metricsIntervalSeconds,
             tlsEnabled: formState.tlsEnabled,
             tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
             namespace: formState.namespace,
-            labelSelector: formState.labelSelectors.map((x) => new LabelSelector(x)),
+            labelSelector: formState.labelSelectors.map((x) => create(LabelSelectorSchema, x)),
             partitions: formState.partitions,
           })
-        : new CreateDebugBundleRequest(),
+        : create(CreateDebugBundleRequestSchema),
     );
   };
 

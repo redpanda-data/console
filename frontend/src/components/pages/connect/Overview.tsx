@@ -9,13 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { Badge, Box, DataTable, Link, Stack, Text, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/ErrorResult';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
 import { isServerless } from '../../../config';
-import { ListSecretScopesRequest } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rpcnSecretManagerApi } from '../../../state/backendApi';
 import type { ClusterConnectorInfo, ClusterConnectorTaskInfo, ClusterConnectors } from '../../../state/restInterfaces';
@@ -90,7 +91,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
 
   async checkRPCNSecretEnable() {
     if (Features.pipelinesApi) {
-      await rpcnSecretManagerApi.checkScope(new ListSecretScopesRequest());
+      await rpcnSecretManagerApi.checkScope(create(ListSecretScopesRequestSchema));
     }
   }
 

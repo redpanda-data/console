@@ -53,6 +53,7 @@ kafka:
       # clientSecret: "example-client-secret"
       # tokenEndpoint: "https://accounts.google.com/token"
       # scope: "openid"
+      # tokenFilepath: "/path/to/token/file"
     # Example for basic authentication (uncomment to use):
     # username: "your-username"
     # password: "your-password"
