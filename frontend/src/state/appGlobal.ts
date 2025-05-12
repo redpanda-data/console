@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Location, NavigateFunction } from "react-router-dom";
-import { api } from "./backendApi";
-import { uiState } from "./uiState";
+import type { Location, NavigateFunction } from 'react-router-dom';
+import { api } from './backendApi';
+import { uiState } from './uiState';
 
 class AppGlobal {
   private _navigate = null as unknown as NavigateFunction;
@@ -55,7 +55,7 @@ class AppGlobal {
 
   get location(): Location {
     if (!this._location) {
-      throw new Error("Location is not initialized. Make sure HistorySetter is mounted.");
+      throw new Error('Location is not initialized. Make sure HistorySetter is mounted.');
     }
     return this._location;
   }
@@ -71,6 +71,6 @@ class AppGlobal {
     // intended for pages to set
   };
 
-  searchMessagesFunc?: (source: "auto" | "manual") => void = undefined;
+  searchMessagesFunc?: (source: 'auto' | 'manual') => void = undefined;
 }
 export const appGlobal = new AppGlobal();

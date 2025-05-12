@@ -11,7 +11,7 @@
 
 import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
-import { useParams, useMatch } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { appGlobal } from '../../state/appGlobal';
 import { api } from '../../state/backendApi';
 import type { ApiError, UserData } from '../../state/restInterfaces';
@@ -20,7 +20,7 @@ import { getBasePath } from '../../utils/env';
 import fetchWithTimeout from '../../utils/fetchWithTimeout';
 import { queryToObj } from '../../utils/queryHelper';
 
-class LoginCompletePage extends Component<{ provider: string; }> {
+class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {
     this.completeLogin(this.props.provider, window.location);
   }
@@ -83,8 +83,7 @@ class LoginCompletePage extends Component<{ provider: string; }> {
   }
 }
 
-
 export default () => {
-  const params = useParams()
+  const params = useParams();
   return <LoginCompletePage provider={params.provider ?? ''} />;
-}
+};

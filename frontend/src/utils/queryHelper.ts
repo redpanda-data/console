@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { appGlobal } from "../state/appGlobal";
+import { appGlobal } from '../state/appGlobal';
 
 export const queryToObj = (str: string) => {
   const query = new URLSearchParams(str);
@@ -22,7 +22,7 @@ export const objToQuery = (obj: { [key: string]: any }) => {
   // '?' + queryString.stringify(obj, stringifyOptions)
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(obj)) {
-    if (v === null || v === undefined || v === "") continue;
+    if (v === null || v === undefined || v === '') continue;
 
     query.append(k, String(v));
   }
@@ -35,7 +35,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
   try {
     const location = appGlobal.historyLocation();
     if (!location) {
-      console.warn("Location not available yet, skipping query update");
+      console.warn('Location not available yet, skipping query update');
       return;
     }
 
@@ -49,6 +49,6 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
       appGlobal.historyReplace(`${path}${newQuery}`);
     }
   } catch (error) {
-    console.warn("Failed to update query:", error);
+    console.warn('Failed to update query:', error);
   }
 }

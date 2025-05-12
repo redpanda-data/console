@@ -9,63 +9,72 @@
  * by the Apache License, Version 2.0
  */
 
-import { BeakerIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, HomeIcon, LinkIcon, ScaleIcon, ShieldCheckIcon } from "@heroicons/react/outline";
-import type { NavLinkProps } from "@redpanda-data/ui/dist/components/Nav/NavLink";
-import React, { Fragment, type FunctionComponent, useEffect } from "react";
-import { HiOutlinePuzzlePiece } from "react-icons/hi2";
-import { MdKey, MdOutlineSmartToy } from "react-icons/md";
-import { Navigate, Route, Routes, useLocation, useParams, useMatch, useNavigate } from "react-router-dom";
-import { appGlobal } from "state/appGlobal";
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from "../config";
-import { api } from "../state/backendApi";
-import type { UserPermissions } from "../state/restInterfaces";
-import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from "../state/supportedFeatures";
-import { uiState } from "../state/uiState";
-import { AnimatePresence } from "../utils/animationProps";
-import { type AppFeature, AppFeatures } from "../utils/env";
-import { Section } from "./misc/common";
-import type { PageComponentType, PageProps } from "./pages/Page";
-import AclList, { type AclListTab } from "./pages/acls/Acl.List";
-import RoleCreatePage from "./pages/acls/RoleCreate";
-import RoleDetailsPage from "./pages/acls/RoleDetails";
-import RoleEditPage from "./pages/acls/RoleEditPage";
-import UserCreatePage from "./pages/acls/UserCreate";
-import UserDetailsPage from "./pages/acls/UserDetails";
-import UserEditPage from "./pages/acls/UserEdit";
-import { AdminDebugBundle } from "./pages/admin/Admin.DebugBundle";
-import AdminPageDebugBundleProgress from "./pages/admin/Admin.DebugBundleProgress";
-import LicenseExpiredPage from "./pages/admin/LicenseExpiredPage";
-import UploadLicensePage from "./pages/admin/UploadLicensePage";
-import { AgentListPage, getAgentSidebarItemTitle } from "./pages/agents/agent-list-page";
-import { CreateAgentPage } from "./pages/agents/create/create-agent-page";
-import { CreateAgentHTTP } from "./pages/agents/create/templates/http/create-agent-http";
-import { AgentDetailsPage } from "./pages/agents/details/agent-details-page";
-import KafkaClusterDetails from "./pages/connect/Cluster.Details";
-import KafkaConnectorDetails from "./pages/connect/Connector.Details";
-import CreateConnector from "./pages/connect/CreateConnector";
-import KafkaConnectOverview from "./pages/connect/Overview";
-import GroupDetails from "./pages/consumers/Group.Details";
-import GroupList from "./pages/consumers/Group.List";
-import { BrokerDetails } from "./pages/overview/Broker.Details";
-import Overview from "./pages/overview/Overview";
-import QuotasList from "./pages/quotas/Quotas.List";
-import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
-import RpConnectPipelinesCreate from "./pages/rp-connect/Pipelines.Create";
-import RpConnectPipelinesDetails from "./pages/rp-connect/Pipelines.Details";
-import RpConnectPipelinesEdit from "./pages/rp-connect/Pipelines.Edit";
-import RpConnectSecretCreate from "./pages/rp-connect/secrets/Secrets.Create";
-import RpConnectSecretUpdate from "./pages/rp-connect/secrets/Secrets.Update";
-import EditSchemaCompatibilityPage from "./pages/schemas/EditCompatibility";
-import { SchemaAddVersionPage, SchemaCreatePage } from "./pages/schemas/Schema.Create";
-import SchemaDetailsView from "./pages/schemas/Schema.Details";
-import SchemaList from "./pages/schemas/Schema.List";
-import { SecretsStorePage } from "./pages/secrets/secrets-store-page";
-import TopicDetails from "./pages/topics/Topic.Details";
-import TopicList from "./pages/topics/Topic.List";
-import { TopicProducePage } from "./pages/topics/Topic.Produce";
-import TransformDetails from "./pages/transforms/Transform.Details";
-import TransformsList from "./pages/transforms/Transforms.List";
-import { TransformsSetup } from "./pages/transforms/Transforms.Setup";
+import {
+  BeakerIcon,
+  CollectionIcon,
+  CubeTransparentIcon,
+  FilterIcon,
+  HomeIcon,
+  LinkIcon,
+  ScaleIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/outline';
+import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
+import React, { Fragment, type FunctionComponent, useEffect } from 'react';
+import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
+import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
+import { Navigate, Route, Routes, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { appGlobal } from 'state/appGlobal';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
+import { api } from '../state/backendApi';
+import type { UserPermissions } from '../state/restInterfaces';
+import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
+import { uiState } from '../state/uiState';
+import { AnimatePresence } from '../utils/animationProps';
+import { type AppFeature, AppFeatures } from '../utils/env';
+import { Section } from './misc/common';
+import type { PageComponentType, PageProps } from './pages/Page';
+import AclList, { type AclListTab } from './pages/acls/Acl.List';
+import RoleCreatePage from './pages/acls/RoleCreate';
+import RoleDetailsPage from './pages/acls/RoleDetails';
+import RoleEditPage from './pages/acls/RoleEditPage';
+import UserCreatePage from './pages/acls/UserCreate';
+import UserDetailsPage from './pages/acls/UserDetails';
+import UserEditPage from './pages/acls/UserEdit';
+import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
+import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
+import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
+import UploadLicensePage from './pages/admin/UploadLicensePage';
+import { AgentListPage, getAgentSidebarItemTitle } from './pages/agents/agent-list-page';
+import { CreateAgentPage } from './pages/agents/create/create-agent-page';
+import { CreateAgentHTTP } from './pages/agents/create/templates/http/create-agent-http';
+import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
+import KafkaClusterDetails from './pages/connect/Cluster.Details';
+import KafkaConnectorDetails from './pages/connect/Connector.Details';
+import CreateConnector from './pages/connect/CreateConnector';
+import KafkaConnectOverview from './pages/connect/Overview';
+import GroupDetails from './pages/consumers/Group.Details';
+import GroupList from './pages/consumers/Group.List';
+import { BrokerDetails } from './pages/overview/Broker.Details';
+import Overview from './pages/overview/Overview';
+import QuotasList from './pages/quotas/Quotas.List';
+import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
+import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
+import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
+import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
+import RpConnectSecretCreate from './pages/rp-connect/secrets/Secrets.Create';
+import RpConnectSecretUpdate from './pages/rp-connect/secrets/Secrets.Update';
+import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
+import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/Schema.Create';
+import SchemaDetailsView from './pages/schemas/Schema.Details';
+import SchemaList from './pages/schemas/Schema.List';
+import { SecretsStorePage } from './pages/secrets/secrets-store-page';
+import TopicDetails from './pages/topics/Topic.Details';
+import TopicList from './pages/topics/Topic.List';
+import { TopicProducePage } from './pages/topics/Topic.Produce';
+import TransformDetails from './pages/transforms/Transform.Details';
+import TransformsList from './pages/transforms/Transforms.List';
+import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 
 //
 //	Route Types
@@ -77,7 +86,7 @@ export interface PageDefinition<TRouteParams = {}> {
   path: string;
   pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
   routeJsx: JSX.Element;
-  icon?: (props: React.ComponentProps<"svg">) => JSX.Element;
+  icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
   menuItemKey?: string; // set by 'CreateRouteMenuItems'
   visibilityCheck?: () => MenuItemState;
 }
@@ -87,7 +96,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
   return entries
     .map((entry) => {
       // Menu entry for Page
-      if (entry.path.includes(":")) return null; // only root-routes (no param) can be in menu
+      if (entry.path.includes(':')) return null; // only root-routes (no param) can be in menu
       if (!entry?.icon) return null; // items without icon do not appear in the sidebar
 
       let isEnabled = true;
@@ -102,7 +111,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       const isDisabled = !isEnabled;
 
       // Handle AI Agents route with Technical Preview badge
-      const title = entry.path === "/agents" ? getAgentSidebarItemTitle({ route: entry }) : entry.title;
+      const title = entry.path === '/agents' ? getAgentSidebarItemTitle({ route: entry }) : entry.title;
 
       return {
         title: title as string | JSX.Element,
@@ -121,7 +130,7 @@ function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
 }
 
 const NotFound = () => {
-  uiState.pageTitle = "404";
+  uiState.pageTitle = '404';
   const location = useLocation();
   return (
     <Section title="404">
@@ -190,7 +199,6 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
     ...params,
   } as PageProps;
 
-
   useEffect(() => {
     // Only update if we haven't already and the path has changed
     if (uiState.currentRoute?.path !== route.path) {
@@ -203,12 +211,10 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
         visibilityCheck: route.visibilityCheck,
         routeJsx: null as unknown as JSX.Element,
       } as PageDefinition<any>;
-      
     }
-    
   }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
 
-  console.log("route.path", route.path);
+  console.log('route.path', route.path);
 
   return <route.pageType key={route.path} {...pageProps} />;
 };
@@ -217,21 +223,27 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
  * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.
  */
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
-  const isAgentFeatureEnabled = isFeatureFlagEnabled("enableAiAgentsInConsoleUi");
+  const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAgentFeatureEnabled && path.includes("/agents") && location.pathname !== "/overview") {
-      appGlobal.historyPush("/overview");
+    if (!isAgentFeatureEnabled && path.includes('/agents') && location.pathname !== '/overview') {
+      appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-  }, [isAgentFeatureEnabled, path, location.pathname, navigate]);
+  }, [isAgentFeatureEnabled, path, location.pathname]);
 
   return children;
 };
 
-function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>, title: string, icon?: (props: React.ComponentProps<"svg">) => JSX.Element, exact = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
+function MakeRoute<TRouteParams>(
+  path: string,
+  page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
+  title: string,
+  icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
+  exact = true,
+  showCallback?: () => MenuItemState,
+): PageDefinition<TRouteParams> {
   const route: PageDefinition<TRouteParams> = {
     title,
     path,
@@ -244,7 +256,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
   // Create the route element after routeData is defined
   const routeElement = (
     <Route
-      path={`${path}${exact ? "" : "/*"}`}
+      path={`${path}${exact ? '' : '/*'}`}
       key={title}
       element={
         <ProtectedRoute path={path}>
@@ -254,13 +266,18 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
     />
   );
   route.routeJsx = routeElement;
-  
+
   return route;
 }
 
-function routeVisibility(visible: boolean | (() => boolean), requiredFeatures?: FeatureEntry[], requiredPermissions?: UserPermissions[], requiredAppFeatures?: AppFeature[]): () => MenuItemState {
+function routeVisibility(
+  visible: boolean | (() => boolean),
+  requiredFeatures?: FeatureEntry[],
+  requiredPermissions?: UserPermissions[],
+  requiredAppFeatures?: AppFeature[],
+): () => MenuItemState {
   return () => {
-    let v = typeof visible === "boolean" ? visible : visible();
+    let v = typeof visible === 'boolean' ? visible : visible();
 
     const disabledReasons: DisabledReasons[] = [];
     if (requiredFeatures)
@@ -304,109 +321,186 @@ function routeVisibility(visible: boolean | (() => boolean), requiredFeatures?: 
 // If a route has one or more parameters it will not be shown in the main menu (obviously, since the parameter would have to be known!)
 //
 export const APP_ROUTES: IRouteEntry[] = [
-  MakeRoute<{}>("/overview", Overview, "Overview", HomeIcon),
-  MakeRoute<{ brokerId: string }>("/overview/:brokerId", BrokerDetails, "Broker Details"),
+  MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
+  MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
 
-  MakeRoute<{}>("/topics", TopicList, "Topics", CollectionIcon), // TODO @Draho - this is causing infinite loop
-  MakeRoute<{ topicName: string }>("/topics/:topicName", TopicDetails, "Topics"),
-  MakeRoute<{ topicName: string }>("/topics/:topicName/produce-record", TopicProducePage, "Produce Record"),
+  MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon), // TODO @Draho - this is causing infinite loop
+  MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
+  MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
 
-  MakeRoute<{}>("/schema-registry", SchemaList, "Schema Registry", CubeTransparentIcon),
-  MakeRoute<{}>("/schema-registry/create", SchemaCreatePage, "Create schema"),
-  MakeRoute<{ subjectName: string }>("/schema-registry/subjects/:subjectName/add-version", SchemaAddVersionPage, "Add version"),
-  MakeRoute<{ subjectName: string }>("/schema-registry/subjects/:subjectName", SchemaDetailsView, "Schema Registry"),
-  MakeRoute<{ subjectName: string }>("/schema-registry/edit-compatibility", EditSchemaCompatibilityPage, "Edit Schema Compatibility"),
-  MakeRoute<{ subjectName: string }>("/schema-registry/subjects/:subjectName/edit-compatibility", EditSchemaCompatibilityPage, "Edit Schema Compatibility"),
-
-  MakeRoute<{}>("/groups", GroupList, "Consumer Groups", FilterIcon, undefined, routeVisibility(true, [Feature.ConsumerGroups])),
-  MakeRoute<{ groupId: string }>("/groups/:groupId/", GroupDetails, "Consumer Groups"),
-
-  MakeRoute<{}>(
-    "/secrets",
-    SecretsStorePage,
-    "Secrets Store",
-    MdKey,
-    true,
-    routeVisibility(() => isEmbedded(), [Feature.PipelineService]) // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
+  MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),
+  MakeRoute<{ subjectName: string }>(
+    '/schema-registry/subjects/:subjectName/add-version',
+    SchemaAddVersionPage,
+    'Add version',
+  ),
+  MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
+  MakeRoute<{ subjectName: string }>(
+    '/schema-registry/edit-compatibility',
+    EditSchemaCompatibilityPage,
+    'Edit Schema Compatibility',
+  ),
+  MakeRoute<{ subjectName: string }>(
+    '/schema-registry/subjects/:subjectName/edit-compatibility',
+    EditSchemaCompatibilityPage,
+    'Edit Schema Compatibility',
   ),
 
   MakeRoute<{}>(
-    "/agents",
+    '/groups',
+    GroupList,
+    'Consumer Groups',
+    FilterIcon,
+    undefined,
+    routeVisibility(true, [Feature.ConsumerGroups]),
+  ),
+  MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
+
+  MakeRoute<{}>(
+    '/secrets',
+    SecretsStorePage,
+    'Secrets Store',
+    MdKey,
+    true,
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+  ),
+
+  MakeRoute<{}>(
+    '/agents',
     AgentListPage,
-    "AI Agents",
+    'AI Agents',
     HiOutlinePuzzlePiece,
     true,
     routeVisibility(
       // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
-      () => isEmbedded() && !isServerless() && isFeatureFlagEnabled("enableAiAgentsInConsoleUi"), // Needed to pass flags to current routing solution
+      () => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
-      []
-    )
+      [],
+    ),
   ),
-  MakeRoute<{}>("/agents/create", CreateAgentPage, "AI Agents", undefined, true, undefined),
-  MakeRoute<{}>("/agents/create/http", CreateAgentHTTP, "AI Agents", undefined, true, undefined),
-  MakeRoute<{ agentId: string }>("/agents/:agentId", AgentDetailsPage, "AI Agents", undefined, true, undefined),
+  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents', undefined, true, undefined),
+  MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents', undefined, true, undefined),
+  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents', undefined, true, undefined),
 
-  MakeRoute<{}>("/security", AclList, "Security", ShieldCheckIcon, true),
-  MakeRoute<{ tab: AclListTab }>("/security/:tab?", AclList, "Security"),
+  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
+  MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
-  MakeRoute<{}>("/security/users/create", UserCreatePage, "Security"),
-  MakeRoute<{ userName: string }>("/security/users/:userName/details", UserDetailsPage, "Security"),
-  MakeRoute<{ userName: string }>("/security/users/:userName/edit", UserEditPage, "Security"),
+  MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
+  MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
+  MakeRoute<{ userName: string }>('/security/users/:userName/edit', UserEditPage, 'Security'),
 
-  MakeRoute<{}>("/security/roles/create", RoleCreatePage, "Security"),
-  MakeRoute<{ roleName: string }>("/security/roles/:roleName/details", RoleDetailsPage, "Security"),
-  MakeRoute<{ roleName: string }>("/security/roles/:roleName/edit", RoleEditPage, "Security"),
+  MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
+  MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),
+  MakeRoute<{ roleName: string }>('/security/roles/:roleName/edit', RoleEditPage, 'Security'),
 
-  MakeRoute<{}>("/quotas", QuotasList, "Quotas", ScaleIcon, true, routeVisibility(true, [Feature.GetQuotas], ["canListQuotas"])),
+  MakeRoute<{}>(
+    '/quotas',
+    QuotasList,
+    'Quotas',
+    ScaleIcon,
+    true,
+    routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
+  ),
 
-  MakeRoute<{ matchedPath: string }>("/connect-clusters", KafkaConnectOverview, "Connect", LinkIcon, true, () => {
+  MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
     if (isServerless()) {
-      console.log("Connect clusters inside serverless checks.");
+      console.log('Connect clusters inside serverless checks.');
       // We are in serverless, there is no kafka connect, so we can ignore it.
       // Here, we only care about the pipeline service and use that to decide whether to show the entry
       if (isSupported(Feature.PipelineService)) {
-        console.debug("Pipeline Service enabled. Showing sidebar link.");
+        console.debug('Pipeline Service enabled. Showing sidebar link.');
         return { visible: true, disabledReasons: [] };
       }
       // Pipeline service is not active? Hide entry
-      console.debug("Pipeline Service NOT enabled. NOT showing sidebar link.");
+      console.debug('Pipeline Service NOT enabled. NOT showing sidebar link.');
       return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
     }
     // We are in cloud (dedicated or BYOC), or self-hosted
     // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
-    console.debug("Pipeline Service state does not matter. Showing sidebar link.");
+    console.debug('Pipeline Service state does not matter. Showing sidebar link.');
     return { visible: true, disabledReasons: [] };
   }),
-  MakeRoute<{ clusterName: string }>("/connect-clusters/:clusterName", KafkaClusterDetails, "Connect Cluster"),
-  MakeRoute<{ clusterName: string }>("/connect-clusters/:clusterName/create-connector", CreateConnector, "Create Connector", undefined, undefined, routeVisibility(false)),
-  MakeRoute<{ clusterName: string; connector: string }>("/connect-clusters/:clusterName/:connector", KafkaConnectorDetails, "Connector Details"),
-
-  MakeRoute<{}>("/transforms-setup", TransformsSetup, "Transforms", undefined, true, routeVisibility(true, [Feature.TransformsService])),
-  MakeRoute<{}>("/transforms", TransformsList, "Transforms", MdOutlineSmartToy, true, routeVisibility(true, [Feature.TransformsService])),
-  MakeRoute<{ transformName: string }>("/transforms/:transformName", TransformDetails, "Transforms"),
-
-  // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
-  MakeRoute<{}>("/rp-connect/secrets/create", RpConnectSecretCreate, "Connector-Secrets"),
-  MakeRoute<{}>("/rp-connect/create", RpConnectPipelinesCreate, "Connectors"),
-  MakeRoute<{ pipelineId: string }>("/rp-connect/:pipelineId", RpConnectPipelinesDetails, "Connectors"),
-  MakeRoute<{ pipelineId: string }>("/rp-connect/:pipelineId/edit", RpConnectPipelinesEdit, "Connectors"),
-  MakeRoute<{ secretId: string }>("/rp-connect/secrets/:secretId/edit", RpConnectSecretUpdate, "Connector-Secrets"),
-
-  MakeRoute<{}>("/reassign-partitions", ReassignPartitions, "Reassign Partitions", BeakerIcon, false, routeVisibility(true, [Feature.GetReassignments, Feature.PatchReassignments], ["canPatchConfigs", "canReassignPartitions"], ["REASSIGN_PARTITIONS"])),
-
-  MakeRoute<{}>("/debug-bundle", AdminDebugBundle, "Debug Bundle", undefined, true, routeVisibility(false, [Feature.DebugBundleService], ["canViewDebugBundle"])),
-  MakeRoute<{}>("/debug-bundle/progress/:jobId", AdminPageDebugBundleProgress, "Debug Bundle Progress", undefined, true, routeVisibility(false, [Feature.DebugBundleService], ["canViewDebugBundle"])),
-
-  MakeRoute<{}>(
-    "/upload-license",
-    UploadLicensePage,
-    "Upload License",
+  MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
+  MakeRoute<{ clusterName: string }>(
+    '/connect-clusters/:clusterName/create-connector',
+    CreateConnector,
+    'Create Connector',
     undefined,
-    false,
-    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ["canManageLicense"])
+    undefined,
+    routeVisibility(false),
+  ),
+  MakeRoute<{ clusterName: string; connector: string }>(
+    '/connect-clusters/:clusterName/:connector',
+    KafkaConnectorDetails,
+    'Connector Details',
   ),
 
-  MakeRoute<{}>("/trial-expired", LicenseExpiredPage, "Your enterprise trial has expired"),
+  MakeRoute<{}>(
+    '/transforms-setup',
+    TransformsSetup,
+    'Transforms',
+    undefined,
+    true,
+    routeVisibility(true, [Feature.TransformsService]),
+  ),
+  MakeRoute<{}>(
+    '/transforms',
+    TransformsList,
+    'Transforms',
+    MdOutlineSmartToy,
+    true,
+    routeVisibility(true, [Feature.TransformsService]),
+  ),
+  MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
+
+  // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
+  MakeRoute<{}>('/rp-connect/secrets/create', RpConnectSecretCreate, 'Connector-Secrets'),
+  MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
+  MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
+  MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
+  MakeRoute<{ secretId: string }>('/rp-connect/secrets/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),
+
+  MakeRoute<{}>(
+    '/reassign-partitions',
+    ReassignPartitions,
+    'Reassign Partitions',
+    BeakerIcon,
+    false,
+    routeVisibility(
+      true,
+      [Feature.GetReassignments, Feature.PatchReassignments],
+      ['canPatchConfigs', 'canReassignPartitions'],
+      ['REASSIGN_PARTITIONS'],
+    ),
+  ),
+
+  MakeRoute<{}>(
+    '/debug-bundle',
+    AdminDebugBundle,
+    'Debug Bundle',
+    undefined,
+    true,
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+  ),
+  MakeRoute<{}>(
+    '/debug-bundle/progress/:jobId',
+    AdminPageDebugBundleProgress,
+    'Debug Bundle Progress',
+    undefined,
+    true,
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+  ),
+
+  MakeRoute<{}>(
+    '/upload-license',
+    UploadLicensePage,
+    'Upload License',
+    undefined,
+    false,
+    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ['canManageLicense']),
+  ),
+
+  MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 ].filterNull();

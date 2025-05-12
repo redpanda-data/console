@@ -340,9 +340,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Button
               variant="link"
               onClick={() => {
-                appGlobal.historyPush(
-                  `/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`,
-                );
+                appGlobal.historyPush(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
               }}
             >
               Go back

@@ -121,15 +121,11 @@ class TopicList extends PageComponent {
     if (uiSettings.topicList.quickSearch) {
       try {
         const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch, 'i');
-        topics = topics.filter(
-          (topic) => Boolean(topic.topicName.match(quickSearchRegExp))
-        );
+        topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
       } catch (e) {
         console.warn('Invalid expression');
         const searchLower = uiSettings.topicList.quickSearch.toLowerCase();
-        topics = topics.filter(
-          (topic) => topic.topicName.toLowerCase().includes(searchLower)
-        );
+        topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
       }
     }
 
