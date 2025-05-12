@@ -129,6 +129,9 @@ import { range } from '../../../misc/common';
 import JavascriptFilterModal from './JavascriptFilterModal';
 import { PreviewSettings, getPreviewTags } from './PreviewSettings';
 
+// Define the column order as a constant
+const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
+
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
   { value: PayloadEncoding.NULL, label: 'None (Null)' },
@@ -889,20 +892,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     if (uiState.topicSettings.previewColumnFields.length > 0) {
       newColumns.splice(0, newColumns.length);
 
-      const columnOrder: DataColumnKey[] = [
-        'timestamp',
-        'partitionID',
-        'offset',
-        'key',
-        'value',
-        'keySize',
-        'valueSize',
-      ];
-
       // let's be defensive and remove any duplicates before showing in the table
       const selectedColumns = new Set(uiState.topicSettings.previewColumnFields.map((field) => field.dataIndex));
 
-      for (const column of columnOrder) {
+      for (const column of COLUMN_ORDER) {
         if (selectedColumns.has(column)) {
           newColumns.push(dataTableColumns[column]);
         }
@@ -1174,7 +1167,6 @@ class SaveMessagesDialog extends Component<{
                   {
                     value: 'csv',
                     label: 'CSV',
-                    disabled: true,
                   },
                 ]}
               />
@@ -1208,16 +1200,84 @@ class SaveMessagesDialog extends Component<{
 
     console.log(`saving cleaned messages; messages: ${messages.length}`);
 
-    const json = toJson(cleanMessages, 4);
-
-    const link = document.createElement('a');
-    const file = new Blob([json], { type: 'application/json' });
-    link.href = URL.createObjectURL(file);
-    link.download = 'messages.json';
-    document.body.appendChild(link); // required in firefox
-    link.click();
+    if (this.format === 'json') {
+      const json = toJson(cleanMessages, 4);
+      const link = document.createElement('a');
+      const file = new Blob([json], { type: 'application/json' });
+      link.href = URL.createObjectURL(file);
+      link.download = 'messages.json';
+      document.body.appendChild(link); // required in firefox
+      link.click();
+    } else if (this.format === 'csv') {
+      const csvContent = this.convertToCSV(cleanMessages);
+      const link = document.createElement('a');
+      const file = new Blob([csvContent], { type: 'text/csv' });
+      link.href = URL.createObjectURL(file);
+      link.download = 'messages.csv';
+      document.body.appendChild(link); // required in firefox
+      link.click();
+    }
 
     this.props.onClose();
+  }
+
+  convertToCSV(messages: any[]): string {
+    if (messages.length === 0) return '';
+
+    const headers: string[] = [...COLUMN_ORDER];
+
+    // Add other common fields that might not be in COLUMN_ORDER
+    if (messages[0].compression && !headers.includes('compression')) headers.push('compression');
+    if (messages[0].isTransactional !== undefined && !headers.includes('isTransactional'))
+      headers.push('isTransactional');
+
+    const csvRows = [];
+
+    // Add the headers
+    csvRows.push(headers.join(','));
+
+    // Add the data
+    for (const message of messages) {
+      const values = [];
+
+      // Add fields in the same order as headers
+      for (const header of headers) {
+        if (header === 'key') {
+          if (message.key) {
+            const keyValue = message.key.payload || '';
+            values.push(
+              typeof keyValue === 'object'
+                ? JSON.stringify(keyValue).replace(/,/g, ';')
+                : String(keyValue).replace(/,/g, ';'),
+            );
+          } else {
+            values.push('');
+          }
+        } else if (header === 'value') {
+          if (message.value) {
+            const valuePayload = message.value.payload || '';
+            values.push(
+              typeof valuePayload === 'object'
+                ? JSON.stringify(valuePayload).replace(/,/g, ';')
+                : String(valuePayload).replace(/,/g, ';'),
+            );
+          } else {
+            values.push('');
+          }
+        } else if (header === 'keySize') {
+          values.push(message.key?.size || '');
+        } else if (header === 'valueSize') {
+          values.push(message.value?.size || '');
+        } else {
+          // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
+          values.push(message[header] !== undefined ? message[header] : '');
+        }
+      }
+
+      csvRows.push(values.join(','));
+    }
+
+    return csvRows.join('\n');
   }
 
   cleanMessages(messages: TopicMessage[]): any[] {
