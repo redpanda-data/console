@@ -10,7 +10,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"time"
 )
 
@@ -44,7 +44,7 @@ func (c *Filesystem) Validate() error {
 		return nil
 	}
 	if c.RefreshInterval == 0 {
-		return fmt.Errorf("filesystem provider is enabled but refresh interval is set to 0")
+		return errors.New("filesystem provider is enabled but refresh interval is set to 0")
 	}
 
 	return nil

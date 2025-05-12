@@ -4,36 +4,16 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
-import { file_buf_validate_validate } from "../../../../buf/validate/validate_pb";
 import { file_redpanda_api_auth_v1_authorization } from "../../auth/v1/authorization_pb";
+import type { CreateRoleRequest as CreateRoleRequest$1, CreateRoleResponse as CreateRoleResponse$1, DeleteRoleRequest as DeleteRoleRequest$1, DeleteRoleResponse as DeleteRoleResponse$1, GetRoleRequest as GetRoleRequest$1, GetRoleResponse as GetRoleResponse$1, ListRoleMembersRequest as ListRoleMembersRequest$1, ListRoleMembersResponse as ListRoleMembersResponse$1, ListRolesRequest as ListRolesRequest$1, ListRolesResponse as ListRolesResponse$1, UpdateRoleMembershipRequest as UpdateRoleMembershipRequest$1, UpdateRoleMembershipResponse as UpdateRoleMembershipResponse$1 } from "../../dataplane/v1/security_pb";
+import { file_redpanda_api_dataplane_v1_security } from "../../dataplane/v1/security_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file redpanda/api/console/v1alpha1/security.proto.
  */
 export const file_redpanda_api_console_v1alpha1_security: GenFile = /*@__PURE__*/
-  fileDesc("CixyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9zZWN1cml0eS5wcm90bxIdcmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEiLQoEUm9sZRIlCgRuYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJCKlAgoQTGlzdFJvbGVzUmVxdWVzdBJLCgZmaWx0ZXIYASABKAsyNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0Um9sZXNSZXF1ZXN0LkZpbHRlckgAiAEBEiYKCXBhZ2Vfc2l6ZRgCIAEoBUITukgQGg4Y6Aco////////////ARISCgpwYWdlX3Rva2VuGAMgASgJGn0KBkZpbHRlchIpCgtuYW1lX3ByZWZpeBgBIAEoCUIUukgRcg8YgAEyCl4oW14sPV0qKSQSKwoNbmFtZV9jb250YWlucxgCIAEoCUIUukgRcg8YgAEyCl4oW14sPV0qKSQSGwoJcHJpbmNpcGFsGAMgASgJQgi6SAVyAxiAAUIJCgdfZmlsdGVyImAKEUxpc3RSb2xlc1Jlc3BvbnNlEjIKBXJvbGVzGAEgAygLMiMucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUm9sZRIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiRgoRQ3JlYXRlUm9sZVJlcXVlc3QSMQoEcm9sZRgBIAEoCzIjLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlJvbGUiRwoSQ3JlYXRlUm9sZVJlc3BvbnNlEjEKBHJvbGUYASABKAsyIy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Sb2xlIjwKDkdldFJvbGVSZXF1ZXN0EioKCXJvbGVfbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQihAEKD0dldFJvbGVSZXNwb25zZRIxCgRyb2xlGAEgASgLMiMucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUm9sZRI+CgdtZW1iZXJzGAIgAygLMi0ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUm9sZU1lbWJlcnNoaXAiVAoRRGVsZXRlUm9sZVJlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBITCgtkZWxldGVfYWNscxgCIAEoCCIUChJEZWxldGVSb2xlUmVzcG9uc2UiiQIKFkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBJRCgZmaWx0ZXIYAiABKAsyPC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0Um9sZU1lbWJlcnNSZXF1ZXN0LkZpbHRlckgAiAEBEiYKCXBhZ2Vfc2l6ZRgDIAEoBUITukgQGg4Y6Aco////////////ARISCgpwYWdlX3Rva2VuGAQgASgJGikKBkZpbHRlchIfCg1uYW1lX2NvbnRhaW5zGAEgASgJQgi6SAVyAxiAAUIJCgdfZmlsdGVyIoUBChdMaXN0Um9sZU1lbWJlcnNSZXNwb25zZRIRCglyb2xlX25hbWUYASABKAkSPgoHbWVtYmVycxgCIAMoCzItLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlJvbGVNZW1iZXJzaGlwEhcKD25leHRfcGFnZV90b2tlbhgDIAEoCSIjCg5Sb2xlTWVtYmVyc2hpcBIRCglwcmluY2lwYWwYASABKAki1AEKG1VwZGF0ZVJvbGVNZW1iZXJzaGlwUmVxdWVzdBIqCglyb2xlX25hbWUYASABKAlCF7pIFMgBAXIPEAEYgAEyCF5bXiw9XSskEg4KBmNyZWF0ZRgCIAEoCBI6CgNhZGQYAyADKAsyLS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Sb2xlTWVtYmVyc2hpcBI9CgZyZW1vdmUYBCADKAsyLS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5Sb2xlTWVtYmVyc2hpcCLIAQocVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXNwb25zZRIqCglyb2xlX25hbWUYASABKAlCF7pIFMgBAXIPEAEYgAEyCF5bXiw9XSskEjwKBWFkZGVkGAIgAygLMi0ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUm9sZU1lbWJlcnNoaXASPgoHcmVtb3ZlZBgDIAMoCzItLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlJvbGVNZW1iZXJzaGlwMqIGCg9TZWN1cml0eVNlcnZpY2USeAoJTGlzdFJvbGVzEi8ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFJvbGVzUmVxdWVzdBowLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RSb2xlc1Jlc3BvbnNlIgiKph0ECAMQAxJ7CgpDcmVhdGVSb2xlEjAucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ3JlYXRlUm9sZVJlcXVlc3QaMS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5DcmVhdGVSb2xlUmVzcG9uc2UiCIqmHQQIAxADEnIKB0dldFJvbGUSLS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRSb2xlUmVxdWVzdBouLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkdldFJvbGVSZXNwb25zZSIIiqYdBAgDEAMSewoKRGVsZXRlUm9sZRIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkRlbGV0ZVJvbGVSZXF1ZXN0GjEucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuRGVsZXRlUm9sZVJlc3BvbnNlIgiKph0ECAMQAxKKAQoPTGlzdFJvbGVNZW1iZXJzEjUucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFJvbGVNZW1iZXJzUmVxdWVzdBo2LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RSb2xlTWVtYmVyc1Jlc3BvbnNlIgiKph0ECAMQAxKZAQoUVXBkYXRlUm9sZU1lbWJlcnNoaXASOi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5VcGRhdGVSb2xlTWVtYmVyc2hpcFJlcXVlc3QaOy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5VcGRhdGVSb2xlTWVtYmVyc2hpcFJlc3BvbnNlIgiKph0ECAMQA0KuAgohY29tLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExQg1TZWN1cml0eVByb3RvUAFaY2dpdGh1Yi5jb20vcmVkcGFuZGEtZGF0YS9jb25zb2xlL2JhY2tlbmQvcGtnL3Byb3RvZ2VuL3JlZHBhbmRhL2FwaS9jb25zb2xlL3YxYWxwaGExO2NvbnNvbGV2MWFscGhhMaICA1JBQ6oCHVJlZHBhbmRhLkFwaS5Db25zb2xlLlYxYWxwaGExygIdUmVkcGFuZGFcQXBpXENvbnNvbGVcVjFhbHBoYTHiAilSZWRwYW5kYVxBcGlcQ29uc29sZVxWMWFscGhhMVxHUEJNZXRhZGF0YeoCIFJlZHBhbmRhOjpBcGk6OkNvbnNvbGU6OlYxYWxwaGExYgZwcm90bzM", [file_buf_validate_validate, file_redpanda_api_auth_v1_authorization]);
-
-/**
- * Role defines a role in the system.
- *
- * @generated from message redpanda.api.console.v1alpha1.Role
- */
-export type Role = Message<"redpanda.api.console.v1alpha1.Role"> & {
-  /**
-   * The name of the role.
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.Role.
- * Use `create(RoleSchema)` to create a new message.
- */
-export const RoleSchema: GenMessage<Role> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 0);
+  fileDesc("CixyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9zZWN1cml0eS5wcm90bxIdcmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEiUAoQTGlzdFJvbGVzUmVxdWVzdBI8CgdyZXF1ZXN0GAEgASgLMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Um9sZXNSZXF1ZXN0IlMKEUxpc3RSb2xlc1Jlc3BvbnNlEj4KCHJlc3BvbnNlGAEgASgLMiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Um9sZXNSZXNwb25zZSJSChFDcmVhdGVSb2xlUmVxdWVzdBI9CgdyZXF1ZXN0GAEgASgLMiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVSb2xlUmVxdWVzdCJVChJDcmVhdGVSb2xlUmVzcG9uc2USPwoIcmVzcG9uc2UYASABKAsyLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVJvbGVSZXNwb25zZSJMCg5HZXRSb2xlUmVxdWVzdBI6CgdyZXF1ZXN0GAEgASgLMikucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5HZXRSb2xlUmVxdWVzdCJPCg9HZXRSb2xlUmVzcG9uc2USPAoIcmVzcG9uc2UYASABKAsyKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFJvbGVSZXNwb25zZSJSChFEZWxldGVSb2xlUmVxdWVzdBI9CgdyZXF1ZXN0GAEgASgLMiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVSb2xlUmVxdWVzdCJVChJEZWxldGVSb2xlUmVzcG9uc2USPwoIcmVzcG9uc2UYASABKAsyLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVJvbGVSZXNwb25zZSJcChZMaXN0Um9sZU1lbWJlcnNSZXF1ZXN0EkIKB3JlcXVlc3QYASABKAsyMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QiXwoXTGlzdFJvbGVNZW1iZXJzUmVzcG9uc2USRAoIcmVzcG9uc2UYASABKAsyMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1Jlc3BvbnNlImYKG1VwZGF0ZVJvbGVNZW1iZXJzaGlwUmVxdWVzdBJHCgdyZXF1ZXN0GAEgASgLMjYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5VcGRhdGVSb2xlTWVtYmVyc2hpcFJlcXVlc3QiaQocVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXNwb25zZRJJCghyZXNwb25zZRgBIAEoCzI3LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXNwb25zZTKiBgoPU2VjdXJpdHlTZXJ2aWNlEngKCUxpc3RSb2xlcxIvLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RSb2xlc1JlcXVlc3QaMC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0Um9sZXNSZXNwb25zZSIIiqYdBAgDEAMSewoKQ3JlYXRlUm9sZRIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkNyZWF0ZVJvbGVSZXF1ZXN0GjEucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ3JlYXRlUm9sZVJlc3BvbnNlIgiKph0ECAMQAxJyCgdHZXRSb2xlEi0ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0Um9sZVJlcXVlc3QaLi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRSb2xlUmVzcG9uc2UiCIqmHQQIAxADEnsKCkRlbGV0ZVJvbGUSMC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5EZWxldGVSb2xlUmVxdWVzdBoxLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkRlbGV0ZVJvbGVSZXNwb25zZSIIiqYdBAgDEAMSigEKD0xpc3RSb2xlTWVtYmVycxI1LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QaNi5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0Um9sZU1lbWJlcnNSZXNwb25zZSIIiqYdBAgDEAMSmQEKFFVwZGF0ZVJvbGVNZW1iZXJzaGlwEjoucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXF1ZXN0GjsucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXNwb25zZSIIiqYdBAgDEANCrgIKIWNvbS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMUINU2VjdXJpdHlQcm90b1ABWmNnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMTtjb25zb2xldjFhbHBoYTGiAgNSQUOqAh1SZWRwYW5kYS5BcGkuQ29uc29sZS5WMWFscGhhMcoCHVJlZHBhbmRhXEFwaVxDb25zb2xlXFYxYWxwaGEx4gIpUmVkcGFuZGFcQXBpXENvbnNvbGVcVjFhbHBoYTFcR1BCTWV0YWRhdGHqAiBSZWRwYW5kYTo6QXBpOjpDb25zb2xlOjpWMWFscGhhMWIGcHJvdG8z", [file_redpanda_api_auth_v1_authorization, file_redpanda_api_dataplane_v1_security]);
 
 /**
  * ListRolesRequest is the request for ListRoles.
@@ -42,26 +22,9 @@ export const RoleSchema: GenMessage<Role> = /*@__PURE__*/
  */
 export type ListRolesRequest = Message<"redpanda.api.console.v1alpha1.ListRolesRequest"> & {
   /**
-   * Optional filter.
-   *
-   * @generated from field: optional redpanda.api.console.v1alpha1.ListRolesRequest.Filter filter = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListRolesRequest request = 1;
    */
-  filter?: ListRolesRequest_Filter;
-
-  /**
-   * Page size.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
+  request?: ListRolesRequest$1;
 };
 
 /**
@@ -69,42 +32,7 @@ export type ListRolesRequest = Message<"redpanda.api.console.v1alpha1.ListRolesR
  * Use `create(ListRolesRequestSchema)` to create a new message.
  */
 export const ListRolesRequestSchema: GenMessage<ListRolesRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 1);
-
-/**
- * Filter options.
- *
- * @generated from message redpanda.api.console.v1alpha1.ListRolesRequest.Filter
- */
-export type ListRolesRequest_Filter = Message<"redpanda.api.console.v1alpha1.ListRolesRequest.Filter"> & {
-  /**
-   * Filter results only roles named with the prefix.
-   *
-   * @generated from field: string name_prefix = 1;
-   */
-  namePrefix: string;
-
-  /**
-   * Filter results to only roles with names which contain the string.
-   *
-   * @generated from field: string name_contains = 2;
-   */
-  nameContains: string;
-
-  /**
-   * Return only roles assigned to this principal.
-   *
-   * @generated from field: string principal = 3;
-   */
-  principal: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.ListRolesRequest.Filter.
- * Use `create(ListRolesRequest_FilterSchema)` to create a new message.
- */
-export const ListRolesRequest_FilterSchema: GenMessage<ListRolesRequest_Filter> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 1, 0);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 0);
 
 /**
  * ListRolesResponse is the response for ListRoles.
@@ -113,18 +41,9 @@ export const ListRolesRequest_FilterSchema: GenMessage<ListRolesRequest_Filter> 
  */
 export type ListRolesResponse = Message<"redpanda.api.console.v1alpha1.ListRolesResponse"> & {
   /**
-   * The roles in the system.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.Role roles = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListRolesResponse response = 1;
    */
-  roles: Role[];
-
-  /**
-   * Token to retrieve the next page.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
+  response?: ListRolesResponse$1;
 };
 
 /**
@@ -132,7 +51,7 @@ export type ListRolesResponse = Message<"redpanda.api.console.v1alpha1.ListRoles
  * Use `create(ListRolesResponseSchema)` to create a new message.
  */
 export const ListRolesResponseSchema: GenMessage<ListRolesResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 2);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 1);
 
 /**
  * CreateRoleRequest is the request for CreateRole.
@@ -141,11 +60,9 @@ export const ListRolesResponseSchema: GenMessage<ListRolesResponse> = /*@__PURE_
  */
 export type CreateRoleRequest = Message<"redpanda.api.console.v1alpha1.CreateRoleRequest"> & {
   /**
-   * The role to create.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
+   * @generated from field: redpanda.api.dataplane.v1.CreateRoleRequest request = 1;
    */
-  role?: Role;
+  request?: CreateRoleRequest$1;
 };
 
 /**
@@ -153,7 +70,7 @@ export type CreateRoleRequest = Message<"redpanda.api.console.v1alpha1.CreateRol
  * Use `create(CreateRoleRequestSchema)` to create a new message.
  */
 export const CreateRoleRequestSchema: GenMessage<CreateRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 3);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 2);
 
 /**
  * CreateRoleResponse is the response for CreateRole.
@@ -162,11 +79,9 @@ export const CreateRoleRequestSchema: GenMessage<CreateRoleRequest> = /*@__PURE_
  */
 export type CreateRoleResponse = Message<"redpanda.api.console.v1alpha1.CreateRoleResponse"> & {
   /**
-   * The role.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
+   * @generated from field: redpanda.api.dataplane.v1.CreateRoleResponse response = 1;
    */
-  role?: Role;
+  response?: CreateRoleResponse$1;
 };
 
 /**
@@ -174,20 +89,18 @@ export type CreateRoleResponse = Message<"redpanda.api.console.v1alpha1.CreateRo
  * Use `create(CreateRoleResponseSchema)` to create a new message.
  */
 export const CreateRoleResponseSchema: GenMessage<CreateRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 4);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 3);
 
 /**
- * CreateRoleRequest is the request for CreateRole.
+ * GetRoleRequest is the request for GetRole.
  *
  * @generated from message redpanda.api.console.v1alpha1.GetRoleRequest
  */
 export type GetRoleRequest = Message<"redpanda.api.console.v1alpha1.GetRoleRequest"> & {
   /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetRoleRequest request = 1;
    */
-  roleName: string;
+  request?: GetRoleRequest$1;
 };
 
 /**
@@ -195,7 +108,7 @@ export type GetRoleRequest = Message<"redpanda.api.console.v1alpha1.GetRoleReque
  * Use `create(GetRoleRequestSchema)` to create a new message.
  */
 export const GetRoleRequestSchema: GenMessage<GetRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 5);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 4);
 
 /**
  * GetRoleResponse is the response to GetRole.
@@ -204,18 +117,9 @@ export const GetRoleRequestSchema: GenMessage<GetRoleRequest> = /*@__PURE__*/
  */
 export type GetRoleResponse = Message<"redpanda.api.console.v1alpha1.GetRoleResponse"> & {
   /**
-   * The Role.
-   *
-   * @generated from field: redpanda.api.console.v1alpha1.Role role = 1;
+   * @generated from field: redpanda.api.dataplane.v1.GetRoleResponse response = 1;
    */
-  role?: Role;
-
-  /**
-   * Members assigned to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
-   */
-  members: RoleMembership[];
+  response?: GetRoleResponse$1;
 };
 
 /**
@@ -223,7 +127,7 @@ export type GetRoleResponse = Message<"redpanda.api.console.v1alpha1.GetRoleResp
  * Use `create(GetRoleResponseSchema)` to create a new message.
  */
 export const GetRoleResponseSchema: GenMessage<GetRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 6);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 5);
 
 /**
  * DeleteRoleRequest is the request for DeleteRole.
@@ -232,18 +136,9 @@ export const GetRoleResponseSchema: GenMessage<GetRoleResponse> = /*@__PURE__*/
  */
 export type DeleteRoleRequest = Message<"redpanda.api.console.v1alpha1.DeleteRoleRequest"> & {
   /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
+   * @generated from field: redpanda.api.dataplane.v1.DeleteRoleRequest request = 1;
    */
-  roleName: string;
-
-  /**
-   * Whether to delete the ACLs bound to the role.
-   *
-   * @generated from field: bool delete_acls = 2;
-   */
-  deleteAcls: boolean;
+  request?: DeleteRoleRequest$1;
 };
 
 /**
@@ -251,7 +146,7 @@ export type DeleteRoleRequest = Message<"redpanda.api.console.v1alpha1.DeleteRol
  * Use `create(DeleteRoleRequestSchema)` to create a new message.
  */
 export const DeleteRoleRequestSchema: GenMessage<DeleteRoleRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 7);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 6);
 
 /**
  * DeleteRoleResponse is the response for DeleteRole.
@@ -259,6 +154,10 @@ export const DeleteRoleRequestSchema: GenMessage<DeleteRoleRequest> = /*@__PURE_
  * @generated from message redpanda.api.console.v1alpha1.DeleteRoleResponse
  */
 export type DeleteRoleResponse = Message<"redpanda.api.console.v1alpha1.DeleteRoleResponse"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.DeleteRoleResponse response = 1;
+   */
+  response?: DeleteRoleResponse$1;
 };
 
 /**
@@ -266,7 +165,7 @@ export type DeleteRoleResponse = Message<"redpanda.api.console.v1alpha1.DeleteRo
  * Use `create(DeleteRoleResponseSchema)` to create a new message.
  */
 export const DeleteRoleResponseSchema: GenMessage<DeleteRoleResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 8);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 7);
 
 /**
  * List role members for a role. That is user principals assigned to that role.
@@ -275,33 +174,9 @@ export const DeleteRoleResponseSchema: GenMessage<DeleteRoleResponse> = /*@__PUR
  */
 export type ListRoleMembersRequest = Message<"redpanda.api.console.v1alpha1.ListRoleMembersRequest"> & {
   /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListRoleMembersRequest request = 1;
    */
-  roleName: string;
-
-  /**
-   * Optional filter.
-   *
-   * @generated from field: optional redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter filter = 2;
-   */
-  filter?: ListRoleMembersRequest_Filter;
-
-  /**
-   * Page size.
-   *
-   * @generated from field: int32 page_size = 3;
-   */
-  pageSize: number;
-
-  /**
-   * Value of the next_page_token field returned by the previous response.
-   * If not provided, the system assumes the first page is requested.
-   *
-   * @generated from field: string page_token = 4;
-   */
-  pageToken: string;
+  request?: ListRoleMembersRequest$1;
 };
 
 /**
@@ -309,28 +184,7 @@ export type ListRoleMembersRequest = Message<"redpanda.api.console.v1alpha1.List
  * Use `create(ListRoleMembersRequestSchema)` to create a new message.
  */
 export const ListRoleMembersRequestSchema: GenMessage<ListRoleMembersRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 9);
-
-/**
- * Filter options.
- *
- * @generated from message redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter
- */
-export type ListRoleMembersRequest_Filter = Message<"redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter"> & {
-  /**
-   * Filter results to only members with names which contain the string.
-   *
-   * @generated from field: string name_contains = 1;
-   */
-  nameContains: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.ListRoleMembersRequest.Filter.
- * Use `create(ListRoleMembersRequest_FilterSchema)` to create a new message.
- */
-export const ListRoleMembersRequest_FilterSchema: GenMessage<ListRoleMembersRequest_Filter> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 9, 0);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 8);
 
 /**
  * ListRoleMembersResponse is the response for ListRoleMembers.
@@ -339,25 +193,9 @@ export const ListRoleMembersRequest_FilterSchema: GenMessage<ListRoleMembersRequ
  */
 export type ListRoleMembersResponse = Message<"redpanda.api.console.v1alpha1.ListRoleMembersResponse"> & {
   /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
+   * @generated from field: redpanda.api.dataplane.v1.ListRoleMembersResponse response = 1;
    */
-  roleName: string;
-
-  /**
-   * Members assigned to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership members = 2;
-   */
-  members: RoleMembership[];
-
-  /**
-   * Token to retrieve the next page.
-   *
-   * @generated from field: string next_page_token = 3;
-   */
-  nextPageToken: string;
+  response?: ListRoleMembersResponse$1;
 };
 
 /**
@@ -365,28 +203,7 @@ export type ListRoleMembersResponse = Message<"redpanda.api.console.v1alpha1.Lis
  * Use `create(ListRoleMembersResponseSchema)` to create a new message.
  */
 export const ListRoleMembersResponseSchema: GenMessage<ListRoleMembersResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 10);
-
-/**
- * RoleMembership is the role membership.
- *
- * @generated from message redpanda.api.console.v1alpha1.RoleMembership
- */
-export type RoleMembership = Message<"redpanda.api.console.v1alpha1.RoleMembership"> & {
-  /**
-   * The name of the principal assigned to the role.
-   *
-   * @generated from field: string principal = 1;
-   */
-  principal: string;
-};
-
-/**
- * Describes the message redpanda.api.console.v1alpha1.RoleMembership.
- * Use `create(RoleMembershipSchema)` to create a new message.
- */
-export const RoleMembershipSchema: GenMessage<RoleMembership> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 11);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 9);
 
 /**
  * UpdateRoleMembershipRequest is the request to UpdateRoleMembership.
@@ -395,33 +212,9 @@ export const RoleMembershipSchema: GenMessage<RoleMembership> = /*@__PURE__*/
  */
 export type UpdateRoleMembershipRequest = Message<"redpanda.api.console.v1alpha1.UpdateRoleMembershipRequest"> & {
   /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
+   * @generated from field: redpanda.api.dataplane.v1.UpdateRoleMembershipRequest request = 1;
    */
-  roleName: string;
-
-  /**
-   * Create the role if it doesn't already exist.
-   * If the role is created in this way, the “add” list will be respected, but the “remove” list will be ignored.
-   *
-   * @generated from field: bool create = 2;
-   */
-  create: boolean;
-
-  /**
-   * Members to assign to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership add = 3;
-   */
-  add: RoleMembership[];
-
-  /**
-   * Members to remove from the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership remove = 4;
-   */
-  remove: RoleMembership[];
+  request?: UpdateRoleMembershipRequest$1;
 };
 
 /**
@@ -429,7 +222,7 @@ export type UpdateRoleMembershipRequest = Message<"redpanda.api.console.v1alpha1
  * Use `create(UpdateRoleMembershipRequestSchema)` to create a new message.
  */
 export const UpdateRoleMembershipRequestSchema: GenMessage<UpdateRoleMembershipRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 12);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 10);
 
 /**
  * UpdateRoleMembershipResponse is the response for UpdateRoleMembership.
@@ -438,25 +231,9 @@ export const UpdateRoleMembershipRequestSchema: GenMessage<UpdateRoleMembershipR
  */
 export type UpdateRoleMembershipResponse = Message<"redpanda.api.console.v1alpha1.UpdateRoleMembershipResponse"> & {
   /**
-   * The role name.
-   *
-   * @generated from field: string role_name = 1;
+   * @generated from field: redpanda.api.dataplane.v1.UpdateRoleMembershipResponse response = 1;
    */
-  roleName: string;
-
-  /**
-   * Members assigned to the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership added = 2;
-   */
-  added: RoleMembership[];
-
-  /**
-   * Members removed from the role.
-   *
-   * @generated from field: repeated redpanda.api.console.v1alpha1.RoleMembership removed = 3;
-   */
-  removed: RoleMembership[];
+  response?: UpdateRoleMembershipResponse$1;
 };
 
 /**
@@ -464,7 +241,7 @@ export type UpdateRoleMembershipResponse = Message<"redpanda.api.console.v1alpha
  * Use `create(UpdateRoleMembershipResponseSchema)` to create a new message.
  */
 export const UpdateRoleMembershipResponseSchema: GenMessage<UpdateRoleMembershipResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_console_v1alpha1_security, 13);
+  messageDesc(file_redpanda_api_console_v1alpha1_security, 11);
 
 /**
  * @generated from service redpanda.api.console.v1alpha1.SecurityService

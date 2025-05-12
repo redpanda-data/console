@@ -10,8 +10,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 	"time"
 )
 
@@ -53,7 +53,7 @@ func (c *KafkaSASLAwsMskIam) RegisterFlags(f *flag.FlagSet) {
 // Validate the given SASL AWS MSK IAM configuration options.
 func (c *KafkaSASLAwsMskIam) Validate() error {
 	if (c.AccessKey == "" && c.SecretKey != "") || (c.AccessKey != "" && c.SecretKey == "") {
-		return fmt.Errorf("invalid AWS IAM configuration. Both access and secret keys are required")
+		return errors.New("invalid AWS IAM configuration. Both access and secret keys are required")
 	}
 
 	// if both or neither are set, it's valid

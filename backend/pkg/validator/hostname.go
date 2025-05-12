@@ -10,7 +10,7 @@
 package validator
 
 import (
-	"fmt"
+	"errors"
 	"net"
 	"regexp"
 	"strconv"
@@ -29,12 +29,12 @@ func IsHostnamePort(val string) (bool, error) {
 	}
 	// Port must be any number 0 > x <= 65535.
 	if portNum, err := strconv.ParseInt(port, 10, 32); err != nil || portNum > 65535 || portNum < 1 {
-		return false, fmt.Errorf("port must be any number between 1 and 65535")
+		return false, errors.New("port must be any number between 1 and 65535")
 	}
 
 	// If host is specified, it should match a DNS name
 	if host != "" {
-		return hostnameRegexRFC1123.MatchString(host), fmt.Errorf("host must match a DNS name")
+		return hostnameRegexRFC1123.MatchString(host), errors.New("host must match a DNS name")
 	}
 
 	return true, nil

@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -143,12 +144,12 @@ type deleteTopicRecordsRequest struct {
 
 func (d *deleteTopicRecordsRequest) OK() error {
 	if len(d.Partitions) == 0 {
-		return fmt.Errorf("at least one partition must be specified")
+		return errors.New("at least one partition must be specified")
 	}
 
 	for _, partition := range d.Partitions {
 		if partition.Offset < -1 {
-			return fmt.Errorf("partition offset must be greater than -1")
+			return errors.New("partition offset must be greater than -1")
 		}
 	}
 
@@ -216,11 +217,11 @@ type editTopicConfigRequest struct {
 
 func (e *editTopicConfigRequest) OK() error {
 	if len(e.Configs) == 0 {
-		return fmt.Errorf("you must set at least one config entry that shall be modified")
+		return errors.New("you must set at least one config entry that shall be modified")
 	}
 	for _, cfg := range e.Configs {
 		if cfg.Key == "" {
-			return fmt.Errorf("at least one config key was not set. config keys must always be set")
+			return errors.New("at least one config key was not set. config keys must always be set")
 		}
 	}
 
@@ -233,7 +234,7 @@ func (api *API) handleEditTopicConfig() http.HandlerFunc {
 		topicName := rest.GetURLParam(r, "topicName")
 		if topicName == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("topic name must be set"),
+				Err:      errors.New("topic name must be set"),
 				Status:   http.StatusBadRequest,
 				Message:  "Topic name must be set",
 				IsSilent: false,
@@ -377,7 +378,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		requestedTopicNames := rest.GetQueryParam(r, "topicNames")
 		if requestedTopicNames == "" {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("required parameter topicNames is missing"),
+				Err:      errors.New("required parameter topicNames is missing"),
 				Status:   http.StatusBadRequest,
 				Message:  "Required parameter topicNames is missing",
 				IsSilent: false,
@@ -390,7 +391,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		timestampStr := rest.GetQueryParam(r, "timestamp")
 		if timestampStr == "" {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("required parameter timestamp is missing"),
+				Err:      errors.New("required parameter timestamp is missing"),
 				Status:   http.StatusBadRequest,
 				Message:  "Required parameter timestamp is missing",
 				IsSilent: false,
@@ -401,7 +402,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		timestamp, err := strconv.Atoi(timestampStr)
 		if err != nil {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("timestamp parameter must be a valid int"),
+				Err:      errors.New("timestamp parameter must be a valid int"),
 				Status:   http.StatusBadRequest,
 				Message:  "Timestamp parameter must be a valid int",
 				IsSilent: false,

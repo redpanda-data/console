@@ -2,8 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { createConnector, deleteConnector } from '../connector.utils';
 
+// biome-ignore lint/suspicious/noExportsInTest: ignore for this test
 export const ACCESS_KEY = 'accesskey';
+// biome-ignore lint/suspicious/noExportsInTest: ignore for this test
 export const SECRET_ACCESS_KEY = 'secretaccesskey';
+// biome-ignore lint/suspicious/noExportsInTest: ignore for this test
 export const S3_BUCKET_NAME = 's3bucketname';
 
 test.describe('Connector', async () => {

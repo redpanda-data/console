@@ -102,7 +102,8 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 			if resourceName, ok := findResourceName(fmEr); ok {
 				if e := new(protovalidate.ValidationError); errors.As(err, &e) {
 					e.Violations = slices.DeleteFunc(e.Violations, func(v *protovalidate.Violation) bool {
-						return !UpdateAffectsField(fmEr.GetUpdateMask(), strings.TrimPrefix(*v.Proto.FieldPath, resourceName+".")) //nolint:staticcheck // we want to keep using this deprecated field for now.
+						//nolint:staticcheck,nolintlint // keep using this deprecated field for now
+						return !UpdateAffectsField(fmEr.GetUpdateMask(), strings.TrimPrefix(*v.Proto.FieldPath, resourceName+"."))
 					})
 					// If no violations anymore after stripping the obsolete ones - proceed with the call.
 					if len(e.Violations) == 0 {

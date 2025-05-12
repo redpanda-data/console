@@ -49,7 +49,7 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 		if r.ContentLength == 0 {
 			s.writeError(w, r, apierrors.NewConnectError(
 				connect.CodeInvalidArgument,
-				fmt.Errorf("request body must be a valid multipart/form-data payload, but sent body is empty"),
+				errors.New("request body must be a valid multipart/form-data payload, but sent body is empty"),
 				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			))
 			return
@@ -70,7 +70,7 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 		if metadataJSON == "" {
 			s.writeError(w, r, apierrors.NewConnectError(
 				connect.CodeInvalidArgument,
-				fmt.Errorf("could not find or parse form field metadata"),
+				errors.New("could not find or parse form field metadata"),
 				apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			))
 			return
@@ -145,7 +145,7 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 		if err != nil {
 			s.writeError(w, r, apierrors.NewConnectError(
 				connect.CodeInternal,
-				fmt.Errorf("deployed wasm transform, but failed to list it afterwards"),
+				errors.New("deployed wasm transform, but failed to list it afterwards"),
 				apierrors.NewErrorInfo(v1.Reason_REASON_TYPE_MAPPING_ERROR.String()),
 			))
 			return

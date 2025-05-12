@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -175,7 +176,7 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 	}
 
 	return nil, &rest.Error{
-		Err:      fmt.Errorf("broker describe config response was empty"),
+		Err:      errors.New("broker describe config response was empty"),
 		Status:   http.StatusInternalServerError,
 		Message:  "BrokerWithLogDirs config response was empty",
 		IsSilent: false,

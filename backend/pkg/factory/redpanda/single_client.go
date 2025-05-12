@@ -25,8 +25,7 @@ var _ ClientFactory = (*SingleClientProvider)(nil)
 // SingleClientProvider is a struct that holds a single instance of the Redpanda
 // Admin API client. It implements the ClientFactory interface.
 type SingleClientProvider struct {
-	redpandaCl *rpadmin.AdminAPI
-	cfg        config.RedpandaAdminAPI
+	cfg config.RedpandaAdminAPI
 }
 
 // NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
@@ -41,14 +40,31 @@ func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
 		return &DisabledClientProvider{}, nil
 	}
 
+	return &SingleClientProvider{
+		cfg: redpandaCfg,
+	}, nil
+}
+
+// GetRedpandaAPIClient returns a redpanda admin api for the given context.
+func (p *SingleClientProvider) GetRedpandaAPIClient(_ context.Context, opts ...ClientOption) (AdminAPIClient, error) {
+	cfg := &ClientOptions{
+		URLs: p.cfg.URLs,
+	}
+
+	for _, opt := range opts {
+		if err := opt(cfg); err != nil {
+			return nil, fmt.Errorf("applying option: %w", err)
+		}
+	}
+
 	// Build admin client with provided credentials
-	tlsCfg, err := redpandaCfg.TLS.TLSConfig()
+	tlsCfg, err := p.cfg.TLS.TLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build TLS config: %w", err)
 	}
 
 	// Explicitly set the tlsCfg to nil in case an HTTP target url has been provided
-	scheme, _, err := net.ParseHostMaybeScheme(redpandaCfg.URLs[0])
+	scheme, _, err := net.ParseHostMaybeScheme(cfg.URLs[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse admin api url scheme: %w", err)
 	}
@@ -56,18 +72,10 @@ func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
 		tlsCfg = nil
 	}
 
-	adminClient, err := rpadmin.NewAdminAPI(redpandaCfg.URLs, redpandaCfg.RPAdminAuth(), tlsCfg)
+	adminClient, err := rpadmin.NewAdminAPI(cfg.URLs, p.cfg.RPAdminAuth(), tlsCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create admin client: %w", err)
 	}
 
-	return &SingleClientProvider{
-		redpandaCl: adminClient,
-		cfg:        redpandaCfg,
-	}, nil
-}
-
-// GetRedpandaAPIClient returns a redpanda admin api for the given context.
-func (p *SingleClientProvider) GetRedpandaAPIClient(_ context.Context) (AdminAPIClient, error) {
-	return p.redpandaCl, nil
+	return adminClient, nil
 }

@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -372,7 +373,7 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, cl *kgo.Client, 
 					err, exists := errorByBrokerID[replicaID]
 					if !exists {
 						// This err should never happen. We should always have a proper err for missing responses!
-						err = fmt.Errorf("haven't got a log dir response for this replica even though it had been requested")
+						err = errors.New("haven't got a log dir response for this replica even though it had been requested")
 					}
 					topicLogDirsPatched[partitionID] = append(topicLogDirsPatched[partitionID], TopicPartitionLogDirs{
 						BrokerID:    replicaID,

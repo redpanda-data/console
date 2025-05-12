@@ -262,5 +262,5 @@ func buildSSHAuth(cfg config.GitAuthSSH) (transport.AuthMethod, error) {
 		return auth, nil
 	}
 
-	return nil, fmt.Errorf("no ssh private key configured")
+	return nil, errors.New("no ssh private key configured")
 }

@@ -85,17 +85,21 @@ const AppPageHeader = observer(() => {
           {showRefresh && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>
-          <Button
-            as={ReactRouterLink}
-            to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
-            variant="ghost"
-            isDisabled={!api.userData?.canViewDebugBundle}
-            tooltip={
-              !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
-            }
-          >
-            Debug bundle
-          </Button>
+          {
+            !isEmbedded() && (
+              <Button
+                as={ReactRouterLink}
+                to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
+                variant="ghost"
+                isDisabled={!api.userData?.canViewDebugBundle}
+                tooltip={
+                  !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
+                }
+                >
+                  Debug bundle
+                </Button>
+            )
+          }
           <UserPreferencesButton />
           {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
         </Flex>

@@ -518,7 +518,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		}
 		if payload.Schema == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("payload validation failed for creating schema"),
+				Err:          errors.New("payload validation failed for creating schema"),
 				Status:       http.StatusBadRequest,
 				Message:      "You must set the schema field when creating a new schema",
 				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
@@ -567,7 +567,7 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		}
 		if payload.Schema == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("payload validation failed for validating schema"),
+				Err:          errors.New("payload validation failed for validating schema"),
 				Status:       http.StatusBadRequest,
 				Message:      "You must set the schema field when validating the schema",
 				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},

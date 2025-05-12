@@ -10,6 +10,7 @@
 package config
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 )
@@ -43,11 +44,11 @@ func (c *KafkaConnectCluster) SetDefaults() {
 // Validate Kafka connect cluster configurations provided by the user.
 func (c *KafkaConnectCluster) Validate() error {
 	if c.Name == "" {
-		return fmt.Errorf("a cluster name must be set to identify the connect cluster")
+		return errors.New("a cluster name must be set to identify the connect cluster")
 	}
 
 	if c.URL == "" {
-		return fmt.Errorf("url to access the KafkaConnect cluster API must be set")
+		return errors.New("url to access the KafkaConnect cluster API must be set")
 	}
 
 	err := c.TLS.Validate()

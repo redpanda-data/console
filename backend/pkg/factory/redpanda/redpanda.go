@@ -14,7 +14,9 @@ package redpanda
 
 import (
 	"context"
+	"errors"
 	"io"
+	"net/http"
 
 	"github.com/redpanda-data/common-go/rpadmin"
 )
@@ -22,7 +24,28 @@ import (
 // ClientFactory defines the interface for creating and retrieving Redpanda API clients.
 type ClientFactory interface {
 	// GetRedpandaAPIClient retrieves a Redpanda admin API client based on the context.
-	GetRedpandaAPIClient(ctx context.Context) (AdminAPIClient, error)
+	GetRedpandaAPIClient(ctx context.Context, opts ...ClientOption) (AdminAPIClient, error)
+}
+
+// ClientOption is a function that configures ClientOptions.
+// It may return an error if the option is invalid.
+type ClientOption func(*ClientOptions) error
+
+// ClientOptions holds all configurable parameters for constructing an AdminAPIClient.
+type ClientOptions struct {
+	URLs []string
+}
+
+// WithURLs lets the caller override the URLs that the client will use.
+// It requires at least one URL; otherwise it returns an error immediately.
+func WithURLs(urls ...string) ClientOption {
+	return func(o *ClientOptions) error {
+		if len(urls) == 0 {
+			return errors.New("WithURLs: at least one URL must be provided")
+		}
+		o.URLs = urls
+		return nil
+	}
 }
 
 // AdminAPIClient defines an interface for the rpadmin.AdminAPI struct, so that
@@ -81,10 +104,6 @@ type AdminAPIClient interface {
 	// true, Redpanda will delete ACLs bound to the role.
 	DeleteRole(ctx context.Context, name string, deleteACL bool) error
 
-	// GetDebugBundleStatus gets the current debug bundle process status on the specified broker node.
-	// This should be called using Host client to issue a request against a specific broker node.
-	GetDebugBundleStatus(ctx context.Context) (rpadmin.DebugBundleStatus, error)
-
 	// MountTopics mounts topics according to the provided configuration.
 	MountTopics(ctx context.Context, config rpadmin.MountConfiguration) (rpadmin.MigrationInfo, error)
 
@@ -121,4 +140,29 @@ type AdminAPIClient interface {
 
 	// GetEnterpriseFeatures reports enterprise features in use as well as the license status.
 	GetEnterpriseFeatures(ctx context.Context) (rpadmin.EnterpriseFeaturesResponse, error)
+
+	// CreateDebugBundle starts the debug bundle process. This should be called using
+	// the host client to issue a request against a specific broker node. jobID is
+	// the user-specified job UUID.
+	CreateDebugBundle(ctx context.Context, jobID string, opts ...rpadmin.DebugBundleOption) (rpadmin.DebugBundleStartResponse, error)
+
+	// GetDebugBundleStatus gets the current debug bundle process status on the
+	// specified broker node. This should be called using the host client to issue a
+	// request against a specific broker node.
+	GetDebugBundleStatus(ctx context.Context) (rpadmin.DebugBundleStatus, error)
+
+	// CancelDebugBundleProcess cancels the specific debug bundle process that's
+	// running. This should be called using the host client to issue a request against a
+	// specific broker node.
+	CancelDebugBundleProcess(ctx context.Context, jobID string) error
+
+	// DeleteDebugBundleFile deletes the specific debug bundle file on the specified
+	// broker node. This should be called using the host client to issue a request
+	// against a specific broker node.
+	DeleteDebugBundleFile(ctx context.Context, filename string) error
+
+	// DownloadDebugBundleFile gets the specific debug bundle file on the specified
+	// broker node. The caller must call close on the response returned as it does
+	// not yet have its body read.
+	DownloadDebugBundleFile(ctx context.Context, filename string) (*http.Response, error)
 }

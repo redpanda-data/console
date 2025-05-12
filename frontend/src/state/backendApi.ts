@@ -2076,21 +2076,23 @@ export const rolesApi = observable({
     if (Features.rolesApi) {
       let nextPageToken = '';
       while (true) {
-        const res = await client.listRoles({ pageSize: 500, pageToken: nextPageToken }).catch((error) => {
+        const res = await client.listRoles({ request: { pageSize: 500, pageToken: nextPageToken } }).catch((error) => {
           this.rolesError = error;
           return null;
         });
 
-        if (res === null) {
+        if (res === null || res.response === null) {
           break;
         }
 
-        const newRoles = res.roles.map((x) => x.name);
-        roles.push(...newRoles);
+        if (res.response) {
+          const newRoles = res.response?.roles.map((x) => x.name);
+          roles.push(...newRoles);
 
-        if (!res.nextPageToken || res.nextPageToken.length === 0) break;
+          if (!res.response?.nextPageToken || res.response?.nextPageToken.length === 0) break;
 
-        nextPageToken = res.nextPageToken;
+          nextPageToken = res.response?.nextPageToken;
+        }
       }
     }
 
@@ -2105,7 +2107,7 @@ export const rolesApi = observable({
 
     if (Features.rolesApi) {
       for (const role of this.roles) {
-        rolePromises.push(client.getRole({ roleName: role }));
+        rolePromises.push(client.getRole({ request: { roleName: role } }));
       }
     }
 
@@ -2115,10 +2117,10 @@ export const rolesApi = observable({
 
     for (const r of rolePromises) {
       const res = await r;
-      if (res.role == null) continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
-      const roleName = res.role.name;
+      if (res.response == null || res.response.role == null) continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+      const roleName = res.response.role.name;
 
-      const members = res.members
+      const members = res.response.members
         .map((x) => {
           const principalParts = x.principal.split(':');
           if (principalParts.length !== 2) {
@@ -2145,7 +2147,7 @@ export const rolesApi = observable({
     if (!client) throw new Error('security client is not initialized');
 
     if (Features.rolesApi) {
-      await client.createRole({ role: { name } });
+      await client.createRole({ request: { role: { name } } });
     }
   },
 
@@ -2154,7 +2156,7 @@ export const rolesApi = observable({
     if (!client) throw new Error('security client is not initialized');
 
     if (Features.rolesApi) {
-      await client.deleteRole({ roleName: name, deleteAcls });
+      await client.deleteRole({ request: { roleName: name, deleteAcls } });
     }
   },
 
@@ -2162,11 +2164,13 @@ export const rolesApi = observable({
     const client = appConfig.securityClient;
     if (!client) throw new Error('security client is not initialized');
 
-    return await client.updateRoleMembership({
-      roleName: roleName,
-      add: addUsers.map((u) => ({ principal: `User:${u}` })),
-      remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
-      create,
+    return await client.updateRoleMembership( {
+      request: {
+        roleName: roleName,
+        add: addUsers.map((u) => ({ principal: `User:${u}` })),
+        remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
+        create,
+      }
     });
   },
 });

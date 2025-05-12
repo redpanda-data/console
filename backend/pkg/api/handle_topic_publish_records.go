@@ -10,7 +10,7 @@
 package api
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
@@ -90,10 +90,10 @@ type publishRecordsRequest struct {
 // communicating to Kafka. It is implicitly called within rest.Decode().
 func (p *publishRecordsRequest) OK() error {
 	if len(p.TopicNames) == 0 {
-		return fmt.Errorf("no topic names have been specified")
+		return errors.New("no topic names have been specified")
 	}
 	if len(p.Records) == 0 {
-		return fmt.Errorf("no records have been specified")
+		return errors.New("no records have been specified")
 	}
 
 	return nil

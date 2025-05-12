@@ -131,27 +131,29 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
               true,
             );
 
-            const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
+            if (newRole.response) {
+              const unpackedPrincipalGroup = unpackPrincipalGroup(aclPrincipalGroup);
 
-            for (const aclFlat of unpackedPrincipalGroup) {
-              await api.createACL({
-                host: aclFlat.host,
-                principal: aclFlat.principal,
-                resourceType: aclFlat.resourceType,
-                resourceName: aclFlat.resourceName,
-                resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
-                operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
-                permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
+              for (const aclFlat of unpackedPrincipalGroup) {
+                await api.createACL({
+                  host: aclFlat.host,
+                  principal: aclFlat.principal,
+                  resourceType: aclFlat.resourceType,
+                  resourceName: aclFlat.resourceName,
+                  resourcePatternType: aclFlat.resourcePatternType as unknown as 'Literal' | 'Prefixed',
+                  operation: aclFlat.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
+                  permissionType: aclFlat.permissionType as unknown as 'Allow' | 'Deny',
+                });
+              }
+
+              setIsLoading(false);
+              toast({
+                status: 'success',
+                title: `Role ${newRole.response.roleName} successfully ${editMode ? 'updated' : 'created'}`,
               });
+
+              navigate(`/security/roles/${encodeURIComponent(newRole.response.roleName)}/details`);
             }
-
-            setIsLoading(false);
-            toast({
-              status: 'success',
-              title: `Role ${newRole.roleName} successfully ${editMode ? 'updated' : 'created'}`,
-            });
-
-            navigate(`/security/roles/${encodeURIComponent(newRole.roleName)}/details`);
           } catch (err) {
             toast({
               status: 'error',

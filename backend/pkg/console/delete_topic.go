@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -44,7 +45,7 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 
 	if len(res.Topics) != 1 {
 		return &rest.Error{
-			Err:          fmt.Errorf("topics array in response is empty"),
+			Err:          errors.New("topics array in response is empty"),
 			Status:       http.StatusServiceUnavailable,
 			Message:      "Unexpected Kafka response: No topics set in the response",
 			InternalLogs: []zapcore.Field{zap.String("topic_name", topicName)},

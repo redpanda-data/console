@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 test.use({
-  permissions: ['clipboard-write'],
+  permissions: ['clipboard-write', 'clipboard-read'],
 });
 
 test.describe('Topic', () => {
@@ -54,14 +55,111 @@ test.describe('Topic', () => {
     await page.getByTestId(`delete-topic-button-${topicName}`).click();
     await page.getByTestId('delete-topic-confirm-button').click();
   });
+
   test('should show internal topics if the corresponding checkbox is checked', async ({ page }) => {
     await page.goto('/topics');
     await page.getByTestId('show-internal-topics-checkbox').check();
     await expect(page.getByTestId('data-table-cell').getByText('_schemas')).toBeVisible();
   });
+
   test('should hide internal topics if the corresponding checkbox is unchecked', async ({ page }) => {
     await page.goto('/topics');
     await page.getByTestId('show-internal-topics-checkbox').uncheck();
     await expect(page.getByTestId('data-table-cell').getByText('_schemas')).not.toBeVisible();
+  });
+
+  test('should create a topic, produce a message, export it as CSV format and delete a topic', async ({ page }) => {
+    const topicName = `test-topic-${Date.now()}`;
+
+    await page.goto('/topics');
+
+    await test.step('Create topic', async () => {
+      await page.getByTestId('create-topic-button').click();
+      await page.getByTestId('topic-name').fill(topicName);
+      await page.getByTestId('onOk-button').click();
+      await page.getByRole('button', { name: 'Close' }).click(); // Close success dialog
+      await expect(page.getByRole('link', { name: topicName })).toBeVisible();
+    });
+
+    await test.step('Produce message', async () => {
+      await page.goto(`/topics/${topicName}/produce-record`);
+      const valueMonacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
+      await valueMonacoEditor.click(); // Focus the editor
+      await page.keyboard.insertText('hello world');
+      await page.getByTestId('produce-button').click();
+      const messageValueCell = page.getByRole('cell', { name: /hello world/i }).first();
+      await expect(messageValueCell).toBeVisible();
+    });
+
+    await test.step('Export message as CSV', async () => {
+      await page.getByLabel('Collapse row').click();
+      await page.getByText('Download Record').click();
+      await page.getByTestId('csv_field').click();
+      const downloadPromise = page.waitForEvent('download');
+      await page.getByRole('dialog', { name: 'Save Message' }).getByRole('button', { name: 'Save Messages' }).click();
+      const download = await downloadPromise;
+      expect(download.suggestedFilename()).toMatch('messages.csv');
+      const tempFilePath = `/tmp/downloaded-${download.suggestedFilename()}`;
+      await download.saveAs(tempFilePath);
+      const fileContent = fs.readFileSync(tempFilePath, 'utf-8');
+      expect(fileContent).toContain('hello world');
+      fs.unlinkSync(tempFilePath); // Clean up
+    });
+
+    await test.step('Delete topic', async () => {
+      await page.goto('/topics');
+      await expect(page.getByRole('link', { name: topicName })).toBeVisible(); // Re-verify topic before delete
+      await page.getByTestId(`delete-topic-button-${topicName}`).click();
+      await page.getByTestId('delete-topic-confirm-button').click();
+      await expect(page.getByText('Topic Deleted')).toBeVisible();
+      await expect(page.getByRole('link', { name: topicName })).not.toBeVisible();
+    });
+  });
+
+  test('should create topic, produce message, copy value to clipboard, and delete topic', async ({ page }) => {
+    const topicName = `test-topic-clipboard-${Date.now()}`;
+    const messageValue = 'hello clipboard test';
+
+    await page.goto('/topics');
+
+    await test.step('Create topic', async () => {
+      await page.getByTestId('create-topic-button').click();
+      await page.getByTestId('topic-name').fill(topicName);
+      await page.getByTestId('onOk-button').click();
+      await page.getByRole('button', { name: 'Close' }).click(); // Close success dialog
+      await expect(page.getByRole('link', { name: topicName })).toBeVisible();
+    });
+
+    await test.step('Produce message', async () => {
+      await page.goto(`/topics/${topicName}/produce-record`);
+      const valueMonacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
+      await valueMonacoEditor.click(); // Focus the editor
+      await page.keyboard.insertText(messageValue);
+      await page.getByTestId('produce-button').click();
+      const messageValueCell = page.getByRole('cell', { name: new RegExp(messageValue, 'i') }).first();
+      await expect(messageValueCell).toBeVisible();
+    });
+
+    await test.step('Copy message value to clipboard', async () => {
+      await page.getByLabel('Collapse row').first().click();
+      // Assuming a button with text like 'Copy value' or an aria-label containing 'Copy value'
+      await page.getByRole('button', { name: /copy value/i }).click();
+    });
+
+    await test.step('Verify clipboard content', async () => {
+      const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboardText).toBe(messageValue);
+
+      await expect(page.getByText('Value copied to clipboard')).toBeVisible({ timeout: 2000 });
+    });
+
+    await test.step('Delete topic', async () => {
+      await page.goto('/topics');
+      await expect(page.getByRole('link', { name: topicName })).toBeVisible(); // Re-verify topic before delete
+      await page.getByTestId(`delete-topic-button-${topicName}`).click();
+      await page.getByTestId('delete-topic-confirm-button').click();
+      await expect(page.getByText('Topic Deleted')).toBeVisible();
+      await expect(page.getByRole('link', { name: topicName })).not.toBeVisible();
+    });
   });
 });

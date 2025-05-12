@@ -12,6 +12,7 @@ package serde
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"unicode/utf8"
 
@@ -44,11 +45,11 @@ func (TextSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 
 	isUTF8 := utf8.Valid(payload)
 	if !isUTF8 {
-		return &RecordPayload{}, fmt.Errorf("payload is not UTF8")
+		return &RecordPayload{}, errors.New("payload is not UTF8")
 	}
 
 	if containsControlChars(payload) {
-		return &RecordPayload{}, fmt.Errorf("payload contains UTF8 control characters therefore not plain text format")
+		return &RecordPayload{}, errors.New("payload contains UTF8 control characters therefore not plain text format")
 	}
 
 	return &RecordPayload{
@@ -77,7 +78,7 @@ func (TextSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 
 	isUTF8 := utf8.Valid(byteData)
 	if !isUTF8 {
-		return nil, fmt.Errorf("payload is not UTF8")
+		return nil, errors.New("payload is not UTF8")
 	}
 
 	// If message encoding text is used and the byte array is empty, the user

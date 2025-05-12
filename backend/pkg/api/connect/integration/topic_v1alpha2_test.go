@@ -34,7 +34,7 @@ func (s *APISuite) TestListTopics_v1alpha2() {
 	t := s.T()
 
 	// Seed some topics that can be listed
-	ctx, cancel := context.WithTimeout(context.Background(), 9*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 9*time.Second)
 	t.Cleanup(cancel)
 
 	topicPrefix := "console-integration-test-list-topics-"
@@ -50,7 +50,7 @@ func (s *APISuite) TestListTopics_v1alpha2() {
 
 	t.Cleanup(func() {
 		for topic := range createdTopics {
-			deleteKafkaTopic(context.Background(), s.kafkaAdminClient, topic)
+			deleteKafkaTopic(t.Context(), s.kafkaAdminClient, topic)
 		}
 	})
 
@@ -59,7 +59,7 @@ func (s *APISuite) TestListTopics_v1alpha2() {
 	t.Run("list all topics with a valid request (connect-go)", func(t *testing.T) {
 		require := require.New(t)
 		assert := assert.New(t)
-		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 		t.Cleanup(cancel)
 
 		// 1. List topics
@@ -84,7 +84,7 @@ func (s *APISuite) TestListTopics_v1alpha2() {
 	t.Run("list all topics with a valid filter (connect-go)", func(t *testing.T) {
 		require := require.New(t)
 		assert := assert.New(t)
-		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 		t.Cleanup(cancel)
 
 		// 1. List topics
@@ -112,7 +112,7 @@ func (s *APISuite) TestListTopics_v1alpha2() {
 	t.Run("list all topics with pagination (connect-go)", func(t *testing.T) {
 		require := require.New(t)
 		assert := assert.New(t)
-		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 		t.Cleanup(cancel)
 
 		toFind := maps.Clone(createdTopics)
@@ -160,7 +160,7 @@ func (s *APISuite) TestListTopics_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		type topic struct {
@@ -210,7 +210,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create Topic via Connect API call
@@ -238,7 +238,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 		assert.EqualValues(1, createTopicRes.Msg.ReplicationFactor)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -276,7 +276,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 		defer cancel()
 
 		// Try tp create Topic via Connect API call
@@ -295,7 +295,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 	t.Run("create topic in dry-run (connect-go)", func(t *testing.T) {
 		require := require.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Start dry-run of create topic via Connect API call
@@ -329,7 +329,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create one Topic via HTTP API
@@ -387,7 +387,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 		assert.Equal(partitionCount, httpRes.PartitionCount)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -424,7 +424,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 	t.Run("create topic with an invalid topic name (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create one topic via HTTP API
@@ -465,7 +465,7 @@ func (s *APISuite) TestCreateTopic_v1alpha2() {
 	t.Run("try to create topic with a blank name (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Try sending a request with no payload via HTTP API
@@ -498,7 +498,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create one Topic via Kafka API
@@ -507,7 +507,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -535,7 +535,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create one Topic via Kafka API
@@ -544,7 +544,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -579,7 +579,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 	t.Run("try to delete a non-existent topic (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
@@ -592,7 +592,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 	t.Run("try to delete a non-existent topic (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		urlPath := "/v1alpha2/topics/some-random-topic-name-that-does-not-exist"
@@ -615,7 +615,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 	t.Run("request topic deletion with invalid characters (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
@@ -629,7 +629,7 @@ func (s *APISuite) TestDeleteTopic_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		urlPath := "/v1alpha2/topics/some-chars-are-not!$-allowed"
@@ -656,7 +656,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -669,7 +669,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -706,7 +706,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 	t.Run("get topic configuration of a non-existent topic (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
@@ -719,7 +719,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 	t.Run("get topic configuration of a bad topic name (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		client := v1alpha2connect.NewTopicServiceClient(http.DefaultClient, s.httpAddress())
@@ -733,7 +733,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -746,7 +746,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -777,7 +777,7 @@ func (s *APISuite) TestGetTopicConfiguration_v1alpha2() {
 	t.Run("get topic configuration of a non-existent topic (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		var errResponse string
@@ -801,7 +801,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -815,7 +815,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -875,7 +875,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -889,7 +889,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -974,7 +974,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -988,7 +988,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -1021,7 +1021,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 	t.Run("update topic configuration for non existent topic (http)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		type updateTopicConfigRequest struct {
@@ -1056,7 +1056,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -1070,7 +1070,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -1099,7 +1099,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -1113,7 +1113,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -1170,7 +1170,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -1184,7 +1184,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -1266,7 +1266,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 1. Create new topic
@@ -1280,7 +1280,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require.NoError(err)
 
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 6*time.Second)
 			defer cancel()
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, topicName)
 			assert.NoError(err)
@@ -1306,7 +1306,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 	t.Run("set topic configuration for a non existent topic (connect-go)", func(t *testing.T) {
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 2. Send alter config request with invalid config key
@@ -1330,7 +1330,7 @@ func (s *APISuite) TestSetTopicConfiguration_v1alpha2() {
 		require := require.New(t)
 		assert := assert.New(t)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 		defer cancel()
 
 		// 2. Update two topic configs where one shall be removed and another set to a different value

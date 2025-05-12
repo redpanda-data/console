@@ -38,17 +38,17 @@ func (AvroSerde) Name() PayloadEncoding {
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.schemaClient == nil {
-		return &RecordPayload{}, fmt.Errorf("no schema registry configured")
+		return &RecordPayload{}, errors.New("no schema registry configured")
 	}
 
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return &RecordPayload{}, fmt.Errorf("payload size is <= 5")
+		return &RecordPayload{}, errors.New("payload size is <= 5")
 	}
 
 	if payload[0] != byte(0) {
-		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for avro")
+		return &RecordPayload{}, errors.New("incorrect magic byte for avro")
 	}
 
 	schemaID := binary.BigEndian.Uint32(payload[1:5])

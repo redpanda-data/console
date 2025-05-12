@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -40,7 +41,7 @@ func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestam
 	}
 	metadata, err := adminCl.Metadata(ctx, topicNames...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to request partition info for topics")
+		return nil, errors.New("failed to request partition info for topics")
 	}
 	if err := metadata.Topics.Error(); err != nil {
 		return nil, fmt.Errorf("failed to request topic metadata: %w", err)

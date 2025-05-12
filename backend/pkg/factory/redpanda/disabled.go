@@ -23,6 +23,6 @@ var _ ClientFactory = (*DisabledClientProvider)(nil)
 type DisabledClientProvider struct{}
 
 // GetRedpandaAPIClient returns a not configured error when invoked.
-func (*DisabledClientProvider) GetRedpandaAPIClient(context.Context) (AdminAPIClient, error) {
+func (*DisabledClientProvider) GetRedpandaAPIClient(context.Context, ...ClientOption) (AdminAPIClient, error) {
 	return nil, apierrors.NewRedpandaAdminAPINotConfiguredError()
 }
