@@ -60,6 +60,7 @@ import {
   type RetentionSizeUnit,
   type RetentionTimeUnit,
 } from './CreateTopicModal/CreateTopicModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 @observer
 class TopicList extends PageComponent {
@@ -134,12 +135,34 @@ class TopicList extends PageComponent {
 
   SearchBar = observer(() => {
     return (
-      <SearchField
-        width="350px"
-        placeholderText="Enter search term/regex"
-        searchText={uiSettings.topicList.quickSearch}
-        setSearchText={(x) => (uiSettings.topicList.quickSearch = x)}
-      />
+      <Flex gap={2}>
+        <SearchField
+          width="350px"
+          placeholderText="Enter search term/regex"
+          searchText={uiSettings.topicList.quickSearch}
+          setSearchText={(x) => (uiSettings.topicList.quickSearch = x)}
+        />
+        <AnimatePresence>
+          {uiSettings.topicList.quickSearch && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              <Text
+                ml={4}
+                alignSelf="center"
+                lineHeight="1"
+                whiteSpace="nowrap"
+              >
+                <Text fontWeight="bold" display="inline">{this.topics.length}</Text> {this.topics.length === 1 ? 'result' : 'results'}
+              </Text>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Flex>
     );
   });
 
