@@ -87,7 +87,7 @@ const AppPageHeader = observer(() => {
         </Flex>
         <Flex alignItems="center" gap={2}>
           {
-            !isEmbedded() && (
+            (!isEmbedded() && api.isRedpanda) && (
               <Button
                 as={ReactRouterLink}
                 to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
