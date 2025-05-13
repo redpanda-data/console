@@ -33,6 +33,7 @@ require (
 	github.com/knadh/koanf v1.5.0
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/ohler55/ojg v1.26.4
 	github.com/prometheus/client_golang v1.20.5
 	github.com/redpanda-data/benthos/v4 v4.42.0
 	github.com/redpanda-data/common-go/api v0.0.0-20241213223629-113b96483733
