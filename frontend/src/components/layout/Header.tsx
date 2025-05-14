@@ -85,7 +85,7 @@ const AppPageHeader = observer(() => {
           {showRefresh && <DataRefreshButton />}
         </Flex>
         <Flex alignItems="center" gap={2}>
-          {(!isEmbedded() && api.isRedpanda) &&(
+          {!isEmbedded() && api.isRedpanda && (
             <Button
               as={ReactRouterLink}
               to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
