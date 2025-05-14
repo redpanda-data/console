@@ -33,7 +33,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { TOASTS, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { isUuid } from 'utils/uuid.utils';
 
 /**
@@ -120,20 +120,13 @@ const createAgentPipelinesPromises = async ({
       }),
     });
 
-    // Show success toast
-    showToast({
-      id: TOASTS.AGENT.CREATE_PIPELINES.SUCCESS,
-      title: 'Agent pipelines created successfully',
-      status: 'success',
-    });
-
     return results;
   } catch (error) {
     const connectError = ConnectError.from(error);
-    showToast({
-      id: TOASTS.AGENT.CREATE_PIPELINES.ERROR,
-      title: formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'agent pipelines' }),
-      status: 'error',
+    return formatToastErrorMessageGRPC({
+      error: connectError,
+      action: 'create',
+      entity: 'agent pipelines',
     });
   }
 };
@@ -306,20 +299,13 @@ const deleteAgentPipelinesPromises = async ({
       }),
     });
 
-    // Show success toast
-    showToast({
-      id: TOASTS.AGENT.DELETE_PIPELINES.SUCCESS,
-      title: 'Agent pipelines deleted successfully',
-      status: 'success',
-    });
-
     return results;
   } catch (error) {
     const connectError = ConnectError.from(error);
-    showToast({
-      id: TOASTS.AGENT.DELETE_PIPELINES.ERROR,
-      title: formatToastErrorMessageGRPC({ error: connectError, action: 'delete', entity: 'agent pipelines' }),
-      status: 'error',
+    return formatToastErrorMessageGRPC({
+      error: connectError,
+      action: 'delete',
+      entity: 'agent pipelines',
     });
   }
 };
