@@ -155,7 +155,7 @@ export class AdminDebugBundle extends PageComponent<{}> {
                 .createDebugBundle(data)
                 .then(async (result) => {
                   await api.refreshDebugBundleStatuses();
-                  appGlobal.historyPush(`/admin/debug-bundle/progress/${result.jobId}`);
+                  appGlobal.historyPush(`/debug-bundle/progress/${result.jobId}`);
                 })
                 .catch((err: ErrorResponse) => {
                   this.createBundleError = err;

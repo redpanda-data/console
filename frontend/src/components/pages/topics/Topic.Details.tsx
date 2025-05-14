@@ -402,7 +402,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     const loc = appGlobal.location;
     loc.hash = String(activeKey);
-    appGlobal.historyReplace(loc.pathname); // TODO @Draho - verify
+    appGlobal.historyReplace(loc.pathname + loc.hash);
 
     this.refreshData(false);
   };

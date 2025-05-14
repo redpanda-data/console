@@ -16,30 +16,15 @@ import { uiState } from './uiState';
 class AppGlobal {
   private _navigate = null as unknown as NavigateFunction;
   private _location = null as unknown as Location;
-  // private _history = null as unknown as History<any>;
-  // get history() {
-  //   return this._history;
-  // }
-
-  // set history(h: History<any>) {
-  //   if (this._history === h || !h) return;
-  //   if (this._history) throw new Error('_history should not be overwritten');
-
-  //   this._history = h;
-
-  //   h.listen((location, _action) => {
-  //     api.errors = [];
-  //     uiState.pathName = location.pathname;
-  //   });
-  //   uiState.pathName = h.location.pathname;
-  // }
 
   historyPush(path: string) {
-    uiState.pathName = path; // TODO @Draho - ensure uiState is correct after the actual navigating finishes
+    uiState.pathName = path;
+    api.errors = [];
     return this._navigate(path);
   }
   historyReplace(path: string) {
     uiState.pathName = path;
+    api.errors = [];
     return this._navigate(path, { replace: true });
   }
   historyLocation() {
@@ -47,8 +32,7 @@ class AppGlobal {
   }
 
   set navigate(n: NavigateFunction) {
-    // if (this._navigate === n || !n) return;
-    // if (this._navigate) throw new Error('_navigate should not be overwritten');
+    if (this._navigate === n || !n) return;
 
     this._navigate = n;
   }
@@ -61,8 +45,7 @@ class AppGlobal {
   }
 
   set location(l: Location) {
-    // if (this._location === l || !l) return;
-    // if (this._location) throw new Error('_location should not be overwritten');
+    if (this._location === l || !l) return;
 
     this._location = l;
   }
