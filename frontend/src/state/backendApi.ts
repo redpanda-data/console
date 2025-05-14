@@ -2164,13 +2164,13 @@ export const rolesApi = observable({
     const client = appConfig.securityClient;
     if (!client) throw new Error('security client is not initialized');
 
-    return await client.updateRoleMembership( {
+    return await client.updateRoleMembership({
       request: {
         roleName: roleName,
         add: addUsers.map((u) => ({ principal: `User:${u}` })),
         remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
         create,
-      }
+      },
     });
   },
 });

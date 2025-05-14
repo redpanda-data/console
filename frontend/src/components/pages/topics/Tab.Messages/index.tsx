@@ -2333,7 +2333,11 @@ function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction> | undefine
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
-export function DeleteRecordsMenuItem(isCompacted: boolean, allowedActions: Array<TopicAction> | undefined, onClick: () => void) {
+export function DeleteRecordsMenuItem(
+  isCompacted: boolean,
+  allowedActions: Array<TopicAction> | undefined,
+  onClick: () => void,
+) {
   const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 
   let errorText: string | undefined;

@@ -103,10 +103,11 @@ export class ActiveReassignments extends Component<{
                 size="sm"
                 style={{ fontSize: 'smaller', padding: '0px 8px' }}
                 onClick={() => (this.showThrottleDialog = true)}
-            >
-              {throttleText}
-            </Button>
-          )}
+              >
+                {throttleText}
+              </Button>
+            )
+          }
         </div>
 
         {/* Table */}

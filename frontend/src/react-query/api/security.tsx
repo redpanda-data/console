@@ -31,9 +31,9 @@ export const useListRolesQuery = (
     ...input,
   });
 
-   const listRolesRequest = create(ListRolesRequestSchema, {
-      request: listRolesRequestDataPlane,
-    }) as MessageInit<ListRolesRequest> & Required<Pick<MessageInit<ListRolesRequest>, 'request'>>;
+  const listRolesRequest = create(ListRolesRequestSchema, {
+    request: listRolesRequestDataPlane,
+  }) as MessageInit<ListRolesRequest> & Required<Pick<MessageInit<ListRolesRequest>, 'request'>>;
 
   const listRolesResult = useInfiniteQueryWithAllPages(listRoles, listRolesRequest, {
     pageParamKey: 'request',

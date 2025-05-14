@@ -33,6 +33,7 @@ import {
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { AnimatePresence, motion } from 'framer-motion';
 import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type FC, useRef, useState } from 'react';
@@ -60,7 +61,6 @@ import {
   type RetentionSizeUnit,
   type RetentionTimeUnit,
 } from './CreateTopicModal/CreateTopicModal';
-import { motion, AnimatePresence } from 'framer-motion';
 
 @observer
 class TopicList extends PageComponent {
@@ -151,13 +151,11 @@ class TopicList extends PageComponent {
               transition={{ duration: 0.12 }}
               style={{ display: 'flex', alignItems: 'center' }}
             >
-              <Text
-                ml={4}
-                alignSelf="center"
-                lineHeight="1"
-                whiteSpace="nowrap"
-              >
-                <Text fontWeight="bold" display="inline">{this.topics.length}</Text> {this.topics.length === 1 ? 'result' : 'results'}
+              <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
+                <Text fontWeight="bold" display="inline">
+                  {this.topics.length}
+                </Text>{' '}
+                {this.topics.length === 1 ? 'result' : 'results'}
               </Text>
             </motion.div>
           )}
