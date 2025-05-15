@@ -23,7 +23,7 @@ import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
-import { Navigate, Route, Routes, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backendApi';

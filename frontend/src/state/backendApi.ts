@@ -550,9 +550,9 @@ const apiStore = {
         if (err.code === Code.PermissionDenied) {
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
-          appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}`);
+          appGlobal.historyPush(`/login?error_code=permission_denied&oidc_subject=${subject}`);
         } else {
-          appGlobal.history.push('/login');
+          appGlobal.historyPush('/login');
         }
       });
   },

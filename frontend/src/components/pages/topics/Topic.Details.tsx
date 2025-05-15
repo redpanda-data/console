@@ -206,20 +206,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
   }
 
-  componentDidMount() {
-    // fix anchor
-    const anchor = `#${this.selectedTabId}`;
-    const location = appGlobal.location;
-    if (location.hash !== anchor) {
-      location.hash = anchor;
-      appGlobal.historyReplace(location);
-    }
-  }
-
   render() {
     const topic = this.topic;
     if (topic === undefined) return DefaultSkeleton;
-    if (topic == null) return this.topicNotFound();
+    if (topic === null) return this.topicNotFound();
 
     const topicConfig = this.topicConfig;
 
@@ -402,7 +392,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     const loc = appGlobal.location;
     loc.hash = String(activeKey);
-    appGlobal.historyReplace(loc.pathname + loc.hash);
+    appGlobal.historyReplace(`${loc.pathname}#${loc.hash}`);
 
     this.refreshData(false);
   };
@@ -419,7 +409,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
           </div>
         }
         extra={
-          <Button variant="solid" onClick={() => appGlobal.history.goBack()}>
+          <Button variant="solid" onClick={() => appGlobal.historyPush('/topics')}>
             Go Back
           </Button>
         }

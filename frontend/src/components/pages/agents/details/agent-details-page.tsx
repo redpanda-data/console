@@ -30,7 +30,7 @@ export const updatePageTitle = ({ agent }: { agent: Agent }) => {
 export const AGENT_POLLING_INTERVAL = 2_000; // 2 seconds
 
 export const AgentDetailsPage = () => {
-  const { agentId } = useParams<{ agentId: Pipeline['id'] }>();
+  const { agentId = '' } = useParams<{ agentId: Pipeline['id'] }>();
   const [shouldPollForChat, setShouldPollForChat] = useState(true);
   const { data: agentData, isLoading: isAgentDataLoading } = useGetAgentQuery(
     {
