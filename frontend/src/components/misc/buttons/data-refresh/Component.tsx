@@ -105,6 +105,7 @@ export const DataRefreshButton = observer(() => {
           hideCloseButton={true}
         >
           <IconButton
+            p={0}
             variant="ghost"
             onClick={autoRefresh.toggleAutorefresh}
             aria-label="Auth Refresh"
@@ -130,6 +131,7 @@ export const DataRefreshButton = observer(() => {
             hideCloseButton={true}
           >
             <IconButton
+              p={0}
               variant="ghost"
               onClick={() => appGlobal.onRefresh()}
               aria-label="Force Refresh"
