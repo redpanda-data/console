@@ -77,7 +77,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
   useEffect(() => {
     const shellNavigationHandler = (event: Event) => {
       const pathname = (event as CustomEvent<string>).detail;
-      appGlobal.history.push(pathname);
+      appGlobal.historyPush(pathname);
     };
 
     window.addEventListener('[shell] navigated', shellNavigationHandler);

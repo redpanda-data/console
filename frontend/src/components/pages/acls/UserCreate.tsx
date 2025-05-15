@@ -109,7 +109,7 @@ class UserCreatePage extends PageComponent<{}> {
     this.isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(this.username);
     this.isValidPassword = Boolean(this.password) && this.password.length >= 4 && this.password.length <= 64;
 
-    const onCancel = () => appGlobal.history.push('/security/users');
+    const onCancel = () => appGlobal.historyPush('/security/users');
 
     return (
       <>

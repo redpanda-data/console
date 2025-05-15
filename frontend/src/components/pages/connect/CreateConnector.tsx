@@ -237,7 +237,6 @@ interface ConnectorWizardProps {
 
 const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorWizardProps) => {
   const toast = useToast();
-  const history = appGlobal.history;
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
   const [invalidValidationResult, setInvalidValidationResult] = useState<ConnectorValidationResult | null>(null);
@@ -299,7 +298,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
               },
             ];
             // biome-ignore lint/style/noNonNullAssertion: we know clusterName is defined
-            history.push(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
+            appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
           }}
           selectedPlugin={selectedPlugin}
           onPluginSelectionChange={(e) => {
@@ -419,7 +418,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             console.log('scanning for new connector...', { connectorName, elapsedTime });
             if (elapsedTime > maxScanTime) {
               // Abort, tried to wait for too long
-              history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
+              appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
               break;
             }
 
@@ -428,7 +427,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
             if (connector) {
               // Success
-              history.push(
+              appGlobal.historyPush(
                 `/connect-clusters/${encodeURIComponent(activeCluster)}/${encodeURIComponent(connectorName)}`,
               );
               break;

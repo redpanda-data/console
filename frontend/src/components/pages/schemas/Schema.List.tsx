@@ -195,7 +195,7 @@ class SchemaList extends PageComponent<{}> {
           variant="outline"
           mb="4"
           width="fit-content"
-          onClick={() => appGlobal.history.push('/schema-registry/edit-compatibility')}
+          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
@@ -265,7 +265,7 @@ class SchemaList extends PageComponent<{}> {
           <Flex justifyContent={'space-between'} pb={3}>
             <Button
               colorScheme="brand"
-              onClick={() => appGlobal.history.push('/schema-registry/create')}
+              onClick={() => appGlobal.historyPush('/schema-registry/create')}
               disabledReason={
                 api.userData?.canCreateSchemas === false
                   ? "You don't have the 'canCreateSchemas' permission"
@@ -346,7 +346,7 @@ class SchemaList extends PageComponent<{}> {
                                 title: 'Subject permanently deleted',
                               });
                               api.refreshSchemaSubjects(true);
-                              appGlobal.history.push('/schema-registry/');
+                              appGlobal.historyPush('/schema-registry/');
                             })
                             .catch((err) => {
                               toast({

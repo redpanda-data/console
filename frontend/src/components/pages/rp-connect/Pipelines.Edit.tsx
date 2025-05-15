@@ -180,7 +180,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           title: 'Pipeline updated',
         });
         await pipelinesApi.refreshPipelines(true);
-        appGlobal.history.push(`/rp-connect/${pipelineId}`);
+        appGlobal.historyPush(`/rp-connect/${pipelineId}`);
       })
       .catch((err) => {
         toast({

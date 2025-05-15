@@ -150,7 +150,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
           <Button
             variant="outline"
             onClick={() =>
-              appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)
+              appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)
             }
             disabledReason={
               api.userData?.canManageSchemaRegistry === false
@@ -162,7 +162,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
           </Button>
           <Button
             variant="outline"
-            onClick={() => appGlobal.history.push(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
+            onClick={() => appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
             disabledReason={
               api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
             }
@@ -187,7 +187,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                         title: 'Subject permanently deleted',
                       });
                       api.refreshSchemaSubjects(true);
-                      appGlobal.history.push('/schema-registry/');
+                      appGlobal.historyPush('/schema-registry/');
                     })
                     .catch((err) => {
                       toast({
@@ -364,7 +364,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
                         const newDetails = api.schemaDetails.get(subject.name);
                         if (!newDetails || !newDetails.latestActiveVersion) {
-                          appGlobal.history.push('/schema-registry/');
+                          appGlobal.historyPush('/schema-registry/');
                         } else {
                           setSelectedVersion(newDetails.latestActiveVersion);
                         }
@@ -411,7 +411,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
                       const updatedDetails = api.schemaDetails.get(subject.name);
                       if (updatedDetails)
-                        appGlobal.history.push(
+                        appGlobal.historyPush(
                           `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`,
                         );
                     })

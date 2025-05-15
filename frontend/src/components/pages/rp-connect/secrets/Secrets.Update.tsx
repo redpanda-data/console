@@ -40,7 +40,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
 
   cancel() {
     this.secret = '';
-    appGlobal.history.push(returnSecretTab);
+    appGlobal.historyPush(returnSecretTab);
   }
 
   async updateSecret() {
@@ -65,7 +65,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           id: 'secret-update-success',
         });
         await pipelinesApi.refreshPipelines(true);
-        appGlobal.history.push(returnSecretTab);
+        appGlobal.historyPush(returnSecretTab);
       })
       .catch((err) => {
         toast({

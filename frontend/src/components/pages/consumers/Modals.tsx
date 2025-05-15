@@ -881,7 +881,7 @@ export class DeleteOffsetsModal extends Component<{
             if (remainingOffsets === 0) {
               // Group is fully deleted, go back to list
               this.props.onClose();
-              appGlobal.history.replace('/groups');
+              appGlobal.historyReplace('/groups');
             } else {
               this.props.onClose();
               dismiss();

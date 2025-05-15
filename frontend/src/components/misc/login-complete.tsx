@@ -11,7 +11,7 @@
 
 import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
-import type { match } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { appGlobal } from '../../state/appGlobal';
 import { api } from '../../state/backendApi';
 import type { ApiError, UserData } from '../../state/restInterfaces';
@@ -20,7 +20,7 @@ import { getBasePath } from '../../utils/env';
 import fetchWithTimeout from '../../utils/fetchWithTimeout';
 import { queryToObj } from '../../utils/queryHelper';
 
-class LoginCompletePage extends Component<{ provider: string; match: match<any> }> {
+class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {
     this.completeLogin(this.props.provider, window.location);
   }
@@ -34,7 +34,7 @@ class LoginCompletePage extends Component<{ provider: string; match: match<any> 
       if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
       if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
       uiState.loginError = errorString.trim();
-      appGlobal.history.replace(`${getBasePath()}/login`);
+      appGlobal.historyReplace(`${getBasePath()}/login`);
       return;
     }
 
@@ -54,7 +54,7 @@ class LoginCompletePage extends Component<{ provider: string; match: match<any> 
       }
     } catch (err) {
       uiState.loginError = String(err);
-      appGlobal.history.push(`${getBasePath()}/login`);
+      appGlobal.historyPush(`${getBasePath()}/login`);
       return;
     }
 
@@ -83,4 +83,7 @@ class LoginCompletePage extends Component<{ provider: string; match: match<any> 
   }
 }
 
-export default LoginCompletePage;
+export default () => {
+  const params = useParams();
+  return <LoginCompletePage provider={params.provider ?? ''} />;
+};

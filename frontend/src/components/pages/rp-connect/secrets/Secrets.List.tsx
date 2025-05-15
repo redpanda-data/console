@@ -186,7 +186,7 @@ class RpConnectSecretsList extends PageComponent {
                           onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            appGlobal.history.push(`/rp-connect/secrets/${r.id}/edit`);
+                            appGlobal.historyPush(`/rp-connect/secrets/${r.id}/edit`);
                           }}
                         >
                           <PencilIcon />

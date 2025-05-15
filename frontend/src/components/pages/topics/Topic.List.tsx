@@ -28,10 +28,12 @@ import {
   Grid,
   Icon,
   Popover,
+  SearchField,
   Text,
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
+import { AnimatePresence, motion } from 'framer-motion';
 import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type FC, useRef, useState } from 'react';
@@ -49,7 +51,6 @@ import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
-import SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { renderLogDirSummary } from '../../misc/common';
@@ -91,14 +92,14 @@ class TopicList extends PageComponent {
   componentDidMount() {
     // 1. use 'q' parameter for quick search (if it exists)
     editQuery((query) => {
-      if (query.q) uiSettings.topicList.quickSearch = String(query.q);
+      uiSettings.topicList.quickSearch = query.q ? String(query.q) : '';
     });
 
     // 2. whenever the quick search box changes, update the url
     this.quickSearchReaction = autorun(() => {
       editQuery((query) => {
         const q = String(uiSettings.topicList.quickSearch);
-        if (q) query.q = q;
+        query.q = q ? String(q) : '';
       });
     });
   }
@@ -112,23 +113,56 @@ class TopicList extends PageComponent {
     void api.refreshClusterHealth();
   }
 
-  isFilterMatch(filter: string, item: Topic): boolean {
-    try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
-      return Boolean(item.topicName.match(quickSearchRegExp));
-    } catch (e) {
-      console.warn('Invalid expression');
-      return item.topicName.toLowerCase().includes(filter.toLowerCase());
-    }
-  }
-
   @computed get topics() {
     let topics = api.topics ?? [];
     if (uiSettings.topicList.hideInternalTopics) {
       topics = topics.filter((x) => !x.isInternal && !x.topicName.startsWith('_'));
     }
+
+    if (uiSettings.topicList.quickSearch) {
+      try {
+        const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch, 'i');
+        topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
+      } catch (e) {
+        console.warn('Invalid expression');
+        const searchLower = uiSettings.topicList.quickSearch.toLowerCase();
+        topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
+      }
+    }
+
     return topics;
   }
+
+  SearchBar = observer(() => {
+    return (
+      <Flex gap={2}>
+        <SearchField
+          width="350px"
+          placeholderText="Enter search term/regex"
+          searchText={uiSettings.topicList.quickSearch}
+          setSearchText={(x) => (uiSettings.topicList.quickSearch = x)}
+        />
+        <AnimatePresence>
+          {uiSettings.topicList.quickSearch && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              style={{ display: 'flex', alignItems: 'center' }}
+            >
+              <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
+                <Text fontWeight="bold" display="inline">
+                  {this.topics.length}
+                </Text>{' '}
+                {this.topics.length === 1 ? 'result' : 'results'}
+              </Text>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Flex>
+    );
+  });
 
   render() {
     if (!api.topics) return DefaultSkeleton;
@@ -149,14 +183,7 @@ class TopicList extends PageComponent {
         </Section>
 
         <Box pt={6}>
-          <SearchBar<Topic>
-            placeholderText="Enter search term/regex"
-            dataSource={() => this.topics}
-            isFilterMatch={this.isFilterMatch}
-            filterText={uiSettings.topicList.quickSearch}
-            onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
-            onFilteredDataChanged={(data) => (this.filteredTopics = data)}
-          />
+          <this.SearchBar />
         </Box>
         <Section>
           <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
@@ -183,7 +210,7 @@ class TopicList extends PageComponent {
           </div>
           <Box my={4}>
             <TopicsTable
-              topics={this.filteredTopics}
+              topics={this.topics}
               onDelete={(record) => {
                 this.topicToDelete = record;
               }}

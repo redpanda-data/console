@@ -26,7 +26,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { type RolePrincipal, api, rolesApi } from '../../../state/backendApi';
 import type { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
@@ -61,7 +61,7 @@ type RoleFormProps = {
 };
 
 export const RoleForm = observer(({ initialData }: RoleFormProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const formState = useLocalObservable<CreateRoleFormState>(() => ({
     roleName: '',
     allowAllOperations: false,
@@ -152,7 +152,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
                 title: `Role ${newRole.response.roleName} successfully ${editMode ? 'updated' : 'created'}`,
               });
 
-              history.push(`/security/roles/${encodeURIComponent(newRole.response.roleName)}/details`);
+              navigate(`/security/roles/${encodeURIComponent(newRole.response.roleName)}/details`);
             }
           } catch (err) {
             toast({
@@ -342,9 +342,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Button
               variant="link"
               onClick={() => {
-                appGlobal.history.push(
-                  `/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`,
-                );
+                appGlobal.historyPush(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
               }}
             >
               Go back
@@ -353,7 +351,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Button
               variant="link"
               onClick={() => {
-                appGlobal.history.push('/security/roles/');
+                appGlobal.historyPush('/security/roles/');
               }}
             >
               Go back

@@ -4,7 +4,7 @@ import { useAppForm } from 'components/form/form';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 import { AgentDetailsForm } from './agent-details-form';
@@ -58,7 +58,7 @@ export const getPipelinePurpose = (pipelineKey: string) => {
 };
 
 export const CreateAgentHTTP = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { mutateAsync: createAgentPipelinesMutation, isPending: isCreateAgentPending } =
     useCreateAgentPipelinesMutation();
 
@@ -113,7 +113,7 @@ export const CreateAgentHTTP = () => {
         }),
       );
       await createAgentPipelinesMutation({ pipelines, agentId }).then(() => {
-        history.push(`/agents/${agentId}`);
+        navigate(`/agents/${agentId}`);
       });
     },
   });
@@ -172,7 +172,7 @@ export const CreateAgentHTTP = () => {
                 <Flex justifyContent="flex-start" pt={6}>
                   <ButtonGroup isDisabled={isCreateAgentPending}>
                     <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
-                    <Button variant="link" onClick={() => history.goBack()}>
+                    <Button variant="link" onClick={() => navigate(-1)}>
                       Cancel
                     </Button>
                   </ButtonGroup>

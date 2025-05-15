@@ -42,7 +42,7 @@ class RpConnectSecretCreate extends PageComponent {
   cancel() {
     this.secret = '';
     this.id = '';
-    appGlobal.history.push(returnSecretTab);
+    appGlobal.historyPush(returnSecretTab);
   }
 
   async createSecret() {
@@ -65,7 +65,7 @@ class RpConnectSecretCreate extends PageComponent {
           title: 'Secret created',
         });
         await pipelinesApi.refreshPipelines(true);
-        appGlobal.history.push(returnSecretTab);
+        appGlobal.historyPush(returnSecretTab);
       })
       .catch((err) => {
         toast({

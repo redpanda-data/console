@@ -234,7 +234,7 @@ async function handle401(res: Response) {
     }
   } else {
     // Redirect to login
-    appGlobal.history.push('/login');
+    appGlobal.historyPush('/login');
   }
 }
 
@@ -362,7 +362,7 @@ export async function handleExpiredLicenseError(r: Response) {
       avatarUrl: '',
       authenticationMethod: AuthenticationMethod.UNSPECIFIED,
     };
-    appGlobal.history.replace('/trial-expired');
+    appGlobal.historyReplace('/trial-expired');
   }
 }
 
@@ -550,9 +550,9 @@ const apiStore = {
         if (err.code === Code.PermissionDenied) {
           // TODO - solve typings, provide corresponding Reason type
           const subject = getOidcSubject(err);
-          appGlobal.history.push(`/login?error_code=permission_denied&oidc_subject=${subject}`);
+          appGlobal.historyPush(`/login?error_code=permission_denied&oidc_subject=${subject}`);
         } else {
-          appGlobal.history.push('/login');
+          appGlobal.historyPush('/login');
         }
       });
   },
@@ -2164,13 +2164,13 @@ export const rolesApi = observable({
     const client = appConfig.securityClient;
     if (!client) throw new Error('security client is not initialized');
 
-    return await client.updateRoleMembership( {
+    return await client.updateRoleMembership({
       request: {
         roleName: roleName,
         add: addUsers.map((u) => ({ principal: `User:${u}` })),
         remove: removeUsers.map((u) => ({ principal: `User:${u}` })),
         create,
-      }
+      },
     });
   },
 });

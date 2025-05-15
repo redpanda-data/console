@@ -194,7 +194,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           title: 'Pipeline created',
         });
         await pipelinesApi.refreshPipelines(true);
-        appGlobal.history.push('/connect-clusters');
+        appGlobal.historyPush('/connect-clusters');
       })
       .catch((err) => {
         toast({

@@ -390,7 +390,7 @@ export const principalGroupsView = observable(
 
         let principalType: PrincipalType;
         let principalName: string;
-        if (principal.includes(':')) {
+        if (principal?.includes(':')) {
           const split = principal.split(':', 2);
           principalType = split[0] as PrincipalType;
           principalName = split[1];

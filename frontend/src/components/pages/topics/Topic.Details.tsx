@@ -186,7 +186,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   get selectedTabId(): TopicTabId {
     function computeTabId() {
       // use url anchor if possible
-      let key = appGlobal.history.location.hash.replace('#', '');
+      let key = appGlobal.location.hash.replace('#', '');
       if (TopicTabIds.includes(key as any)) return key as TopicTabId;
 
       // use settings (last visited tab)
@@ -206,20 +206,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
   }
 
-  componentDidMount() {
-    // fix anchor
-    const anchor = `#${this.selectedTabId}`;
-    const location = appGlobal.history.location;
-    if (location.hash !== anchor) {
-      location.hash = anchor;
-      appGlobal.history.replace(location);
-    }
-  }
-
   render() {
     const topic = this.topic;
     if (topic === undefined) return DefaultSkeleton;
-    if (topic == null) return this.topicNotFound();
+    if (topic === null) return this.topicNotFound();
 
     const topicConfig = this.topicConfig;
 
@@ -337,7 +327,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             <Button
               variant="outline"
               onClick={() => {
-                appGlobal.history.push(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+                appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
               }}
             >
               Produce Record
@@ -400,9 +390,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   setTabPage = (activeKey: string): void => {
     uiSettings.topicDetailsActiveTabKey = activeKey as any;
 
-    const loc = appGlobal.history.location;
+    const loc = appGlobal.location;
     loc.hash = String(activeKey);
-    appGlobal.history.replace(loc);
+    appGlobal.historyReplace(`${loc.pathname}#${loc.hash}`);
 
     this.refreshData(false);
   };
@@ -419,7 +409,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
           </div>
         }
         extra={
-          <Button variant="solid" onClick={() => appGlobal.history.goBack()}>
+          <Button variant="solid" onClick={() => appGlobal.historyPush('/topics')}>
             Go Back
           </Button>
         }

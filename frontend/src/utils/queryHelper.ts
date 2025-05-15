@@ -32,14 +32,23 @@ export const objToQuery = (obj: { [key: string]: any }) => {
 // edit the current search query,
 // IFF you make any changes inside editFunction, it returns the stringified version of the search query
 export function editQuery(editFunction: (queryObject: Record<string, string | null | undefined>) => void) {
-  const currentObj = queryToObj(window.location.search);
-  editFunction(currentObj);
+  try {
+    const location = appGlobal.historyLocation();
+    if (!location) {
+      console.warn('Location not available yet, skipping query update');
+      return;
+    }
 
-  const newQuery = objToQuery(currentObj);
+    const currentObj = queryToObj(location.search);
+    editFunction(currentObj);
 
-  if (window.location.search !== newQuery) {
-    //console.log(`changing search: (${window.location.search}) -> (${search})`);
-    appGlobal.history.location.search = newQuery;
-    appGlobal.history.replace(appGlobal.history.location);
+    const newQuery = objToQuery(currentObj);
+
+    if (location.search !== newQuery) {
+      const path = location.pathname;
+      appGlobal.historyReplace(`${path}${newQuery}`);
+    }
+  } catch (error) {
+    console.warn('Failed to update query:', error);
   }
 }

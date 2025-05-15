@@ -3,7 +3,7 @@ import { runInAction } from 'mobx';
 import type { ReactNode } from 'react';
 import { AiOutlineSlack } from 'react-icons/ai';
 import { FaGithub } from 'react-icons/fa';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { CreateAgentCard } from './create-agent-card';
 
@@ -28,7 +28,7 @@ export const updatePageTitle = () => {
 };
 
 export const CreateAgentPage = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const templateListData: AgentOption[] = [
     {
@@ -86,7 +86,7 @@ export const CreateAgentPage = () => {
               isSelected={agent.isSelected}
               isDisabled={agent.isDisabled}
               onSelect={() => {
-                history.push(`/agents/create/${agent.type}`);
+                navigate(`/agents/create/${agent.type}`);
               }}
             />
           ))}

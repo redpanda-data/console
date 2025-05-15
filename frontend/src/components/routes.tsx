@@ -20,11 +20,10 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
-import React, { Fragment, type FunctionComponent } from 'react';
+import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
-import { Redirect, Route } from 'react-router';
-import { Switch } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backendApi';
@@ -98,7 +97,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
     .map((entry) => {
       // Menu entry for Page
       if (entry.path.includes(':')) return null; // only root-routes (no param) can be in menu
-      if (!entry.icon) return null; // items without icon do not appear in the sidebar
+      if (!entry?.icon) return null; // items without icon do not appear in the sidebar
 
       let isEnabled = true;
       let disabledText: JSX.Element = <Fragment key={entry.title} />;
@@ -130,31 +129,32 @@ function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
   return entries.map((e) => e.routeJsx);
 }
 
+const NotFound = () => {
+  uiState.pageTitle = '404';
+  const location = useLocation();
+  return (
+    <Section title="404">
+      <div>
+        <h4>Path:</h4> <span>{location.pathname}</span>
+      </div>
+      <div>
+        <h4>Query:</h4> <pre>{JSON.stringify(location.search, null, 4)}</pre>
+      </div>
+    </Section>
+  );
+};
+
 export const RouteView = () => (
   <AnimatePresence mode="wait">
-    <Switch>
+    <Routes>
       {/* Index */}
-      <Route exact path="/" render={() => <Redirect to="/overview" />} />
+      <Route path="/" element={<Navigate to="/overview" replace />} />
 
       {/* Emit all <Route/> elements */}
       {EmitRouteViews(APP_ROUTES)}
 
-      <Route
-        render={(rp) => {
-          uiState.pageTitle = '404';
-          return (
-            <Section title="404">
-              <div>
-                <h4>Path:</h4> <span>{rp.location.pathname}</span>
-              </div>
-              <div>
-                <h4>Query:</h4> <pre>{JSON.stringify(rp.location.search, null, 4)}</pre>
-              </div>
-            </Section>
-          );
-        }}
-      />
-    </Switch>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   </AnimatePresence>
 );
 
@@ -189,18 +189,51 @@ interface MenuItemState {
   disabledReasons: DisabledReasons[];
 }
 
+// Separate component to handle the route rendering logic
+const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ route }) => {
+  const matchedPath = useMatch(route.path) ?? '';
+  const params = useParams();
+
+  const pageProps: PageProps = {
+    matchedPath,
+    ...params,
+  } as PageProps;
+
+  useEffect(() => {
+    // Only update if we haven't already and the path has changed
+    if (uiState.currentRoute?.path !== route.path) {
+      // assign router without the routeJsx, otherwise it will cause MobX to overflow callstack
+      uiState.currentRoute = {
+        title: route.title,
+        path: route.path,
+        pageType: route.pageType,
+        icon: route.icon,
+        visibilityCheck: route.visibilityCheck,
+        routeJsx: null as unknown as JSX.Element,
+      } as PageDefinition<any>;
+    }
+  }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
+
+  console.log('route.path', route.path);
+
+  return <route.pageType key={route.path} {...pageProps} />;
+};
+
 /**
  * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.
  */
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
+  const location = useLocation();
 
-  if (!isAgentFeatureEnabled && path.includes('/agents')) {
-    appGlobal.history.push('/overview', { replace: true });
-    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
-  }
+  useEffect(() => {
+    if (!isAgentFeatureEnabled && path.includes('/agents') && location.pathname !== '/overview') {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
+  }, [isAgentFeatureEnabled, path, location.pathname]);
 
-  return <>{children}</>;
+  return children;
 };
 
 function MakeRoute<TRouteParams>(
@@ -215,40 +248,24 @@ function MakeRoute<TRouteParams>(
     title,
     path,
     pageType: page,
-    routeJsx: null as unknown as JSX.Element, // will be set below
     icon,
     visibilityCheck: showCallback,
+    routeJsx: null as unknown as JSX.Element,
   };
 
-  // todo: verify that path and route params match
-  route.routeJsx = (
+  // Create the route element after routeData is defined
+  const routeElement = (
     <Route
-      path={route.path}
-      key={route.title}
-      exact={exact ? true : undefined}
-      render={(rp) => {
-        const matchedPath = rp.match.url;
-        const { ...params } = rp.match.params;
-
-        if (uiState.currentRoute && uiState.currentRoute.path !== route.path) {
-          //console.log('switching route: ' + routeStr(ui.currentRoute) + " -> " + routeStr(route));
-        }
-
-        const pageProps: PageProps<TRouteParams> = {
-          matchedPath,
-          ...params,
-        } as PageProps<TRouteParams>;
-
-        uiState.currentRoute = route;
-
-        return (
-          <ProtectedRoute path={route.path}>
-            <route.pageType {...pageProps} />
-          </ProtectedRoute>
-        );
-      }}
+      path={`${path}${exact ? '' : '/*'}`}
+      key={title}
+      element={
+        <ProtectedRoute path={path}>
+          <RouteRenderer route={route} />
+        </ProtectedRoute>
+      }
     />
   );
+  route.routeJsx = routeElement;
 
   return route;
 }

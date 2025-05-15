@@ -312,8 +312,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   messageSearch = createMessageSearch();
   messageSource = new FilterableDataSource<TopicMessage>(
     () => this.messageSearch.messages,
-    (_, m) => this.isFilterMatch('', m),
-    16,
+    (filterText, m) => this.isFilterMatch(filterText, m),
+    100, // Increased debounce time to match default
   );
 
   autoSearchReaction: IReactionDisposer | null = null;
@@ -1684,108 +1684,103 @@ export const ExpandedMessage: FC<{
   );
 };
 
-const PayloadComponent = observer(
-  (p: {
-    payload: Payload;
-    loadLargeMessage: () => Promise<void>;
-  }) => {
-    const { payload, loadLargeMessage } = p;
-    const toast = useToast();
-    const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
+const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
+  const { payload, loadLargeMessage } = p;
+  const toast = useToast();
+  const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
 
-    if (payload.isPayloadTooLarge) {
-      return (
-        <Flex flexDirection="column" gap="4">
-          <Flex alignItems="center" gap="2">
-            Because this message size exceeds the display limit, loading it could cause performance degradation.
-          </Flex>
-          <Button
-            variant="outline"
-            width="10rem"
-            size="small"
-            data-testid="load-anyway-button"
-            isLoading={isLoadingLargeMessage}
-            loadingText="Loading..."
-            onClick={() => {
-              setLoadingLargeMessage(true);
-              loadLargeMessage()
-                .catch((err) =>
-                  toast({
-                    status: 'error',
-                    description: err instanceof Error ? err.message : String(err),
-                  }),
-                )
-                .finally(() => setLoadingLargeMessage(false));
-            }}
-          >
-            Load anyway
-          </Button>
+  if (payload.isPayloadTooLarge) {
+    return (
+      <Flex flexDirection="column" gap="4">
+        <Flex alignItems="center" gap="2">
+          Because this message size exceeds the display limit, loading it could cause performance degradation.
         </Flex>
+        <Button
+          variant="outline"
+          width="10rem"
+          size="small"
+          data-testid="load-anyway-button"
+          isLoading={isLoadingLargeMessage}
+          loadingText="Loading..."
+          onClick={() => {
+            setLoadingLargeMessage(true);
+            loadLargeMessage()
+              .catch((err) =>
+                toast({
+                  status: 'error',
+                  description: err instanceof Error ? err.message : String(err),
+                }),
+              )
+              .finally(() => setLoadingLargeMessage(false));
+          }}
+        >
+          Load anyway
+        </Button>
+      </Flex>
+    );
+  }
+
+  try {
+    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
+      return <code>null</code>;
+
+    const val = payload.payload;
+    const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
+
+    if (payload.encoding === 'binary') {
+      const mode = 'hex' as 'ascii' | 'raw' | 'hex';
+      if (mode === 'raw') {
+        return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
+      }
+      if (mode === 'hex') {
+        const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
+
+        if (rawBytes) {
+          let result = '';
+          for (const rawByte of rawBytes) {
+            result += `${rawByte.toString(16).padStart(2, '0')} `;
+          }
+          return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
+        }
+        return <div>Raw bytes not available</div>;
+      }
+      const str = String(val);
+      let result = '';
+      const isPrintable = /[\x20-\x7E]/;
+      for (let i = 0; i < str.length; i++) {
+        let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
+        ch = isPrintable.test(ch) ? ch : '. ';
+        result += `${ch} `;
+      }
+
+      return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
+    }
+
+    // Decode payload from base64 and render control characters as code highlighted text, such as
+    // `NUL`, `ACK` etc.
+    if (payload.encoding === 'utf8WithControlChars') {
+      const elements = highlightControlChars(val);
+
+      return (
+        <div className="codeBox" data-testid="payload-content">
+          {elements}
+        </div>
       );
     }
 
-    try {
-      if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
-        return <code>null</code>;
-
-      const val = payload.payload;
-      const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
-
-      if (payload.encoding === 'binary') {
-        const mode = 'hex' as 'ascii' | 'raw' | 'hex';
-        if (mode === 'raw') {
-          return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
-        }
-        if (mode === 'hex') {
-          const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
-
-          if (rawBytes) {
-            let result = '';
-            for (const rawByte of rawBytes) {
-              result += `${rawByte.toString(16).padStart(2, '0')} `;
-            }
-            return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-          }
-          return <div>Raw bytes not available</div>;
-        }
-        const str = String(val);
-        let result = '';
-        const isPrintable = /[\x20-\x7E]/;
-        for (let i = 0; i < str.length; i++) {
-          let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
-          ch = isPrintable.test(ch) ? ch : '. ';
-          result += `${ch} `;
-        }
-
-        return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
-      }
-
-      // Decode payload from base64 and render control characters as code highlighted text, such as
-      // `NUL`, `ACK` etc.
-      if (payload.encoding === 'utf8WithControlChars') {
-        const elements = highlightControlChars(val);
-
-        return (
-          <div className="codeBox" data-testid="payload-content">
-            {elements}
-          </div>
-        );
-      }
-
-      if (isPrimitive) {
-        return (
-          <div className="codeBox" data-testid="payload-content">
-            {String(val)}
-          </div>
-        );
-      }
-
-      return <KowlJsonView srcObj={val} />;
-    } catch (e) {
-      return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {(e as Error).message ?? String(e)}</span>;
+    if (isPrimitive) {
+      return (
+        <div className="codeBox" data-testid="payload-content">
+          {String(val)}
+        </div>
+      );
     }
-  },
-);
+
+    return <KowlJsonView srcObj={val} />;
+  } catch (e) {
+    return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {(e as Error).message ?? String(e)}</span>;
+  }
+});
 
 function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
   const elements: ReactNode[] = [];
@@ -2338,7 +2333,11 @@ function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction> | undefine
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
-export function DeleteRecordsMenuItem(isCompacted: boolean, allowedActions: Array<TopicAction> | undefined, onClick: () => void) {
+export function DeleteRecordsMenuItem(
+  isCompacted: boolean,
+  allowedActions: Array<TopicAction> | undefined,
+  onClick: () => void,
+) {
   const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 
   let errorText: string | undefined;
