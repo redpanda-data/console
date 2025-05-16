@@ -19,7 +19,7 @@ import {
   CreateTopicRequest_TopicSchema,
   CreateTopicRequest_Topic_ConfigSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { useCreateTopicMutation, useListTopicsQuery } from 'react-query/api/topic';
+import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
 
 export const topicSchema = z.object({
@@ -39,7 +39,7 @@ export const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 export const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
 export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => {
-  const { data: topicList } = useListTopicsQuery();
+  const { data: topicList } = useLegacyListTopicsQuery();
   const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useCreateTopicMutation();
 
   const formOpts = formOptions({
@@ -92,7 +92,7 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
                   name="name"
                   validators={{
                     onChange: ({ value }) =>
-                      topicList?.topics?.some((topic) => topic?.name === value)
+                      topicList?.topics?.some((topic) => topic?.topicName === value)
                         ? { message: 'Name is already in use', path: 'name' }
                         : undefined,
                   }}

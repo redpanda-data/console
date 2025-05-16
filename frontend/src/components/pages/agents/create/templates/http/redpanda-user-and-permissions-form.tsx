@@ -4,8 +4,8 @@ import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal'
 import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
 import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { useListTopicsQuery } from 'react-query/api/topic';
-import { useListUsersQuery } from 'react-query/api/user';
+import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
 import {
@@ -48,7 +48,7 @@ export const RedpandaUserAndPermissionsForm = withForm({
 
     const [customSecretSchema, setCustomSecretSchema] = useState<z.ZodTypeAny | undefined>(undefined);
     const [helperText, setHelperText] = useState<ReactNode | undefined>(undefined);
-    const { data: userList } = useListUsersQuery();
+    const { data: userList } = useLegacyListUsersQuery();
     const userListOptions =
       userList?.users?.map((user) => ({
         value: user?.name,
@@ -62,11 +62,11 @@ export const RedpandaUserAndPermissionsForm = withForm({
         label: secret?.id,
       })) ?? [];
 
-    const { data: topicList } = useListTopicsQuery();
+    const { data: topicList } = useLegacyListTopicsQuery();
     const topicListOptions =
       topicList?.topics?.map((topic) => ({
-        value: topic?.name,
-        label: topic?.name,
+        value: topic?.topicName,
+        label: topic?.topicName,
       })) ?? [];
 
     const handleCreateSecretModalClose = (createdSecretId?: string) => {
