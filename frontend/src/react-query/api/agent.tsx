@@ -169,16 +169,26 @@ export const useListAgentsQuery = (
     refetchInterval?: number | false;
   },
 ) => {
+  // Ensure name contains is only used if a string is provided. It has to match the agent name exactly.
+  // We cannot use nameContains for filtering pipeline name because the name of the agent is stored as a tag, not pipeline name.
+  // TODO: Once dedicated "agent service" exists, we can use agentName for that endpoint to filter by agent name.
+  const agentName = input?.filter?.nameContains;
+
+  const listPipelinesRequestFilter = create(ListPipelinesRequest_FilterSchema, {
+    tags: agentName
+      ? {
+          __redpanda_cloud_pipeline_type: 'agent',
+          __redpanda_cloud_agent_name: agentName,
+        }
+      : {
+          __redpanda_cloud_pipeline_type: 'agent',
+        },
+  });
+
   const listPipelinesRequestDataPlane = create(ListPipelinesRequestSchemaDataPlane, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
-    filter: create(ListPipelinesRequest_FilterSchema, {
-      tags: {
-        __redpanda_cloud_pipeline_type: 'agent',
-        // TODO: Ensure this tag can do partial matching of the name
-        __redpanda_cloud_agent_name: input?.filter?.nameContains ?? '',
-      },
-    }),
+    filter: listPipelinesRequestFilter,
   });
 
   const listPipelinesRequest = create(ListPipelinesRequestSchema, {
@@ -201,13 +211,8 @@ export const useListAgentsQuery = (
 
   const allRetrievedPipelines = listAgentsResult?.data?.pages?.flatMap(({ response }) => response?.pipelines);
 
-  // TODO: Remove once tags are properly used for filtering
   const filteredAgentPipelines = allRetrievedPipelines?.filter(
-    (agent) =>
-      agent?.tags?.__redpanda_cloud_pipeline_type === 'agent' &&
-      agent?.tags?.__redpanda_cloud_agent_name
-        ?.toLowerCase()
-        .includes(input?.filter?.nameContains?.toLowerCase() ?? ''),
+    (agent) => agent?.tags?.__redpanda_cloud_pipeline_type === 'agent',
   );
 
   const uniqueAgentIds = [
