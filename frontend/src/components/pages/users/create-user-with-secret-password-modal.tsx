@@ -19,7 +19,7 @@ import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplan
 import { CreateUserRequestSchema, CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from 'react-query/api/user';
+import { getSASLMechanism, useCreateUserMutation, useLegacyListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 import { passwordSchema, usernameSchema } from '../agents/create/templates/http/create-agent-http-schema';
@@ -54,7 +54,7 @@ interface CreateUserWithSecretPasswordModalProps {
 
 export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUserWithSecretPasswordModalProps) => {
   const { data: secretList } = useListSecretsQuery();
-  const { data: userList } = useListUsersQuery();
+  const { data: userList } = useLegacyListUsersQuery();
 
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
   const { mutateAsync: createUser, isPending: isCreateUserPending } = useCreateUserMutation();
