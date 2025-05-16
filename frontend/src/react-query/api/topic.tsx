@@ -26,7 +26,6 @@ interface ListTopicsExtraOptions {
  */
 export const useLegacyListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
-  _options?: QueryOptions<GenMessage<ListTopicsRequest>, ListTopicsResponse>,
   { hideInternalTopics = false }: ListTopicsExtraOptions = {},
 ) => {
   const listTopicsRequest = create(ListTopicsRequestSchema, {
