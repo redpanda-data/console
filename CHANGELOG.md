@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.1.1 / 2025-05-21
+
+- [BUFGIX] Fix hot reloading of authorization configs.
+- [BUFGIX] OIDC authentication without using unified identity failed under certain conditions (enterprise feature).
+
 ## v3.1.0 / 2025-04-28
 
 - [IMPROVEMENT] Add `tokenFilepath` support for providing SASL OAuth token via file.
@@ -23,6 +28,10 @@
 - [IMPROVEMENT] Update Consumer Groups page layout.
 - [IMPROVEMENT] Ability to edit consumer group offsets by shifting the committed offsets.
 - [BUFGIX] Fix deletion of subject compatibility levels to reset to the default.
+
+## v2.8.6 / 2025-05-21
+
+- [BUGFIX] Backport CSV export of Kafka records into v2 release.
 
 ## v2.8.5 / 2025-03-25
 
