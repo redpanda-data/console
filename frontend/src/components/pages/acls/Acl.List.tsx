@@ -39,7 +39,9 @@ import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs'
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useRef, useState } from 'react';
+import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import ErrorResult from '../../../components/misc/ErrorResult';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
@@ -47,6 +49,8 @@ import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { clone } from '../../../utils/jsonUtils';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -61,12 +65,8 @@ import {
   principalGroupsView,
 } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
-import { BsThreeDots } from 'react-icons/bs';
-import ErrorResult from '../../../components/misc/ErrorResult';
-import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
-import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
+import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
-import {ChangePasswordModal, ChangeRolesModal} from './UserEditModals';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -100,7 +100,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   initPage(p: PageInitHelper): void {
-    p.title = 'Access control';
+    p.title = 'Access Control';
     p.addBreadcrumb('Access control', '/security');
 
     void this.refreshData();
@@ -315,8 +315,8 @@ const UsersTab = observer(() => {
   return (
     <Flex flexDirection="column" gap="4">
       <Box>
-        These users are SASL-SCRAM users that are managed by your cluster. Other authentication identities (OIDC,
-        Kerberos, mTLS) will not be listed here. You can view their permissions in the permissions list.
+        These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
+        (OIDC, Kerberos, mTLS) on the Permissions list page.
       </Box>
 
       <SearchField
@@ -427,26 +427,32 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 
   return (
     <>
-      <ChangePasswordModal
-        userName={user.name}
-        isOpen={isChangePasswordModalOpen}
-        setIsOpen={setIsChangePasswordModalOpen}
-      />
-      <ChangeRolesModal userName={user.name} isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} />
+      {api.isAdminApiConfigured && (
+        <ChangePasswordModal
+          userName={user.name}
+          isOpen={isChangePasswordModalOpen}
+          setIsOpen={setIsChangePasswordModalOpen}
+        />
+      )}
+      {Features.rolesApi && (
+        <ChangeRolesModal userName={user.name} isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} />
+      )}
 
       <Menu>
         <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
           <Icon as={BsThreeDots} />
         </MenuButton>
         <MenuList>
-          <MenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsChangePasswordModalOpen(true);
-            }}
-          >
-            Change password
-          </MenuItem>
+          {api.isAdminApiConfigured && (
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsChangePasswordModalOpen(true);
+              }}
+            >
+              Change password
+            </MenuItem>
+          )}
           {Features.rolesApi && (
             <MenuItem
               onClick={(e) => {
@@ -467,7 +473,6 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
     </>
   );
 };
-
 
 const RolesTab = observer(() => {
   const roles = (rolesApi.roles ?? []).filter((u) => {
