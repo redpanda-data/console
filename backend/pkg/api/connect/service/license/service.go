@@ -17,6 +17,7 @@ import (
 	"errors"
 	"log/slog"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/rpadmin"
@@ -56,6 +57,31 @@ func NewService(
 	}, nil
 }
 
+// requireGating returns true if the license gating should be enforced. This happens when:
+// 1. The license is expired
+// 2. The license is the built-in evaluation license
+func (s Service) requireGating(ctx context.Context) bool {
+	// Check if the license is the built-in evaluation license
+	s.logger.Info("console license information",
+		zap.Any("license", s.consoleLicense))
+
+	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
+	if err != nil {
+		return true
+	}
+
+	coreLicense, err := adminCl.GetLicenseInfo(ctx)
+	if err != nil {
+		return true
+	}
+
+	// Check if the license is the built-in evaluation license
+	isBuiltInEval := coreLicense.Properties.Organization == "Redpanda Built-In Evaluation Period"
+
+	// Return true only if the license is both expired and the built-in evaluation
+	return coreLicense.Properties.Expires < time.Now().Unix() && isBuiltInEval
+}
+
 // ListLicenses retrieves the licenses associated with the Redpanda console and
 // cluster. It requires the requester to be authenticated and have the necessary
 // permissions.
@@ -70,6 +96,8 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 	}
 
 	coreLicense, err := adminCl.GetLicenseInfo(ctx)
+	s.logger.Info("core license info", zap.Any("license", coreLicense))
+
 	if err != nil {
 		var httpErr *rpadmin.HTTPResponseError
 		if errors.As(err, &httpErr) {
@@ -98,7 +126,8 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 	coreProtoLicense := s.mapper.adminAPILicenseInformationToProto(coreLicense)
 	licenses = append(licenses, coreProtoLicense)
 
-	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: isViolation}), nil
+	requireGating := s.requireGating(ctx)
+	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: isViolation, RequireGating: requireGating }), nil
 }
 
 // SetLicense installs a new license into the Redpanda cluster.
