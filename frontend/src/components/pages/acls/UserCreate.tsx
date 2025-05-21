@@ -30,6 +30,7 @@ import {
   Text,
   Tooltip,
   createStandaloneToast,
+  isMultiValue,
   isSingleValue,
   redpandaTheme,
   redpandaToastOptions,
@@ -428,7 +429,7 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
     <Flex direction="column" gap={4}>
       <Box w="280px">
         <Select<string>
-          isMulti={false}
+          isMulti={true}
           options={availableRoles}
           inputValue={searchValue}
           onInputChange={setSearchValue}
@@ -440,31 +441,15 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
           //       On 'undefined' it should handle selection on its own (this works properly)
           //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
           //       The override doesn't work either (isOptionSelected={()=>false})
-          value={undefined}
-          onChange={(val, meta) => {
-            console.log('onChange', { metaAction: meta.action, val });
-            if (val && isSingleValue(val) && val.value) {
-              setRoles([...roles, val.value]);
+          value={roles.map((r) => ({ value: r }))}
+          onChange={(val) => {
+            if (val && isMultiValue(val)) {
+              setRoles([...val.map((val) => val.value)]);
               setSearchValue('');
             }
           }}
         />
       </Box>
-
-      <Flex gap={2}>
-        {roles.map((role) => (
-          <Tag key={role} cursor="pointer">
-            <TagLabel>{role}</TagLabel>
-            <TagCloseButton
-              onClick={() => {
-                const tempRoles = [...roles];
-                tempRoles.remove(role);
-                setRoles(tempRoles);
-              }}
-            />
-          </Tag>
-        ))}
-      </Flex>
     </Flex>
   );
 };

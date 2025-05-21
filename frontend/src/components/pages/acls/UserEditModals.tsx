@@ -1,18 +1,36 @@
-import {useEffect, useState} from 'react';
-import {generatePassword, StateRoleSelector} from './UserCreate';
-import {useUpdateUserMutation} from '../../../react-query/api/user';
-import {Button, Checkbox, CopyButton, Flex, FormField, IconButton, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay, PasswordInput, Tooltip, useToast} from '@redpanda-data/ui';
-import {MdRefresh} from 'react-icons/md';
-import {SingleSelect} from '../../misc/Select';
-import {useListRolesQuery, useUpdateRoleMembershipMutation} from '../../../react-query/api/security';
-import {Features} from '../../../state/supportedFeatures';
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
+import {
+  Button,
+  Checkbox,
+  CopyButton,
+  Flex,
+  FormField,
+  IconButton,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  PasswordInput,
+  Tooltip,
+  useToast,
+} from '@redpanda-data/ui';
 import {
   UpdateRoleMembershipRequestSchema,
   type UpdateRoleMembershipResponse,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { SASLMechanism, UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import {rolesApi} from '../../../state/backendApi';
+import { useEffect, useState } from 'react';
+import { MdRefresh } from 'react-icons/md';
+import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../react-query/api/security';
+import { useUpdateUserMutationWithToast } from '../../../react-query/api/user';
+import { rolesApi } from '../../../state/backendApi';
+import { Features } from '../../../state/supportedFeatures';
+import { formatToastErrorMessageGRPC, showToast } from '../../../utils/toast.utils';
+import { SingleSelect } from '../../misc/Select';
+import { StateRoleSelector, generatePassword } from './UserCreate';
 
 type ChangePasswordModalProps = {
   userName: string;
@@ -21,12 +39,12 @@ type ChangePasswordModalProps = {
 };
 
 export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePasswordModalProps) => {
-  const toast = useToast()
+  const toast = useToast();
   const [password, setPassword] = useState(generatePassword(30, false));
   const [mechanism, setMechanism] = useState<SASLMechanism>();
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
   const isValidPassword = password && password.length >= 4 && password.length <= 64;
-  const { mutateAsync: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutation();
+  const { mutateAsync: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutationWithToast();
 
   const onSavePassword = async () => {
     const updateRequest = create(UpdateUserRequestSchema, {
@@ -43,13 +61,14 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
         title: `Password for user ${userName} updated`,
       });
       setIsOpen(false);
-    } catch (err) {
-      toast({
+    } catch (error) {
+      showToast({
+        title: formatToastErrorMessageGRPC({
+          error: ConnectError.from(error),
+          action: 'update',
+          entity: 'user',
+        }),
         status: 'error',
-        duration: null,
-        isClosable: true,
-        title: `Failed to update user ${userName}`,
-        description: String(err),
       });
     }
   };
@@ -105,7 +124,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                 </Checkbox>
               </Flex>
             </FormField>
-            <FormField label="SASL Mechanism" showRequiredIndicator>
+            <FormField label="SASL mechanism" showRequiredIndicator>
               <SingleSelect<SASLMechanism | undefined>
                 options={[
                   {
@@ -156,21 +175,26 @@ type ChangeRolesModalProps = {
 };
 
 export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesModalProps) => {
-  const toast = useToast()
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const toast = useToast();
+  const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
   const { mutateAsync: updateRoleMembership, isPending: isUpdateMembershipPending } = useUpdateRoleMembershipMutation();
-  const { data } = useListRolesQuery({ filter: { principal: userName } });
+  const { data, isLoading } = useListRolesQuery({ filter: { principal: userName } });
   const originalRoles = data.roles.map((r) => r.name);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    setSelectedRoles([...originalRoles]);
-  }, [JSON.stringify(originalRoles)]);
+    if (!isLoading && selectedRoles === undefined) {
+      setSelectedRoles([...originalRoles]);
+    }
+  }, [originalRoles, isLoading, selectedRoles]);
 
   const onSaveRoles = async () => {
     if (!Features.rolesApi) return;
-    const addedRoles = selectedRoles.except(originalRoles);
-    const removedRoles = originalRoles.except(selectedRoles);
+    let formattedSelectedRoles: string[] = [];
+    if (selectedRoles) {
+      formattedSelectedRoles = selectedRoles;
+    }
+    const addedRoles = formattedSelectedRoles.except(originalRoles);
+    const removedRoles = originalRoles.except(formattedSelectedRoles);
     try {
       const promises: Promise<UpdateRoleMembershipResponse>[] = [];
 
@@ -201,13 +225,14 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
         title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`,
       });
       setIsOpen(false);
-    } catch (err) {
-      toast({
+    } catch (error) {
+      showToast({
+        title: formatToastErrorMessageGRPC({
+          error: ConnectError.from(error),
+          action: 'update',
+          entity: 'role',
+        }),
         status: 'error',
-        duration: null,
-        isClosable: true,
-        title: `Failed to update user ${userName}`,
-        description: String(err),
       });
     }
   };
@@ -227,7 +252,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
             label="Assign roles"
             description="Assign roles to this user. This is optional and can be changed later."
           >
-            <StateRoleSelector roles={selectedRoles} setRoles={setSelectedRoles} />
+            <StateRoleSelector roles={selectedRoles || []} setRoles={setSelectedRoles} />
           </FormField>
         </ModalBody>
         <ModalFooter display="flex" gap={2}>
