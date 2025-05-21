@@ -39,6 +39,7 @@ import { observer } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 import { MdRefresh } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { useListRolesQuery } from '../../../react-query/api/security';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
@@ -414,6 +415,59 @@ export const RoleSelector = observer((p: { state: string[] }) => {
     </Flex>
   );
 });
+
+// use instead of RoleSelector whn not using mobx
+export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRoles: (roles: string[]) => void }) => {
+  const [searchValue, setSearchValue] = useState('');
+  const {
+    data: { roles: allRoles },
+  } = useListRolesQuery();
+  const availableRoles = (allRoles ?? []).filter((r) => !roles.includes(r.name)).map((r) => ({ value: r.name }));
+
+  return (
+    <Flex direction="column" gap={4}>
+      <Box w="280px">
+        <Select<string>
+          isMulti={false}
+          options={availableRoles}
+          inputValue={searchValue}
+          onInputChange={setSearchValue}
+          placeholder="Select roles..."
+          noOptionsMessage={() => 'No roles found'}
+          // TODO: Selecting an entry triggers onChange properly.
+          //       But there is no way to prevent the component from showing no value as intended
+          //       Seems to be a bug with the component.
+          //       On 'undefined' it should handle selection on its own (this works properly)
+          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
+          //       The override doesn't work either (isOptionSelected={()=>false})
+          value={undefined}
+          onChange={(val, meta) => {
+            console.log('onChange', { metaAction: meta.action, val });
+            if (val && isSingleValue(val) && val.value) {
+              setRoles([...roles, val.value]);
+              setSearchValue('');
+            }
+          }}
+        />
+      </Box>
+
+      <Flex gap={2}>
+        {roles.map((role) => (
+          <Tag key={role} cursor="pointer">
+            <TagLabel>{role}</TagLabel>
+            <TagCloseButton
+              onClick={() => {
+                const tempRoles = [...roles];
+                tempRoles.remove(role);
+                setRoles(tempRoles);
+              }}
+            />
+          </Tag>
+        ))}
+      </Flex>
+    </Flex>
+  );
+};
 
 export function generatePassword(length: number, allowSpecialChars: boolean): string {
   if (length <= 0) return '';
