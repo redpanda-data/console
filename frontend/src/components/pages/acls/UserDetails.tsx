@@ -25,6 +25,7 @@ import { Features } from '../../../state/supportedFeatures';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import { type AclPrincipalGroup, principalGroupsView } from './Models';
 import { UserRoleTags } from './UserPermissionAssignments';
+import {ChangePasswordModal, ChangeRolesModal} from './UserEditModals';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
@@ -39,6 +40,11 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   @observable isCreating = false;
 
   @observable selectedRoles: string[] = [];
+
+  @observable isChangePasswordModalOpen = false;
+  @observable isChangeRolesModalOpen = false
+
+
 
   constructor(p: any) {
     super(p);
@@ -81,13 +87,29 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
     return (
       <>
         <PageContent>
+          <ChangePasswordModal
+            userName={userName}
+            isOpen={this.isChangePasswordModalOpen}
+            setIsOpen={(value: boolean) => this.isChangePasswordModalOpen = value}
+          />
+          <ChangeRolesModal
+            userName={userName}
+            isOpen={this.isChangeRolesModalOpen}
+            setIsOpen={(value: boolean) => this.isChangeRolesModalOpen = value} />
           <Flex gap="4">
             <Button
               variant="outline"
-              onClick={() => appGlobal.historyPush(`/security/users/${userName}/edit`)}
+              onClick={() => this.isChangeRolesModalOpen = true}
               isDisabled={!canEdit}
             >
-              Edit
+              Change roles
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => this.isChangePasswordModalOpen = true}
+              isDisabled={!canEdit}
+            >
+              Change password
             </Button>
             {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
             {isServiceAccount && (

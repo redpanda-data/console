@@ -61,11 +61,12 @@ import {
   principalGroupsView,
 } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
-
+import { BsThreeDots } from 'react-icons/bs';
 import ErrorResult from '../../../components/misc/ErrorResult';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { UserRoleTags } from './UserPermissionAssignments';
+import {ChangePasswordModal, ChangeRolesModal} from './UserEditModals';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -311,7 +312,6 @@ const UsersTab = observer(() => {
   if (api.serviceAccountsError) {
     return <ErrorResult error={api.serviceAccountsError} />;
   }
-
   return (
     <Flex flexDirection="column" gap="4">
       <Box>
@@ -392,45 +392,7 @@ const UsersTab = observer(() => {
                 header: '',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return (
-                    <Flex flexDirection="row" gap={4}>
-                      {Features.rolesApi && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            appGlobal.historyPush(`/security/users/${entry.name}/edit`);
-                          }}
-                        >
-                          <Icon as={PencilIcon} />
-                        </button>
-                      )}
-                      <DeleteUserConfirmModal
-                        onConfirm={async () => {
-                          await api.deleteServiceAccount(entry.name);
-
-                          // Remove user from all its roles
-                          const promises = [];
-                          for (const [roleName, members] of rolesApi.roleMembers) {
-                            if (members.any((m) => m.name === entry.name)) {
-                              // is this user part of this role?
-                              // then remove it
-                              promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
-                            }
-                          }
-
-                          await Promise.allSettled(promises);
-                          await rolesApi.refreshRoleMembers();
-                          await api.refreshServiceAccounts();
-                        }}
-                        buttonEl={
-                          <button type="button">
-                            <Icon as={TrashIcon} />
-                          </button>
-                        }
-                        userName={entry.name}
-                      />
-                    </Flex>
-                  );
+                  return <UserActions user={entry} />;
                 },
               },
             ]}
@@ -440,6 +402,72 @@ const UsersTab = observer(() => {
     </Flex>
   );
 });
+
+const UserActions = ({ user }: { user: UsersEntry }) => {
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+
+  const onConfirmDelete = async () => {
+    await api.deleteServiceAccount(user.name);
+
+    // Remove user from all its roles
+    const promises = [];
+    for (const [roleName, members] of rolesApi.roleMembers) {
+      if (members.any((m) => m.name === user.name)) {
+        // is this user part of this role?
+        // then remove it
+        promises.push(rolesApi.updateRoleMembership(roleName, [], [user.name]));
+      }
+    }
+
+    await Promise.allSettled(promises);
+    await rolesApi.refreshRoleMembers();
+    await api.refreshServiceAccounts();
+  };
+
+  return (
+    <>
+      <ChangePasswordModal
+        userName={user.name}
+        isOpen={isChangePasswordModalOpen}
+        setIsOpen={setIsChangePasswordModalOpen}
+      />
+      <ChangeRolesModal userName={user.name} isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} />
+
+      <Menu>
+        <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+          <Icon as={BsThreeDots} />
+        </MenuButton>
+        <MenuList>
+          <MenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsChangePasswordModalOpen(true);
+            }}
+          >
+            Change password
+          </MenuItem>
+          {Features.rolesApi && (
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsChangeRolesModalOpen(true);
+              }}
+            >
+              Change roles
+            </MenuItem>
+          )}
+          <DeleteUserConfirmModal
+            onConfirm={onConfirmDelete}
+            buttonEl={<MenuItem type="button">Delete</MenuItem>}
+            userName={user.name}
+          />
+        </MenuList>
+      </Menu>
+    </>
+  );
+};
+
 
 const RolesTab = observer(() => {
   const roles = (rolesApi.roles ?? []).filter((u) => {
