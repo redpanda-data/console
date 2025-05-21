@@ -32,6 +32,7 @@ message ListLicensesRequest {}
 message ListLicensesResponse {
   repeated License licenses = 1;
   bool violation = 2;
+  bool require_gating = 3;
 }
 
 message SetLicenseRequest {
