@@ -88,7 +88,7 @@ export const useListUsersQuery = (
   const listUsersResult = useInfiniteQueryWithAllPages(listUsers, listUsersRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
-    getNextPageParam: (lastPage) => lastPage.nextPageToken,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
   });
 
   const allRetrievedUsers = listUsersResult?.data?.pages?.flatMap(({ users }) => users);
