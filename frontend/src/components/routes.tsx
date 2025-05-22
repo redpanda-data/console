@@ -257,7 +257,7 @@ function MakeRoute<TRouteParams>(
   const routeElement = (
     <Route
       path={`${path}${exact ? '' : '/*'}`}
-      key={title}
+      key={path}
       element={
         <ProtectedRoute path={path}>
           <RouteRenderer route={route} />

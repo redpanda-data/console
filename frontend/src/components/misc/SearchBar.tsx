@@ -10,7 +10,7 @@
  */
 
 import { SearchField } from '@redpanda-data/ui';
-import { type IReactionDisposer, autorun } from 'mobx';
+import { type IReactionDisposer, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { AnimatePresence, MotionSpan, animProps_span_searchResult } from '../../utils/animationProps';
@@ -28,7 +28,7 @@ class SearchBar<TItem> extends Component<{
   placeholderText?: string;
 }> {
   private filteredSource = {} as FilterableDataSource<TItem>;
-  autorunDisposer: IReactionDisposer | undefined = undefined;
+  reactionDisposer: IReactionDisposer | undefined = undefined;
 
   /*
         todo: autocomplete:
@@ -45,9 +45,13 @@ class SearchBar<TItem> extends Component<{
   }
 
   componentDidMount() {
-    this.autorunDisposer = autorun(() => {
-      this.props.onFilteredDataChanged(this.filteredSource.data);
-    });
+    this.reactionDisposer = reaction(
+      // Track the filtered data
+      () => this.filteredSource.data,
+      (filteredData) => {
+        this.props.onFilteredDataChanged(filteredData);
+      }
+    );
   }
 
   onChange(text: string) {
@@ -57,7 +61,7 @@ class SearchBar<TItem> extends Component<{
 
   componentWillUnmount() {
     this.filteredSource.dispose();
-    if (this.autorunDisposer) this.autorunDisposer();
+    if (this.reactionDisposer) this.reactionDisposer();
   }
 
   render() {
