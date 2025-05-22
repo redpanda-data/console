@@ -1216,7 +1216,7 @@ components:
       description: Defines the pipeline resource.
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           title: |-
             The pipeline configuration in YAML.
             See https://docs.redpanda.com/redpanda-connect/configuration/about/
@@ -1245,7 +1245,7 @@ components:
           type: object
         url:
           description: |-
-            URL to connect to the pipeline, e.g. via http_server.
+            URL to connect to the pipeline, for example, via http_server.
             May be empty if no http_server is used.
           type: string
       required:
@@ -1281,7 +1281,7 @@ components:
       description: PipelineCreate contains the details for the pipeline creation request.
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
@@ -1294,7 +1294,7 @@ components:
         tags:
           additionalProperties:
             type: string
-          description: Optional lList of tags to attach to a pipeline.
+          description: Optional list of tags to attach to a pipeline.
           type: object
       required:
         - display_name
@@ -1303,7 +1303,7 @@ components:
     PipelineUpdate:
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
@@ -4995,7 +4995,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

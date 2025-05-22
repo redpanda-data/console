@@ -44,7 +44,7 @@ message Pipeline {
   string config_yaml = 4 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details."}
   ];
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
@@ -55,7 +55,7 @@ message Pipeline {
 
   Status status = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // URL to connect to the pipeline, e.g. via http_server.
+  // URL to connect to the pipeline, for example, via http_server.
   // May be empty if no http_server is used.
   string url = 10;
 
@@ -415,7 +415,7 @@ message PipelineCreate {
   // Pipeline description.
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
-  // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+  // The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
   string config_yaml = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
@@ -424,7 +424,7 @@ message PipelineCreate {
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
 
-  // Optional lList of tags to attach to a pipeline.
+  // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 7 [(buf.validate.field).map = {
     max_pairs: 16
     values: {
@@ -527,7 +527,7 @@ message PipelineUpdate {
     (buf.validate.field).string.max_len = 256
   ];
 
-  // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+  // The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
   string config_yaml = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
