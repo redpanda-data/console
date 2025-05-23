@@ -30,6 +30,7 @@ import {
   Text,
   Tooltip,
   createStandaloneToast,
+  isMultiValue,
   isSingleValue,
   redpandaTheme,
   redpandaToastOptions,
@@ -39,6 +40,7 @@ import { observer } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 import { MdRefresh } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { useListRolesQuery } from '../../../react-query/api/security';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
@@ -414,6 +416,43 @@ export const RoleSelector = observer((p: { state: string[] }) => {
     </Flex>
   );
 });
+
+// use instead of RoleSelector whn not using mobx
+export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRoles: (roles: string[]) => void }) => {
+  const [searchValue, setSearchValue] = useState('');
+  const {
+    data: { roles: allRoles },
+  } = useListRolesQuery();
+  const availableRoles = (allRoles ?? []).filter((r) => !roles.includes(r.name)).map((r) => ({ value: r.name }));
+
+  return (
+    <Flex direction="column" gap={4}>
+      <Box w="280px">
+        <Select<string>
+          isMulti={true}
+          options={availableRoles}
+          inputValue={searchValue}
+          onInputChange={setSearchValue}
+          placeholder="Select roles..."
+          noOptionsMessage={() => 'No roles found'}
+          // TODO: Selecting an entry triggers onChange properly.
+          //       But there is no way to prevent the component from showing no value as intended
+          //       Seems to be a bug with the component.
+          //       On 'undefined' it should handle selection on its own (this works properly)
+          //       On 'null' the component should NOT show any selection after a selection has been made (does not work!)
+          //       The override doesn't work either (isOptionSelected={()=>false})
+          value={roles.map((r) => ({ value: r }))}
+          onChange={(val) => {
+            if (val && isMultiValue(val)) {
+              setRoles([...val.map((val) => val.value)]);
+              setSearchValue('');
+            }
+          }}
+        />
+      </Box>
+    </Flex>
+  );
+};
 
 export function generatePassword(length: number, allowSpecialChars: boolean): string {
   if (length <= 0) return '';

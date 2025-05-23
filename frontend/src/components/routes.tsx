@@ -40,7 +40,6 @@ import RoleDetailsPage from './pages/acls/RoleDetails';
 import RoleEditPage from './pages/acls/RoleEditPage';
 import UserCreatePage from './pages/acls/UserCreate';
 import UserDetailsPage from './pages/acls/UserDetails';
-import UserEditPage from './pages/acls/UserEdit';
 import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
@@ -389,7 +388,6 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
   MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
-  MakeRoute<{ userName: string }>('/security/users/:userName/edit', UserEditPage, 'Security'),
 
   MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
   MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),

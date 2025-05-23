@@ -24,6 +24,7 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import { Features } from '../../../state/supportedFeatures';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import { type AclPrincipalGroup, principalGroupsView } from './Models';
+import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
 
 @observer
@@ -39,6 +40,9 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   @observable isCreating = false;
 
   @observable selectedRoles: string[] = [];
+
+  @observable isChangePasswordModalOpen = false;
+  @observable isChangeRolesModalOpen = false;
 
   constructor(p: any) {
     super(p);
@@ -81,14 +85,31 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
     return (
       <>
         <PageContent>
+          {api.isAdminApiConfigured && (
+            <ChangePasswordModal
+              userName={userName}
+              isOpen={this.isChangePasswordModalOpen}
+              setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+            />
+          )}
+          {Features.rolesApi && (
+            <ChangeRolesModal
+              userName={userName}
+              isOpen={this.isChangeRolesModalOpen}
+              setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+            />
+          )}
           <Flex gap="4">
-            <Button
-              variant="outline"
-              onClick={() => appGlobal.historyPush(`/security/users/${userName}/edit`)}
-              isDisabled={!canEdit}
-            >
-              Edit
-            </Button>
+            {Features.rolesApi && (
+              <Button variant="outline" onClick={() => (this.isChangeRolesModalOpen = true)} isDisabled={!canEdit}>
+                Change roles
+              </Button>
+            )}
+            {api.isAdminApiConfigured && (
+              <Button variant="outline" onClick={() => (this.isChangePasswordModalOpen = true)} isDisabled={!canEdit}>
+                Change password
+              </Button>
+            )}
             {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
             {isServiceAccount && (
               <DeleteUserConfirmModal
@@ -122,7 +143,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           <Heading as="h3" mt="4">
             Permissions
           </Heading>
-          <Box>Below are all of the permissions assigned to this principal.</Box>
+          <Box>The following permissions are assigned to this principal.</Box>
 
           <Heading as="h3" mt="4">
             Assignments
