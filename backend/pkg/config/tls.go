@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/tls"
 	"flag"
+	"time"
 
 	"github.com/twmb/tlscfg"
 )
@@ -14,11 +15,14 @@ type TLS struct {
 	CertFilepath          string `yaml:"certFilepath"`
 	KeyFilepath           string `yaml:"keyFilepath"`
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
+	// RefreshInterval is the interval at which the TLS configuration will be refreshed, from disk.
+	RefreshInterval time.Duration `yaml:"refreshInterval"`
 }
 
 // SetDefaults for the TLS config.
 func (c *TLS) SetDefaults() {
 	c.Enabled = false
+	c.RefreshInterval = 5 * time.Minute
 }
 
 // Validate the TLS config.
