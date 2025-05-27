@@ -53,10 +53,10 @@ tasks:
       - task: lint
       - task: format
       - |
-        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml
+        {{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml
       - for: { var: BUF_INPUTS }
-        cmd: "{{ .PATH_PREFIX }} buf generate --template={{ .ITEM }}/buf.gen.yaml {{ .ITEM }}"
-      - "{{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.yaml buf.build/redpandadata/common"
+        cmd: "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml {{ .ITEM }}"
+      - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml buf.build/redpandadata/common"
       - task: :backend:fmt
       - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
@@ -70,14 +70,14 @@ tasks:
       - rm -rf ./proto/gen/openapi
       # v1alpha2
       - |
-        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane/v1alpha2
+        {{ .PATH_PREFIX }} buf generate --template=buf.gen.openapi.yaml --path proto/redpanda/api/dataplane/v1alpha2
       - cd backend && {{ .PATH_PREFIX }} go run ./pkg/tools/openapi-generator/v1alpha2 -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.v1alpha2.json
       - |
         {{ .PATH_PREFIX }} yq -p json ./proto/gen/openapi/openapi.v1alpha2.json -o yaml > ./proto/gen/openapi/openapi.v1alpha2.yaml
       - rm -f ./proto/gen/openapi/apidocs.swagger.json
       # v1
       - |
-        {{ .PATH_PREFIX }} buf generate --template=proto/buf.gen.openapi.yaml --path proto/redpanda/api/dataplane/v1
+        {{ .PATH_PREFIX }} buf generate --template=buf.gen.openapi.yaml --path proto/redpanda/api/dataplane/v1
       - cd backend && {{ .PATH_PREFIX }} go run ./pkg/tools/openapi-generator/v1 -in ../proto/gen/openapi/apidocs.swagger.json -out ../proto/gen/openapi/openapi.json
       - |
         {{ .PATH_PREFIX }} yq -p json ./proto/gen/openapi/openapi.json -o yaml > ./proto/gen/openapi/openapi.yaml
@@ -87,7 +87,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.52.1
+      BUF_VERSION: 1.54.0
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin

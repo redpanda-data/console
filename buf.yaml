@@ -1,0 +1,28 @@
+version: v2
+
+modules:
+  - path: proto
+
+deps:
+  - buf.build/bufbuild/protovalidate
+  - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway:v2.24.0
+  - buf.build/redpandadata/common
+lint:
+  use:
+    - STANDARD
+  except:
+    - FIELD_NOT_REQUIRED
+    - PACKAGE_NO_IMPORT_CYCLE
+  rpc_allow_google_protobuf_empty_responses: true
+breaking:
+  use:
+    - FILE
+    - WIRE
+    - WIRE_JSON
+  except:
+    - EXTENSION_NO_DELETE
+    - FIELD_SAME_DEFAULT
+  ignore:
+    - redpanda/api/console/v1alpha1
+    - redpanda/api/dataplane/v1alpha1

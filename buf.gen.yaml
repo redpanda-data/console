@@ -5,20 +5,43 @@ managed:
     - file_option: go_package
       module: buf.build/googleapis/googleapis
     - file_option: go_package
+      module: buf.build/grpc-ecosystem/grpc-gateway
+    - file_option: go_package
       module: buf.build/bufbuild/protovalidate
+    - file_option: go_package
+      module: buf.build/envoyproxy/protoc-gen-validate
+    - file_option: go_package
+      module: buf.build/redpandadata/common
   override:
     - file_option: go_package_prefix
       value: github.com/redpanda-data/console/backend/pkg/protogen
 plugins:
-  - remote: buf.build/protocolbuffers/go:v1.35.2
+  - remote: buf.build/protocolbuffers/go:v1.36.0
     out: backend/pkg/protogen
     opt: paths=source_relative
-  - remote: buf.build/connectrpc/go:v1.18.1
+  - remote: buf.build/grpc/go:v1.5.1
+    out: backend/pkg/protogen
+    opt: paths=source_relative
+  - remote: buf.build/connectrpc/go:v1.17.0
     out: backend/pkg/protogen
     opt:
       - paths=source_relative
       - require_unimplemented_servers=false
+  - remote: buf.build/grpc-ecosystem/gateway:v2.18.0
+    out: backend/pkg/protogen
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
   - remote: buf.build/bufbuild/es:v2.2.5
     out: frontend/src/protogen
     opt: target=ts
+    include_imports: true
+  - local: protoc-gen-connect-gateway
+    out: backend/pkg/protogen
+    opt: paths=source_relative
+  - remote: buf.build/connectrpc/query-es:v2.0.1
+    out: frontend/src/protogen
+    opt:
+      - target=ts
+      - js_import_style=legacy_commonjs
     include_imports: true
