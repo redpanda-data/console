@@ -852,6 +852,17 @@ components:
           description: Optional lint type or enum.
           type: string
       type: object
+    LintPipelineConfigRequest:
+      properties:
+        config_yaml:
+          description: |-
+            The Redpanda Connect pipeline configuration in YAML format.
+            See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation
+            for more details.
+          type: string
+      required:
+        - config_yaml
+      type: object
     LintPipelineConfigResponse:
       properties:
         lint_hints:
@@ -3710,6 +3721,44 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Get Redpanda Connect pipelines by secrets
+      tags:
+        - Redpanda Connect Pipeline
+    post:
+      description: Validates a supplied Redpanda Connect pipeline YAML and returns a list of linting hints. If no problems are found, the list is empty.
+      operationId: PipelineService_LintPipelineConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LintPipelineConfigRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LintPipelineConfigResponse'
+          description: Linting finished. See `lint_hints` for details.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Lint a Redpanda Connect pipeline configuration
       tags:
         - Redpanda Connect Pipeline
   /v1/redpanda-connect/pipelines-for-secret:

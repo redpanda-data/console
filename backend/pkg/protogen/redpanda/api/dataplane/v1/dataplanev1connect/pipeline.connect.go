@@ -111,6 +111,8 @@ type PipelineServiceClient interface {
 	// GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
 	// in the Redpanda cluster for all secrets.
 	GetPipelinesBySecrets(context.Context, *connect.Request[v1.GetPipelinesBySecretsRequest]) (*connect.Response[v1.GetPipelinesBySecretsResponse], error)
+	// Lints a Redpanda Connect pipeline configuration and returns zero or more
+	// issues (“hints”). An empty list means the config passed all lint checks.
 	LintPipelineConfig(context.Context, *connect.Request[v1.LintPipelineConfigRequest]) (*connect.Response[v1.LintPipelineConfigResponse], error)
 }
 
@@ -290,6 +292,8 @@ type PipelineServiceHandler interface {
 	// GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
 	// in the Redpanda cluster for all secrets.
 	GetPipelinesBySecrets(context.Context, *connect.Request[v1.GetPipelinesBySecretsRequest]) (*connect.Response[v1.GetPipelinesBySecretsResponse], error)
+	// Lints a Redpanda Connect pipeline configuration and returns zero or more
+	// issues (“hints”). An empty list means the config passed all lint checks.
 	LintPipelineConfig(context.Context, *connect.Request[v1.LintPipelineConfigRequest]) (*connect.Response[v1.LintPipelineConfigResponse], error)
 }
 

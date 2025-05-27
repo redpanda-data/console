@@ -78,6 +78,9 @@ export const getPipelinesForSecret = PipelineService.method.getPipelinesForSecre
 export const getPipelinesBySecrets = PipelineService.method.getPipelinesBySecrets;
 
 /**
+ * Lints a Redpanda Connect pipeline configuration and returns zero or more
+ * issues (“hints”). An empty list means the config passed all lint checks.
+ *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig
  */
 export const lintPipelineConfig = PipelineService.method.lintPipelineConfig;

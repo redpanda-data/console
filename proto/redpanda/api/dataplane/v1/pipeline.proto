@@ -392,7 +392,31 @@ service PipelineService {
     };
   }
 
-  rpc LintPipelineConfig(LintPipelineConfigRequest) returns (LintPipelineConfigResponse) {}
+  // Lints a Redpanda Connect pipeline configuration and returns zero or more
+  // issues (“hints”). An empty list means the config passed all lint checks.
+  rpc LintPipelineConfig(LintPipelineConfigRequest) returns (LintPipelineConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/redpanda-connect/pipelines:lint"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Lint a Redpanda Connect pipeline configuration"
+      description: "Validates a supplied Redpanda Connect pipeline YAML and returns a list of linting hints. If no problems are found, the list is empty."
+      responses: {
+        key: "200"
+        value: {
+          description: "Linting finished. See `lint_hints` for details."
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.LintPipelineConfigResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 }
 
 // PipelineCreate contains the details for the pipeline creation request.

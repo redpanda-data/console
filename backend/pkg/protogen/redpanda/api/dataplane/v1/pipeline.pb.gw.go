@@ -765,7 +765,7 @@ func RegisterPipelineServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig", runtime.WithHTTPPathPattern("/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig", runtime.WithHTTPPathPattern("/v1/redpanda-connect/pipelines-by-secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1049,7 +1049,7 @@ func RegisterPipelineServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig", runtime.WithHTTPPathPattern("/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig", runtime.WithHTTPPathPattern("/v1/redpanda-connect/pipelines-by-secrets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1089,7 +1089,7 @@ var (
 
 	pattern_PipelineService_GetPipelinesBySecrets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "redpanda-connect", "pipelines-by-secrets"}, ""))
 
-	pattern_PipelineService_LintPipelineConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.dataplane.v1.PipelineService", "LintPipelineConfig"}, ""))
+	pattern_PipelineService_LintPipelineConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "redpanda-connect", "pipelines-by-secrets"}, ""))
 )
 
 var (
