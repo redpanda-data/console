@@ -58,8 +58,7 @@ func NewService(
 }
 
 // requireGating returns true if the license gating should be enforced. This happens when:
-// 1. The license is expired
-// 2. The license is the built-in evaluation license
+// 1. The license is expired more than 30 days and the license is the built-in evaluation license
 func (s Service) requireGating(ctx context.Context) bool {
 	// Check if the license is the built-in evaluation license
 	s.logger.Info("console license information",
@@ -78,8 +77,13 @@ func (s Service) requireGating(ctx context.Context) bool {
 	// Check if the license is the built-in evaluation license
 	isBuiltInEval := coreLicense.Properties.Organization == "Redpanda Built-In Evaluation Period"
 
-	// Return true only if the license is both expired and the built-in evaluation
-	return coreLicense.Properties.Expires < time.Now().Unix() && isBuiltInEval
+	s.logger.Info("core license information",
+		zap.Any("license", coreLicense.Properties.Expires))
+
+	thirtyDaysAgo := time.Now().Add(-30 * 24 * time.Hour).Unix()
+
+	// Return true only if the license expired more than 30 days ago and is the built-in evaluation license
+	return coreLicense.Properties.Expires < thirtyDaysAgo && isBuiltInEval
 }
 
 // ListLicenses retrieves the licenses associated with the Redpanda console and
