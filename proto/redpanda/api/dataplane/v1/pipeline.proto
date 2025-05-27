@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/common/v1/linthint.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
@@ -390,6 +391,8 @@ service PipelineService {
       api: API_REDPANDA_CONNECT
     };
   }
+
+  rpc LintPipelineConfig(LintPipelineConfigRequest) returns (LintPipelineConfigResponse) {}
 }
 
 // PipelineCreate contains the details for the pipeline creation request.
@@ -634,4 +637,19 @@ message GetPipelinesBySecretsRequest {}
 
 message GetPipelinesBySecretsResponse {
   repeated PipelinesForSecret pipelines_for_secret = 1;
+}
+
+message LintPipelineConfigRequest {
+  // The Redpanda Connect pipeline configuration in YAML format.
+  // See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation
+  // for more details.
+  string config_yaml = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message LintPipelineConfigResponse {
+  // A list of linting issues.
+  repeated common.v1.LintHint lint_hints = 1;
 }

@@ -834,6 +834,32 @@ components:
           description: The URL of the link.
           type: string
       type: object
+    LintHint:
+      description: LintHint is a generic linting hint.
+      properties:
+        column:
+          description: Column number of the lint.
+          format: int32
+          type: integer
+        hint:
+          description: The hint message.
+          type: string
+        line:
+          description: Line number of the lint.
+          format: int32
+          type: integer
+        lint_type:
+          description: Optional lint type or enum.
+          type: string
+      type: object
+    LintPipelineConfigResponse:
+      properties:
+        lint_hints:
+          description: A list of linting issues.
+          items:
+            $ref: '#/components/schemas/LintHint'
+          type: array
+      type: object
     ListACLsRequest.Filter:
       properties:
         host:

@@ -76,3 +76,8 @@ export const getPipelinesForSecret = PipelineService.method.getPipelinesForSecre
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.GetPipelinesBySecrets
  */
 export const getPipelinesBySecrets = PipelineService.method.getPipelinesBySecrets;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig
+ */
+export const lintPipelineConfig = PipelineService.method.lintPipelineConfig;
