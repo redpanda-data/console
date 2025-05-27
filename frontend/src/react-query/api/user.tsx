@@ -3,7 +3,7 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { useQueryClient, useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { config } from 'config';
-import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
+import { createUser, listUsers, updateUser } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import {
   type ListUsersRequest,
   ListUsersRequestSchema,
@@ -88,7 +88,7 @@ export const useListUsersQuery = (
   const listUsersResult = useInfiniteQueryWithAllPages(listUsers, listUsersRequest, {
     pageParamKey: 'pageToken',
     enabled: options?.enabled,
-    getNextPageParam: (lastPage) => lastPage.nextPageToken,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken || undefined,
   });
 
   const allRetrievedUsers = listUsersResult?.data?.pages?.flatMap(({ users }) => users);
@@ -127,6 +127,29 @@ export const useCreateUserMutation = () => {
       return formatToastErrorMessageGRPC({
         error,
         action: 'create',
+        entity: 'user',
+      });
+    },
+  });
+};
+
+export const useUpdateUserMutationWithToast = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(updateUser, {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: createConnectQueryKey({
+          schema: UserService.method.listUsers,
+          cardinality: 'infinite',
+        }),
+        exact: false,
+      });
+    },
+    onError: (error) => {
+      return formatToastErrorMessageGRPC({
+        error,
+        action: 'update',
         entity: 'user',
       });
     },
