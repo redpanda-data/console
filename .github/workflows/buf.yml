@@ -50,7 +50,7 @@ jobs:
           lint: true
           breaking: true
           # Compare against the default branch so the whole PR is checked
-          breaking_against: .git#branch=master
+          breaking_against: https://github.com/redpanda-data/console.git#branch=master
 
   # ===========================================================================
   # Job: push-module (push & delete in canonical repo)
