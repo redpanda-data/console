@@ -1,38 +1,85 @@
 ---
+# ---------------------------------------------------------------------------
+# Buf CI
+# ---------------------------------------------------------------------------
+# 1. push -> full lint / format / breaking / push to the Buf registry
+# 2. pull_request -> lint + breaking checks (no secrets, safe for forks)
+# 3. delete -> archive the corresponding label in the registry when a branch or tag is deleted
+# ---------------------------------------------------------------------------
 name: Buf CI
+
 on:
   push:
     paths:
-      - .github/workflows/buf.yml
-      - proto/**.proto
+      - '**/*.proto'
+      - '**/buf.yaml'
+      - '**/buf.gen.openapi.yaml'
+      - '**/buf.gen.yaml'
+      - '**/buf.lock'
+      - '.github/workflows/buf.yml'
+
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
-      - .github/workflows/buf.yml
-      - proto/**.proto
+      - '**/*.proto'
+      - '**/buf.yaml'
+      - '**/buf.gen.openapi.yaml'
+      - '**/buf.gen.yaml'
+      - '**/buf.lock'
+      - '.github/workflows/buf.yml'
+
   delete:
+
+permissions:
+  contents: read          # checkout + annotations
+  pull-requests: write    # inline lint / breaking comments
+  id-token: write         # OIDC to assume AWS role (push job)
+
+# ===========================================================================
+# Job: lint-and-breaking (pull_request only)
+# ===========================================================================
 jobs:
-  push-module:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'redpanda-data/console' }}
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
+  lint-and-breaking:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Buf – lint & breaking
+        uses: bufbuild/buf-action@v1
+        with:
+          lint: true
+          breaking: true
+          # Compare against the default branch so the whole PR is checked
+          breaking_against: .git#branch=master
+
+  # ===========================================================================
+  # Job: push-module (push & delete in canonical repo)
+  # ===========================================================================
+  push-module:
+    if: |
+      github.event_name != 'pull_request' &&
+      github.repository == 'redpanda-data/console'
+    runs-on: ubuntu-latest
+    steps:
+      # AWS credentials (only needed here because this job pushes)
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ vars.RP_AWS_CRED_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+
       - uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
             ,sdlc/prod/github/buf_token
           parse-json-secrets: true
-      # Run `git checkout`
+
       - uses: actions/checkout@v4
-      - uses: bufbuild/buf-action@v1
+
+      - name: Buf – lint, format, breaking, push / archive
+        uses: bufbuild/buf-action@v1
         with:
-          input: proto
+          lint: true
+          format: true
+          breaking: true
+          push: true
           token: ${{ env.BUF_TOKEN }}
-          breaking_against: https://github.com/redpanda-data/console.git#branch=master,ref=HEAD~1,subdir=proto
