@@ -396,7 +396,7 @@ service PipelineService {
   // issues (“hints”). An empty list means the config passed all lint checks.
   rpc LintPipelineConfig(LintPipelineConfigRequest) returns (LintPipelineConfigResponse) {
     option (google.api.http) = {
-      post: "/v1/redpanda-connect/pipelines:lint"
+      post: "/v1/redpanda-connect/pipelines:lint-config"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
