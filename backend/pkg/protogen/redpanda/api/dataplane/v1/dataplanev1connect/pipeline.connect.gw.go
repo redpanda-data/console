@@ -27,6 +27,7 @@ type PipelineServiceGatewayServer struct {
 	getPipelineServiceConfigSchema connect_gateway.UnaryHandler[v1.GetPipelineServiceConfigSchemaRequest, v1.GetPipelineServiceConfigSchemaResponse]
 	getPipelinesForSecret          connect_gateway.UnaryHandler[v1.GetPipelinesForSecretRequest, v1.GetPipelinesForSecretResponse]
 	getPipelinesBySecrets          connect_gateway.UnaryHandler[v1.GetPipelinesBySecretsRequest, v1.GetPipelinesBySecretsResponse]
+	lintPipelineConfig             connect_gateway.UnaryHandler[v1.LintPipelineConfigRequest, v1.LintPipelineConfigResponse]
 }
 
 // NewPipelineServiceGatewayServer constructs a Connect-Gateway gRPC server for the PipelineService
@@ -43,6 +44,7 @@ func NewPipelineServiceGatewayServer(svc PipelineServiceHandler, opts ...connect
 		getPipelineServiceConfigSchema: connect_gateway.NewUnaryHandler(PipelineServiceGetPipelineServiceConfigSchemaProcedure, svc.GetPipelineServiceConfigSchema, opts...),
 		getPipelinesForSecret:          connect_gateway.NewUnaryHandler(PipelineServiceGetPipelinesForSecretProcedure, svc.GetPipelinesForSecret, opts...),
 		getPipelinesBySecrets:          connect_gateway.NewUnaryHandler(PipelineServiceGetPipelinesBySecretsProcedure, svc.GetPipelinesBySecrets, opts...),
+		lintPipelineConfig:             connect_gateway.NewUnaryHandler(PipelineServiceLintPipelineConfigProcedure, svc.LintPipelineConfig, opts...),
 	}
 }
 
@@ -84,6 +86,10 @@ func (s *PipelineServiceGatewayServer) GetPipelinesForSecret(ctx context.Context
 
 func (s *PipelineServiceGatewayServer) GetPipelinesBySecrets(ctx context.Context, req *v1.GetPipelinesBySecretsRequest) (*v1.GetPipelinesBySecretsResponse, error) {
 	return s.getPipelinesBySecrets(ctx, req)
+}
+
+func (s *PipelineServiceGatewayServer) LintPipelineConfig(ctx context.Context, req *v1.LintPipelineConfigRequest) (*v1.LintPipelineConfigResponse, error) {
+	return s.lintPipelineConfig(ctx, req)
 }
 
 // RegisterPipelineServiceHandlerGatewayServer registers the Connect handlers for the

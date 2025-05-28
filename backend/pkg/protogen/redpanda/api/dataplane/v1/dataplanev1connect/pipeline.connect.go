@@ -65,6 +65,9 @@ const (
 	// PipelineServiceGetPipelinesBySecretsProcedure is the fully-qualified name of the
 	// PipelineService's GetPipelinesBySecrets RPC.
 	PipelineServiceGetPipelinesBySecretsProcedure = "/redpanda.api.dataplane.v1.PipelineService/GetPipelinesBySecrets"
+	// PipelineServiceLintPipelineConfigProcedure is the fully-qualified name of the PipelineService's
+	// LintPipelineConfig RPC.
+	PipelineServiceLintPipelineConfigProcedure = "/redpanda.api.dataplane.v1.PipelineService/LintPipelineConfig"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -80,6 +83,7 @@ var (
 	pipelineServiceGetPipelineServiceConfigSchemaMethodDescriptor = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelineServiceConfigSchema")
 	pipelineServiceGetPipelinesForSecretMethodDescriptor          = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelinesForSecret")
 	pipelineServiceGetPipelinesBySecretsMethodDescriptor          = pipelineServiceServiceDescriptor.Methods().ByName("GetPipelinesBySecrets")
+	pipelineServiceLintPipelineConfigMethodDescriptor             = pipelineServiceServiceDescriptor.Methods().ByName("LintPipelineConfig")
 )
 
 // PipelineServiceClient is a client for the redpanda.api.dataplane.v1.PipelineService service.
@@ -107,6 +111,9 @@ type PipelineServiceClient interface {
 	// GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
 	// in the Redpanda cluster for all secrets.
 	GetPipelinesBySecrets(context.Context, *connect.Request[v1.GetPipelinesBySecretsRequest]) (*connect.Response[v1.GetPipelinesBySecretsResponse], error)
+	// Lints a Redpanda Connect pipeline configuration and returns zero or more
+	// issues (“hints”). An empty list means the config passed all lint checks.
+	LintPipelineConfig(context.Context, *connect.Request[v1.LintPipelineConfigRequest]) (*connect.Response[v1.LintPipelineConfigResponse], error)
 }
 
 // NewPipelineServiceClient constructs a client for the redpanda.api.dataplane.v1.PipelineService
@@ -179,6 +186,12 @@ func NewPipelineServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(pipelineServiceGetPipelinesBySecretsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		lintPipelineConfig: connect.NewClient[v1.LintPipelineConfigRequest, v1.LintPipelineConfigResponse](
+			httpClient,
+			baseURL+PipelineServiceLintPipelineConfigProcedure,
+			connect.WithSchema(pipelineServiceLintPipelineConfigMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -194,6 +207,7 @@ type pipelineServiceClient struct {
 	getPipelineServiceConfigSchema *connect.Client[v1.GetPipelineServiceConfigSchemaRequest, v1.GetPipelineServiceConfigSchemaResponse]
 	getPipelinesForSecret          *connect.Client[v1.GetPipelinesForSecretRequest, v1.GetPipelinesForSecretResponse]
 	getPipelinesBySecrets          *connect.Client[v1.GetPipelinesBySecretsRequest, v1.GetPipelinesBySecretsResponse]
+	lintPipelineConfig             *connect.Client[v1.LintPipelineConfigRequest, v1.LintPipelineConfigResponse]
 }
 
 // CreatePipeline calls redpanda.api.dataplane.v1.PipelineService.CreatePipeline.
@@ -247,6 +261,11 @@ func (c *pipelineServiceClient) GetPipelinesBySecrets(ctx context.Context, req *
 	return c.getPipelinesBySecrets.CallUnary(ctx, req)
 }
 
+// LintPipelineConfig calls redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig.
+func (c *pipelineServiceClient) LintPipelineConfig(ctx context.Context, req *connect.Request[v1.LintPipelineConfigRequest]) (*connect.Response[v1.LintPipelineConfigResponse], error) {
+	return c.lintPipelineConfig.CallUnary(ctx, req)
+}
+
 // PipelineServiceHandler is an implementation of the redpanda.api.dataplane.v1.PipelineService
 // service.
 type PipelineServiceHandler interface {
@@ -273,6 +292,9 @@ type PipelineServiceHandler interface {
 	// GetPipelinesBySecrets implements the get pipelines by secrets method which lists the pipelines
 	// in the Redpanda cluster for all secrets.
 	GetPipelinesBySecrets(context.Context, *connect.Request[v1.GetPipelinesBySecretsRequest]) (*connect.Response[v1.GetPipelinesBySecretsResponse], error)
+	// Lints a Redpanda Connect pipeline configuration and returns zero or more
+	// issues (“hints”). An empty list means the config passed all lint checks.
+	LintPipelineConfig(context.Context, *connect.Request[v1.LintPipelineConfigRequest]) (*connect.Response[v1.LintPipelineConfigResponse], error)
 }
 
 // NewPipelineServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -341,6 +363,12 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 		connect.WithSchema(pipelineServiceGetPipelinesBySecretsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	pipelineServiceLintPipelineConfigHandler := connect.NewUnaryHandler(
+		PipelineServiceLintPipelineConfigProcedure,
+		svc.LintPipelineConfig,
+		connect.WithSchema(pipelineServiceLintPipelineConfigMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1.PipelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case PipelineServiceCreatePipelineProcedure:
@@ -363,6 +391,8 @@ func NewPipelineServiceHandler(svc PipelineServiceHandler, opts ...connect.Handl
 			pipelineServiceGetPipelinesForSecretHandler.ServeHTTP(w, r)
 		case PipelineServiceGetPipelinesBySecretsProcedure:
 			pipelineServiceGetPipelinesBySecretsHandler.ServeHTTP(w, r)
+		case PipelineServiceLintPipelineConfigProcedure:
+			pipelineServiceLintPipelineConfigHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -410,4 +440,8 @@ func (UnimplementedPipelineServiceHandler) GetPipelinesForSecret(context.Context
 
 func (UnimplementedPipelineServiceHandler) GetPipelinesBySecrets(context.Context, *connect.Request[v1.GetPipelinesBySecretsRequest]) (*connect.Response[v1.GetPipelinesBySecretsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.PipelineService.GetPipelinesBySecrets is not implemented"))
+}
+
+func (UnimplementedPipelineServiceHandler) LintPipelineConfig(context.Context, *connect.Request[v1.LintPipelineConfigRequest]) (*connect.Response[v1.LintPipelineConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.PipelineService.LintPipelineConfig is not implemented"))
 }

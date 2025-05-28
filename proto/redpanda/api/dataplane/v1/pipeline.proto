@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/common/v1/linthint.proto";
 
 // Defines the pipeline resource.
 message Pipeline {
@@ -390,6 +391,32 @@ service PipelineService {
       api: API_REDPANDA_CONNECT
     };
   }
+
+  // Lints a Redpanda Connect pipeline configuration and returns zero or more
+  // issues (“hints”). An empty list means the config passed all lint checks.
+  rpc LintPipelineConfig(LintPipelineConfigRequest) returns (LintPipelineConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/redpanda-connect/pipelines:lint-config"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Lint a Redpanda Connect pipeline configuration"
+      description: "Validates a supplied Redpanda Connect pipeline YAML and returns a list of linting hints. If no problems are found, the list is empty."
+      responses: {
+        key: "200"
+        value: {
+          description: "Linting finished. See `lint_hints` for details."
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.LintPipelineConfigResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 }
 
 // PipelineCreate contains the details for the pipeline creation request.
@@ -634,4 +661,19 @@ message GetPipelinesBySecretsRequest {}
 
 message GetPipelinesBySecretsResponse {
   repeated PipelinesForSecret pipelines_for_secret = 1;
+}
+
+message LintPipelineConfigRequest {
+  // The Redpanda Connect pipeline configuration in YAML format.
+  // See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation
+  // for more details.
+  string config_yaml = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message LintPipelineConfigResponse {
+  // A list of linting issues.
+  repeated common.v1.LintHint lint_hints = 1;
 }
