@@ -31,8 +31,8 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_RedpandaNewsService_GetRedpandaNews_0(ctx context.Context, marshaler runtime.Marshaler, client RedpandaNewsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRedpandaNewsRequest
+func request_RedpandaNewsService_ListRedpandaNews_0(ctx context.Context, marshaler runtime.Marshaler, client RedpandaNewsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListRedpandaNewsRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -43,13 +43,13 @@ func request_RedpandaNewsService_GetRedpandaNews_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.GetRedpandaNews(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListRedpandaNews(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_RedpandaNewsService_GetRedpandaNews_0(ctx context.Context, marshaler runtime.Marshaler, server RedpandaNewsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetRedpandaNewsRequest
+func local_request_RedpandaNewsService_ListRedpandaNews_0(ctx context.Context, marshaler runtime.Marshaler, server RedpandaNewsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListRedpandaNewsRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -60,7 +60,7 @@ func local_request_RedpandaNewsService_GetRedpandaNews_0(ctx context.Context, ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.GetRedpandaNews(ctx, &protoReq)
+	msg, err := server.ListRedpandaNews(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -71,7 +71,7 @@ func local_request_RedpandaNewsService_GetRedpandaNews_0(ctx context.Context, ma
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterRedpandaNewsServiceHandlerFromEndpoint instead.
 func RegisterRedpandaNewsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server RedpandaNewsServiceServer) error {
 
-	mux.Handle("POST", pattern_RedpandaNewsService_GetRedpandaNews_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RedpandaNewsService_ListRedpandaNews_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -79,12 +79,12 @@ func RegisterRedpandaNewsServiceHandlerServer(ctx context.Context, mux *runtime.
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaNewsService/GetRedpandaNews", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaNewsService/GetRedpandaNews"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaNewsService/ListRedpandaNews", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaNewsService/ListRedpandaNews"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_RedpandaNewsService_GetRedpandaNews_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_RedpandaNewsService_ListRedpandaNews_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -92,7 +92,7 @@ func RegisterRedpandaNewsServiceHandlerServer(ctx context.Context, mux *runtime.
 			return
 		}
 
-		forward_RedpandaNewsService_GetRedpandaNews_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RedpandaNewsService_ListRedpandaNews_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -137,25 +137,25 @@ func RegisterRedpandaNewsServiceHandler(ctx context.Context, mux *runtime.ServeM
 // "RedpandaNewsServiceClient" to call the correct interceptors.
 func RegisterRedpandaNewsServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client RedpandaNewsServiceClient) error {
 
-	mux.Handle("POST", pattern_RedpandaNewsService_GetRedpandaNews_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_RedpandaNewsService_ListRedpandaNews_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaNewsService/GetRedpandaNews", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaNewsService/GetRedpandaNews"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.console.v1alpha1.RedpandaNewsService/ListRedpandaNews", runtime.WithHTTPPathPattern("/redpanda.api.console.v1alpha1.RedpandaNewsService/ListRedpandaNews"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_RedpandaNewsService_GetRedpandaNews_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_RedpandaNewsService_ListRedpandaNews_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_RedpandaNewsService_GetRedpandaNews_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_RedpandaNewsService_ListRedpandaNews_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -163,9 +163,9 @@ func RegisterRedpandaNewsServiceHandlerClient(ctx context.Context, mux *runtime.
 }
 
 var (
-	pattern_RedpandaNewsService_GetRedpandaNews_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.RedpandaNewsService", "GetRedpandaNews"}, ""))
+	pattern_RedpandaNewsService_ListRedpandaNews_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"redpanda.api.console.v1alpha1.RedpandaNewsService", "ListRedpandaNews"}, ""))
 )
 
 var (
-	forward_RedpandaNewsService_GetRedpandaNews_0 = runtime.ForwardResponseMessage
+	forward_RedpandaNewsService_ListRedpandaNews_0 = runtime.ForwardResponseMessage
 )

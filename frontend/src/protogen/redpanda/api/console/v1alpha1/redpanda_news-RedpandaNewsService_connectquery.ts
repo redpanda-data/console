@@ -5,8 +5,8 @@
 import { RedpandaNewsService } from "./redpanda_news_pb";
 
 /**
- * GetRedpandaNews retrieves the latest news and updates from Redpanda
+ * ListRedpandaNews retrieves the latest news and updates from Redpanda
  *
- * @generated from rpc redpanda.api.console.v1alpha1.RedpandaNewsService.GetRedpandaNews
+ * @generated from rpc redpanda.api.console.v1alpha1.RedpandaNewsService.ListRedpandaNews
  */
-export const getRedpandaNews = RedpandaNewsService.method.getRedpandaNews;
+export const listRedpandaNews = RedpandaNewsService.method.listRedpandaNews;

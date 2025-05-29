@@ -2,10 +2,12 @@ syntax = "proto3";
 
 package redpanda.api.console.v1alpha1;
 
+import "google/protobuf/timestamp.proto";
+
 // RedpandaNewsService provides Redpanda-specific news and updates functionality to the console
 service RedpandaNewsService {
-  // GetRedpandaNews retrieves the latest news and updates from Redpanda
-  rpc GetRedpandaNews(GetRedpandaNewsRequest) returns (GetRedpandaNewsResponse) {}
+  // ListRedpandaNews retrieves the latest news and updates from Redpanda
+  rpc ListRedpandaNews(ListRedpandaNewsRequest) returns (ListRedpandaNewsResponse) {}
 }
 
 // RedpandaNewsItem represents a single news item from Redpanda
@@ -13,16 +15,16 @@ message RedpandaNewsItem {
   string title = 1; // The title of the news item
   string link = 2; // The URL link to the full news article
   string description = 3; // A brief description or summary of the news item
-  string pub_date = 4; // The publication date of the news item
+  google.protobuf.Timestamp pub_date = 4; // The publication date of the news item
 }
 
-// GetRedpandaNewsRequest is the request message for getting Redpanda news
-message GetRedpandaNewsRequest {
+// ListRedpandaNewsRequest is the request message for listing Redpanda news
+message ListRedpandaNewsRequest {
   // No fields required for now, but can be extended in the future
 }
 
-// GetRedpandaNewsResponse is the response message containing Redpanda news
-message GetRedpandaNewsResponse {
+// ListRedpandaNewsResponse is the response message containing Redpanda news
+message ListRedpandaNewsResponse {
   string title = 1; // The title of the news feed
   string last_updated = 2; // Timestamp of when the news was last updated
   repeated RedpandaNewsItem news_items = 3; // List of news items

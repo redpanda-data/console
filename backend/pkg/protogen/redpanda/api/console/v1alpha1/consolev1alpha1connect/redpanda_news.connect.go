@@ -35,22 +35,22 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// RedpandaNewsServiceGetRedpandaNewsProcedure is the fully-qualified name of the
-	// RedpandaNewsService's GetRedpandaNews RPC.
-	RedpandaNewsServiceGetRedpandaNewsProcedure = "/redpanda.api.console.v1alpha1.RedpandaNewsService/GetRedpandaNews"
+	// RedpandaNewsServiceListRedpandaNewsProcedure is the fully-qualified name of the
+	// RedpandaNewsService's ListRedpandaNews RPC.
+	RedpandaNewsServiceListRedpandaNewsProcedure = "/redpanda.api.console.v1alpha1.RedpandaNewsService/ListRedpandaNews"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	redpandaNewsServiceServiceDescriptor               = v1alpha1.File_redpanda_api_console_v1alpha1_redpanda_news_proto.Services().ByName("RedpandaNewsService")
-	redpandaNewsServiceGetRedpandaNewsMethodDescriptor = redpandaNewsServiceServiceDescriptor.Methods().ByName("GetRedpandaNews")
+	redpandaNewsServiceServiceDescriptor                = v1alpha1.File_redpanda_api_console_v1alpha1_redpanda_news_proto.Services().ByName("RedpandaNewsService")
+	redpandaNewsServiceListRedpandaNewsMethodDescriptor = redpandaNewsServiceServiceDescriptor.Methods().ByName("ListRedpandaNews")
 )
 
 // RedpandaNewsServiceClient is a client for the redpanda.api.console.v1alpha1.RedpandaNewsService
 // service.
 type RedpandaNewsServiceClient interface {
-	// GetRedpandaNews retrieves the latest news and updates from Redpanda
-	GetRedpandaNews(context.Context, *connect.Request[v1alpha1.GetRedpandaNewsRequest]) (*connect.Response[v1alpha1.GetRedpandaNewsResponse], error)
+	// ListRedpandaNews retrieves the latest news and updates from Redpanda
+	ListRedpandaNews(context.Context, *connect.Request[v1alpha1.ListRedpandaNewsRequest]) (*connect.Response[v1alpha1.ListRedpandaNewsResponse], error)
 }
 
 // NewRedpandaNewsServiceClient constructs a client for the
@@ -64,10 +64,10 @@ type RedpandaNewsServiceClient interface {
 func NewRedpandaNewsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) RedpandaNewsServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &redpandaNewsServiceClient{
-		getRedpandaNews: connect.NewClient[v1alpha1.GetRedpandaNewsRequest, v1alpha1.GetRedpandaNewsResponse](
+		listRedpandaNews: connect.NewClient[v1alpha1.ListRedpandaNewsRequest, v1alpha1.ListRedpandaNewsResponse](
 			httpClient,
-			baseURL+RedpandaNewsServiceGetRedpandaNewsProcedure,
-			connect.WithSchema(redpandaNewsServiceGetRedpandaNewsMethodDescriptor),
+			baseURL+RedpandaNewsServiceListRedpandaNewsProcedure,
+			connect.WithSchema(redpandaNewsServiceListRedpandaNewsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -75,19 +75,19 @@ func NewRedpandaNewsServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // redpandaNewsServiceClient implements RedpandaNewsServiceClient.
 type redpandaNewsServiceClient struct {
-	getRedpandaNews *connect.Client[v1alpha1.GetRedpandaNewsRequest, v1alpha1.GetRedpandaNewsResponse]
+	listRedpandaNews *connect.Client[v1alpha1.ListRedpandaNewsRequest, v1alpha1.ListRedpandaNewsResponse]
 }
 
-// GetRedpandaNews calls redpanda.api.console.v1alpha1.RedpandaNewsService.GetRedpandaNews.
-func (c *redpandaNewsServiceClient) GetRedpandaNews(ctx context.Context, req *connect.Request[v1alpha1.GetRedpandaNewsRequest]) (*connect.Response[v1alpha1.GetRedpandaNewsResponse], error) {
-	return c.getRedpandaNews.CallUnary(ctx, req)
+// ListRedpandaNews calls redpanda.api.console.v1alpha1.RedpandaNewsService.ListRedpandaNews.
+func (c *redpandaNewsServiceClient) ListRedpandaNews(ctx context.Context, req *connect.Request[v1alpha1.ListRedpandaNewsRequest]) (*connect.Response[v1alpha1.ListRedpandaNewsResponse], error) {
+	return c.listRedpandaNews.CallUnary(ctx, req)
 }
 
 // RedpandaNewsServiceHandler is an implementation of the
 // redpanda.api.console.v1alpha1.RedpandaNewsService service.
 type RedpandaNewsServiceHandler interface {
-	// GetRedpandaNews retrieves the latest news and updates from Redpanda
-	GetRedpandaNews(context.Context, *connect.Request[v1alpha1.GetRedpandaNewsRequest]) (*connect.Response[v1alpha1.GetRedpandaNewsResponse], error)
+	// ListRedpandaNews retrieves the latest news and updates from Redpanda
+	ListRedpandaNews(context.Context, *connect.Request[v1alpha1.ListRedpandaNewsRequest]) (*connect.Response[v1alpha1.ListRedpandaNewsResponse], error)
 }
 
 // NewRedpandaNewsServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -96,16 +96,16 @@ type RedpandaNewsServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewRedpandaNewsServiceHandler(svc RedpandaNewsServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	redpandaNewsServiceGetRedpandaNewsHandler := connect.NewUnaryHandler(
-		RedpandaNewsServiceGetRedpandaNewsProcedure,
-		svc.GetRedpandaNews,
-		connect.WithSchema(redpandaNewsServiceGetRedpandaNewsMethodDescriptor),
+	redpandaNewsServiceListRedpandaNewsHandler := connect.NewUnaryHandler(
+		RedpandaNewsServiceListRedpandaNewsProcedure,
+		svc.ListRedpandaNews,
+		connect.WithSchema(redpandaNewsServiceListRedpandaNewsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/redpanda.api.console.v1alpha1.RedpandaNewsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case RedpandaNewsServiceGetRedpandaNewsProcedure:
-			redpandaNewsServiceGetRedpandaNewsHandler.ServeHTTP(w, r)
+		case RedpandaNewsServiceListRedpandaNewsProcedure:
+			redpandaNewsServiceListRedpandaNewsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -115,6 +115,6 @@ func NewRedpandaNewsServiceHandler(svc RedpandaNewsServiceHandler, opts ...conne
 // UnimplementedRedpandaNewsServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedRedpandaNewsServiceHandler struct{}
 
-func (UnimplementedRedpandaNewsServiceHandler) GetRedpandaNews(context.Context, *connect.Request[v1alpha1.GetRedpandaNewsRequest]) (*connect.Response[v1alpha1.GetRedpandaNewsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.RedpandaNewsService.GetRedpandaNews is not implemented"))
+func (UnimplementedRedpandaNewsServiceHandler) ListRedpandaNews(context.Context, *connect.Request[v1alpha1.ListRedpandaNewsRequest]) (*connect.Response[v1alpha1.ListRedpandaNewsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.RedpandaNewsService.ListRedpandaNews is not implemented"))
 }

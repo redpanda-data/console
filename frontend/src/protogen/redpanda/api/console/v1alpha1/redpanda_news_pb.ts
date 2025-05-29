@@ -4,13 +4,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file redpanda/api/console/v1alpha1/redpanda_news.proto.
  */
 export const file_redpanda_api_console_v1alpha1_redpanda_news: GenFile = /*@__PURE__*/
-  fileDesc("CjFyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9yZWRwYW5kYV9uZXdzLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSJWChBSZWRwYW5kYU5ld3NJdGVtEg0KBXRpdGxlGAEgASgJEgwKBGxpbmsYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSEAoIcHViX2RhdGUYBCABKAkiGAoWR2V0UmVkcGFuZGFOZXdzUmVxdWVzdCKDAQoXR2V0UmVkcGFuZGFOZXdzUmVzcG9uc2USDQoFdGl0bGUYASABKAkSFAoMbGFzdF91cGRhdGVkGAIgASgJEkMKCm5ld3NfaXRlbXMYAyADKAsyLy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5SZWRwYW5kYU5ld3NJdGVtMpoBChNSZWRwYW5kYU5ld3NTZXJ2aWNlEoIBCg9HZXRSZWRwYW5kYU5ld3MSNS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5HZXRSZWRwYW5kYU5ld3NSZXF1ZXN0GjYucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuR2V0UmVkcGFuZGFOZXdzUmVzcG9uc2UiAEKyAgohY29tLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExQhFSZWRwYW5kYU5ld3NQcm90b1ABWmNnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMTtjb25zb2xldjFhbHBoYTGiAgNSQUOqAh1SZWRwYW5kYS5BcGkuQ29uc29sZS5WMWFscGhhMcoCHVJlZHBhbmRhXEFwaVxDb25zb2xlXFYxYWxwaGEx4gIpUmVkcGFuZGFcQXBpXENvbnNvbGVcVjFhbHBoYTFcR1BCTWV0YWRhdGHqAiBSZWRwYW5kYTo6QXBpOjpDb25zb2xlOjpWMWFscGhhMWIGcHJvdG8z");
+  fileDesc("CjFyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9yZWRwYW5kYV9uZXdzLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSJyChBSZWRwYW5kYU5ld3NJdGVtEg0KBXRpdGxlGAEgASgJEgwKBGxpbmsYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSLAoIcHViX2RhdGUYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhkKF0xpc3RSZWRwYW5kYU5ld3NSZXF1ZXN0IoQBChhMaXN0UmVkcGFuZGFOZXdzUmVzcG9uc2USDQoFdGl0bGUYASABKAkSFAoMbGFzdF91cGRhdGVkGAIgASgJEkMKCm5ld3NfaXRlbXMYAyADKAsyLy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5SZWRwYW5kYU5ld3NJdGVtMp0BChNSZWRwYW5kYU5ld3NTZXJ2aWNlEoUBChBMaXN0UmVkcGFuZGFOZXdzEjYucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGlzdFJlZHBhbmRhTmV3c1JlcXVlc3QaNy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaXN0UmVkcGFuZGFOZXdzUmVzcG9uc2UiAEKyAgohY29tLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExQhFSZWRwYW5kYU5ld3NQcm90b1ABWmNnaXRodWIuY29tL3JlZHBhbmRhLWRhdGEvY29uc29sZS9iYWNrZW5kL3BrZy9wcm90b2dlbi9yZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMTtjb25zb2xldjFhbHBoYTGiAgNSQUOqAh1SZWRwYW5kYS5BcGkuQ29uc29sZS5WMWFscGhhMcoCHVJlZHBhbmRhXEFwaVxDb25zb2xlXFYxYWxwaGEx4gIpUmVkcGFuZGFcQXBpXENvbnNvbGVcVjFhbHBoYTFcR1BCTWV0YWRhdGHqAiBSZWRwYW5kYTo6QXBpOjpDb25zb2xlOjpWMWFscGhhMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * RedpandaNewsItem represents a single news item from Redpanda
@@ -42,9 +44,9 @@ export type RedpandaNewsItem = Message<"redpanda.api.console.v1alpha1.RedpandaNe
   /**
    * The publication date of the news item
    *
-   * @generated from field: string pub_date = 4;
+   * @generated from field: google.protobuf.Timestamp pub_date = 4;
    */
-  pubDate: string;
+  pubDate?: Timestamp;
 };
 
 /**
@@ -55,28 +57,28 @@ export const RedpandaNewsItemSchema: GenMessage<RedpandaNewsItem> = /*@__PURE__*
   messageDesc(file_redpanda_api_console_v1alpha1_redpanda_news, 0);
 
 /**
- * GetRedpandaNewsRequest is the request message for getting Redpanda news
+ * ListRedpandaNewsRequest is the request message for listing Redpanda news
  *
  * No fields required for now, but can be extended in the future
  *
- * @generated from message redpanda.api.console.v1alpha1.GetRedpandaNewsRequest
+ * @generated from message redpanda.api.console.v1alpha1.ListRedpandaNewsRequest
  */
-export type GetRedpandaNewsRequest = Message<"redpanda.api.console.v1alpha1.GetRedpandaNewsRequest"> & {
+export type ListRedpandaNewsRequest = Message<"redpanda.api.console.v1alpha1.ListRedpandaNewsRequest"> & {
 };
 
 /**
- * Describes the message redpanda.api.console.v1alpha1.GetRedpandaNewsRequest.
- * Use `create(GetRedpandaNewsRequestSchema)` to create a new message.
+ * Describes the message redpanda.api.console.v1alpha1.ListRedpandaNewsRequest.
+ * Use `create(ListRedpandaNewsRequestSchema)` to create a new message.
  */
-export const GetRedpandaNewsRequestSchema: GenMessage<GetRedpandaNewsRequest> = /*@__PURE__*/
+export const ListRedpandaNewsRequestSchema: GenMessage<ListRedpandaNewsRequest> = /*@__PURE__*/
   messageDesc(file_redpanda_api_console_v1alpha1_redpanda_news, 1);
 
 /**
- * GetRedpandaNewsResponse is the response message containing Redpanda news
+ * ListRedpandaNewsResponse is the response message containing Redpanda news
  *
- * @generated from message redpanda.api.console.v1alpha1.GetRedpandaNewsResponse
+ * @generated from message redpanda.api.console.v1alpha1.ListRedpandaNewsResponse
  */
-export type GetRedpandaNewsResponse = Message<"redpanda.api.console.v1alpha1.GetRedpandaNewsResponse"> & {
+export type ListRedpandaNewsResponse = Message<"redpanda.api.console.v1alpha1.ListRedpandaNewsResponse"> & {
   /**
    * The title of the news feed
    *
@@ -100,10 +102,10 @@ export type GetRedpandaNewsResponse = Message<"redpanda.api.console.v1alpha1.Get
 };
 
 /**
- * Describes the message redpanda.api.console.v1alpha1.GetRedpandaNewsResponse.
- * Use `create(GetRedpandaNewsResponseSchema)` to create a new message.
+ * Describes the message redpanda.api.console.v1alpha1.ListRedpandaNewsResponse.
+ * Use `create(ListRedpandaNewsResponseSchema)` to create a new message.
  */
-export const GetRedpandaNewsResponseSchema: GenMessage<GetRedpandaNewsResponse> = /*@__PURE__*/
+export const ListRedpandaNewsResponseSchema: GenMessage<ListRedpandaNewsResponse> = /*@__PURE__*/
   messageDesc(file_redpanda_api_console_v1alpha1_redpanda_news, 2);
 
 /**
@@ -113,14 +115,14 @@ export const GetRedpandaNewsResponseSchema: GenMessage<GetRedpandaNewsResponse> 
  */
 export const RedpandaNewsService: GenService<{
   /**
-   * GetRedpandaNews retrieves the latest news and updates from Redpanda
+   * ListRedpandaNews retrieves the latest news and updates from Redpanda
    *
-   * @generated from rpc redpanda.api.console.v1alpha1.RedpandaNewsService.GetRedpandaNews
+   * @generated from rpc redpanda.api.console.v1alpha1.RedpandaNewsService.ListRedpandaNews
    */
-  getRedpandaNews: {
+  listRedpandaNews: {
     methodKind: "unary";
-    input: typeof GetRedpandaNewsRequestSchema;
-    output: typeof GetRedpandaNewsResponseSchema;
+    input: typeof ListRedpandaNewsRequestSchema;
+    output: typeof ListRedpandaNewsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_console_v1alpha1_redpanda_news, 0);

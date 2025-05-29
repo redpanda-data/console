@@ -20,7 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RedpandaNewsService_GetRedpandaNews_FullMethodName = "/redpanda.api.console.v1alpha1.RedpandaNewsService/GetRedpandaNews"
+	RedpandaNewsService_ListRedpandaNews_FullMethodName = "/redpanda.api.console.v1alpha1.RedpandaNewsService/ListRedpandaNews"
 )
 
 // RedpandaNewsServiceClient is the client API for RedpandaNewsService service.
@@ -29,8 +29,8 @@ const (
 //
 // RedpandaNewsService provides Redpanda-specific news and updates functionality to the console
 type RedpandaNewsServiceClient interface {
-	// GetRedpandaNews retrieves the latest news and updates from Redpanda
-	GetRedpandaNews(ctx context.Context, in *GetRedpandaNewsRequest, opts ...grpc.CallOption) (*GetRedpandaNewsResponse, error)
+	// ListRedpandaNews retrieves the latest news and updates from Redpanda
+	ListRedpandaNews(ctx context.Context, in *ListRedpandaNewsRequest, opts ...grpc.CallOption) (*ListRedpandaNewsResponse, error)
 }
 
 type redpandaNewsServiceClient struct {
@@ -41,10 +41,10 @@ func NewRedpandaNewsServiceClient(cc grpc.ClientConnInterface) RedpandaNewsServi
 	return &redpandaNewsServiceClient{cc}
 }
 
-func (c *redpandaNewsServiceClient) GetRedpandaNews(ctx context.Context, in *GetRedpandaNewsRequest, opts ...grpc.CallOption) (*GetRedpandaNewsResponse, error) {
+func (c *redpandaNewsServiceClient) ListRedpandaNews(ctx context.Context, in *ListRedpandaNewsRequest, opts ...grpc.CallOption) (*ListRedpandaNewsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetRedpandaNewsResponse)
-	err := c.cc.Invoke(ctx, RedpandaNewsService_GetRedpandaNews_FullMethodName, in, out, cOpts...)
+	out := new(ListRedpandaNewsResponse)
+	err := c.cc.Invoke(ctx, RedpandaNewsService_ListRedpandaNews_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func (c *redpandaNewsServiceClient) GetRedpandaNews(ctx context.Context, in *Get
 //
 // RedpandaNewsService provides Redpanda-specific news and updates functionality to the console
 type RedpandaNewsServiceServer interface {
-	// GetRedpandaNews retrieves the latest news and updates from Redpanda
-	GetRedpandaNews(context.Context, *GetRedpandaNewsRequest) (*GetRedpandaNewsResponse, error)
+	// ListRedpandaNews retrieves the latest news and updates from Redpanda
+	ListRedpandaNews(context.Context, *ListRedpandaNewsRequest) (*ListRedpandaNewsResponse, error)
 	mustEmbedUnimplementedRedpandaNewsServiceServer()
 }
 
@@ -69,8 +69,8 @@ type RedpandaNewsServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedRedpandaNewsServiceServer struct{}
 
-func (UnimplementedRedpandaNewsServiceServer) GetRedpandaNews(context.Context, *GetRedpandaNewsRequest) (*GetRedpandaNewsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRedpandaNews not implemented")
+func (UnimplementedRedpandaNewsServiceServer) ListRedpandaNews(context.Context, *ListRedpandaNewsRequest) (*ListRedpandaNewsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRedpandaNews not implemented")
 }
 func (UnimplementedRedpandaNewsServiceServer) mustEmbedUnimplementedRedpandaNewsServiceServer() {}
 func (UnimplementedRedpandaNewsServiceServer) testEmbeddedByValue()                             {}
@@ -93,20 +93,20 @@ func RegisterRedpandaNewsServiceServer(s grpc.ServiceRegistrar, srv RedpandaNews
 	s.RegisterService(&RedpandaNewsService_ServiceDesc, srv)
 }
 
-func _RedpandaNewsService_GetRedpandaNews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetRedpandaNewsRequest)
+func _RedpandaNewsService_ListRedpandaNews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRedpandaNewsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RedpandaNewsServiceServer).GetRedpandaNews(ctx, in)
+		return srv.(RedpandaNewsServiceServer).ListRedpandaNews(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RedpandaNewsService_GetRedpandaNews_FullMethodName,
+		FullMethod: RedpandaNewsService_ListRedpandaNews_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RedpandaNewsServiceServer).GetRedpandaNews(ctx, req.(*GetRedpandaNewsRequest))
+		return srv.(RedpandaNewsServiceServer).ListRedpandaNews(ctx, req.(*ListRedpandaNewsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -119,8 +119,8 @@ var RedpandaNewsService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RedpandaNewsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetRedpandaNews",
-			Handler:    _RedpandaNewsService_GetRedpandaNews_Handler,
+			MethodName: "ListRedpandaNews",
+			Handler:    _RedpandaNewsService_ListRedpandaNews_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	consolev1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 )
@@ -51,69 +51,53 @@ type RSSFeed struct {
 	} `xml:"channel"`
 }
 
-// parseDate attempts to parse a date string in RFC1123 or RFC1123Z format
-func parseDate(dateStr string) (time.Time, error) {
-	if t, err := time.Parse(time.RFC1123, dateStr); err == nil {
-		return t, nil
-	}
-	return time.Parse(time.RFC1123Z, dateStr)
-}
-
-// GetRedpandaNews implements the GetRedpandaNews RPC method
-func (s *Service) GetRedpandaNews(
+// ListRedpandaNews implements the ListRedpandaNews RPC method
+func (s *Service) ListRedpandaNews(
 	ctx context.Context,
-	_ *connect.Request[consolev1alpha1.GetRedpandaNewsRequest],
-) (*connect.Response[consolev1alpha1.GetRedpandaNewsResponse], error) {
+	_ *connect.Request[consolev1alpha1.ListRedpandaNewsRequest],
+) (*connect.Response[consolev1alpha1.ListRedpandaNewsResponse], error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, redpandaNewsRSSURL, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create HTTP request: %w", err))
 	}
 
-	resp, err := http.DefaultClient.Do(httpReq)
+	httpResp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch news: %w", err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch Redpanda news: %w", err))
 	}
-	defer resp.Body.Close()
+	defer httpResp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch news: status code %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read news: %w", err)
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch Redpanda news: unexpected status code %d", httpResp.StatusCode))
 	}
 
 	var feed RSSFeed
-	if err := xml.Unmarshal(body, &feed); err != nil {
-		return nil, fmt.Errorf("failed to parse news: %w", err)
+	if err := xml.NewDecoder(httpResp.Body).Decode(&feed); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to parse Redpanda news feed: %w", err))
 	}
 
-	// Convert items to response format
+	lastUpdated, err := time.Parse(time.RFC1123, feed.Channel.PubDate)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to parse last build date: %w", err))
+	}
+
 	newsItems := make([]*consolev1alpha1.RedpandaNewsItem, 0, len(feed.Channel.Items))
 	for _, item := range feed.Channel.Items {
-		pubDate, err := parseDate(item.PubDate)
+		pubDate, err := time.Parse(time.RFC1123, item.PubDate)
 		if err != nil {
 			s.logger.Warn("failed to parse pubDate", zap.String("pubDate", item.PubDate), zap.Error(err))
-			continue
+			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to parse publication date: %w", err))
 		}
 
 		newsItems = append(newsItems, &consolev1alpha1.RedpandaNewsItem{
 			Title:       item.Title,
 			Link:        item.Link,
 			Description: item.Description,
-			PubDate:     pubDate.Format(time.RFC3339),
+			PubDate:     timestamppb.New(pubDate),
 		})
 	}
 
-	// Parse the channel pubDate
-	lastUpdated, err := parseDate(feed.Channel.PubDate)
-	if err != nil {
-		s.logger.Warn("failed to parse channel pubDate", zap.String("pubDate", feed.Channel.PubDate), zap.Error(err))
-		lastUpdated = time.Now()
-	}
-
-	response := &consolev1alpha1.GetRedpandaNewsResponse{
+	response := &consolev1alpha1.ListRedpandaNewsResponse{
 		Title:       feed.Channel.Title,
 		LastUpdated: lastUpdated.Format(time.RFC3339),
 		NewsItems:   newsItems,

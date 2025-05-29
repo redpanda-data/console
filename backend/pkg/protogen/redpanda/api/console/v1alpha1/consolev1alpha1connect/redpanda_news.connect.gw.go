@@ -18,19 +18,19 @@ import (
 // service.
 type RedpandaNewsServiceGatewayServer struct {
 	v1alpha1.UnimplementedRedpandaNewsServiceServer
-	getRedpandaNews connect_gateway.UnaryHandler[v1alpha1.GetRedpandaNewsRequest, v1alpha1.GetRedpandaNewsResponse]
+	listRedpandaNews connect_gateway.UnaryHandler[v1alpha1.ListRedpandaNewsRequest, v1alpha1.ListRedpandaNewsResponse]
 }
 
 // NewRedpandaNewsServiceGatewayServer constructs a Connect-Gateway gRPC server for the
 // RedpandaNewsService service.
 func NewRedpandaNewsServiceGatewayServer(svc RedpandaNewsServiceHandler, opts ...connect_gateway.HandlerOption) *RedpandaNewsServiceGatewayServer {
 	return &RedpandaNewsServiceGatewayServer{
-		getRedpandaNews: connect_gateway.NewUnaryHandler(RedpandaNewsServiceGetRedpandaNewsProcedure, svc.GetRedpandaNews, opts...),
+		listRedpandaNews: connect_gateway.NewUnaryHandler(RedpandaNewsServiceListRedpandaNewsProcedure, svc.ListRedpandaNews, opts...),
 	}
 }
 
-func (s *RedpandaNewsServiceGatewayServer) GetRedpandaNews(ctx context.Context, req *v1alpha1.GetRedpandaNewsRequest) (*v1alpha1.GetRedpandaNewsResponse, error) {
-	return s.getRedpandaNews(ctx, req)
+func (s *RedpandaNewsServiceGatewayServer) ListRedpandaNews(ctx context.Context, req *v1alpha1.ListRedpandaNewsRequest) (*v1alpha1.ListRedpandaNewsResponse, error) {
+	return s.listRedpandaNews(ctx, req)
 }
 
 // RegisterRedpandaNewsServiceHandlerGatewayServer registers the Connect handlers for the
