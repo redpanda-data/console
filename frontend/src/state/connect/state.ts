@@ -503,13 +503,15 @@ export class ConnectorPropertiesStore {
       for (const p of g.properties) {
         if (!p.entry.definition.required) {
           if (p.value === p.entry.definition.default_value) {
+            // Prevent sending configs set to default when the user has not modified them.
+
             // let's ignore the default variable if the value is the same as initially rendered
             // otherwise, user might want to set it back to default
             if (p.value === p.entry.value.value) {
               continue;
             }
-            // let's ignore the variable if the original value is null
-            if (p.entry.value.value === null) {
+            // let's ignore the variable if the original value is null and the config is not present in current set configs values.
+            if (p.entry.value.value === null && !config[p.name]) {
               continue;
             }
           }
