@@ -164,6 +164,7 @@ import {
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './uiState';
+import { GetRedpandaNewsResponse } from 'protogen/redpanda/api/console/v1alpha1/redpanda_news_pb';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -441,6 +442,8 @@ const apiStore = {
   // undefined = we haven't checked yet
   // null = call completed, and we're not logged in
   userData: undefined as UserData | null | undefined,
+
+  redpandaNews: undefined as GetRedpandaNewsResponse | undefined,
 
   async logout() {
     await appConfig.fetch('./auth/logout');
@@ -2057,6 +2060,15 @@ const apiStore = {
       .finally(() => {
         this.refreshDebugBundleStatuses();
       });
+  },
+
+  async refreshRedpandaNews() {
+    const client = appConfig.redpandaNewsClient;
+    if (!client) throw new Error('redpanda news client is not initialized');
+
+    const response = await client.getRedpandaNews({});
+    console.log('response', response);
+    this.redpandaNews = response;
   },
 };
 

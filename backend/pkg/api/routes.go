@@ -40,6 +40,7 @@ import (
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
+	redpandanewssvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/redpandanews"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
 	topicsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha2"
@@ -134,6 +135,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvcV1alpha2)
 	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
 	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.RedpandaClientProvider, api.License)
+	redpandanewssvc := redpandanewssvc.NewService(api.Logger.Named("redpanda_news_service"))
+
 	if err != nil {
 		api.Logger.Fatal("failed to create license service", zap.Error(err))
 	}
@@ -163,6 +166,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.AuthenticationServiceName: &AuthenticationDefaultHandler{},
 			consolev1alpha1connect.ClusterStatusServiceName:  clusterStatusSvc,
 			consolev1alpha1connect.SecretServiceName:         consolev1alpha1connect.UnimplementedSecretServiceHandler{},
+			consolev1alpha1connect.RedpandaNewsServiceName:   redpandanewssvc,
 			dataplanev1alpha2connect.ACLServiceName:          aclSvcV1alpha2,
 			dataplanev1alpha2connect.TopicServiceName:        topicSvcV1alpha2,
 			dataplanev1alpha2connect.UserServiceName:         userSvcV1alpha2,
@@ -243,6 +247,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	consoleSecretsServicePath, consoleSecretsServiceHandler := consolev1alpha1connect.NewSecretServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.SecretServiceName].(consolev1alpha1connect.SecretServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
+
+	redpandanewssvcPath, redpandanewssvcHandler := consolev1alpha1connect.NewRedpandaNewsServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.RedpandaNewsServiceName].(consolev1alpha1connect.RedpandaNewsServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...),
+	)
 
 	// v1alpha2
 
@@ -418,6 +427,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			MountPath:   securitySvcPathV1,
 			Handler:     securitySvcHandlerV1,
 		},
+		{
+			ServiceName: consolev1alpha1connect.RedpandaNewsServiceName,
+			MountPath:   redpandanewssvcPath,
+			Handler:     redpandanewssvcHandler,
+		},
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.
@@ -438,6 +452,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1alpha1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha1connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1alpha1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	consolev1alpha1connect.RegisterRedpandaNewsServiceHandlerGatewayServer(gwMux, redpandanewssvc, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 
 	// v1alpha2
 

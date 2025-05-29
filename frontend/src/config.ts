@@ -38,6 +38,7 @@ import { appGlobal } from './state/appGlobal';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
 import { AppFeatures, getBasePath } from './utils/env';
+import { RedpandaNewsService } from 'protogen/redpanda/api/console/v1alpha1/redpanda_news_pb';
 
 declare const __webpack_public_path__: string;
 
@@ -125,6 +126,7 @@ interface Config {
   rpcnSecretsClient?: Client<typeof SecretService>;
   transformsClient?: Client<typeof TransformService>;
   clusterStatusClient?: Client<typeof ClusterStatusService>;
+  redpandaNewsClient?: Client<typeof RedpandaNewsService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -172,6 +174,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const authenticationGrpcClient = createClient(AuthenticationService, transport);
   const transformClient = createClient(TransformService, transport);
   const clusterStatusGrpcClient = createClient(ClusterStatusService, transport);
+  const redpandaNewsGrpcClient = createClient(RedpandaNewsService, transport);
   Object.assign(config, {
     jwt,
     isServerless,
@@ -188,6 +191,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     clusterStatusClient: clusterStatusGrpcClient,
+    redpandaNewsClient: redpandaNewsGrpcClient,
     featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });

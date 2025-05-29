@@ -50,6 +50,7 @@ import {
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
+import { RedpandaNews } from './RedpandaNews';
 
 @observer
 class Overview extends PageComponent {
@@ -239,6 +240,7 @@ class Overview extends PageComponent {
                       </a>
                     </li>
                   </ul>
+                  <RedpandaNews />
                 </div>
               </Section>
             </GridItem>
