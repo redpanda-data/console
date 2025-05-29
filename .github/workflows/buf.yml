@@ -78,8 +78,14 @@ jobs:
       - name: Buf – lint, format, breaking, push / archive
         uses: bufbuild/buf-action@v1
         with:
-          lint: true
-          format: true
-          breaking: true
+          # By default, breaking checks against the previous commit in the same branch.
+          # If this is the first commit of a new branch, we'll skip the breaking check.
+          #
+          # Push event: lint, format, breaking, push
+          # Push event (create): lint, format, push
+          # Delete event: Push (archive)
+          lint: ${{ github.event_name == 'push' }}
+          format: ${{ github.event_name == 'push' }}
+          breaking: ${{ github.event_name == 'push' && github.event.created == false }}
           push: true
           token: ${{ env.BUF_TOKEN }}
