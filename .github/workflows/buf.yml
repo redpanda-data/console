@@ -78,8 +78,11 @@ jobs:
       - name: Buf – lint, format, breaking, push / archive
         uses: bufbuild/buf-action@v1
         with:
-          lint: true
-          format: true
-          breaking: true
+          # Lint & breaking: PRs only
+          # Format (writes files): push only
+          # Push (publishes / archives): push and delete
+          lint: ${{ github.event_name == 'push' }}
+          format: ${{ github.event_name == 'push' }}
+          breaking: ${{ github.event_name == 'push' }}
           push: true
           token: ${{ env.BUF_TOKEN }}
