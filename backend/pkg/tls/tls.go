@@ -12,6 +12,7 @@ package tls
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 
@@ -29,7 +30,12 @@ import (
 func ClientForGRPC(ctx context.Context, cfg *config.TLS, addr string, logger *zap.Logger) (*grpc.ClientConn, error) {
 	var grpcOpts []grpc.DialOption
 	if cfg != nil && cfg.Enabled {
-		var opts []tlscfg.Opt
+		opts := []tlscfg.Opt{
+			tlscfg.WithOverride(func(c *tls.Config) error {
+				c.InsecureSkipVerify = cfg.InsecureSkipTLSVerify
+				return nil
+			}),
+		}
 		if cfg.CaFilepath == "" {
 			// The server will be protected by a public LE cert
 			opts = append(opts, tlscfg.WithSystemCertPool())
@@ -38,7 +44,6 @@ func ClientForGRPC(ctx context.Context, cfg *config.TLS, addr string, logger *za
 			opts = append(opts, tlscfg.WithOverride(MaybeWithDynamicClientCA(ctx,
 				cfg.CaFilepath, hostname, cfg.RefreshInterval, logger)))
 		}
-
 		opts = append(opts, tlscfg.WithOverride(MaybeWithDynamicDiskKeyPair(ctx,
 			cfg.CertFilepath, cfg.KeyFilepath, tlscfg.ForClient, cfg.RefreshInterval, logger)))
 
