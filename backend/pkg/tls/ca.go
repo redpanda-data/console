@@ -49,16 +49,18 @@ func MaybeWithDynamicClientCA(
 		// There's no direct client-side equivalent to GetConfigForClient;
 		// instead, we skip the standard server certificate validation and
 		// override VerifyConnection instead.
-		cfg.InsecureSkipVerify = true
-		cfg.VerifyConnection = func(s libtls.ConnectionState) error {
-			root := r.tc.Load()
-			pool := root.ClientCAs
-			leaf := s.PeerCertificates[0]
-			_, err := leaf.Verify(x509.VerifyOptions{
-				DNSName: hostname,
-				Roots:   pool,
-			})
-			return err
+		if !cfg.InsecureSkipVerify {
+			cfg.InsecureSkipVerify = true
+			cfg.VerifyConnection = func(s libtls.ConnectionState) error {
+				root := r.tc.Load()
+				pool := root.ClientCAs
+				leaf := s.PeerCertificates[0]
+				_, err := leaf.Verify(x509.VerifyOptions{
+					DNSName: hostname,
+					Roots:   pool,
+				})
+				return err
+			}
 		}
 		return nil
 	}
