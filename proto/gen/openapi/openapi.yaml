@@ -3385,7 +3385,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetKafkaConnectSecretResponse'
           description: Secret created
         "401":
           content:
@@ -3479,7 +3479,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetKafkaConnectSecretResponse'
           description: OK
         "401":
           content:
@@ -3536,7 +3536,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/UpdateKafkaConnectSecretResponse'
           description: OK
         "401":
           content:
@@ -4446,7 +4446,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/CreateSecretResponse'
           description: Secret created
         "401":
           content:
@@ -4528,7 +4528,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetSecretResponse'
           description: OK
         "401":
           content:
@@ -4579,7 +4579,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/UpdateSecretResponse'
           description: OK
         "401":
           content:
