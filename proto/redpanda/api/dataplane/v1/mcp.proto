@@ -279,7 +279,7 @@ service MCPServerService {
 
   // StopMCPServer stops a specific Redpanda Connect MCP server.
   rpc StopMCPServer(StopMCPServerRequest) returns (StopMCPServerResponse) {
-    option (google.api.http) = {put: "/v1/redpanda-connect/mcp-servers/{id}/stop"};
+    option (google.api.http) = {post: "/v1/redpanda-connect/mcp-servers/{id}:stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Stops a Redpanda Connect MCP server"
       description: "Stop a running Redpanda Connect MCP server."
@@ -310,7 +310,7 @@ service MCPServerService {
 
   // StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
   rpc StartMCPServer(StartMCPServerRequest) returns (StartMCPServerResponse) {
-    option (google.api.http) = {put: "/v1/redpanda-connect/mcp-servers/{id}/start"};
+    option (google.api.http) = {post: "/v1/redpanda-connect/mcp-servers/{id}:start"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Start a Redpanda Connect MCP server"
       description: "Start a stopped Redpanda Connect MCP server."
