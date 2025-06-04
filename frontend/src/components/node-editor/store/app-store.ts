@@ -15,7 +15,8 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { initialEdges, initialNodes } from '@/components/node-editor/data/workflow-data';
 // import { setColorModeCookie } from '@/app/actions/cookies';
 import { type AppEdge, createEdge } from '@/components/node-editor/edges';
-import { type AppNode, type AppNodeType, createNodeByType } from '@/components/node-editor/nodes';
+import { createNodeByType } from '@/components/node-editor/nodes';
+import type { AppNode, AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 import { nodesConfig } from '@/components/node-editor/nodes/nodes-config';
 import { layoutGraph } from '@/components/node-editor/store/layout';
 

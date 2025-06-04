@@ -1,6 +1,7 @@
 import { iconMapping } from '@/components/node-editor/data/icon-mapping';
-import type { AppNodeType, NodeConfig } from '@/components/node-editor/nodes';
+import type { NodeConfig } from '@/components/node-editor/nodes';
 import { nodesConfig } from '@/components/node-editor/nodes/nodes-config';
+import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 import {
   DropdownMenu,
   DropdownMenuContent,

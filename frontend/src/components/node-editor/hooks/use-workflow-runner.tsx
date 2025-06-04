@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { AppEdge } from '@/components/node-editor/edges';
-import type { AppNode } from '@/components/node-editor/nodes';
+import type { AppNode } from '@/components/node-editor/nodes/nodes-config';
 import { useAppStore } from '@/components/node-editor/store';
 
 /**

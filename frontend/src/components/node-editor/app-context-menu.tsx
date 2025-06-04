@@ -4,8 +4,8 @@ import type { ReactNode } from 'react';
 
 import { iconMapping } from '@/components/node-editor/data/icon-mapping';
 import { useClientPosition } from '@/components/node-editor/hooks/use-client-position';
-import type { AppNodeType } from '@/components/node-editor/nodes';
 import { nodesConfig } from '@/components/node-editor/nodes/nodes-config';
+import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 import { useAppStore } from '@/components/node-editor/store';
 import {
   ContextMenu,

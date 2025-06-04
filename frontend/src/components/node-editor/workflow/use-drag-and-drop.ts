@@ -1,7 +1,8 @@
 import { useReactFlow } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
 
-import { type AppNode, createNodeByType } from '@/components/node-editor/nodes';
+import { createNodeByType } from '@/components/node-editor/nodes';
+import type { AppNode } from '@/components/node-editor/nodes/nodes-config';
 import { useAppStore } from '@/components/node-editor/store';
 import type { AppStore } from '@/components/node-editor/store/app-store';
 import { useShallow } from 'zustand/react/shallow';

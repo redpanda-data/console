@@ -1,5 +1,6 @@
 import { type AppEdge, createEdge } from '@/components/node-editor/edges';
-import { type AppNode, createNodeByType } from '@/components/node-editor/nodes';
+import { createNodeByType } from '@/components/node-editor/nodes';
+import type { AppNode } from '@/components/node-editor/nodes/nodes-config';
 
 export const initialNodes: AppNode[] = [
   createNodeByType({ type: 'initial-node', id: 'workflowNode_1' }),

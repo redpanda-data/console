@@ -6,9 +6,10 @@ import type { iconMapping } from '@/components/node-editor/data/icon-mapping';
 import { BranchNode } from '@/components/node-editor/nodes/branch-node';
 import { InitialNode } from '@/components/node-editor/nodes/initial-node';
 import { JoinNode } from '@/components/node-editor/nodes/join-node';
-import { type AppNode, type AppNodeType, NODE_SIZE, nodesConfig } from '@/components/node-editor/nodes/nodes-config';
+import { type AppNode, NODE_SIZE, nodesConfig } from '@/components/node-editor/nodes/nodes-config';
 import { OutputNode } from '@/components/node-editor/nodes/output-node';
 import { TransformNode } from '@/components/node-editor/nodes/transform-node';
+import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 
 /* WORKFLOW NODE DATA PROPS ------------------------------------------------------ */
 

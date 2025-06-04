@@ -1,6 +1,6 @@
 import { AppNavbar } from '@/components/node-editor/layouts/sidebar-layout/app-navbar';
 import { AppSidebar } from '@/components/node-editor/layouts/sidebar-layout/app-sidebar';
-import { SidebarProvider, SidebarTrigger } from '@/components/redpanda-ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/redpanda-ui/sidebar';
 
 export default function SidebarLayout({
   children,
@@ -11,11 +11,13 @@ export default function SidebarLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main className="flex h-screen w-full flex-col overflow-hidden">
-        <SidebarTrigger className="absolute z-10" />
-        {children}
-        <AppNavbar />
-      </main>
+      <SidebarInset>
+        <main className="flex h-screen w-full flex-col overflow-hidden">
+          <SidebarTrigger className="absolute z-10" />
+          {children}
+          <AppNavbar />
+        </main>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

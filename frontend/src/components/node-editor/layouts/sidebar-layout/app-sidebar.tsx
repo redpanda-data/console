@@ -5,7 +5,8 @@ import { Command, GripVertical, Plus } from 'lucide-react';
 import { type ComponentProps, useCallback, useRef, useState } from 'react';
 
 import { iconMapping } from '@/components/node-editor/data/icon-mapping';
-import { type AppNode, type NodeConfig, createNodeByType } from '@/components/node-editor/nodes';
+import { createNodeByType, NodeConfig } from '@/components/node-editor/nodes';
+import type { AppNode } from '@/components/node-editor/nodes/nodes-config';
 import { nodesConfig } from '@/components/node-editor/nodes/nodes-config';
 import { SettingsDialog } from '@/components/node-editor/settings-dialog';
 import { useAppStore } from '@/components/node-editor/store';
@@ -26,7 +27,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar className="border-r-0" side="right" {...props}>
+    <Sidebar className="border-r-0" variant="sidebar" {...props}>
       <SidebarHeader className="py-0">
         <div className="flex gap-2 px-1 h-14 items-center ">
           <div className="flex aspect-square size-5 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">

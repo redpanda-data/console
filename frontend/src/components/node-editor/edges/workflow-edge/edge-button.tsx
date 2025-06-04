@@ -4,12 +4,13 @@ import { type CSSProperties, useCallback, useEffect } from 'react';
 import { AppDropdownMenu } from '@/components/node-editor/app-dropdown-menu';
 import type { AppEdge } from '@/components/node-editor/edges';
 import { useDropdown } from '@/components/node-editor/hooks/use-dropdown';
-import type { AppNodeType, NodeConfig } from '@/components/node-editor/nodes';
+import type { NodeConfig } from '@/components/node-editor/nodes';
 import { useAppStore } from '@/components/node-editor/store';
 import type { AppStore } from '@/components/node-editor/store/app-store';
 import { Button } from '@/components/redpanda-ui/button';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
+import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 
 const selector = (id: string) => {
   return (state: AppStore) => ({
