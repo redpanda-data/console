@@ -22,6 +22,7 @@ import {
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
+import { IoMdBuild } from 'react-icons/io';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
@@ -48,6 +49,7 @@ import { AgentListPage, getAgentSidebarItemTitle } from './pages/agents/agent-li
 import { CreateAgentPage } from './pages/agents/create/create-agent-page';
 import { CreateAgentHTTP } from './pages/agents/create/templates/http/create-agent-http';
 import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
+import { NodeEditor } from './pages/connect-v2/node-editor';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import CreateConnector from './pages/connect/CreateConnector';
@@ -419,6 +421,29 @@ export const APP_ROUTES: IRouteEntry[] = [
     // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
     console.debug('Pipeline Service state does not matter. Showing sidebar link.');
     return { visible: true, disabledReasons: [] };
+  }),
+  MakeRoute<{ matchedPath: string }>('/node-editor', NodeEditor, 'Node Editor', IoMdBuild, true, () => {
+    if (isServerless()) {
+      console.log('Connect clusters inside serverless checks.');
+      // We are in serverless, there is no kafka connect, so we can ignore it.
+      // Here, we only care about the pipeline service and use that to decide whether to show the entry
+      if (isSupported(Feature.PipelineService)) {
+        console.debug('Pipeline Service enabled. Showing sidebar link.');
+        return { visible: true, disabledReasons: [] };
+      }
+      // Pipeline service is not active? Hide entry
+      console.debug('Pipeline Service NOT enabled. NOT showing sidebar link.');
+      return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
+    }
+    // We are in cloud (dedicated or BYOC), or self-hosted
+    // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
+    console.debug('Pipeline Service state does not matter. Showing sidebar link.');
+
+    if (isFeatureFlagEnabled('enableRedpandaConnectNodeEditorInConsoleUi')) {
+      return { visible: true, disabledReasons: [] };
+    }
+
+    return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
   }),
   MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
   MakeRoute<{ clusterName: string }>(
