@@ -439,7 +439,13 @@ export const APP_ROUTES: IRouteEntry[] = [
     // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
     console.debug('Pipeline Service state does not matter. Showing sidebar link.');
 
-    if (isFeatureFlagEnabled('enableRedpandaConnectNodeEditorInConsoleUi')) {
+    // Always show in self-hosted mode for now
+    if (!isEmbedded()) {
+      return { visible: true, disabledReasons: [] };
+    }
+
+    // If embedded, only show behind a feature flag
+    if (isEmbedded() && isFeatureFlagEnabled('enableRedpandaConnectNodeEditorInConsoleUi')) {
       return { visible: true, disabledReasons: [] };
     }
 
