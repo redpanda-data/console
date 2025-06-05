@@ -163,7 +163,7 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 	}
 
 	if opts.redpandaClientProvider == nil {
-		redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg)
+		redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg, logger.Named("admin-api"))
 		if err != nil {
 			logger.Fatal("failed to create the Redpanda client provider", zap.Error(err))
 		}

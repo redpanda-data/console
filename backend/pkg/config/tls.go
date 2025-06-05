@@ -1,11 +1,15 @@
 package config
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"time"
 
 	"github.com/twmb/tlscfg"
+	"go.uber.org/zap"
+
+	tlspkg "github.com/redpanda-data/console/backend/pkg/tls"
 )
 
 // TLS represents generic TLS configuration options.
@@ -50,6 +54,56 @@ func (c *TLS) TLSConfig(overrides ...func(cfg *tls.Config) error) (*tls.Config, 
 			cfg.InsecureSkipVerify = c.InsecureSkipTLSVerify
 			return nil
 		}),
+	}
+
+	if len(overrides) > 0 {
+		for _, o := range overrides {
+			opts = append(opts, tlscfg.WithOverride(o))
+		}
+	}
+
+	tlsconfig, err := tlscfg.New(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return tlsconfig, nil
+}
+
+// TLSConfigWithReloader returns the TLS Config from the configured parameters
+// and additionally starts a goroutine to hot refresh certificates at
+// RefreshInterval
+func (c *TLS) TLSConfigWithReloader(ctx context.Context, logger *zap.Logger, hostname string, overrides ...func(cfg *tls.Config) error) (*tls.Config, error) {
+	if !c.Enabled {
+		return &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}, nil
+	}
+
+	opts := []tlscfg.Opt{
+		tlscfg.WithOverride(func(cfg *tls.Config) error {
+			cfg.InsecureSkipVerify = c.InsecureSkipTLSVerify
+			return nil
+		}),
+		tlscfg.WithOverride(
+			tlspkg.MaybeWithDynamicClientCA(
+				ctx,
+				c.CaFilepath,
+				hostname,
+				c.RefreshInterval,
+				logger,
+			),
+		),
+		tlscfg.WithOverride(
+			tlspkg.MaybeWithDynamicDiskKeyPair(
+				ctx,
+				c.CertFilepath,
+				c.KeyFilepath,
+				tlscfg.ForClient,
+				c.RefreshInterval,
+				logger,
+			),
+		),
 	}
 
 	if len(overrides) > 0 {
