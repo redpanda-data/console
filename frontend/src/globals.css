@@ -127,3 +127,47 @@
     cursor: pointer;
   }
 }
+
+/* React Flow Edge Visibility and Animation Fixes */
+@layer components {
+  /* Ensure React Flow edges container has static positioning for proper visibility */
+  .react-flow .react-flow__edges {
+    position: static !important;
+    z-index: 1;
+  }
+  
+  /* Ensure individual edges are visible and positioned correctly */
+  .react-flow .react-flow__edge {
+    position: relative;
+    pointer-events: auto;
+  }
+  
+  /* Preserve edge animations */
+  .react-flow .react-flow__edge.animated .react-flow__edge-path {
+    stroke-dasharray: 5;
+    animation: dashdraw 0.5s linear infinite;
+  }
+  
+  /* Define animation keyframes for edge animation */
+  @keyframes dashdraw {
+    to {
+      stroke-dashoffset: -10;
+    }
+  }
+  
+  /* Ensure edge markers (arrows) are visible */
+  .react-flow .react-flow__edge .react-flow__arrowhead {
+    fill: currentColor;
+  }
+  
+  /* Improve edge interaction area */
+  .react-flow .react-flow__edge-path {
+    stroke-width: 2;
+    cursor: pointer;
+  }
+  
+  /* Ensure edge selection is visible */
+  .react-flow .react-flow__edge.selected .react-flow__edge-path {
+    stroke-width: 3;
+  }
+}
