@@ -26,6 +26,7 @@ import (
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
+	netpkg "github.com/redpanda-data/common-go/net"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
@@ -86,9 +87,9 @@ func NewCachedClientProvider(cfg *config.Config, logger *zap.Logger) *CachedClie
 // the current request's lifecycle. We retain the client after the request completes,
 // as handling multiple requests in quick succession is common. Establishing a new
 // Kafka connection for each request is resource-intensive and time-consuming.
-func (f *CachedClientProvider) GetKafkaClient(context.Context) (*kgo.Client, *kadm.Client, error) {
+func (f *CachedClientProvider) GetKafkaClient(ctx context.Context) (*kgo.Client, *kadm.Client, error) {
 	kgoClient, err, _ := f.clientCache.Get("client", func() (*kgo.Client, error) {
-		return f.createClient()
+		return f.createClient(ctx)
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed getting Kafka client: %w", err)
@@ -98,8 +99,8 @@ func (f *CachedClientProvider) GetKafkaClient(context.Context) (*kgo.Client, *ka
 }
 
 // createClient creates a Kafka client based on the provided Kafka configuration.
-func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
-	kgoOpts, err := NewKgoConfig(f.cfg.Kafka, f.logger, f.cfg.MetricsNamespace)
+func (f *CachedClientProvider) createClient(ctx context.Context) (*kgo.Client, error) {
+	kgoOpts, err := NewKgoConfig(ctx, f.cfg.Kafka, f.logger, f.cfg.MetricsNamespace)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
@@ -115,7 +116,7 @@ func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 // If TLS certificates can't be read an error will be returned.
 //
 //nolint:gocognit,cyclop // This function is lengthy, but it's only plumbing configurations. Seems okay to me.
-func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string) ([]kgo.Opt, error) {
+func NewKgoConfig(ctx context.Context, cfg config.Kafka, logger *zap.Logger, metricsNamespace string) ([]kgo.Opt, error) {
 	metricHooks := newClientHooks(logger.Named("kafka_client_hooks"), metricsNamespace)
 
 	opts := []kgo.Opt{
@@ -273,7 +274,14 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 	}
 
 	if cfg.TLS.Enabled {
-		tlsConfig, err := cfg.TLS.TLSConfig()
+		// Extract hostname from the first broker URL
+		_, host, err := netpkg.ParseHostMaybeScheme(cfg.Brokers[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse broker url scheme: %w", err)
+		}
+		hostname, _ := netpkg.SplitHostPortDefault(host, 9092)
+
+		tlsConfig, err := cfg.TLS.TLSConfigWithReloader(ctx, logger, hostname)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build tls config: %w", err)
 		}
