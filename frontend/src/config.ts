@@ -264,7 +264,6 @@ const routesIgnoredInEmbedded = ['/overview', '/quotas', '/reassign-partitions',
 
 const routesIgnoredInServerless = [
   '/overview',
-  '/schema-registry',
   '/quotas',
   '/reassign-partitions',
   '/admin',
