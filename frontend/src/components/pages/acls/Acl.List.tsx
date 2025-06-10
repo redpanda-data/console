@@ -67,6 +67,7 @@ import {
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
+import { isServerless } from 'config';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -142,7 +143,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
           (!Features.createUser && "Your cluster doesn't support this feature.") ||
           (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
-      {
+      isServerless() ? null : {
         key: 'roles' as AclListTab,
         name: 'Roles',
         component: <RolesTab data-testid="roles-tab" />,
@@ -164,7 +165,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
           ? false
           : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
       },
-    ] as TabsItemProps[];
+    ].filter(x => x !== null) as TabsItemProps[];
 
     // todo: maybe there is a better way to sync the tab control to the path
     const activeTab = tabs.findIndex((x) => x.key === this.props.tab);
