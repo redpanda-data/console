@@ -10,6 +10,7 @@
  */
 
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   AlertDialog,
@@ -34,7 +35,7 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { type FC, useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { type FC, useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type FC, useRef, useState } from 'react';
@@ -43,7 +44,6 @@ import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { Link, useSearchParams } from 'react-router-dom';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
-import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { type Topic, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -63,34 +63,37 @@ import {
   type RetentionSizeUnit,
   type RetentionTimeUnit,
 } from './CreateTopicModal/CreateTopicModal';
+import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
+import { observable } from 'mobx';
 
 const TopicList: FC = () => {
-  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [localSearchValue, setLocalSearchValue] = useState(searchParams.get('q') || '');
-  const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(() => makeCreateTopicModal(), []);
+  const [showInternalTopics, setShowInternalTopics] = useState(false);
 
-  // Update URL when search value changes
   useEffect(() => {
-    setSearchParams({
-      q: localSearchValue
+    setSearchParams((searchParams) => {
+      if(localSearchValue) {
+        searchParams.set("q", localSearchValue);
+      } else {
+        searchParams.delete("q");
+      }
+      return searchParams;
     });
   }, [localSearchValue, searchParams, setSearchParams]);
 
+  const { data, isLoading, isError } = useLegacyListTopicsQuery();
+  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(() => makeCreateTopicModal(), []);
+
   const refreshData = useCallback((force: boolean) => {
-    api.refreshTopics(force);
     api.refreshClusterOverview();
     void api.refreshClusterHealth();
   }, []);
 
-  useEffect(() => {
-    refreshData(true);
-    appGlobal.onRefresh = () => refreshData(true);
-  }, [refreshData]);
-
   const topics = useMemo(() => {
-    let topics = api.topics ?? [];
-    if (uiSettings.topicList.hideInternalTopics) {
+    let topics = data.topics ?? [];
+    if (!showInternalTopics) {
       topics = topics.filter((x) => !x.isInternal && !x.topicName.startsWith('_'));
     }
 
@@ -107,9 +110,11 @@ const TopicList: FC = () => {
     }
 
     return topics;
-  }, [api.topics, uiSettings.topicList.hideInternalTopics, localSearchValue]);
+  }, [data.topics, showInternalTopics, localSearchValue]);
 
-  if (!api.topics) return DefaultSkeleton;
+  if (isLoading) return DefaultSkeleton;
+
+  if(isError) return <div>Error</div>
 
   const partitionCount = topics.sum((x) => x.partitionCount);
   const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
@@ -166,8 +171,8 @@ const TopicList: FC = () => {
 
           <Checkbox
             data-testid="show-internal-topics-checkbox"
-            isChecked={!uiSettings.topicList.hideInternalTopics}
-            onChange={(x) => (uiSettings.topicList.hideInternalTopics = !x.target.checked)}
+            isChecked={showInternalTopics}
+            onChange={(x) => setShowInternalTopics(x.target.checked)}
             style={{ marginLeft: 'auto' }}
           >
             Show internal topics
@@ -611,11 +616,15 @@ function makeCreateTopicModal() {
 
       setVal('cleanup.policy', state.cleanupPolicy);
 
-      const result = await api.createTopic({
-        topicName: state.topicName,
-        partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
-        replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-        configs: config.filter((x) => x.name.length > 0),
+      const { mutateAsync: createTopic } = useCreateTopicMutation();
+      const result = await createTopic({
+        topic: {
+          name: state.topicName,
+          partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
+          replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
+          configs: config.filter((x) => x.name.length > 0).map(x => ({ name: x.name, value: x.value })),
+        },
+        validateOnly: false,
       });
 
       return (
@@ -643,7 +652,8 @@ function makeCreateTopicModal() {
       );
     },
     onSuccess: (_state, _result) => {
-      parent.refreshData(true);
+      api.refreshClusterOverview();
+      void api.refreshClusterHealth();
     },
     content: (state) => <CreateTopicModalContent state={state} />,
   });
