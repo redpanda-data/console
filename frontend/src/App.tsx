@@ -53,6 +53,10 @@ import {
 import { uiSettings } from './state/ui';
 import { getBasePath } from './utils/env';
 
+// Stagewise (AI)
+import { ReactPlugin } from '@stagewise-plugins/react';
+import { StagewiseToolbar, type ToolbarConfig } from '@stagewise/toolbar-react';
+
 const AppSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
 
@@ -80,6 +84,8 @@ const App = () => {
     },
   });
 
+  const stagewiseConfig: ToolbarConfig = { plugins: [ReactPlugin] };
+
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
@@ -103,6 +109,10 @@ const App = () => {
                 </RequireAuth>
               </ErrorBoundary>
               <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
+              <StagewiseToolbar
+                config={stagewiseConfig}
+                enabled={process.env.NODE_ENV === 'development' && developerView}
+              />
             </QueryClientProvider>
           </TransportProvider>
         </ChakraProvider>

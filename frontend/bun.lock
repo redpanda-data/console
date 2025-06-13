@@ -79,6 +79,8 @@
         "@rsbuild/plugin-yaml": "^1.0.2",
         "@rsdoctor/rspack-plugin": "^1.1.2",
         "@rspack/cli": "^1.3.9",
+        "@stagewise-plugins/react": "^0.4.7",
+        "@stagewise/toolbar-react": "^0.4.7",
         "@tailwindcss/typography": "^0.5.16",
         "@tanstack/react-query-devtools": "^5.75.6",
         "@testing-library/dom": "^10.4.0",
@@ -531,6 +533,12 @@
     "@sindresorhus/is": ["@sindresorhus/is@4.6.0", "", {}, "sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw=="],
 
     "@socket.io/component-emitter": ["@socket.io/component-emitter@3.1.2", "", {}, "sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA=="],
+
+    "@stagewise-plugins/react": ["@stagewise-plugins/react@0.4.7", "", { "peerDependencies": { "@stagewise/toolbar": "0.4.7" } }, "sha512-o3pa/2Tc/Lo+e7OEEDx45vx2NczPgDyGYQHfCZzN0IHLVDm/mj5uSmi5Ldo2NjJdThK4hSQNA5MLc4zBhkUlNg=="],
+
+    "@stagewise/toolbar": ["@stagewise/toolbar@0.4.7", "", {}, "sha512-xU+lDPiGEhFs6Vx5Xwy1y43VQJIul9muN5u0eXnMoFKJYL+ku931at3gTRVP/+4BEgAC4G8P5g3pACyYa0ikOA=="],
+
+    "@stagewise/toolbar-react": ["@stagewise/toolbar-react@0.4.7", "", { "dependencies": { "@stagewise/toolbar": "0.4.7" }, "peerDependencies": { "@types/react": ">=18.0.0", "react": ">=18.0.0" } }, "sha512-of7J8uJiqq38VVxKMxO4dkshb6wOc32xx4epi+ODovMLOrN8Xv2KbYMUxEtoPEKGkZagIwEZWiXKhI8ra29NVw=="],
 
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
 
