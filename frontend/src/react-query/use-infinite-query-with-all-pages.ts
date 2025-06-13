@@ -22,7 +22,6 @@ export type UseInfiniteQueryWithAllPagesOptions<
     MessageShape<O>,
     ConnectError,
     InfiniteData<MessageShape<O>>,
-    MessageShape<O>,
     ConnectQueryKey,
     MessageInitShape<I>[ParamKey]
   >,

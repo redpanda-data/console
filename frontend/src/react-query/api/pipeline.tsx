@@ -14,8 +14,8 @@ import {
   updatePipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
-  type GetPipelineRequest,
   GetPipelineRequestSchema,
+  type GetPipelineResponse,
   GetPipelinesBySecretsRequestSchema,
   GetPipelinesForSecretRequestSchema,
   type ListPipelinesRequest,
@@ -25,7 +25,6 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   GetPipelineRequestSchema as GetPipelineRequestSchemaDataPlane,
-  type GetPipelineResponse,
   GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
   GetPipelinesForSecretRequestSchema as GetPipelinesForSecretRequestSchemaDataPlane,
   type ListPipelinesRequest as ListPipelinesRequestDataPlane,
@@ -43,7 +42,7 @@ export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
-  options?: QueryOptions<GenMessage<GetPipelineRequest>, GetPipelineResponse> & {
+  options?: QueryOptions<GenMessage<GetPipelineResponse>, GetPipelineResponse> & {
     refetchInterval?: number | false;
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
