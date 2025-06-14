@@ -264,7 +264,6 @@ class ReassignPartitions extends PageComponent {
 
               {/* Content */}
               <motion.div {...animProps} key={`step${this.currentStep}`}>
-                {' '}
                 {(() => {
                   switch (this.currentStep) {
                     case 0:

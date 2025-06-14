@@ -205,7 +205,7 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
     }));
 
     const toast = useToast();
-    const toastRef = useRef<ToastId>();
+    const toastRef = useRef<ToastId | null>(null);
 
     const throttleValue = $state.newThrottleValue ?? 0;
     const noChange = $state.newThrottleValue === lastKnownMinThrottle || $state.newThrottleValue == null;
