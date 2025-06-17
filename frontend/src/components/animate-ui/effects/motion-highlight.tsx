@@ -117,7 +117,7 @@ function MotionHighlight<T extends string>({ ref, ...props }: MotionHighlightPro
   } = props;
 
   const localRef = React.useRef<HTMLDivElement>(null);
-  // @ts-ignore part of animate ui motion highlight implementation
+  // @ts-ignore part of the motion highlight implementation, remove ignore when in React 19
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
   const [activeValue, setActiveValue] = React.useState<T | null>(value ?? defaultValue ?? null);
@@ -351,8 +351,7 @@ function MotionHighlightItem({
   const itemTransition = transition ?? contextTransition;
 
   const localRef = React.useRef<HTMLDivElement>(null);
-
-  // @ts-ignore part of animate ui motion highlight implementation
+  // @ts-ignore part of the motion highlight implementation, remove ignore when in React 19
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
   React.useEffect(() => {

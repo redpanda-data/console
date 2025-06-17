@@ -7,6 +7,7 @@ import { Slot } from 'radix-ui';
 import * as React from 'react';
 
 import { MotionHighlight, MotionHighlightItem } from '@/components/animate-ui/effects/motion-highlight';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/redpanda-ui/button';
 import { Input } from '@/components/redpanda-ui/input';
 import { Separator } from '@/components/redpanda-ui/separator';
@@ -14,7 +15,6 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Skeleton } from '@/components/redpanda-ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/redpanda-ui/tooltip';
 import { useIsMobile } from '@/hooks/redpanda-ui/use-mobile';
-import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
