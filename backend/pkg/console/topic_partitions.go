@@ -180,8 +180,8 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		// Construct partition details
 		partitionsDetails := make([]TopicPartitionDetails, len(topic.Partitions))
 		for i, partition := range topic.Partitions {
-			startOffset, _ := startOffsets.Lookup(topic.TopicName, partition.PartitionID)
-			endOffset, _ := endOffsets.Lookup(topic.TopicName, partition.PartitionID)
+			startOffset, _ := startOffsets.Lookup(topic.TopicName, partition.ID)
+			endOffset, _ := endOffsets.Lookup(topic.TopicName, partition.ID)
 			offsetErr := errorToString(startOffset.Err)
 			if offsetErr == "" {
 				errorToString(endOffset.Err)
