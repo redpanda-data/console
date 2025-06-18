@@ -31,7 +31,6 @@ function TabsList({
   ...props
 }: TabsListProps) {
   const localRef = React.useRef<HTMLDivElement | null>(null);
-  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
   const [activeValue, setActiveValue] = React.useState<string | undefined>(undefined);
 

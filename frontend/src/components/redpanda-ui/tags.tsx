@@ -98,13 +98,7 @@ export const Tags = ({
 export type TagsTriggerProps = ComponentProps<typeof Button>;
 export const TagsTrigger = ({ className, children, ...props }: TagsTriggerProps) => (
   <PopoverTrigger asChild>
-    <Button
-      variant="outline"
-      // biome-ignore lint/a11y/useSemanticElements: part of tags component
-      role="combobox"
-      className={cn('h-auto w-full justify-between p-2', className)}
-      {...props}
-    >
+    <Button variant="outline" role="combobox" className={cn('h-auto w-full justify-between p-2', className)} {...props}>
       <div className="flex flex-wrap items-center gap-1">
         {children}
         <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
@@ -123,8 +117,6 @@ export const TagsValue = ({ className, children, onRemove, ...props }: TagsValue
     <Badge className={cn('flex items-center gap-2', className)} {...props}>
       {children}
       {onRemove && (
-        // biome-ignore lint/nursery/noStaticElementInteractions: part of tags component
-        // biome-ignore lint/a11y/useKeyWithClickEvents: part of tags component
         <div onClick={handleRemove} className="size-auto cursor-pointer hover:text-muted-foreground">
           <XIcon size={12} />
         </div>
