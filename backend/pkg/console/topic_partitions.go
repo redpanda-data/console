@@ -37,54 +37,28 @@ type TopicDetails struct {
 	Partitions []TopicPartitionDetails `json:"partitions"`
 }
 
-// TopicPartitionDetails consists of some (not all) information about a single partition of a topic.
+// TopicPartitionDetails consists of all information about a single partition of a topic.
 // Only data relevant to the 'partition table' in the frontend is included.
+// This struct consolidates metadata, watermark, and log directory information in one place
+// to prevent bugs from inconsistent partition ID handling.
 type TopicPartitionDetails struct {
-	// Metadata about the topic and partitions as fetched via the Kafka metadata request.
-	*TopicPartitionMetadata
-
-	// Marks returns the low and high water mark for each partition. It's a separate entity as this is a set of
-	// separate requests towards Kafka. These request can also fail.
-	*TopicPartitionMarks
-
-	// PartitionLogDirs return the size per partition for each replica. If a partition replica fails to respond the
-	// log dirs an entry for it should still exist along with a descriptive error.
-	PartitionLogDirs []TopicPartitionLogDirs `json:"partitionLogDirs"`
-}
-
-// TopicPartitionMetadata represents the available metadata for a partition.
-type TopicPartitionMetadata struct {
+	// Partition identification
 	ID int32 `json:"id"`
 
-	// Err should only be set if the metadata request for this partition has failed
-	PartitionError string `json:"partitionError,omitempty"`
-
-	// Replicas returns all broker IDs containing replicas of this partition.
-	Replicas []int32 `json:"replicas"`
-
-	// OfflineReplicas, proposed in KIP-112 and introduced in Kafka 1.0,
-	// returns all offline broker IDs that should be replicating this partition.
+	// Partition metadata fields
+	PartitionError  string  `json:"partitionError,omitempty"`
+	Replicas        []int32 `json:"replicas"`
 	OfflineReplicas []int32 `json:"offlineReplicas"`
+	InSyncReplicas  []int32 `json:"inSyncReplicas"`
+	Leader          int32   `json:"leader"`
 
-	// InSyncReplicas returns all broker IDs of in-sync replicas of this partition.
-	InSyncReplicas []int32 `json:"inSyncReplicas"`
-
-	// Leader is the broker leader for this partition. This will be -1 on leader / listener error.
-	Leader int32 `json:"leader"`
-}
-
-// TopicPartitionMarks contains information about the offsets for a partition.
-type TopicPartitionMarks struct {
-	PartitionID int32 `json:"-"`
-
-	// Err indicates whether there was an issue fetching the watermarks for this partition.
+	// Watermark fields
 	WaterMarksError string `json:"waterMarksError,omitempty"`
+	WaterMarkLow    int64  `json:"waterMarkLow"`
+	WaterMarkHigh   int64  `json:"waterMarkHigh"`
 
-	// Low water mark for this partition
-	Low int64 `json:"waterMarkLow"`
-
-	// High water mark for this partition
-	High int64 `json:"waterMarkHigh"`
+	// Log directory information
+	PartitionLogDirs []TopicPartitionLogDirs `json:"partitionLogDirs"`
 }
 
 // TopicPartitionLogDirs contains the reported log dir size for a single partition as reported by one
@@ -193,20 +167,15 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 			logDirs := logDirsByTopicPartition[topic.TopicName][partition.ID]
 
 			d := TopicPartitionDetails{
-				TopicPartitionMetadata: &TopicPartitionMetadata{
-					ID:              partition.ID,
-					PartitionError:  partition.PartitionError,
-					Replicas:        partition.Replicas,
-					OfflineReplicas: partition.OfflineReplicas,
-					InSyncReplicas:  partition.InSyncReplicas,
-					Leader:          partition.Leader,
-				},
-				TopicPartitionMarks: &TopicPartitionMarks{
-					PartitionID:     partition.ID,
-					WaterMarksError: offsetErr,
-					Low:             startOffset.Offset,
-					High:            endOffset.Offset,
-				},
+				ID:               partition.ID,
+				PartitionError:   partition.PartitionError,
+				Replicas:         partition.Replicas,
+				OfflineReplicas:  partition.OfflineReplicas,
+				InSyncReplicas:   partition.InSyncReplicas,
+				Leader:           partition.Leader,
+				WaterMarksError:  offsetErr,
+				WaterMarkLow:     startOffset.Offset,
+				WaterMarkHigh:    endOffset.Offset,
 				PartitionLogDirs: logDirs,
 			}
 			partitionsDetails[i] = d
@@ -245,9 +214,9 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, adminCl *kadm.C
 		}
 
 		// Iterate all partitions
-		partitionInfo := make([]TopicPartitionDetails, len(topic.Partitions))
+		partitionMetadata := make([]TopicPartitionDetails, len(topic.Partitions))
 		for i, partition := range topic.Partitions {
-			partitionMetadata := TopicPartitionMetadata{
+			details := TopicPartitionDetails{
 				ID: partition.Partition,
 			}
 			if partition.Err != nil {
@@ -255,26 +224,18 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, adminCl *kadm.C
 				// still contain all the necessary partition information.
 
 				// Propagate the failed response and do not even try any further requests for that partition.
-				partitionMetadata.PartitionError = fmt.Sprintf("Failed to get partitionMetadata for partition: %v", partition.Err.Error())
-				partitionInfo[i] = TopicPartitionDetails{
-					&partitionMetadata,
-					&TopicPartitionMarks{},
-					nil,
-				}
+				details.PartitionError = fmt.Sprintf("Failed to get partitionMetadata for partition: %v", partition.Err.Error())
+				partitionMetadata[i] = details
 				continue
 			}
-			partitionMetadata.Replicas = partition.Replicas
-			partitionMetadata.InSyncReplicas = partition.ISR
-			partitionMetadata.Replicas = partition.Replicas
-			partitionMetadata.Leader = partition.Leader
-			partitionMetadata.OfflineReplicas = partition.OfflineReplicas
-			partitionInfo[i] = TopicPartitionDetails{
-				&partitionMetadata,
-				&TopicPartitionMarks{},
-				[]TopicPartitionLogDirs{},
-			}
+			details.Replicas = partition.Replicas
+			details.InSyncReplicas = partition.ISR
+			details.Leader = partition.Leader
+			details.OfflineReplicas = partition.OfflineReplicas
+			details.PartitionLogDirs = []TopicPartitionLogDirs{}
+			partitionMetadata[i] = details
 		}
-		topicOverview.Partitions = partitionInfo
+		topicOverview.Partitions = partitionMetadata
 		overviewByTopic[topic.Topic] = topicOverview
 	}
 
