@@ -27,7 +27,7 @@ import (
 func TestHandlePutConnectorConfigParsesRequestBody(t *testing.T) {
 	// Test that malformed JSON fails at parsing stage (not at service stage)
 	t.Run("malformed_json_returns_bad_request", func(t *testing.T) {
-		req := httptest.NewRequest("PUT", "/kafka-connect/clusters/test-cluster/connectors/test-connector", bytes.NewReader([]byte(`{"config": invalid}`)))
+		req := httptest.NewRequest(http.MethodPut, "/kafka-connect/clusters/test-cluster/connectors/test-connector", bytes.NewReader([]byte(`{"config": invalid}`)))
 		req.Header.Set("Content-Type", "application/json")
 
 		// Setup chi URL params
@@ -52,7 +52,7 @@ func TestHandlePutConnectorConfigParsesRequestBody(t *testing.T) {
 
 	// Test that empty request body (no JSON) properly fails at parsing stage
 	t.Run("empty_request_body_fails_at_parsing", func(t *testing.T) {
-		req := httptest.NewRequest("PUT", "/kafka-connect/clusters/test-cluster/connectors/test-connector", bytes.NewReader([]byte("")))
+		req := httptest.NewRequest(http.MethodPut, "/kafka-connect/clusters/test-cluster/connectors/test-connector", bytes.NewReader([]byte("")))
 		req.Header.Set("Content-Type", "application/json")
 
 		// Setup chi URL params
