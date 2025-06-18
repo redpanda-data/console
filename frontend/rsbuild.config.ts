@@ -23,7 +23,10 @@ export default defineConfig({
     pluginSvgr({ mixedImport: true }),
     pluginSass(),
     pluginYaml(),
-    pluginModuleFederation(moduleFederationConfig),
+    pluginModuleFederation({
+      ...moduleFederationConfig,
+      dts: false, // Disable DTS generation to avoid type resolution issues
+    }),
   ],
   dev: {
     hmr: true,
@@ -42,6 +45,10 @@ export default defineConfig({
   },
   server: {
     htmlFallback: 'index',
+    cors: {
+      origin: ['http://localhost:3000', 'http://localhost:9090'],
+      credentials: true,
+    },
     proxy: {
       context: ['/api', '/redpanda.api', '/auth', '/logout'],
       target: 'http://localhost:9090',
