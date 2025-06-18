@@ -6,6 +6,7 @@ import {
   createPipeline,
   deletePipeline,
   getPipeline,
+  getPipelineServiceConfigSchema,
   getPipelinesBySecrets,
   getPipelinesForSecret,
   listPipelines,
@@ -16,6 +17,7 @@ import {
 import {
   type GetPipelineRequest,
   GetPipelineRequestSchema,
+  GetPipelineServiceConfigSchemaRequestSchema,
   GetPipelinesBySecretsRequestSchema,
   GetPipelinesForSecretRequestSchema,
   type ListPipelinesRequest,
@@ -23,6 +25,7 @@ import {
   type ListPipelinesResponse,
   PipelineService,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { GetPipelineServiceConfigSchemaRequestSchema as GetPipelineServiceConfigSchemaRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   GetPipelineRequestSchema as GetPipelineRequestSchemaDataPlane,
   type GetPipelineResponse,
@@ -238,4 +241,13 @@ export const useGetPipelinesBySecretsQuery = () => {
     request: getPipelinesBySecretsRequestDataPlane,
   });
   return useQuery(getPipelinesBySecrets, getPipelinesBySecretsRequest);
+};
+
+export const useGetPipelineServiceConfigSchemaQuery = () => {
+  const getPipelineServiceConfigSchemaRequestDataPlane = create(GetPipelineServiceConfigSchemaRequestSchemaDataPlane);
+
+  const getPipelineServiceConfigSchemaRequest = create(GetPipelineServiceConfigSchemaRequestSchema, {
+    request: getPipelineServiceConfigSchemaRequestDataPlane,
+  });
+  return useQuery(getPipelineServiceConfigSchema, getPipelineServiceConfigSchemaRequest);
 };
