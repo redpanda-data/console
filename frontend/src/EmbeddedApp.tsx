@@ -38,6 +38,7 @@ import queryClient from 'queryClient';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
+import { Toaster } from './components/redpanda-ui/sonner';
 import {
   type SetConfigArguments,
   addBearerTokenInterceptor,
@@ -111,6 +112,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
                 <AppContent />
+                <Toaster />
               </ErrorBoundary>
             </QueryClientProvider>
           </TransportProvider>
