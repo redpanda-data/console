@@ -39,14 +39,26 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
   // According to Tyler they can only apply to string types at the moment,
   // but generic handling shouldn't hurt.
   if (spec.annotated_options || spec.options) {
-    const opts = spec.annotated_options?.map(([v]) => v) ?? spec.options!;
+    const opts = spec.annotated_options?.map(([v]) => v) ?? spec.options;
+
+    if (!opts) {
+      return null;
+    }
+
     return (
       <FormField
         control={control}
         name={path}
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>{spec.name}</FormLabel>
+          <FormItem className="space-y-1 my-2">
+            <div className="flex flex-col gap-2">
+              <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+              {spec.description && (
+                <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                  {spec.description}
+                </FormDescription>
+              )}
+            </div>
             <Select onValueChange={field.onChange} defaultValue={field.value || spec.default}>
               <FormControl>
                 <SelectTrigger>
@@ -61,7 +73,6 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
                 ))}
               </SelectContent>
             </Select>
-            {spec.description && <FormDescription>{spec.description}</FormDescription>}
             <FormMessage />
           </FormItem>
         )}
@@ -77,8 +88,15 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
           control={control}
           name={path}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>{spec.name}</FormLabel>
+            <FormItem className="space-y-2 my-4">
+              <div className="flex flex-col gap-2">
+                <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+                {spec.description && (
+                  <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                    {spec.description}
+                  </FormDescription>
+                )}
+              </div>
               <FormControl>
                 <Input
                   type={spec.is_secret ? 'password' : 'text'}
@@ -86,7 +104,7 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
                   {...field}
                 />
               </FormControl>
-              {spec.description && <FormDescription>{spec.description}</FormDescription>}
+
               <FormMessage />
             </FormItem>
           )}
@@ -100,8 +118,15 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
           control={control}
           name={path}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>{spec.name}</FormLabel>
+            <FormItem className="space-y-1 my-2">
+              <div className="flex flex-col gap-2">
+                <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+                {spec.description && (
+                  <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                    {spec.description}
+                  </FormDescription>
+                )}
+              </div>
               <FormControl>
                 <Input
                   type="number"
@@ -110,7 +135,6 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
                   {...field}
                 />
               </FormControl>
-              {spec.description && <FormDescription>{spec.description}</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
@@ -123,13 +147,17 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
           control={control}
           name={path}
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start gap-3 rounded-md border p-4">
+            <FormItem className="flex flex-row items-start gap-3 rounded-md border p-4 space-y-1 my-2">
               <FormControl>
                 <Checkbox checked={field.value ?? spec.default ?? false} onCheckedChange={field.onChange} />
               </FormControl>
-              <div className="flex flex-col gap-1">
-                <FormLabel className="leading-snug">{spec.name}</FormLabel>
-                {spec.description && <FormDescription className="leading-snug">{spec.description}</FormDescription>}
+              <div className="flex flex-col gap-2">
+                <FormLabel className="text-sm font-medium leading-none">{spec.name}</FormLabel>
+                {spec.description && (
+                  <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                    {spec.description}
+                  </FormDescription>
+                )}
               </div>
             </FormItem>
           )}
@@ -143,12 +171,18 @@ const ScalarField: React.FC<UiField> = ({ path, spec }) => {
           control={control}
           name={path}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>{spec.name}</FormLabel>
+            <FormItem className="space-y-1 my-2">
+              <div className="flex flex-col gap-2">
+                <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+                {spec.description && (
+                  <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                    {spec.description}
+                  </FormDescription>
+                )}
+              </div>
               <FormControl>
                 <Textarea rows={3} placeholder={spec.default ? String(spec.default) : undefined} {...field} />
               </FormControl>
-              {spec.description && <FormDescription>{spec.description}</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
@@ -205,47 +239,66 @@ const ArrayField: React.FC<UiField> = ({ path, spec }) => {
       control={control}
       name={path}
       render={() => (
-        <FormItem className="flex flex-col gap-4">
-          <div>
-            <FormLabel className="text-base">{spec.name}</FormLabel>
-            {spec.description && <FormDescription>{spec.description}</FormDescription>}
+        <FormItem className="space-y-1 my-2">
+          <div className="flex flex-col gap-2">
+            <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+            {spec.description && (
+              <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                {spec.description}
+              </FormDescription>
+            )}
           </div>
-          <div className="flex flex-col gap-3">
-            {fields.map((field, idx) => (
-              <div key={field.id} className="flex gap-2 items-start p-3 border rounded-md">
-                <div className="flex-1">
-                  {childSpec ? (
-                    // Use the appropriate field component based on child spec
-                    <FieldInput
-                      path={`${path}.${idx}`}
-                      spec={{
-                        ...childSpec,
-                        name: `Item ${idx + 1}`,
-                      }}
-                    />
-                  ) : (
-                    // Fallback to simple input if no child spec
-                    <FormField
-                      control={control}
-                      name={`${path}.${idx}`}
-                      render={({ field: itemField }) => (
-                        <FormItem>
-                          <FormLabel>Item {idx + 1}</FormLabel>
-                          <FormControl>
-                            <Input placeholder={spec.default ? String(spec.default) : undefined} {...itemField} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </div>
-                <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)} className="mt-6">
-                  Remove
-                </Button>
+          <div className="space-y-3">
+            {fields.length === 0 ? (
+              <div className="text-xs text-muted-foreground italic p-3 border border-dashed rounded-md text-center">
+                No items added yet
               </div>
-            ))}
-            <Button type="button" onClick={addItem} variant="outline">
-              Add Item
+            ) : (
+              fields.map((field, idx) => (
+                <div key={field.id} className="relative border rounded-lg p-4 bg-muted/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Item {idx + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => remove(idx)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {childSpec ? (
+                      <FieldInput
+                        path={`${path}.${idx}`}
+                        spec={{
+                          ...childSpec,
+                          name: childSpec.name || 'Value',
+                        }}
+                      />
+                    ) : (
+                      <FormField
+                        control={control}
+                        name={`${path}.${idx}`}
+                        render={({ field: itemField }) => (
+                          <FormItem className="space-y-1 my-2">
+                            <FormLabel className="text-sm font-medium">Value</FormLabel>
+                            <FormControl>
+                              <Input placeholder={spec.default ? String(spec.default) : undefined} {...itemField} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+            <Button type="button" onClick={addItem} variant="outline" className="w-full">
+              + Add Item
             </Button>
           </div>
           <FormMessage />
@@ -272,48 +325,68 @@ const MapField: React.FC<UiField> = ({ path, spec }) => {
       control={control}
       name={path}
       render={() => (
-        <FormItem className="flex flex-col gap-4">
-          <div>
-            <FormLabel className="text-base">{spec.name}</FormLabel>
-            {spec.description && <FormDescription>{spec.description}</FormDescription>}
+        <FormItem className="space-y-1 my-2">
+          <div className="space-y-2">
+            <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+            {spec.description && (
+              <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                {spec.description}
+              </FormDescription>
+            )}
           </div>
-          <div className="flex flex-col gap-3">
-            {fields.map((field, idx) => (
-              <div key={field.id} className="flex gap-2 items-start p-3 border rounded-md">
-                <div className="flex flex-col gap-2 flex-1">
-                  <FormField
-                    control={control}
-                    name={`${path}.${idx}.key`}
-                    render={({ field: keyField }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Key</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter key" {...keyField} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={control}
-                    name={`${path}.${idx}.value`}
-                    render={({ field: valueField }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Value</FormLabel>
-                        <FormControl>
-                          {/* For now, default to string input. TODO: make this dynamic based on spec.children */}
-                          <Input placeholder={spec.default ? 'Enter value' : 'Enter value'} {...valueField} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <Button type="button" variant="destructive" size="sm" onClick={() => remove(idx)} className="mt-6">
-                  Remove
-                </Button>
+          <div className="space-y-3">
+            {fields.length === 0 ? (
+              <div className="text-xs text-muted-foreground italic p-3 border border-dashed rounded-md text-center">
+                No key-value pairs added yet
               </div>
-            ))}
-            <Button type="button" onClick={addKeyValuePair} variant="outline">
-              Add Key-Value Pair
+            ) : (
+              fields.map((field, idx) => (
+                <div key={field.id} className="border rounded-lg p-4 bg-muted/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Pair {idx + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => remove(idx)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={control}
+                      name={`${path}.${idx}.key`}
+                      render={({ field: keyField }) => (
+                        <FormItem className="space-y-1 my-2">
+                          <FormLabel className="text-sm font-medium">Key</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter key" {...keyField} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name={`${path}.${idx}.value`}
+                      render={({ field: valueField }) => (
+                        <FormItem className="space-y-1 my-2">
+                          <FormLabel className="text-sm font-medium">Value</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter value" {...valueField} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+            <Button type="button" onClick={addKeyValuePair} variant="outline" className="w-full">
+              + Add Key-Value Pair
             </Button>
           </div>
           <FormMessage />
@@ -343,32 +416,54 @@ const TwoDArrayField: React.FC<UiField> = ({ path, spec }) => {
       control={control}
       name={path}
       render={() => (
-        <FormItem className="flex flex-col gap-4">
-          <div>
-            <FormLabel className="text-base">{spec.name}</FormLabel>
-            {spec.description && <FormDescription>{spec.description}</FormDescription>}
+        <FormItem className="space-y-1 my-2">
+          <div className="space-y-2">
+            <FormLabel className="text-sm font-medium">{spec.name}</FormLabel>
+            {spec.description && (
+              <FormDescription className="text-xs text-muted-foreground leading-relaxed">
+                {spec.description}
+              </FormDescription>
+            )}
           </div>
-          <div className="flex flex-col gap-3">
-            {rows.map((row, rowIdx) => (
-              <div key={row.id} className="p-3 border rounded-md">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Row {rowIdx + 1}</span>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removeRow(rowIdx)}>
-                    Remove Row
-                  </Button>
-                </div>
-                <ArrayField
-                  path={`${path}.${rowIdx}`}
-                  spec={{
-                    ...spec,
-                    kind: 'array', // Convert 2darray to regular array for each row
-                    name: `Row ${rowIdx + 1}`,
-                  }}
-                />
+          <div className="space-y-4">
+            {rows.length === 0 ? (
+              <div className="text-xs text-muted-foreground italic p-3 border border-dashed rounded-md text-center">
+                No rows added yet
               </div>
-            ))}
-            <Button type="button" onClick={addRow} variant="outline">
-              Add Row
+            ) : (
+              rows.map((row, rowIdx) => (
+                <div key={row.id} className="border-2 border-dashed border-muted rounded-lg p-4 bg-background">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">Row {rowIdx + 1}</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">2D Array</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeRow(rowIdx)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      Remove Row
+                    </Button>
+                  </div>
+                  <div className="pl-4 border-l-2 border-muted">
+                    <ArrayField
+                      path={`${path}.${rowIdx}`}
+                      spec={{
+                        ...spec,
+                        kind: 'array',
+                        name: 'Items',
+                        description: undefined, // Remove description to avoid repetition
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+            <Button type="button" onClick={addRow} variant="outline" className="w-full">
+              + Add Row
             </Button>
           </div>
           <FormMessage />

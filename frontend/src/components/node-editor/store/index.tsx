@@ -27,7 +27,7 @@ export const useAppStore = <T,>(selector: (store: AppStore) => T): T => {
   const appStoreContext = useContext(AppStoreContext);
 
   if (!appStoreContext) {
-    throw new Error(`useAppStore must be used within AppStoreProvider`);
+    throw new Error('useAppStore must be used within AppStoreProvider');
   }
 
   return useStore(appStoreContext, selector);

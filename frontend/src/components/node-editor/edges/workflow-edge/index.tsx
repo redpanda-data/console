@@ -36,6 +36,7 @@ export function WorkflowEdge({
         source={source}
         target={target}
         sourceHandleId={sourceHandleId}
+        type={sourceHandleId === 'output' ? 'source' : 'target'}
         style={{ ...style }}
       />
     </>

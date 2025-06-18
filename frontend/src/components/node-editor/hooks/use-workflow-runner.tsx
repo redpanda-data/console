@@ -16,10 +16,10 @@ export function useWorkflowRunner() {
   const [logMessages, setLogMessages] = useState<string[]>([]);
   const isRunning = useRef(false);
   const { getNodes, setNodes, getEdges } = useAppStore(
-    useShallow((s) => ({
-      getNodes: s.getNodes,
-      setNodes: s.setNodes,
-      getEdges: s.getEdges,
+    useShallow((state) => ({
+      getNodes: state.getNodes,
+      setNodes: state.setNodes,
+      getEdges: state.getEdges,
     })),
   );
 

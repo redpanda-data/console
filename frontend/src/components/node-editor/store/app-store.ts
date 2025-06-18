@@ -15,9 +15,10 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { initialEdges, initialNodes } from '@/components/node-editor/data/workflow-data';
 // import { setColorModeCookie } from '@/app/actions/cookies';
 import { type AppEdge, createEdge } from '@/components/node-editor/edges';
-import { createNodeByType } from '@/components/node-editor/nodes';
+import { createNodeByType, createRedpandaNode } from '@/components/node-editor/nodes';
 import type { AppNode, AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 import { nodesConfig } from '@/components/node-editor/nodes/nodes-config';
+import type { SchemaNodeConfig } from '@/components/node-editor/redpanda-connect/schema-loader';
 import { layoutGraph } from '@/components/node-editor/store/layout';
 
 export type AppState = {
@@ -28,6 +29,9 @@ export type AppState = {
   draggedNodes: Map<string, AppNode>;
   connectionSites: Map<string, PotentialConnection>;
   potentialConnection?: PotentialConnection;
+  selectedNodeId?: string;
+  isNodeInspectorOpen: boolean;
+  nodeConfigData: Map<string, Record<string, any>>;
 };
 
 /**
@@ -53,6 +57,7 @@ export type AppActions = {
   addNode: (node: AppNode) => void;
   removeNode: (nodeId: string) => void;
   addNodeByType: (type: AppNodeType, position: XYPosition) => null | string;
+  addRedpandaNode: (schemaConfig: SchemaNodeConfig, position: XYPosition) => null | string;
   addNodeInBetween: ({
     type,
     source,
@@ -82,6 +87,12 @@ export type AppActions = {
     options?: { exclude?: string[]; type?: 'source' | 'target' },
   ) => void;
   resetPotentialConnection: () => void;
+  selectNode: (nodeId: string) => void;
+  openNodeInspector: (nodeId?: string) => void;
+  closeNodeInspector: () => void;
+  saveNodeConfig: (nodeId: string, configData: Record<string, any>) => void;
+  getNodeConfig: (nodeId: string) => Record<string, any> | undefined;
+  clearNodeConfig: (nodeId: string) => void;
 };
 
 export type AppStore = AppState & AppActions;
@@ -94,6 +105,9 @@ export const defaultState: AppState = {
   draggedNodes: new Map(),
   connectionSites: new Map(),
   potentialConnection: undefined,
+  selectedNodeId: undefined,
+  isNodeInspectorOpen: false,
+  nodeConfigData: new Map(),
 };
 
 export const createAppStore = (initialState: AppState = defaultState) => {
@@ -116,14 +130,28 @@ export const createAppStore = (initialState: AppState = defaultState) => {
       setNodes: (nodes) => set({ nodes }),
 
       addNode: (node) => {
+        console.log('addNode', node);
         const nextNodes = [...get().nodes, node];
         set({ nodes: nextNodes });
       },
 
-      removeNode: (nodeId) => set({ nodes: get().nodes.filter((node) => node.id !== nodeId) }),
+      removeNode: (nodeId) => {
+        set({ nodes: get().nodes.filter((node) => node.id !== nodeId) });
+        get().clearNodeConfig(nodeId);
+      },
 
       addNodeByType: (type, position) => {
         const newNode = createNodeByType({ type, position });
+
+        if (!newNode) return null;
+
+        get().addNode(newNode);
+
+        return newNode.id;
+      },
+
+      addRedpandaNode: (schemaConfig, position) => {
+        const newNode = createRedpandaNode({ schemaConfig, position });
 
         if (!newNode) return null;
 
@@ -237,6 +265,37 @@ export const createAppStore = (initialState: AppState = defaultState) => {
       onNodeDragStop: () => {
         set({ draggedNodes: new Map() });
         set({ potentialConnection: undefined });
+      },
+
+      selectNode: (nodeId) => {
+        set({ selectedNodeId: nodeId });
+      },
+
+      openNodeInspector: (nodeId) => {
+        set({
+          isNodeInspectorOpen: true,
+          selectedNodeId: nodeId || get().selectedNodeId,
+        });
+      },
+
+      closeNodeInspector: () => {
+        set({ isNodeInspectorOpen: false });
+      },
+
+      saveNodeConfig: (nodeId, configData) => {
+        const currentConfigData = new Map(get().nodeConfigData);
+        currentConfigData.set(nodeId, configData);
+        set({ nodeConfigData: currentConfigData });
+      },
+
+      getNodeConfig: (nodeId) => {
+        return get().nodeConfigData.get(nodeId);
+      },
+
+      clearNodeConfig: (nodeId) => {
+        const currentConfigData = new Map(get().nodeConfigData);
+        currentConfigData.delete(nodeId);
+        set({ nodeConfigData: currentConfigData });
       },
     })),
   );

@@ -4,25 +4,12 @@ import { type CSSProperties, useCallback, useEffect } from 'react';
 import { AppDropdownMenu } from '@/components/node-editor/app-dropdown-menu';
 import type { AppEdge } from '@/components/node-editor/edges';
 import { useDropdown } from '@/components/node-editor/hooks/use-dropdown';
-import type { NodeConfig } from '@/components/node-editor/nodes';
+import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 import { useAppStore } from '@/components/node-editor/store';
-import type { AppStore } from '@/components/node-editor/store/app-store';
 import { Button } from '@/components/redpanda-ui/button';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/react/shallow';
-import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
-
-const selector = (id: string) => {
-  return (state: AppStore) => ({
-    addNodeInBetween: state.addNodeInBetween,
-    connectionSites: state.connectionSites,
-    isPotentialConnection: state.potentialConnection?.id === `edge-${id}`,
-  });
-};
-
-const filterNodes = (node: NodeConfig) => {
-  return node.id === 'transform-node' || node.id === 'join-node' || node.id === 'branch-node';
-};
+import { compatibleNodeTypes } from '../../nodes/workflow-node/app-handle';
 
 export function EdgeButton({
   x,
@@ -33,12 +20,20 @@ export function EdgeButton({
   sourceHandleId,
   targetHandleId,
   style,
+  type,
 }: Pick<EdgeProps<AppEdge>, 'source' | 'target' | 'sourceHandleId' | 'targetHandleId' | 'id'> & {
   x: number;
   y: number;
   style: CSSProperties;
+  type: 'source' | 'target';
 }) {
-  const { addNodeInBetween, connectionSites, isPotentialConnection } = useAppStore(useShallow(selector(id)));
+  const { addNodeInBetween, connectionSites, isPotentialConnection } = useAppStore(
+    useShallow((state) => ({
+      addNodeInBetween: state.addNodeInBetween,
+      connectionSites: state.connectionSites,
+      isPotentialConnection: state.potentialConnection?.id === `edge-${id}`,
+    })),
+  );
   const { isOpen, toggleDropdown, ref } = useDropdown();
 
   const onAddNode = useCallback(
@@ -106,7 +101,7 @@ export function EdgeButton({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <AppDropdownMenu onAddNode={onAddNode} filterNodes={filterNodes} />
+          <AppDropdownMenu onAddNode={onAddNode} filterNodes={compatibleNodeTypes(type)} />
         </div>
       )}
     </EdgeLabelRenderer>

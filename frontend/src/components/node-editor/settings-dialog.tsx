@@ -5,6 +5,7 @@ import { Settings2 } from 'lucide-react';
 import { useAppStore } from '@/components/node-editor/store';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/redpanda-ui/dialog';
 import { Switch } from '@/components/redpanda-ui/switch';
+import { useShallow } from 'zustand/react/shallow';
 
 function CheckItem({
   title,
@@ -29,7 +30,14 @@ function CheckItem({
 }
 
 export function SettingsDialog() {
-  const state = useAppStore((state) => state);
+  const { colorMode, layout, toggleDarkMode, toggleLayout } = useAppStore(
+    useShallow((state) => ({
+      colorMode: state.colorMode,
+      layout: state.layout,
+      toggleDarkMode: state.toggleDarkMode,
+      toggleLayout: state.toggleLayout,
+    })),
+  );
 
   return (
     <Dialog>
@@ -49,14 +57,14 @@ export function SettingsDialog() {
         <CheckItem
           title="Dark Mode"
           description="Toggle to switch to dark mode"
-          checked={state.colorMode === 'dark'}
-          onCheckedChange={state.toggleDarkMode}
+          checked={colorMode === 'dark'}
+          onCheckedChange={toggleDarkMode}
         />
         <CheckItem
           title="Fixed Layout"
           description="Toggle between fixed and free layout"
-          checked={state.layout === 'fixed'}
-          onCheckedChange={state.toggleLayout}
+          checked={layout === 'fixed'}
+          onCheckedChange={toggleLayout}
         />
       </DialogContent>
     </Dialog>

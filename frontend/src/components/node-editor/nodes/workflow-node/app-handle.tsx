@@ -18,33 +18,25 @@ import { useDropdown } from '@/components/node-editor/hooks/use-dropdown';
 import type { NodeConfig } from '@/components/node-editor/nodes';
 import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
 import { useAppStore } from '@/components/node-editor/store';
-import type { AppStore } from '@/components/node-editor/store/app-store';
 import { Button } from '@/components/redpanda-ui/button';
 
-const compatibleNodeTypes = (type: 'source' | 'target') => {
+export const compatibleNodeTypes = (type: 'source' | 'target') => {
   if (type === 'source') {
+    // Source handles (outputs) can connect to nodes that have inputs
+    // Exclude input-only nodes since input nodes cannot connect to other input nodes
     return (node: NodeConfig) => {
-      return (
-        node.id === 'transform-node' ||
-        node.id === 'join-node' ||
-        node.id === 'branch-node' ||
-        node.id === 'output-node'
-      );
+      return node.id === 'transform-node' || node.id === 'join-node' || node.id === 'branch-node';
     };
   }
+  // Target handles (inputs) can connect to nodes that have outputs
+  // Exclude output-only nodes since output nodes cannot connect to other output nodes
   return (node: NodeConfig) => {
     return (
-      node.id === 'transform-node' || node.id === 'join-node' || node.id === 'branch-node' || node.id === 'initial-node'
+      node.id === 'transform-node' || node.id === 'join-node' || node.id === 'branch-node'
+      // Explicitly exclude 'redpanda-output-node' - output nodes cannot connect to other output nodes
     );
   };
 };
-
-const selector = (nodeId: string, type: string, id?: string | null) => (state: AppStore) => ({
-  addNodeInBetween: state.addNodeInBetween,
-  draggedNodes: state.draggedNodes,
-  connectionSites: state.connectionSites,
-  isPotentialConnection: state.potentialConnection?.id === `handle-${nodeId}-${type}-${id}`,
-});
 
 // TODO: we need to streamline how we calculate the yOffset
 const yOffset = (type: 'source' | 'target') => (type === 'source' ? 50 : -65);
@@ -84,13 +76,19 @@ export function AppHandle({
 
   const { isOpen, toggleDropdown } = useDropdown();
   const { draggedNodes, addNodeInBetween, connectionSites, isPotentialConnection } = useAppStore(
-    useShallow(selector(nodeId, type, id)),
+    useShallow((state) => ({
+      draggedNodes: state.draggedNodes,
+      addNodeInBetween: state.addNodeInBetween,
+      connectionSites: state.connectionSites,
+      isPotentialConnection: state.potentialConnection?.id === `handle-${nodeId}-${type}-${id}`,
+    })),
   );
 
   // We get the actual position of the node
   const nodePosition = useInternalNode(nodeId)?.internals.positionAbsolute ?? fallbackPosition;
 
-  const onClick = () => {
+  const onClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling to parent node
     toggleDropdown();
   };
 
@@ -131,6 +129,7 @@ export function AppHandle({
       connectionSites.delete(connectionId);
     };
   }, [nodePosition, connectionSites, connectionId, id, nodeId, type, x, y, displayAddButton]);
+
   return (
     <ButtonHandle
       type={type}

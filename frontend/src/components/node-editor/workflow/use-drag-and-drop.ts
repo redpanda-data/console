@@ -1,31 +1,53 @@
+import { createNodeByType, createRedpandaNode } from '@/components/node-editor/nodes';
+import type { AppNode } from '@/components/node-editor/nodes/nodes-config';
+import type { SchemaNodeConfig } from '@/components/node-editor/redpanda-connect/schema-loader';
+import { useAppStore } from '@/components/node-editor/store';
 import { useReactFlow } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
-
-import { createNodeByType } from '@/components/node-editor/nodes';
-import type { AppNode } from '@/components/node-editor/nodes/nodes-config';
-import { useAppStore } from '@/components/node-editor/store';
-import type { AppStore } from '@/components/node-editor/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
-
-const selector = (state: AppStore) => ({
-  addNode: state.addNode,
-  addNodeInBetween: state.addNodeInBetween,
-  potentialConnection: state.potentialConnection,
-});
 
 export function useDragAndDrop() {
   const { screenToFlowPosition } = useReactFlow();
-  const { addNode, addNodeInBetween, potentialConnection } = useAppStore(useShallow(selector));
+  const { addNode, addNodeInBetween, potentialConnection } = useAppStore(
+    useShallow((state) => ({
+      addNode: state.addNode,
+      addNodeInBetween: state.addNodeInBetween,
+      potentialConnection: state.potentialConnection,
+    })),
+  );
 
   const onDrop: React.DragEventHandler = useCallback(
     (event) => {
-      const nodeProps = JSON.parse(event.dataTransfer.getData('application/reactflow'));
+      // Try to get different node types
+      const redpandaConfigData = event.dataTransfer.getData('application/redpanda-connect');
+      const commonNodeData = event.dataTransfer.getData('application/common-node');
 
-      if (!nodeProps) return;
+      let newNode: AppNode | null = null;
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
-      if (potentialConnection) {
+      if (redpandaConfigData) {
+        // Handle Redpanda Connect component drop
+        const schemaConfig: SchemaNodeConfig = JSON.parse(redpandaConfigData);
+        newNode = createRedpandaNode({ schemaConfig, position });
+      } else if (commonNodeData) {
+        // Handle common node drop
+        const commonNodeConfig = JSON.parse(commonNodeData);
+        newNode = createNodeByType({
+          type: commonNodeConfig.type,
+          position,
+        });
+      }
+
+      if (!newNode) return;
+
+      if (potentialConnection && commonNodeData) {
+        // Use potential connection for common nodes
+        const nodeType = JSON.parse(commonNodeData).type;
         addNodeInBetween({
-          type: nodeProps.id,
+          type: nodeType,
           source: potentialConnection.source?.node,
           target: potentialConnection.target?.node,
           sourceHandleId: potentialConnection.source?.handle,
@@ -33,15 +55,6 @@ export function useDragAndDrop() {
           position: potentialConnection.position,
         });
       } else {
-        const position = screenToFlowPosition({
-          x: event.clientX,
-          y: event.clientY,
-        });
-
-        const newNode: AppNode = createNodeByType({
-          type: nodeProps.id,
-          position,
-        });
         addNode(newNode);
       }
     },

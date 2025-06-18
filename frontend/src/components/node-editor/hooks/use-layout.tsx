@@ -3,19 +3,18 @@ import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { useAppStore } from '@/components/node-editor/store';
-import type { AppStore } from '@/components/node-editor/store/app-store';
 import { layoutGraph } from '@/components/node-editor/store/layout';
-
-const selector = (state: AppStore) => ({
-  getNodes: state.getNodes,
-  setNodes: state.setNodes,
-  getEdges: state.getEdges,
-  setEdges: state.setEdges,
-});
 
 export function useLayout(shouldFitView = false) {
   const { fitView } = useReactFlow();
-  const { getNodes, getEdges, setNodes, setEdges } = useAppStore(useShallow(selector));
+  const { getNodes, getEdges, setNodes, setEdges } = useAppStore(
+    useShallow((state) => ({
+      getNodes: state.getNodes,
+      getEdges: state.getEdges,
+      setNodes: state.setNodes,
+      setEdges: state.setEdges,
+    })),
+  );
 
   return useCallback(async () => {
     const nodes = getNodes();

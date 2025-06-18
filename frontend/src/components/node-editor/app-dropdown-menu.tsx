@@ -1,4 +1,3 @@
-import { iconMapping } from '@/components/node-editor/data/icon-mapping';
 import type { NodeConfig } from '@/components/node-editor/nodes';
 import { nodesConfig } from '@/components/node-editor/nodes/nodes-config';
 import type { AppNodeType } from '@/components/node-editor/nodes/nodes-config';
@@ -25,11 +24,12 @@ export function AppDropdownMenu({
         {Object.values(nodesConfig)
           .filter(filterNodes)
           .map((item) => {
-            const IconComponent = item?.icon ? iconMapping[item.icon] : undefined;
+            const IconComponent = item?.icon;
             return (
-              <a key={item.title} onClick={() => onAddNode(item.id)}>
+              // biome-ignore lint/a11y/useValidAnchor: needed to use anchor for the react flow node
+              <a key={item.title} onClick={(e) => { e.stopPropagation(); onAddNode(item.id); }}>
                 <DropdownMenuItem className="flex items-center space-x-2">
-                  {IconComponent ? <IconComponent aria-label={item?.icon} /> : null}
+                  {IconComponent ? <IconComponent /> : null}
                   <span>New {item.title}</span>
                 </DropdownMenuItem>
               </a>

@@ -1,12 +1,9 @@
-import { Play } from 'lucide-react';
 import { useCallback } from 'react';
 
 import { BaseNode } from '@/components/node-editor/base-node';
-import { iconMapping } from '@/components/node-editor/data/icon-mapping';
-import { useWorkflowRunner } from '@/components/node-editor/hooks/use-workflow-runner';
+// import { useWorkflowRunner } from '@/components/node-editor/hooks/use-workflow-runner';
 import {
   NodeHeader,
-  NodeHeaderAction,
   NodeHeaderActions,
   NodeHeaderDeleteAction,
   NodeHeaderIcon,
@@ -15,6 +12,7 @@ import {
 import { NodeStatusIndicator } from '@/components/node-editor/node-status-indicator';
 import type { WorkflowNodeData } from '@/components/node-editor/nodes';
 import { NODE_SIZE } from '@/components/node-editor/nodes/nodes-config';
+import { useAppStore } from '@/components/node-editor/store';
 
 // This is an example of how to implement the WorkflowNode component. All the nodes in the Workflow Builder example
 // are variations on this CustomNode defined in the index.tsx file.
@@ -28,21 +26,20 @@ function WorkflowNode({
   data: WorkflowNodeData;
   children?: React.ReactNode;
 }) {
-  const { runWorkflow } = useWorkflowRunner();
-  const onClick = useCallback(() => runWorkflow(id), [id, runWorkflow]);
+  // const { runWorkflow } = useWorkflowRunner();
+  const openNodeInspector = useAppStore((state) => state.openNodeInspector);
+  // const onClick = useCallback(() => runWorkflow(id), [id, runWorkflow]);
+  const onNodeClick = useCallback(() => openNodeInspector(id), [id, openNodeInspector]);
 
-  const IconComponent = data?.icon ? iconMapping[data.icon] : undefined;
+  const IconComponent = data?.icon;
 
   return (
     <NodeStatusIndicator status={data?.status}>
-      <BaseNode className="p-1" style={{ ...NODE_SIZE }}>
+      <BaseNode className="p-1" style={{ ...NODE_SIZE }} onClick={onNodeClick}>
         <NodeHeader>
-          <NodeHeaderIcon>{IconComponent ? <IconComponent aria-label={data?.icon} /> : null}</NodeHeaderIcon>
+          <NodeHeaderIcon>{IconComponent ? <IconComponent /> : null}</NodeHeaderIcon>
           <NodeHeaderTitle>{data?.title}</NodeHeaderTitle>
           <NodeHeaderActions>
-            <NodeHeaderAction onClick={onClick} label="Run node">
-              <Play className="stroke-blue-500 fill-blue-500" />
-            </NodeHeaderAction>
             <NodeHeaderDeleteAction />
           </NodeHeaderActions>
         </NodeHeader>
