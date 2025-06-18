@@ -92,10 +92,10 @@ export function NodeInspector({ onClose }: NodeInspectorProps) {
           </TabsList>
 
           <TabsContents className="flex-1 overflow-hidden h-[400px]">
-            <TabsContent value="overview" className="flex-1 overflow-y-auto p-6 h-full">
-              <div>
+            <TabsContent value="overview" className="flex-1 overflow-hidden p-6 h-full">
+              <div className="h-full overflow-auto">
                 {schemaConfig?.description && (
-                  <div className="text-sm max-h-128 overflow-y-auto">
+                  <div className="text-sm w-full max-w-full max-h-128">
                     <NodeAsciidoc content={schemaConfig.description} />
                   </div>
                 )}

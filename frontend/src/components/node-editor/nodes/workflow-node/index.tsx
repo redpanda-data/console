@@ -21,15 +21,26 @@ function WorkflowNode({
   id,
   data,
   children,
+  type,
 }: {
   id: string;
   data: WorkflowNodeData;
   children?: React.ReactNode;
+  type?: string;
 }) {
   // const { runWorkflow } = useWorkflowRunner();
   const openNodeInspector = useAppStore((state) => state.openNodeInspector);
   // const onClick = useCallback(() => runWorkflow(id), [id, runWorkflow]);
-  const onNodeClick = useCallback(() => openNodeInspector(id), [id, openNodeInspector]);
+  
+  // Don't open inspector for common nodes (transform, join, branch)
+  const commonNodeTypes = ['transform-node', 'join-node', 'branch-node'];
+  const shouldOpenInspector = !commonNodeTypes.includes(type || '');
+  
+  const onNodeClick = useCallback(() => {
+    if (shouldOpenInspector) {
+      openNodeInspector(id);
+    }
+  }, [id, openNodeInspector, shouldOpenInspector]);
 
   const IconComponent = data?.icon;
 
