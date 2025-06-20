@@ -131,6 +131,11 @@ func (api *API) handlePutConnectorConfig() http.HandlerFunc {
 		connectorName := rest.GetURLParam(r, "connector")
 
 		var req putConnectorConfigRequest
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
 
 		cInfo, restErr := api.ConnectSvc.PutConnectorConfig(r.Context(), clusterName, connectorName, req.ToClientRequest())
 		if restErr != nil {
