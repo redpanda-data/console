@@ -45,6 +45,9 @@ issues:
     - path: (.+)/v1alpha1/service.go
       linters: [staticcheck]
       text: "SA1019: dataplanev1alpha1connect"
+    - path: (.+).go
+      linters: [staticcheck]
+      text: "SA1019.*jhump/protoreflect"
   exclude-use-default: false
   max-same-issues: 0 # 0 is unlimited
 linters:

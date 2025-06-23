@@ -12,9 +12,9 @@ package api
 import (
 	"net/http"
 
+	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
-	"github.com/bufbuild/protovalidate-go"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
