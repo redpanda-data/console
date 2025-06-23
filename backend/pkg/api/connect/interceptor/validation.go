@@ -18,8 +18,8 @@ import (
 	"strings"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
+	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
-	"github.com/bufbuild/protovalidate-go"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -32,12 +32,12 @@ import (
 
 // ValidationInterceptor validates incoming requests against the provided validation.
 type ValidationInterceptor struct {
-	validator *protovalidate.Validator
+	validator protovalidate.Validator
 	logger    *zap.Logger
 }
 
 // NewRequestValidationInterceptor creates an interceptor to validate Connect requests.
-func NewRequestValidationInterceptor(validator *protovalidate.Validator, logger *zap.Logger) *ValidationInterceptor {
+func NewRequestValidationInterceptor(validator protovalidate.Validator, logger *zap.Logger) *ValidationInterceptor {
 	return &ValidationInterceptor{
 		validator: validator,
 		logger:    logger,
@@ -102,8 +102,7 @@ func (in *ValidationInterceptor) WrapUnary(next connect.UnaryFunc) connect.Unary
 			if resourceName, ok := findResourceName(fmEr); ok {
 				if e := new(protovalidate.ValidationError); errors.As(err, &e) {
 					e.Violations = slices.DeleteFunc(e.Violations, func(v *protovalidate.Violation) bool {
-						//nolint:staticcheck,nolintlint // keep using this deprecated field for now
-						return !UpdateAffectsField(fmEr.GetUpdateMask(), strings.TrimPrefix(*v.Proto.FieldPath, resourceName+"."))
+						return !UpdateAffectsField(fmEr.GetUpdateMask(), strings.TrimPrefix(v.Proto.GetField().String(), resourceName+"."))
 					})
 					// If no violations anymore after stripping the obsolete ones - proceed with the call.
 					if len(e.Violations) == 0 {
