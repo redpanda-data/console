@@ -50,6 +50,7 @@ import {
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
+import { ResourcesAndUpdates } from './ResourcesAndUpdates';
 
 @observer
 class Overview extends PageComponent {
@@ -217,29 +218,27 @@ class Overview extends PageComponent {
                 />
               </Section>
 
-              <Section py={4}>
-                <h3>Resources and updates</h3>
-
-                <div style={{ display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem' }}>
-                  <ul className="resource-list">
-                    <li>
-                      <a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link">
-                        <span className="dot">&bull;</span>
+              <Section>
+                <Flex flexDirection="column">
+                  <Heading as="h3">Resources and updates</Heading>
+                  <div>
+                    {api.clusterOverview?.kafka?.distribution && <ResourcesAndUpdates />}
+                  </div>
+                  <hr />
+                    <div className="flex flex-row items-center gap-2 text-gray-600 mt-2 font-sm">
+                      <a href="https://docs.redpanda.com/docs/home/">
                         Documentation
                       </a>
-                    </li>
-                    <li>
-                      <a
-                        href="https://docs.redpanda.com/docs/get-started/rpk-install/"
-                        rel=""
-                        className="resource-link"
-                      >
-                        <span className="dot">&bull;</span>
-                        CLI Tools
+                      <span className="text-gray-300 mx-2">|</span>
+                      <a href="https://docs.redpanda.com/docs/get-started/rpk-install/">
+                        CLI tools
                       </a>
-                    </li>
-                  </ul>
-                </div>
+                      <span className="text-gray-300 mx-2">|</span>
+                      <a href="https://redpanda.com/contact-us">
+                        Support
+                      </a>
+                    </div>
+                </Flex>
               </Section>
             </GridItem>
 
