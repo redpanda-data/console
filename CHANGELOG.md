@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.1.2 / 2025-06-23
+
+- [IMPROVEMENT] Add support for insecure TLS verification via configuration.
+- [BUGFIX] Fix topic deletion compatibility with Kafka API v6+.
+- [BUGFIX] Fix partition watermarks displaying identical values across all partitions.
+- [BUGFIX] Fix Kafka Connect connector config update request parsing regression.
+- [BUGFIX] Fix default value handling in Kafka Connect connector configuration updates.
+- [BUGFIX] Prevent panic on IncrementalAlterConfigs operations.
+- [CHANGE] Update dependencies and fix protovalidate integration.
+
 ## v3.1.1 / 2025-05-21
 
 - [BUFGIX] Fix hot reloading of authorization configs.
