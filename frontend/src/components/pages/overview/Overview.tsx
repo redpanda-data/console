@@ -233,10 +233,6 @@ class Overview extends PageComponent {
                       <a href="https://docs.redpanda.com/docs/get-started/rpk-install/">
                         CLI tools
                       </a>
-                      <span className="text-gray-300 mx-2">|</span>
-                      <a href="https://redpanda.com/contact-us">
-                        Support
-                      </a>
                     </div>
                 </Flex>
               </Section>
