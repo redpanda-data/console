@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 interface NewsItem {
   id: string;
@@ -15,34 +15,27 @@ interface NewsItem {
   };
 }
 
+const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> => {
+  const url = new URL('https://redpanda-news-feed.netlify.app/news');
+  if (segment) {
+    url.searchParams.set('segment', segment);
+  }
+
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    throw new Error('Failed to fetch news');
+  }
+  return response.json();
+};
+
 export const useNewsFeed = (segment?: 'redpanda' | 'kafka') => {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const url = new URL('https://redpanda-news-feed.netlify.app/news');
-        if (segment) {
-          url.searchParams.set('segment', segment);
-        }
-
-        const response = await fetch(url.toString());
-        if (!response.ok) {
-          throw new Error('Failed to fetch news');
-        }
-        const data: NewsItem[] = await response.json();
-        setNews(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchNews();
-  }, [segment]);
-
-  return { news, loading, error };
+  return useQuery({
+    queryKey: ['news', segment],
+    queryFn: () => fetchNews(segment),
+    staleTime: Infinity, 
+    gcTime: Infinity,
+    refetchOnMount: false, // Don't refetch when component mounts
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnReconnect: false, // Don't refetch when network reconnects
+  });
 };

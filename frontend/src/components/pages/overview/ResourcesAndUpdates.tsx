@@ -5,11 +5,11 @@ import { api } from '../../../state/backendApi';
 
 export const ResourcesAndUpdates: React.FC = () => {
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
-  const { news, loading, error } = useNewsFeed(platform);
+  const { data: news, isLoading, error } = useNewsFeed(platform);
 
   return (
     <Box>
-      {loading ? (
+      {isLoading ? (
         <Box>
           <Skeleton height={4} width="80%" mb={1} />
           <Skeleton height={3} width="32%" mb={4} />
@@ -24,17 +24,16 @@ export const ResourcesAndUpdates: React.FC = () => {
           <Box borderBottom="1px" borderColor="gray.200" mt={2} />
         </Box>
       ) : error ? (
-        <Text>Failed to load news: {error}</Text>
+        <Text>Failed to load news: {error.message}</Text>
       ) : (
         <Flex direction="column" gap={4}>
-          {news.map((item) => (
+          {news?.map((item) => (
             <Link
               key={item.id}
               href={item.fieldData['link-url']}
               target="_blank"
               rel="noopener noreferrer"
               className="!no-underline"
-              style={{ textDecoration: 'none' }}
             >
               <Box _hover={{ bg: 'gray.50', cursor: 'pointer' }} py={2}>
                 <Text fontWeight="medium">{item.fieldData.message}</Text>
