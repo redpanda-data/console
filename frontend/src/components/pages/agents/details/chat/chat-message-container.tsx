@@ -5,7 +5,7 @@ import { ChatTypingIndicator } from './chat-typing-indicator';
 interface ChatMessageContainerProps {
   messages: ChatMessage[];
   isTyping: boolean;
-  messagesEndRef: React.RefObject<HTMLDivElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const ChatMessageContainer = ({ messages, isTyping, messagesEndRef }: ChatMessageContainerProps) => {
