@@ -2,6 +2,8 @@
 // @generated from file redpanda/api/common/v1alpha1/pagination.proto (package redpanda.api.common.v1alpha1, syntax proto3)
 /* eslint-disable */
 
+// Deprecated: Use redpanda.api.common.v1 instead.
+
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
 import type { Message } from "@bufbuild/protobuf";

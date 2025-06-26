@@ -88,13 +88,13 @@ message CreateDebugBundleRequest {
 
 message LabelSelector {
   string key = 1 [
-    (buf.validate.field).string.max_len = 253,
-    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+    (buf.validate.field).string.max_len = 317,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9]([a-zA-Z0-9\\-_.]*[a-zA-Z0-9])?(/[a-zA-Z0-9]([a-zA-Z0-9\\-_.]*[a-zA-Z0-9])?)?$"
   ];
 
   string value = 2 [
-    (buf.validate.field).string.max_len = 253,
-    (buf.validate.field).string.pattern = "^([a-zA-Z0-9-_.]*)$"
+    (buf.validate.field).string.max_len = 63,
+    (buf.validate.field).string.pattern = "^([a-zA-Z0-9]([a-zA-Z0-9\\-_.]*[a-zA-Z0-9])?)?$"
   ];
 }
 
