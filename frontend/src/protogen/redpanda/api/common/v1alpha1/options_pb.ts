@@ -2,6 +2,8 @@
 // @generated from file redpanda/api/common/v1alpha1/options.proto (package redpanda.api.common.v1alpha1, syntax proto3)
 /* eslint-disable */
 
+// Deprecated: Use redpanda.api.common.v1 instead.
+
 import type { GenExtension, GenFile } from "@bufbuild/protobuf/codegenv1";
 import { extDesc, fileDesc } from "@bufbuild/protobuf/codegenv1";
 import type { MethodOptions } from "@bufbuild/protobuf/wkt";

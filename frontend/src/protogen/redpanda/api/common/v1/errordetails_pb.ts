@@ -2,10 +2,12 @@
 // @generated from file redpanda/api/common/v1/errordetails.proto (package redpanda.api.common.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
 import type { Any } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_any } from "@bufbuild/protobuf/wkt";
+import type { Code } from "../../../../google/rpc/code_pb";
+import { file_google_rpc_code } from "../../../../google/rpc/code_pb";
 import type { Status } from "../../../../google/rpc/status_pb";
 import { file_google_rpc_status } from "../../../../google/rpc/status_pb";
 import type { Message } from "@bufbuild/protobuf";
@@ -14,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/common/v1/errordetails.proto.
  */
 export const file_redpanda_api_common_v1_errordetails: GenFile = /*@__PURE__*/
-  fileDesc("CilyZWRwYW5kYS9hcGkvY29tbW9uL3YxL2Vycm9yZGV0YWlscy5wcm90bxIWcmVkcGFuZGEuYXBpLmNvbW1vbi52MSKLAQoLQXR0ZW1wdEluZm8SPQoIYXR0ZW1wdHMYASADKAsyKy5yZWRwYW5kYS5hcGkuY29tbW9uLnYxLkF0dGVtcHRJbmZvLkF0dGVtcHQaPQoHQXR0ZW1wdBIOCgZudW1iZXIYASABKAUSIgoGc3RhdHVzGAIgASgLMhIuZ29vZ2xlLnJwYy5TdGF0dXMiRwoNRXh0ZXJuYWxFcnJvchIPCgdtZXNzYWdlGAEgASgJEiUKB2RldGFpbHMYAiADKAsyFC5nb29nbGUucHJvdG9idWYuQW55QoMCChpjb20ucmVkcGFuZGEuYXBpLmNvbW1vbi52MUIRRXJyb3JkZXRhaWxzUHJvdG9QAVpXYnVmLmJ1aWxkL2dlbi9nby9yZWRwYW5kYWRhdGEvY29tbW9uL3Byb3RvY29sYnVmZmVycy9nby9yZWRwYW5kYS9hcGkvY29tbW9uL3YxO2NvbW1vbnYxogIDUkFDqgIWUmVkcGFuZGEuQXBpLkNvbW1vbi5WMcoCFlJlZHBhbmRhXEFwaVxDb21tb25cVjHiAiJSZWRwYW5kYVxBcGlcQ29tbW9uXFYxXEdQQk1ldGFkYXRh6gIZUmVkcGFuZGE6OkFwaTo6Q29tbW9uOjpWMWIGcHJvdG8z", [file_google_protobuf_any, file_google_rpc_status]);
+  fileDesc("CilyZWRwYW5kYS9hcGkvY29tbW9uL3YxL2Vycm9yZGV0YWlscy5wcm90bxIWcmVkcGFuZGEuYXBpLmNvbW1vbi52MSKLAQoLQXR0ZW1wdEluZm8SPQoIYXR0ZW1wdHMYASADKAsyKy5yZWRwYW5kYS5hcGkuY29tbW9uLnYxLkF0dGVtcHRJbmZvLkF0dGVtcHQaPQoHQXR0ZW1wdBIOCgZudW1iZXIYASABKAUSIgoGc3RhdHVzGAIgASgLMhIuZ29vZ2xlLnJwYy5TdGF0dXMiRwoNRXh0ZXJuYWxFcnJvchIPCgdtZXNzYWdlGAEgASgJEiUKB2RldGFpbHMYAiADKAsyFC5nb29nbGUucHJvdG9idWYuQW55ImUKC0Vycm9yU3RhdHVzEh4KBGNvZGUYASABKA4yEC5nb29nbGUucnBjLkNvZGUSDwoHbWVzc2FnZRgCIAEoCRIlCgdkZXRhaWxzGAMgAygLMhQuZ29vZ2xlLnByb3RvYnVmLkFueSr9AgoGUmVhc29uEhYKElJFQVNPTl9VTlNQRUNJRklFRBAAEh0KGVJFQVNPTl9SRVNPVVJDRV9OT1RfRk9VTkQQARIYChRSRUFTT05fSU5WQUxJRF9JTlBVVBACEiIKHlJFQVNPTl9OT19BVVRIRU5USUNBVElPTl9UT0tFThADEicKI1JFQVNPTl9BVVRIRU5USUNBVElPTl9UT0tFTl9FWFBJUkVEEAQSJwojUkVBU09OX0FVVEhFTlRJQ0FUSU9OX1RPS0VOX0lOVkFMSUQQBRIcChhSRUFTT05fUEVSTUlTU0lPTl9ERU5JRUQQBhIXChNSRUFTT05fU0VSVkVSX0VSUk9SEAcSHAoYUkVBU09OX1RPT19NQU5ZX1JFUVVFU1RTEAgSEgoOUkVBU09OX1RJTUVPVVQQCRIhCh1SRUFTT05fRkVBVFVSRV9OT1RfQ09ORklHVVJFRBAKEiAKHFJFQVNPTl9GRUFUVVJFX05PVF9TVVBQT1JURUQQC0KDAgoaY29tLnJlZHBhbmRhLmFwaS5jb21tb24udjFCEUVycm9yZGV0YWlsc1Byb3RvUAFaV2J1Zi5idWlsZC9nZW4vZ28vcmVkcGFuZGFkYXRhL2NvbW1vbi9wcm90b2NvbGJ1ZmZlcnMvZ28vcmVkcGFuZGEvYXBpL2NvbW1vbi92MTtjb21tb252MaICA1JBQ6oCFlJlZHBhbmRhLkFwaS5Db21tb24uVjHKAhZSZWRwYW5kYVxBcGlcQ29tbW9uXFYx4gIiUmVkcGFuZGFcQXBpXENvbW1vblxWMVxHUEJNZXRhZGF0YeoCGVJlZHBhbmRhOjpBcGk6OkNvbW1vbjo6VjFiBnByb3RvMw", [file_google_protobuf_any, file_google_rpc_code, file_google_rpc_status]);
 
 /**
  * AttemptInfo contains information about retryable actions and their specific attempts.
@@ -82,4 +84,145 @@ export type ExternalError = Message<"redpanda.api.common.v1.ExternalError"> & {
  */
 export const ExternalErrorSchema: GenMessage<ExternalError> = /*@__PURE__*/
   messageDesc(file_redpanda_api_common_v1_errordetails, 1);
+
+/**
+ * Modified variant of google.rpc.Status, that uses enum instead of int32 for
+ * code, so it's nicer in REST.
+ * The `Status` type defines a logical error model that is suitable for
+ * different programming environments, including REST APIs and RPC APIs. It is
+ * used by [gRPC](https://github.com/grpc). Each `Status` message contains
+ * three pieces of data: error code, error message, and error details.
+ *
+ * You can find out more about this error model and how to work with it in the
+ * [API Design Guide](https://cloud.google.com/apis/design/errors).
+ *
+ * @generated from message redpanda.api.common.v1.ErrorStatus
+ */
+export type ErrorStatus = Message<"redpanda.api.common.v1.ErrorStatus"> & {
+  /**
+   * The status code, which should be an enum value of
+   * [google.rpc.Code][google.rpc.Code].
+   *
+   * @generated from field: google.rpc.Code code = 1;
+   */
+  code: Code;
+
+  /**
+   * A developer-facing error message, which should be in English. Any
+   * user-facing error message should be localized and sent in the
+   * [google.rpc.Status.details][google.rpc.Status.details] field, or localized
+   * by the client.
+   *
+   * @generated from field: string message = 2;
+   */
+  message: string;
+
+  /**
+   * A list of messages that carry the error details.  There is a common set of
+   * message types for APIs to use.
+   *
+   * @generated from field: repeated google.protobuf.Any details = 3;
+   */
+  details: Any[];
+};
+
+/**
+ * Describes the message redpanda.api.common.v1.ErrorStatus.
+ * Use `create(ErrorStatusSchema)` to create a new message.
+ */
+export const ErrorStatusSchema: GenMessage<ErrorStatus> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_common_v1_errordetails, 2);
+
+/**
+ * @generated from enum redpanda.api.common.v1.Reason
+ */
+export enum Reason {
+  /**
+   * @generated from enum value: REASON_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The specified resource could not be found.
+   *
+   * @generated from enum value: REASON_RESOURCE_NOT_FOUND = 1;
+   */
+  RESOURCE_NOT_FOUND = 1,
+
+  /**
+   * The input provided with the request is invalid.
+   *
+   * @generated from enum value: REASON_INVALID_INPUT = 2;
+   */
+  INVALID_INPUT = 2,
+
+  /**
+   * Authentication token is missing.
+   *
+   * @generated from enum value: REASON_NO_AUTHENTICATION_TOKEN = 3;
+   */
+  NO_AUTHENTICATION_TOKEN = 3,
+
+  /**
+   * The authentication token provided has expired.
+   *
+   * @generated from enum value: REASON_AUTHENTICATION_TOKEN_EXPIRED = 4;
+   */
+  AUTHENTICATION_TOKEN_EXPIRED = 4,
+
+  /**
+   * The authentication token provided is invalid.
+   *
+   * @generated from enum value: REASON_AUTHENTICATION_TOKEN_INVALID = 5;
+   */
+  AUTHENTICATION_TOKEN_INVALID = 5,
+
+  /**
+   * The user does not have the necessary permissions.
+   *
+   * @generated from enum value: REASON_PERMISSION_DENIED = 6;
+   */
+  PERMISSION_DENIED = 6,
+
+  /**
+   * The request cannot be completed due to server error.
+   *
+   * @generated from enum value: REASON_SERVER_ERROR = 7;
+   */
+  SERVER_ERROR = 7,
+
+  /**
+   * The request rate is too high.
+   *
+   * @generated from enum value: REASON_TOO_MANY_REQUESTS = 8;
+   */
+  TOO_MANY_REQUESTS = 8,
+
+  /**
+   * The request timed out.
+   *
+   * @generated from enum value: REASON_TIMEOUT = 9;
+   */
+  TIMEOUT = 9,
+
+  /**
+   * The feature is not configured.
+   *
+   * @generated from enum value: REASON_FEATURE_NOT_CONFIGURED = 10;
+   */
+  FEATURE_NOT_CONFIGURED = 10,
+
+  /**
+   * The feature is not supported in the requested environment.
+   *
+   * @generated from enum value: REASON_FEATURE_NOT_SUPPORTED = 11;
+   */
+  FEATURE_NOT_SUPPORTED = 11,
+}
+
+/**
+ * Describes the enum redpanda.api.common.v1.Reason.
+ */
+export const ReasonSchema: GenEnum<Reason> = /*@__PURE__*/
+  enumDesc(file_redpanda_api_common_v1_errordetails, 0);
 
