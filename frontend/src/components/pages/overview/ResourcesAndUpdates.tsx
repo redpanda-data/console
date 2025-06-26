@@ -24,9 +24,10 @@ export const ResourcesAndUpdates: React.FC = () => {
           <Box borderBottom="1px" borderColor="gray.200" mt={2} />
         </Box>
       ) : error ? (
-        <Text>Failed to load news: {error.message}</Text>
+        <Text>Failed to load news</Text>
       ) : (
         <Flex direction="column" gap={4}>
+          {news?.length === 0 && <Text>No updates available</Text>}
           {news?.map((item) => (
             <Link
               key={item.id}
