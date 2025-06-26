@@ -3,6 +3,8 @@
 /* eslint-disable */
 // @ts-nocheck
 
+// Deprecated: Use redpanda.api.common.v1 instead.
+
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Any, Message, proto3 } from "@bufbuild/protobuf";
 import { Code } from "../../../../google/rpc/code_pb";
