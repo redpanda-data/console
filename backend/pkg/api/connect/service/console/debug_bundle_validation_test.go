@@ -196,11 +196,11 @@ func TestDebugBundleLabelSelectorValidation(t *testing.T) {
 				},
 				// Add required fields to pass other validations
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
-				LogsSince:                   timestamppb.Now(),
-				LogsUntil:                   timestamppb.Now(),
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
+				LogsSince:                    timestamppb.Now(),
+				LogsUntil:                    timestamppb.Now(),
 			}
 
 			err := validator.Validate(request)
@@ -231,9 +231,9 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 			name: "valid minimal request",
 			request: &v1alpha1.CreateDebugBundleRequest{
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: true,
 		},
@@ -250,12 +250,12 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 				BrokerIds:                    []int32{1, 2, 3},
 				ControllerLogsSizeLimitBytes: 1024,
 				CpuProfilerWaitSeconds:       &[]int32{30}[0],
-				LogsSizeLimitBytes:          2048,
-				MetricsIntervalSeconds:      10,
-				MetricsSamples:              5,
-				TlsEnabled:                  true,
-				TlsInsecureSkipVerify:       false,
-				Namespace:                   "test-namespace",
+				LogsSizeLimitBytes:           2048,
+				MetricsIntervalSeconds:       10,
+				MetricsSamples:               5,
+				TlsEnabled:                   true,
+				TlsInsecureSkipVerify:        false,
+				Namespace:                    "test-namespace",
 				LabelSelector: []*v1alpha1.LabelSelector{
 					{
 						Key:   "app.kubernetes.io/name",
@@ -277,9 +277,9 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 					},
 				},
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: false,
 			expectedErr: "string.max_len",
@@ -295,9 +295,9 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 					},
 				},
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: false,
 			expectedErr: "required",
@@ -306,9 +306,9 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 			name: "invalid controller logs size negative",
 			request: &v1alpha1.CreateDebugBundleRequest{
 				ControllerLogsSizeLimitBytes: -1,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: false,
 			expectedErr: "int32.gte",
@@ -318,9 +318,9 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 			request: &v1alpha1.CreateDebugBundleRequest{
 				CpuProfilerWaitSeconds:       &[]int32{10}[0], // Below minimum of 15
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: false,
 			expectedErr: "int32.gte",
@@ -328,11 +328,11 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 		{
 			name: "invalid namespace pattern",
 			request: &v1alpha1.CreateDebugBundleRequest{
-				Namespace:                   "invalid_namespace", // Underscores not allowed in namespace
+				Namespace:                    "invalid_namespace", // Underscores not allowed in namespace
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: false,
 			expectedErr: "string.pattern",
@@ -340,11 +340,11 @@ func TestDebugBundleCreateRequestValidation(t *testing.T) {
 		{
 			name: "invalid namespace too long",
 			request: &v1alpha1.CreateDebugBundleRequest{
-				Namespace:                   strings.Repeat("a", 254), // Too long
+				Namespace:                    strings.Repeat("a", 254), // Too long
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			},
 			expectValid: false,
 			expectedErr: "string.max_len",
@@ -414,7 +414,7 @@ func TestDebugBundleLabelSelectorEdgeCases(t *testing.T) {
 			description: "Maximum prefix length should be allowed",
 		},
 		{
-			name:        "name part exactly 63 chars", 
+			name:        "name part exactly 63 chars",
 			labelKey:    "example.com/" + strings.Repeat("a", 63),
 			labelValue:  "value",
 			expectValid: true,
@@ -439,9 +439,9 @@ func TestDebugBundleLabelSelectorEdgeCases(t *testing.T) {
 					},
 				},
 				ControllerLogsSizeLimitBytes: 0,
-				LogsSizeLimitBytes:          0,
-				MetricsIntervalSeconds:      0,
-				MetricsSamples:              0,
+				LogsSizeLimitBytes:           0,
+				MetricsIntervalSeconds:       0,
+				MetricsSamples:               0,
 			}
 
 			err := validator.Validate(request)
