@@ -4362,7 +4362,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -4589,8 +4589,12 @@ paths:
                     field_violations:
                       - description: value length must be at least 3 characters
                         field: user.password
+                        localized_message: null
+                        reason: ""
                       - description: value is required
                         field: user.mechanism
+                        localized_message: null
+                        reason: ""
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/rpc.Status'
@@ -4722,8 +4726,12 @@ paths:
                     field_violations:
                       - description: value length must be at least 3 characters
                         field: user.password
+                        localized_message: null
+                        reason: ""
                       - description: value is required
                         field: user.mechanism
+                        localized_message: null
+                        reason: ""
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/rpc.Status'

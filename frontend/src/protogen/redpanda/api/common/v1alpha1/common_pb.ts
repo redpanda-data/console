@@ -2,6 +2,8 @@
 // @generated from file redpanda/api/common/v1alpha1/common.proto (package redpanda.api.common.v1alpha1, syntax proto3)
 /* eslint-disable */
 
+// Deprecated: Use redpanda.api.common.v1 instead.
+
 import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
 import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
 import type { Any } from "@bufbuild/protobuf/wkt";
