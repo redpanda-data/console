@@ -10,6 +10,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"buf.build/go/protovalidate"
@@ -25,6 +26,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commoninterceptor "github.com/redpanda-data/common-go/api/interceptor"
 	"github.com/redpanda-data/common-go/api/metrics"
+	"github.com/redpanda-data/common-go/api/useragent"
 	"go.uber.org/zap"
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -69,6 +71,13 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	apiProm, err := metrics.NewPrometheus(
 		metrics.WithRegistry(prometheus.DefaultRegisterer),
 		metrics.WithMetricsNamespace("redpanda_api"),
+		metrics.WithDynamicLabel("user_agent", func(ctx context.Context, _ *commoninterceptor.RequestMetadata) string {
+			if userAgent, ok := useragent.ExtractUserAgent(ctx); ok {
+				// Return the user agent family name IE Safari, Terraform, Curl, etc.
+				return userAgent.UserAgent.Family
+			}
+			return "unknown"
+		}),
 	)
 	if err != nil {
 		api.Logger.Fatal("failed to create prometheus adapter", zap.Error(err))
@@ -475,6 +484,11 @@ func (api *API) routes() *chi.Mux {
 	if err != nil {
 		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
 	}
+
+	ua, err := useragent.NewHTTPMiddleware()
+	if err != nil {
+		api.Logger.Fatal("failed to create useragent middleware", zap.Error(err))
+	}
 	transformSvc := transformsvcv1alpha2.NewService(api.Cfg, api.Logger.Named("transform_service"), v, api.RedpandaClientProvider)
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
@@ -488,6 +502,7 @@ func (api *API) routes() *chi.Mux {
 	baseRouter.Use(recoverer.Wrap)
 	baseRouter.Use(chimiddleware.RealIP)
 	baseRouter.Use(basePath.Wrap)
+	baseRouter.Use(ua.Handler)
 	baseRouter.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, _ string) bool {
 			isAllowed := checkOriginFn(r)
