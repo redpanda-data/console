@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.8.7 / 2025-06-27
+
+- [IMPROVEMENT] Update key dependencies (e.g. franz-go) to latest version.
+- [BUGFIX] Allow more generous label keys & values for creating debug bundles (enterprise feature).
+
 ## v3.1.2 / 2025-06-23
 
 - [IMPROVEMENT] Add support for insecure TLS verification via configuration.
