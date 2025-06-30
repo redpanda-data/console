@@ -438,20 +438,20 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// v1alpha1
 
 	// Register gRPC-Gateway Handlers of OSS. Enterprise handlers are directly registered in the hook via the *runtime.ServeMux passed.
-	dataplanev1alpha1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha1connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha1connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1alpha1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1alpha1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1alpha1, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha1connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvcV1alpha1, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1alpha1, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha1connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvcV1alpha1, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1alpha1, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 
 	// v1alpha2
 
-	dataplanev1alpha2connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha2connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha2connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha2connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha2connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
-	dataplanev1alpha2connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1Alpha2, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1alpha2connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvcV1alpha2, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha2connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvcV1alpha2, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha2connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1alpha2, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha2connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1alpha2, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha2connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1alpha2, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	dataplanev1alpha2connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1Alpha2, connectgateway.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 
 	// v1
 
