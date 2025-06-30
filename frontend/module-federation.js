@@ -1,3 +1,5 @@
+const deps = require('./package.json').dependencies;
+
 module.exports = {
   filename: 'embedded.js',
   name: 'rp_console',
@@ -11,11 +13,14 @@ module.exports = {
   shared: {
     react: {
       singleton: true,
-      requiredVersion: '>=18.0.0 <20.0.0',
+      requiredVersion: deps.react,
     },
     'react-dom': {
       singleton: true,
-      requiredVersion: '>=18.0.0 <20.0.0',
+      requiredVersion: deps['react-dom'],
+    },
+    '@redpanda-data/ui': {
+      import: '@redpanda-data/ui',
     },
   },
 };

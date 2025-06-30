@@ -10,7 +10,7 @@ interface ChatInputProps {
   agentId: string;
   initialValue?: string;
   onInputChange?: () => void;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
 export const ChatInput = ({
