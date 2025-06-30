@@ -256,6 +256,34 @@ message KnowledgeBaseCreate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  message Indexer {
+    int32 chunk_size = 1;
+    int32 chunk_overlap = 2;
+  }
+  Indexer indexer = 9;
+
+  message Retriever {
+    message Reranker {
+      bool enabled = 1;
+      message RerankProvider {
+        message Cohere {
+          string api_key = 2 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+          string model = 3 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+        }
+        oneof provider {
+          Cohere cohere = 1;
+        }
+      }
+    }
+  }
+  Retriever retriever = 10;
 }
 
 message KnowledgeBaseUpdate {
