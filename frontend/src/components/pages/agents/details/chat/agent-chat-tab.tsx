@@ -27,7 +27,7 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
   const [shouldScroll, setShouldScroll] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const id = pipeline?.id ?? null;
 

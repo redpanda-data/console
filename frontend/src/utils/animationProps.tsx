@@ -103,8 +103,7 @@ export const animProps_logo = {
 
 export const MotionAlways: FC = (p: { children?: React.ReactNode; style?: CSSProperties }) => (
   <motion.div key={alwaysChanging()} {...animProps} style={p.style}>
-    {/* biome-ignore lint/complexity/noUselessFragments: required for React 19 */}
-    <>{p.children}</>
+    {p.children}
   </motion.div>
 );
 
