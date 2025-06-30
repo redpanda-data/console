@@ -250,8 +250,6 @@ message KnowledgeBaseCreate {
   ];
 
   string table = 12 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 63
