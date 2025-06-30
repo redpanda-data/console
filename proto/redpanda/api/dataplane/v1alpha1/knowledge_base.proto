@@ -388,6 +388,30 @@ message KnowledgeBaseUpdate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  message Retriever {
+    message Reranker {
+      bool enabled = 1;
+      message Provider {
+        message Cohere {
+          string api_key = 2 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+          string model = 3 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+        }
+        oneof provider {
+          Cohere cohere = 1;
+        }
+      }
+      Provider provider = 2;
+    }
+    Reranker reranker = 1;
+  }
+  Retriever retriever = 8;
 }
 
 message CreateKnowledgeBaseRequest {
