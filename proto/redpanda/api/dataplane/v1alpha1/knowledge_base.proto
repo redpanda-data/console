@@ -135,7 +135,7 @@ message KnowledgeBase {
   message Retriever {
     message Reranker {
       bool enabled = 1;
-      message RerankProvider {
+      message Provider {
         message Cohere {
           string api_key = 2 [
             (google.api.field_behavior) = REQUIRED,
@@ -150,7 +150,9 @@ message KnowledgeBase {
           Cohere cohere = 1;
         }
       }
+      Provider provider = 2;
     }
+    Reranker reranker = 1;
   }
   Retriever retriever = 12;
 }
@@ -266,7 +268,7 @@ message KnowledgeBaseCreate {
   message Retriever {
     message Reranker {
       bool enabled = 1;
-      message RerankProvider {
+      message Provider {
         message Cohere {
           string api_key = 2 [
             (google.api.field_behavior) = REQUIRED,
@@ -281,7 +283,9 @@ message KnowledgeBaseCreate {
           Cohere cohere = 1;
         }
       }
+      Provider provider = 2;
     }
+    Reranker reranker = 1;
   }
   Retriever retriever = 10;
 }
