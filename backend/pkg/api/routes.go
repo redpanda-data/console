@@ -11,6 +11,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
@@ -107,8 +108,12 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		runtime.WithUnescapingMode(runtime.UnescapingModeAllExceptReserved),
 	)
 
-	// v1
+	sunsetInterceptor := commoninterceptor.NewSunset(
+		time.Date(2025, time.November, 30, 0, 0, 0, 0, time.UTC),
+		commoninterceptor.WithDeprecationDate(time.Date(2025, time.May, 30, 0, 0, 0, 0, time.UTC)),
+	)
 
+	// v1
 	aclSvcV1 := apiaclsvcv1.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
 	topicSvcV1 := topicsvcv1.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
 	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(api.Cfg, api.Logger.Named("user_service"), api.ConsoleSvc, api.RedpandaClientProvider)
@@ -209,62 +214,62 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	userSvcPathV1Alpha1, userSvcHandlerV1Alpha1 := dataplanev1alpha1connect.NewUserServiceHandler(
 		hookOutput.Services[dataplanev1alpha1connect.UserServiceName].(dataplanev1alpha1connect.UserServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	aclSvcPathV1Alpha1, aclSvcHandlerV1Alpha1 := dataplanev1alpha1connect.NewACLServiceHandler(
 		hookOutput.Services[dataplanev1alpha1connect.ACLServiceName].(dataplanev1alpha1connect.ACLServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	kafkaConnectPathV1Alpha1, kafkaConnectHandlerV1Alpha1 := dataplanev1alpha1connect.NewKafkaConnectServiceHandler(
 		hookOutput.Services[dataplanev1alpha1connect.KafkaConnectServiceName].(dataplanev1alpha1connect.KafkaConnectServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	topicSvcPathV1Alpha1, topicSvcHandlerV1Alpha1 := dataplanev1alpha1connect.NewTopicServiceHandler(
 		hookOutput.Services[dataplanev1alpha1connect.TopicServiceName].(dataplanev1alpha1connect.TopicServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	transformSvcPathV1alpha1, transformSvcHandlerV1alpha1 := dataplanev1alpha1connect.NewTransformServiceHandler(
 		hookOutput.Services[dataplanev1alpha1connect.TransformServiceName].(dataplanev1alpha1connect.TransformServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 
 	// Console v1alpha1
 
 	consoleServicePath, consoleServiceHandler := consolev1alpha1connect.NewConsoleServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.ConsoleServiceName].(consolev1alpha1connect.ConsoleServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	securityServicePath, securityServiceHandler := consolev1alpha1connect.NewSecurityServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.SecurityServiceName].(consolev1alpha1connect.SecurityServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	consoleTransformSvcPath, consoleTransformSvcHandler := consolev1alpha1connect.NewTransformServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	authenticationSvcPath, authenticationSvcHandler := consolev1alpha1connect.NewAuthenticationServiceHandler(hookOutput.Services[consolev1alpha1connect.AuthenticationServiceName].(consolev1alpha1connect.AuthenticationServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	clusterStatusSvcPath, clusterStatusSvcHandler := consolev1alpha1connect.NewClusterStatusServiceHandler(hookOutput.Services[consolev1alpha1connect.ClusterStatusServiceName].(consolev1alpha1connect.ClusterStatusServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	consoleSecretsServicePath, consoleSecretsServiceHandler := consolev1alpha1connect.NewSecretServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.SecretServiceName].(consolev1alpha1connect.SecretServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 
 	// v1alpha2
 
 	aclSvcPathV1Alpha2, aclSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewACLServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.ACLServiceName].(dataplanev1alpha2connect.ACLServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	topicSvcPathV1Alpha2, topicSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewTopicServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.TopicServiceName].(dataplanev1alpha2connect.TopicServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	userSvcPathV1Alpha2, userSvcHandlerV1alpha2 := dataplanev1alpha2connect.NewUserServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.UserServiceName].(dataplanev1alpha2connect.UserServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	transformSvcPathV1Alpha2, transformSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewTransformServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.TransformServiceName].(dataplanev1alpha2connect.TransformServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	kafkaConnectSvcPathV1Alpha2, kafkaConnectSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewKafkaConnectServiceHandler(
 		hookOutput.Services[dataplanev1alpha2connect.KafkaConnectServiceName].(dataplanev1alpha2connect.KafkaConnectServiceHandler),
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	cloudStorageSvcV1Alpha2 := hookOutput.Services[dataplanev1alpha2connect.CloudStorageServiceName].(dataplanev1alpha2connect.CloudStorageServiceHandler) //nolint:revive // we control the map
 	cloudStorageSvcPathV1Alpha2, cloudStorageSvcHandlerV1Alpha2 := dataplanev1alpha2connect.NewCloudStorageServiceHandler(
 		cloudStorageSvcV1Alpha2,
-		connect.WithInterceptors(hookOutput.Interceptors...))
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 
 	// v1
 

@@ -42,7 +42,7 @@ require (
 	github.com/ohler55/ojg v1.26.6
 	github.com/prometheus/client_golang v1.22.0
 	github.com/redpanda-data/benthos/v4 v4.53.0
-	github.com/redpanda-data/common-go/api v0.0.0-20250520173735-a6ab5e2bd434
+	github.com/redpanda-data/common-go/api v0.0.0-20250630112538-0ffb2c400e1e
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/redpanda-data/common-go/rpadmin v0.1.14
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
