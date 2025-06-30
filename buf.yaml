@@ -27,3 +27,4 @@ breaking:
   ignore:
     - redpanda/api/console/v1alpha1
     - redpanda/api/dataplane/v1alpha1
+    - proto/redpanda/api/dataplane/v1alpha1
