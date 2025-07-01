@@ -226,7 +226,6 @@ message KnowledgeBaseCreate {
     (buf.validate.field).required = true
   ];
 
-
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
