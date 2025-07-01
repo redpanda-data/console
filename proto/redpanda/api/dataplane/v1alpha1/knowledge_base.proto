@@ -311,6 +311,7 @@ message KnowledgeBaseUpdate {
       }
 
       message Cohere {
+        string base_url = 1;
         string api_key = 2;
       }
 
