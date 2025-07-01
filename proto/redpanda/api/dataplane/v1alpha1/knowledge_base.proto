@@ -59,10 +59,7 @@ message KnowledgeBase {
       }
 
       message Cohere {
-        string base_url = 1 [
-          (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
-        ];
+        string base_url = 1;
         string api_key = 2 [
           (google.api.field_behavior) = REQUIRED,
           (buf.validate.field).required = true
@@ -201,10 +198,7 @@ message KnowledgeBaseCreate {
       }
 
       message Cohere {
-        string base_url = 1 [
-          (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
-        ];
+        string base_url = 1;
         string api_key = 2 [
           (google.api.field_behavior) = REQUIRED,
           (buf.validate.field).required = true
@@ -343,10 +337,7 @@ message KnowledgeBaseUpdate {
       }
 
       message Cohere {
-        string base_url = 1 [
-          (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
-        ];
+        string base_url = 1;
         string api_key = 2 [
           (google.api.field_behavior) = REQUIRED,
           (buf.validate.field).required = true
