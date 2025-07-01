@@ -115,9 +115,6 @@ message KnowledgeBase {
     (buf.validate.field).repeated.min_items = 1
   ];
 
-  string redpanda_username = 8;
-  string redpanda_password = 9;
-
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 7 [(buf.validate.field).map = {
     max_pairs: 16
@@ -129,6 +126,8 @@ message KnowledgeBase {
   message Indexer {
     int32 chunk_size = 1;
     int32 chunk_overlap = 2;
+    string redpanda_username = 3;
+    string redpanda_password = 4;
   }
   Indexer indexer = 11;
 
@@ -199,10 +198,6 @@ message KnowledgeBaseCreate {
           (google.api.field_behavior) = REQUIRED,
           (buf.validate.field).required = true
         ];
-        string model = 3 [
-          (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
-        ];
         int32 dimensions = 4 [(buf.validate.field).int32 = {
           in: [
             256,
@@ -251,9 +246,6 @@ message KnowledgeBaseCreate {
     (buf.validate.field).repeated.min_items = 1
   ];
 
-  string redpanda_username = 6;
-  string redpanda_password = 7;
-
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
@@ -265,6 +257,8 @@ message KnowledgeBaseCreate {
   message Indexer {
     int32 chunk_size = 1;
     int32 chunk_overlap = 2;
+    string redpanda_username = 3;
+    string redpanda_password = 4;
   }
   Indexer indexer = 9;
 
@@ -333,23 +327,7 @@ message KnowledgeBaseUpdate {
       }
 
       message Cohere {
-        string base_url = 1;
-        string api_key = 2 [
-          (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
-        ];
-        string model = 3 [
-          (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
-        ];
-        int32 dimensions = 4 [(buf.validate.field).int32 = {
-          in: [
-            256,
-            512,
-            1024,
-            1536
-          ]
-        }];
+        string api_key = 2;
       }
 
       oneof provider {
@@ -378,9 +356,6 @@ message KnowledgeBaseUpdate {
     (buf.validate.field).required = true
   ];
 
-  string redpanda_username = 6;
-  string redpanda_password = 7;
-
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
@@ -388,6 +363,14 @@ message KnowledgeBaseUpdate {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
     }
   }];
+
+  message Indexer {
+    int32 chunk_size = 1;
+    int32 chunk_overlap = 2;
+    string redpanda_username = 3;
+    string redpanda_password = 4;
+  }
+  Indexer indexer = 9;
 
   message Retriever {
     message Reranker {
