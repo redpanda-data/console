@@ -101,11 +101,6 @@ message KnowledgeBase {
     (buf.validate.field).string.max_len = 63
   ];
 
-  repeated string input_topics = 10 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated.min_items = 1
-  ];
 
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 7 [(buf.validate.field).map = {
@@ -120,6 +115,11 @@ message KnowledgeBase {
     int32 chunk_overlap = 2;
     string redpanda_username = 3;
     string redpanda_password = 4;
+    repeated string input_topics = 5 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
   }
   Indexer indexer = 11;
 
@@ -224,11 +224,6 @@ message KnowledgeBaseCreate {
     (buf.validate.field).string.max_len = 63
   ];
 
-  repeated string input_topics = 8 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
-    (buf.validate.field).repeated.min_items = 1
-  ];
 
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
@@ -243,6 +238,11 @@ message KnowledgeBaseCreate {
     int32 chunk_overlap = 2;
     string redpanda_username = 3;
     string redpanda_password = 4;
+    repeated string input_topics = 5 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
   }
   Indexer indexer = 9;
 
@@ -354,6 +354,11 @@ message KnowledgeBaseUpdate {
     int32 chunk_overlap = 2;
     string redpanda_username = 3;
     string redpanda_password = 4;
+    repeated string input_topics = 5 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
   }
   Indexer indexer = 9;
 
