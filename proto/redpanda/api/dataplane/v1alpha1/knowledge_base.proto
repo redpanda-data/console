@@ -64,14 +64,6 @@ message KnowledgeBase {
           (google.api.field_behavior) = REQUIRED,
           (buf.validate.field).required = true
         ];
-        int32 dimensions = 4 [(buf.validate.field).int32 = {
-          in: [
-            256,
-            512,
-            1024,
-            1536
-          ]
-        }];
       }
 
       oneof provider {
@@ -198,14 +190,6 @@ message KnowledgeBaseCreate {
           (google.api.field_behavior) = REQUIRED,
           (buf.validate.field).required = true
         ];
-        int32 dimensions = 4 [(buf.validate.field).int32 = {
-          in: [
-            256,
-            512,
-            1024,
-            1536
-          ]
-        }];
       }
 
       oneof provider {
