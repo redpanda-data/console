@@ -39,6 +39,14 @@ message KnowledgeBase {
         (google.api.field_behavior) = REQUIRED,
         (buf.validate.field).required = true
       ];
+      string table = 2 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.field_behavior) = IMMUTABLE,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 63
+      ];
     }
 
     oneof vector_database {
@@ -94,12 +102,6 @@ message KnowledgeBase {
 
   string retrieval_api_url = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string table = 13 [
-    (google.api.field_behavior) = IMMUTABLE,
-    (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 63
-  ];
 
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 7 [(buf.validate.field).map = {
@@ -164,6 +166,14 @@ message KnowledgeBaseCreate {
         (google.api.field_behavior) = REQUIRED,
         (buf.validate.field).required = true
       ];
+      string table = 2 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.field_behavior) = IMMUTABLE,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 63
+      ];
     }
 
     oneof vector_database {
@@ -217,11 +227,6 @@ message KnowledgeBaseCreate {
     (buf.validate.field).required = true
   ];
 
-  string table = 12 [
-    (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 63
-  ];
 
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
