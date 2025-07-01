@@ -102,7 +102,6 @@ message KnowledgeBase {
 
   string retrieval_api_url = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 7 [(buf.validate.field).map = {
     max_pairs: 16
