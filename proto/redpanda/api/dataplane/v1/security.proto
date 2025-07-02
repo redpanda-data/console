@@ -4,8 +4,11 @@ package redpanda.api.dataplane.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/dataplane/v1/acl.proto";
+import "google/rpc/status.proto";
 
 // Role defines a role in the system.
 message Role {
@@ -196,6 +199,219 @@ message UpdateRoleMembershipResponse {
   repeated RoleMembership removed = 3;
 }
 
+
+message ListSchemaRegistryACLsRequest {
+  message Filter {
+    // The type of resource (topic, consumer group, etc.) this
+    // ACL targets.
+    ACL.ResourceType resource_type = 1 [(buf.validate.field).enum = {defined_only: true}];
+    // The name of the resource this ACL targets.
+    optional string resource_name = 2;
+    // The pattern to use for matching the specified resource_name
+    // (any, exact match, literal, or prefixed).
+    ACL.ResourcePatternType resource_pattern_type = 3 [(buf.validate.field).enum.defined_only = true];
+    // The user for whom this ACL applies. With the Kafka simple
+    // authorizer, you must include the prefix "User:" with the user name.
+    optional string principal = 4;
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
+    optional string host = 5;
+    // The operation that is allowed or denied (e.g. READ).
+    ACL.Operation operation = 6 [(buf.validate.field).enum.defined_only = true];
+    // Whether the operation should be allowed or denied.
+    ACL.PermissionType permission_type = 7 [(buf.validate.field).enum.defined_only = true];
+  }
+
+  Filter filter = 1;
+}
+
+message ListSchemaRegistryACLsResponse {
+  message Policy {
+    // The user for whom this ACL applies.
+    string principal = 1;
+    // The host address for this ACL.
+    string host = 2;
+    ACL.Operation operation = 3;
+    ACL.PermissionType permission_type = 4;
+  }
+
+  message Resource {
+    ACL.ResourceType resource_type = 1;
+    // The name of the resource this ACL targets.
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    repeated Policy acls = 4;
+  }
+
+  repeated Resource resources = 1;
+}
+
+message CreateSchemaRegistryACLRequest {
+  option (buf.validate.message).cel = {
+    id: "resource_name_must_be_set_except_for_cluster_resource_type"
+    expression:
+        "this.resource_type == 4 && size(this.resource_name) == 0 ? ''"
+            ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
+            ": this.resource_type != 4 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
+            ": ''"
+  };
+
+  ACL.ResourceType resource_type = 1 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0,
+        1
+      ] /* Disallow: Unspecified and ANY */
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The name of the resource this ACL targets.
+  // For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+  string resource_name = 2;
+
+  ACL.ResourcePatternType resource_pattern_type = 3 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      in: [
+        3,
+        4
+      ]
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // The user for whom this ACL applies. With the Kafka simple
+  // authorizer, you must include the prefix "User:" with the user name.
+  string principal = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.prefix = "User:"
+  ];
+
+  // The host address to use for this ACL. To allow a principal
+  // access from multiple hosts, you must create an ACL for each host.
+  string host = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "wildcard_or_ip_address"
+      message: "Field host must be either wildcard (*) or a valid IP address."
+      expression: "this == '*' ? true : this.isIp()"
+    }
+  ];
+
+  ACL.Operation operation = 6 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0,
+        1
+      ] /* Disallow: Unspecified and ANY */
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  ACL.PermissionType permission_type = 7 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      in: [
+        2,
+        3
+      ] /* Allow or Deny */
+    },
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message CreateSchemaRegistryACLResponse {}
+
+message DeleteSchemaRegistryACLsRequest {
+  message Filter {
+    // The type of resource (topic, consumer group, etc.) this
+    // ACL targets.
+    ACL.ResourceType resource_type = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    // The name of the resource this ACL targets.
+    optional string resource_name = 2;
+
+    // The pattern to use for matching the specified resource_name
+    // (any, exact match, literal, or prefixed).
+    ACL.ResourcePatternType resource_pattern_type = 3 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    // The user for whom this ACL applies. With the Kafka simple
+    // authorizer, you must include the prefix "User:" with the user name.
+    optional string principal = 4;
+
+    // The host address to use for this ACL. To allow a principal
+    // access from multiple hosts, you must create an ACL for each host.
+    optional string host = 5;
+
+    // The operation that is allowed or denied (e.g. READ).
+    ACL.Operation operation = 6 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+
+    // Whether the operation should be allowed or denied.
+    ACL.PermissionType permission_type = 7 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0] /* Disallow: Unspecified */
+      }
+    ];
+  }
+
+  Filter filter = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message DeleteSchemaRegistryACLsResponse {
+  message MatchingACL {
+    ACL.ResourceType resource_type = 1;
+    // The name of the resource this ACL targets.
+    string resource_name = 2;
+    ACL.ResourcePatternType resource_pattern_type = 3;
+    // The user for whom this ACL applies.
+    string principal = 4;
+    // The host address to use for this ACL.
+    string host = 5;
+    ACL.Operation operation = 6;
+    ACL.PermissionType permission_type = 7;
+    google.rpc.Status error = 8;
+  }
+
+  repeated MatchingACL matching_acls = 1;
+}
+
+
 service SecurityService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Security"
@@ -367,4 +583,77 @@ service SecurityService {
       api: API_REDPANDA_ADMIN
     };
   }
+
+  // ListSchemaRegistryACLs lists Schema Registry ACLs that match the filter criteria.
+  rpc ListSchemaRegistryACLs(ListSchemaRegistryACLsRequest) returns (ListSchemaRegistryACLsResponse) {
+    option (google.api.http) = {get: "/v1/schema-registry/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Schema Registry ACLs"
+      description: "List all Schema Registry ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // CreateSchemaRegistryACL creates a new Schema Registry ACL.
+  rpc CreateSchemaRegistryACL(CreateSchemaRegistryACLRequest) returns (CreateSchemaRegistryACLResponse) {
+    option (google.api.http) = {
+      post: "/v1/schema-registry/acls"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Schema Registry ACL"
+      description: "Create a new Schema Registry ACL."
+      responses: {
+        key: "201"
+        value: {
+          description: "Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateSchemaRegistryACLResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
+  // DeleteSchemaRegistryACLs deletes Schema Registry ACLs that match the filter criteria.
+  rpc DeleteSchemaRegistryACLs(DeleteSchemaRegistryACLsRequest) returns (DeleteSchemaRegistryACLsResponse) {
+    option (google.api.http) = {
+      post: "/v1/schema-registry/acls:remove"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Schema Registry ACLs"
+      description: "Delete all Schema Registry ACLs that match the filter criteria. The filter in the request body specifies which ACLs to delete."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_SCHEMA_REGISTRY
+    };
+  }
+
 }
