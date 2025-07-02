@@ -5,10 +5,10 @@ package redpanda.api.dataplane.v1;
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/rpc/status.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/dataplane/v1/acl.proto";
-import "google/rpc/status.proto";
 
 // Role defines a role in the system.
 message Role {
@@ -199,7 +199,6 @@ message UpdateRoleMembershipResponse {
   repeated RoleMembership removed = 3;
 }
 
-
 message ListSchemaRegistryACLsRequest {
   message Filter {
     // The type of resource (topic, consumer group, etc.) this
@@ -250,10 +249,10 @@ message CreateSchemaRegistryACLRequest {
   option (buf.validate.message).cel = {
     id: "resource_name_must_be_set_except_for_cluster_resource_type"
     expression:
-        "this.resource_type == 4 && size(this.resource_name) == 0 ? ''"
-            ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
-            ": this.resource_type != 4 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
-            ": ''"
+      "this.resource_type == 4 && size(this.resource_name) == 0 ? ''"
+      ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
+      ": this.resource_type != 4 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
+      ": ''"
   };
 
   ACL.ResourceType resource_type = 1 [
@@ -410,7 +409,6 @@ message DeleteSchemaRegistryACLsResponse {
 
   repeated MatchingACL matching_acls = 1;
 }
-
 
 service SecurityService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
@@ -655,5 +653,4 @@ service SecurityService {
       api: API_SCHEMA_REGISTRY
     };
   }
-
 }
