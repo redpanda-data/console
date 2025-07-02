@@ -52,17 +52,29 @@ const (
 	// SecurityServiceUpdateRoleMembershipProcedure is the fully-qualified name of the SecurityService's
 	// UpdateRoleMembership RPC.
 	SecurityServiceUpdateRoleMembershipProcedure = "/redpanda.api.dataplane.v1.SecurityService/UpdateRoleMembership"
+	// SecurityServiceListSchemaRegistryACLsProcedure is the fully-qualified name of the
+	// SecurityService's ListSchemaRegistryACLs RPC.
+	SecurityServiceListSchemaRegistryACLsProcedure = "/redpanda.api.dataplane.v1.SecurityService/ListSchemaRegistryACLs"
+	// SecurityServiceCreateSchemaRegistryACLsProcedure is the fully-qualified name of the
+	// SecurityService's CreateSchemaRegistryACLs RPC.
+	SecurityServiceCreateSchemaRegistryACLsProcedure = "/redpanda.api.dataplane.v1.SecurityService/CreateSchemaRegistryACLs"
+	// SecurityServiceDeleteSchemaRegistryACLsProcedure is the fully-qualified name of the
+	// SecurityService's DeleteSchemaRegistryACLs RPC.
+	SecurityServiceDeleteSchemaRegistryACLsProcedure = "/redpanda.api.dataplane.v1.SecurityService/DeleteSchemaRegistryACLs"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	securityServiceServiceDescriptor                    = v1.File_redpanda_api_dataplane_v1_security_proto.Services().ByName("SecurityService")
-	securityServiceListRolesMethodDescriptor            = securityServiceServiceDescriptor.Methods().ByName("ListRoles")
-	securityServiceCreateRoleMethodDescriptor           = securityServiceServiceDescriptor.Methods().ByName("CreateRole")
-	securityServiceGetRoleMethodDescriptor              = securityServiceServiceDescriptor.Methods().ByName("GetRole")
-	securityServiceDeleteRoleMethodDescriptor           = securityServiceServiceDescriptor.Methods().ByName("DeleteRole")
-	securityServiceListRoleMembersMethodDescriptor      = securityServiceServiceDescriptor.Methods().ByName("ListRoleMembers")
-	securityServiceUpdateRoleMembershipMethodDescriptor = securityServiceServiceDescriptor.Methods().ByName("UpdateRoleMembership")
+	securityServiceServiceDescriptor                        = v1.File_redpanda_api_dataplane_v1_security_proto.Services().ByName("SecurityService")
+	securityServiceListRolesMethodDescriptor                = securityServiceServiceDescriptor.Methods().ByName("ListRoles")
+	securityServiceCreateRoleMethodDescriptor               = securityServiceServiceDescriptor.Methods().ByName("CreateRole")
+	securityServiceGetRoleMethodDescriptor                  = securityServiceServiceDescriptor.Methods().ByName("GetRole")
+	securityServiceDeleteRoleMethodDescriptor               = securityServiceServiceDescriptor.Methods().ByName("DeleteRole")
+	securityServiceListRoleMembersMethodDescriptor          = securityServiceServiceDescriptor.Methods().ByName("ListRoleMembers")
+	securityServiceUpdateRoleMembershipMethodDescriptor     = securityServiceServiceDescriptor.Methods().ByName("UpdateRoleMembership")
+	securityServiceListSchemaRegistryACLsMethodDescriptor   = securityServiceServiceDescriptor.Methods().ByName("ListSchemaRegistryACLs")
+	securityServiceCreateSchemaRegistryACLsMethodDescriptor = securityServiceServiceDescriptor.Methods().ByName("CreateSchemaRegistryACLs")
+	securityServiceDeleteSchemaRegistryACLsMethodDescriptor = securityServiceServiceDescriptor.Methods().ByName("DeleteSchemaRegistryACLs")
 )
 
 // SecurityServiceClient is a client for the redpanda.api.dataplane.v1.SecurityService service.
@@ -82,6 +94,12 @@ type SecurityServiceClient interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *connect.Request[v1.UpdateRoleMembershipRequest]) (*connect.Response[v1.UpdateRoleMembershipResponse], error)
+	// ListSchemaRegistryACLs lists Schema Registry ACLs based on optional filters.
+	ListSchemaRegistryACLs(context.Context, *connect.Request[v1.ListSchemaRegistryACLsRequest]) (*connect.Response[v1.ListSchemaRegistryACLsResponse], error)
+	// CreateSchemaRegistryACLs creates new Schema Registry ACL entries.
+	CreateSchemaRegistryACLs(context.Context, *connect.Request[v1.CreateSchemaRegistryACLsRequest]) (*connect.Response[v1.CreateSchemaRegistryACLsResponse], error)
+	// DeleteSchemaRegistryACLs deletes existing Schema Registry ACL entries.
+	DeleteSchemaRegistryACLs(context.Context, *connect.Request[v1.DeleteSchemaRegistryACLsRequest]) (*connect.Response[v1.DeleteSchemaRegistryACLsResponse], error)
 }
 
 // NewSecurityServiceClient constructs a client for the redpanda.api.dataplane.v1.SecurityService
@@ -130,17 +148,38 @@ func NewSecurityServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(securityServiceUpdateRoleMembershipMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listSchemaRegistryACLs: connect.NewClient[v1.ListSchemaRegistryACLsRequest, v1.ListSchemaRegistryACLsResponse](
+			httpClient,
+			baseURL+SecurityServiceListSchemaRegistryACLsProcedure,
+			connect.WithSchema(securityServiceListSchemaRegistryACLsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		createSchemaRegistryACLs: connect.NewClient[v1.CreateSchemaRegistryACLsRequest, v1.CreateSchemaRegistryACLsResponse](
+			httpClient,
+			baseURL+SecurityServiceCreateSchemaRegistryACLsProcedure,
+			connect.WithSchema(securityServiceCreateSchemaRegistryACLsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		deleteSchemaRegistryACLs: connect.NewClient[v1.DeleteSchemaRegistryACLsRequest, v1.DeleteSchemaRegistryACLsResponse](
+			httpClient,
+			baseURL+SecurityServiceDeleteSchemaRegistryACLsProcedure,
+			connect.WithSchema(securityServiceDeleteSchemaRegistryACLsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // securityServiceClient implements SecurityServiceClient.
 type securityServiceClient struct {
-	listRoles            *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
-	createRole           *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
-	getRole              *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
-	deleteRole           *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
-	listRoleMembers      *connect.Client[v1.ListRoleMembersRequest, v1.ListRoleMembersResponse]
-	updateRoleMembership *connect.Client[v1.UpdateRoleMembershipRequest, v1.UpdateRoleMembershipResponse]
+	listRoles                *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	createRole               *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	getRole                  *connect.Client[v1.GetRoleRequest, v1.GetRoleResponse]
+	deleteRole               *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	listRoleMembers          *connect.Client[v1.ListRoleMembersRequest, v1.ListRoleMembersResponse]
+	updateRoleMembership     *connect.Client[v1.UpdateRoleMembershipRequest, v1.UpdateRoleMembershipResponse]
+	listSchemaRegistryACLs   *connect.Client[v1.ListSchemaRegistryACLsRequest, v1.ListSchemaRegistryACLsResponse]
+	createSchemaRegistryACLs *connect.Client[v1.CreateSchemaRegistryACLsRequest, v1.CreateSchemaRegistryACLsResponse]
+	deleteSchemaRegistryACLs *connect.Client[v1.DeleteSchemaRegistryACLsRequest, v1.DeleteSchemaRegistryACLsResponse]
 }
 
 // ListRoles calls redpanda.api.dataplane.v1.SecurityService.ListRoles.
@@ -173,6 +212,23 @@ func (c *securityServiceClient) UpdateRoleMembership(ctx context.Context, req *c
 	return c.updateRoleMembership.CallUnary(ctx, req)
 }
 
+// ListSchemaRegistryACLs calls redpanda.api.dataplane.v1.SecurityService.ListSchemaRegistryACLs.
+func (c *securityServiceClient) ListSchemaRegistryACLs(ctx context.Context, req *connect.Request[v1.ListSchemaRegistryACLsRequest]) (*connect.Response[v1.ListSchemaRegistryACLsResponse], error) {
+	return c.listSchemaRegistryACLs.CallUnary(ctx, req)
+}
+
+// CreateSchemaRegistryACLs calls
+// redpanda.api.dataplane.v1.SecurityService.CreateSchemaRegistryACLs.
+func (c *securityServiceClient) CreateSchemaRegistryACLs(ctx context.Context, req *connect.Request[v1.CreateSchemaRegistryACLsRequest]) (*connect.Response[v1.CreateSchemaRegistryACLsResponse], error) {
+	return c.createSchemaRegistryACLs.CallUnary(ctx, req)
+}
+
+// DeleteSchemaRegistryACLs calls
+// redpanda.api.dataplane.v1.SecurityService.DeleteSchemaRegistryACLs.
+func (c *securityServiceClient) DeleteSchemaRegistryACLs(ctx context.Context, req *connect.Request[v1.DeleteSchemaRegistryACLsRequest]) (*connect.Response[v1.DeleteSchemaRegistryACLsResponse], error) {
+	return c.deleteSchemaRegistryACLs.CallUnary(ctx, req)
+}
+
 // SecurityServiceHandler is an implementation of the redpanda.api.dataplane.v1.SecurityService
 // service.
 type SecurityServiceHandler interface {
@@ -191,6 +247,12 @@ type SecurityServiceHandler interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *connect.Request[v1.UpdateRoleMembershipRequest]) (*connect.Response[v1.UpdateRoleMembershipResponse], error)
+	// ListSchemaRegistryACLs lists Schema Registry ACLs based on optional filters.
+	ListSchemaRegistryACLs(context.Context, *connect.Request[v1.ListSchemaRegistryACLsRequest]) (*connect.Response[v1.ListSchemaRegistryACLsResponse], error)
+	// CreateSchemaRegistryACLs creates new Schema Registry ACL entries.
+	CreateSchemaRegistryACLs(context.Context, *connect.Request[v1.CreateSchemaRegistryACLsRequest]) (*connect.Response[v1.CreateSchemaRegistryACLsResponse], error)
+	// DeleteSchemaRegistryACLs deletes existing Schema Registry ACL entries.
+	DeleteSchemaRegistryACLs(context.Context, *connect.Request[v1.DeleteSchemaRegistryACLsRequest]) (*connect.Response[v1.DeleteSchemaRegistryACLsResponse], error)
 }
 
 // NewSecurityServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -235,6 +297,24 @@ func NewSecurityServiceHandler(svc SecurityServiceHandler, opts ...connect.Handl
 		connect.WithSchema(securityServiceUpdateRoleMembershipMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	securityServiceListSchemaRegistryACLsHandler := connect.NewUnaryHandler(
+		SecurityServiceListSchemaRegistryACLsProcedure,
+		svc.ListSchemaRegistryACLs,
+		connect.WithSchema(securityServiceListSchemaRegistryACLsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	securityServiceCreateSchemaRegistryACLsHandler := connect.NewUnaryHandler(
+		SecurityServiceCreateSchemaRegistryACLsProcedure,
+		svc.CreateSchemaRegistryACLs,
+		connect.WithSchema(securityServiceCreateSchemaRegistryACLsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	securityServiceDeleteSchemaRegistryACLsHandler := connect.NewUnaryHandler(
+		SecurityServiceDeleteSchemaRegistryACLsProcedure,
+		svc.DeleteSchemaRegistryACLs,
+		connect.WithSchema(securityServiceDeleteSchemaRegistryACLsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1.SecurityService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SecurityServiceListRolesProcedure:
@@ -249,6 +329,12 @@ func NewSecurityServiceHandler(svc SecurityServiceHandler, opts ...connect.Handl
 			securityServiceListRoleMembersHandler.ServeHTTP(w, r)
 		case SecurityServiceUpdateRoleMembershipProcedure:
 			securityServiceUpdateRoleMembershipHandler.ServeHTTP(w, r)
+		case SecurityServiceListSchemaRegistryACLsProcedure:
+			securityServiceListSchemaRegistryACLsHandler.ServeHTTP(w, r)
+		case SecurityServiceCreateSchemaRegistryACLsProcedure:
+			securityServiceCreateSchemaRegistryACLsHandler.ServeHTTP(w, r)
+		case SecurityServiceDeleteSchemaRegistryACLsProcedure:
+			securityServiceDeleteSchemaRegistryACLsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -280,4 +366,16 @@ func (UnimplementedSecurityServiceHandler) ListRoleMembers(context.Context, *con
 
 func (UnimplementedSecurityServiceHandler) UpdateRoleMembership(context.Context, *connect.Request[v1.UpdateRoleMembershipRequest]) (*connect.Response[v1.UpdateRoleMembershipResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecurityService.UpdateRoleMembership is not implemented"))
+}
+
+func (UnimplementedSecurityServiceHandler) ListSchemaRegistryACLs(context.Context, *connect.Request[v1.ListSchemaRegistryACLsRequest]) (*connect.Response[v1.ListSchemaRegistryACLsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecurityService.ListSchemaRegistryACLs is not implemented"))
+}
+
+func (UnimplementedSecurityServiceHandler) CreateSchemaRegistryACLs(context.Context, *connect.Request[v1.CreateSchemaRegistryACLsRequest]) (*connect.Response[v1.CreateSchemaRegistryACLsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecurityService.CreateSchemaRegistryACLs is not implemented"))
+}
+
+func (UnimplementedSecurityServiceHandler) DeleteSchemaRegistryACLs(context.Context, *connect.Request[v1.DeleteSchemaRegistryACLsRequest]) (*connect.Response[v1.DeleteSchemaRegistryACLsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.SecurityService.DeleteSchemaRegistryACLs is not implemented"))
 }

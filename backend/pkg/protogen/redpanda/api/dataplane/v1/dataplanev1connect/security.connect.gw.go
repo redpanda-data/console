@@ -17,24 +17,30 @@ import (
 // SecurityServiceGatewayServer implements the gRPC server API for the SecurityService service.
 type SecurityServiceGatewayServer struct {
 	v1.UnimplementedSecurityServiceServer
-	listRoles            connect_gateway.UnaryHandler[v1.ListRolesRequest, v1.ListRolesResponse]
-	createRole           connect_gateway.UnaryHandler[v1.CreateRoleRequest, v1.CreateRoleResponse]
-	getRole              connect_gateway.UnaryHandler[v1.GetRoleRequest, v1.GetRoleResponse]
-	deleteRole           connect_gateway.UnaryHandler[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
-	listRoleMembers      connect_gateway.UnaryHandler[v1.ListRoleMembersRequest, v1.ListRoleMembersResponse]
-	updateRoleMembership connect_gateway.UnaryHandler[v1.UpdateRoleMembershipRequest, v1.UpdateRoleMembershipResponse]
+	listRoles                connect_gateway.UnaryHandler[v1.ListRolesRequest, v1.ListRolesResponse]
+	createRole               connect_gateway.UnaryHandler[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	getRole                  connect_gateway.UnaryHandler[v1.GetRoleRequest, v1.GetRoleResponse]
+	deleteRole               connect_gateway.UnaryHandler[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	listRoleMembers          connect_gateway.UnaryHandler[v1.ListRoleMembersRequest, v1.ListRoleMembersResponse]
+	updateRoleMembership     connect_gateway.UnaryHandler[v1.UpdateRoleMembershipRequest, v1.UpdateRoleMembershipResponse]
+	listSchemaRegistryACLs   connect_gateway.UnaryHandler[v1.ListSchemaRegistryACLsRequest, v1.ListSchemaRegistryACLsResponse]
+	createSchemaRegistryACLs connect_gateway.UnaryHandler[v1.CreateSchemaRegistryACLsRequest, v1.CreateSchemaRegistryACLsResponse]
+	deleteSchemaRegistryACLs connect_gateway.UnaryHandler[v1.DeleteSchemaRegistryACLsRequest, v1.DeleteSchemaRegistryACLsResponse]
 }
 
 // NewSecurityServiceGatewayServer constructs a Connect-Gateway gRPC server for the SecurityService
 // service.
 func NewSecurityServiceGatewayServer(svc SecurityServiceHandler, opts ...connect_gateway.HandlerOption) *SecurityServiceGatewayServer {
 	return &SecurityServiceGatewayServer{
-		listRoles:            connect_gateway.NewUnaryHandler(SecurityServiceListRolesProcedure, svc.ListRoles, opts...),
-		createRole:           connect_gateway.NewUnaryHandler(SecurityServiceCreateRoleProcedure, svc.CreateRole, opts...),
-		getRole:              connect_gateway.NewUnaryHandler(SecurityServiceGetRoleProcedure, svc.GetRole, opts...),
-		deleteRole:           connect_gateway.NewUnaryHandler(SecurityServiceDeleteRoleProcedure, svc.DeleteRole, opts...),
-		listRoleMembers:      connect_gateway.NewUnaryHandler(SecurityServiceListRoleMembersProcedure, svc.ListRoleMembers, opts...),
-		updateRoleMembership: connect_gateway.NewUnaryHandler(SecurityServiceUpdateRoleMembershipProcedure, svc.UpdateRoleMembership, opts...),
+		listRoles:                connect_gateway.NewUnaryHandler(SecurityServiceListRolesProcedure, svc.ListRoles, opts...),
+		createRole:               connect_gateway.NewUnaryHandler(SecurityServiceCreateRoleProcedure, svc.CreateRole, opts...),
+		getRole:                  connect_gateway.NewUnaryHandler(SecurityServiceGetRoleProcedure, svc.GetRole, opts...),
+		deleteRole:               connect_gateway.NewUnaryHandler(SecurityServiceDeleteRoleProcedure, svc.DeleteRole, opts...),
+		listRoleMembers:          connect_gateway.NewUnaryHandler(SecurityServiceListRoleMembersProcedure, svc.ListRoleMembers, opts...),
+		updateRoleMembership:     connect_gateway.NewUnaryHandler(SecurityServiceUpdateRoleMembershipProcedure, svc.UpdateRoleMembership, opts...),
+		listSchemaRegistryACLs:   connect_gateway.NewUnaryHandler(SecurityServiceListSchemaRegistryACLsProcedure, svc.ListSchemaRegistryACLs, opts...),
+		createSchemaRegistryACLs: connect_gateway.NewUnaryHandler(SecurityServiceCreateSchemaRegistryACLsProcedure, svc.CreateSchemaRegistryACLs, opts...),
+		deleteSchemaRegistryACLs: connect_gateway.NewUnaryHandler(SecurityServiceDeleteSchemaRegistryACLsProcedure, svc.DeleteSchemaRegistryACLs, opts...),
 	}
 }
 
@@ -60,6 +66,18 @@ func (s *SecurityServiceGatewayServer) ListRoleMembers(ctx context.Context, req 
 
 func (s *SecurityServiceGatewayServer) UpdateRoleMembership(ctx context.Context, req *v1.UpdateRoleMembershipRequest) (*v1.UpdateRoleMembershipResponse, error) {
 	return s.updateRoleMembership(ctx, req)
+}
+
+func (s *SecurityServiceGatewayServer) ListSchemaRegistryACLs(ctx context.Context, req *v1.ListSchemaRegistryACLsRequest) (*v1.ListSchemaRegistryACLsResponse, error) {
+	return s.listSchemaRegistryACLs(ctx, req)
+}
+
+func (s *SecurityServiceGatewayServer) CreateSchemaRegistryACLs(ctx context.Context, req *v1.CreateSchemaRegistryACLsRequest) (*v1.CreateSchemaRegistryACLsResponse, error) {
+	return s.createSchemaRegistryACLs(ctx, req)
+}
+
+func (s *SecurityServiceGatewayServer) DeleteSchemaRegistryACLs(ctx context.Context, req *v1.DeleteSchemaRegistryACLsRequest) (*v1.DeleteSchemaRegistryACLsResponse, error) {
+	return s.deleteSchemaRegistryACLs(ctx, req)
 }
 
 // RegisterSecurityServiceHandlerGatewayServer registers the Connect handlers for the
