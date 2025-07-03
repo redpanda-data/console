@@ -2,15 +2,6 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { useQuery } from '@connectrpc/connect-query';
 import {
-  getConsoleInfo,
-  getKafkaAuthorizerInfo,
-  getKafkaConnectInfo,
-  getKafkaInfo,
-  getRedpandaInfo,
-  getRedpandaPartitionBalancerStatus,
-  getSchemaRegistryInfo,
-} from 'protogen/redpanda/api/console/v1alpha1/cluster_status-ClusterStatusService_connectquery';
-import {
   type GetConsoleInfoRequest,
   GetConsoleInfoRequestSchema,
   type GetConsoleInfoResponse,
@@ -33,6 +24,15 @@ import {
   GetSchemaRegistryInfoRequestSchema,
   type GetSchemaRegistryInfoResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import {
+  getConsoleInfo,
+  getKafkaAuthorizerInfo,
+  getKafkaConnectInfo,
+  getKafkaInfo,
+  getRedpandaInfo,
+  getRedpandaPartitionBalancerStatus,
+  getSchemaRegistryInfo,
+} from 'protogen/redpanda/api/console/v1alpha1/cluster_status-ClusterStatusService_connectquery';
 import type { QueryOptions } from 'react-query/react-query.utils';
 
 export const useGetKafkaInfoQuery = (options?: QueryOptions<GenMessage<GetKafkaInfoRequest>, GetKafkaInfoResponse>) => {

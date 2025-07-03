@@ -3,11 +3,6 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  listEnterpriseFeatures,
-  listLicenses,
-  setLicense,
-} from 'protogen/redpanda/api/console/v1alpha1/license-LicenseService_connectquery';
-import {
   LicenseService,
   type ListEnterpriseFeaturesRequest,
   ListEnterpriseFeaturesRequestSchema,
@@ -16,6 +11,11 @@ import {
   ListLicensesRequestSchema,
   type ListLicensesResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/license_pb';
+import {
+  listEnterpriseFeatures,
+  listLicenses,
+  setLicense,
+} from 'protogen/redpanda/api/console/v1alpha1/license-LicenseService_connectquery';
 import type { QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

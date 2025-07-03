@@ -4,6 +4,7 @@ import {
   ButtonGroup,
   FormErrorMessage,
   FormField,
+  isMultiValue,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -15,7 +16,6 @@ import {
   Stack,
   Text,
   UnorderedList,
-  isMultiValue,
 } from '@redpanda-data/ui';
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';

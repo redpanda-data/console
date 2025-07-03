@@ -3,13 +3,6 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  createSecret,
-  deleteSecret,
-  getSecret,
-  listSecrets,
-  updateSecret,
-} from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
-import {
   GetSecretRequestSchema,
   type ListSecretsRequest,
   ListSecretsRequestSchema,
@@ -17,11 +10,16 @@ import {
   SecretService,
 } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
+  createSecret,
+  deleteSecret,
+  getSecret,
+  listSecrets,
+  updateSecret,
+} from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import {
   type GetSecretRequest as GetSecretRequestDataPlane,
   GetSecretRequestSchema as GetSecretRequestSchemaDataPlane,
   ListSecretsFilterSchema,
-} from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import {
   type ListSecretsRequest as ListSecretsRequestDataPlane,
   ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';

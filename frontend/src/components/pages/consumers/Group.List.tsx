@@ -10,7 +10,7 @@
  */
 
 import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
-import { type IReactionDisposer, autorun } from 'mobx';
+import { autorun, type IReactionDisposer } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
@@ -72,46 +72,45 @@ class GroupList extends PageComponent {
         (groupDescription) =>
           groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp),
       );
-    } catch (e) {
+    } catch (_e) {
       console.warn('Invalid expression');
     }
 
     const stateGroups = groups.groupInto((g) => g.state);
 
     return (
-      <>
-        <PageContent>
-          <Section py={4}>
-            <Flex>
-              <Statistic title="Total Groups" value={groups.length} />
-              <div
-                style={{
-                  width: '1px',
-                  background: '#8883',
-                  margin: '0 1.5rem',
-                  marginLeft: 0,
-                }}
-              />
-              {stateGroups.map((g) => (
-                <Statistic key={g.key} title={g.key} value={g.items.length} marginRight={'1.5rem'} />
-              ))}
-            </Flex>
-          </Section>
-
-          <Section>
-            {/* Searchbar */} {/* Filters */}
+      <PageContent>
+        <Section py={4}>
+          <Flex>
+            <Statistic title="Total Groups" value={groups.length} />
             <div
               style={{
-                marginBottom: '.5rem',
-                padding: '0',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2em',
+                width: '1px',
+                background: '#8883',
+                margin: '0 1.5rem',
+                marginLeft: 0,
               }}
-            >
-              <this.SearchBar />
-              {/*
+            />
+            {stateGroups.map((g) => (
+              <Statistic key={g.key} title={g.key} value={g.items.length} marginRight={'1.5rem'} />
+            ))}
+          </Flex>
+        </Section>
+
+        <Section>
+          {/* Searchbar */} {/* Filters */}
+          <div
+            style={{
+              marginBottom: '.5rem',
+              padding: '0',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2em',
+            }}
+          >
+            <this.SearchBar />
+            {/*
                         <Checkbox
                             value={uiSettings.consumerGroupList.hideEmpty}
                             onChange={c => uiSettings.consumerGroupList.hideEmpty = c.target.checked}
@@ -119,56 +118,55 @@ class GroupList extends PageComponent {
                             Hide Empty
                         </Checkbox>
                         */}
-            </div>
-            {/* Content */}
-            <DataTable<GroupDescription>
-              data={groups}
-              pagination
-              sorting
-              columns={[
-                {
-                  header: 'State',
-                  accessorKey: 'state',
-                  size: 130,
-                  cell: ({ row: { original } }) => <GroupState group={original} />,
-                },
-                {
-                  header: 'ID',
-                  accessorKey: 'groupId',
-                  cell: ({ row: { original } }) => (
-                    <Link to={`/groups/${encodeURIComponent(original.groupId)}`}>
-                      <this.GroupId group={original} />
-                    </Link>
-                  ),
-                  size: Number.POSITIVE_INFINITY,
-                },
-                {
-                  header: 'Coordinator',
-                  accessorKey: 'coordinatorId',
-                  size: 1,
-                  cell: ({ row: { original } }) => <BrokerList brokerIds={[original.coordinatorId]} />,
-                },
-                {
-                  header: 'Protocol',
-                  accessorKey: 'protocol',
-                  size: 1,
-                },
-                {
-                  header: 'Members',
-                  accessorKey: 'members',
-                  size: 1,
-                  cell: ({ row: { original } }) => original.members.length,
-                },
-                {
-                  header: 'Lag (Sum)',
-                  accessorKey: 'lagSum',
-                  cell: ({ row: { original } }) => ShortNum({ value: original.lagSum }),
-                },
-              ]}
-            />
-          </Section>
-        </PageContent>
-      </>
+          </div>
+          {/* Content */}
+          <DataTable<GroupDescription>
+            data={groups}
+            pagination
+            sorting
+            columns={[
+              {
+                header: 'State',
+                accessorKey: 'state',
+                size: 130,
+                cell: ({ row: { original } }) => <GroupState group={original} />,
+              },
+              {
+                header: 'ID',
+                accessorKey: 'groupId',
+                cell: ({ row: { original } }) => (
+                  <Link to={`/groups/${encodeURIComponent(original.groupId)}`}>
+                    <this.GroupId group={original} />
+                  </Link>
+                ),
+                size: Number.POSITIVE_INFINITY,
+              },
+              {
+                header: 'Coordinator',
+                accessorKey: 'coordinatorId',
+                size: 1,
+                cell: ({ row: { original } }) => <BrokerList brokerIds={[original.coordinatorId]} />,
+              },
+              {
+                header: 'Protocol',
+                accessorKey: 'protocol',
+                size: 1,
+              },
+              {
+                header: 'Members',
+                accessorKey: 'members',
+                size: 1,
+                cell: ({ row: { original } }) => original.members.length,
+              },
+              {
+                header: 'Lag (Sum)',
+                accessorKey: 'lagSum',
+                cell: ({ row: { original } }) => ShortNum({ value: original.lagSum }),
+              },
+            ]}
+          />
+        </Section>
+      </PageContent>
     );
   }
 

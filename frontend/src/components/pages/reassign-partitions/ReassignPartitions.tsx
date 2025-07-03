@@ -10,10 +10,10 @@
  */
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
-import { StepSeparator } from '@redpanda-data/ui';
 import {
   Box,
   Button,
+  createStandaloneToast,
   Flex,
   Modal,
   ModalBody,
@@ -21,18 +21,18 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  redpandaTheme,
+  redpandaToastOptions,
   Step,
   StepIcon,
   StepIndicator,
   StepNumber,
-  StepStatus,
   Stepper,
-  createStandaloneToast,
-  redpandaTheme,
-  redpandaToastOptions,
+  StepSeparator,
+  StepStatus,
 } from '@redpanda-data/ui';
 import { motion } from 'framer-motion';
-import { type IReactionDisposer, autorun, computed, makeObservable, observable, transaction } from 'mobx';
+import { autorun, computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { MdOutlineErrorOutline } from 'react-icons/md';
 import { appGlobal } from '../../../state/appGlobal';
@@ -57,17 +57,17 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { StepSelectPartitions } from './Step1.Partitions';
-import { StepSelectBrokers } from './Step2.Brokers';
-import { StepReview, type TopicWithMoves } from './Step3.Review';
 import { ActiveReassignments } from './components/ActiveReassignments';
-import { type ApiData, type TopicPartitions, computeReassignments } from './logic/reassignLogic';
+import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassignLogic';
 import { ReassignmentTracker } from './logic/reassignmentTracker';
 import {
   computeMovedReplicas,
   partitionSelectionToTopicPartitions,
   topicAssignmentsToReassignmentRequest,
 } from './logic/utils';
+import { StepSelectPartitions } from './Step1.Partitions';
+import { StepSelectBrokers } from './Step2.Brokers';
+import { StepReview, type TopicWithMoves } from './Step3.Review';
 
 export interface PartitionSelection {
   // Which partitions are selected?
@@ -599,7 +599,7 @@ class ReassignPartitions extends PageComponent {
       });
       this.setReassignError(startedCount, errors);
       return false;
-    } catch (err) {
+    } catch (_err) {
       toast.close(toastRef);
 
       return false;

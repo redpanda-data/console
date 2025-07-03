@@ -1,4 +1,4 @@
-import { Box, Flex, Grid, Heading, Icon, Text, VStack, useColorModeValue } from '@redpanda-data/ui';
+import { Box, Flex, Grid, Heading, Icon, Text, useColorModeValue, VStack } from '@redpanda-data/ui';
 import { runInAction } from 'mobx';
 import type { ReactNode } from 'react';
 import { AiOutlineSlack } from 'react-icons/ai';

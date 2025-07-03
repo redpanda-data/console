@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import type { Topic } from '../../../../state/restInterfaces';
 import DeleteRecordsModal from './DeleteRecordsModal';
 

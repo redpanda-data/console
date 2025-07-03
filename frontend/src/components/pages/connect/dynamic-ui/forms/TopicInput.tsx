@@ -16,8 +16,8 @@ import {
   FormHelperText,
   Grid,
   Input,
-  Select,
   isMultiValue,
+  Select,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { api } from '../../../../../state/backendApi';

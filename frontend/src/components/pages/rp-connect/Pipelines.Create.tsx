@@ -17,18 +17,18 @@ import {
   Box,
   Button,
   Link as ChLink,
+  createStandaloneToast,
   Flex,
   FormField,
   Heading,
   Input,
   NumberInput,
   Text,
-  createStandaloneToast,
   useDisclosure,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import type { IDisposable, editor, languages } from 'monaco-editor';
+import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -396,7 +396,7 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
   let json: object;
   try {
     json = JSON.parse(value);
-  } catch (e) {
+  } catch (_e) {
     // If parsing fails, it's not a valid JSON and hence not a Kafka Connect config
     return false;
   }

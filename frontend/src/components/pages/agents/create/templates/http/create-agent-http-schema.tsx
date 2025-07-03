@@ -82,7 +82,7 @@ export const AGENT_DESCRIPTION_DESCRIPTION =
 export const SYSTEM_PROMPT_DESCRIPTION =
   'A system prompt that guides the behavior of the AI assistant. This defines how the assistant should respond to user queries.';
 
-const GLOB_PATTERN_REGEX = /^[a-zA-Z0-9*?\[\]{}!@#$%^&()|_+\-./,()]+$/;
+const GLOB_PATTERN_REGEX = /^[a-zA-Z0-9*?[\]{}!@#$%^&()|_+\-./,()]+$/;
 export const INCLUDE_GLOB_PATTERN_DESCRIPTION =
   'Define which files to include using glob patterns (e.g., **/*.md, docs/**/*.txt). This helps limit indexing to relevant files.';
 export const EXCLUDE_GLOB_PATTERN_DESCRIPTION =

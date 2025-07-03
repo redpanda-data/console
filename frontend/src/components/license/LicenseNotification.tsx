@@ -6,12 +6,12 @@ import { License_Source, License_Type } from '../../protogen/redpanda/api/consol
 import { api } from '../../state/backendApi';
 import { capitalizeFirst } from '../../utils/utils';
 import {
-  MS_IN_DAY,
   coreHasEnterpriseFeatures,
   getMillisecondsToExpiration,
   getPrettyTimeToExpiration,
   licenseIsExpired,
   licenseSoonToExpire,
+  MS_IN_DAY,
   prettyLicenseType,
 } from './licenseUtils';
 

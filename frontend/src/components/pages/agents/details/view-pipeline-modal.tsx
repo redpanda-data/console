@@ -13,7 +13,7 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { PipelineEditor } from 'components/pages/rp-connect/Pipelines.Create';
-import { MAX_TASKS, MIN_TASKS, cpuToTasks } from 'components/pages/rp-connect/tasks';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS } from 'components/pages/rp-connect/tasks';
 import { useGetPipelineQuery, useGetPipelinesBySecretsQuery } from 'react-query/api/pipeline';
 import { z } from 'zod';
 

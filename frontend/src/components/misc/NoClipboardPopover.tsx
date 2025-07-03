@@ -25,7 +25,7 @@ export const NoClipboardPopover: FunctionComponent<{
   placement?: 'left' | 'top';
 }> = ({ children, placement = 'top' }) =>
   isClipboardAvailable ? (
-    <>{children}</>
+    children
   ) : (
     <Popover title="Clipboard unavailable" content={popoverContent} placement={placement} trigger="hover">
       {children}

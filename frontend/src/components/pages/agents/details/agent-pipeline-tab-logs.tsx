@@ -7,8 +7,8 @@ import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_p
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
 import { REDPANDA_CONNECT_LOGS_TOPIC } from 'react-query/api/pipeline';
-import { createMessageSearch } from 'state/backendApi';
 import type { MessageSearch, MessageSearchRequest } from 'state/backendApi';
+import { createMessageSearch } from 'state/backendApi';
 import type { TopicMessage } from 'state/restInterfaces';
 import { uiState } from 'state/uiState';
 import { sanitizeString } from 'utils/filterHelper';

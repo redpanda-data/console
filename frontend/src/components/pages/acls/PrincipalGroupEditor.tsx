@@ -27,8 +27,8 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
-  VStack,
   useToast,
+  VStack,
 } from '@redpanda-data/ui';
 import { comparer } from 'mobx';
 import { observer } from 'mobx-react';
@@ -36,27 +36,23 @@ import { useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { api } from '../../../state/backendApi';
 import { AclOperation, type AclStrOperation, type AclStrResourceType } from '../../../state/restInterfaces';
-import { AnimatePresence, MotionDiv, animProps_radioOptionGroup } from '../../../utils/animationProps';
+import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { SingleSelect } from '../../misc/Select';
 import {
   type AclPrincipalGroup,
-  type PrincipalType,
-  type ResourceACLs,
   createEmptyClusterAcl,
   createEmptyConsumerGroupAcl,
   createEmptyTopicAcl,
   createEmptyTransactionalIdAcl,
+  type PrincipalType,
+  type ResourceACLs,
   unpackPrincipalGroup,
 } from './Models';
 import { Operation } from './Operation';
 
 export const AclPrincipalGroupEditor = observer(
-  (p: {
-    principalGroup: AclPrincipalGroup;
-    type: 'create' | 'edit';
-    onClose: () => void;
-  }) => {
+  (p: { principalGroup: AclPrincipalGroup; type: 'create' | 'edit'; onClose: () => void }) => {
     const group = p.principalGroup;
     const toast = useToast();
 

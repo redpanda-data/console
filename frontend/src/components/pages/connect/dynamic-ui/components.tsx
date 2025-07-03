@@ -91,20 +91,15 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
           })}
         </>
       ) : (
-        <>
-          <div style={{ margin: '0 auto 1.5rem' }}>
-            <ConnectorJsonEditor connectorStore={connectorStore} context={context} />
-          </div>
-        </>
+        <div style={{ margin: '0 auto 1.5rem' }}>
+          <ConnectorJsonEditor connectorStore={connectorStore} context={context} />
+        </div>
       )}
     </>
   );
 });
 
-function ConnectorJsonEditor(p: {
-  connectorStore: ConnectorPropertiesStore;
-  context: 'CREATE' | 'EDIT';
-}) {
+function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; context: 'CREATE' | 'EDIT' }) {
   const connectorStore = p.connectorStore;
 
   // Initialize connector with existing data

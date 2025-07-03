@@ -20,6 +20,7 @@ import {
   Button,
   Link as ChakraLink,
   CloseButton,
+  createStandaloneToast,
   DataTable,
   Flex,
   Icon,
@@ -27,15 +28,15 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  redpandaTheme,
+  redpandaToastOptions,
   SearchField,
   Tabs,
   Text,
   Tooltip,
-  createStandaloneToast,
-  redpandaTheme,
-  redpandaToastOptions,
 } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useRef, useState } from 'react';
@@ -67,7 +68,6 @@ import {
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
-import { isServerless } from 'config';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -143,14 +143,17 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
           (!Features.createUser && "Your cluster doesn't support this feature.") ||
           (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
-      isServerless() ? null : {
-        key: 'roles' as AclListTab,
-        name: 'Roles',
-        component: <RolesTab data-testid="roles-tab" />,
-        isDisabled:
-          (!Features.rolesApi && "Your cluster doesn't support this feature.") ||
-          (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
-      },
+      isServerless()
+        ? null
+        : {
+            key: 'roles' as AclListTab,
+            name: 'Roles',
+            component: <RolesTab data-testid="roles-tab" />,
+            isDisabled:
+              (!Features.rolesApi && "Your cluster doesn't support this feature.") ||
+              (api.userData?.canManageUsers === false &&
+                'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+          },
       {
         key: 'acls' as AclListTab,
         name: 'ACLs',
@@ -165,7 +168,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
           ? false
           : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
       },
-    ].filter(x => x !== null) as TabsItemProps[];
+    ].filter((x) => x !== null) as TabsItemProps[];
 
     // todo: maybe there is a better way to sync the tab control to the path
     const activeTab = tabs.findIndex((x) => x.key === this.props.tab);
@@ -267,15 +270,9 @@ const PermissionsListTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <>
-                      <ChakraLink
-                        as={ReactRouterLink}
-                        to={`/security/users/${entry.name}/details`}
-                        textDecoration="none"
-                      >
-                        {entry.name}
-                      </ChakraLink>
-                    </>
+                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                      {entry.name}
+                    </ChakraLink>
                   );
                 },
               },
@@ -367,15 +364,9 @@ const UsersTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <>
-                      <ChakraLink
-                        as={ReactRouterLink}
-                        to={`/security/users/${entry.name}/details`}
-                        textDecoration="none"
-                      >
-                        {entry.name}
-                      </ChakraLink>
-                    </>
+                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                      {entry.name}
+                    </ChakraLink>
                   );
                 },
               },
@@ -543,15 +534,13 @@ const RolesTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <>
-                      <ChakraLink
-                        as={ReactRouterLink}
-                        to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
-                        textDecoration="none"
-                      >
-                        {entry.name}
-                      </ChakraLink>
-                    </>
+                    <ChakraLink
+                      as={ReactRouterLink}
+                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
+                      textDecoration="none"
+                    >
+                      {entry.name}
+                    </ChakraLink>
                   );
                 },
               },
@@ -617,7 +606,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
   try {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
     groups = groups.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
-  } catch (e) {
+  } catch (_e) {
     console.warn('Invalid expression');
   }
 

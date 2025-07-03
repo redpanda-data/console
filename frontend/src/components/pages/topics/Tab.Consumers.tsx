@@ -36,6 +36,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = observer(({ topic }) => {
     consumers = [];
   }
 
+  // biome-ignore lint/correctness/useHookAtTopLevel: part of TopicConsumers implementation
   const paginationParams = usePaginationParams(consumers.length, uiState.topicSettings.consumerPageSize);
 
   return (

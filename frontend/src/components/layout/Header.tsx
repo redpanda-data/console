@@ -17,8 +17,8 @@ import { isEmbedded } from '../../config';
 import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
 import { IsDev } from '../../utils/env';
-import { UserPreferencesButton } from '../misc/UserPreferences';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
+import { UserPreferencesButton } from '../misc/UserPreferences';
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();

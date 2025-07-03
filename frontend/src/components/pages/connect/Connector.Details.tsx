@@ -13,7 +13,7 @@ import { comparer, observable, transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { useEffect, useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
-import { type MessageSearch, type MessageSearchRequest, api, createMessageSearch } from '../../../state/backendApi';
+import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../state/backendApi';
 import { ConnectClusterStore } from '../../../state/connect/state';
 import {
   type ClusterConnectorInfo,
@@ -60,10 +60,9 @@ import { sanitizeString } from '../../../utils/filterHelper';
 import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
-import { MessagePreview } from '../topics/Tab.Messages';
-import { ExpandedMessage } from '../topics/Tab.Messages';
+import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 import { getConnectorFriendlyName } from './ConnectorBoxCard';
-import { ConfirmModal, NotConfigured, TaskState, statusColors } from './helper';
+import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
@@ -356,105 +355,99 @@ const KafkaConnectorMain = observer(
 );
 
 const ConfigOverviewTab = observer(
-  (p: {
-    clusterName: string;
-    connectClusterStore: ConnectClusterStore;
-    connector: ClusterConnectorInfo;
-  }) => {
+  (p: { clusterName: string; connectClusterStore: ConnectClusterStore; connector: ClusterConnectorInfo }) => {
     const { connectClusterStore, connector } = p;
     const connectorName = connector.name;
 
     return (
-      <>
-        <Grid
-          templateAreas={`
+      <Grid
+        templateAreas={`
                 "errors errors"
                 "health details"
                 "tasks details"
             `}
-          gridTemplateRows="auto"
-          alignItems="start"
-          gap="6"
-        >
-          <Flex gridArea="errors" flexDirection="column" gap="2">
-            {connector.errors.map((e) => (
-              <ConnectorErrorModal key={e.title} error={e} />
-            ))}
-          </Flex>
+        gridTemplateRows="auto"
+        alignItems="start"
+        gap="6"
+      >
+        <Flex gridArea="errors" flexDirection="column" gap="2">
+          {connector.errors.map((e) => (
+            <ConnectorErrorModal key={e.title} error={e} />
+          ))}
+        </Flex>
 
-          <Section gridArea="health">
-            <Flex flexDirection="row" gap="4" m="1">
-              <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} />
+        <Section gridArea="health">
+          <Flex flexDirection="row" gap="4" m="1">
+            <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} />
 
-              <Flex flexDirection="column">
-                <Text fontWeight="semibold" fontSize="3xl">
-                  {titleCase(connector.status)}
-                </Text>
-                <Text opacity=".5">Status</Text>
-              </Flex>
-            </Flex>
-          </Section>
-
-          <Section py={4} gridArea="tasks" minWidth="500px">
-            <Flex alignItems="center" mt="2" mb="6" gap="2">
-              <Heading as="h3" fontSize="1rem" fontWeight="semibold" textTransform="uppercase" color="blackAlpha.800">
-                Tasks
-              </Heading>
-              <Text opacity=".5" fontWeight="normal">
-                ({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})
+            <Flex flexDirection="column">
+              <Text fontWeight="semibold" fontSize="3xl">
+                {titleCase(connector.status)}
               </Text>
+              <Text opacity=".5">Status</Text>
             </Flex>
-            <DataTable<ClusterConnectorTaskInfo>
-              data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-              pagination
-              defaultPageSize={10}
-              sorting
-              columns={[
-                {
-                  header: 'Task',
-                  accessorKey: 'taskId',
-                  size: 200,
-                  cell: ({
-                    row: {
-                      original: { taskId },
-                    },
-                  }) => <Code nowrap>Task-{taskId}</Code>,
-                },
-                {
-                  header: 'Status',
-                  accessorKey: 'state',
-                  cell: ({ row: { original } }) => <TaskState observable={original} />,
-                },
-                {
-                  header: 'Worker',
-                  accessorKey: 'workerId',
-                  cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
-                },
-              ]}
-            />
-          </Section>
+          </Flex>
+        </Section>
 
-          <Section py={4} gridArea="details">
-            <Heading
-              as="h3"
-              mb="6"
-              mt="2"
-              fontSize="1rem"
-              fontWeight="semibold"
-              textTransform="uppercase"
-              color="blackAlpha.800"
-            >
-              Connector Details
+        <Section py={4} gridArea="tasks" minWidth="500px">
+          <Flex alignItems="center" mt="2" mb="6" gap="2">
+            <Heading as="h3" fontSize="1rem" fontWeight="semibold" textTransform="uppercase" color="blackAlpha.800">
+              Tasks
             </Heading>
+            <Text opacity=".5" fontWeight="normal">
+              ({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})
+            </Text>
+          </Flex>
+          <DataTable<ClusterConnectorTaskInfo>
+            data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
+            pagination
+            defaultPageSize={10}
+            sorting
+            columns={[
+              {
+                header: 'Task',
+                accessorKey: 'taskId',
+                size: 200,
+                cell: ({
+                  row: {
+                    original: { taskId },
+                  },
+                }) => <Code nowrap>Task-{taskId}</Code>,
+              },
+              {
+                header: 'Status',
+                accessorKey: 'state',
+                cell: ({ row: { original } }) => <TaskState observable={original} />,
+              },
+              {
+                header: 'Worker',
+                accessorKey: 'workerId',
+                cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
+              },
+            ]}
+          />
+        </Section>
 
-            <ConnectorDetails
-              clusterName={p.clusterName}
-              connectClusterStore={connectClusterStore}
-              connector={connector}
-            />
-          </Section>
-        </Grid>
-      </>
+        <Section py={4} gridArea="details">
+          <Heading
+            as="h3"
+            mb="6"
+            mt="2"
+            fontSize="1rem"
+            fontWeight="semibold"
+            textTransform="uppercase"
+            color="blackAlpha.800"
+          >
+            Connector Details
+          </Heading>
+
+          <ConnectorDetails
+            clusterName={p.clusterName}
+            connectClusterStore={connectClusterStore}
+            connector={connector}
+          />
+        </Section>
+      </Grid>
     );
   },
 );
@@ -547,11 +540,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 export default KafkaConnectorDetails;
 
 const ConnectorDetails = observer(
-  (p: {
-    clusterName: string;
-    connectClusterStore: ConnectClusterStore;
-    connector: ClusterConnectorInfo;
-  }) => {
+  (p: { clusterName: string; connectClusterStore: ConnectClusterStore; connector: ClusterConnectorInfo }) => {
     const store = p.connectClusterStore.getConnectorStore(p.connector.name);
 
     const allProps = [...(store?.propsByName.values() ?? [])];
@@ -619,11 +608,7 @@ const ConnectorDetails = observer(
 );
 
 const LogsTab = observer(
-  (p: {
-    clusterName: string;
-    connectClusterStore: ConnectClusterStore;
-    connector: ClusterConnectorInfo;
-  }) => {
+  (p: { clusterName: string; connectClusterStore: ConnectClusterStore; connector: ClusterConnectorInfo }) => {
     const { connector } = p;
     const connectorName = connector.name;
     const topicName = LOGS_TOPIC_NAME;

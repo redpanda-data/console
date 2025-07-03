@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { createStandaloneToast } from '@redpanda-data/ui';
 import {
   Alert,
   AlertDescription,
@@ -17,17 +16,18 @@ import {
   AlertTitle,
   Box,
   CodeBlock,
+  createStandaloneToast,
   Divider,
   Flex,
   Grid,
   GridItem,
+  Link,
   ListItem,
   Tabs,
+  Text,
   UnorderedList,
   useToast,
 } from '@redpanda-data/ui';
-import { Text } from '@redpanda-data/ui';
-import { Link } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
@@ -45,6 +45,7 @@ import { SingleSelect } from '../../misc/Select';
 import { SmallStat } from '../../misc/SmallStat';
 import { PageComponent } from '../Page';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
+
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
@@ -430,46 +431,44 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
               </Button>
             </>
           ) : (
-            <>
-              <Button
-                variant="outline"
-                ml="auto"
-                disabledReason={
-                  api.userData?.canDeleteSchemas === false
-                    ? "You don't have the 'canDeleteSchemas' permission"
-                    : undefined
-                }
-                onClick={() =>
-                  openDeleteModal(`${subject.name} version ${schema.version}`, () => {
-                    api
-                      .deleteSchemaSubjectVersion(subject.name, schema.version, false)
-                      .then(() => {
-                        toast({
-                          status: 'success',
-                          duration: 4000,
-                          isClosable: false,
-                          title: 'Schema version deleted',
-                          description: 'You can recover or permanently delete it.',
-                        });
-
-                        api.refreshSchemaDetails(subject.name, true);
-                        api.refreshSchemaSubjects(true);
-                      })
-                      .catch((err) => {
-                        toast({
-                          status: 'error',
-                          duration: null,
-                          isClosable: true,
-                          title: 'Failed to delete schema version',
-                          description: String(err),
-                        });
+            <Button
+              variant="outline"
+              ml="auto"
+              disabledReason={
+                api.userData?.canDeleteSchemas === false
+                  ? "You don't have the 'canDeleteSchemas' permission"
+                  : undefined
+              }
+              onClick={() =>
+                openDeleteModal(`${subject.name} version ${schema.version}`, () => {
+                  api
+                    .deleteSchemaSubjectVersion(subject.name, schema.version, false)
+                    .then(() => {
+                      toast({
+                        status: 'success',
+                        duration: 4000,
+                        isClosable: false,
+                        title: 'Schema version deleted',
+                        description: 'You can recover or permanently delete it.',
                       });
-                  })
-                }
-              >
-                Delete
-              </Button>
-            </>
+
+                      api.refreshSchemaDetails(subject.name, true);
+                      api.refreshSchemaSubjects(true);
+                    })
+                    .catch((err) => {
+                      toast({
+                        status: 'error',
+                        duration: null,
+                        isClosable: true,
+                        title: 'Failed to delete schema version',
+                        description: String(err),
+                      });
+                    });
+                })
+              }
+            >
+              Delete
+            </Button>
           )}
         </Flex>
 

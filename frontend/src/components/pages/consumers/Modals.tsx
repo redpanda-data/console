@@ -15,6 +15,7 @@ import {
   Box,
   Button,
   ConfirmItemDeleteModal,
+  createStandaloneToast,
   DataTable,
   Flex,
   FormLabel,
@@ -29,14 +30,13 @@ import {
   ModalOverlay,
   NumberInput,
   Radio,
+  redpandaTheme,
+  redpandaToastOptions,
   Text,
   Tooltip,
   UnorderedList,
-  createStandaloneToast,
-  redpandaTheme,
-  redpandaToastOptions,
 } from '@redpanda-data/ui';
-import { type IReactionDisposer, action, autorun, makeObservable, observable, transaction } from 'mobx';
+import { action, autorun, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { MdOutlineWarningAmber } from 'react-icons/md';
@@ -50,7 +50,7 @@ import type {
   TopicOffset,
 } from '../../../state/restInterfaces';
 import { toJson } from '../../../utils/jsonUtils';
-import { InfoText, Button as RPButton, numberToThousandsString } from '../../../utils/tsxUtils';
+import { InfoText, numberToThousandsString, Button as RPButton } from '../../../utils/tsxUtils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { SingleSelect } from '../../misc/Select';
@@ -108,7 +108,7 @@ export class EditOffsetsModal extends Component<{
   @observable selectedOption: EditOptions = 'startOffset';
   @observable selectedTopic: string | null = null;
   @observable selectedPartition: number | null = null;
-  @observable timestampUtcMs: number = new Date().valueOf();
+  @observable timestampUtcMs: number = Date.now();
   @observable offsetShiftByValue = 0;
   @observable offsetShiftByValueAsString = '0';
 

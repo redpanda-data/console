@@ -16,24 +16,24 @@ import {
   Button,
   Checkbox,
   CopyButton,
+  createStandaloneToast,
   Flex,
   FormField,
   Grid,
   Heading,
   IconButton,
   Input,
+  isMultiValue,
+  isSingleValue,
   PasswordInput,
+  redpandaTheme,
+  redpandaToastOptions,
   Select,
   Tag,
   TagCloseButton,
   TagLabel,
   Text,
   Tooltip,
-  createStandaloneToast,
-  isMultiValue,
-  isSingleValue,
-  redpandaTheme,
-  redpandaToastOptions,
 } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -169,11 +169,7 @@ class UserCreatePage extends PageComponent<{}> {
 export default UserCreatePage;
 
 const CreateUserModal = observer(
-  (p: {
-    state: CreateUserModalState;
-    onCreateUser: () => Promise<boolean>;
-    onCancel: () => void;
-  }) => {
+  (p: { state: CreateUserModalState; onCreateUser: () => Promise<boolean>; onCancel: () => void }) => {
     const state = p.state;
 
     const isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(state.username);

@@ -12,12 +12,20 @@
 import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
 import { XIcon } from '@heroicons/react/solid';
-import { Link as ChakraLink, createStandaloneToast } from '@redpanda-data/ui';
-import { Box, Button, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
+import {
+  Box,
+  Button,
+  Link as ChakraLink,
+  createStandaloneToast,
+  DataTable,
+  Flex,
+  SearchField,
+  Stack,
+  Text,
+} from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Link as ReactRouterLink } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { Link, Link as ReactRouterLink } from 'react-router-dom';
 import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
@@ -31,6 +39,7 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
+
 const { ToastContainer, toast } = createStandaloneToast();
 
 export const PartitionStatus = observer((p: { status: PartitionTransformStatus_PartitionStatus }) => {
@@ -60,7 +69,7 @@ export const PartitionStatus = observer((p: { status: PartitionTransformStatus_P
         </Flex>
       );
     default:
-      return <> Unknown</>;
+      return 'Unknown';
   }
 });
 

@@ -16,12 +16,11 @@ import {
   createClient,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { type Monaco, loader } from '@monaco-editor/react';
-import { autorun, configure, observable, when } from 'mobx';
-import * as monaco from 'monaco-editor';
-
+import { loader, type Monaco } from '@monaco-editor/react';
 import { getAgentSidebarItemTitle } from 'components/pages/agents/agent-list-page';
 import memoizeOne from 'memoize-one';
+import { autorun, configure, observable, when } from 'mobx';
+import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
 import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { ClusterStatusService } from 'protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
@@ -262,13 +261,7 @@ export function isServerless() {
 
 const routesIgnoredInEmbedded = ['/overview', '/quotas', '/reassign-partitions', '/admin'];
 
-const routesIgnoredInServerless = [
-  '/overview',
-  '/quotas',
-  '/reassign-partitions',
-  '/admin',
-  '/transforms',
-];
+const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {

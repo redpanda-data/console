@@ -14,33 +14,33 @@ import {
   Button,
   Flex,
   FormField,
-  HStack,
   Heading,
+  HStack,
   Input,
+  isSingleValue,
   Select,
   Tag,
   TagCloseButton,
   TagLabel,
-  isSingleValue,
   useToast,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
-import { type RolePrincipal, api, rolesApi } from '../../../state/backendApi';
+import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
 import type { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 import {
   type AclPrincipalGroup,
   type ClusterACLs,
   type ConsumerGroupACLs,
-  type TopicACLs,
-  type TransactionalIdACLs,
   createEmptyClusterAcl,
   createEmptyConsumerGroupAcl,
   createEmptyTopicAcl,
   createEmptyTransactionalIdAcl,
   principalGroupsView,
+  type TopicACLs,
+  type TransactionalIdACLs,
   unpackPrincipalGroup,
 } from './Models';
 import { ResourceACLsEditor } from './PrincipalGroupEditor';
