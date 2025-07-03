@@ -6,15 +6,20 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../../../../google/api/annotations_pb";
+import { file_google_api_field_behavior } from "../../../../google/api/field_behavior_pb";
+import type { Status } from "../../../../google/rpc/status_pb";
+import { file_google_rpc_status } from "../../../../google/rpc/status_pb";
 import { file_protoc_gen_openapiv2_options_annotations } from "../../../../protoc-gen-openapiv2/options/annotations_pb";
 import { file_redpanda_api_auth_v1_authorization } from "../../auth/v1/authorization_pb";
+import type { ACL_Operation, ACL_PermissionType, ACL_ResourcePatternType, ACL_ResourceType } from "./acl_pb";
+import { file_redpanda_api_dataplane_v1_acl } from "./acl_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file redpanda/api/dataplane/v1/security.proto.
  */
 export const file_redpanda_api_dataplane_v1_security: GenFile = /*@__PURE__*/
-  fileDesc("CihyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL3NlY3VyaXR5LnByb3RvEhlyZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxIi0KBFJvbGUSJQoEbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQioQIKEExpc3RSb2xlc1JlcXVlc3QSRwoGZmlsdGVyGAEgASgLMjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Um9sZXNSZXF1ZXN0LkZpbHRlckgAiAEBEiYKCXBhZ2Vfc2l6ZRgCIAEoBUITukgQGg4Y6Aco////////////ARISCgpwYWdlX3Rva2VuGAMgASgJGn0KBkZpbHRlchIpCgtuYW1lX3ByZWZpeBgBIAEoCUIUukgRcg8YgAEyCl4oW14sPV0qKSQSKwoNbmFtZV9jb250YWlucxgCIAEoCUIUukgRcg8YgAEyCl4oW14sPV0qKSQSGwoJcHJpbmNpcGFsGAMgASgJQgi6SAVyAxiAAUIJCgdfZmlsdGVyIlwKEUxpc3RSb2xlc1Jlc3BvbnNlEi4KBXJvbGVzGAEgAygLMh8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSJCChFDcmVhdGVSb2xlUmVxdWVzdBItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlIkMKEkNyZWF0ZVJvbGVSZXNwb25zZRItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlIjwKDkdldFJvbGVSZXF1ZXN0EioKCXJvbGVfbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQifAoPR2V0Um9sZVJlc3BvbnNlEi0KBHJvbGUYASABKAsyHy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGUSOgoHbWVtYmVycxgCIAMoCzIpLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUm9sZU1lbWJlcnNoaXAiVAoRRGVsZXRlUm9sZVJlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBITCgtkZWxldGVfYWNscxgCIAEoCCIUChJEZWxldGVSb2xlUmVzcG9uc2UihQIKFkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBJNCgZmaWx0ZXIYAiABKAsyOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QuRmlsdGVySACIAQESJgoJcGFnZV9zaXplGAMgASgFQhO6SBAaDhjoByj///////////8BEhIKCnBhZ2VfdG9rZW4YBCABKAkaKQoGRmlsdGVyEh8KDW5hbWVfY29udGFpbnMYASABKAlCCLpIBXIDGIABQgkKB19maWx0ZXIigQEKF0xpc3RSb2xlTWVtYmVyc1Jlc3BvbnNlEhEKCXJvbGVfbmFtZRgBIAEoCRI6CgdtZW1iZXJzGAIgAygLMikucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlTWVtYmVyc2hpcBIXCg9uZXh0X3BhZ2VfdG9rZW4YAyABKAkiIwoOUm9sZU1lbWJlcnNoaXASEQoJcHJpbmNpcGFsGAEgASgJIswBChtVcGRhdGVSb2xlTWVtYmVyc2hpcFJlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBIOCgZjcmVhdGUYAiABKAgSNgoDYWRkGAMgAygLMikucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlTWVtYmVyc2hpcBI5CgZyZW1vdmUYBCADKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGVNZW1iZXJzaGlwIsABChxVcGRhdGVSb2xlTWVtYmVyc2hpcFJlc3BvbnNlEioKCXJvbGVfbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQSOAoFYWRkZWQYAiADKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGVNZW1iZXJzaGlwEjoKB3JlbW92ZWQYAyADKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGVNZW1iZXJzaGlwMs0NCg9TZWN1cml0eVNlcnZpY2USkQIKCUxpc3RSb2xlcxIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFJvbGVzUmVxdWVzdBosLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFJvbGVzUmVzcG9uc2UiqAGSQYsBEgpMaXN0IFJvbGVzGj5MaXN0IHJvbGVzLiBPcHRpb25hbDogZmlsdGVyIGJhc2VkIG9uIHJvbGUgbmFtZSBhbmQgcHJpbmNpcGFsLko9CgMyMDASNgoCT0sSMAouGiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Um9sZXNSZXNwb25zZYqmHQQIAxADgtPkkwILEgkvdjEvcm9sZXMS9QEKCkNyZWF0ZVJvbGUSLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVJvbGVSZXF1ZXN0Gi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVSb2xlUmVzcG9uc2UiiQGSQWcSC0NyZWF0ZSBSb2xlGg5DcmVhdGUgYSByb2xlLkpICgMyMDESQQoMUm9sZSBjcmVhdGVkEjEKLxotLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ3JlYXRlUm9sZVJlc3BvbnNliqYdBAgDEAOC0+STAhE6BHJvbGUiCS92MS9yb2xlcxKMAgoHR2V0Um9sZRIpLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0Um9sZVJlcXVlc3QaKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFJvbGVSZXNwb25zZSKpAZJBgAESCEdldCBSb2xlGgtHZXQgYSByb2xlLko7CgMyMDASNAoCT0sSLgosGioucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5HZXRSb2xlUmVzcG9uc2VKKgoDNDA0EiMKCU5vdCBGb3VuZBIWChQaEi5nb29nbGUucnBjLlN0YXR1c4qmHQQIAxADgtPkkwIXEhUvdjEvcm9sZXMve3JvbGVfbmFtZX0SgwIKCkRlbGV0ZVJvbGUSLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVJvbGVSZXF1ZXN0Gi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVSb2xlUmVzcG9uc2UilwGSQW8SC0RlbGV0ZSBSb2xlGg5EZWxldGUgYSBSb2xlLkokCgMyMDQSHQoZUm9sZSBkZWxldGVkIHN1Y2Nlc3NmdWxseRIASioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAMQA4LT5JMCFyoVL3YxL3JvbGVzL3tyb2xlX25hbWV9EqUCCg9MaXN0Um9sZU1lbWJlcnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1Jlc3BvbnNlIqoBkkF6EhFMaXN0IFJvbGUgTWVtYmVycxogTGlzdCBtZW1iZXJzIGFzc2lnbmVkIHRvIGEgcm9sZS5KQwoDMjAwEjwKAk9LEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFJvbGVNZW1iZXJzUmVzcG9uc2WKph0ECAMQA4LT5JMCHxIdL3YxL3JvbGVzL3tyb2xlX25hbWV9L21lbWJlcnMSyQIKFFVwZGF0ZVJvbGVNZW1iZXJzaGlwEjYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5VcGRhdGVSb2xlTWVtYmVyc2hpcFJlcXVlc3QaNy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlVwZGF0ZVJvbGVNZW1iZXJzaGlwUmVzcG9uc2UivwGSQZMBEgtVcGRhdGUgUm9sZRoOVXBkYXRlIGEgcm9sZS5KSAoDMjAwEkEKAk9LEjsKORo3LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXNwb25zZUoqCgM0MDQSIwoJTm90IEZvdW5kEhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgDEAOC0+STAho6ASoaFS92MS9yb2xlcy97cm9sZV9uYW1lfRolkkEiCghTZWN1cml0eRIWTWFuYWdlIFJlZHBhbmRhIHJvbGVzLkKSAgodY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFCDVNlY3VyaXR5UHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
+  fileDesc("CihyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL3NlY3VyaXR5LnByb3RvEhlyZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxIi0KBFJvbGUSJQoEbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQioQIKEExpc3RSb2xlc1JlcXVlc3QSRwoGZmlsdGVyGAEgASgLMjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Um9sZXNSZXF1ZXN0LkZpbHRlckgAiAEBEiYKCXBhZ2Vfc2l6ZRgCIAEoBUITukgQGg4Y6Aco////////////ARISCgpwYWdlX3Rva2VuGAMgASgJGn0KBkZpbHRlchIpCgtuYW1lX3ByZWZpeBgBIAEoCUIUukgRcg8YgAEyCl4oW14sPV0qKSQSKwoNbmFtZV9jb250YWlucxgCIAEoCUIUukgRcg8YgAEyCl4oW14sPV0qKSQSGwoJcHJpbmNpcGFsGAMgASgJQgi6SAVyAxiAAUIJCgdfZmlsdGVyIlwKEUxpc3RSb2xlc1Jlc3BvbnNlEi4KBXJvbGVzGAEgAygLMh8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSJCChFDcmVhdGVSb2xlUmVxdWVzdBItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlIkMKEkNyZWF0ZVJvbGVSZXNwb25zZRItCgRyb2xlGAEgASgLMh8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlIjwKDkdldFJvbGVSZXF1ZXN0EioKCXJvbGVfbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQifAoPR2V0Um9sZVJlc3BvbnNlEi0KBHJvbGUYASABKAsyHy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGUSOgoHbWVtYmVycxgCIAMoCzIpLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUm9sZU1lbWJlcnNoaXAiVAoRRGVsZXRlUm9sZVJlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBITCgtkZWxldGVfYWNscxgCIAEoCCIUChJEZWxldGVSb2xlUmVzcG9uc2UihQIKFkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBJNCgZmaWx0ZXIYAiABKAsyOC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QuRmlsdGVySACIAQESJgoJcGFnZV9zaXplGAMgASgFQhO6SBAaDhjoByj///////////8BEhIKCnBhZ2VfdG9rZW4YBCABKAkaKQoGRmlsdGVyEh8KDW5hbWVfY29udGFpbnMYASABKAlCCLpIBXIDGIABQgkKB19maWx0ZXIigQEKF0xpc3RSb2xlTWVtYmVyc1Jlc3BvbnNlEhEKCXJvbGVfbmFtZRgBIAEoCRI6CgdtZW1iZXJzGAIgAygLMikucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlTWVtYmVyc2hpcBIXCg9uZXh0X3BhZ2VfdG9rZW4YAyABKAkiIwoOUm9sZU1lbWJlcnNoaXASEQoJcHJpbmNpcGFsGAEgASgJIswBChtVcGRhdGVSb2xlTWVtYmVyc2hpcFJlcXVlc3QSKgoJcm9sZV9uYW1lGAEgASgJQhe6SBTIAQFyDxABGIABMgheW14sPV0rJBIOCgZjcmVhdGUYAiABKAgSNgoDYWRkGAMgAygLMikucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5Sb2xlTWVtYmVyc2hpcBI5CgZyZW1vdmUYBCADKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGVNZW1iZXJzaGlwIsABChxVcGRhdGVSb2xlTWVtYmVyc2hpcFJlc3BvbnNlEioKCXJvbGVfbmFtZRgBIAEoCUIXukgUyAEBcg8QARiAATIIXlteLD1dKyQSOAoFYWRkZWQYAiADKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGVNZW1iZXJzaGlwEjoKB3JlbW92ZWQYAyADKAsyKS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJvbGVNZW1iZXJzaGlwIq8ECh1MaXN0U2NoZW1hUmVnaXN0cnlBQ0xzUmVxdWVzdBJPCgZmaWx0ZXIYASABKAsyPy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RTY2hlbWFSZWdpc3RyeUFDTHNSZXF1ZXN0LkZpbHRlchq8AwoGRmlsdGVyEkwKDXJlc291cmNlX3R5cGUYASABKA4yKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5SZXNvdXJjZVR5cGVCCLpIBYIBAhABEhoKDXJlc291cmNlX25hbWUYAiABKAlIAIgBARJbChVyZXNvdXJjZV9wYXR0ZXJuX3R5cGUYAyABKA4yMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5SZXNvdXJjZVBhdHRlcm5UeXBlQgi6SAWCAQIQARIWCglwcmluY2lwYWwYBCABKAlIAYgBARIRCgRob3N0GAUgASgJSAKIAQESRQoJb3BlcmF0aW9uGAYgASgOMigucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuT3BlcmF0aW9uQgi6SAWCAQIQARJQCg9wZXJtaXNzaW9uX3R5cGUYByABKA4yLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5QZXJtaXNzaW9uVHlwZUIIukgFggECEAFCEAoOX3Jlc291cmNlX25hbWVCDAoKX3ByaW5jaXBhbEIHCgVfaG9zdCKzBAoeTGlzdFNjaGVtYVJlZ2lzdHJ5QUNMc1Jlc3BvbnNlElUKCXJlc291cmNlcxgBIAMoCzJCLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFNjaGVtYVJlZ2lzdHJ5QUNMc1Jlc3BvbnNlLlJlc291cmNlGq4BCgZQb2xpY3kSEQoJcHJpbmNpcGFsGAEgASgJEgwKBGhvc3QYAiABKAkSOwoJb3BlcmF0aW9uGAMgASgOMigucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuT3BlcmF0aW9uEkYKD3Blcm1pc3Npb25fdHlwZRgEIAEoDjItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQUNMLlBlcm1pc3Npb25UeXBlGogCCghSZXNvdXJjZRJCCg1yZXNvdXJjZV90eXBlGAEgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuUmVzb3VyY2VUeXBlEhUKDXJlc291cmNlX25hbWUYAiABKAkSUQoVcmVzb3VyY2VfcGF0dGVybl90eXBlGAMgASgOMjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuUmVzb3VyY2VQYXR0ZXJuVHlwZRJOCgRhY2xzGAQgAygLMkAucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0U2NoZW1hUmVnaXN0cnlBQ0xzUmVzcG9uc2UuUG9saWN5IuwHCh5DcmVhdGVTY2hlbWFSZWdpc3RyeUFDTFJlcXVlc3QSVgoNcmVzb3VyY2VfdHlwZRgBIAEoDjIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQUNMLlJlc291cmNlVHlwZUIS4EECukgMyAEBggEGEAEgACABEhUKDXJlc291cmNlX25hbWUYAiABKAkSZQoVcmVzb3VyY2VfcGF0dGVybl90eXBlGAMgASgOMjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuUmVzb3VyY2VQYXR0ZXJuVHlwZUIS4EECukgMyAEBggEGEAEYAxgEEiUKCXByaW5jaXBhbBgEIAEoCUIS4EECukgMyAEBcgc6BVVzZXI6EpQBCgRob3N0GAUgASgJQoUB4EECukh/ugF5ChZ3aWxkY2FyZF9vcl9pcF9hZGRyZXNzEj1GaWVsZCBob3N0IG11c3QgYmUgZWl0aGVyIHdpbGRjYXJkICgqKSBvciBhIHZhbGlkIElQIGFkZHJlc3MuGiB0aGlzID09ICcqJyA/IHRydWUgOiB0aGlzLmlzSXAoKcgBARJPCglvcGVyYXRpb24YBiABKA4yKC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5PcGVyYXRpb25CEuBBArpIDMgBAYIBBhABIAAgARJaCg9wZXJtaXNzaW9uX3R5cGUYByABKA4yLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5QZXJtaXNzaW9uVHlwZUIS4EECukgMyAEBggEGEAEYAhgDOogDukiEAxqBAwo6cmVzb3VyY2VfbmFtZV9tdXN0X2JlX3NldF9leGNlcHRfZm9yX2NsdXN0ZXJfcmVzb3VyY2VfdHlwZRrCAnRoaXMucmVzb3VyY2VfdHlwZSA9PSA0ICYmIHNpemUodGhpcy5yZXNvdXJjZV9uYW1lKSA9PSAwID8gJyc6IHRoaXMucmVzb3VyY2VfdHlwZSA9PSA0ICYmIHRoaXMucmVzb3VyY2VfbmFtZSAhPSAna2Fma2EtY2x1c3RlcicgPyAnRmllbGQgcmVzb3VyY2VfbmFtZSBtdXN0IGJlIHNldCB0byAia2Fma2EtY2x1c3RlciIgb3IgZW1wdHkgd2hlbiB1c2luZyByZXNvdXJjZV90eXBlPUNMVVNURVInOiB0aGlzLnJlc291cmNlX3R5cGUgIT0gNCAmJiBzaXplKHRoaXMucmVzb3VyY2VfbmFtZSkgPT0gMCA/ICdGaWVsZCByZXNvdXJjZV9uYW1lIG11c3QgYmUgc2V0JzogJyciIQofQ3JlYXRlU2NoZW1hUmVnaXN0cnlBQ0xSZXNwb25zZSLeBAofRGVsZXRlU2NoZW1hUmVnaXN0cnlBQ0xzUmVxdWVzdBJcCgZmaWx0ZXIYASABKAsyQS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVNjaGVtYVJlZ2lzdHJ5QUNMc1JlcXVlc3QuRmlsdGVyQgngQQK6SAPIAQEa3AMKBkZpbHRlchJUCg1yZXNvdXJjZV90eXBlGAEgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuUmVzb3VyY2VUeXBlQhDgQQK6SArIAQGCAQQQASAAEhoKDXJlc291cmNlX25hbWUYAiABKAlIAIgBARJjChVyZXNvdXJjZV9wYXR0ZXJuX3R5cGUYAyABKA4yMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5SZXNvdXJjZVBhdHRlcm5UeXBlQhDgQQK6SArIAQGCAQQQASAAEhYKCXByaW5jaXBhbBgEIAEoCUgBiAEBEhEKBGhvc3QYBSABKAlIAogBARJNCglvcGVyYXRpb24YBiABKA4yKC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5PcGVyYXRpb25CEOBBArpICsgBAYIBBBABIAASWAoPcGVybWlzc2lvbl90eXBlGAcgASgOMi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5BQ0wuUGVybWlzc2lvblR5cGVCEOBBArpICsgBAYIBBBABIABCEAoOX3Jlc291cmNlX25hbWVCDAoKX3ByaW5jaXBhbEIHCgVfaG9zdCKJBAogRGVsZXRlU2NoZW1hUmVnaXN0cnlBQ0xzUmVzcG9uc2USXgoNbWF0Y2hpbmdfYWNscxgBIAMoCzJHLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlU2NoZW1hUmVnaXN0cnlBQ0xzUmVzcG9uc2UuTWF0Y2hpbmdBQ0wahAMKC01hdGNoaW5nQUNMEkIKDXJlc291cmNlX3R5cGUYASABKA4yKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5SZXNvdXJjZVR5cGUSFQoNcmVzb3VyY2VfbmFtZRgCIAEoCRJRChVyZXNvdXJjZV9wYXR0ZXJuX3R5cGUYAyABKA4yMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5SZXNvdXJjZVBhdHRlcm5UeXBlEhEKCXByaW5jaXBhbBgEIAEoCRIMCgRob3N0GAUgASgJEjsKCW9wZXJhdGlvbhgGIAEoDjIoLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQUNMLk9wZXJhdGlvbhJGCg9wZXJtaXNzaW9uX3R5cGUYByABKA4yLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkFDTC5QZXJtaXNzaW9uVHlwZRIhCgVlcnJvchgIIAEoCzISLmdvb2dsZS5ycGMuU3RhdHVzMoAXCg9TZWN1cml0eVNlcnZpY2USkQIKCUxpc3RSb2xlcxIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFJvbGVzUmVxdWVzdBosLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFJvbGVzUmVzcG9uc2UiqAGSQYsBEgpMaXN0IFJvbGVzGj5MaXN0IHJvbGVzLiBPcHRpb25hbDogZmlsdGVyIGJhc2VkIG9uIHJvbGUgbmFtZSBhbmQgcHJpbmNpcGFsLko9CgMyMDASNgoCT0sSMAouGiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0Um9sZXNSZXNwb25zZYqmHQQIAxADgtPkkwILEgkvdjEvcm9sZXMS9QEKCkNyZWF0ZVJvbGUSLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVJvbGVSZXF1ZXN0Gi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVSb2xlUmVzcG9uc2UiiQGSQWcSC0NyZWF0ZSBSb2xlGg5DcmVhdGUgYSByb2xlLkpICgMyMDESQQoMUm9sZSBjcmVhdGVkEjEKLxotLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ3JlYXRlUm9sZVJlc3BvbnNliqYdBAgDEAOC0+STAhE6BHJvbGUiCS92MS9yb2xlcxKMAgoHR2V0Um9sZRIpLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuR2V0Um9sZVJlcXVlc3QaKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkdldFJvbGVSZXNwb25zZSKpAZJBgAESCEdldCBSb2xlGgtHZXQgYSByb2xlLko7CgMyMDASNAoCT0sSLgosGioucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5HZXRSb2xlUmVzcG9uc2VKKgoDNDA0EiMKCU5vdCBGb3VuZBIWChQaEi5nb29nbGUucnBjLlN0YXR1c4qmHQQIAxADgtPkkwIXEhUvdjEvcm9sZXMve3JvbGVfbmFtZX0SgwIKCkRlbGV0ZVJvbGUSLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVJvbGVSZXF1ZXN0Gi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVSb2xlUmVzcG9uc2UilwGSQW8SC0RlbGV0ZSBSb2xlGg5EZWxldGUgYSBSb2xlLkokCgMyMDQSHQoZUm9sZSBkZWxldGVkIHN1Y2Nlc3NmdWxseRIASioKAzQwNBIjCglOb3QgRm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAMQA4LT5JMCFyoVL3YxL3JvbGVzL3tyb2xlX25hbWV9EqUCCg9MaXN0Um9sZU1lbWJlcnMSMS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1JlcXVlc3QaMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RSb2xlTWVtYmVyc1Jlc3BvbnNlIqoBkkF6EhFMaXN0IFJvbGUgTWVtYmVycxogTGlzdCBtZW1iZXJzIGFzc2lnbmVkIHRvIGEgcm9sZS5KQwoDMjAwEjwKAk9LEjYKNBoyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFJvbGVNZW1iZXJzUmVzcG9uc2WKph0ECAMQA4LT5JMCHxIdL3YxL3JvbGVzL3tyb2xlX25hbWV9L21lbWJlcnMSyQIKFFVwZGF0ZVJvbGVNZW1iZXJzaGlwEjYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5VcGRhdGVSb2xlTWVtYmVyc2hpcFJlcXVlc3QaNy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlVwZGF0ZVJvbGVNZW1iZXJzaGlwUmVzcG9uc2UivwGSQZMBEgtVcGRhdGUgUm9sZRoOVXBkYXRlIGEgcm9sZS5KSAoDMjAwEkEKAk9LEjsKORo3LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuVXBkYXRlUm9sZU1lbWJlcnNoaXBSZXNwb25zZUoqCgM0MDQSIwoJTm90IEZvdW5kEhYKFBoSLmdvb2dsZS5ycGMuU3RhdHVziqYdBAgDEAOC0+STAho6ASoaFS92MS9yb2xlcy97cm9sZV9uYW1lfRKgAwoWTGlzdFNjaGVtYVJlZ2lzdHJ5QUNMcxI4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFNjaGVtYVJlZ2lzdHJ5QUNMc1JlcXVlc3QaOS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RTY2hlbWFSZWdpc3RyeUFDTHNSZXNwb25zZSKQApJB5AESGUxpc3QgU2NoZW1hIFJlZ2lzdHJ5IEFDTHMae0xpc3QgYWxsIFNjaGVtYSBSZWdpc3RyeSBBQ0xzLiBUaGUgYGZpbHRlci5gIHF1ZXJ5IHN0cmluZyBwYXJhbWV0ZXJzIGZpbmQgbWF0Y2hpbmcgQUNMcyB0aGF0IG1lZXQgYWxsIHNwZWNpZmllZCBjb25kaXRpb25zLkpKCgMyMDASQwoCT0sSPQo7GjkucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0U2NoZW1hUmVnaXN0cnlBQ0xzUmVzcG9uc2WKph0ECAMQAoLT5JMCGhIYL3YxL3NjaGVtYS1yZWdpc3RyeS9hY2xzEtMCChdDcmVhdGVTY2hlbWFSZWdpc3RyeUFDTBI5LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQ3JlYXRlU2NoZW1hUmVnaXN0cnlBQ0xSZXF1ZXN0GjoucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5DcmVhdGVTY2hlbWFSZWdpc3RyeUFDTFJlc3BvbnNlIsABkkGRARIaQ3JlYXRlIFNjaGVtYSBSZWdpc3RyeSBBQ0waIUNyZWF0ZSBhIG5ldyBTY2hlbWEgUmVnaXN0cnkgQUNMLkpQCgMyMDESSQoHQ3JlYXRlZBI+CjwaOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkNyZWF0ZVNjaGVtYVJlZ2lzdHJ5QUNMUmVzcG9uc2WKph0ECAMQAoLT5JMCHToBKiIYL3YxL3NjaGVtYS1yZWdpc3RyeS9hY2xzErcDChhEZWxldGVTY2hlbWFSZWdpc3RyeUFDTHMSOi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVNjaGVtYVJlZ2lzdHJ5QUNMc1JlcXVlc3QaOy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkRlbGV0ZVNjaGVtYVJlZ2lzdHJ5QUNMc1Jlc3BvbnNlIqECkkHrARIbRGVsZXRlIFNjaGVtYSBSZWdpc3RyeSBBQ0xzGn5EZWxldGUgYWxsIFNjaGVtYSBSZWdpc3RyeSBBQ0xzIHRoYXQgbWF0Y2ggdGhlIGZpbHRlciBjcml0ZXJpYS4gVGhlIGZpbHRlciBpbiB0aGUgcmVxdWVzdCBib2R5IHNwZWNpZmllcyB3aGljaCBBQ0xzIHRvIGRlbGV0ZS5KTAoDMjAwEkUKAk9LEj8KPRo7LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlU2NoZW1hUmVnaXN0cnlBQ0xzUmVzcG9uc2WKph0ECAMQAoLT5JMCJDoBKiIfL3YxL3NjaGVtYS1yZWdpc3RyeS9hY2xzOnJlbW92ZRolkkEiCghTZWN1cml0eRIWTWFuYWdlIFJlZHBhbmRhIHJvbGVzLkKSAgodY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFCDVNlY3VyaXR5UHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_api_field_behavior, file_google_rpc_status, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization, file_redpanda_api_dataplane_v1_acl]);
 
 /**
  * Role defines a role in the system.
@@ -469,6 +474,401 @@ export const UpdateRoleMembershipResponseSchema: GenMessage<UpdateRoleMembership
   messageDesc(file_redpanda_api_dataplane_v1_security, 13);
 
 /**
+ * @generated from message redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest
+ */
+export type ListSchemaRegistryACLsRequest = Message<"redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest.Filter filter = 1;
+   */
+  filter?: ListSchemaRegistryACLsRequest_Filter;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest.
+ * Use `create(ListSchemaRegistryACLsRequestSchema)` to create a new message.
+ */
+export const ListSchemaRegistryACLsRequestSchema: GenMessage<ListSchemaRegistryACLsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 14);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest.Filter
+ */
+export type ListSchemaRegistryACLsRequest_Filter = Message<"redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest.Filter"> & {
+  /**
+   * The type of resource (topic, consumer group, etc.) this
+   * ACL targets.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourceType resource_type = 1;
+   */
+  resourceType: ACL_ResourceType;
+
+  /**
+   * The name of the resource this ACL targets.
+   *
+   * @generated from field: optional string resource_name = 2;
+   */
+  resourceName?: string;
+
+  /**
+   * The pattern to use for matching the specified resource_name
+   * (any, exact match, literal, or prefixed).
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourcePatternType resource_pattern_type = 3;
+   */
+  resourcePatternType: ACL_ResourcePatternType;
+
+  /**
+   * The user for whom this ACL applies. With the Kafka simple
+   * authorizer, you must include the prefix "User:" with the user name.
+   *
+   * @generated from field: optional string principal = 4;
+   */
+  principal?: string;
+
+  /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
+   *
+   * @generated from field: optional string host = 5;
+   */
+  host?: string;
+
+  /**
+   * The operation that is allowed or denied (e.g. READ).
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.Operation operation = 6;
+   */
+  operation: ACL_Operation;
+
+  /**
+   * Whether the operation should be allowed or denied.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.PermissionType permission_type = 7;
+   */
+  permissionType: ACL_PermissionType;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListSchemaRegistryACLsRequest.Filter.
+ * Use `create(ListSchemaRegistryACLsRequest_FilterSchema)` to create a new message.
+ */
+export const ListSchemaRegistryACLsRequest_FilterSchema: GenMessage<ListSchemaRegistryACLsRequest_Filter> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 14, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse
+ */
+export type ListSchemaRegistryACLsResponse = Message<"redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Resource resources = 1;
+   */
+  resources: ListSchemaRegistryACLsResponse_Resource[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.
+ * Use `create(ListSchemaRegistryACLsResponseSchema)` to create a new message.
+ */
+export const ListSchemaRegistryACLsResponseSchema: GenMessage<ListSchemaRegistryACLsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 15);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Policy
+ */
+export type ListSchemaRegistryACLsResponse_Policy = Message<"redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Policy"> & {
+  /**
+   * The user for whom this ACL applies.
+   *
+   * @generated from field: string principal = 1;
+   */
+  principal: string;
+
+  /**
+   * The host address for this ACL.
+   *
+   * @generated from field: string host = 2;
+   */
+  host: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.Operation operation = 3;
+   */
+  operation: ACL_Operation;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.PermissionType permission_type = 4;
+   */
+  permissionType: ACL_PermissionType;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Policy.
+ * Use `create(ListSchemaRegistryACLsResponse_PolicySchema)` to create a new message.
+ */
+export const ListSchemaRegistryACLsResponse_PolicySchema: GenMessage<ListSchemaRegistryACLsResponse_Policy> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 15, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Resource
+ */
+export type ListSchemaRegistryACLsResponse_Resource = Message<"redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Resource"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourceType resource_type = 1;
+   */
+  resourceType: ACL_ResourceType;
+
+  /**
+   * The name of the resource this ACL targets.
+   *
+   * @generated from field: string resource_name = 2;
+   */
+  resourceName: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourcePatternType resource_pattern_type = 3;
+   */
+  resourcePatternType: ACL_ResourcePatternType;
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Policy acls = 4;
+   */
+  acls: ListSchemaRegistryACLsResponse_Policy[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse.Resource.
+ * Use `create(ListSchemaRegistryACLsResponse_ResourceSchema)` to create a new message.
+ */
+export const ListSchemaRegistryACLsResponse_ResourceSchema: GenMessage<ListSchemaRegistryACLsResponse_Resource> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 15, 1);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.CreateSchemaRegistryACLRequest
+ */
+export type CreateSchemaRegistryACLRequest = Message<"redpanda.api.dataplane.v1.CreateSchemaRegistryACLRequest"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourceType resource_type = 1;
+   */
+  resourceType: ACL_ResourceType;
+
+  /**
+   * The name of the resource this ACL targets.
+   * For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+   *
+   * @generated from field: string resource_name = 2;
+   */
+  resourceName: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourcePatternType resource_pattern_type = 3;
+   */
+  resourcePatternType: ACL_ResourcePatternType;
+
+  /**
+   * The user for whom this ACL applies. With the Kafka simple
+   * authorizer, you must include the prefix "User:" with the user name.
+   *
+   * @generated from field: string principal = 4;
+   */
+  principal: string;
+
+  /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
+   *
+   * @generated from field: string host = 5;
+   */
+  host: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.Operation operation = 6;
+   */
+  operation: ACL_Operation;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.PermissionType permission_type = 7;
+   */
+  permissionType: ACL_PermissionType;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.CreateSchemaRegistryACLRequest.
+ * Use `create(CreateSchemaRegistryACLRequestSchema)` to create a new message.
+ */
+export const CreateSchemaRegistryACLRequestSchema: GenMessage<CreateSchemaRegistryACLRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 16);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.CreateSchemaRegistryACLResponse
+ */
+export type CreateSchemaRegistryACLResponse = Message<"redpanda.api.dataplane.v1.CreateSchemaRegistryACLResponse"> & {
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.CreateSchemaRegistryACLResponse.
+ * Use `create(CreateSchemaRegistryACLResponseSchema)` to create a new message.
+ */
+export const CreateSchemaRegistryACLResponseSchema: GenMessage<CreateSchemaRegistryACLResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 17);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest
+ */
+export type DeleteSchemaRegistryACLsRequest = Message<"redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest.Filter filter = 1;
+   */
+  filter?: DeleteSchemaRegistryACLsRequest_Filter;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest.
+ * Use `create(DeleteSchemaRegistryACLsRequestSchema)` to create a new message.
+ */
+export const DeleteSchemaRegistryACLsRequestSchema: GenMessage<DeleteSchemaRegistryACLsRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 18);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest.Filter
+ */
+export type DeleteSchemaRegistryACLsRequest_Filter = Message<"redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest.Filter"> & {
+  /**
+   * The type of resource (topic, consumer group, etc.) this
+   * ACL targets.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourceType resource_type = 1;
+   */
+  resourceType: ACL_ResourceType;
+
+  /**
+   * The name of the resource this ACL targets.
+   *
+   * @generated from field: optional string resource_name = 2;
+   */
+  resourceName?: string;
+
+  /**
+   * The pattern to use for matching the specified resource_name
+   * (any, exact match, literal, or prefixed).
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourcePatternType resource_pattern_type = 3;
+   */
+  resourcePatternType: ACL_ResourcePatternType;
+
+  /**
+   * The user for whom this ACL applies. With the Kafka simple
+   * authorizer, you must include the prefix "User:" with the user name.
+   *
+   * @generated from field: optional string principal = 4;
+   */
+  principal?: string;
+
+  /**
+   * The host address to use for this ACL. To allow a principal
+   * access from multiple hosts, you must create an ACL for each host.
+   *
+   * @generated from field: optional string host = 5;
+   */
+  host?: string;
+
+  /**
+   * The operation that is allowed or denied (e.g. READ).
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.Operation operation = 6;
+   */
+  operation: ACL_Operation;
+
+  /**
+   * Whether the operation should be allowed or denied.
+   *
+   * @generated from field: redpanda.api.dataplane.v1.ACL.PermissionType permission_type = 7;
+   */
+  permissionType: ACL_PermissionType;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsRequest.Filter.
+ * Use `create(DeleteSchemaRegistryACLsRequest_FilterSchema)` to create a new message.
+ */
+export const DeleteSchemaRegistryACLsRequest_FilterSchema: GenMessage<DeleteSchemaRegistryACLsRequest_Filter> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 18, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse
+ */
+export type DeleteSchemaRegistryACLsResponse = Message<"redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse.MatchingACL matching_acls = 1;
+   */
+  matchingAcls: DeleteSchemaRegistryACLsResponse_MatchingACL[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse.
+ * Use `create(DeleteSchemaRegistryACLsResponseSchema)` to create a new message.
+ */
+export const DeleteSchemaRegistryACLsResponseSchema: GenMessage<DeleteSchemaRegistryACLsResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 19);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse.MatchingACL
+ */
+export type DeleteSchemaRegistryACLsResponse_MatchingACL = Message<"redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse.MatchingACL"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourceType resource_type = 1;
+   */
+  resourceType: ACL_ResourceType;
+
+  /**
+   * The name of the resource this ACL targets.
+   *
+   * @generated from field: string resource_name = 2;
+   */
+  resourceName: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.ResourcePatternType resource_pattern_type = 3;
+   */
+  resourcePatternType: ACL_ResourcePatternType;
+
+  /**
+   * The user for whom this ACL applies.
+   *
+   * @generated from field: string principal = 4;
+   */
+  principal: string;
+
+  /**
+   * The host address to use for this ACL.
+   *
+   * @generated from field: string host = 5;
+   */
+  host: string;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.Operation operation = 6;
+   */
+  operation: ACL_Operation;
+
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.ACL.PermissionType permission_type = 7;
+   */
+  permissionType: ACL_PermissionType;
+
+  /**
+   * @generated from field: google.rpc.Status error = 8;
+   */
+  error?: Status;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse.MatchingACL.
+ * Use `create(DeleteSchemaRegistryACLsResponse_MatchingACLSchema)` to create a new message.
+ */
+export const DeleteSchemaRegistryACLsResponse_MatchingACLSchema: GenMessage<DeleteSchemaRegistryACLsResponse_MatchingACL> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_security, 19, 0);
+
+/**
  * @generated from service redpanda.api.dataplane.v1.SecurityService
  */
 export const SecurityService: GenService<{
@@ -533,6 +933,36 @@ export const SecurityService: GenService<{
     methodKind: "unary";
     input: typeof UpdateRoleMembershipRequestSchema;
     output: typeof UpdateRoleMembershipResponseSchema;
+  },
+  /**
+   * ListSchemaRegistryACLs lists Schema Registry ACLs that match the filter criteria.
+   *
+   * @generated from rpc redpanda.api.dataplane.v1.SecurityService.ListSchemaRegistryACLs
+   */
+  listSchemaRegistryACLs: {
+    methodKind: "unary";
+    input: typeof ListSchemaRegistryACLsRequestSchema;
+    output: typeof ListSchemaRegistryACLsResponseSchema;
+  },
+  /**
+   * CreateSchemaRegistryACL creates a new Schema Registry ACL.
+   *
+   * @generated from rpc redpanda.api.dataplane.v1.SecurityService.CreateSchemaRegistryACL
+   */
+  createSchemaRegistryACL: {
+    methodKind: "unary";
+    input: typeof CreateSchemaRegistryACLRequestSchema;
+    output: typeof CreateSchemaRegistryACLResponseSchema;
+  },
+  /**
+   * DeleteSchemaRegistryACLs deletes Schema Registry ACLs that match the filter criteria.
+   *
+   * @generated from rpc redpanda.api.dataplane.v1.SecurityService.DeleteSchemaRegistryACLs
+   */
+  deleteSchemaRegistryACLs: {
+    methodKind: "unary";
+    input: typeof DeleteSchemaRegistryACLsRequestSchema;
+    output: typeof DeleteSchemaRegistryACLsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_dataplane_v1_security, 0);

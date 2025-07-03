@@ -17,6 +17,7 @@ components:
         - OPERATION_IDEMPOTENT_WRITE
         - OPERATION_CREATE_TOKENS
         - OPERATION_DESCRIBE_TOKENS
+        - OPERATION_REMOVE
       type: string
     Action:
       enum:
@@ -380,6 +381,41 @@ components:
         role:
           $ref: '#/components/schemas/Role'
       type: object
+    CreateSchemaRegistryACLRequest:
+      properties:
+        host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          type: string
+        resource_name:
+          description: |-
+            The name of the resource this ACL targets.
+            For requests with resource_type CLUSTER, this will default to "kafka-cluster".
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      required:
+        - resource_type
+        - resource_pattern_type
+        - principal
+        - host
+        - operation
+        - permission_type
+      type: object
+    CreateSchemaRegistryACLResponse:
+      type: object
     CreateSecretRequest:
       description: CreateSecretRequest is the request of CreateSecret.
       properties:
@@ -527,8 +563,30 @@ components:
       properties:
         matching_acls:
           items:
-            $ref: '#/components/schemas/MatchingACL'
+            $ref: '#/components/schemas/DeleteACLsResponse.MatchingACL'
           type: array
+      type: object
+    DeleteACLsResponse.MatchingACL:
+      properties:
+        error:
+          $ref: '#/components/schemas/rpc.Status'
+        host:
+          description: The host address to use for this ACL.
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: The user for whom this ACL applies.
+          type: string
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     DeleteKafkaConnectSecretResponse:
       description: DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
@@ -541,6 +599,74 @@ components:
       type: object
     DeleteRoleResponse:
       description: DeleteRoleResponse is the response for DeleteRole.
+      type: object
+    DeleteSchemaRegistryACLsRequest:
+      properties:
+        filter:
+          $ref: '#/components/schemas/DeleteSchemaRegistryACLsRequest.Filter'
+      required:
+        - filter
+      type: object
+    DeleteSchemaRegistryACLsRequest.Filter:
+      properties:
+        host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          nullable: true
+          type: string
+        resource_name:
+          description: The name of the resource this ACL targets.
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      required:
+        - resource_type
+        - resource_pattern_type
+        - operation
+        - permission_type
+      type: object
+    DeleteSchemaRegistryACLsResponse:
+      properties:
+        matching_acls:
+          items:
+            $ref: '#/components/schemas/DeleteSchemaRegistryACLsResponse.MatchingACL'
+          type: array
+      type: object
+    DeleteSchemaRegistryACLsResponse.MatchingACL:
+      properties:
+        error:
+          $ref: '#/components/schemas/rpc.Status'
+        host:
+          description: The host address to use for this ACL.
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: The user for whom this ACL applies.
+          type: string
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     DeleteSecretResponse:
       description: DeleteSecretResponse is the response of DeleteSecret.
@@ -903,8 +1029,35 @@ components:
       properties:
         resources:
           items:
-            $ref: '#/components/schemas/Resource'
+            $ref: '#/components/schemas/ListACLsResponse.Resource'
           type: array
+      type: object
+    ListACLsResponse.Policy:
+      properties:
+        host:
+          description: The host address for this ACL.
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: The user for whom this ACL applies.
+          type: string
+      type: object
+    ListACLsResponse.Resource:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/ListACLsResponse.Policy'
+          type: array
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     ListConnectClustersResponse:
       properties:
@@ -1047,6 +1200,67 @@ components:
           items:
             $ref: '#/components/schemas/Role'
           type: array
+      type: object
+    ListSchemaRegistryACLsRequest.Filter:
+      properties:
+        host:
+          description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          nullable: true
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          nullable: true
+          type: string
+        resource_name:
+          description: The name of the resource this ACL targets.
+          nullable: true
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+      type: object
+    ListSchemaRegistryACLsResponse:
+      properties:
+        resources:
+          items:
+            $ref: '#/components/schemas/ListSchemaRegistryACLsResponse.Resource'
+          type: array
+      type: object
+    ListSchemaRegistryACLsResponse.Policy:
+      properties:
+        host:
+          description: The host address for this ACL.
+          type: string
+        operation:
+          $ref: '#/components/schemas/ACL.Operation'
+        permission_type:
+          $ref: '#/components/schemas/PermissionType'
+        principal:
+          description: The user for whom this ACL applies.
+          type: string
+      type: object
+    ListSchemaRegistryACLsResponse.Resource:
+      properties:
+        acls:
+          items:
+            $ref: '#/components/schemas/ListSchemaRegistryACLsResponse.Policy'
+          type: array
+        resource_name:
+          description: The name of the resource this ACL targets.
+          type: string
+        resource_pattern_type:
+          $ref: '#/components/schemas/ResourcePatternType'
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
       type: object
     ListSecretScopesResponse:
       description: ListSecretScopesResponse is the response of ListSecretScopes.
@@ -1293,28 +1507,6 @@ components:
             If a tag's value is empty, the server interprets that as a deletion.
           type: object
       type: object
-    MatchingACL:
-      properties:
-        error:
-          $ref: '#/components/schemas/rpc.Status'
-        host:
-          description: The host address to use for this ACL.
-          type: string
-        operation:
-          $ref: '#/components/schemas/ACL.Operation'
-        permission_type:
-          $ref: '#/components/schemas/PermissionType'
-        principal:
-          description: The user for whom this ACL applies.
-          type: string
-        resource_name:
-          description: The name of the resource this ACL targets.
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
-      type: object
     MountTask:
       properties:
         id:
@@ -1539,19 +1731,6 @@ components:
         secret_id:
           type: string
       type: object
-    Policy:
-      properties:
-        host:
-          description: The host address for this ACL.
-          type: string
-        operation:
-          $ref: '#/components/schemas/ACL.Operation'
-        permission_type:
-          $ref: '#/components/schemas/PermissionType'
-        principal:
-          description: The user for whom this ACL applies.
-          type: string
-      type: object
     QuotaFailure:
       description: |-
         Describes how a quota check failed.
@@ -1684,20 +1863,6 @@ components:
             type: integer
           type: array
       type: object
-    Resource:
-      properties:
-        acls:
-          items:
-            $ref: '#/components/schemas/Policy'
-          type: array
-        resource_name:
-          description: The name of the resource this ACL targets.
-          type: string
-        resource_pattern_type:
-          $ref: '#/components/schemas/ResourcePatternType'
-        resource_type:
-          $ref: '#/components/schemas/ResourceType'
-      type: object
     ResourcePatternType:
       description: |-
         The pattern to use for matching the specified resource_name
@@ -1720,6 +1885,8 @@ components:
         - RESOURCE_TYPE_TRANSACTIONAL_ID
         - RESOURCE_TYPE_DELEGATION_TOKEN
         - RESOURCE_TYPE_USER
+        - RESOURCE_TYPE_REGISTRY
+        - RESOURCE_TYPE_SUBJECT
       type: string
     Resources:
       properties:
@@ -2248,6 +2415,8 @@ paths:
               - RESOURCE_TYPE_TRANSACTIONAL_ID
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
+              - RESOURCE_TYPE_REGISTRY
+              - RESOURCE_TYPE_SUBJECT
             type: string
         - description: The name of the resource this ACL targets.
           in: query
@@ -2301,6 +2470,7 @@ paths:
               - OPERATION_IDEMPOTENT_WRITE
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
+              - OPERATION_REMOVE
             type: string
         - description: Whether the operation should be allowed or denied.
           in: query
@@ -2358,6 +2528,8 @@ paths:
               - RESOURCE_TYPE_TRANSACTIONAL_ID
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
+              - RESOURCE_TYPE_REGISTRY
+              - RESOURCE_TYPE_SUBJECT
             type: string
         - description: The name of the resource this ACL targets.
           in: query
@@ -2409,6 +2581,7 @@ paths:
               - OPERATION_IDEMPOTENT_WRITE
               - OPERATION_CREATE_TOKENS
               - OPERATION_DESCRIBE_TOKENS
+              - OPERATION_REMOVE
             type: string
         - description: Whether the operation should be allowed or denied.
           in: query
@@ -4881,6 +5054,194 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: List Role Members
+      tags:
+        - Security
+  /v1/schema-registry/acls:
+    get:
+      description: List all Schema Registry ACLs. The `filter.` query string parameters find matching ACLs that meet all specified conditions.
+      operationId: SecurityService_ListSchemaRegistryACLs
+      parameters:
+        - description: |-
+            The type of resource (topic, consumer group, etc.) this
+            ACL targets.
+          in: query
+          name: filter.resource_type
+          schema:
+            enum:
+              - RESOURCE_TYPE_ANY
+              - RESOURCE_TYPE_TOPIC
+              - RESOURCE_TYPE_GROUP
+              - RESOURCE_TYPE_CLUSTER
+              - RESOURCE_TYPE_TRANSACTIONAL_ID
+              - RESOURCE_TYPE_DELEGATION_TOKEN
+              - RESOURCE_TYPE_USER
+              - RESOURCE_TYPE_REGISTRY
+              - RESOURCE_TYPE_SUBJECT
+            type: string
+        - description: The name of the resource this ACL targets.
+          in: query
+          name: filter.resource_name
+          schema:
+            type: string
+        - description: |-
+            The pattern to use for matching the specified resource_name
+            (any, exact match, literal, or prefixed).
+          in: query
+          name: filter.resource_pattern_type
+          schema:
+            enum:
+              - RESOURCE_PATTERN_TYPE_ANY
+              - RESOURCE_PATTERN_TYPE_MATCH
+              - RESOURCE_PATTERN_TYPE_LITERAL
+              - RESOURCE_PATTERN_TYPE_PREFIXED
+            type: string
+        - description: |-
+            The user for whom this ACL applies. With the Kafka simple
+            authorizer, you must include the prefix "User:" with the user name.
+          in: query
+          name: filter.principal
+          schema:
+            type: string
+        - description: |-
+            The host address to use for this ACL. To allow a principal
+            access from multiple hosts, you must create an ACL for each host.
+          in: query
+          name: filter.host
+          schema:
+            type: string
+        - description: The operation that is allowed or denied (e.g. READ).
+          in: query
+          name: filter.operation
+          schema:
+            enum:
+              - OPERATION_ANY
+              - OPERATION_ALL
+              - OPERATION_READ
+              - OPERATION_WRITE
+              - OPERATION_CREATE
+              - OPERATION_DELETE
+              - OPERATION_ALTER
+              - OPERATION_DESCRIBE
+              - OPERATION_CLUSTER_ACTION
+              - OPERATION_DESCRIBE_CONFIGS
+              - OPERATION_ALTER_CONFIGS
+              - OPERATION_IDEMPOTENT_WRITE
+              - OPERATION_CREATE_TOKENS
+              - OPERATION_DESCRIBE_TOKENS
+              - OPERATION_REMOVE
+            type: string
+        - description: Whether the operation should be allowed or denied.
+          in: query
+          name: filter.permission_type
+          schema:
+            enum:
+              - PERMISSION_TYPE_ANY
+              - PERMISSION_TYPE_DENY
+              - PERMISSION_TYPE_ALLOW
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSchemaRegistryACLsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Schema Registry ACLs
+      tags:
+        - Security
+    post:
+      description: Create a new Schema Registry ACL.
+      operationId: SecurityService_CreateSchemaRegistryACL
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSchemaRegistryACLRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSchemaRegistryACLResponse'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create Schema Registry ACL
+      tags:
+        - Security
+  /v1/schema-registry/acls:remove:
+    post:
+      description: Delete all Schema Registry ACLs that match the filter criteria. The filter in the request body specifies which ACLs to delete.
+      operationId: SecurityService_DeleteSchemaRegistryACLs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteSchemaRegistryACLsRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteSchemaRegistryACLsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete Schema Registry ACLs
       tags:
         - Security
   /v1/secret-scopes:

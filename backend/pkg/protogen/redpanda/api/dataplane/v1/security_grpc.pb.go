@@ -20,12 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SecurityService_ListRoles_FullMethodName            = "/redpanda.api.dataplane.v1.SecurityService/ListRoles"
-	SecurityService_CreateRole_FullMethodName           = "/redpanda.api.dataplane.v1.SecurityService/CreateRole"
-	SecurityService_GetRole_FullMethodName              = "/redpanda.api.dataplane.v1.SecurityService/GetRole"
-	SecurityService_DeleteRole_FullMethodName           = "/redpanda.api.dataplane.v1.SecurityService/DeleteRole"
-	SecurityService_ListRoleMembers_FullMethodName      = "/redpanda.api.dataplane.v1.SecurityService/ListRoleMembers"
-	SecurityService_UpdateRoleMembership_FullMethodName = "/redpanda.api.dataplane.v1.SecurityService/UpdateRoleMembership"
+	SecurityService_ListRoles_FullMethodName                = "/redpanda.api.dataplane.v1.SecurityService/ListRoles"
+	SecurityService_CreateRole_FullMethodName               = "/redpanda.api.dataplane.v1.SecurityService/CreateRole"
+	SecurityService_GetRole_FullMethodName                  = "/redpanda.api.dataplane.v1.SecurityService/GetRole"
+	SecurityService_DeleteRole_FullMethodName               = "/redpanda.api.dataplane.v1.SecurityService/DeleteRole"
+	SecurityService_ListRoleMembers_FullMethodName          = "/redpanda.api.dataplane.v1.SecurityService/ListRoleMembers"
+	SecurityService_UpdateRoleMembership_FullMethodName     = "/redpanda.api.dataplane.v1.SecurityService/UpdateRoleMembership"
+	SecurityService_ListSchemaRegistryACLs_FullMethodName   = "/redpanda.api.dataplane.v1.SecurityService/ListSchemaRegistryACLs"
+	SecurityService_CreateSchemaRegistryACL_FullMethodName  = "/redpanda.api.dataplane.v1.SecurityService/CreateSchemaRegistryACL"
+	SecurityService_DeleteSchemaRegistryACLs_FullMethodName = "/redpanda.api.dataplane.v1.SecurityService/DeleteSchemaRegistryACLs"
 )
 
 // SecurityServiceClient is the client API for SecurityService service.
@@ -47,6 +50,12 @@ type SecurityServiceClient interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(ctx context.Context, in *UpdateRoleMembershipRequest, opts ...grpc.CallOption) (*UpdateRoleMembershipResponse, error)
+	// ListSchemaRegistryACLs lists Schema Registry ACLs that match the filter criteria.
+	ListSchemaRegistryACLs(ctx context.Context, in *ListSchemaRegistryACLsRequest, opts ...grpc.CallOption) (*ListSchemaRegistryACLsResponse, error)
+	// CreateSchemaRegistryACL creates a new Schema Registry ACL.
+	CreateSchemaRegistryACL(ctx context.Context, in *CreateSchemaRegistryACLRequest, opts ...grpc.CallOption) (*CreateSchemaRegistryACLResponse, error)
+	// DeleteSchemaRegistryACLs deletes Schema Registry ACLs that match the filter criteria.
+	DeleteSchemaRegistryACLs(ctx context.Context, in *DeleteSchemaRegistryACLsRequest, opts ...grpc.CallOption) (*DeleteSchemaRegistryACLsResponse, error)
 }
 
 type securityServiceClient struct {
@@ -117,6 +126,36 @@ func (c *securityServiceClient) UpdateRoleMembership(ctx context.Context, in *Up
 	return out, nil
 }
 
+func (c *securityServiceClient) ListSchemaRegistryACLs(ctx context.Context, in *ListSchemaRegistryACLsRequest, opts ...grpc.CallOption) (*ListSchemaRegistryACLsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSchemaRegistryACLsResponse)
+	err := c.cc.Invoke(ctx, SecurityService_ListSchemaRegistryACLs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *securityServiceClient) CreateSchemaRegistryACL(ctx context.Context, in *CreateSchemaRegistryACLRequest, opts ...grpc.CallOption) (*CreateSchemaRegistryACLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateSchemaRegistryACLResponse)
+	err := c.cc.Invoke(ctx, SecurityService_CreateSchemaRegistryACL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *securityServiceClient) DeleteSchemaRegistryACLs(ctx context.Context, in *DeleteSchemaRegistryACLsRequest, opts ...grpc.CallOption) (*DeleteSchemaRegistryACLsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteSchemaRegistryACLsResponse)
+	err := c.cc.Invoke(ctx, SecurityService_DeleteSchemaRegistryACLs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SecurityServiceServer is the server API for SecurityService service.
 // All implementations must embed UnimplementedSecurityServiceServer
 // for forward compatibility.
@@ -136,6 +175,12 @@ type SecurityServiceServer interface {
 	// Adding a member that is already assigned to the role (or removing one that is not) is a no-op,
 	// and the rest of the members will be added and removed and reported.
 	UpdateRoleMembership(context.Context, *UpdateRoleMembershipRequest) (*UpdateRoleMembershipResponse, error)
+	// ListSchemaRegistryACLs lists Schema Registry ACLs that match the filter criteria.
+	ListSchemaRegistryACLs(context.Context, *ListSchemaRegistryACLsRequest) (*ListSchemaRegistryACLsResponse, error)
+	// CreateSchemaRegistryACL creates a new Schema Registry ACL.
+	CreateSchemaRegistryACL(context.Context, *CreateSchemaRegistryACLRequest) (*CreateSchemaRegistryACLResponse, error)
+	// DeleteSchemaRegistryACLs deletes Schema Registry ACLs that match the filter criteria.
+	DeleteSchemaRegistryACLs(context.Context, *DeleteSchemaRegistryACLsRequest) (*DeleteSchemaRegistryACLsResponse, error)
 	mustEmbedUnimplementedSecurityServiceServer()
 }
 
@@ -163,6 +208,15 @@ func (UnimplementedSecurityServiceServer) ListRoleMembers(context.Context, *List
 }
 func (UnimplementedSecurityServiceServer) UpdateRoleMembership(context.Context, *UpdateRoleMembershipRequest) (*UpdateRoleMembershipResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRoleMembership not implemented")
+}
+func (UnimplementedSecurityServiceServer) ListSchemaRegistryACLs(context.Context, *ListSchemaRegistryACLsRequest) (*ListSchemaRegistryACLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSchemaRegistryACLs not implemented")
+}
+func (UnimplementedSecurityServiceServer) CreateSchemaRegistryACL(context.Context, *CreateSchemaRegistryACLRequest) (*CreateSchemaRegistryACLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSchemaRegistryACL not implemented")
+}
+func (UnimplementedSecurityServiceServer) DeleteSchemaRegistryACLs(context.Context, *DeleteSchemaRegistryACLsRequest) (*DeleteSchemaRegistryACLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSchemaRegistryACLs not implemented")
 }
 func (UnimplementedSecurityServiceServer) mustEmbedUnimplementedSecurityServiceServer() {}
 func (UnimplementedSecurityServiceServer) testEmbeddedByValue()                         {}
@@ -293,6 +347,60 @@ func _SecurityService_UpdateRoleMembership_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SecurityService_ListSchemaRegistryACLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSchemaRegistryACLsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecurityServiceServer).ListSchemaRegistryACLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecurityService_ListSchemaRegistryACLs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecurityServiceServer).ListSchemaRegistryACLs(ctx, req.(*ListSchemaRegistryACLsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SecurityService_CreateSchemaRegistryACL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSchemaRegistryACLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecurityServiceServer).CreateSchemaRegistryACL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecurityService_CreateSchemaRegistryACL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecurityServiceServer).CreateSchemaRegistryACL(ctx, req.(*CreateSchemaRegistryACLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SecurityService_DeleteSchemaRegistryACLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSchemaRegistryACLsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecurityServiceServer).DeleteSchemaRegistryACLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecurityService_DeleteSchemaRegistryACLs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecurityServiceServer).DeleteSchemaRegistryACLs(ctx, req.(*DeleteSchemaRegistryACLsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SecurityService_ServiceDesc is the grpc.ServiceDesc for SecurityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -323,6 +431,18 @@ var SecurityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRoleMembership",
 			Handler:    _SecurityService_UpdateRoleMembership_Handler,
+		},
+		{
+			MethodName: "ListSchemaRegistryACLs",
+			Handler:    _SecurityService_ListSchemaRegistryACLs_Handler,
+		},
+		{
+			MethodName: "CreateSchemaRegistryACL",
+			Handler:    _SecurityService_CreateSchemaRegistryACL_Handler,
+		},
+		{
+			MethodName: "DeleteSchemaRegistryACLs",
+			Handler:    _SecurityService_DeleteSchemaRegistryACLs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
