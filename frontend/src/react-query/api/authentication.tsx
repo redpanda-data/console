@@ -3,12 +3,6 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  getIdentity,
-  listAuthenticationMethods,
-  listConsoleUsers,
-  loginSaslScram,
-} from 'protogen/redpanda/api/console/v1alpha1/authentication-AuthenticationService_connectquery';
-import {
   AuthenticationService,
   type GetIdentityRequest,
   GetIdentityRequestSchema,
@@ -20,6 +14,12 @@ import {
   ListConsoleUsersRequestSchema,
   type ListConsoleUsersResponse,
 } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import {
+  getIdentity,
+  listAuthenticationMethods,
+  listConsoleUsers,
+  loginSaslScram,
+} from 'protogen/redpanda/api/console/v1alpha1/authentication-AuthenticationService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

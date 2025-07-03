@@ -7,10 +7,10 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import type { z } from 'zod';
 import {
   type CreateAgentHttpFormValues,
+  createAgentHttpFormOpts,
   EXCLUDE_GLOB_PATTERN_DESCRIPTION,
   INCLUDE_GLOB_PATTERN_DESCRIPTION,
   PERSONAL_ACCESS_TOKEN_DESCRIPTION,
-  createAgentHttpFormOpts,
   personalAccessTokenSchema,
 } from './create-agent-http-schema';
 

@@ -1,15 +1,16 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import {
+  StartPipelineRequestSchema,
+  StopPipelineRequestSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import {
   startPipeline,
   stopPipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
-  StartPipelineRequestSchema,
-  StopPipelineRequestSchema,
-} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { PipelineSchema, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import {
+  Pipeline_State,
+  PipelineSchema,
   StartPipelineRequestSchema as StartPipelineRequestSchemaDataPlane,
   StopPipelineRequestSchema as StopPipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';

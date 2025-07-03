@@ -67,21 +67,19 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
     const principals = rolesApi.roleMembers.get(this.props.roleName);
 
     return (
-      <>
-        <PageContent>
-          <RoleForm
-            initialData={{
-              roleName: this.roleName,
-              topicACLs: aclPrincipalGroup?.topicAcls ?? [],
-              consumerGroupsACLs: aclPrincipalGroup?.consumerGroupAcls ?? [],
-              clusterACLs: aclPrincipalGroup?.clusterAcls,
-              transactionalIDACLs: aclPrincipalGroup?.transactionalIdAcls ?? [],
-              host: aclPrincipalGroup?.host ?? '',
-              principals: principals ?? [],
-            }}
-          />
-        </PageContent>
-      </>
+      <PageContent>
+        <RoleForm
+          initialData={{
+            roleName: this.roleName,
+            topicACLs: aclPrincipalGroup?.topicAcls ?? [],
+            consumerGroupsACLs: aclPrincipalGroup?.consumerGroupAcls ?? [],
+            clusterACLs: aclPrincipalGroup?.clusterAcls,
+            transactionalIDACLs: aclPrincipalGroup?.transactionalIdAcls ?? [],
+            host: aclPrincipalGroup?.host ?? '',
+            principals: principals ?? [],
+          }}
+        />
+      </PageContent>
     );
   }
 }

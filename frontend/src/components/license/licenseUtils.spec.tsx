@@ -1,7 +1,7 @@
 import {
-  LicenseSchema,
   License_Source,
   License_Type,
+  LicenseSchema,
   type ListEnterpriseFeaturesResponse_Feature,
   ListEnterpriseFeaturesResponse_FeatureSchema,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';

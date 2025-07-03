@@ -12,9 +12,9 @@
 import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { PropertyGroup } from '../../../../state/connect/state';
-import { PropertyComponent } from './PropertyComponent';
 import type { ConfigPageProps } from './components';
 import { TopicInput } from './forms/TopicInput';
+import { PropertyComponent } from './PropertyComponent';
 
 const topicsFields = ['topics', 'topics.regex'];
 
@@ -75,45 +75,43 @@ export const PropertyGroupComponent = observer(
     }
     // Normal group
     return (
-      <>
-        <Box>
-          {g.group.name && (
-            <Heading as="h3" size="md" mt="8" mb="4">
-              {g.group.name}
-            </Heading>
-          )}
+      <Box>
+        {g.group.name && (
+          <Heading as="h3" size="md" mt="8" mb="4">
+            {g.group.name}
+          </Heading>
+        )}
 
-          {g.group.description && (
-            <Text>
-              {g.group.description}
-              {g.group.documentation_link && (
-                <>
-                  {' '}
-                  <Link href={g.group.documentation_link}>Documentation</Link>
-                </>
-              )}
-            </Text>
-          )}
+        {g.group.description && (
+          <Text>
+            {g.group.description}
+            {g.group.documentation_link && (
+              <>
+                {' '}
+                <Link href={g.group.documentation_link}>Documentation</Link>
+              </>
+            )}
+          </Text>
+        )}
 
-          <div>
-            {
-              <TopicInput
-                properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
-                connectorType={props.connectorType}
-              />
-            }
-            {filteredProperties
-              .filter((p) => topicsFields.every((v) => v !== p.name))
-              .map((p) => {
-                if (p.name === 'name' && props.context === 'EDIT') {
-                  p.isDisabled = true;
-                }
-                return <PropertyComponent key={p.name} property={p} />;
-              })}
-          </div>
-          <Divider my={10} />
-        </Box>
-      </>
+        <div>
+          {
+            <TopicInput
+              properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
+              connectorType={props.connectorType}
+            />
+          }
+          {filteredProperties
+            .filter((p) => topicsFields.every((v) => v !== p.name))
+            .map((p) => {
+              if (p.name === 'name' && props.context === 'EDIT') {
+                p.isDisabled = true;
+              }
+              return <PropertyComponent key={p.name} property={p} />;
+            })}
+        </div>
+        <Divider my={10} />
+      </Box>
     );
   },
 );

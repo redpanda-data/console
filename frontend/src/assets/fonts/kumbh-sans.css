@@ -5,7 +5,9 @@
   font-weight: 400;
   src: url("./kumbh-sans/kumbh-sans-v11-latin-regular.eot");
   /* IE9 Compat Modes */
-  src: local(""), url("./kumbh-sans/kumbh-sans-v11-latin-regular.eot?#iefix") format("embedded-opentype"), /* IE6-IE8 */
+  src:
+    local(""),
+    url("./kumbh-sans/kumbh-sans-v11-latin-regular.eot?#iefix") format("embedded-opentype"), /* IE6-IE8 */
     url("./kumbh-sans/kumbh-sans-v11-latin-regular.woff2") format("woff2"), /* Super Modern Browsers */
     url("./kumbh-sans/kumbh-sans-v11-latin-regular.woff") format("woff"), /* Modern Browsers */
     url("./kumbh-sans/kumbh-sans-v11-latin-regular.ttf") format("truetype"), /* Safari, Android, iOS */

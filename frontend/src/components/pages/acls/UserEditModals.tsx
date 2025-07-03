@@ -30,7 +30,7 @@ import { rolesApi } from '../../../state/backendApi';
 import { Features } from '../../../state/supportedFeatures';
 import { formatToastErrorMessageGRPC, showToast } from '../../../utils/toast.utils';
 import { SingleSelect } from '../../misc/Select';
-import { StateRoleSelector, generatePassword } from './UserCreate';
+import { generatePassword, StateRoleSelector } from './UserCreate';
 
 type ChangePasswordModalProps = {
   userName: string;

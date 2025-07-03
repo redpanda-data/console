@@ -1,5 +1,4 @@
-import { Code } from '@connectrpc/connect';
-import { ConnectError } from '@connectrpc/connect';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient } from '@tanstack/react-query';
 
 function isConnectError(error: Error | ConnectError): error is ConnectError {

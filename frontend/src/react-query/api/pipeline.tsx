@@ -3,6 +3,16 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  GetPipelineRequestSchema,
+  type GetPipelineResponse,
+  GetPipelinesBySecretsRequestSchema,
+  GetPipelinesForSecretRequestSchema,
+  type ListPipelinesRequest,
+  ListPipelinesRequestSchema,
+  type ListPipelinesResponse,
+  PipelineService,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import {
   createPipeline,
   deletePipeline,
   getPipeline,
@@ -13,16 +23,6 @@ import {
   stopPipeline,
   updatePipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-import {
-  GetPipelineRequestSchema,
-  type GetPipelineResponse,
-  GetPipelinesBySecretsRequestSchema,
-  GetPipelinesForSecretRequestSchema,
-  type ListPipelinesRequest,
-  ListPipelinesRequestSchema,
-  type ListPipelinesResponse,
-  PipelineService,
-} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
   GetPipelineRequestSchema as GetPipelineRequestSchemaDataPlane,
   GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,

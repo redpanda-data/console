@@ -11,13 +11,13 @@ import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
 import {
-  CreateUserWithSecretPasswordModal,
   type CreatedUser,
+  CreateUserWithSecretPasswordModal,
 } from '../../../../users/create-user-with-secret-password-modal';
 import {
   type CreateAgentHttpFormValues,
-  KAFKA_PASSWORD_DESCRIPTION,
   createAgentHttpFormOpts,
+  KAFKA_PASSWORD_DESCRIPTION,
   passwordSchema,
 } from './create-agent-http-schema';
 

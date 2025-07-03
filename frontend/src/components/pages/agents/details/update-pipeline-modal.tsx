@@ -14,15 +14,18 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { PipelineEditor } from 'components/pages/rp-connect/Pipelines.Create';
-import { MAX_TASKS, MIN_TASKS, cpuToTasks, tasksToCPU } from 'components/pages/rp-connect/tasks';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from 'components/pages/rp-connect/tasks';
 import {
-  PipelineUpdateSchema,
   Pipeline_ResourcesSchema,
+  PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useListAgentsQuery } from 'react-query/api/agent';
-import { useGetPipelineQuery, useGetPipelinesBySecretsQuery } from 'react-query/api/pipeline';
-import { useUpdatePipelineMutation } from 'react-query/api/pipeline';
+import {
+  useGetPipelineQuery,
+  useGetPipelinesBySecretsQuery,
+  useUpdatePipelineMutation,
+} from 'react-query/api/pipeline';
 import { z } from 'zod';
 
 export const updatePipelineSchema = z.object({

@@ -8,8 +8,8 @@ import {
   FormControl,
   Grid,
   GridItem,
-  HStack,
   Heading,
+  HStack,
   IconButton,
   Input,
   Link,
@@ -438,10 +438,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
           {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
             <Label text="Index">
-              <>
-                {protoBufInfoElement}
-                <Input my={2} type="number" {...register('key.protobufIndex')} />
-              </>
+              {protoBufInfoElement}
+              <Input my={2} type="number" {...register('key.protobufIndex')} />
             </Label>
           )}
 
@@ -546,10 +544,8 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
             {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
               <Label text="Index">
-                <>
-                  {protoBufInfoElement}
-                  <Input my={2} type="number" {...register('value.protobufIndex')} />
-                </>
+                {protoBufInfoElement}
+                <Input my={2} type="number" {...register('value.protobufIndex')} />
               </Label>
             )}
 

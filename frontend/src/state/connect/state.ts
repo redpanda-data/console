@@ -10,11 +10,11 @@
  */
 
 import {
-  type IReactionDisposer,
   action,
   autorun,
   comparer,
   flow,
+  type IReactionDisposer,
   intercept,
   makeAutoObservable,
   observable,

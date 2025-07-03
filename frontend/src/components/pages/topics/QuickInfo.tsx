@@ -110,12 +110,9 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             </Text>
             {segmentMs && segmentBytes && (
               <Text as="dd">
-                ~
-                <>
-                  {formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
-                  {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
-                  {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
-                </>
+                ~{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
+                {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
+                {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
               </Text>
             )}
           </>

@@ -39,30 +39,28 @@ export default function Tabs(props: TabsProps) {
     : undefined;
 
   return (
-    <>
-      <RpTabs
-        isFitted={props.isFitted}
-        defaultIndex={defaultIndex}
-        index={selectedIndex}
-        onChange={(index, key) => {
-          setSelectedIndex(Number(index));
-          if (props.onChange) props.onChange(String(key));
-        }}
-        items={tabs.map((t) => {
-          const titleComp = t.title;
-          const title: React.ReactNode = typeof titleComp === 'function' ? titleComp() : titleComp;
+    <RpTabs
+      isFitted={props.isFitted}
+      defaultIndex={defaultIndex}
+      index={selectedIndex}
+      onChange={(index, key) => {
+        setSelectedIndex(Number(index));
+        if (props.onChange) props.onChange(String(key));
+      }}
+      items={tabs.map((t) => {
+        const titleComp = t.title;
+        const title: React.ReactNode = typeof titleComp === 'function' ? titleComp() : titleComp;
 
-          const contentComp = t.content;
-          const content = typeof contentComp === 'function' ? contentComp() : contentComp;
+        const contentComp = t.content;
+        const content = typeof contentComp === 'function' ? contentComp() : contentComp;
 
-          return {
-            key: t.key,
-            name: title,
-            component: content,
-            isDisabled: t.disabled,
-          };
-        })}
-      />
-    </>
+        return {
+          key: t.key,
+          name: title,
+          component: content,
+          isDisabled: t.disabled,
+        };
+      })}
+    />
   );
 }

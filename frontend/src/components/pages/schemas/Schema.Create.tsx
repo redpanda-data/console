@@ -289,149 +289,144 @@ type NamingStrategy =
 
 type SchemaEditorStateHelper = ReturnType<typeof createSchemaState>;
 
-const SchemaEditor = observer(
-  (p: {
-    state: SchemaEditorStateHelper;
-    mode: 'CREATE' | 'ADD_VERSION';
-  }) => {
-    useEffect(() => {
-      api.refreshSchemaTypes(true);
-    }, []);
+const SchemaEditor = observer((p: { state: SchemaEditorStateHelper; mode: 'CREATE' | 'ADD_VERSION' }) => {
+  useEffect(() => {
+    api.refreshSchemaTypes(true);
+  }, []);
 
-    const { state, mode } = p;
-    const isAddVersion = mode === 'ADD_VERSION';
+  const { state, mode } = p;
+  const isAddVersion = mode === 'ADD_VERSION';
 
-    const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
-    const isCustom = state.strategy === 'CUSTOM';
+  const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
+  const isCustom = state.strategy === 'CUSTOM';
 
-    const formatOptions = [
-      { value: 'AVRO', label: 'Avro' },
-      { value: 'PROTOBUF', label: 'Protobuf' },
-    ];
+  const formatOptions = [
+    { value: 'AVRO', label: 'Avro' },
+    { value: 'PROTOBUF', label: 'Protobuf' },
+  ];
 
-    if (api.schemaTypes?.includes('JSON')) {
-      formatOptions.push({ value: 'JSON', label: 'JSON' });
-    }
+  if (api.schemaTypes?.includes('JSON')) {
+    formatOptions.push({ value: 'JSON', label: 'JSON' });
+  }
 
-    return (
-      <>
-        <Heading variant="lg">Settings</Heading>
+  return (
+    <>
+      <Heading variant="lg">Settings</Heading>
 
-        {isAddVersion && (
-          <Alert status="info">
-            <AlertIcon />
-            When adding a new schema version, the only thing that can be changed is the schema definition and its
-            references. The rest of the fields have been disabled.
-          </Alert>
-        )}
+      {isAddVersion && (
+        <Alert status="info">
+          <AlertIcon />
+          When adding a new schema version, the only thing that can be changed is the schema definition and its
+          references. The rest of the fields have been disabled.
+        </Alert>
+      )}
 
-        <Flex direction="column" gap="8" maxWidth="650px">
-          <Flex gap="8">
-            <FormField label="Strategy">
-              <SingleSelect<NamingStrategy>
-                isDisabled={isAddVersion}
-                value={state.strategy}
-                options={[
-                  { value: 'TOPIC', label: 'Topic Name' },
-                  { value: 'RECORD_NAME', label: 'Record Name' },
-                  { value: 'TOPIC_RECORD_NAME', label: 'Topic-Record Name' },
-                  { value: 'CUSTOM', label: 'Custom' },
-                ]}
-                onChange={(e) => {
-                  state.userInput = '';
-                  state.strategy = e;
-                }}
-              />
-            </FormField>
-
-            {showTopicNameInput ? (
-              <FormField label="Topic name">
-                <SingleSelect
-                  isDisabled={isAddVersion}
-                  value={state.userInput}
-                  onChange={(e) => (state.userInput = e)}
-                  options={
-                    api.topics?.filter((x) => !x.topicName.startsWith('_')).map((x) => ({ value: x.topicName })) ?? []
-                  }
-                />
-              </FormField>
-            ) : (
-              // We don't want "Strategy" to expand
-              <Box width="100%" />
-            )}
-          </Flex>
-
-          <Flex gap="8">
-            <FormField label="Key or value" width="auto" isInvalid={state.isInvalidKeyOrValue} errorText="Required">
-              <RadioGroup
-                name="keyOrValue"
-                isDisabled={isAddVersion}
-                value={state.keyOrValue}
-                onChange={(e) => (state.keyOrValue = e)}
-                options={[
-                  { value: 'KEY', label: 'Key' },
-                  { value: 'VALUE', label: 'Value' },
-                ]}
-              />
-            </FormField>
-
-            <FormField
-              label={isCustom ? 'Subject name' : 'Computed subject name'}
-              isInvalid={!state.computedSubjectName}
-              errorText="Subject name is required"
-            >
-              <Input
-                value={state.computedSubjectName}
-                onChange={(e) => (state.userInput = e.target.value)}
-                isDisabled={!isCustom || isAddVersion}
-              />
-            </FormField>
-          </Flex>
-        </Flex>
-
-        <Heading variant="lg" mt="8">
-          Schema definition
-        </Heading>
-
-        <Flex direction="column" gap="4" maxWidth="1000px">
-          <FormField label="Format">
-            <RadioGroup
-              name="format"
-              value={state.format}
-              onChange={(e) => {
-                if (state.format === e) {
-                  return;
-                }
-
-                // Let user confirm
-                openSwitchSchemaFormatModal(() => {
-                  state.format = e;
-                  state.schemaText = exampleSchema[state.format];
-                });
-              }}
-              options={formatOptions}
+      <Flex direction="column" gap="8" maxWidth="650px">
+        <Flex gap="8">
+          <FormField label="Strategy">
+            <SingleSelect<NamingStrategy>
               isDisabled={isAddVersion}
+              value={state.strategy}
+              options={[
+                { value: 'TOPIC', label: 'Topic Name' },
+                { value: 'RECORD_NAME', label: 'Record Name' },
+                { value: 'TOPIC_RECORD_NAME', label: 'Topic-Record Name' },
+                { value: 'CUSTOM', label: 'Custom' },
+              ]}
+              onChange={(e) => {
+                state.userInput = '';
+                state.strategy = e;
+              }}
             />
           </FormField>
 
-          <KowlEditor
-            value={state.schemaText}
-            onChange={(e) => (state.schemaText = e ?? '')}
-            height="400px"
-            language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
-          />
-
-          <Heading variant="lg" mt="8">
-            Schema references
-          </Heading>
-          {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
-
-          <ReferencesEditor state={state} />
+          {showTopicNameInput ? (
+            <FormField label="Topic name">
+              <SingleSelect
+                isDisabled={isAddVersion}
+                value={state.userInput}
+                onChange={(e) => (state.userInput = e)}
+                options={
+                  api.topics?.filter((x) => !x.topicName.startsWith('_')).map((x) => ({ value: x.topicName })) ?? []
+                }
+              />
+            </FormField>
+          ) : (
+            // We don't want "Strategy" to expand
+            <Box width="100%" />
+          )}
         </Flex>
-      </>
-    );
-  },
-);
+
+        <Flex gap="8">
+          <FormField label="Key or value" width="auto" isInvalid={state.isInvalidKeyOrValue} errorText="Required">
+            <RadioGroup
+              name="keyOrValue"
+              isDisabled={isAddVersion}
+              value={state.keyOrValue}
+              onChange={(e) => (state.keyOrValue = e)}
+              options={[
+                { value: 'KEY', label: 'Key' },
+                { value: 'VALUE', label: 'Value' },
+              ]}
+            />
+          </FormField>
+
+          <FormField
+            label={isCustom ? 'Subject name' : 'Computed subject name'}
+            isInvalid={!state.computedSubjectName}
+            errorText="Subject name is required"
+          >
+            <Input
+              value={state.computedSubjectName}
+              onChange={(e) => (state.userInput = e.target.value)}
+              isDisabled={!isCustom || isAddVersion}
+            />
+          </FormField>
+        </Flex>
+      </Flex>
+
+      <Heading variant="lg" mt="8">
+        Schema definition
+      </Heading>
+
+      <Flex direction="column" gap="4" maxWidth="1000px">
+        <FormField label="Format">
+          <RadioGroup
+            name="format"
+            value={state.format}
+            onChange={(e) => {
+              if (state.format === e) {
+                return;
+              }
+
+              // Let user confirm
+              openSwitchSchemaFormatModal(() => {
+                state.format = e;
+                state.schemaText = exampleSchema[state.format];
+              });
+            }}
+            options={formatOptions}
+            isDisabled={isAddVersion}
+          />
+        </FormField>
+
+        <KowlEditor
+          value={state.schemaText}
+          onChange={(e) => (state.schemaText = e ?? '')}
+          height="400px"
+          language={state.format === 'PROTOBUF' ? 'proto' : 'json'}
+        />
+
+        <Heading variant="lg" mt="8">
+          Schema references
+        </Heading>
+        {/* <Text>This is an example help text about the references list, to be updated later</Text> */}
+
+        <ReferencesEditor state={state} />
+      </Flex>
+    </>
+  );
+});
 
 const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
   const { state } = p;

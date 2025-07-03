@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import React, { useMemo } from 'react';
-
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
 import { SkipIcon } from '@primer/octicons-react';
 import {
@@ -30,6 +27,8 @@ import {
   Text,
 } from '@redpanda-data/ui';
 import { action, computed, makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React, { useMemo } from 'react';
 import {
   MdCheckCircleOutline,
   MdHourglassBottom,
@@ -267,7 +266,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
     let regExp = /.*/s; // match everything by default
     try {
       regExp = new RegExp(props.quickSearch, 'i');
-    } catch (e) {
+    } catch (_e) {
       console.warn('Invalid expression');
     }
     return regExp;

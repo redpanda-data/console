@@ -9,14 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { useEffect, useState } from 'react';
-import { api } from '../../../../state/backendApi';
-import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
-import { RadioOptionGroup } from '../../../../utils/tsxUtils';
-import { prettyNumber } from '../../../../utils/utils';
-import { range } from '../../../misc/common';
-
 import {
   Alert,
   AlertIcon,
@@ -40,6 +32,13 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
+import { useEffect, useState } from 'react';
+import { api } from '../../../../state/backendApi';
+import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
+import { RadioOptionGroup } from '../../../../utils/tsxUtils';
+import { prettyNumber } from '../../../../utils/utils';
+import { range } from '../../../misc/common';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
 import { SingleSelect } from '../../../misc/Select';
 import styles from './DeleteRecordsModal.module.scss';
@@ -117,6 +116,7 @@ function SelectPartitionStep({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
+              // biome-ignore lint/a11y/noStaticElementInteractions: part of SelectPartitionStep implementation
               <span
                 onClick={(e) => {
                   e.preventDefault();
@@ -203,6 +203,7 @@ const SelectOffsetStep = ({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
+              // biome-ignore lint/a11y/noStaticElementInteractions: part of SelectOffsetStep implementation
               <span
                 onClick={(e) => {
                   e.preventDefault();
@@ -374,7 +375,7 @@ interface DeleteRecordsModalProps {
   afterClose: () => void;
 }
 
-export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
+export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
   const { visible, topic, onCancel, onFinish, afterClose } = props;
   const toast = useToast();
 
@@ -419,7 +420,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     }
   };
 
-  if (!topic) return <></>;
+  if (!topic) return null;
 
   const isOkButtonDisabled = () => {
     if (hasErrors) return false;

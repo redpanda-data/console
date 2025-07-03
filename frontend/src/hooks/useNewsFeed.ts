@@ -32,8 +32,8 @@ export const useNewsFeed = (segment?: 'redpanda' | 'kafka') => {
   return useQuery({
     queryKey: ['news', segment],
     queryFn: () => fetchNews(segment),
-    staleTime: Infinity, 
-    gcTime: Infinity,
+    staleTime: Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
     refetchOnMount: false, // Don't refetch when component mounts
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
     refetchOnReconnect: false, // Don't refetch when network reconnects

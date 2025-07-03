@@ -1,8 +1,10 @@
 import { create } from '@bufbuild/protobuf';
 import {
   Button,
+  createStandaloneToast,
   Flex,
   FormField,
+  isSingleValue,
   Modal,
   ModalBody,
   ModalContent,
@@ -12,8 +14,6 @@ import {
   PasswordInput,
   Select,
   Text,
-  createStandaloneToast,
-  isSingleValue,
   useDisclosure,
 } from '@redpanda-data/ui';
 import { useState } from 'react';

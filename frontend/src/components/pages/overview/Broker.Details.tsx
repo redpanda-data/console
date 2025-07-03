@@ -76,23 +76,21 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
       );
 
     return (
-      <>
-        <PageContent>
-          <Section py={4}>
-            <Flex>
-              <Statistic title="Broker ID" value={this.id} />
-              <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
-              {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
-              <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
-              <Statistic title="IP address" value={broker.address} />
-              {broker.rack && <Statistic title="Rack" value={broker.rack} />}
-            </Flex>
-          </Section>
-          <Section py={4}>
-            <BrokerConfigView entries={brokerConfigs} />
-          </Section>
-        </PageContent>
-      </>
+      <PageContent>
+        <Section py={4}>
+          <Flex>
+            <Statistic title="Broker ID" value={this.id} />
+            <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
+            {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
+            <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
+            <Statistic title="IP address" value={broker.address} />
+            {broker.rack && <Statistic title="Rack" value={broker.rack} />}
+          </Flex>
+        </Section>
+        <Section py={4}>
+          <BrokerConfigView entries={brokerConfigs} />
+        </Section>
+      </PageContent>
     );
   }
 }

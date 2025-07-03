@@ -15,9 +15,9 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import {
-  CreateTopicRequestSchema,
-  CreateTopicRequest_TopicSchema,
   CreateTopicRequest_Topic_ConfigSchema,
+  CreateTopicRequest_TopicSchema,
+  CreateTopicRequestSchema,
   ListTopicsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';

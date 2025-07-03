@@ -3,13 +3,13 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { useQueryClient, useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { config } from 'config';
-import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   type ListTopicsRequest,
   ListTopicsRequestSchema,
   type ListTopicsResponse,
   TopicService,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetTopicsResponse } from 'state/restInterfaces';

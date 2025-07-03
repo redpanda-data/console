@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import Dexie from 'dexie';
 import type { Table } from 'dexie';
+import Dexie from 'dexie';
 
 export interface ChatMessage {
   id: string;

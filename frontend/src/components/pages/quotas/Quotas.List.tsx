@@ -74,59 +74,57 @@ class QuotasList extends PageComponent {
       );
 
     return (
-      <>
-        <PageContent>
-          <Section>
-            {warning}
+      <PageContent>
+        <Section>
+          {warning}
 
-            <DataTable<{
-              eqKey: string;
-              entityType: 'client-id' | 'user' | 'ip';
-              entityName?: string | undefined;
-              settings: QuotaResponseSetting[];
-            }>
-              data={resources}
-              columns={[
-                {
-                  size: 100, // Assuming '100px' translates to '100'
-                  header: 'Type',
-                  accessorKey: 'entityType',
-                },
-                {
-                  size: 100, // 'auto' width replaced with an example number
-                  header: 'Name',
-                  accessorKey: 'entityName',
-                },
-                {
-                  size: 100,
-                  header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Rate</InfoText>,
-                  accessorKey: 'producerRate',
-                  cell: ({ row: { original } }) =>
-                    formatBytes(original.settings.first((k) => k.key === QuotaType.PRODUCER_BYTE_RATE)?.value),
-                },
-                {
-                  size: 100,
-                  header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Rate</InfoText>,
-                  accessorKey: 'consumerRate',
-                  cell: ({ row: { original } }) =>
-                    formatBytes(original.settings.first((k) => k.key === QuotaType.CONSUMER_BYTE_RATE)?.value),
-                },
-                {
-                  size: 100,
-                  header: () => (
-                    <InfoText tooltip="Limit rate of topic mutation requests, including create, add, and delete partition, in number of partitions per second">
-                      Controller Mutation Rate
-                    </InfoText>
-                  ),
-                  accessorKey: 'controllerMutationRate',
-                  cell: ({ row: { original } }) =>
-                    formatRate(original.settings.first((k) => k.key === QuotaType.CONTROLLER_MUTATION_RATE)?.value),
-                },
-              ]}
-            />
-          </Section>
-        </PageContent>
-      </>
+          <DataTable<{
+            eqKey: string;
+            entityType: 'client-id' | 'user' | 'ip';
+            entityName?: string | undefined;
+            settings: QuotaResponseSetting[];
+          }>
+            data={resources}
+            columns={[
+              {
+                size: 100, // Assuming '100px' translates to '100'
+                header: 'Type',
+                accessorKey: 'entityType',
+              },
+              {
+                size: 100, // 'auto' width replaced with an example number
+                header: 'Name',
+                accessorKey: 'entityName',
+              },
+              {
+                size: 100,
+                header: () => <InfoText tooltip="Limit throughput of produce requests">Producer Rate</InfoText>,
+                accessorKey: 'producerRate',
+                cell: ({ row: { original } }) =>
+                  formatBytes(original.settings.first((k) => k.key === QuotaType.PRODUCER_BYTE_RATE)?.value),
+              },
+              {
+                size: 100,
+                header: () => <InfoText tooltip="Limit throughput of fetch requests">Consumer Rate</InfoText>,
+                accessorKey: 'consumerRate',
+                cell: ({ row: { original } }) =>
+                  formatBytes(original.settings.first((k) => k.key === QuotaType.CONSUMER_BYTE_RATE)?.value),
+              },
+              {
+                size: 100,
+                header: () => (
+                  <InfoText tooltip="Limit rate of topic mutation requests, including create, add, and delete partition, in number of partitions per second">
+                    Controller Mutation Rate
+                  </InfoText>
+                ),
+                accessorKey: 'controllerMutationRate',
+                cell: ({ row: { original } }) =>
+                  formatRate(original.settings.first((k) => k.key === QuotaType.CONTROLLER_MUTATION_RATE)?.value),
+              },
+            ]}
+          />
+        </Section>
+      </PageContent>
     );
   }
 

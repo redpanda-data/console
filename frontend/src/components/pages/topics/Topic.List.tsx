@@ -34,7 +34,7 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { AnimatePresence, motion } from 'framer-motion';
-import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
+import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type FC, useRef, useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
@@ -50,10 +50,10 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
+import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
-import { renderLogDirSummary } from '../../misc/common';
 import { PageComponent, type PageInitHelper } from '../Page';
 import {
   CreateTopicModalContent,
@@ -123,7 +123,7 @@ class TopicList extends PageComponent {
       try {
         const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch, 'i');
         topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
-      } catch (e) {
+      } catch (_e) {
         console.warn('Invalid expression');
         const searchLower = uiSettings.topicList.quickSearch.toLowerCase();
         topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
@@ -400,7 +400,11 @@ function ConfirmDeletionModal({
   topicToDelete,
   onFinish,
   onCancel,
-}: { topicToDelete: Topic | null; onFinish: () => void; onCancel: () => void }) {
+}: {
+  topicToDelete: Topic | null;
+  onFinish: () => void;
+  onCancel: () => void;
+}) {
   const [deletionPending, setDeletionPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
   const toast = useToast();

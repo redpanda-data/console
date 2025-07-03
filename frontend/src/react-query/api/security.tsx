@@ -2,15 +2,6 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
-
-import {
-  createRole,
-  deleteRole,
-  getRole,
-  listRoleMembers,
-  listRoles,
-  updateRoleMembership,
-} from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import {
   type GetRoleRequest,
   GetRoleRequestSchema,
@@ -23,6 +14,14 @@ import {
   type ListRolesResponse,
   SecurityService,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import {
+  createRole,
+  deleteRole,
+  getRole,
+  listRoleMembers,
+  listRoles,
+  updateRoleMembership,
+} from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';

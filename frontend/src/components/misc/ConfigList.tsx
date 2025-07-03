@@ -9,17 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
+import type { ColumnDef } from '@tanstack/react-table';
 import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
 import colors from '../../colors';
 import type { ConfigEntry } from '../../state/restInterfaces';
 import type { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { equalsIgnoreCase } from '../../utils/utils';
-
 import styles from './ConfigList.module.scss';
-
-import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
-import type { ColumnDef } from '@tanstack/react-table';
 
 export function ConfigList({
   configEntries,

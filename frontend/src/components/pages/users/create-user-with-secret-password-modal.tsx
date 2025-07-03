@@ -16,7 +16,7 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { generatePassword } from 'components/pages/acls/UserCreate';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { CreateUserRequestSchema, CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { CreateUserRequest_UserSchema, CreateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { getSASLMechanism, useCreateUserMutation, useLegacyListUsersQuery } from 'react-query/api/user';

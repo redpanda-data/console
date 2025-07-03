@@ -78,16 +78,14 @@ export class SubjectComponent extends Component<{ subject: Subject }> {
     // todo: this is a placeholder, to be completely replaced...
 
     return (
-      <>
-        <div>
-          <span>{s.providerName}</span>
-          {'-'}
-          <span style={{ textTransform: 'capitalize' }}>{s.subjectKindName}</span>
-          {': '}
-          <span>{s.name}</span>
-          <span>{s.organization && ` (Org: ${s.organization})`}</span>
-        </div>
-      </>
+      <div>
+        <span>{s.providerName}</span>
+        {'-'}
+        <span style={{ textTransform: 'capitalize' }}>{s.subjectKindName}</span>
+        {': '}
+        <span>{s.name}</span>
+        <span>{s.organization && ` (Org: ${s.organization})`}</span>
+      </div>
     );
   }
 }

@@ -9,19 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
+import { Box, Button, Link as ChakraLink, DataTable, Flex, Heading, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
+import { Features } from '../../../state/supportedFeatures';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-
-import { Link as ChakraLink } from '@redpanda-data/ui';
-import { Link as ReactRouterLink } from 'react-router-dom';
-import { Features } from '../../../state/supportedFeatures';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import { type AclPrincipalGroup, principalGroupsView } from './Models';
 import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
@@ -83,133 +81,123 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
     if (!Features.rolesApi) canEdit = false;
 
     return (
-      <>
-        <PageContent>
-          {api.isAdminApiConfigured && (
-            <ChangePasswordModal
-              userName={userName}
-              isOpen={this.isChangePasswordModalOpen}
-              setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
-            />
-          )}
+      <PageContent>
+        {api.isAdminApiConfigured && (
+          <ChangePasswordModal
+            userName={userName}
+            isOpen={this.isChangePasswordModalOpen}
+            setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+          />
+        )}
+        {Features.rolesApi && (
+          <ChangeRolesModal
+            userName={userName}
+            isOpen={this.isChangeRolesModalOpen}
+            setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+          />
+        )}
+        <Flex gap="4">
           {Features.rolesApi && (
-            <ChangeRolesModal
+            <Button variant="outline" onClick={() => (this.isChangeRolesModalOpen = true)} isDisabled={!canEdit}>
+              Change roles
+            </Button>
+          )}
+          {api.isAdminApiConfigured && (
+            <Button variant="outline" onClick={() => (this.isChangePasswordModalOpen = true)} isDisabled={!canEdit}>
+              Change password
+            </Button>
+          )}
+          {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
+          {isServiceAccount && (
+            <DeleteUserConfirmModal
+              onConfirm={async () => {
+                await api.deleteServiceAccount(userName);
+
+                // Remove user from all its roles
+                const promises = [];
+                for (const [roleName, members] of rolesApi.roleMembers) {
+                  if (members.any((m) => m.name === userName)) {
+                    // is this user part of this role?
+                    // then remove it
+                    promises.push(rolesApi.updateRoleMembership(roleName, [], [userName]));
+                  }
+                }
+                await Promise.allSettled(promises);
+                await api.refreshServiceAccounts();
+                await rolesApi.refreshRoleMembers();
+                appGlobal.historyPush('/security/users/');
+              }}
+              buttonEl={
+                <Button variant="outline-delete" isDisabled={!isServiceAccount}>
+                  Delete
+                </Button>
+              }
               userName={userName}
-              isOpen={this.isChangeRolesModalOpen}
-              setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
             />
           )}
-          <Flex gap="4">
-            {Features.rolesApi && (
-              <Button variant="outline" onClick={() => (this.isChangeRolesModalOpen = true)} isDisabled={!canEdit}>
-                Change roles
-              </Button>
-            )}
-            {api.isAdminApiConfigured && (
-              <Button variant="outline" onClick={() => (this.isChangePasswordModalOpen = true)} isDisabled={!canEdit}>
-                Change password
-              </Button>
-            )}
-            {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
-            {isServiceAccount && (
-              <DeleteUserConfirmModal
-                onConfirm={async () => {
-                  await api.deleteServiceAccount(userName);
+        </Flex>
 
-                  // Remove user from all its roles
-                  const promises = [];
-                  for (const [roleName, members] of rolesApi.roleMembers) {
-                    if (members.any((m) => m.name === userName)) {
-                      // is this user part of this role?
-                      // then remove it
-                      promises.push(rolesApi.updateRoleMembership(roleName, [], [userName]));
-                    }
-                  }
-                  await Promise.allSettled(promises);
-                  await api.refreshServiceAccounts();
-                  await rolesApi.refreshRoleMembers();
-                  appGlobal.historyPush('/security/users/');
-                }}
-                buttonEl={
-                  <Button variant="outline-delete" isDisabled={!isServiceAccount}>
-                    Delete
-                  </Button>
-                }
-                userName={userName}
-              />
-            )}
-          </Flex>
+        <Heading as="h3" mt="4">
+          Permissions
+        </Heading>
+        <Box>The following permissions are assigned to this principal.</Box>
 
-          <Heading as="h3" mt="4">
-            Permissions
-          </Heading>
-          <Box>The following permissions are assigned to this principal.</Box>
-
-          <Heading as="h3" mt="4">
-            Assignments
-          </Heading>
-          <UserRoleTags userName={userName} />
-          <UserPermissionDetails userName={userName} />
-        </PageContent>
-      </>
+        <Heading as="h3" mt="4">
+          Assignments
+        </Heading>
+        <UserRoleTags userName={userName} />
+        <UserPermissionDetails userName={userName} />
+      </PageContent>
     );
   }
 }
 
 export default UserDetailsPage;
 
-const UserPermissionDetails = observer(
-  (p: {
-    userName: string;
-  }) => {
-    // Get all roles and ACLs matching this user
-    // For each "AclPrincipalGroup" show its name, then a table that shows the details
-    const roles: string[] = [];
-    if (Features.rolesApi) {
-      for (const [roleName, members] of rolesApi.roleMembers) {
-        if (!members.any((m) => m.name === p.userName)) continue; // this role doesn't contain our user
-        roles.push(roleName);
-      }
+const UserPermissionDetails = observer((p: { userName: string }) => {
+  // Get all roles and ACLs matching this user
+  // For each "AclPrincipalGroup" show its name, then a table that shows the details
+  const roles: string[] = [];
+  if (Features.rolesApi) {
+    for (const [roleName, members] of rolesApi.roleMembers) {
+      if (!members.any((m) => m.name === p.userName)) continue; // this role doesn't contain our user
+      roles.push(roleName);
     }
+  }
 
-    // Get all AclPrincipal groups, find the ones that apply
-    const groups = principalGroupsView.principalGroups.filter((g) => {
-      if (g.principalType === 'User' && (g.principalName === p.userName || g.principalName === '*')) return true;
-      if (g.principalType === 'RedpandaRole' && roles.includes(g.principalName)) return true;
-      return false;
-    });
+  // Get all AclPrincipal groups, find the ones that apply
+  const groups = principalGroupsView.principalGroups.filter((g) => {
+    if (g.principalType === 'User' && (g.principalName === p.userName || g.principalName === '*')) return true;
+    if (g.principalType === 'RedpandaRole' && roles.includes(g.principalName)) return true;
+    return false;
+  });
 
-    return <PrincipalGroupTables groups={groups} />;
-  },
-);
+  return <PrincipalGroupTables groups={groups} />;
+});
 
 // Renders an array of AclPrincipalGroup as multiple tabls below each other
-const PrincipalGroupTables = observer(
-  (p: {
-    groups: AclPrincipalGroup[];
-  }) => {
-    return (
-      <>
-        {p.groups.map((r) => (
-          <>
-            {r.principalType === 'RedpandaRole' ? (
-              <ChakraLink key={r.principalName} as={ReactRouterLink} to={`/security/roles/${r.principalName}/details`}>
-                <Heading as="h3" mt="4">
-                  {r.principalName}
-                </Heading>
-              </ChakraLink>
-            ) : (
-              <Heading key={r.principalName} as="h3" mt="4">
-                User: {r.principalName}
+const PrincipalGroupTables = observer((p: { groups: AclPrincipalGroup[] }) => {
+  return (
+    <>
+      {p.groups.map((r) => (
+        <>
+          {r.principalType === 'RedpandaRole' ? (
+            <ChakraLink key={r.principalName} as={ReactRouterLink} to={`/security/roles/${r.principalName}/details`}>
+              <Heading as="h3" mt="4">
+                {r.principalName}
               </Heading>
-            )}
-            <AclPrincipalGroupPermissionsTable key={r.principalName} group={r} />
-          </>
-        ))}
-      </>
-    );
-  },
-);
+            </ChakraLink>
+          ) : (
+            <Heading key={r.principalName} as="h3" mt="4">
+              User: {r.principalName}
+            </Heading>
+          )}
+          <AclPrincipalGroupPermissionsTable key={r.principalName} group={r} />
+        </>
+      ))}
+    </>
+  );
+});
 
 export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGroup }) => {
   const entries: {
@@ -315,54 +303,52 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
       });
   }
 
-  if (entries.length === 0) return <>No permissions assigned</>;
+  if (entries.length === 0) return 'No permissions assigned';
 
   return (
-    <>
-      <DataTable
-        data={entries}
-        columns={[
-          {
-            header: 'Type',
-            accessorKey: 'type',
-            size: 150,
-          },
-          {
-            header: 'Selector',
-            accessorKey: 'selector',
-            size: 300,
-          },
-          {
-            header: 'Operations',
-            size: Number.POSITIVE_INFINITY,
-            cell: ({ row: { original: record } }) => {
-              const allow = record.operations.allow;
-              const deny = record.operations.deny;
+    <DataTable
+      data={entries}
+      columns={[
+        {
+          header: 'Type',
+          accessorKey: 'type',
+          size: 150,
+        },
+        {
+          header: 'Selector',
+          accessorKey: 'selector',
+          size: 300,
+        },
+        {
+          header: 'Operations',
+          size: Number.POSITIVE_INFINITY,
+          cell: ({ row: { original: record } }) => {
+            const allow = record.operations.allow;
+            const deny = record.operations.deny;
 
-              return (
-                <Box>
-                  {allow.length > 0 && (
-                    <Box whiteSpace="pre">
-                      <Text as="span" fontWeight="semibold">
-                        Allow:{' '}
-                      </Text>
-                      <Text as="span">{allow.join(', ')}</Text>
-                    </Box>
-                  )}
-                  {deny.length > 0 && (
-                    <Box>
-                      <Text as="span" fontWeight="semibold">
-                        Deny:{' '}
-                      </Text>
-                      <Text as="span">{deny.join(', ')}</Text>
-                    </Box>
-                  )}
-                </Box>
-              );
-            },
+            return (
+              <Box>
+                {allow.length > 0 && (
+                  <Box whiteSpace="pre">
+                    <Text as="span" fontWeight="semibold">
+                      Allow:{' '}
+                    </Text>
+                    <Text as="span">{allow.join(', ')}</Text>
+                  </Box>
+                )}
+                {deny.length > 0 && (
+                  <Box>
+                    <Text as="span" fontWeight="semibold">
+                      Deny:{' '}
+                    </Text>
+                    <Text as="span">{deny.join(', ')}</Text>
+                  </Box>
+                )}
+              </Box>
+            );
           },
-        ]}
-      />
-    </>
+        },
+      ]}
+    />
   );
 });

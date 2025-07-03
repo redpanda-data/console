@@ -1,5 +1,5 @@
 import { create } from '@bufbuild/protobuf';
-import { Button, ButtonGroup, Flex, FormField, Input, PasswordInput, createStandaloneToast } from '@redpanda-data/ui';
+import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';

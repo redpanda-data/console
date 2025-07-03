@@ -13,7 +13,7 @@ import { SearchField } from '@redpanda-data/ui';
 import { type IReactionDisposer, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { AnimatePresence, MotionSpan, animProps_span_searchResult } from '../../utils/animationProps';
+import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 
 // todo: extract out where the filterText is retreived from / saved.
@@ -50,7 +50,7 @@ class SearchBar<TItem> extends Component<{
       () => this.filteredSource.data,
       (filteredData) => {
         this.props.onFilteredDataChanged(filteredData);
-      }
+      },
     );
   }
 
