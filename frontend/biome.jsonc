@@ -3,7 +3,8 @@
   "vcs": {
     "enabled": false,
     "clientKind": "git",
-    "useIgnoreFile": false
+    "useIgnoreFile": false,
+    "defaultBranch": "master"
   },
   "files": {
     "ignoreUnknown": false,
@@ -11,8 +12,13 @@
   },
   "formatter": {
     "enabled": true,
+    "formatWithErrors": true,
     "indentStyle": "space",
-    "lineWidth": 120
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto",
+    "bracketSpacing": true
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
@@ -20,28 +26,100 @@
     "rules": {
       "recommended": true,
       "suspicious": {
+        // Disallow the any type usage.
         "noExplicitAny": "off",
+        // Discourage the usage of Array index in keys. We use them a lot with string interpolation though. In the future we may rely on React.useId().
         "noArrayIndexKey": "off",
-        "noAssignInExpressions": "off"
+        // Disallow assignments in expressions.
+        "noAssignInExpressions": "off",
+        // Disallow variables from evolving into any type through reassignments.
+        "noEvolvingTypes": "off", // enable later
+        // Require for-in loops to include an if statement.
+        "useGuardForIn": "off", // enable later
+        // Disallow empty block statements and static blocks.
+        "noEmptyBlockStatements": "off", // enable later
+        // Ensure async functions utilize await.
+        "useAwait": "off", // enable later
+        // Enforce get methods to always return a value.
+        "useGetterReturn": "off", // enable later
+        // Disallow the use of console. This will help us clean up the browser console.
+        "noConsole": "off" // enable later
       },
       "a11y": {
         "useKeyWithClickEvents": "off",
         "useSemanticElements": "off"
       },
       "style": {
+        // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
         "noParameterAssign": "off",
+        // Enforce the use of as const over literal type and type annotation.
         "useAsConstAssertion": "error",
+        // Enforce default function parameters and optional function parameters to be last.
         "useDefaultParameterLast": "error",
+        // Require that each enum member value be explicitly initialized.
         "useEnumInitializers": "error",
+        // Prevent extra closing tags for components without children.
         "useSelfClosingElements": "error",
+        // Disallow multiple variable declarations in the same variable statement
         "useSingleVarDeclarator": "error",
+        // Disallow template literals if interpolation and special-character handling are not needed
         "noUnusedTemplateLiteral": "error",
+        // Use the Number properties instead of global ones. For instance. Number.isNaN();
         "useNumberNamespace": "error",
+        // Disallow type annotations for variables, parameters, and class properties initialized with a literal expression.
         "noInferrableTypes": "error",
-        "noUselessElse": "error"
+        // Disallow else block when the if block breaks early.
+        "noUselessElse": "error",
+        // Enforce naming conventions for JavaScript and TypeScript filenames.
+        // Supports TanStack Router convention: allows - prefixed files (e.g., -hooks.ts, -components.tsx)
+        // For now we don't have bandwidth to refactor the codebase fully.
+        "useFilenamingConvention": "off", // enable later
+        // Disallow exporting an imported variable. Sometimes we need to do it for monaco editor.
+        "noExportedImports": "off", // enable later
+        // Require the default clause in switch statements.
+        "useDefaultSwitchClause": "off", // enable later
+        // Require consistent accessibility modifiers on class properties and methods.
+        "useConsistentMemberAccessibility": "off", // enable later
+        // Disallow the use of TypeScript's namespaces. It's legacy as of TS v5+.
+        "noNamespace": "off", // enable later
+        // Disallow nested ternary expressions. Too many cases to cover for now.
+        "noNestedTernary": "off", // enable later
+        // Disallow TypeScript enum. We use them a lot so it's off.
+        "noEnum": "off",
+        // Disallow throwing non-Error values. For now we allow it.
+        "useThrowOnlyError": "off",
+        // Disallow the use of parameter properties in class constructors.
+        "noParameterProperties": "off", // enable later
+        // Enforce using single if instead of nested if clauses.
+        "useCollapsedIf": "off" // enable later
       },
       "complexity": {
-        "noBannedTypes": "off"
+        // Disallow primitive type aliases and misleading types.
+        "noBannedTypes": "off",
+        // Disallow the use of void operators, which is not a familiar operator. We don't want to change the current logic of the codebase, so it's off for now.
+        "noVoid": "off", // enable later,
+        // Disallow functions that exceed a given Cognitive Complexity score. Similar to go cyclop
+        "noExcessiveCognitiveComplexity": "off" // enable later
+      },
+      "correctness": {
+        // Prevents the usage of variables that haven't been declared inside the document.
+        "noUndeclaredVariables": "off" // enable later
+      },
+      "nursery": {
+        // Disallow variable declarations from shadowing variables declared in the outer scope.
+        "noShadow": "off", // enable later
+        // Disallow await inside loops.
+        "noAwaitInLoop": "off", // enable later
+        // Disallow unknown at-rules. CSS specific.
+        "noUnknownAtRule": "off"
+      },
+      "performance": {
+        // Prevent usage of <img> element in a Next.js project. We don't use Next.js
+        "noImgElement": "off",
+        // Require regex literals to be declared at the top level. Performance hit.
+        "useTopLevelRegex": "off", // enable later
+        // Disallow the use of namespace imports.
+        "noNamespaceImport": "error"
       }
     }
   },

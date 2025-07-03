@@ -20,6 +20,7 @@ import { loader, type Monaco } from '@monaco-editor/react';
 import { getAgentSidebarItemTitle } from 'components/pages/agents/agent-list-page';
 import memoizeOne from 'memoize-one';
 import { autorun, configure, observable, when } from 'mobx';
+// biome-ignore lint/performance/noNamespaceImport: part of monaco editor
 import * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
 import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
