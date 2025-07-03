@@ -231,7 +231,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 
 	grp.Go(func() error {
 		// 2. Retrieve subject config (subject compatibility level)
-		compatibilityRes := srClient.Compatibility(grpCtx, subjectName)
+		compatibilityRes := srClient.Compatibility(sr.WithParams(grpCtx, sr.DefaultToGlobal), subjectName)
 		compatibility := compatibilityRes[0]
 		if err := compatibility.Err; err != nil {
 			s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
