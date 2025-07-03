@@ -196,10 +196,141 @@ message UpdateRoleMembershipResponse {
   repeated RoleMembership removed = 3;
 }
 
+// Schema Registry ACLs
+// ResourceType defines the type of resource an ACL applies to.
+enum ResourceType {
+  // Unspecified resource type.
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  // Registry resource type.
+  RESOURCE_TYPE_REGISTRY = 1;
+  // Subject (schema) resource type.
+  RESOURCE_TYPE_SUBJECT = 2;
+}
+
+// PatternType defines how the resource name is matched.
+enum PatternType {
+  // Unspecified pattern type.
+  PATTERN_TYPE_UNSPECIFIED = 0;
+  // Literal pattern matches a resource name exactly.
+  PATTERN_TYPE_LITERAL = 1;
+  // Prefixed pattern matches resource names by prefix.
+  PATTERN_TYPE_PREFIXED = 2;
+}
+
+// Operation defines the action allowed or denied by an ACL.
+enum Operation {
+  // Unspecified operation.
+  OPERATION_UNSPECIFIED = 0;
+  // ALL operations.
+  OPERATION_ALL = 1;
+  // READ operation.
+  OPERATION_READ = 2;
+  // WRITE operation.
+  OPERATION_WRITE = 3;
+  // REMOVE operation.
+  OPERATION_REMOVE = 4;
+  // DESCRIBE operation.
+  OPERATION_DESCRIBE = 5;
+  // DESCRIBE_CONFIGS operation.
+  OPERATION_DESCRIBE_CONFIGS = 6;
+  // ALTER operation.
+  OPERATION_ALTER = 7;
+  // ALTER_CONFIGS operation.
+  OPERATION_ALTER_CONFIGS = 8;
+}
+
+// Permission defines whether an ACL allows or denies an operation.
+enum Permission {
+  // Unspecified permission.
+  PERMISSION_UNSPECIFIED = 0;
+  // ALLOW permission permits the operation.
+  PERMISSION_ALLOW = 1;
+  // DENY permission denies the operation.
+  PERMISSION_DENY = 2;
+}
+
+// ACL represents an individual access control rule.
+message SchemaRegistryACL {
+  // The principal (user/service) this ACL applies to.
+  string principal = 1;
+
+  // The resource name this ACL applies to.
+  string resource = 2;
+
+  // The type of resource this ACL applies to.
+  ResourceType resource_type = 3;
+
+  // How the resource name should be matched.
+  PatternType pattern_type = 4;
+
+  // The host this ACL applies to.
+  string host = 5;
+
+  // The operation this ACL controls.
+  Operation operation = 6;
+
+  // Whether this ACL allows or denies the operation.
+  Permission permission = 7;
+}
+
+// ListSchemaRegistryACLsRequest is the request for ListSchemaRegistryACLs.
+message ListSchemaRegistryACLsRequest {
+  // Filter options.
+  message Filter {
+    // Filter by principal name.
+    string principal = 1;
+
+    // Filter by resource name.
+    string resource = 2;
+
+    // Filter by resource type.
+    ResourceType resource_type = 3;
+
+    // Filter by pattern type.
+    PatternType pattern_type = 4;
+
+    // Filter by host.
+    string host = 5;
+
+    // Filter by operation.
+    Operation operation = 6;
+
+    // Filter by permission.
+    Permission permission = 7;
+  }
+
+  // Optional filter.
+  repeated Filter filter = 1;
+}
+
+// ListSchemaRegistryACLsResponse is the response for ListSchemaRegistryACLs.
+message ListSchemaRegistryACLsResponse {
+  // The Schema Registry ACLs.
+  repeated SchemaRegistryACL acls = 1;
+}
+
+// CreateSchemaRegistryACLsRequest is the request for CreateSchemaRegistryACLs.
+message CreateSchemaRegistryACLsRequest {
+  // The ACLs to create.
+  repeated SchemaRegistryACL acls = 1;
+}
+
+// CreateSchemaRegistryACLsResponse is the response for CreateSchemaRegistryACLs.
+message CreateSchemaRegistryACLsResponse {}
+
+// DeleteSchemaRegistryACLsRequest is the request for DeleteSchemaRegistryACLs.
+message DeleteSchemaRegistryACLsRequest {
+  // The ACLs to delete. Only exact matches will be deleted.
+  repeated SchemaRegistryACL acls = 1;
+}
+
+// DeleteSchemaRegistryACLsResponse is the response for DeleteSchemaRegistryACLs.
+message DeleteSchemaRegistryACLsResponse {}
+
 service SecurityService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Security"
-    description: "Manage Redpanda roles."
+    description: "Manage Redpanda roles and Schema Registry ACLs."
   };
 
   // ListRoles lists all the roles based on optional filter.
@@ -349,6 +480,86 @@ service SecurityService {
           description: "OK"
           schema: {
             json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateRoleMembershipResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // ListSchemaRegistryACLs lists Schema Registry ACLs based on optional filters.
+  rpc ListSchemaRegistryACLs(ListSchemaRegistryACLsRequest) returns (ListSchemaRegistryACLsResponse) {
+    option (google.api.http) = {get: "/v1/schema-registry/acls"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Schema Registry ACLs"
+      description: "List Schema Registry ACLs. Optional: filter based on principal, resource, operation, etc."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListSchemaRegistryACLsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // CreateSchemaRegistryACLs creates new Schema Registry ACL entries.
+  rpc CreateSchemaRegistryACLs(CreateSchemaRegistryACLsRequest) returns (CreateSchemaRegistryACLsResponse) {
+    option (google.api.http) = {
+      post: "/v1/schema-registry/acls"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Schema Registry ACLs"
+      description: "Create new Schema Registry ACL entries."
+      responses: {
+        key: "201"
+        value: {
+          description: "Schema Registry ACLs created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateSchemaRegistryACLsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // DeleteSchemaRegistryACLs deletes existing Schema Registry ACL entries.
+  rpc DeleteSchemaRegistryACLs(DeleteSchemaRegistryACLsRequest) returns (DeleteSchemaRegistryACLsResponse) {
+    option (google.api.http) = {
+      post: "/v1/schema-registry/acls:remove"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Remove Schema Registry ACLs"
+      description: "Relete existing Schema Registry ACL entries. Only exact matches will be removed."
+      responses: {
+        key: "200"
+        value: {
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteSchemaRegistryACLsResponse"}
           }
         }
       }

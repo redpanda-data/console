@@ -47,3 +47,24 @@ export const listRoleMembers = SecurityService.method.listRoleMembers;
  * @generated from rpc redpanda.api.dataplane.v1.SecurityService.UpdateRoleMembership
  */
 export const updateRoleMembership = SecurityService.method.updateRoleMembership;
+
+/**
+ * ListSchemaRegistryACLs lists Schema Registry ACLs based on optional filters.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1.SecurityService.ListSchemaRegistryACLs
+ */
+export const listSchemaRegistryACLs = SecurityService.method.listSchemaRegistryACLs;
+
+/**
+ * CreateSchemaRegistryACLs creates new Schema Registry ACL entries.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1.SecurityService.CreateSchemaRegistryACLs
+ */
+export const createSchemaRegistryACLs = SecurityService.method.createSchemaRegistryACLs;
+
+/**
+ * DeleteSchemaRegistryACLs deletes existing Schema Registry ACL entries.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1.SecurityService.DeleteSchemaRegistryACLs
+ */
+export const deleteSchemaRegistryACLs = SecurityService.method.deleteSchemaRegistryACLs;
