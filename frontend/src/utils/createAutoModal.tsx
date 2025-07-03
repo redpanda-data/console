@@ -43,7 +43,7 @@ export type AutoModalProps = {
 
 export type AutoModal<TArg> = {
   show: (arg: TArg) => void;
-  Component: () => JSX.Element;
+  Component: () => JSX.Element | null;
 };
 
 // Create a wrapper for <Modal/>  takes care of rendering depending on 'visible'
