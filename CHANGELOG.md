@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- [BUGFIX] Fix transactional record production always appearing to fail even when records were successfully produced and committed.
+- [BUGFIX] Fix misleading error messages when fetching topic partition offsets that made troubleshooting difficult.
+- [BUGFIX] Fix missing error reporting for topic partition end offset failures that were silently ignored.
+- [BUGFIX] Fix incorrect error details returned when partition access fails or start offset retrieval fails.
+
 ## v2.8.7 / 2025-06-27
 
 - [IMPROVEMENT] Update key dependencies (e.g. franz-go) to latest version.
