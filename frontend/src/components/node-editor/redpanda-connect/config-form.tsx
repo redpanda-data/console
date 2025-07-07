@@ -2,12 +2,11 @@ import type { FieldSpec } from '@/components/node-editor/redpanda-connect/types'
 import { useAppStore } from '@/components/node-editor/store';
 import { Button } from '@/components/redpanda-ui/button';
 import { Form } from '@/components/redpanda-ui/form';
-import { Separator } from '@/components/redpanda-ui/separator';
 import { useEffect } from 'react';
 import { type FieldValues, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
-import { FieldInput } from './field-input';
+import { FieldRenderer } from './field-renderer';
 
 interface ConfigFormProps {
   root: FieldSpec;
@@ -51,13 +50,12 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ root, basePath = '', nod
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        {fields.map((f, index) => {
+        {fields.map((f, _) => {
           const path = basePath ? `${basePath}.${f.name}` : f.name;
 
           return (
             <>
-              <FieldInput key={path} path={path} spec={f} />
-              {index < fields.length - 1 && <Separator key={`separator-${path}`} className="my-4" />}
+              <FieldRenderer key={path} path={path} spec={f} />
             </>
           );
         })}
