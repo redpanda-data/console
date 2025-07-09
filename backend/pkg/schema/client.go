@@ -278,7 +278,7 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 // error will be returned.
 func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema, schemaCache *avro.SchemaCache) (avro.Schema, error) {
 	if len(schema.References) == 0 {
-		return avro.Parse(schema.Schema)
+		return avro.ParseWithCache(schema.Schema, "", schemaCache)
 	}
 
 	// Fetch and parse all schema references recursively. All schemas that have
