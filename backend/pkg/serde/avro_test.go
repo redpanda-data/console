@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
@@ -126,7 +127,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			Enabled: true,
 			URLs:    []string{ts.URL},
 		},
-	})
+	}, zaptest.NewLogger(t))
 	require.NoError(t, err)
 	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
 		return "single/", nil
@@ -306,7 +307,7 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 			Enabled: true,
 			URLs:    []string{ts.URL},
 		},
-	})
+	}, zaptest.NewLogger(t))
 	require.NoError(t, err)
 	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
 		return "single/", nil
