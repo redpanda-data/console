@@ -112,9 +112,6 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       // Log different types of errors for debugging
       const errorStr = String(err);
       if (errorStr.includes('404') || errorStr.includes('not found')) {
-        console.log(
-          `KnowledgeBase.Details: Consumer group '${consumerGroupId}' not found yet (likely still being created)`,
-        );
       } else {
         console.warn('KnowledgeBase.Details: Failed to load consumer group data:', err);
       }

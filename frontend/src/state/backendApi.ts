@@ -2289,14 +2289,7 @@ export const knowledgebaseApi = observable({
   async createKnowledgeBase(knowledgeBase: KnowledgeBaseCreate) {
     const client = appConfig.knowledgebaseClient;
     if (!client) throw new Error('knowledgebase client is not initialized');
-
-    console.log('=== Console gRPC Client Debug ===');
-    console.log('Full knowledgeBase object:', knowledgeBase);
-    console.log('knowledgeBase.indexer:', knowledgeBase.indexer);
-    console.log('Serialized request:', JSON.stringify({ knowledgeBase }, null, 2));
-
     const result = await client.createKnowledgeBase({ knowledgeBase });
-    console.log('gRPC call completed, result:', result);
     return result;
   },
   async updateKnowledgeBase(id: string, knowledgeBaseUpdate: KnowledgeBaseUpdate, updateMask?: string[]) {

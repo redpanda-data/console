@@ -25,10 +25,7 @@ import {
 
 describe('Protobuf Field Reflection', () => {
   test('should detect field behaviors for KnowledgeBase', () => {
-    console.log('=== KnowledgeBase Field Behaviors ===');
     debugFieldBehaviors(KnowledgeBaseSchema);
-
-    const metadata = getMessageFieldMetadata(KnowledgeBaseSchema);
 
     // Test specific field behaviors we expect
     expect(isFieldRequired(KnowledgeBaseSchema, 'id')).toBe(true);
@@ -40,13 +37,9 @@ describe('Protobuf Field Reflection', () => {
 
     expect(isFieldOutputOnly(KnowledgeBaseSchema, 'retrieval_api_url')).toBe(true);
     expect(isFieldEditable(KnowledgeBaseSchema, 'retrieval_api_url')).toBe(false);
-
-    // Print metadata for inspection
-    console.log('KnowledgeBase field metadata:', metadata);
   });
 
   test('should detect field behaviors for KnowledgeBaseUpdate', () => {
-    console.log('=== KnowledgeBaseUpdate Field Behaviors ===');
     debugFieldBehaviors(KnowledgeBaseUpdateSchema);
 
     const metadata = getMessageFieldMetadata(KnowledgeBaseUpdateSchema);
@@ -58,12 +51,9 @@ describe('Protobuf Field Reflection', () => {
     // But should have editable fields (note: field name is display_name in schema, not displayName)
     expect(isFieldRequired(KnowledgeBaseUpdateSchema, 'display_name')).toBe(true);
     expect(isFieldEditable(KnowledgeBaseUpdateSchema, 'display_name')).toBe(true);
-
-    console.log('KnowledgeBaseUpdate field metadata:', metadata);
   });
 
   test('should detect field behaviors for nested Postgres schema', () => {
-    console.log('=== Postgres Field Behaviors ===');
     debugFieldBehaviors(KnowledgeBase_VectorDatabase_PostgresSchema);
 
     const metadata = getMessageFieldMetadata(KnowledgeBase_VectorDatabase_PostgresSchema);
@@ -72,8 +62,6 @@ describe('Protobuf Field Reflection', () => {
     expect(isFieldRequired(KnowledgeBase_VectorDatabase_PostgresSchema, 'dsn')).toBe(true);
     expect(isFieldRequired(KnowledgeBase_VectorDatabase_PostgresSchema, 'table')).toBe(true);
     expect(isFieldImmutable(KnowledgeBase_VectorDatabase_PostgresSchema, 'table')).toBe(true);
-
-    console.log('Postgres field metadata:', metadata);
   });
 
   test('should handle non-existent fields gracefully', () => {

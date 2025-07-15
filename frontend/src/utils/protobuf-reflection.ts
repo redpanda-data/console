@@ -115,7 +115,6 @@ export function getMessageFieldMetadata(messageSchema: DescMessage): Record<
  * @param messageSchema The message schema descriptor
  */
 export function debugFieldBehaviors(messageSchema: DescMessage): void {
-  console.group(`Field behaviors for ${messageSchema.name}:`);
   const metadata = getMessageFieldMetadata(messageSchema);
 
   for (const [fieldName, meta] of Object.entries(metadata)) {
@@ -123,8 +122,5 @@ export function debugFieldBehaviors(messageSchema: DescMessage): void {
     if (meta.isRequired) flags.push('REQUIRED');
     if (meta.isImmutable) flags.push('IMMUTABLE');
     if (meta.isOutputOnly) flags.push('OUTPUT_ONLY');
-
-    console.log(`${fieldName}: ${flags.length > 0 ? flags.join(', ') : 'no special behaviors'}`);
   }
-  console.groupEnd();
 }

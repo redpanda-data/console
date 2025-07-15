@@ -220,8 +220,6 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
     }
   }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
 
-  console.log('route.path', route.path);
-
   return <route.pageType key={route.path} {...pageProps} />;
 };
 
