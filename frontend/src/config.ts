@@ -32,6 +32,8 @@ import { PipelineService } from 'protogen/redpanda/api/console/v1alpha1/pipeline
 import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
+import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { appGlobal } from './state/appGlobal';
@@ -125,6 +127,8 @@ interface Config {
   rpcnSecretsClient?: Client<typeof SecretService>;
   transformsClient?: Client<typeof TransformService>;
   clusterStatusClient?: Client<typeof ClusterStatusService>;
+  knowledgebaseClient?: Client<typeof KnowledgeBaseService>;
+  userClient?: Client<typeof UserService>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -172,6 +176,8 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const authenticationGrpcClient = createClient(AuthenticationService, transport);
   const transformClient = createClient(TransformService, transport);
   const clusterStatusGrpcClient = createClient(ClusterStatusService, transport);
+  const knowledgebaseGrpcClient = createClient(KnowledgeBaseService, transport);
+  const userGrpcClient = createClient(UserService, transport);
   Object.assign(config, {
     jwt,
     isServerless,
@@ -188,6 +194,8 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
     transformsClient: transformClient,
     rpcnSecretsClient: secretGrpcClient,
     clusterStatusClient: clusterStatusGrpcClient,
+    knowledgebaseClient: knowledgebaseGrpcClient,
+    userClient: userGrpcClient,
     featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
@@ -267,7 +275,7 @@ const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
     return APP_ROUTES.map((route) => {
-      if (route.path === '/agents') {
+      if (route.path === '/agents' || route.path === '/knowledgebases') {
         return {
           ...route,
           // Needed because we cannot use JSX in this file

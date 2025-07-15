@@ -118,18 +118,22 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     <Modal isOpen={isOpen} onClose={closeModal} isCentered={true} size={'md'}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Add secret</ModalHeader>
+        <ModalHeader>Select secret</ModalHeader>
         <ModalBody>
           <Flex flexDirection="column" gap={5} w={300}>
-            <Text>Add or create a new secret in your pipeline. This secret will be available across pipelines,</Text>
+            <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
             <FormField
               label="Secret name"
               errorText={isNameValid(id)}
               isInvalid={!!isNameValid(id)}
-              description={isNewSecret && 'This secret name will be stored in upper case.'}
+              description={
+                isNewSecret
+                  ? 'Creating new secret (stored in upper case)'
+                  : 'Select existing or type new name to create'
+              }
             >
               <Select<Secret>
-                placeholder="Find secret"
+                placeholder="Select or create secret"
                 inputValue={searchValue}
                 onInputChange={setSearchValue}
                 isMulti={false}
@@ -180,7 +184,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
               void addSecret(id);
             }}
           >
-            Add
+            Select
           </Button>
         </ModalFooter>
       </ModalContent>

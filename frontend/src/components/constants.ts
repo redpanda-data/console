@@ -5,4 +5,5 @@ export const DEFAULT_API_BASE = './api' as const;
 export const FEATURE_FLAGS = {
   enableAiAgentsInConsoleUi: false,
   enableAiAgentsInConsoleUiPreview: false,
+  enableKnowledgeBaseInConsoleUi: false,
 };

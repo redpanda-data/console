@@ -11,6 +11,7 @@
 
 import {
   BeakerIcon,
+  BookOpenIcon,
   CollectionIcon,
   CubeTransparentIcon,
   FilterIcon,
@@ -53,6 +54,9 @@ import CreateConnector from './pages/connect/CreateConnector';
 import KafkaConnectOverview from './pages/connect/Overview';
 import GroupDetails from './pages/consumers/Group.Details';
 import GroupList from './pages/consumers/Group.List';
+import KnowledgeBaseCreate from './pages/knowledgebase/KnowledgeBase.Create';
+import KnowledgeBaseDetails from './pages/knowledgebase/KnowledgeBase.Details';
+import KnowledgeBaseList from './pages/knowledgebase/KnowledgeBase.List';
 import { BrokerDetails } from './pages/overview/Broker.Details';
 import Overview from './pages/overview/Overview';
 import type { PageComponentType, PageProps } from './pages/Page';
@@ -104,13 +108,16 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         const visibility = entry.visibilityCheck();
         if (!visibility.visible) return null;
 
-        isEnabled = visibility.disabledReasons.length === 0;
-        if (!isEnabled) disabledText = disabledReasonText[visibility.disabledReasons[0]];
+        isEnabled = visibility.disabledReasons?.length === 0;
+        if (!isEnabled) disabledText = disabledReasonText[visibility.disabledReasons?.[0]];
       }
       const isDisabled = !isEnabled;
 
-      // Handle AI Agents route with Technical Preview badge
-      const title = entry.path === '/agents' ? getAgentSidebarItemTitle({ route: entry }) : entry.title;
+      // Handle AI Agents and Knowledge Base routes with beta badge
+      const title =
+        entry.path === '/agents' || entry.path === '/knowledgebases'
+          ? getAgentSidebarItemTitle({ route: entry })
+          : entry.title;
 
       return {
         title: title as string | JSX.Element,
@@ -223,6 +230,7 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
  */
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
+  const isKnowledgeBaseFeatureEnabled = isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi');
   const location = useLocation();
 
   useEffect(() => {
@@ -230,7 +238,11 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-  }, [isAgentFeatureEnabled, path, location.pathname]);
+    if (!isKnowledgeBaseFeatureEnabled && path.includes('/knowledgebases') && location.pathname !== '/overview') {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
+  }, [isAgentFeatureEnabled, isKnowledgeBaseFeatureEnabled, path, location.pathname]);
 
   return children;
 };
@@ -382,6 +394,27 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents', undefined, true, undefined),
   MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents', undefined, true, undefined),
   MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents', undefined, true, undefined),
+
+  MakeRoute<{}>(
+    '/knowledgebases',
+    KnowledgeBaseList,
+    'Knowledge Bases',
+    BookOpenIcon,
+    true,
+    routeVisibility(
+      // Do not display knowledge bases if feature flag is disabled
+      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'), // Needed to pass flags to current routing solution
+      [Feature.PipelineService],
+      [],
+      [],
+    ),
+  ),
+  MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreate, 'Create Knowledge Base'),
+  MakeRoute<{ knowledgebaseId: string }>(
+    '/knowledgebases/:knowledgebaseId',
+    KnowledgeBaseDetails,
+    'Knowledge Base Details',
+  ),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
