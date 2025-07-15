@@ -117,7 +117,7 @@ export function getMessageFieldMetadata(messageSchema: DescMessage): Record<
 export function debugFieldBehaviors(messageSchema: DescMessage): void {
   const metadata = getMessageFieldMetadata(messageSchema);
 
-  for (const [fieldName, meta] of Object.entries(metadata)) {
+  for (const [, meta] of Object.entries(metadata)) {
     const flags = [];
     if (meta.isRequired) flags.push('REQUIRED');
     if (meta.isImmutable) flags.push('IMMUTABLE');

@@ -42,7 +42,7 @@ describe('Protobuf Field Reflection', () => {
   test('should detect field behaviors for KnowledgeBaseUpdate', () => {
     debugFieldBehaviors(KnowledgeBaseUpdateSchema);
 
-    const metadata = getMessageFieldMetadata(KnowledgeBaseUpdateSchema);
+    const _metadata = getMessageFieldMetadata(KnowledgeBaseUpdateSchema);
 
     // KnowledgeBaseUpdate should not have id or retrieval_api_url fields
     expect(KnowledgeBaseUpdateSchema.fields.find((f) => f.name === 'id')).toBeUndefined();
@@ -56,7 +56,7 @@ describe('Protobuf Field Reflection', () => {
   test('should detect field behaviors for nested Postgres schema', () => {
     debugFieldBehaviors(KnowledgeBase_VectorDatabase_PostgresSchema);
 
-    const metadata = getMessageFieldMetadata(KnowledgeBase_VectorDatabase_PostgresSchema);
+    const _metadata = getMessageFieldMetadata(KnowledgeBase_VectorDatabase_PostgresSchema);
 
     // Test PostgreSQL fields
     expect(isFieldRequired(KnowledgeBase_VectorDatabase_PostgresSchema, 'dsn')).toBe(true);
