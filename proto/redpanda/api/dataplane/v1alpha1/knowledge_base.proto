@@ -1,0 +1,607 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+message KnowledgeBase {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1/KnowledgeBase"
+    singular: "knowledge_base"
+    plural: "knowledge_bases"
+  };
+
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.len = 20
+  ];
+
+  string display_name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+
+  message VectorDatabase {
+    message Postgres {
+      string dsn = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true
+      ];
+      string table = 2 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.field_behavior) = IMMUTABLE,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 63
+      ];
+    }
+
+    oneof vector_database {
+      option (buf.validate.oneof).required = true;
+      Postgres postgres = 1;
+    }
+  }
+
+  VectorDatabase vector_database = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  message EmbeddingGenerator {
+    message Provider {
+      message OpenAI {
+        string api_key = 1;
+      }
+
+      message Cohere {
+        string base_url = 1;
+        string api_key = 2 [
+          (google.api.field_behavior) = REQUIRED,
+          (buf.validate.field).required = true
+        ];
+      }
+
+      oneof provider {
+        option (buf.validate.oneof).required = true;
+        OpenAI openai = 1;
+        Cohere cohere = 2;
+      }
+    }
+
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    int32 dimensions = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (google.api.field_behavior) = IMMUTABLE,
+      (buf.validate.field).required = true
+    ];
+    string model = 3 [
+      (google.api.field_behavior) = REQUIRED,
+      (google.api.field_behavior) = IMMUTABLE,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  EmbeddingGenerator embedding_generator = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  string retrieval_api_url = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Optional list of tags to attach to a pipeline.
+  map<string, string> tags = 7 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
+  message Indexer {
+    int32 chunk_size = 1;
+    int32 chunk_overlap = 2;
+    string redpanda_username = 3;
+    string redpanda_password = 4;
+    repeated string input_topics = 5 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
+  }
+  Indexer indexer = 8;
+
+  message Retriever {
+    message Reranker {
+      bool enabled = 1;
+      message Provider {
+        message Cohere {
+          string api_key = 2 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+          string model = 3 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+        }
+        oneof provider {
+          option (buf.validate.oneof).required = true;
+          Cohere cohere = 1;
+        }
+      }
+      Provider provider = 2;
+    }
+    Reranker reranker = 1;
+  }
+  Retriever retriever = 9;
+
+  message Generation {
+    message Provider {
+      message OpenAI {
+        string api_key = 1;
+      }
+
+      oneof provider {
+        option (buf.validate.oneof).required = true;
+        OpenAI openai = 1;
+      }
+    }
+
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    string model = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (google.api.field_behavior) = IMMUTABLE,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  Generation generation = 10;
+}
+
+message KnowledgeBaseCreate {
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+
+  message VectorDatabase {
+    message Postgres {
+      string dsn = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true
+      ];
+      string table = 2 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.field_behavior) = IMMUTABLE,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^[a-zA-Z][a-zA-Z0-9_]*$",
+        (buf.validate.field).string.min_len = 1,
+        (buf.validate.field).string.max_len = 63
+      ];
+    }
+
+    oneof vector_database {
+      option (buf.validate.oneof).required = true;
+      Postgres postgres = 1;
+    }
+  }
+
+  VectorDatabase vector_database = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  message EmbeddingGenerator {
+    message Provider {
+      message OpenAI {
+        string api_key = 1;
+      }
+
+      message Cohere {
+        string base_url = 1;
+        string api_key = 2 [
+          (google.api.field_behavior) = REQUIRED,
+          (buf.validate.field).required = true
+        ];
+      }
+
+      oneof provider {
+        option (buf.validate.oneof).required = true;
+        OpenAI openai = 1;
+        Cohere cohere = 2;
+      }
+    }
+
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    int32 dimensions = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    string model = 3 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  EmbeddingGenerator embedding_generator = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Optional list of tags to attach to a pipeline.
+  map<string, string> tags = 5 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
+  message Indexer {
+    int32 chunk_size = 1;
+    int32 chunk_overlap = 2;
+    string redpanda_username = 3;
+    string redpanda_password = 4;
+    repeated string input_topics = 5 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
+  }
+  Indexer indexer = 6;
+
+  message Retriever {
+    message Reranker {
+      bool enabled = 1;
+      message Provider {
+        message Cohere {
+          string api_key = 2 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+          string model = 3 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+        }
+        oneof provider {
+          option (buf.validate.oneof).required = true;
+          Cohere cohere = 1;
+        }
+      }
+      Provider provider = 2;
+    }
+    Reranker reranker = 1;
+  }
+  Retriever retriever = 7;
+
+  message Generation {
+    message Provider {
+      message OpenAI {
+        string api_key = 1;
+      }
+
+      oneof provider {
+        option (buf.validate.oneof).required = true;
+        OpenAI openai = 1;
+      }
+    }
+
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    string model = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  Generation generation = 8;
+}
+
+message KnowledgeBaseUpdate {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1/KnowledgeBase"
+    singular: "knowledge_base"
+    plural: "knowledge_bases"
+  };
+
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  string description = 2 [
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+    (buf.validate.field).string.max_len = 256
+  ];
+
+  message VectorDatabase {
+    message Postgres {
+      string dsn = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true
+      ];
+    }
+
+    oneof vector_database {
+      option (buf.validate.oneof).required = true;
+      Postgres postgres = 1;
+    }
+  }
+
+  VectorDatabase vector_database = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  message EmbeddingGenerator {
+    message Provider {
+      message OpenAI {
+        string api_key = 1;
+      }
+
+      message Cohere {
+        string base_url = 1;
+        string api_key = 2;
+      }
+
+      oneof provider {
+        option (buf.validate.oneof).required = true;
+        OpenAI openai = 1;
+        Cohere cohere = 2;
+      }
+    }
+
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  EmbeddingGenerator embedding_generator = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Optional list of tags to attach to a pipeline.
+  map<string, string> tags = 5 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
+  message Indexer {
+    int32 chunk_size = 1;
+    int32 chunk_overlap = 2;
+    string redpanda_username = 3;
+    string redpanda_password = 4;
+    repeated string input_topics = 5 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).repeated.min_items = 1
+    ];
+  }
+  Indexer indexer = 6;
+
+  message Retriever {
+    message Reranker {
+      bool enabled = 1;
+      message Provider {
+        message Cohere {
+          string api_key = 2 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+          string model = 3 [
+            (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).required = true
+          ];
+        }
+        oneof provider {
+          Cohere cohere = 1;
+        }
+      }
+      Provider provider = 2;
+    }
+    Reranker reranker = 1;
+  }
+  Retriever retriever = 7;
+
+  message Generation {
+    message Provider {
+      message OpenAI {
+        string api_key = 1;
+      }
+
+      oneof provider {
+        option (buf.validate.oneof).required = true;
+        OpenAI openai = 1;
+      }
+    }
+
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+  }
+
+  Generation generation = 8;
+}
+
+message CreateKnowledgeBaseRequest {
+  KnowledgeBaseCreate knowledge_base = 1;
+}
+
+message CreateKnowledgeBaseResponse {
+  KnowledgeBase knowledge_base = 1;
+}
+
+message GetKnowledgeBaseRequest {
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.len = 20
+  ];
+}
+
+message GetKnowledgeBaseResponse {
+  KnowledgeBase knowledge_base = 1;
+}
+
+message ListKnowledgeBasesRequest {
+  message Filter {
+    // Substring match on pipeline name. Case-sensitive.
+    string name_contains = 1 [
+      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+      (buf.validate.field).string.max_len = 128,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Any KnowledgeBase that partially match this name will be returned."}
+    ];
+
+    // Filter pipelines that contain all of these key/value pairs.
+    map<string, string> tags = 2 [
+      (buf.validate.field).map = {
+        max_pairs: 16
+        values: {
+          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+        }
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "KnowledgeBases that match all the provided tags will be returned."}
+    ];
+  }
+
+  int32 page_size = 1 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 50
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 50
+    }
+  ];
+
+  string page_token = 2;
+
+  Filter filter = 3;
+}
+
+message ListKnowledgeBasesResponse {
+  repeated KnowledgeBase knowledge_bases = 1;
+  string next_page_token = 2;
+}
+
+message UpdateKnowledgeBaseRequest {
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.len = 20
+  ];
+
+  KnowledgeBaseUpdate knowledge_base = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message UpdateKnowledgeBaseResponse {
+  KnowledgeBase knowledge_base = 1;
+}
+
+message DeleteKnowledgeBaseRequest {
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.len = 20
+  ];
+}
+
+message DeleteKnowledgeBaseResponse {}
+
+service KnowledgeBaseService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda AI KnowledgeBase"
+    description: "Create and manage retrieval-augmented generation (RAG) knowledge bases."
+  };
+
+  rpc CreateKnowledgeBase(CreateKnowledgeBaseRequest) returns (CreateKnowledgeBaseResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/knowledge-bases"
+      body: "knowledge_base"
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
+
+  rpc GetKnowledgeBase(GetKnowledgeBaseRequest) returns (GetKnowledgeBaseResponse) {
+    option (google.api.http) = {get: "/v1alpha1/knowledge-bases/{id}"};
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
+
+  rpc ListKnowledgeBases(ListKnowledgeBasesRequest) returns (ListKnowledgeBasesResponse) {
+    option (google.api.http) = {get: "/v1alpha1/knowledge-bases"};
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
+
+  rpc UpdateKnowledgeBase(UpdateKnowledgeBaseRequest) returns (UpdateKnowledgeBaseResponse) {
+    option (google.api.http) = {
+      put: "/v1alpha1/knowledge-bases/{id}"
+      body: "knowledge_base"
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
+
+  rpc DeleteKnowledgeBase(DeleteKnowledgeBaseRequest) returns (DeleteKnowledgeBaseResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/knowledge-bases/{id}"};
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
+}
