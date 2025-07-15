@@ -1,4 +1,5 @@
 const deps = require('./package.json').dependencies;
+
 module.exports = {
   filename: 'embedded.js',
   name: 'rp_console',

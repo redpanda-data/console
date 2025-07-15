@@ -5,11 +5,11 @@ import {
   ButtonGroup,
   Center,
   Flex,
-  HStack,
   Heading,
+  HStack,
   Text,
-  VStack,
   usePrefersReducedMotion,
+  VStack,
 } from '@redpanda-data/ui';
 import { useEffect, useState } from 'react';
 import { FaCode, FaGraduationCap } from 'react-icons/fa';

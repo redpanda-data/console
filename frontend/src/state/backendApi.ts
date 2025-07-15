@@ -11,7 +11,7 @@
 
 /*eslint block-scoped-var: "error"*/
 
-import { type Registry, create } from '@bufbuild/protobuf';
+import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
@@ -66,12 +66,12 @@ import {
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1/secret_pb';
-import { LazyMap } from '../utils/LazyMap';
 import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
+import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { TimeSince, decodeBase64, getOidcSubject } from '../utils/utils';
+import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -120,6 +120,7 @@ import {
   type GetTopicsResponse,
   type GetUsersResponse,
   type GroupDescription,
+  isApiError,
   type KafkaConnectors,
   type PartialTopicConfigsResponse,
   type Partition,
@@ -159,7 +160,6 @@ import {
   type TopicPermissions,
   type UserData,
   WrappedApiError,
-  isApiError,
 } from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
@@ -2339,7 +2339,7 @@ export const transformsApi = observable({
       let res: ListTransformsResponse;
       try {
         res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
-      } catch (err) {
+      } catch (_err) {
         break;
       }
       const r = res.response;
@@ -2855,7 +2855,7 @@ export interface MessageSearchRequest {
 }
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
-  let obj: undefined | any = undefined;
+  let obj: undefined | any;
   if (text === null) {
     if (response.bodyUsed) throw new Error('response content already consumed');
     text = await response.text();

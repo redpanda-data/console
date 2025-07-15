@@ -4,6 +4,8 @@
 // 	protoc        (unknown)
 // source: redpanda/api/common/v1alpha1/pagination.proto
 
+// Deprecated: Use redpanda.api.common.v1 instead.
+
 package commonv1alpha1
 
 import (

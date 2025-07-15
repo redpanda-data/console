@@ -94,7 +94,7 @@ const ConfigEditorForm: FC<{
   const onSubmit: SubmitHandler<Inputs> = async ({ valueType, customValue }) => {
     const operation = valueType === 'infinite' || valueType === 'custom' ? 'SET' : 'DELETE';
 
-    let value: number | string | undefined | null = undefined;
+    let value: number | string | undefined | null;
     if (valueType === 'infinite') {
       value = getInfiniteValueForEntry(editedEntry);
     } else if (valueType === 'custom') {
@@ -330,6 +330,7 @@ const ConfigEntryComponent = observer(
 
         <span className="configButtons">
           <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
+            {/** biome-ignore lint/a11y/noStaticElementInteractions: part of ConfigEntryComponent implementation */}
             <span
               className={`btnEdit${canEdit ? '' : ' disabled'}`}
               onClick={() => {

@@ -28,11 +28,11 @@ import {
   Grid,
   GridItem,
   Input,
+  isMultiValue,
+  isSingleValue,
   PasswordInput,
   Select,
   Text,
-  isMultiValue,
-  isSingleValue,
 } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { MdDeleteOutline } from 'react-icons/md';

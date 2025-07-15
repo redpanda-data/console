@@ -1,5 +1,5 @@
 import type { ConnectError } from '@connectrpc/connect';
-import { type ToastId, type UseToastOptions, createStandaloneToast } from '@redpanda-data/ui';
+import { createStandaloneToast, type ToastId, type UseToastOptions } from '@redpanda-data/ui';
 
 export interface ErrorHttpPayload {
   internalCode: number;

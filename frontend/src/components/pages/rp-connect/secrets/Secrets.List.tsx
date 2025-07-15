@@ -1,20 +1,20 @@
 import { create } from '@bufbuild/protobuf';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
-import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
   Box,
   Button,
   ButtonGroup,
+  Link as ChakraLink,
   Code,
   ConfirmItemDeleteModal,
   CopyButton,
+  createStandaloneToast,
   DataTable,
   Flex,
   Image,
   SearchField,
   Text,
   Tooltip,
-  createStandaloneToast,
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';

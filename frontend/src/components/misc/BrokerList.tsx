@@ -133,10 +133,8 @@ function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; toolt
   );
 
   return (
-    <>
-      <Tooltip placement="top" label={tooltipContent} hasArrow>
-        {p.children}
-      </Tooltip>
-    </>
+    <Tooltip placement="top" label={tooltipContent} hasArrow>
+      {p.children}
+    </Tooltip>
   );
 }

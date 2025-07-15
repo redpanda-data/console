@@ -19,9 +19,9 @@ import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
 import { BrokerList } from '../../misc/BrokerList';
+import { BandwidthSlider } from './components/BandwidthSlider';
 import type ReassignPartitions from './ReassignPartitions';
 import type { PartitionSelection } from './ReassignPartitions';
-import { BandwidthSlider } from './components/BandwidthSlider';
 
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
@@ -123,7 +123,7 @@ export class StepReview extends Component<{
                   assignments={this.props.assignments.topics.first((t) => t.topicName === topic.topicName)!}
                 />
               ) : (
-                <>Error loading partitions</>
+                'Error loading partitions'
               )}
             </Box>
           )}

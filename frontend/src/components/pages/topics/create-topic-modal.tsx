@@ -15,9 +15,10 @@ import {
 import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import {
-  CreateTopicRequestSchema,
-  CreateTopicRequest_TopicSchema,
   CreateTopicRequest_Topic_ConfigSchema,
+  CreateTopicRequest_TopicSchema,
+  CreateTopicRequestSchema,
+  ListTopicsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
@@ -39,7 +40,9 @@ export const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 export const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
 export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => {
-  const { data: topicList } = useLegacyListTopicsQuery();
+  const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+    hideInternalTopics: true,
+  });
   const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useCreateTopicMutation();
 
   const formOpts = formOptions({

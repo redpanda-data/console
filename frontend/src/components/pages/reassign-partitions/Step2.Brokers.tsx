@@ -17,8 +17,8 @@ import { Component } from 'react';
 import { api } from '../../../state/backendApi';
 import type { Broker } from '../../../state/restInterfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
-import type { PartitionSelection } from './ReassignPartitions';
 import { SelectionInfoBar } from './components/StatisticsBar';
+import type { PartitionSelection } from './ReassignPartitions';
 
 @observer
 export class StepSelectBrokers extends Component<{

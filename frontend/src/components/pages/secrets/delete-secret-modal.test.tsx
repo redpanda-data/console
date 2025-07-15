@@ -1,13 +1,13 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { deleteSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { DeleteSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { deleteSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
   GetPipelinesForSecretResponseSchema as GetPipelinesForSecretResponseSchemaDataPlane,
-  PipelineSchema,
   Pipeline_State,
+  PipelineSchema,
   PipelinesForSecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { DeleteSecretRequestSchema as DeleteSecretRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';

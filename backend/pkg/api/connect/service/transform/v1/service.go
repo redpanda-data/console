@@ -18,8 +18,8 @@ import (
 	"strconv"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
+	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
-	"github.com/bufbuild/protovalidate-go"
 	"github.com/redpanda-data/common-go/api/pagination"
 	"go.uber.org/zap"
 
@@ -36,7 +36,7 @@ var _ dataplanev1connect.TransformServiceHandler = (*Service)(nil)
 type Service struct {
 	cfg                    *config.Config
 	logger                 *zap.Logger
-	validator              *protovalidate.Validator
+	validator              protovalidate.Validator
 	redpandaClientProvider redpandafactory.ClientFactory
 	mapper                 mapper
 	errorWriter            *connect.ErrorWriter
@@ -46,7 +46,7 @@ type Service struct {
 // NewService creates a new transform service handler.
 func NewService(cfg *config.Config,
 	logger *zap.Logger,
-	protoValidator *protovalidate.Validator,
+	protoValidator protovalidate.Validator,
 	redpandaClientProvider redpandafactory.ClientFactory,
 ) *Service {
 	return &Service{

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noTemplateCurlyInString: part of the create agent HTTP implementation */
 import { create } from '@bufbuild/protobuf';
 import { Box, Button, ButtonGroup, Divider, Flex, Grid, GridItem, Image, Spinner, VStack } from '@redpanda-data/ui';
 import { useAppForm } from 'components/form/form';
@@ -13,8 +14,8 @@ import { ExternalDependenciesForm } from './external-dependencies-form';
 import { GitDetailsForm } from './git-details-form';
 import { parseYamlTemplateSecrets } from './parse-yaml-template-secrets';
 import ragChatPipeline from './rag-chat.yaml';
-import gitPrivatePipeline from './rag-git-private.yaml';
 import gitPipeline from './rag-git.yaml';
+import gitPrivatePipeline from './rag-git-private.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
 
@@ -127,61 +128,59 @@ export const CreateAgentHTTP = () => {
   }
 
   return (
-    <>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          form.handleSubmit();
-        }}
-      >
-        <form.AppForm>
-          <Grid gap={8}>
-            <GridItem display="flex" alignItems="center" justifyContent="center" width="100%">
-              <Box borderRadius="md" overflow="hidden" boxShadow="md" width="100%" maxWidth="1000px" mx="auto">
-                <Image
-                  src={agentIllustration}
-                  alt="AI Agent Illustration"
-                  width="100%"
-                  height="auto"
-                  objectFit="contain"
-                  fallbackSrc="https://via.placeholder.com/800x450?text=AI+Agent"
-                />
-              </Box>
-            </GridItem>
-            <GridItem maxWidth={{ base: '100%', lg: '800px' }} mx="auto" width="100%">
-              <VStack spacing={6} align="stretch">
-                <AgentDetailsForm
-                  form={form}
-                  title="New Support Agent"
-                  description="This agent connects to a GitHub repository and ingests all text-based content (e.g., Markdown, plaintext, code) into a vector database you provide. The content becomes part of a Retrieval-Augmented Generation (RAG) pipeline that enhances the agent's ability to respond accurately and contextually via a chat API."
-                />
-                <Divider my={1} />
-                <RedpandaUserAndPermissionsForm
-                  form={form}
-                  title="Redpanda user and permissions"
-                  description="The agent needs to connect to Redpanda in order to stream GitHub documents as records into a Kafka topic. These credentials allow it to authenticate and produce messages securely. The user must posses ACLs for writing and reading the configured topic."
-                />
-                <Divider my={1} />
-                <GitDetailsForm
-                  form={form}
-                  title="Git repository with your knowledge"
-                  description="Tell the agent where to find your knowledge base. It will clone the specified GitHub repository, extract relevant files, and ingest them into your vector database for AI-powered querying."
-                />
-                <Divider my={1} />
-                <ExternalDependenciesForm form={form} title="External Dependencies" />
-                <Flex justifyContent="flex-start" pt={6}>
-                  <ButtonGroup isDisabled={isCreateAgentPending}>
-                    <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
-                    <Button variant="link" onClick={() => navigate(-1)}>
-                      Cancel
-                    </Button>
-                  </ButtonGroup>
-                </Flex>
-              </VStack>
-            </GridItem>
-          </Grid>
-        </form.AppForm>
-      </form>
-    </>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <form.AppForm>
+        <Grid gap={8}>
+          <GridItem display="flex" alignItems="center" justifyContent="center" width="100%">
+            <Box borderRadius="md" overflow="hidden" boxShadow="md" width="100%" maxWidth="1000px" mx="auto">
+              <Image
+                src={agentIllustration}
+                alt="AI Agent Illustration"
+                width="100%"
+                height="auto"
+                objectFit="contain"
+                fallbackSrc="https://via.placeholder.com/800x450?text=AI+Agent"
+              />
+            </Box>
+          </GridItem>
+          <GridItem maxWidth={{ base: '100%', lg: '800px' }} mx="auto" width="100%">
+            <VStack spacing={6} align="stretch">
+              <AgentDetailsForm
+                form={form}
+                title="New Support Agent"
+                description="This agent connects to a GitHub repository and ingests all text-based content (e.g., Markdown, plaintext, code) into a vector database you provide. The content becomes part of a Retrieval-Augmented Generation (RAG) pipeline that enhances the agent's ability to respond accurately and contextually via a chat API."
+              />
+              <Divider my={1} />
+              <RedpandaUserAndPermissionsForm
+                form={form}
+                title="Redpanda user and permissions"
+                description="The agent needs to connect to Redpanda in order to stream GitHub documents as records into a Kafka topic. These credentials allow it to authenticate and produce messages securely. The user must posses ACLs for writing and reading the configured topic."
+              />
+              <Divider my={1} />
+              <GitDetailsForm
+                form={form}
+                title="Git repository with your knowledge"
+                description="Tell the agent where to find your knowledge base. It will clone the specified GitHub repository, extract relevant files, and ingest them into your vector database for AI-powered querying."
+              />
+              <Divider my={1} />
+              <ExternalDependenciesForm form={form} title="External Dependencies" />
+              <Flex justifyContent="flex-start" pt={6}>
+                <ButtonGroup isDisabled={isCreateAgentPending}>
+                  <form.SubscribeButton label="Create" variant="solid" loadingText="Creating" />
+                  <Button variant="link" onClick={() => navigate(-1)}>
+                    Cancel
+                  </Button>
+                </ButtonGroup>
+              </Flex>
+            </VStack>
+          </GridItem>
+        </Grid>
+      </form.AppForm>
+    </form>
   );
 };

@@ -8,7 +8,7 @@ const HistorySetter = () => {
   const location = useLocation();
   appGlobal.navigate = navigate;
   appGlobal.location = location;
-  return <></>;
+  return null;
 };
 
 export default observer(HistorySetter);

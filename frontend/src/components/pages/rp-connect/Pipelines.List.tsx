@@ -11,13 +11,12 @@
 
 import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
-import { Box, Button, DataTable, Flex, Image, SearchField, Text, createStandaloneToast } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
-import { MdOutlineQuestionMark } from 'react-icons/md';
-import { MdRefresh } from 'react-icons/md';
+import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -108,7 +107,7 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
 
 export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
   const { resources } = p.pipeline;
-  if (!resources) return <></>;
+  if (!resources) return null;
 
   return (
     <>
@@ -233,11 +232,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               {
                 header: 'State',
                 cell: ({ row: { original } }) => {
-                  return (
-                    <>
-                      <PipelineStatus status={original.state} />
-                    </>
-                  );
+                  return <PipelineStatus status={original.state} />;
                 },
               },
               // {

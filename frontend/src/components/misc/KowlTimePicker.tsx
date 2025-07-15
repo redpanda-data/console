@@ -21,7 +21,7 @@ export class KowlTimePicker extends Component<{
   disabled?: boolean;
 }> {
   @observable isLocalTimeMode = false;
-  @observable timestampUtcMs: number = new Date().valueOf();
+  @observable timestampUtcMs: number = Date.now();
 
   constructor(p: any) {
     super(p);

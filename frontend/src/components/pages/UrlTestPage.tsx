@@ -9,13 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { PageComponent, type PageInitHelper } from './Page';
-
 import { Checkbox } from '@redpanda-data/ui';
 import { motion } from 'framer-motion';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { AnimatePresence, MotionDiv, animProps } from '../../utils/animationProps';
+import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
+import { PageComponent, type PageInitHelper } from './Page';
 
 @observer
 export class UrlTestPage extends PageComponent {

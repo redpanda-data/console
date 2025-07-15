@@ -7,10 +7,10 @@ import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
 import {
   type CreateAgentHttpFormValues,
-  OPEN_AI_API_TOKEN_DESCRIPTION,
-  POSTGRES_CONNECTION_URI_DESCRIPTION,
   createAgentHttpFormOpts,
+  OPEN_AI_API_TOKEN_DESCRIPTION,
   openAiApiTokenSchema,
+  POSTGRES_CONNECTION_URI_DESCRIPTION,
   postgresConnectionUriSchema,
 } from './create-agent-http-schema';
 

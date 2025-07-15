@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noTemplateCurlyInString: part of parse-yaml-template-secrets implementation */
 import { Scalar, stringify } from 'yaml';
 
 type YamlTemplate = Record<string, any>;

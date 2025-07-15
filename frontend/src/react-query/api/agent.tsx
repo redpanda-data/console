@@ -4,11 +4,6 @@ import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { type QueryClient, type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import {
-  createPipeline,
-  deletePipeline,
-  listPipelines,
-} from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-import {
   type CreatePipelineRequest,
   CreatePipelineRequestSchema,
   type CreatePipelineResponse,
@@ -21,15 +16,20 @@ import {
   PipelineService,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
+  createPipeline,
+  deletePipeline,
+  listPipelines,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
   DeletePipelineRequestSchema as DeletePipelineRequestSchemaDataPlane,
+  ListPipelinesRequest_FilterSchema,
   type ListPipelinesRequest as ListPipelinesRequestDataPlane,
   ListPipelinesRequestSchema as ListPipelinesRequestSchemaDataPlane,
-  ListPipelinesRequest_FilterSchema,
   type Pipeline,
+  Pipeline_State,
   type PipelineCreate,
   PipelineCreateSchema,
-  Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';

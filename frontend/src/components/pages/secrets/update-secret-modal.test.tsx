@@ -1,23 +1,21 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { listSecrets, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import { getPipelinesForSecret } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { ListSecretsResponseSchema, UpdateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { listSecrets, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
-  GetPipelinesForSecretRequestSchema as GetPipelinesForSecretRequestSchemaDataPlane,
   GetPipelinesForSecretResponseSchema as GetPipelinesForSecretResponseSchemaDataPlane,
-  PipelineSchema,
   Pipeline_State,
+  PipelineSchema,
   PipelinesForSecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane,
+  Scope,
   SecretSchema,
   UpdateSecretRequestSchema as UpdateSecretRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { MAX_PAGE_SIZE } from 'react-query/react-query.utils';
 import { fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { UpdateSecretModal } from './update-secret-modal';

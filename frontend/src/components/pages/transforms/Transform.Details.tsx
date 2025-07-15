@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { createStandaloneToast } from '@redpanda-data/ui';
-import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
@@ -24,10 +23,10 @@ import {
 } from '../../../protogen/redpanda/api/dataplane/v1/transform_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import {
-  type MessageSearch,
-  type MessageSearchRequest,
   api,
   createMessageSearch,
+  type MessageSearch,
+  type MessageSearchRequest,
   transformsApi,
 } from '../../../state/backendApi';
 import type { TopicMessage } from '../../../state/restInterfaces';
@@ -41,8 +40,9 @@ import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { PartitionStatus } from './Transforms.List';
 import { openDeleteModal } from './modals';
+import { PartitionStatus } from './Transforms.List';
+
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer
@@ -131,210 +131,198 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 }
 export default TransformDetails;
 
-const OverviewTab = observer(
-  (p: {
-    transform: TransformMetadata;
-  }) => {
-    let overallStatus = <></>;
-    if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
-      overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
-    else {
-      // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-      const partitionTransformStatus = p.transform.statuses.first(
-        (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
-      )!;
-      overallStatus = <PartitionStatus status={partitionTransformStatus.status} />;
-    }
+const OverviewTab = observer((p: { transform: TransformMetadata }) => {
+  let overallStatus = <></>;
+  if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
+    overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
+  else {
+    // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
+    const partitionTransformStatus = p.transform.statuses.first(
+      (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+    )!;
+    overallStatus = <PartitionStatus status={partitionTransformStatus.status} />;
+  }
 
-    return (
-      <>
-        <Box my="6">
-          {QuickTable(
-            [
-              { key: 'Status', value: overallStatus },
-              { key: 'Input topic', value: p.transform.inputTopicName },
-              {
-                key: 'Output topics',
-                value: (
-                  <>
-                    {p.transform.outputTopicNames
-                      .map((x) => <Fragment key={x}>{x}</Fragment>)
-                      .genericJoin(() => (
-                        <br />
-                      ))}
-                  </>
-                ),
-              },
-              // { key: '', value: p.transform.environmentVariables }
-            ],
+  return (
+    <>
+      <Box my="6">
+        {QuickTable(
+          [
+            { key: 'Status', value: overallStatus },
+            { key: 'Input topic', value: p.transform.inputTopicName },
             {
-              keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
-              keyAlign: 'left',
-              gapHeight: '.5rem',
-              gapWidth: '4rem',
+              key: 'Output topics',
+              value: (
+                <>
+                  {p.transform.outputTopicNames
+                    .map((x) => <Fragment key={x}>{x}</Fragment>)
+                    .genericJoin(() => (
+                      <br />
+                    ))}
+                </>
+              ),
             },
-          )}
-        </Box>
-        <Box maxWidth="35rem">
-          <DataTable<PartitionTransformStatus>
-            data={p.transform.statuses}
-            columns={[
-              { header: 'Partition', accessorKey: 'partitionId' },
-              { header: 'Node', accessorKey: 'brokerId' },
-              {
-                header: 'Status',
-                cell: ({ row: { original: r } }) => {
-                  return (
-                    <>
-                      <PartitionStatus status={r.status} />
-                    </>
-                  );
-                },
-              },
-              { header: 'Lag', accessorKey: 'lag' },
-            ]}
-          />
-        </Box>
-      </>
-    );
-  },
-);
-
-const LogsTab = observer(
-  (p: {
-    transform: TransformMetadata;
-  }) => {
-    const topicName = '_redpanda.transform_logs';
-    const topic = api.topics?.first((x) => x.topicName === topicName);
-
-    const createLogsTabState = () => {
-      const search: MessageSearch = createMessageSearch();
-      const state = observable({
-        messages: search.messages,
-        isComplete: false,
-        error: null as string | null,
-        search,
-      });
-
-      // Start search immediately
-      const searchPromise = executeMessageSearch(search, topicName, p.transform.name);
-      searchPromise.catch((x) => (state.error = String(x))).finally(() => (state.isComplete = true));
-      return state;
-    };
-
-    const [state, setState] = useState(createLogsTabState);
-
-    const loadLargeMessage = async (topicName: string, partitionID: number, offset: number) => {
-      // Create a new search that looks for only this message specifically
-      const search = createMessageSearch();
-      const searchReq: MessageSearchRequest = {
-        filterInterpreterCode: '',
-        maxResults: 1,
-        partitionId: partitionID,
-        startOffset: offset,
-        startTimestamp: 0,
-        topicName: topicName,
-        includeRawPayload: true,
-        ignoreSizeLimit: true,
-        keyDeserializer: PayloadEncoding.UNSPECIFIED,
-        valueDeserializer: PayloadEncoding.UNSPECIFIED,
-      };
-      const messages = await search.startSearch(searchReq);
-
-      if (messages && messages.length === 1) {
-        // We must update the old message (that still says "payload too large")
-        // So we just find its index and replace it in the array we are currently displaying
-        const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
-        if (indexOfOldMessage > -1) {
-          state.messages[indexOfOldMessage] = messages[0];
-        } else {
-          console.error('LoadLargeMessage: cannot find old message to replace', {
-            searchReq,
-            messages,
-          });
-          throw new Error(
-            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
-          );
-        }
-      } else {
-        console.error('LoadLargeMessage: messages response is empty', { messages });
-        throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
-      }
-    };
-
-    const paginationParams = usePaginationParams(state.messages.length, 10);
-    const messageTableColumns: ColumnDef<TopicMessage>[] = [
-      {
-        header: 'Timestamp',
-        accessorKey: 'timestamp',
-        cell: ({
-          row: {
-            original: { timestamp },
+            // { key: '', value: p.transform.environmentVariables }
+          ],
+          {
+            keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
+            keyAlign: 'left',
+            gapHeight: '.5rem',
+            gapWidth: '4rem',
           },
-        }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
-        size: 30,
-      },
-      {
-        header: 'Value',
-        accessorKey: 'value',
-        cell: ({ row: { original } }) => (
-          <MessagePreview
-            msg={original}
-            previewFields={() => []}
-            isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          />
-        ),
-        size: Number.MAX_SAFE_INTEGER,
-      },
-    ];
+        )}
+      </Box>
+      <Box maxWidth="35rem">
+        <DataTable<PartitionTransformStatus>
+          data={p.transform.statuses}
+          columns={[
+            { header: 'Partition', accessorKey: 'partitionId' },
+            { header: 'Node', accessorKey: 'brokerId' },
+            {
+              header: 'Status',
+              cell: ({ row: { original: r } }) => {
+                return <PartitionStatus status={r.status} />;
+              },
+            },
+            { header: 'Lag', accessorKey: 'lag' },
+          ]}
+        />
+      </Box>
+    </>
+  );
+});
 
-    const filteredMessages = state.messages.filter((x) => {
-      if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
-      return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
+const LogsTab = observer((p: { transform: TransformMetadata }) => {
+  const topicName = '_redpanda.transform_logs';
+  const topic = api.topics?.first((x) => x.topicName === topicName);
+
+  const createLogsTabState = () => {
+    const search: MessageSearch = createMessageSearch();
+    const state = observable({
+      messages: search.messages,
+      isComplete: false,
+      error: null as string | null,
+      search,
     });
 
-    return (
-      <>
-        <Box my="1rem">The logs below are for the last five hours.</Box>
+    // Start search immediately
+    const searchPromise = executeMessageSearch(search, topicName, p.transform.name);
+    searchPromise.catch((x) => (state.error = String(x))).finally(() => (state.isComplete = true));
+    return state;
+  };
 
-        <Section minWidth="800px">
-          <Flex mb="6">
-            <SearchField
-              width="230px"
-              searchText={uiSettings.connectorsDetails.logsQuickSearch}
-              setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
-            />
-            <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
-              Refresh logs
-            </Button>
-          </Flex>
+  const [state, setState] = useState(createLogsTabState);
 
-          <DataTable<TopicMessage>
-            data={filteredMessages}
-            emptyText="No messages"
-            columns={messageTableColumns}
-            sorting={uiSettings.connectorsDetails.sorting ?? []}
-            onSortingChange={(sorting) => {
-              uiSettings.connectorsDetails.sorting =
-                typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
-            }}
-            pagination={paginationParams}
-            // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
-            //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-            subComponent={({ row: { original } }) => (
-              <ExpandedMessage
-                msg={original}
-                loadLargeMessage={() =>
-                  loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
-                }
-              />
-            )}
+  const loadLargeMessage = async (topicName: string, partitionID: number, offset: number) => {
+    // Create a new search that looks for only this message specifically
+    const search = createMessageSearch();
+    const searchReq: MessageSearchRequest = {
+      filterInterpreterCode: '',
+      maxResults: 1,
+      partitionId: partitionID,
+      startOffset: offset,
+      startTimestamp: 0,
+      topicName: topicName,
+      includeRawPayload: true,
+      ignoreSizeLimit: true,
+      keyDeserializer: PayloadEncoding.UNSPECIFIED,
+      valueDeserializer: PayloadEncoding.UNSPECIFIED,
+    };
+    const messages = await search.startSearch(searchReq);
+
+    if (messages && messages.length === 1) {
+      // We must update the old message (that still says "payload too large")
+      // So we just find its index and replace it in the array we are currently displaying
+      const indexOfOldMessage = state.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
+      if (indexOfOldMessage > -1) {
+        state.messages[indexOfOldMessage] = messages[0];
+      } else {
+        console.error('LoadLargeMessage: cannot find old message to replace', {
+          searchReq,
+          messages,
+        });
+        throw new Error(
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+        );
+      }
+    } else {
+      console.error('LoadLargeMessage: messages response is empty', { messages });
+      throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
+    }
+  };
+
+  const paginationParams = usePaginationParams(state.messages.length, 10);
+  const messageTableColumns: ColumnDef<TopicMessage>[] = [
+    {
+      header: 'Timestamp',
+      accessorKey: 'timestamp',
+      cell: ({
+        row: {
+          original: { timestamp },
+        },
+      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      size: 30,
+    },
+    {
+      header: 'Value',
+      accessorKey: 'value',
+      cell: ({ row: { original } }) => (
+        <MessagePreview
+          msg={original}
+          previewFields={() => []}
+          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
+        />
+      ),
+      size: Number.MAX_SAFE_INTEGER,
+    },
+  ];
+
+  const filteredMessages = state.messages.filter((x) => {
+    if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+    return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
+  });
+
+  return (
+    <>
+      <Box my="1rem">The logs below are for the last five hours.</Box>
+
+      <Section minWidth="800px">
+        <Flex mb="6">
+          <SearchField
+            width="230px"
+            searchText={uiSettings.connectorsDetails.logsQuickSearch}
+            setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
           />
-        </Section>
-      </>
-    );
-  },
-);
+          <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
+            Refresh logs
+          </Button>
+        </Flex>
+
+        <DataTable<TopicMessage>
+          data={filteredMessages}
+          emptyText="No messages"
+          columns={messageTableColumns}
+          sorting={uiSettings.connectorsDetails.sorting ?? []}
+          onSortingChange={(sorting) => {
+            uiSettings.connectorsDetails.sorting =
+              typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
+          }}
+          pagination={paginationParams}
+          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
+          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
+          subComponent={({ row: { original } }) => (
+            <ExpandedMessage
+              msg={original}
+              loadLargeMessage={() =>
+                loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
+              }
+            />
+          )}
+        />
+      </Section>
+    </>
+  );
+});
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();

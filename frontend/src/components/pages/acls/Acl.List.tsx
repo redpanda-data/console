@@ -20,6 +20,7 @@ import {
   Button,
   Link as ChakraLink,
   CloseButton,
+  createStandaloneToast,
   DataTable,
   Flex,
   Icon,
@@ -27,19 +28,21 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  redpandaTheme,
+  redpandaToastOptions,
   SearchField,
   Tabs,
   Text,
   Tooltip,
-  createStandaloneToast,
-  redpandaTheme,
-  redpandaToastOptions,
 } from '@redpanda-data/ui';
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
+import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useRef, useState } from 'react';
+import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import ErrorResult from '../../../components/misc/ErrorResult';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
@@ -47,6 +50,8 @@ import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { clone } from '../../../utils/jsonUtils';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -61,10 +66,7 @@ import {
   principalGroupsView,
 } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
-
-import ErrorResult from '../../../components/misc/ErrorResult';
-import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
-import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
+import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
@@ -99,7 +101,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
   }
 
   initPage(p: PageInitHelper): void {
-    p.title = 'Access control';
+    p.title = 'Access Control';
     p.addBreadcrumb('Access control', '/security');
 
     void this.refreshData();
@@ -141,14 +143,17 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
           (!Features.createUser && "Your cluster doesn't support this feature.") ||
           (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
       },
-      {
-        key: 'roles' as AclListTab,
-        name: 'Roles',
-        component: <RolesTab data-testid="roles-tab" />,
-        isDisabled:
-          (!Features.rolesApi && "Your cluster doesn't support this feature.") ||
-          (api.userData?.canManageUsers === false && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
-      },
+      isServerless()
+        ? null
+        : {
+            key: 'roles' as AclListTab,
+            name: 'Roles',
+            component: <RolesTab data-testid="roles-tab" />,
+            isDisabled:
+              (!Features.rolesApi && "Your cluster doesn't support this feature.") ||
+              (api.userData?.canManageUsers === false &&
+                'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.'),
+          },
       {
         key: 'acls' as AclListTab,
         name: 'ACLs',
@@ -163,7 +168,7 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
           ? false
           : 'You need (KafkaAclOperation.DESCRIBE and RedpandaCapability.MANAGE_REDPANDA_USERS permissions.',
       },
-    ] as TabsItemProps[];
+    ].filter((x) => x !== null) as TabsItemProps[];
 
     // todo: maybe there is a better way to sync the tab control to the path
     const activeTab = tabs.findIndex((x) => x.key === this.props.tab);
@@ -265,15 +270,9 @@ const PermissionsListTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <>
-                      <ChakraLink
-                        as={ReactRouterLink}
-                        to={`/security/users/${entry.name}/details`}
-                        textDecoration="none"
-                      >
-                        {entry.name}
-                      </ChakraLink>
-                    </>
+                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                      {entry.name}
+                    </ChakraLink>
                   );
                 },
               },
@@ -311,12 +310,11 @@ const UsersTab = observer(() => {
   if (api.serviceAccountsError) {
     return <ErrorResult error={api.serviceAccountsError} />;
   }
-
   return (
     <Flex flexDirection="column" gap="4">
       <Box>
-        These users are SASL-SCRAM users that are managed by your cluster. Other authentication identities (OIDC,
-        Kerberos, mTLS) will not be listed here. You can view their permissions in the permissions list.
+        These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
+        (OIDC, Kerberos, mTLS) on the Permissions list page.
       </Box>
 
       <SearchField
@@ -366,15 +364,9 @@ const UsersTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <>
-                      <ChakraLink
-                        as={ReactRouterLink}
-                        to={`/security/users/${entry.name}/details`}
-                        textDecoration="none"
-                      >
-                        {entry.name}
-                      </ChakraLink>
-                    </>
+                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                      {entry.name}
+                    </ChakraLink>
                   );
                 },
               },
@@ -392,45 +384,7 @@ const UsersTab = observer(() => {
                 header: '',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return (
-                    <Flex flexDirection="row" gap={4}>
-                      {Features.rolesApi && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            appGlobal.historyPush(`/security/users/${entry.name}/edit`);
-                          }}
-                        >
-                          <Icon as={PencilIcon} />
-                        </button>
-                      )}
-                      <DeleteUserConfirmModal
-                        onConfirm={async () => {
-                          await api.deleteServiceAccount(entry.name);
-
-                          // Remove user from all its roles
-                          const promises = [];
-                          for (const [roleName, members] of rolesApi.roleMembers) {
-                            if (members.any((m) => m.name === entry.name)) {
-                              // is this user part of this role?
-                              // then remove it
-                              promises.push(rolesApi.updateRoleMembership(roleName, [], [entry.name]));
-                            }
-                          }
-
-                          await Promise.allSettled(promises);
-                          await rolesApi.refreshRoleMembers();
-                          await api.refreshServiceAccounts();
-                        }}
-                        buttonEl={
-                          <button type="button">
-                            <Icon as={TrashIcon} />
-                          </button>
-                        }
-                        userName={entry.name}
-                      />
-                    </Flex>
-                  );
+                  return <UserActions user={entry} />;
                 },
               },
             ]}
@@ -440,6 +394,77 @@ const UsersTab = observer(() => {
     </Flex>
   );
 });
+
+const UserActions = ({ user }: { user: UsersEntry }) => {
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isChangeRolesModalOpen, setIsChangeRolesModalOpen] = useState(false);
+
+  const onConfirmDelete = async () => {
+    await api.deleteServiceAccount(user.name);
+
+    // Remove user from all its roles
+    const promises = [];
+    for (const [roleName, members] of rolesApi.roleMembers) {
+      if (members.any((m) => m.name === user.name)) {
+        // is this user part of this role?
+        // then remove it
+        promises.push(rolesApi.updateRoleMembership(roleName, [], [user.name]));
+      }
+    }
+
+    await Promise.allSettled(promises);
+    await rolesApi.refreshRoleMembers();
+    await api.refreshServiceAccounts();
+  };
+
+  return (
+    <>
+      {api.isAdminApiConfigured && (
+        <ChangePasswordModal
+          userName={user.name}
+          isOpen={isChangePasswordModalOpen}
+          setIsOpen={setIsChangePasswordModalOpen}
+        />
+      )}
+      {Features.rolesApi && (
+        <ChangeRolesModal userName={user.name} isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} />
+      )}
+
+      <Menu>
+        <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+          <Icon as={BsThreeDots} />
+        </MenuButton>
+        <MenuList>
+          {api.isAdminApiConfigured && (
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsChangePasswordModalOpen(true);
+              }}
+            >
+              Change password
+            </MenuItem>
+          )}
+          {Features.rolesApi && (
+            <MenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsChangeRolesModalOpen(true);
+              }}
+            >
+              Change roles
+            </MenuItem>
+          )}
+          <DeleteUserConfirmModal
+            onConfirm={onConfirmDelete}
+            buttonEl={<MenuItem type="button">Delete</MenuItem>}
+            userName={user.name}
+          />
+        </MenuList>
+      </Menu>
+    </>
+  );
+};
 
 const RolesTab = observer(() => {
   const roles = (rolesApi.roles ?? []).filter((u) => {
@@ -509,15 +534,13 @@ const RolesTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <>
-                      <ChakraLink
-                        as={ReactRouterLink}
-                        to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
-                        textDecoration="none"
-                      >
-                        {entry.name}
-                      </ChakraLink>
-                    </>
+                    <ChakraLink
+                      as={ReactRouterLink}
+                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
+                      textDecoration="none"
+                    >
+                      {entry.name}
+                    </ChakraLink>
                   );
                 },
               },
@@ -583,7 +606,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
   try {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
     groups = groups.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
-  } catch (e) {
+  } catch (_e) {
     console.warn('Invalid expression');
   }
 

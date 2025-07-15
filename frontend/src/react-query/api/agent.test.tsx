@@ -1,11 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import {
-  createPipeline,
-  deletePipeline,
-  listPipelines,
-} from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-import {
   CreatePipelineRequestSchema,
   CreatePipelineResponseSchema,
   DeletePipelineRequestSchema,
@@ -13,11 +8,16 @@ import {
   ListPipelinesResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
+  createPipeline,
+  deletePipeline,
+  listPipelines,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import {
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
   DeletePipelineRequestSchema as DeletePipelineRequestSchemaDataPlane,
+  Pipeline_State,
   PipelineCreateSchema,
   PipelineSchema,
-  Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { connectQueryWrapper, renderHook, waitFor } from 'test-utils';
 import { useCreateAgentPipelinesMutation, useDeleteAgentPipelinesMutation } from './agent';

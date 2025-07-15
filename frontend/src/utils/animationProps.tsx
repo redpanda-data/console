@@ -12,10 +12,10 @@
 import {
   type AnimatePresenceProps,
   AnimatePresence as AnimatePresenceRaw,
-  type Transition,
   motion,
+  type Transition,
 } from 'framer-motion';
-import React, { type FC, type CSSProperties } from 'react';
+import React, { type CSSProperties, type FC } from 'react';
 import { alwaysChanging } from './utils';
 
 export const AnimatePresence = AnimatePresenceRaw as React.FunctionComponent<

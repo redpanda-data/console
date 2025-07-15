@@ -54,7 +54,7 @@ func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 		errMessage := ""
 		kafkaErr := newKafkaErrorWithDynamicMessage(res.ErrorCode, res.ErrorMessage)
 		if kafkaErr != nil {
-			errMessage = err.Error()
+			errMessage = kafkaErr.Error()
 		}
 		patchedConfigs[i] = IncrementalAlterConfigsResourceResponse{
 			Error:        errMessage,

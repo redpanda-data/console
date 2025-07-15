@@ -2,13 +2,10 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  cancelDebugBundleProcess,
-  createDebugBundle,
-  deleteDebugBundleFile,
-  getClusterHealth,
-  getDebugBundleStatus,
-} from 'protogen/redpanda/api/console/v1alpha1/debug_bundle-DebugBundleService_connectquery';
+import type {
+  GetClusterHealthResponse,
+  GetDebugBundleStatusResponse,
+} from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import {
   DebugBundleService,
   type GetClusterHealthRequest,
@@ -16,10 +13,13 @@ import {
   type GetDebugBundleStatusRequest,
   GetDebugBundleStatusRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import type {
-  GetClusterHealthResponse,
-  GetDebugBundleStatusResponse,
-} from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import {
+  cancelDebugBundleProcess,
+  createDebugBundle,
+  deleteDebugBundleFile,
+  getClusterHealth,
+  getDebugBundleStatus,
+} from 'protogen/redpanda/api/console/v1alpha1/debug_bundle-DebugBundleService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

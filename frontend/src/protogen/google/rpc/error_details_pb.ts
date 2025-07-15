@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file google/rpc/error_details.proto.
  */
 export const file_google_rpc_error_details: GenFile = /*@__PURE__*/
-  fileDesc("Ch5nb29nbGUvcnBjL2Vycm9yX2RldGFpbHMucHJvdG8SCmdvb2dsZS5ycGMikwEKCUVycm9ySW5mbxIOCgZyZWFzb24YASABKAkSDgoGZG9tYWluGAIgASgJEjUKCG1ldGFkYXRhGAMgAygLMiMuZ29vZ2xlLnJwYy5FcnJvckluZm8uTWV0YWRhdGFFbnRyeRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOwoJUmV0cnlJbmZvEi4KC3JldHJ5X2RlbGF5GAEgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uIjIKCURlYnVnSW5mbxIVCg1zdGFja19lbnRyaWVzGAEgAygJEg4KBmRldGFpbBgCIAEoCSJ5CgxRdW90YUZhaWx1cmUSNgoKdmlvbGF0aW9ucxgBIAMoCzIiLmdvb2dsZS5ycGMuUXVvdGFGYWlsdXJlLlZpb2xhdGlvbhoxCglWaW9sYXRpb24SDwoHc3ViamVjdBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCSKVAQoTUHJlY29uZGl0aW9uRmFpbHVyZRI9Cgp2aW9sYXRpb25zGAEgAygLMikuZ29vZ2xlLnJwYy5QcmVjb25kaXRpb25GYWlsdXJlLlZpb2xhdGlvbho/CglWaW9sYXRpb24SDAoEdHlwZRgBIAEoCRIPCgdzdWJqZWN0GAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJIoMBCgpCYWRSZXF1ZXN0Ej8KEGZpZWxkX3Zpb2xhdGlvbnMYASADKAsyJS5nb29nbGUucnBjLkJhZFJlcXVlc3QuRmllbGRWaW9sYXRpb24aNAoORmllbGRWaW9sYXRpb24SDQoFZmllbGQYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkiNwoLUmVxdWVzdEluZm8SEgoKcmVxdWVzdF9pZBgBIAEoCRIUCgxzZXJ2aW5nX2RhdGEYAiABKAkiYAoMUmVzb3VyY2VJbmZvEhUKDXJlc291cmNlX3R5cGUYASABKAkSFQoNcmVzb3VyY2VfbmFtZRgCIAEoCRINCgVvd25lchgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCSJWCgRIZWxwEiQKBWxpbmtzGAEgAygLMhUuZ29vZ2xlLnJwYy5IZWxwLkxpbmsaKAoETGluaxITCgtkZXNjcmlwdGlvbhgBIAEoCRILCgN1cmwYAiABKAkiMwoQTG9jYWxpemVkTWVzc2FnZRIOCgZsb2NhbGUYASABKAkSDwoHbWVzc2FnZRgCIAEoCUKtAQoOY29tLmdvb2dsZS5ycGNCEUVycm9yRGV0YWlsc1Byb3RvUAFaP2dvb2dsZS5nb2xhbmcub3JnL2dlbnByb3RvL2dvb2dsZWFwaXMvcnBjL2VycmRldGFpbHM7ZXJyZGV0YWlsc6ICA0dSWKoCCkdvb2dsZS5ScGPKAgpHb29nbGVcUnBj4gIWR29vZ2xlXFJwY1xHUEJNZXRhZGF0YeoCC0dvb2dsZTo6UnBjYgZwcm90bzM", [file_google_protobuf_duration]);
+  fileDesc("Ch5nb29nbGUvcnBjL2Vycm9yX2RldGFpbHMucHJvdG8SCmdvb2dsZS5ycGMikwEKCUVycm9ySW5mbxIOCgZyZWFzb24YASABKAkSDgoGZG9tYWluGAIgASgJEjUKCG1ldGFkYXRhGAMgAygLMiMuZ29vZ2xlLnJwYy5FcnJvckluZm8uTWV0YWRhdGFFbnRyeRovCg1NZXRhZGF0YUVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOwoJUmV0cnlJbmZvEi4KC3JldHJ5X2RlbGF5GAEgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uIjIKCURlYnVnSW5mbxIVCg1zdGFja19lbnRyaWVzGAEgAygJEg4KBmRldGFpbBgCIAEoCSKPAwoMUXVvdGFGYWlsdXJlEjYKCnZpb2xhdGlvbnMYASADKAsyIi5nb29nbGUucnBjLlF1b3RhRmFpbHVyZS5WaW9sYXRpb24axgIKCVZpb2xhdGlvbhIPCgdzdWJqZWN0GAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEhMKC2FwaV9zZXJ2aWNlGAMgASgJEhQKDHF1b3RhX21ldHJpYxgEIAEoCRIQCghxdW90YV9pZBgFIAEoCRJRChBxdW90YV9kaW1lbnNpb25zGAYgAygLMjcuZ29vZ2xlLnJwYy5RdW90YUZhaWx1cmUuVmlvbGF0aW9uLlF1b3RhRGltZW5zaW9uc0VudHJ5EhMKC3F1b3RhX3ZhbHVlGAcgASgDEh8KEmZ1dHVyZV9xdW90YV92YWx1ZRgIIAEoA0gAiAEBGjYKFFF1b3RhRGltZW5zaW9uc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAFCFQoTX2Z1dHVyZV9xdW90YV92YWx1ZSKVAQoTUHJlY29uZGl0aW9uRmFpbHVyZRI9Cgp2aW9sYXRpb25zGAEgAygLMikuZ29vZ2xlLnJwYy5QcmVjb25kaXRpb25GYWlsdXJlLlZpb2xhdGlvbho/CglWaW9sYXRpb24SDAoEdHlwZRgBIAEoCRIPCgdzdWJqZWN0GAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJIswBCgpCYWRSZXF1ZXN0Ej8KEGZpZWxkX3Zpb2xhdGlvbnMYASADKAsyJS5nb29nbGUucnBjLkJhZFJlcXVlc3QuRmllbGRWaW9sYXRpb24afQoORmllbGRWaW9sYXRpb24SDQoFZmllbGQYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSDgoGcmVhc29uGAMgASgJEjcKEWxvY2FsaXplZF9tZXNzYWdlGAQgASgLMhwuZ29vZ2xlLnJwYy5Mb2NhbGl6ZWRNZXNzYWdlIjcKC1JlcXVlc3RJbmZvEhIKCnJlcXVlc3RfaWQYASABKAkSFAoMc2VydmluZ19kYXRhGAIgASgJImAKDFJlc291cmNlSW5mbxIVCg1yZXNvdXJjZV90eXBlGAEgASgJEhUKDXJlc291cmNlX25hbWUYAiABKAkSDQoFb3duZXIYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkiVgoESGVscBIkCgVsaW5rcxgBIAMoCzIVLmdvb2dsZS5ycGMuSGVscC5MaW5rGigKBExpbmsSEwoLZGVzY3JpcHRpb24YASABKAkSCwoDdXJsGAIgASgJIjMKEExvY2FsaXplZE1lc3NhZ2USDgoGbG9jYWxlGAEgASgJEg8KB21lc3NhZ2UYAiABKAlCrQEKDmNvbS5nb29nbGUucnBjQhFFcnJvckRldGFpbHNQcm90b1ABWj9nb29nbGUuZ29sYW5nLm9yZy9nZW5wcm90by9nb29nbGVhcGlzL3JwYy9lcnJkZXRhaWxzO2VycmRldGFpbHOiAgNHUliqAgpHb29nbGUuUnBjygIKR29vZ2xlXFJwY+ICFkdvb2dsZVxScGNcR1BCTWV0YWRhdGHqAgtHb29nbGU6OlJwY2IGcHJvdG8z", [file_google_protobuf_duration]);
 
 /**
  * Describes the cause of the error with structured details.
@@ -83,11 +83,12 @@ export type ErrorInfo = Message<"google.rpc.ErrorInfo"> & {
   /**
    * Additional structured details about this error.
    *
-   * Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in
+   * Keys must match a regular expression of `[a-z][a-zA-Z0-9-_]+` but should
+   * ideally be lowerCamelCase. Also, they must be limited to 64 characters in
    * length. When identifying the current value of an exceeded limit, the units
    * should be contained in the key, not the value.  For example, rather than
-   * {"instanceLimit": "100/request"}, should be returned as,
-   * {"instanceLimitPerRequest": "100"}, if the client exceeds the number of
+   * `{"instanceLimit": "100/request"}`, should be returned as,
+   * `{"instanceLimitPerRequest": "100"}`, if the client exceeds the number of
    * instances that can be created in a single (batch) request.
    *
    * @generated from field: map<string, string> metadata = 3;
@@ -222,6 +223,95 @@ export type QuotaFailure_Violation = Message<"google.rpc.QuotaFailure.Violation"
    * @generated from field: string description = 2;
    */
   description: string;
+
+  /**
+   * The API Service from which the `QuotaFailure.Violation` orginates. In
+   * some cases, Quota issues originate from an API Service other than the one
+   * that was called. In other words, a dependency of the called API Service
+   * could be the cause of the `QuotaFailure`, and this field would have the
+   * dependency API service name.
+   *
+   * For example, if the called API is Kubernetes Engine API
+   * (container.googleapis.com), and a quota violation occurs in the
+   * Kubernetes Engine API itself, this field would be
+   * "container.googleapis.com". On the other hand, if the quota violation
+   * occurs when the Kubernetes Engine API creates VMs in the Compute Engine
+   * API (compute.googleapis.com), this field would be
+   * "compute.googleapis.com".
+   *
+   * @generated from field: string api_service = 3;
+   */
+  apiService: string;
+
+  /**
+   * The metric of the violated quota. A quota metric is a named counter to
+   * measure usage, such as API requests or CPUs. When an activity occurs in a
+   * service, such as Virtual Machine allocation, one or more quota metrics
+   * may be affected.
+   *
+   * For example, "compute.googleapis.com/cpus_per_vm_family",
+   * "storage.googleapis.com/internet_egress_bandwidth".
+   *
+   * @generated from field: string quota_metric = 4;
+   */
+  quotaMetric: string;
+
+  /**
+   * The id of the violated quota. Also know as "limit name", this is the
+   * unique identifier of a quota in the context of an API service.
+   *
+   * For example, "CPUS-PER-VM-FAMILY-per-project-region".
+   *
+   * @generated from field: string quota_id = 5;
+   */
+  quotaId: string;
+
+  /**
+   * The dimensions of the violated quota. Every non-global quota is enforced
+   * on a set of dimensions. While quota metric defines what to count, the
+   * dimensions specify for what aspects the counter should be increased.
+   *
+   * For example, the quota "CPUs per region per VM family" enforces a limit
+   * on the metric "compute.googleapis.com/cpus_per_vm_family" on dimensions
+   * "region" and "vm_family". And if the violation occurred in region
+   * "us-central1" and for VM family "n1", the quota_dimensions would be,
+   *
+   * {
+   *   "region": "us-central1",
+   *   "vm_family": "n1",
+   * }
+   *
+   * When a quota is enforced globally, the quota_dimensions would always be
+   * empty.
+   *
+   * @generated from field: map<string, string> quota_dimensions = 6;
+   */
+  quotaDimensions: { [key: string]: string };
+
+  /**
+   * The enforced quota value at the time of the `QuotaFailure`.
+   *
+   * For example, if the enforced quota value at the time of the
+   * `QuotaFailure` on the number of CPUs is "10", then the value of this
+   * field would reflect this quantity.
+   *
+   * @generated from field: int64 quota_value = 7;
+   */
+  quotaValue: bigint;
+
+  /**
+   * The new quota value being rolled out at the time of the violation. At the
+   * completion of the rollout, this value will be enforced in place of
+   * quota_value. If no rollout is in progress at the time of the violation,
+   * this field is not set.
+   *
+   * For example, if at the time of the violation a rollout is in progress
+   * changing the number of CPUs quota from 10 to 20, 20 would be the value of
+   * this field.
+   *
+   * @generated from field: optional int64 future_quota_value = 8;
+   */
+  futureQuotaValue?: bigint;
 };
 
 /**
@@ -375,6 +465,26 @@ export type BadRequest_FieldViolation = Message<"google.rpc.BadRequest.FieldViol
    * @generated from field: string description = 2;
    */
   description: string;
+
+  /**
+   * The reason of the field-level error. This is a constant value that
+   * identifies the proximate cause of the field-level error. It should
+   * uniquely identify the type of the FieldViolation within the scope of the
+   * google.rpc.ErrorInfo.domain. This should be at most 63
+   * characters and match a regular expression of `[A-Z][A-Z0-9_]+[A-Z0-9]`,
+   * which represents UPPER_SNAKE_CASE.
+   *
+   * @generated from field: string reason = 3;
+   */
+  reason: string;
+
+  /**
+   * Provides a localized error message for field-level errors that is safe to
+   * return to the API consumer.
+   *
+   * @generated from field: google.rpc.LocalizedMessage localized_message = 4;
+   */
+  localizedMessage?: LocalizedMessage;
 };
 
 /**

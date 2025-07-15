@@ -162,9 +162,11 @@ func (s *Service) ProducePlainRecords(ctx context.Context, records []*kgo.Record
 
 	if useTransactions {
 		err := client.EndTransaction(ctx, true)
-		return ProduceRecordsResponse{
-			Records: nil,
-			Error:   fmt.Errorf("failed to end transactions: %w", err).Error(),
+		if err != nil {
+			return ProduceRecordsResponse{
+				Records: nil,
+				Error:   fmt.Errorf("failed to end transactions: %w", err).Error(),
+			}
 		}
 	}
 

@@ -9,10 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { toJson } from '../../../../utils/jsonUtils';
-
 import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
+import { observer } from 'mobx-react';
 import type {
   AclRule,
   AclStrOperation,
@@ -21,6 +19,7 @@ import type {
   AclStrResourceType,
   GetAclOverviewResponse,
 } from '../../../../state/restInterfaces';
+import { toJson } from '../../../../utils/jsonUtils';
 
 type Acls = GetAclOverviewResponse | null | undefined;
 

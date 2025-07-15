@@ -3,17 +3,17 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  deleteTransform,
-  getTransform,
-  listTransforms,
-} from 'protogen/redpanda/api/console/v1alpha1/transform-TransformService_connectquery';
-import {
   type GetTransformRequest,
   GetTransformRequestSchema,
   type ListTransformsRequest,
   ListTransformsRequestSchema,
   TransformService,
 } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
+import {
+  deleteTransform,
+  getTransform,
+  listTransforms,
+} from 'protogen/redpanda/api/console/v1alpha1/transform-TransformService_connectquery';
 import {
   type GetTransformRequest as GetTransformRequestDataPlane,
   GetTransformRequestSchema as GetTransformRequestSchemaDataPlane,

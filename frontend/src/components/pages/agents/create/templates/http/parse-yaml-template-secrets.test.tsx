@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noTemplateCurlyInString: part of tests */
 import { parseYamlTemplateSecrets, toPostgresTableName } from './parse-yaml-template-secrets';
 
 describe('toPostgresTableName', () => {

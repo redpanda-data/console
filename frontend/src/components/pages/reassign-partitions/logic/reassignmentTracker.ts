@@ -141,7 +141,7 @@ export class ReassignmentTracker {
       // Remove reassignments that are in completed state for some time
       const expiredTrackers = this.trackingReassignments.filter((x) => {
         if (x.actualTimeCompleted == null) return false; // not yet complete
-        const age = (new Date().getTime() - x.actualTimeCompleted.getTime()) / 1000;
+        const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
         if (age > 8) {
           if (IsDev) console.log('removing reassignment', x.topicName);
           return true;
@@ -222,7 +222,7 @@ export class ReassignmentTracker {
     // estimate completion time
     if (state.estimateSpeed !== null && state.remaining !== null) {
       const remainingTimeSec = state.remaining.value / state.estimateSpeed;
-      state.estimateCompletionTime = new Date(new Date().getTime() + remainingTimeSec * 1000);
+      state.estimateCompletionTime = new Date(Date.now() + remainingTimeSec * 1000);
     }
 
     return state;

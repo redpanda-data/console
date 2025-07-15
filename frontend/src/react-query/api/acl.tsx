@@ -8,13 +8,12 @@ import {
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import { config } from 'config';
-import { createACL, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import {
-  ACLService,
   ACL_Operation,
   ACL_PermissionType,
   ACL_ResourcePatternType,
   ACL_ResourceType,
+  ACLService,
   type CreateACLRequest,
   type ListACLsRequest,
   ListACLsRequestSchema,
@@ -22,6 +21,7 @@ import {
   ListACLsResponse_PolicySchema,
   ListACLsResponse_ResourceSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { createACL, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import type {
   AclStrOperation,

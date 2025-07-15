@@ -10,8 +10,8 @@
  */
 
 import { observer } from 'mobx-react';
-import React from 'react';
 import type { RefObject } from 'react';
+import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -23,38 +23,35 @@ import { TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
   AlertIcon,
+  Box,
   Checkbox,
+  createStandaloneToast,
   DataTable,
   Divider,
-  Empty,
-  Flex,
-  SearchField,
-  Skeleton,
-  Text,
-  VStack,
-} from '@redpanda-data/ui';
-import { action, makeObservable, observable } from 'mobx';
-import PageContent from '../../misc/PageContent';
-import type SearchBar from '../../misc/SearchBar';
-import Section from '../../misc/Section';
-import { SmallStat } from '../../misc/SmallStat';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
-
-import {
-  Box,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  Empty,
+  Flex,
   Heading,
+  SearchField,
+  Skeleton,
   Spinner,
-  createStandaloneToast,
+  Text,
+  VStack,
 } from '@redpanda-data/ui';
+import { action, makeObservable, observable } from 'mobx';
 import { Link } from 'react-router-dom';
 import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { encodeURIComponentPercents } from '../../../utils/utils';
+import PageContent from '../../misc/PageContent';
+import type SearchBar from '../../misc/SearchBar';
+import Section from '../../misc/Section';
+import { SmallStat } from '../../misc/SmallStat';
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -425,7 +422,7 @@ const LatestVersionColumn = observer((p: { name: string }) => {
   }
 
   if (details.latestActiveVersion < 0) {
-    return <></>;
+    return null;
   }
 
   return <>{details.latestActiveVersion}</>;

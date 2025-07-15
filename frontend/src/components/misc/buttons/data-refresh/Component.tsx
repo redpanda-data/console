@@ -13,7 +13,7 @@ import { observer } from 'mobx-react';
  */
 import { MdOutlineCached, MdPause, MdPlayCircleOutline } from 'react-icons/md';
 import { appGlobal } from '../../../../state/appGlobal';
-import { REST_CACHE_DURATION_SEC, api } from '../../../../state/backendApi';
+import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 
@@ -26,7 +26,7 @@ const autoRefresh = observable(
     remainingSeconds: 0,
 
     get currentTime() {
-      return new Date().getTime();
+      return Date.now();
     },
 
     toggleAutorefresh() {

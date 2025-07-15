@@ -70,7 +70,11 @@ const authenticationApi = observable({
     username,
     password,
     mechanism,
-  }: { username: string; password: string; mechanism: SASLMechanism }): Promise<void> {
+  }: {
+    username: string;
+    password: string;
+    mechanism: SASLMechanism;
+  }): Promise<void> {
     const client = appConfig.authenticationClient;
 
     if (!client) throw new Error('security client is not initialized');

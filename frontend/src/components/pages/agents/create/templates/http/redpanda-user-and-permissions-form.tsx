@@ -1,7 +1,9 @@
+import { create } from '@bufbuild/protobuf';
 import { Heading, Link, Stack, Text, useDisclosure } from '@redpanda-data/ui';
 import { withForm } from 'components/form/form';
 import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal';
 import { CreateTopicModal } from 'components/pages/topics/create-topic-modal';
+import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
@@ -9,13 +11,13 @@ import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
 import {
-  CreateUserWithSecretPasswordModal,
   type CreatedUser,
+  CreateUserWithSecretPasswordModal,
 } from '../../../../users/create-user-with-secret-password-modal';
 import {
   type CreateAgentHttpFormValues,
-  KAFKA_PASSWORD_DESCRIPTION,
   createAgentHttpFormOpts,
+  KAFKA_PASSWORD_DESCRIPTION,
   passwordSchema,
 } from './create-agent-http-schema';
 
@@ -62,7 +64,9 @@ export const RedpandaUserAndPermissionsForm = withForm({
         label: secret?.id,
       })) ?? [];
 
-    const { data: topicList } = useLegacyListTopicsQuery();
+    const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+      hideInternalTopics: true,
+    });
     const topicListOptions =
       topicList?.topics?.map((topic) => ({
         value: topic?.topicName,

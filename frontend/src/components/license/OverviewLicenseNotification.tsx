@@ -4,15 +4,15 @@ import { type FC, type ReactElement, useEffect } from 'react';
 import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import {
+  consoleHasEnterpriseFeature,
   DISABLE_SSO_DOCS_LINK,
   ENTERPRISE_FEATURES_DOCS_LINK,
-  MS_IN_DAY,
-  UpgradeButton,
-  UploadLicenseButton,
-  consoleHasEnterpriseFeature,
   getEnterpriseCTALink,
   getMillisecondsToExpiration,
   getPrettyTimeToExpiration,
+  MS_IN_DAY,
+  UpgradeButton,
+  UploadLicenseButton,
 } from './licenseUtils';
 
 const getLicenseAlertContent = (

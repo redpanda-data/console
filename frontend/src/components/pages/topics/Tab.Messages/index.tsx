@@ -11,10 +11,10 @@
 
 import { DownloadIcon, KebabHorizontalIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import {
-  type IReactionDisposer,
   action,
   autorun,
   computed,
+  type IReactionDisposer,
   makeObservable,
   observable,
   transaction,
@@ -22,14 +22,13 @@ import {
 } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, type FC, type ReactNode, useState } from 'react';
-import { type MessageSearch, type MessageSearchRequest, api, createMessageSearch } from '../../../../state/backendApi';
-import type { Payload, Topic, TopicAction } from '../../../../state/restInterfaces';
-import type { TopicMessage } from '../../../../state/restInterfaces';
+import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backendApi';
+import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import {
   type ColumnList,
-  DEFAULT_SEARCH_PARAMS,
   type DataColumnKey,
+  DEFAULT_SEARCH_PARAMS,
   FilterEntry,
   PartitionOffsetOrigin,
   type PreviewTagV2,
@@ -100,18 +99,18 @@ import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { IsDev } from '../../../../utils/env';
-import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
+import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { onPaginationChange } from '../../../../utils/pagination';
 import { editQuery } from '../../../../utils/queryHelper';
 import {
   Ellipsis,
   Label,
-  StatusIndicator,
-  TimestampDisplay,
   navigatorClipboardErrorHandler,
   numberToThousandsString,
+  StatusIndicator,
+  TimestampDisplay,
   toSafeString,
 } from '../../../../utils/tsxUtils';
 import {
@@ -122,12 +121,12 @@ import {
   prettyMilliseconds,
   titleCase,
 } from '../../../../utils/utils';
+import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import RemovableFilter from '../../../misc/RemovableFilter';
 import { SingleSelect, type SingleSelectProps } from '../../../misc/Select';
-import { range } from '../../../misc/common';
 import JavascriptFilterModal from './JavascriptFilterModal';
-import { PreviewSettings, getPreviewTags } from './PreviewSettings';
+import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -405,9 +404,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             </Box>
           </Alert>
         ) : (
-          <>
-            <this.MessageTable />
-          </>
+          <this.MessageTable />
         )}
       </>
     );
@@ -1488,7 +1485,7 @@ class StartOffsetDateTimePicker extends Component {
     // console.log('time picker 1', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
     if (!searchParams.startTimestampWasSetByUser) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
-      searchParams.startTimestamp = new Date().getTime();
+      searchParams.startTimestamp = Date.now();
     }
     // console.log('time picker 2', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
   }
@@ -1988,11 +1985,9 @@ const MessageSchema = observer((p: { schemaId: number }) => {
 
   const s = subjects[0];
   return (
-    <>
-      <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(s.subject)}?version=${s.version}`}>
-        {s.subject} (version {s.version})
-      </Link>
-    </>
+    <Link as={ReactRouterLink} to={`/schema-registry/subjects/${encodeURIComponent(s.subject)}?version=${s.version}`}>
+      {s.subject} (version {s.version})
+    </Link>
   );
 });
 
@@ -2154,7 +2149,7 @@ const ColumnSettings: FC<{
             </GridItem>
             <GridItem>
               <Label text="Preview">
-                <TimestampDisplay unixEpochMillisecond={+new Date()} format={uiState.topicSettings.previewTimestamps} />
+                <TimestampDisplay unixEpochMillisecond={Date.now()} format={uiState.topicSettings.previewTimestamps} />
               </Label>
             </GridItem>
           </Grid>

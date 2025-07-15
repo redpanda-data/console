@@ -3,14 +3,6 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  createRole,
-  deleteRole,
-  getRole,
-  listRoleMembers,
-  listRoles,
-  updateRoleMembership,
-} from 'protogen/redpanda/api/console/v1alpha1/security-SecurityService_connectquery';
-import {
   type GetRoleRequest,
   GetRoleRequestSchema,
   type GetRoleResponse,
@@ -21,44 +13,36 @@ import {
   ListRolesRequestSchema,
   type ListRolesResponse,
   SecurityService,
-} from 'protogen/redpanda/api/console/v1alpha1/security_pb';
-import {
-  type ListRoleMembersRequest as ListRoleMembersRequestDataPlane,
-  ListRoleMembersRequestSchema as ListRoleMembersRequestSchemaDataPlane,
-  type ListRolesRequest as ListRolesRequestDataPlane,
-  ListRolesRequestSchema as ListRolesRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import {
+  createRole,
+  deleteRole,
+  getRole,
+  listRoleMembers,
+  listRoles,
+  updateRoleMembership,
+} from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListRolesQuery = (
-  input?: MessageInit<ListRolesRequestDataPlane>,
+  input?: MessageInit<ListRolesRequest>,
   options?: QueryOptions<GenMessage<ListRolesRequest>, ListRolesResponse>,
 ) => {
-  const listRolesRequestDataPlane = create(ListRolesRequestSchemaDataPlane, {
+  const listRolesRequest: ListRolesRequest = create(ListRolesRequestSchema, {
     pageToken: '',
     pageSize: MAX_PAGE_SIZE,
     ...input,
   });
 
-  const listRolesRequest = create(ListRolesRequestSchema, {
-    request: listRolesRequestDataPlane,
-  }) as MessageInit<ListRolesRequest> & Required<Pick<MessageInit<ListRolesRequest>, 'request'>>;
-
   const listRolesResult = useInfiniteQueryWithAllPages(listRoles, listRolesRequest, {
-    pageParamKey: 'request',
     enabled: options?.enabled,
-    getNextPageParam: (lastPage) =>
-      lastPage?.response?.nextPageToken
-        ? {
-            ...listRolesRequestDataPlane,
-            pageToken: lastPage.response?.nextPageToken,
-          }
-        : undefined,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
 
-  const roles = listRolesResult?.data?.pages?.flatMap(({ response }) => response?.roles);
+  const roles = listRolesResult?.data?.pages?.flatMap((response) => (response ? response?.roles : [])) || [];
 
   return {
     ...listRolesResult,
@@ -69,32 +53,22 @@ export const useListRolesQuery = (
 };
 
 export const useListRoleMembersQuery = (
-  input?: MessageInit<ListRoleMembersRequestDataPlane>,
+  input?: MessageInit<ListRoleMembersRequest>,
   options?: QueryOptions<GenMessage<ListRoleMembersRequest>, ListRoleMembersResponse>,
 ) => {
-  const listRoleMembersRequestDataPlane = create(ListRoleMembersRequestSchemaDataPlane, {
+  const listRoleMembersRequest = create(ListRoleMembersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
     pageToken: '',
     ...input,
   });
 
-  const listRolesMembersRequest = create(ListRoleMembersRequestSchema, {
-    request: listRoleMembersRequestDataPlane,
-  }) as MessageInit<ListRoleMembersRequest> & Required<Pick<MessageInit<ListRoleMembersRequest>, 'request'>>;
-
-  const listRoleMembersResult = useInfiniteQueryWithAllPages(listRoleMembers, listRolesMembersRequest, {
-    pageParamKey: 'request',
+  const listRoleMembersResult = useInfiniteQueryWithAllPages(listRoleMembers, listRoleMembersRequest, {
     enabled: options?.enabled,
-    getNextPageParam: (lastPage) =>
-      lastPage?.response?.nextPageToken
-        ? {
-            ...listRoleMembersRequestDataPlane,
-            pageToken: lastPage.response?.nextPageToken,
-          }
-        : undefined,
+    getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
+    pageParamKey: 'pageToken',
   });
 
-  const members = listRoleMembersResult?.data?.pages?.flatMap(({ response }) => response?.members);
+  const members = listRoleMembersResult?.data?.pages?.flatMap((response) => response?.members) || [];
 
   return {
     ...listRoleMembersResult,

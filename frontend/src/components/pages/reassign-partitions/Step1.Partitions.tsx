@@ -11,7 +11,7 @@
 
 import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import type { Row } from '@tanstack/react-table';
-import { type IReactionDisposer, computed, makeObservable, observable, transaction } from 'mobx';
+import { computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
@@ -22,10 +22,10 @@ import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { BrokerList } from '../../misc/BrokerList';
+import { renderLogDirSummary, WarningToolip } from '../../misc/common';
 import { SearchTitle } from '../../misc/KowlTable';
-import { WarningToolip, renderLogDirSummary } from '../../misc/common';
-import type { PartitionSelection } from './ReassignPartitions';
 import { SelectionInfoBar } from './components/StatisticsBar';
+import type { PartitionSelection } from './ReassignPartitions';
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];

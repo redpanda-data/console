@@ -22,27 +22,28 @@ import './assets/fonts/inter.css';
 
 /* start tailwind styles */
 import './globals.css';
+
 /* end tailwind styles */
 
+import queryClient from 'queryClient';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { Container, Grid, Sidebar, redpandaToastOptions } from '@redpanda-data/ui';
-import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { ChakraProvider, Container, Grid, redpandaTheme, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
+import { StagewiseToolbar, type ToolbarConfig } from '@stagewise/toolbar-react';
+import { ReactPlugin } from '@stagewise-plugins/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CustomFeatureFlagProvider, useBooleanFlagValue } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
-import queryClient from 'queryClient';
 import { BrowserRouter } from 'react-router-dom';
-import RequireAuth from './components/RequireAuth';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
 import { UserProfile } from './components/misc/UserButton';
-import { createVisibleSidebarItems } from './components/routes';
-import { APP_ROUTES } from './components/routes';
+import RequireAuth from './components/RequireAuth';
+import { APP_ROUTES, createVisibleSidebarItems } from './components/routes';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -80,6 +81,8 @@ const App = () => {
     },
   });
 
+  const stagewiseConfig: ToolbarConfig = { plugins: [ReactPlugin] };
+
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
@@ -103,6 +106,10 @@ const App = () => {
                 </RequireAuth>
               </ErrorBoundary>
               <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
+              <StagewiseToolbar
+                config={stagewiseConfig}
+                enabled={process.env.NODE_ENV === 'development' && developerView}
+              />
             </QueryClientProvider>
           </TransportProvider>
         </ChakraProvider>

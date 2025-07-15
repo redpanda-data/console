@@ -5,7 +5,7 @@ import { config as appConfig } from '../config';
 import { api } from '../state/backendApi';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
-import { AppFeatures, IsDev, getBasePath } from '../utils/env';
+import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 import HistorySetter from './misc/HistorySetter';
 import LoginPage from './misc/login';
 import LoginCompletePage from './misc/login-complete';

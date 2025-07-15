@@ -33,14 +33,12 @@ import { uiState } from '../state/uiState';
 import { AnimatePresence } from '../utils/animationProps';
 import { type AppFeature, AppFeatures } from '../utils/env';
 import { Section } from './misc/common';
-import type { PageComponentType, PageProps } from './pages/Page';
 import AclList, { type AclListTab } from './pages/acls/Acl.List';
 import RoleCreatePage from './pages/acls/RoleCreate';
 import RoleDetailsPage from './pages/acls/RoleDetails';
 import RoleEditPage from './pages/acls/RoleEditPage';
 import UserCreatePage from './pages/acls/UserCreate';
 import UserDetailsPage from './pages/acls/UserDetails';
-import UserEditPage from './pages/acls/UserEdit';
 import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
@@ -57,6 +55,7 @@ import GroupDetails from './pages/consumers/Group.Details';
 import GroupList from './pages/consumers/Group.List';
 import { BrokerDetails } from './pages/overview/Broker.Details';
 import Overview from './pages/overview/Overview';
+import type { PageComponentType, PageProps } from './pages/Page';
 import QuotasList from './pages/quotas/Quotas.List';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
@@ -257,7 +256,7 @@ function MakeRoute<TRouteParams>(
   const routeElement = (
     <Route
       path={`${path}${exact ? '' : '/*'}`}
-      key={title}
+      key={path}
       element={
         <ProtectedRoute path={path}>
           <RouteRenderer route={route} />
@@ -374,7 +373,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     true,
     routeVisibility(
       // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
-      () => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
+      () => isEmbedded() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
       [],
@@ -389,7 +388,6 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
   MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
-  MakeRoute<{ userName: string }>('/security/users/:userName/edit', UserEditPage, 'Security'),
 
   MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
   MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),

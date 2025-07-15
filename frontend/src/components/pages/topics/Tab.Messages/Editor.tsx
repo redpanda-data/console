@@ -10,7 +10,7 @@
  */
 
 import type { BeforeMount, OnChange, OnMount } from '@monaco-editor/react';
-import type { Uri, editor, languages } from 'monaco-editor';
+import type { editor, languages, Uri } from 'monaco-editor';
 import { type FC, useRef, useState } from 'react';
 import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 

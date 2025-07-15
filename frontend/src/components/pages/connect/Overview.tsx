@@ -19,7 +19,7 @@ import { isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rpcnSecretManagerApi } from '../../../state/backendApi';
-import type { ClusterConnectorInfo, ClusterConnectorTaskInfo, ClusterConnectors } from '../../../state/restInterfaces';
+import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -33,12 +33,12 @@ import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 import {
   ConnectorClass,
   ConnectorsColumn,
+  errIcon,
+  mr05,
   NotConfigured,
   OverviewStatisticsCard,
   TaskState,
   TasksColumn,
-  errIcon,
-  mr05,
 } from './helper';
 
 enum ConnectView {
@@ -192,15 +192,14 @@ class TabClusters extends Component {
               if (r.error) {
                 return (
                   <Tooltip label={r.error} placement="top" hasArrow={true}>
-                    <>
-                      <span style={mr05}>{errIcon}</span>
-                      {r.clusterName}
-                    </>
+                    <span style={mr05}>{errIcon}</span>
+                    {r.clusterName}
                   </Tooltip>
                 );
               }
 
               return (
+                // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
                 <span
                   className="hoverLink"
                   style={{ display: 'inline-block', width: '100%' }}
@@ -253,7 +252,7 @@ const TabConnectors = observer(() => {
     try {
       const quickSearchRegExp = new RegExp(uiSettings.clusterOverview.connectorsList.quickSearch, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
-    } catch (e) {
+    } catch (_e) {
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
@@ -284,6 +283,7 @@ const TabConnectors = observer(() => {
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
               <Tooltip placement="top" label={original.name} hasArrow={true}>
+                {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
                 <span
                   className="hoverLink"
                   style={{ display: 'inline-block', width: '100%' }}

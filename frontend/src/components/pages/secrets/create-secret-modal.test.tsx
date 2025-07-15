@@ -1,14 +1,14 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { CreateSecretRequestSchema, ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
   CreateSecretResponseSchema,
   ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane,
+  Scope,
   SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { CreateSecretModal } from './create-secret-modal';

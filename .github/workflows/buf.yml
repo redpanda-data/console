@@ -1,38 +1,120 @@
 ---
+# ---------------------------------------------------------------------------
+# Buf CI
+# ---------------------------------------------------------------------------
+# 1. validate -> lint + format + breaking checks (runs on both push & pull_request)
+# 2. push-to-registry -> push to Buf registry only (runs after validation passes)
+# 3. archive-label -> archive label in registry when branch/tag deleted (with error handling)
+# ---------------------------------------------------------------------------
 name: Buf CI
+
 on:
   push:
     paths:
-      - .github/workflows/buf.yml
-      - proto/**.proto
+      - '**/*.proto'
+      - '**/buf.yaml'
+      - '**/buf.gen.openapi.yaml'
+      - '**/buf.gen.yaml'
+      - '**/buf.lock'
+      - '.github/workflows/buf.yml'
+
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
-      - .github/workflows/buf.yml
-      - proto/**.proto
+      - '**/*.proto'
+      - '**/buf.yaml'
+      - '**/buf.gen.openapi.yaml'
+      - '**/buf.gen.yaml'
+      - '**/buf.lock'
+      - '.github/workflows/buf.yml'
+
   delete:
+
+permissions:
+  contents: read          # checkout + annotations
+  pull-requests: write    # inline lint / breaking comments
+  id-token: write         # OIDC to assume AWS role (push job)
+
+# ===========================================================================
+# Job: validate (both push and pull_request - comprehensive validation)
+# ===========================================================================
 jobs:
-  push-module:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'redpanda-data/console' }}
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
+  validate:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Buf – lint, format & breaking
+        uses: bufbuild/buf-action@v1
+        with:
+          lint: true
+          format: true
+          breaking: true
+          push: false  # Only validate, don't push to registry
+          # Compare against the default branch so the whole PR is checked
+          breaking_against: https://github.com/redpanda-data/console.git#branch=master
+
+  # ===========================================================================
+  # Job: push-to-registry (push events only - registry operations only)
+  # ===========================================================================
+  push-to-registry:
+    if: |
+      github.event_name == 'push' &&
+      github.repository == 'redpanda-data/console'
+    needs: validate  # Only run after validation passes
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ vars.RP_AWS_CRED_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+
       - uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
             ,sdlc/prod/github/buf_token
           parse-json-secrets: true
-      # Run `git checkout`
+
       - uses: actions/checkout@v4
-      - uses: bufbuild/buf-action@v1
+
+      - name: Buf – push to registry
+        uses: bufbuild/buf-action@v1
         with:
-          input: proto
+          # No validation - already done in validate job
+          lint: false
+          format: false
+          breaking: false
+          # Only push to registry
+          push: true
           token: ${{ env.BUF_TOKEN }}
-          breaking_against: https://github.com/redpanda-data/console.git#branch=master,ref=HEAD~1,subdir=proto
+
+  # ===========================================================================
+  # Job: archive-label (delete events only - with error handling)
+  # ===========================================================================
+  archive-label:
+    if: |
+      github.event_name == 'delete' &&
+      github.repository == 'redpanda-data/console'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/buf_token
+          parse-json-secrets: true
+
+      - uses: actions/checkout@v4
+
+      - name: Buf – archive label (ignore if not found)
+        uses: bufbuild/buf-action@v1
+        with:
+          # Only archive - no other operations
+          push: true
+          token: ${{ env.BUF_TOKEN }}
+        # Don't fail the workflow if label doesn't exist
+        continue-on-error: true

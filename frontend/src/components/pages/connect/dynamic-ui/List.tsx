@@ -12,10 +12,10 @@
 import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
-import { type IReactionDisposer, autorun, computed, makeObservable, observable } from 'mobx';
+import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, useState } from 'react';
-import { DragDropContext, Draggable, type DropResult, Droppable, type ResponderProvided } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from 'react-beautiful-dnd';
 
 @observer
 export class CommaSeparatedStringList extends Component<{
@@ -114,6 +114,7 @@ export class CommaSeparatedStringList extends Component<{
         </Tooltip>
 
         {/* Delete */}
+        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of CommaSeparatedStringList implementation */}
         <span
           className="deleteButton"
           onClick={() => {

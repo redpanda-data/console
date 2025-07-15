@@ -132,37 +132,18 @@ components:
         - CONFIG_TYPE_CLASS
         - CONFIG_TYPE_PASSWORD
       type: string
-    Configuration:
+    ConfigurationFileSchema:
       properties:
-        config_synonyms:
+        config_schema:
+          description: JSON schema of the configuration components that are allowed for MCP Servers.
+          type: string
+        path_pattern:
           description: |-
-            If no config value is set at the topic level, it will inherit the value
-            set at the broker or cluster level. `name` is the corresponding config
-            key whose value is inherited. `source` indicates whether the inherited
-            config is default, broker, etc.
-          items:
-            $ref: '#/components/schemas/ConfigSynonym'
-          type: array
-        documentation:
-          description: Config documentation.
-          nullable: true
-          type: string
-        name:
-          description: A topic-level config key (e.g. `segment.bytes`).
-          type: string
-        read_only:
-          description: Whether the config is read-only, or is dynamic and can be altered.
-          type: boolean
-        sensitive:
-          description: Whether this is a sensitive config key and value.
-          type: boolean
-        source:
-          $ref: '#/components/schemas/ConfigSource'
-        type:
-          $ref: '#/components/schemas/ConfigType'
-        value:
-          description: A topic-level config value (e.g. 1073741824).
-          nullable: true
+            The glob pattern that matches the configuration file paths.
+
+            Example: "o11y/*.yaml" or "processors/*.yaml"
+
+            Single and double asterisks are supported.
           type: string
       type: object
     ConnectCluster:
@@ -383,6 +364,11 @@ components:
         secret:
           $ref: '#/components/schemas/Secret'
       type: object
+    CreateMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
+      type: object
     CreatePipelineResponse:
       properties:
         pipeline:
@@ -547,6 +533,8 @@ components:
     DeleteKafkaConnectSecretResponse:
       description: DeleteKafkaConnectSecretResponse is the response of DeleteKafkaConnectSecret.
       type: object
+    DeleteMCPServerResponse:
+      type: object
     DeleteMountTaskResponse:
       type: object
     DeletePipelineResponse:
@@ -648,11 +636,12 @@ components:
           description: |-
             Additional structured details about this error.
 
-            Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in
+            Keys must match a regular expression of `[a-z][a-zA-Z0-9-_]+` but should
+            ideally be lowerCamelCase. Also, they must be limited to 64 characters in
             length. When identifying the current value of an exceeded limit, the units
             should be contained in the key, not the value.  For example, rather than
-            {"instanceLimit": "100/request"}, should be returned as,
-            {"instanceLimitPerRequest": "100"}, if the client exceeds the number of
+            `{"instanceLimit": "100/request"}`, should be returned as,
+            `{"instanceLimitPerRequest": "100"}`, if the client exceeds the number of
             instances that can be created in a single (batch) request.
           type: object
         reason:
@@ -711,6 +700,17 @@ components:
             * `emailAddresses[3].type[2]` for a violation in the second `type`
               value in the third `emailAddresses` message.
           type: string
+        localized_message:
+          $ref: '#/components/schemas/LocalizedMessage'
+        reason:
+          description: |-
+            The reason of the field-level error. This is a constant value that
+            identifies the proximate cause of the field-level error. It should
+            uniquely identify the type of the FieldViolation within the scope of the
+            google.rpc.ErrorInfo.domain. This should be at most 63
+            characters and match a regular expression of `[A-Z][A-Z0-9_]+[A-Z0-9]`,
+            which represents UPPER_SNAKE_CASE.
+          type: string
       type: object
     GetConnectClusterResponse:
       properties:
@@ -739,6 +739,19 @@ components:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    GetMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
+      type: object
+    GetMCPServerServiceConfigSchemaResponse:
+      properties:
+        configuration_files:
+          description: The configuration schema for the MCP Server.
+          items:
+            $ref: '#/components/schemas/ConfigurationFileSchema'
+          type: array
       type: object
     GetMountTaskResponse:
       properties:
@@ -789,7 +802,7 @@ components:
       properties:
         configurations:
           items:
-            $ref: '#/components/schemas/Configuration'
+            $ref: '#/components/schemas/Topic.Configuration'
           type: array
       type: object
     GetTransformResponse:
@@ -821,6 +834,43 @@ components:
         url:
           description: The URL of the link.
           type: string
+      type: object
+    LintHint:
+      description: LintHint is a generic linting hint.
+      properties:
+        column:
+          description: Column number of the lint.
+          format: int32
+          type: integer
+        hint:
+          description: The hint message.
+          type: string
+        line:
+          description: Line number of the lint.
+          format: int32
+          type: integer
+        lint_type:
+          description: Optional lint type or enum.
+          type: string
+      type: object
+    LintPipelineConfigRequest:
+      properties:
+        config_yaml:
+          description: |-
+            The Redpanda Connect pipeline configuration in YAML format.
+            See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation
+            for more details.
+          type: string
+      required:
+        - config_yaml
+      type: object
+    LintPipelineConfigResponse:
+      properties:
+        lint_hints:
+          description: A list of linting issues.
+          items:
+            $ref: '#/components/schemas/LintHint'
+          type: array
       type: object
     ListACLsRequest.Filter:
       properties:
@@ -893,6 +943,29 @@ components:
           items:
             $ref: '#/components/schemas/Secret'
           type: array
+      type: object
+    ListMCPServersRequest.Filter:
+      properties:
+        display_name_contains:
+          description: Any MCP Server that partially match this name will be returned.
+          type: string
+        secret_id:
+          description: Match MCP servers that use this secret ID.
+          type: string
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: MCP servers that match all the provided tags will be returned.
+          type: object
+      type: object
+    ListMCPServersResponse:
+      properties:
+        mcp_servers:
+          items:
+            $ref: '#/components/schemas/MCPServer'
+          type: array
+        next_page_token:
+          type: string
       type: object
     ListMountTasksResponse:
       properties:
@@ -1087,6 +1160,139 @@ components:
           description: Username.
           type: string
       type: object
+    LocalizedMessage:
+      description: |-
+        Provides a localized error message that is safe to return to the user
+        which can be attached to an RPC error.
+      properties:
+        locale:
+          title: |-
+            The locale used following the specification defined at
+            https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
+            Examples are: "en-US", "fr-CH", "es-MX"
+          type: string
+        message:
+          description: The localized error message in the above locale.
+          type: string
+      type: object
+    MCPServer:
+      description: Defines the MCP server resource.
+      properties:
+        config_files:
+          additionalProperties:
+            $ref: '#/components/schemas/MCPServer.Configuration'
+          description: The Redpanda Connect MCP server configuration in files.
+          type: object
+        description:
+          description: Optional MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP server name.
+          type: string
+        id:
+          description: MCP Server ID.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        state:
+          $ref: '#/components/schemas/MCPServer.State'
+        status:
+          $ref: '#/components/schemas/MCPServer.Status'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            Tags are key-value pairs that can be assigned to a MCP server resource.
+            They help organize MCP servers and enable filtering when listing them.
+          type: object
+        url:
+          readOnly: true
+          title: URL to connect to the MCP server
+          type: string
+      required:
+        - id
+        - display_name
+        - config_files
+      type: object
+    MCPServer.Configuration:
+      description: A configuration file for the MCP server.
+      properties:
+        contents:
+          description: The contents of the configuration file in YAML format.
+          type: string
+      required:
+        - contents
+      type: object
+    MCPServer.State:
+      description: |-
+        State of the MCP server.
+
+         - STATE_STARTING: The MCP server is starting.
+         - STATE_RUNNING: The MCP server is running.
+         - STATE_STOPPING: The MCP server is in the process of stopping.
+         - STATE_STOPPED: The MCP server is stopped and in paused state.
+         - STATE_ERROR: The MCP server encountered an error.
+      enum:
+        - STATE_STARTING
+        - STATE_RUNNING
+        - STATE_STOPPING
+        - STATE_STOPPED
+        - STATE_ERROR
+      type: string
+    MCPServer.Status:
+      description: MCP server status may contain an error message.
+      properties:
+        error:
+          type: string
+      type: object
+    MCPServerCreate:
+      description: MCPServerCreate contains the details for the MCP Server creation request.
+      properties:
+        config_files:
+          additionalProperties:
+            $ref: '#/components/schemas/MCPServer.Configuration'
+          description: The Redpanda Connect MCP server configuration in files..
+          type: object
+        description:
+          description: MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP server name.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        tags:
+          additionalProperties:
+            type: string
+          description: Optional list of tags to attach to a MCP server.
+          type: object
+      required:
+        - display_name
+        - config_files
+      type: object
+    MCPServerUpdate:
+      properties:
+        config_files:
+          additionalProperties:
+            $ref: '#/components/schemas/MCPServer.Configuration'
+          description: The Redpanda Connect MCP server configuration in files.
+          type: object
+        description:
+          description: MCP server description.
+          type: string
+        display_name:
+          description: User-friendly MCP servers name.
+          type: string
+        resources:
+          $ref: '#/components/schemas/Resources'
+        tags:
+          additionalProperties:
+            type: string
+          description: |-
+            A map of tags to add, update or delete.
+            If a tag's value is empty, the server interprets that as a deletion.
+          type: object
+      type: object
     MatchingACL:
       properties:
         error:
@@ -1216,7 +1422,7 @@ components:
       description: Defines the pipeline resource.
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           title: |-
             The pipeline configuration in YAML.
             See https://docs.redpanda.com/redpanda-connect/configuration/about/
@@ -1245,7 +1451,7 @@ components:
           type: object
         url:
           description: |-
-            URL to connect to the pipeline, e.g. via http_server.
+            URL to connect to the pipeline, for example, via http_server.
             May be empty if no http_server is used.
           type: string
       required:
@@ -1281,7 +1487,7 @@ components:
       description: PipelineCreate contains the details for the pipeline creation request.
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
@@ -1294,7 +1500,7 @@ components:
         tags:
           additionalProperties:
             type: string
-          description: Optional lList of tags to attach to a pipeline.
+          description: Optional list of tags to attach to a pipeline.
           type: object
       required:
         - display_name
@@ -1303,7 +1509,7 @@ components:
     PipelineUpdate:
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
@@ -1372,6 +1578,22 @@ components:
         A message type used to describe a single quota violation.  For example, a
         daily quota or a custom quota that was exceeded.
       properties:
+        api_service:
+          description: |-
+            The API Service from which the `QuotaFailure.Violation` orginates. In
+            some cases, Quota issues originate from an API Service other than the one
+            that was called. In other words, a dependency of the called API Service
+            could be the cause of the `QuotaFailure`, and this field would have the
+            dependency API service name.
+
+            For example, if the called API is Kubernetes Engine API
+            (container.googleapis.com), and a quota violation occurs in the
+            Kubernetes Engine API itself, this field would be
+            "container.googleapis.com". On the other hand, if the quota violation
+            occurs when the Kubernetes Engine API creates VMs in the Compute Engine
+            API (compute.googleapis.com), this field would be
+            "compute.googleapis.com".
+          type: string
         description:
           description: |-
             A description of how the quota check failed. Clients can use this
@@ -1381,6 +1603,66 @@ components:
 
             For example: "Service disabled" or "Daily Limit for read operations
             exceeded".
+          type: string
+        future_quota_value:
+          description: |-
+            The new quota value being rolled out at the time of the violation. At the
+            completion of the rollout, this value will be enforced in place of
+            quota_value. If no rollout is in progress at the time of the violation,
+            this field is not set.
+
+            For example, if at the time of the violation a rollout is in progress
+            changing the number of CPUs quota from 10 to 20, 20 would be the value of
+            this field.
+          format: int64
+          nullable: true
+          type: string
+        quota_dimensions:
+          additionalProperties:
+            type: string
+          description: |-
+            The dimensions of the violated quota. Every non-global quota is enforced
+            on a set of dimensions. While quota metric defines what to count, the
+            dimensions specify for what aspects the counter should be increased.
+
+            For example, the quota "CPUs per region per VM family" enforces a limit
+            on the metric "compute.googleapis.com/cpus_per_vm_family" on dimensions
+            "region" and "vm_family". And if the violation occurred in region
+            "us-central1" and for VM family "n1", the quota_dimensions would be,
+
+            {
+              "region": "us-central1",
+              "vm_family": "n1",
+            }
+
+            When a quota is enforced globally, the quota_dimensions would always be
+            empty.
+          type: object
+        quota_id:
+          description: |-
+            The id of the violated quota. Also know as "limit name", this is the
+            unique identifier of a quota in the context of an API service.
+
+            For example, "CPUS-PER-VM-FAMILY-per-project-region".
+          type: string
+        quota_metric:
+          description: |-
+            The metric of the violated quota. A quota metric is a named counter to
+            measure usage, such as API requests or CPUs. When an activity occurs in a
+            service, such as Virtual Machine allocation, one or more quota metrics
+            may be affected.
+
+            For example, "compute.googleapis.com/cpus_per_vm_family",
+            "storage.googleapis.com/internet_egress_bandwidth".
+          type: string
+        quota_value:
+          description: |-
+            The enforced quota value at the time of the `QuotaFailure`.
+
+            For example, if the enforced quota value at the time of the
+            `QuotaFailure` on the number of CPUs is "10", then the value of this
+            field would reflect this quantity.
+          format: int64
           type: string
         subject:
           description: |-
@@ -1551,7 +1833,7 @@ components:
         configurations:
           description: Topic's complete set of configurations after this update.
           items:
-            $ref: '#/components/schemas/Configuration'
+            $ref: '#/components/schemas/Topic.Configuration'
           type: array
       type: object
     SetTopicPartitionsBody:
@@ -1566,10 +1848,20 @@ components:
       type: object
     SetTopicPartitionsResponse:
       type: object
+    StartMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
+      type: object
     StartPipelineResponse:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
+      type: object
+    StopMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
       type: object
     StopPipelineResponse:
       properties:
@@ -1600,6 +1892,39 @@ components:
           type: string
         worker_id:
           description: ID of worker that the task is assigned to.
+          type: string
+      type: object
+    Topic.Configuration:
+      properties:
+        config_synonyms:
+          description: |-
+            If no config value is set at the topic level, it will inherit the value
+            set at the broker or cluster level. `name` is the corresponding config
+            key whose value is inherited. `source` indicates whether the inherited
+            config is default, broker, etc.
+          items:
+            $ref: '#/components/schemas/ConfigSynonym'
+          type: array
+        documentation:
+          description: Config documentation.
+          nullable: true
+          type: string
+        name:
+          description: A topic-level config key (e.g. `segment.bytes`).
+          type: string
+        read_only:
+          description: Whether the config is read-only, or is dynamic and can be altered.
+          type: boolean
+        sensitive:
+          description: Whether this is a sensitive config key and value.
+          type: boolean
+        source:
+          $ref: '#/components/schemas/ConfigSource'
+        type:
+          $ref: '#/components/schemas/ConfigType'
+        value:
+          description: A topic-level config value (e.g. 1073741824).
+          nullable: true
           type: string
       type: object
     TopicLocation:
@@ -1698,6 +2023,11 @@ components:
         secret:
           $ref: '#/components/schemas/Secret'
       type: object
+    UpdateMCPServerResponse:
+      properties:
+        mcp_server:
+          $ref: '#/components/schemas/MCPServer'
+      type: object
     UpdateMountTaskBody:
       properties:
         action:
@@ -1779,7 +2109,7 @@ components:
         configurations:
           description: Topic's complete set of configurations after applying this partial patch.
           items:
-            $ref: '#/components/schemas/Configuration'
+            $ref: '#/components/schemas/Topic.Configuration'
           type: array
       type: object
     UpdateUserRequest.User:
@@ -3245,7 +3575,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetKafkaConnectSecretResponse'
           description: Secret created
         "401":
           content:
@@ -3339,7 +3669,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetKafkaConnectSecretResponse'
           description: OK
         "401":
           content:
@@ -3396,7 +3726,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/UpdateKafkaConnectSecretResponse'
           description: OK
         "401":
           content:
@@ -3457,6 +3787,367 @@ paths:
       summary: Retrieve the schema for Redpanda Connect pipeline configurations.
       tags:
         - Redpanda Connect Pipeline
+  /v1/redpanda-connect/mcp-servers:
+    get:
+      description: 'List Redpanda Connect MCP Servers. Optional: filter based on MCP server name.'
+      operationId: MCPServerService_ListMCPServers
+      parameters:
+        - description: Any MCP Server that partially match this name will be returned.
+          in: query
+          name: filter.display_name_contains
+          schema:
+            type: string
+        - description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          name: filter.tags[string]
+          schema:
+            type: string
+        - description: Match MCP servers that use this secret ID.
+          in: query
+          name: filter.secret_id
+          schema:
+            type: string
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: |-
+            Value of the next_page_token field returned by the previous response.
+            If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMCPServersResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List Redpanda Connect MCP Servers
+      tags:
+        - Redpanda Connect MCP servers
+    post:
+      description: Create a new Redpanda Connect MCP Server.
+      operationId: MCPServerService_CreateMCPServer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServerCreate'
+        required: true
+        x-originalParamName: mcp_server
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Create Redpanda Connect MCP Server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers/{id}:
+    delete:
+      description: Delete a Redpanda Connect MCP server.
+      operationId: MCPServerService_DeleteMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          content:
+            application/json:
+              schema: {}
+          description: Deleted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete a Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+    get:
+      description: Get a specific Redpanda Connect MCP server.
+      operationId: MCPServerService_GetMCPServer
+      parameters:
+        - description: MCP server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+    put:
+      description: Update the configuration of a Redpanda Connect MCP server.
+      operationId: MCPServerService_UpdateMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: |-
+            Specifies which fields should be updated. If not provided,
+            all fields will be updated.
+          in: query
+          name: update_mask
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServerUpdate'
+        required: true
+        x-originalParamName: mcp_server
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update a Redpanda Connect MCP Server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers/{id}:start:
+    post:
+      description: Start a stopped Redpanda Connect MCP server.
+      operationId: MCPServerService_StartMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: Started
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Start a Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers/{id}:stop:
+    post:
+      description: Stop a running Redpanda Connect MCP server.
+      operationId: MCPServerService_StopMCPServer
+      parameters:
+        - description: MCP Server ID.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServer'
+          description: Stopped
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Stops a Redpanda Connect MCP server
+      tags:
+        - Redpanda Connect MCP servers
+  /v1/redpanda-connect/mcp-servers:getConfigSchema:
+    get:
+      description: The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
+      operationId: MCPServerService_GetMCPServerServiceConfigSchema
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMCPServerServiceConfigSchemaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Retrieve the schema for Redpanda Connect MCP Servers configurations.
+      tags:
+        - Redpanda Connect MCP servers
   /v1/redpanda-connect/pipelines:
     get:
       description: 'List Redpanda Connect pipelines. Optional: filter based on pipeline name.'
@@ -3850,6 +4541,45 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Stops a Redpanda Connect pipeline
+      tags:
+        - Redpanda Connect Pipeline
+  /v1/redpanda-connect/pipelines:lint-config:
+    post:
+      description: Validates a supplied Redpanda Connect pipeline YAML and returns a list of linting hints. If no problems are found, the list is empty.
+      operationId: PipelineService_LintPipelineConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LintPipelineConfigRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LintPipelineConfigResponse'
+          description: Linting finished. See `lint_hints` for details.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Lint a Redpanda Connect pipeline configuration
       tags:
         - Redpanda Connect Pipeline
   /v1/roles:
@@ -4267,7 +4997,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/CreateSecretResponse'
           description: Secret created
         "401":
           content:
@@ -4349,7 +5079,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/GetSecretResponse'
           description: OK
         "401":
           content:
@@ -4400,7 +5130,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Secret'
+                $ref: '#/components/schemas/UpdateSecretResponse'
           description: OK
         "401":
           content:
@@ -5222,8 +5952,12 @@ paths:
                     field_violations:
                       - description: value length must be at least 3 characters
                         field: user.password
+                        localized_message: null
+                        reason: ""
                       - description: value is required
                         field: user.mechanism
+                        localized_message: null
+                        reason: ""
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/rpc.Status'
@@ -5355,8 +6089,12 @@ paths:
                     field_violations:
                       - description: value length must be at least 3 characters
                         field: user.password
+                        localized_message: null
+                        reason: ""
                       - description: value is required
                         field: user.mechanism
+                        localized_message: null
+                        reason: ""
                 message: provided parameters are invalid
               schema:
                 $ref: '#/components/schemas/rpc.Status'
@@ -5405,6 +6143,8 @@ tags:
     name: Kafka Connect
   - description: Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations.
     name: Redpanda Connect Pipeline
+  - description: Create and manage Redpanda Connect MCP servers and their configurations.
+    name: Redpanda Connect MCP servers
   - description: Manage [secrets](https://docs.redpanda.com/redpanda-cloud/security/secrets) for Redpanda Cloud.
     name: Secrets
   - description: Manage Redpanda roles.

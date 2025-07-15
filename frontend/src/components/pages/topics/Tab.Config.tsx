@@ -42,15 +42,13 @@ export class TopicConfiguration extends Component<{
     const entries = api.topicConfig.get(this.props.topic.topicName)?.configEntries ?? [];
 
     return (
-      <>
-        <TopicConfigurationEditor
-          targetTopic={this.props.topic.topicName}
-          entries={entries}
-          onForceRefresh={() => {
-            api.refreshTopicConfig(this.props.topic.topicName, true);
-          }}
-        />
-      </>
+      <TopicConfigurationEditor
+        targetTopic={this.props.topic.topicName}
+        entries={entries}
+        onForceRefresh={() => {
+          api.refreshTopicConfig(this.props.topic.topicName, true);
+        }}
+      />
     );
   }
 

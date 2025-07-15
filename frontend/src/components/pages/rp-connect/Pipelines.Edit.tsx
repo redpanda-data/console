@@ -10,8 +10,16 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Box, Button, Flex, FormField, Input, NumberInput, createStandaloneToast } from '@redpanda-data/ui';
-import { Link as ChLink } from '@redpanda-data/ui';
+import {
+  Box,
+  Button,
+  Link as ChLink,
+  createStandaloneToast,
+  Flex,
+  FormField,
+  Input,
+  NumberInput,
+} from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -21,9 +29,10 @@ import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { PipelineEditor } from './Pipelines.Create';
 import { formatPipelineError } from './errors';
-import { MAX_TASKS, MIN_TASKS, cpuToTasks, tasksToCPU } from './tasks';
+import { PipelineEditor } from './Pipelines.Create';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+
 const { ToastContainer, toast } = createStandaloneToast();
 
 @observer

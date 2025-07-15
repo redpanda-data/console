@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+- [BUGFIX] Fix transactional record production always appearing to fail even when records were successfully produced and committed.
+- [BUGFIX] Fix misleading error messages when fetching topic partition offsets that made troubleshooting difficult.
+- [BUGFIX] Fix missing error reporting for topic partition end offset failures that were silently ignored.
+- [BUGFIX] Fix incorrect error details returned when partition access fails or start offset retrieval fails.
+
+## v2.8.7 / 2025-06-27
+
+- [IMPROVEMENT] Update key dependencies (e.g. franz-go) to latest version.
+- [BUGFIX] Allow more generous label keys & values for creating debug bundles (enterprise feature).
+
+## v3.1.2 / 2025-06-23
+
+- [IMPROVEMENT] Add support for insecure TLS verification via configuration.
+- [BUGFIX] Fix topic deletion compatibility with Kafka API v6+.
+- [BUGFIX] Fix partition watermarks displaying identical values across all partitions.
+- [BUGFIX] Fix Kafka Connect connector config update request parsing regression.
+- [BUGFIX] Fix default value handling in Kafka Connect connector configuration updates.
+- [BUGFIX] Prevent panic on IncrementalAlterConfigs operations.
+- [CHANGE] Update dependencies and fix protovalidate integration.
+
+## v3.1.1 / 2025-05-21
+
+- [BUFGIX] Fix hot reloading of authorization configs.
+- [BUFGIX] OIDC authentication without using unified identity failed under certain conditions (enterprise feature).
+
 ## v3.1.0 / 2025-04-28
 
 - [IMPROVEMENT] Add `tokenFilepath` support for providing SASL OAuth token via file.
@@ -23,6 +50,10 @@
 - [IMPROVEMENT] Update Consumer Groups page layout.
 - [IMPROVEMENT] Ability to edit consumer group offsets by shifting the committed offsets.
 - [BUFGIX] Fix deletion of subject compatibility levels to reset to the default.
+
+## v2.8.6 / 2025-05-21
+
+- [BUGFIX] Backport CSV export of Kafka records into v2 release.
 
 ## v2.8.5 / 2025-03-25
 

@@ -4,8 +4,8 @@ import { useListAgentsQuery } from 'react-query/api/agent';
 import {
   AGENT_DESCRIPTION_DESCRIPTION,
   AGENT_NAME_DESCRIPTION,
-  SYSTEM_PROMPT_DESCRIPTION,
   createAgentHttpFormOpts,
+  SYSTEM_PROMPT_DESCRIPTION,
 } from './create-agent-http-schema';
 
 export const AgentDetailsForm = withForm({

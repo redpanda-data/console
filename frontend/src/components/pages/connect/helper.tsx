@@ -30,8 +30,8 @@ import {
   ModalOverlay,
   Popover,
   Text,
-  VStack,
   useToast,
+  VStack,
 } from '@redpanda-data/ui';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
@@ -72,8 +72,8 @@ import { api } from '../../../state/backendApi';
 import {
   type ApiError,
   type ClusterConnectorInfo,
-  type ClusterConnectorTaskInfo,
   type ClusterConnectors,
+  type ClusterConnectorTaskInfo,
   ConnectorState,
   type ConnectorStatus,
 } from '../../../state/restInterfaces';
@@ -711,7 +711,7 @@ type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error
 export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
   let running = 0;
   let total = 0;
-  let error: string | undefined = undefined;
+  let error: string | undefined;
   if ('runningConnectors' in props.observable) {
     running = props.observable.runningConnectors;
     total = props.observable.totalConnectors;
@@ -757,8 +757,8 @@ export const TaskState = observer(
       </span>
     );
 
-    let errBtn: JSX.Element | undefined = undefined;
-    let errModal: JSX.Element | undefined = undefined;
+    let errBtn: JSX.Element | undefined;
+    let errModal: JSX.Element | undefined;
     if (task.trace) {
       errBtn = (
         <Button

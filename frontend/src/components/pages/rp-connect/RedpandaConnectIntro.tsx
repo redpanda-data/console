@@ -1,10 +1,10 @@
-import { Link as ChakraLink } from '@redpanda-data/ui';
 import {
   Alert,
   AlertDescription,
   AlertIcon,
   AlertTitle,
   Box,
+  Link as ChakraLink,
   CodeBlock,
   Flex,
   Grid,
