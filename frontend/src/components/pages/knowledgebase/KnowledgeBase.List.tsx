@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { useMutation, useQuery } from '@connectrpc/connect-query';
 import {
   Box,
   Button,
@@ -31,14 +30,8 @@ import { AiOutlineDelete } from 'react-icons/ai';
 import { Link } from 'react-router-dom';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import type { KnowledgeBase } from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
-import {
-  DeleteKnowledgeBaseRequestSchema,
-  ListKnowledgeBasesRequestSchema,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
-import {
-  deleteKnowledgeBase,
-  listKnowledgeBases,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base-KnowledgeBaseService_connectquery';
+import { DeleteKnowledgeBaseRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
+import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from '../../../react-query/api/knowledge-base';
 import { Features } from '../../../state/supportedFeatures';
 import { uiState } from '../../../state/uiState';
 import { openModal } from '../../../utils/ModalContainer';
@@ -108,36 +101,20 @@ export const KnowledgeBaseList = () => {
     updatePageTitle();
   }, []);
 
-  // Fetch knowledge bases using React Query
+  // Fetch knowledge bases using reusable hook
   const {
     data: knowledgeBasesData,
     isLoading,
     error,
     refetch,
-  } = useQuery(listKnowledgeBases, create(ListKnowledgeBasesRequestSchema, {}), {
-    enabled: Features.pipelinesApi,
-  });
+  } = useListKnowledgeBasesQuery(
+    {},
+    {
+      enabled: Features.pipelinesApi,
+    },
+  );
 
-  const deleteMutation = useMutation(deleteKnowledgeBase, {
-    onSuccess: () => {
-      toast({
-        status: 'success',
-        duration: 4000,
-        isClosable: false,
-        title: 'Knowledge base deleted',
-      });
-      refetch();
-    },
-    onError: (err) => {
-      toast({
-        status: 'error',
-        duration: null,
-        isClosable: true,
-        title: 'Failed to delete knowledge base',
-        description: String(err),
-      });
-    },
-  });
+  const deleteMutation = useDeleteKnowledgeBaseMutation();
 
   // Show error toast if there's an error (but not 404 for OSS version)
   useEffect(() => {
@@ -178,7 +155,26 @@ export const KnowledgeBaseList = () => {
 
   const handleDeleteKnowledgeBase = (knowledgeBaseId: string, displayName: string) => {
     openDeleteKnowledgeBaseModal(displayName, () => {
-      deleteMutation.mutate(create(DeleteKnowledgeBaseRequestSchema, { id: knowledgeBaseId }));
+      deleteMutation.mutate(create(DeleteKnowledgeBaseRequestSchema, { id: knowledgeBaseId }), {
+        onSuccess: () => {
+          toast({
+            status: 'success',
+            duration: 4000,
+            isClosable: false,
+            title: 'Knowledge base deleted',
+          });
+          refetch();
+        },
+        onError: (err) => {
+          toast({
+            status: 'error',
+            duration: null,
+            isClosable: true,
+            title: 'Failed to delete knowledge base',
+            description: String(err),
+          });
+        },
+      });
     });
   };
 
