@@ -45,7 +45,7 @@ import {
   CreateUserRequestSchema,
   SASLMechanism,
 } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import type { KnowledgeBaseCreate as KnowledgeBaseCreateType } from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
+import type { KnowledgeBaseCreate as KnowledgeBaseCreateType } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_CohereSchema,
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAISchema,
@@ -62,9 +62,9 @@ import {
   KnowledgeBaseCreate_VectorDatabase_PostgresSchema,
   KnowledgeBaseCreate_VectorDatabaseSchema,
   KnowledgeBaseCreateSchema,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
+} from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha3/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha3/topic-TopicService_connectquery';
 import { appGlobal } from '../../../state/appGlobal';
 import { knowledgebaseApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../utils/utils';

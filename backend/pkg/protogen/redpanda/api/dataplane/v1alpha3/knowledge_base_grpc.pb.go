@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: redpanda/api/dataplane/v1alpha1/knowledge_base.proto
+// source: redpanda/api/dataplane/v1alpha3/knowledge_base.proto
 
-package dataplanev1alpha1
+package dataplanev1alpha3
 
 import (
 	context "context"
@@ -20,11 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	KnowledgeBaseService_CreateKnowledgeBase_FullMethodName = "/redpanda.api.dataplane.v1alpha1.KnowledgeBaseService/CreateKnowledgeBase"
-	KnowledgeBaseService_GetKnowledgeBase_FullMethodName    = "/redpanda.api.dataplane.v1alpha1.KnowledgeBaseService/GetKnowledgeBase"
-	KnowledgeBaseService_ListKnowledgeBases_FullMethodName  = "/redpanda.api.dataplane.v1alpha1.KnowledgeBaseService/ListKnowledgeBases"
-	KnowledgeBaseService_UpdateKnowledgeBase_FullMethodName = "/redpanda.api.dataplane.v1alpha1.KnowledgeBaseService/UpdateKnowledgeBase"
-	KnowledgeBaseService_DeleteKnowledgeBase_FullMethodName = "/redpanda.api.dataplane.v1alpha1.KnowledgeBaseService/DeleteKnowledgeBase"
+	KnowledgeBaseService_CreateKnowledgeBase_FullMethodName = "/redpanda.api.dataplane.v1alpha3.KnowledgeBaseService/CreateKnowledgeBase"
+	KnowledgeBaseService_GetKnowledgeBase_FullMethodName    = "/redpanda.api.dataplane.v1alpha3.KnowledgeBaseService/GetKnowledgeBase"
+	KnowledgeBaseService_ListKnowledgeBases_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.KnowledgeBaseService/ListKnowledgeBases"
+	KnowledgeBaseService_UpdateKnowledgeBase_FullMethodName = "/redpanda.api.dataplane.v1alpha3.KnowledgeBaseService/UpdateKnowledgeBase"
+	KnowledgeBaseService_DeleteKnowledgeBase_FullMethodName = "/redpanda.api.dataplane.v1alpha3.KnowledgeBaseService/DeleteKnowledgeBase"
 )
 
 // KnowledgeBaseServiceClient is the client API for KnowledgeBaseService service.
@@ -245,7 +245,7 @@ func _KnowledgeBaseService_DeleteKnowledgeBase_Handler(srv interface{}, ctx cont
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var KnowledgeBaseService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "redpanda.api.dataplane.v1alpha1.KnowledgeBaseService",
+	ServiceName: "redpanda.api.dataplane.v1alpha3.KnowledgeBaseService",
 	HandlerType: (*KnowledgeBaseServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -270,5 +270,5 @@ var KnowledgeBaseService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "redpanda/api/dataplane/v1alpha1/knowledge_base.proto",
+	Metadata: "redpanda/api/dataplane/v1alpha3/knowledge_base.proto",
 }

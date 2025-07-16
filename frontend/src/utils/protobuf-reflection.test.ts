@@ -13,7 +13,7 @@ import {
   KnowledgeBase_VectorDatabase_PostgresSchema,
   KnowledgeBaseSchema,
   KnowledgeBaseUpdateSchema,
-} from '../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
+} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   debugFieldBehaviors,
   getMessageFieldMetadata,

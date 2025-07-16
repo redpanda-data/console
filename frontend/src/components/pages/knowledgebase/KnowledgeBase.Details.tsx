@@ -17,7 +17,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import type {
   KnowledgeBase,
   KnowledgeBaseUpdate,
-} from '../../../protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
+} from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, knowledgebaseApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { Features } from '../../../state/supportedFeatures';

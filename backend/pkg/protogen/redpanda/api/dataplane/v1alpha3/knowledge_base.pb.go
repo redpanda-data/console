@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.0
 // 	protoc        (unknown)
-// source: redpanda/api/dataplane/v1alpha1/knowledge_base.proto
+// source: redpanda/api/dataplane/v1alpha3/knowledge_base.proto
 
-package dataplanev1alpha1
+package dataplanev1alpha3
 
 import (
 	reflect "reflect"
@@ -46,7 +46,7 @@ type KnowledgeBase struct {
 
 func (x *KnowledgeBase) Reset() {
 	*x = KnowledgeBase{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[0]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -58,7 +58,7 @@ func (x *KnowledgeBase) String() string {
 func (*KnowledgeBase) ProtoMessage() {}
 
 func (x *KnowledgeBase) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[0]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -71,7 +71,7 @@ func (x *KnowledgeBase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *KnowledgeBase) GetId() string {
@@ -161,7 +161,7 @@ type KnowledgeBaseCreate struct {
 
 func (x *KnowledgeBaseCreate) Reset() {
 	*x = KnowledgeBaseCreate{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[1]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -173,7 +173,7 @@ func (x *KnowledgeBaseCreate) String() string {
 func (*KnowledgeBaseCreate) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[1]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -186,7 +186,7 @@ func (x *KnowledgeBaseCreate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseCreate.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *KnowledgeBaseCreate) GetDisplayName() string {
@@ -262,7 +262,7 @@ type KnowledgeBaseUpdate struct {
 
 func (x *KnowledgeBaseUpdate) Reset() {
 	*x = KnowledgeBaseUpdate{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[2]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -274,7 +274,7 @@ func (x *KnowledgeBaseUpdate) String() string {
 func (*KnowledgeBaseUpdate) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[2]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -287,7 +287,7 @@ func (x *KnowledgeBaseUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseUpdate.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *KnowledgeBaseUpdate) GetDisplayName() string {
@@ -355,7 +355,7 @@ type CreateKnowledgeBaseRequest struct {
 
 func (x *CreateKnowledgeBaseRequest) Reset() {
 	*x = CreateKnowledgeBaseRequest{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[3]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -367,7 +367,7 @@ func (x *CreateKnowledgeBaseRequest) String() string {
 func (*CreateKnowledgeBaseRequest) ProtoMessage() {}
 
 func (x *CreateKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[3]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,7 +380,7 @@ func (x *CreateKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateKnowledgeBaseRequest.ProtoReflect.Descriptor instead.
 func (*CreateKnowledgeBaseRequest) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{3}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateKnowledgeBaseRequest) GetKnowledgeBase() *KnowledgeBaseCreate {
@@ -399,7 +399,7 @@ type CreateKnowledgeBaseResponse struct {
 
 func (x *CreateKnowledgeBaseResponse) Reset() {
 	*x = CreateKnowledgeBaseResponse{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[4]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -411,7 +411,7 @@ func (x *CreateKnowledgeBaseResponse) String() string {
 func (*CreateKnowledgeBaseResponse) ProtoMessage() {}
 
 func (x *CreateKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[4]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,7 +424,7 @@ func (x *CreateKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateKnowledgeBaseResponse.ProtoReflect.Descriptor instead.
 func (*CreateKnowledgeBaseResponse) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{4}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateKnowledgeBaseResponse) GetKnowledgeBase() *KnowledgeBase {
@@ -443,7 +443,7 @@ type GetKnowledgeBaseRequest struct {
 
 func (x *GetKnowledgeBaseRequest) Reset() {
 	*x = GetKnowledgeBaseRequest{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[5]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -455,7 +455,7 @@ func (x *GetKnowledgeBaseRequest) String() string {
 func (*GetKnowledgeBaseRequest) ProtoMessage() {}
 
 func (x *GetKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[5]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -468,7 +468,7 @@ func (x *GetKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetKnowledgeBaseRequest.ProtoReflect.Descriptor instead.
 func (*GetKnowledgeBaseRequest) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{5}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetKnowledgeBaseRequest) GetId() string {
@@ -487,7 +487,7 @@ type GetKnowledgeBaseResponse struct {
 
 func (x *GetKnowledgeBaseResponse) Reset() {
 	*x = GetKnowledgeBaseResponse{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[6]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -499,7 +499,7 @@ func (x *GetKnowledgeBaseResponse) String() string {
 func (*GetKnowledgeBaseResponse) ProtoMessage() {}
 
 func (x *GetKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[6]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -512,7 +512,7 @@ func (x *GetKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetKnowledgeBaseResponse.ProtoReflect.Descriptor instead.
 func (*GetKnowledgeBaseResponse) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{6}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetKnowledgeBaseResponse) GetKnowledgeBase() *KnowledgeBase {
@@ -533,7 +533,7 @@ type ListKnowledgeBasesRequest struct {
 
 func (x *ListKnowledgeBasesRequest) Reset() {
 	*x = ListKnowledgeBasesRequest{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[7]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -545,7 +545,7 @@ func (x *ListKnowledgeBasesRequest) String() string {
 func (*ListKnowledgeBasesRequest) ProtoMessage() {}
 
 func (x *ListKnowledgeBasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[7]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -558,7 +558,7 @@ func (x *ListKnowledgeBasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListKnowledgeBasesRequest.ProtoReflect.Descriptor instead.
 func (*ListKnowledgeBasesRequest) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{7}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListKnowledgeBasesRequest) GetPageSize() int32 {
@@ -592,7 +592,7 @@ type ListKnowledgeBasesResponse struct {
 
 func (x *ListKnowledgeBasesResponse) Reset() {
 	*x = ListKnowledgeBasesResponse{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[8]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +604,7 @@ func (x *ListKnowledgeBasesResponse) String() string {
 func (*ListKnowledgeBasesResponse) ProtoMessage() {}
 
 func (x *ListKnowledgeBasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[8]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +617,7 @@ func (x *ListKnowledgeBasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListKnowledgeBasesResponse.ProtoReflect.Descriptor instead.
 func (*ListKnowledgeBasesResponse) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{8}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListKnowledgeBasesResponse) GetKnowledgeBases() []*KnowledgeBase {
@@ -645,7 +645,7 @@ type UpdateKnowledgeBaseRequest struct {
 
 func (x *UpdateKnowledgeBaseRequest) Reset() {
 	*x = UpdateKnowledgeBaseRequest{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[9]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +657,7 @@ func (x *UpdateKnowledgeBaseRequest) String() string {
 func (*UpdateKnowledgeBaseRequest) ProtoMessage() {}
 
 func (x *UpdateKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[9]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +670,7 @@ func (x *UpdateKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateKnowledgeBaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdateKnowledgeBaseRequest) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{9}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateKnowledgeBaseRequest) GetId() string {
@@ -703,7 +703,7 @@ type UpdateKnowledgeBaseResponse struct {
 
 func (x *UpdateKnowledgeBaseResponse) Reset() {
 	*x = UpdateKnowledgeBaseResponse{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[10]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -715,7 +715,7 @@ func (x *UpdateKnowledgeBaseResponse) String() string {
 func (*UpdateKnowledgeBaseResponse) ProtoMessage() {}
 
 func (x *UpdateKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[10]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -728,7 +728,7 @@ func (x *UpdateKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateKnowledgeBaseResponse.ProtoReflect.Descriptor instead.
 func (*UpdateKnowledgeBaseResponse) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{10}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UpdateKnowledgeBaseResponse) GetKnowledgeBase() *KnowledgeBase {
@@ -747,7 +747,7 @@ type DeleteKnowledgeBaseRequest struct {
 
 func (x *DeleteKnowledgeBaseRequest) Reset() {
 	*x = DeleteKnowledgeBaseRequest{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[11]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -759,7 +759,7 @@ func (x *DeleteKnowledgeBaseRequest) String() string {
 func (*DeleteKnowledgeBaseRequest) ProtoMessage() {}
 
 func (x *DeleteKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[11]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -772,7 +772,7 @@ func (x *DeleteKnowledgeBaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteKnowledgeBaseRequest.ProtoReflect.Descriptor instead.
 func (*DeleteKnowledgeBaseRequest) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{11}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DeleteKnowledgeBaseRequest) GetId() string {
@@ -790,7 +790,7 @@ type DeleteKnowledgeBaseResponse struct {
 
 func (x *DeleteKnowledgeBaseResponse) Reset() {
 	*x = DeleteKnowledgeBaseResponse{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[12]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -802,7 +802,7 @@ func (x *DeleteKnowledgeBaseResponse) String() string {
 func (*DeleteKnowledgeBaseResponse) ProtoMessage() {}
 
 func (x *DeleteKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[12]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -815,7 +815,7 @@ func (x *DeleteKnowledgeBaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteKnowledgeBaseResponse.ProtoReflect.Descriptor instead.
 func (*DeleteKnowledgeBaseResponse) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{12}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{12}
 }
 
 type KnowledgeBase_VectorDatabase struct {
@@ -830,7 +830,7 @@ type KnowledgeBase_VectorDatabase struct {
 
 func (x *KnowledgeBase_VectorDatabase) Reset() {
 	*x = KnowledgeBase_VectorDatabase{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[13]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -842,7 +842,7 @@ func (x *KnowledgeBase_VectorDatabase) String() string {
 func (*KnowledgeBase_VectorDatabase) ProtoMessage() {}
 
 func (x *KnowledgeBase_VectorDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[13]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -855,7 +855,7 @@ func (x *KnowledgeBase_VectorDatabase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase_VectorDatabase.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_VectorDatabase) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 0}
 }
 
 func (x *KnowledgeBase_VectorDatabase) GetVectorDatabase() isKnowledgeBase_VectorDatabase_VectorDatabase {
@@ -895,7 +895,7 @@ type KnowledgeBase_EmbeddingGenerator struct {
 
 func (x *KnowledgeBase_EmbeddingGenerator) Reset() {
 	*x = KnowledgeBase_EmbeddingGenerator{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[14]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -907,7 +907,7 @@ func (x *KnowledgeBase_EmbeddingGenerator) String() string {
 func (*KnowledgeBase_EmbeddingGenerator) ProtoMessage() {}
 
 func (x *KnowledgeBase_EmbeddingGenerator) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[14]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -920,7 +920,7 @@ func (x *KnowledgeBase_EmbeddingGenerator) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase_EmbeddingGenerator.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_EmbeddingGenerator) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 1}
 }
 
 func (x *KnowledgeBase_EmbeddingGenerator) GetProvider() *KnowledgeBase_EmbeddingGenerator_Provider {
@@ -957,7 +957,7 @@ type KnowledgeBase_Indexer struct {
 
 func (x *KnowledgeBase_Indexer) Reset() {
 	*x = KnowledgeBase_Indexer{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[16]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -969,7 +969,7 @@ func (x *KnowledgeBase_Indexer) String() string {
 func (*KnowledgeBase_Indexer) ProtoMessage() {}
 
 func (x *KnowledgeBase_Indexer) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[16]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -982,7 +982,7 @@ func (x *KnowledgeBase_Indexer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase_Indexer.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Indexer) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 3}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 3}
 }
 
 func (x *KnowledgeBase_Indexer) GetChunkSize() int32 {
@@ -1029,7 +1029,7 @@ type KnowledgeBase_Retriever struct {
 
 func (x *KnowledgeBase_Retriever) Reset() {
 	*x = KnowledgeBase_Retriever{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[17]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1041,7 +1041,7 @@ func (x *KnowledgeBase_Retriever) String() string {
 func (*KnowledgeBase_Retriever) ProtoMessage() {}
 
 func (x *KnowledgeBase_Retriever) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[17]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1054,7 +1054,7 @@ func (x *KnowledgeBase_Retriever) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase_Retriever.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Retriever) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 4}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 4}
 }
 
 func (x *KnowledgeBase_Retriever) GetReranker() *KnowledgeBase_Retriever_Reranker {
@@ -1074,7 +1074,7 @@ type KnowledgeBase_Generation struct {
 
 func (x *KnowledgeBase_Generation) Reset() {
 	*x = KnowledgeBase_Generation{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[18]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1086,7 +1086,7 @@ func (x *KnowledgeBase_Generation) String() string {
 func (*KnowledgeBase_Generation) ProtoMessage() {}
 
 func (x *KnowledgeBase_Generation) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[18]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1099,7 +1099,7 @@ func (x *KnowledgeBase_Generation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase_Generation.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Generation) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 5}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 5}
 }
 
 func (x *KnowledgeBase_Generation) GetProvider() *KnowledgeBase_Generation_Provider {
@@ -1126,7 +1126,7 @@ type KnowledgeBase_VectorDatabase_Postgres struct {
 
 func (x *KnowledgeBase_VectorDatabase_Postgres) Reset() {
 	*x = KnowledgeBase_VectorDatabase_Postgres{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[19]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1138,7 +1138,7 @@ func (x *KnowledgeBase_VectorDatabase_Postgres) String() string {
 func (*KnowledgeBase_VectorDatabase_Postgres) ProtoMessage() {}
 
 func (x *KnowledgeBase_VectorDatabase_Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[19]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1151,7 +1151,7 @@ func (x *KnowledgeBase_VectorDatabase_Postgres) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use KnowledgeBase_VectorDatabase_Postgres.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_VectorDatabase_Postgres) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
 func (x *KnowledgeBase_VectorDatabase_Postgres) GetDsn() string {
@@ -1181,7 +1181,7 @@ type KnowledgeBase_EmbeddingGenerator_Provider struct {
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider) Reset() {
 	*x = KnowledgeBase_EmbeddingGenerator_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[20]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1193,7 +1193,7 @@ func (x *KnowledgeBase_EmbeddingGenerator_Provider) String() string {
 func (*KnowledgeBase_EmbeddingGenerator_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[20]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1206,7 +1206,7 @@ func (x *KnowledgeBase_EmbeddingGenerator_Provider) ProtoReflect() protoreflect.
 
 // Deprecated: Use KnowledgeBase_EmbeddingGenerator_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_EmbeddingGenerator_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 1, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider) GetProvider() isKnowledgeBase_EmbeddingGenerator_Provider_Provider {
@@ -1261,7 +1261,7 @@ type KnowledgeBase_EmbeddingGenerator_Provider_OpenAI struct {
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) Reset() {
 	*x = KnowledgeBase_EmbeddingGenerator_Provider_OpenAI{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[21]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1273,7 +1273,7 @@ func (x *KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) String() string {
 func (*KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) ProtoMessage() {}
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[21]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1286,7 +1286,7 @@ func (x *KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) ProtoReflect() protor
 
 // Deprecated: Use KnowledgeBase_EmbeddingGenerator_Provider_OpenAI.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 1, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 1, 0, 0}
 }
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider_OpenAI) GetApiKey() string {
@@ -1306,7 +1306,7 @@ type KnowledgeBase_EmbeddingGenerator_Provider_Cohere struct {
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider_Cohere) Reset() {
 	*x = KnowledgeBase_EmbeddingGenerator_Provider_Cohere{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[22]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1318,7 +1318,7 @@ func (x *KnowledgeBase_EmbeddingGenerator_Provider_Cohere) String() string {
 func (*KnowledgeBase_EmbeddingGenerator_Provider_Cohere) ProtoMessage() {}
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider_Cohere) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[22]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1331,7 +1331,7 @@ func (x *KnowledgeBase_EmbeddingGenerator_Provider_Cohere) ProtoReflect() protor
 
 // Deprecated: Use KnowledgeBase_EmbeddingGenerator_Provider_Cohere.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_EmbeddingGenerator_Provider_Cohere) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 1, 0, 1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 1, 0, 1}
 }
 
 func (x *KnowledgeBase_EmbeddingGenerator_Provider_Cohere) GetBaseUrl() string {
@@ -1358,7 +1358,7 @@ type KnowledgeBase_Retriever_Reranker struct {
 
 func (x *KnowledgeBase_Retriever_Reranker) Reset() {
 	*x = KnowledgeBase_Retriever_Reranker{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[23]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1370,7 +1370,7 @@ func (x *KnowledgeBase_Retriever_Reranker) String() string {
 func (*KnowledgeBase_Retriever_Reranker) ProtoMessage() {}
 
 func (x *KnowledgeBase_Retriever_Reranker) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[23]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1383,7 +1383,7 @@ func (x *KnowledgeBase_Retriever_Reranker) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBase_Retriever_Reranker.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Retriever_Reranker) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 4, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 4, 0}
 }
 
 func (x *KnowledgeBase_Retriever_Reranker) GetEnabled() bool {
@@ -1412,7 +1412,7 @@ type KnowledgeBase_Retriever_Reranker_Provider struct {
 
 func (x *KnowledgeBase_Retriever_Reranker_Provider) Reset() {
 	*x = KnowledgeBase_Retriever_Reranker_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[24]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1424,7 +1424,7 @@ func (x *KnowledgeBase_Retriever_Reranker_Provider) String() string {
 func (*KnowledgeBase_Retriever_Reranker_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBase_Retriever_Reranker_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[24]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1437,7 +1437,7 @@ func (x *KnowledgeBase_Retriever_Reranker_Provider) ProtoReflect() protoreflect.
 
 // Deprecated: Use KnowledgeBase_Retriever_Reranker_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Retriever_Reranker_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 4, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 4, 0, 0}
 }
 
 func (x *KnowledgeBase_Retriever_Reranker_Provider) GetProvider() isKnowledgeBase_Retriever_Reranker_Provider_Provider {
@@ -1477,7 +1477,7 @@ type KnowledgeBase_Retriever_Reranker_Provider_Cohere struct {
 
 func (x *KnowledgeBase_Retriever_Reranker_Provider_Cohere) Reset() {
 	*x = KnowledgeBase_Retriever_Reranker_Provider_Cohere{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[25]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1489,7 +1489,7 @@ func (x *KnowledgeBase_Retriever_Reranker_Provider_Cohere) String() string {
 func (*KnowledgeBase_Retriever_Reranker_Provider_Cohere) ProtoMessage() {}
 
 func (x *KnowledgeBase_Retriever_Reranker_Provider_Cohere) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[25]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1502,7 +1502,7 @@ func (x *KnowledgeBase_Retriever_Reranker_Provider_Cohere) ProtoReflect() protor
 
 // Deprecated: Use KnowledgeBase_Retriever_Reranker_Provider_Cohere.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Retriever_Reranker_Provider_Cohere) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 4, 0, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 4, 0, 0, 0}
 }
 
 func (x *KnowledgeBase_Retriever_Reranker_Provider_Cohere) GetApiKey() string {
@@ -1531,7 +1531,7 @@ type KnowledgeBase_Generation_Provider struct {
 
 func (x *KnowledgeBase_Generation_Provider) Reset() {
 	*x = KnowledgeBase_Generation_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[26]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1543,7 +1543,7 @@ func (x *KnowledgeBase_Generation_Provider) String() string {
 func (*KnowledgeBase_Generation_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBase_Generation_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[26]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1556,7 +1556,7 @@ func (x *KnowledgeBase_Generation_Provider) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use KnowledgeBase_Generation_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Generation_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 5, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 5, 0}
 }
 
 func (x *KnowledgeBase_Generation_Provider) GetProvider() isKnowledgeBase_Generation_Provider_Provider {
@@ -1594,7 +1594,7 @@ type KnowledgeBase_Generation_Provider_OpenAI struct {
 
 func (x *KnowledgeBase_Generation_Provider_OpenAI) Reset() {
 	*x = KnowledgeBase_Generation_Provider_OpenAI{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[27]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1606,7 +1606,7 @@ func (x *KnowledgeBase_Generation_Provider_OpenAI) String() string {
 func (*KnowledgeBase_Generation_Provider_OpenAI) ProtoMessage() {}
 
 func (x *KnowledgeBase_Generation_Provider_OpenAI) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[27]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1619,7 +1619,7 @@ func (x *KnowledgeBase_Generation_Provider_OpenAI) ProtoReflect() protoreflect.M
 
 // Deprecated: Use KnowledgeBase_Generation_Provider_OpenAI.ProtoReflect.Descriptor instead.
 func (*KnowledgeBase_Generation_Provider_OpenAI) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{0, 5, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{0, 5, 0, 0}
 }
 
 func (x *KnowledgeBase_Generation_Provider_OpenAI) GetApiKey() string {
@@ -1641,7 +1641,7 @@ type KnowledgeBaseCreate_VectorDatabase struct {
 
 func (x *KnowledgeBaseCreate_VectorDatabase) Reset() {
 	*x = KnowledgeBaseCreate_VectorDatabase{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[28]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1653,7 +1653,7 @@ func (x *KnowledgeBaseCreate_VectorDatabase) String() string {
 func (*KnowledgeBaseCreate_VectorDatabase) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_VectorDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[28]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1666,7 +1666,7 @@ func (x *KnowledgeBaseCreate_VectorDatabase) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use KnowledgeBaseCreate_VectorDatabase.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_VectorDatabase) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 0}
 }
 
 func (x *KnowledgeBaseCreate_VectorDatabase) GetVectorDatabase() isKnowledgeBaseCreate_VectorDatabase_VectorDatabase {
@@ -1707,7 +1707,7 @@ type KnowledgeBaseCreate_EmbeddingGenerator struct {
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator) Reset() {
 	*x = KnowledgeBaseCreate_EmbeddingGenerator{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[29]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1719,7 +1719,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator) String() string {
 func (*KnowledgeBaseCreate_EmbeddingGenerator) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[29]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1732,7 +1732,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use KnowledgeBaseCreate_EmbeddingGenerator.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_EmbeddingGenerator) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 1}
 }
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator) GetProvider() *KnowledgeBaseCreate_EmbeddingGenerator_Provider {
@@ -1769,7 +1769,7 @@ type KnowledgeBaseCreate_Indexer struct {
 
 func (x *KnowledgeBaseCreate_Indexer) Reset() {
 	*x = KnowledgeBaseCreate_Indexer{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[31]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1781,7 +1781,7 @@ func (x *KnowledgeBaseCreate_Indexer) String() string {
 func (*KnowledgeBaseCreate_Indexer) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Indexer) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[31]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1794,7 +1794,7 @@ func (x *KnowledgeBaseCreate_Indexer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseCreate_Indexer.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Indexer) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 3}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 3}
 }
 
 func (x *KnowledgeBaseCreate_Indexer) GetChunkSize() int32 {
@@ -1841,7 +1841,7 @@ type KnowledgeBaseCreate_Retriever struct {
 
 func (x *KnowledgeBaseCreate_Retriever) Reset() {
 	*x = KnowledgeBaseCreate_Retriever{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[32]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1853,7 +1853,7 @@ func (x *KnowledgeBaseCreate_Retriever) String() string {
 func (*KnowledgeBaseCreate_Retriever) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Retriever) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[32]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1866,7 +1866,7 @@ func (x *KnowledgeBaseCreate_Retriever) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseCreate_Retriever.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Retriever) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 4}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 4}
 }
 
 func (x *KnowledgeBaseCreate_Retriever) GetReranker() *KnowledgeBaseCreate_Retriever_Reranker {
@@ -1886,7 +1886,7 @@ type KnowledgeBaseCreate_Generation struct {
 
 func (x *KnowledgeBaseCreate_Generation) Reset() {
 	*x = KnowledgeBaseCreate_Generation{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[33]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1898,7 +1898,7 @@ func (x *KnowledgeBaseCreate_Generation) String() string {
 func (*KnowledgeBaseCreate_Generation) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Generation) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[33]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1911,7 +1911,7 @@ func (x *KnowledgeBaseCreate_Generation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseCreate_Generation.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Generation) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 5}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 5}
 }
 
 func (x *KnowledgeBaseCreate_Generation) GetProvider() *KnowledgeBaseCreate_Generation_Provider {
@@ -1938,7 +1938,7 @@ type KnowledgeBaseCreate_VectorDatabase_Postgres struct {
 
 func (x *KnowledgeBaseCreate_VectorDatabase_Postgres) Reset() {
 	*x = KnowledgeBaseCreate_VectorDatabase_Postgres{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[34]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1950,7 +1950,7 @@ func (x *KnowledgeBaseCreate_VectorDatabase_Postgres) String() string {
 func (*KnowledgeBaseCreate_VectorDatabase_Postgres) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_VectorDatabase_Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[34]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1963,7 +1963,7 @@ func (x *KnowledgeBaseCreate_VectorDatabase_Postgres) ProtoReflect() protoreflec
 
 // Deprecated: Use KnowledgeBaseCreate_VectorDatabase_Postgres.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_VectorDatabase_Postgres) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 0, 0}
 }
 
 func (x *KnowledgeBaseCreate_VectorDatabase_Postgres) GetDsn() string {
@@ -1993,7 +1993,7 @@ type KnowledgeBaseCreate_EmbeddingGenerator_Provider struct {
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider) Reset() {
 	*x = KnowledgeBaseCreate_EmbeddingGenerator_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[35]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2005,7 +2005,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider) String() string {
 func (*KnowledgeBaseCreate_EmbeddingGenerator_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[35]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2018,7 +2018,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider) ProtoReflect() protore
 
 // Deprecated: Use KnowledgeBaseCreate_EmbeddingGenerator_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_EmbeddingGenerator_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 1, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 1, 0}
 }
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider) GetProvider() isKnowledgeBaseCreate_EmbeddingGenerator_Provider_Provider {
@@ -2073,7 +2073,7 @@ type KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI struct {
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) Reset() {
 	*x = KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[36]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2085,7 +2085,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) String() string
 func (*KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[36]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2098,7 +2098,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) ProtoReflect() 
 
 // Deprecated: Use KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 1, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 1, 0, 0}
 }
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI) GetApiKey() string {
@@ -2118,7 +2118,7 @@ type KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere struct {
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) Reset() {
 	*x = KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[37]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2130,7 +2130,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) String() string
 func (*KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[37]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2143,7 +2143,7 @@ func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) ProtoReflect() 
 
 // Deprecated: Use KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 1, 0, 1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 1, 0, 1}
 }
 
 func (x *KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere) GetBaseUrl() string {
@@ -2170,7 +2170,7 @@ type KnowledgeBaseCreate_Retriever_Reranker struct {
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker) Reset() {
 	*x = KnowledgeBaseCreate_Retriever_Reranker{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[38]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2182,7 +2182,7 @@ func (x *KnowledgeBaseCreate_Retriever_Reranker) String() string {
 func (*KnowledgeBaseCreate_Retriever_Reranker) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[38]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2195,7 +2195,7 @@ func (x *KnowledgeBaseCreate_Retriever_Reranker) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use KnowledgeBaseCreate_Retriever_Reranker.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Retriever_Reranker) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 4, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 4, 0}
 }
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker) GetEnabled() bool {
@@ -2224,7 +2224,7 @@ type KnowledgeBaseCreate_Retriever_Reranker_Provider struct {
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider) Reset() {
 	*x = KnowledgeBaseCreate_Retriever_Reranker_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[39]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2236,7 +2236,7 @@ func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider) String() string {
 func (*KnowledgeBaseCreate_Retriever_Reranker_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[39]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2249,7 +2249,7 @@ func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider) ProtoReflect() protore
 
 // Deprecated: Use KnowledgeBaseCreate_Retriever_Reranker_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Retriever_Reranker_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 4, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 4, 0, 0}
 }
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider) GetProvider() isKnowledgeBaseCreate_Retriever_Reranker_Provider_Provider {
@@ -2289,7 +2289,7 @@ type KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere struct {
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) Reset() {
 	*x = KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[40]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2301,7 +2301,7 @@ func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) String() string
 func (*KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[40]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2314,7 +2314,7 @@ func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) ProtoReflect() 
 
 // Deprecated: Use KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 4, 0, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 4, 0, 0, 0}
 }
 
 func (x *KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere) GetApiKey() string {
@@ -2343,7 +2343,7 @@ type KnowledgeBaseCreate_Generation_Provider struct {
 
 func (x *KnowledgeBaseCreate_Generation_Provider) Reset() {
 	*x = KnowledgeBaseCreate_Generation_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[41]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2355,7 +2355,7 @@ func (x *KnowledgeBaseCreate_Generation_Provider) String() string {
 func (*KnowledgeBaseCreate_Generation_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Generation_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[41]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2368,7 +2368,7 @@ func (x *KnowledgeBaseCreate_Generation_Provider) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use KnowledgeBaseCreate_Generation_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Generation_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 5, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 5, 0}
 }
 
 func (x *KnowledgeBaseCreate_Generation_Provider) GetProvider() isKnowledgeBaseCreate_Generation_Provider_Provider {
@@ -2407,7 +2407,7 @@ type KnowledgeBaseCreate_Generation_Provider_OpenAI struct {
 
 func (x *KnowledgeBaseCreate_Generation_Provider_OpenAI) Reset() {
 	*x = KnowledgeBaseCreate_Generation_Provider_OpenAI{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[42]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2419,7 +2419,7 @@ func (x *KnowledgeBaseCreate_Generation_Provider_OpenAI) String() string {
 func (*KnowledgeBaseCreate_Generation_Provider_OpenAI) ProtoMessage() {}
 
 func (x *KnowledgeBaseCreate_Generation_Provider_OpenAI) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[42]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2432,7 +2432,7 @@ func (x *KnowledgeBaseCreate_Generation_Provider_OpenAI) ProtoReflect() protoref
 
 // Deprecated: Use KnowledgeBaseCreate_Generation_Provider_OpenAI.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseCreate_Generation_Provider_OpenAI) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{1, 5, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{1, 5, 0, 0}
 }
 
 func (x *KnowledgeBaseCreate_Generation_Provider_OpenAI) GetApiKey() string {
@@ -2454,7 +2454,7 @@ type KnowledgeBaseUpdate_VectorDatabase struct {
 
 func (x *KnowledgeBaseUpdate_VectorDatabase) Reset() {
 	*x = KnowledgeBaseUpdate_VectorDatabase{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[43]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2466,7 +2466,7 @@ func (x *KnowledgeBaseUpdate_VectorDatabase) String() string {
 func (*KnowledgeBaseUpdate_VectorDatabase) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_VectorDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[43]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2479,7 +2479,7 @@ func (x *KnowledgeBaseUpdate_VectorDatabase) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use KnowledgeBaseUpdate_VectorDatabase.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_VectorDatabase) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 0}
 }
 
 func (x *KnowledgeBaseUpdate_VectorDatabase) GetVectorDatabase() isKnowledgeBaseUpdate_VectorDatabase_VectorDatabase {
@@ -2518,7 +2518,7 @@ type KnowledgeBaseUpdate_EmbeddingGenerator struct {
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator) Reset() {
 	*x = KnowledgeBaseUpdate_EmbeddingGenerator{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[44]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2530,7 +2530,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator) String() string {
 func (*KnowledgeBaseUpdate_EmbeddingGenerator) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[44]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2543,7 +2543,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use KnowledgeBaseUpdate_EmbeddingGenerator.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_EmbeddingGenerator) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 1}
 }
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator) GetProvider() *KnowledgeBaseUpdate_EmbeddingGenerator_Provider {
@@ -2566,7 +2566,7 @@ type KnowledgeBaseUpdate_Indexer struct {
 
 func (x *KnowledgeBaseUpdate_Indexer) Reset() {
 	*x = KnowledgeBaseUpdate_Indexer{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[46]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2578,7 +2578,7 @@ func (x *KnowledgeBaseUpdate_Indexer) String() string {
 func (*KnowledgeBaseUpdate_Indexer) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Indexer) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[46]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2591,7 +2591,7 @@ func (x *KnowledgeBaseUpdate_Indexer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseUpdate_Indexer.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Indexer) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 3}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 3}
 }
 
 func (x *KnowledgeBaseUpdate_Indexer) GetChunkSize() int32 {
@@ -2638,7 +2638,7 @@ type KnowledgeBaseUpdate_Retriever struct {
 
 func (x *KnowledgeBaseUpdate_Retriever) Reset() {
 	*x = KnowledgeBaseUpdate_Retriever{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[47]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2650,7 +2650,7 @@ func (x *KnowledgeBaseUpdate_Retriever) String() string {
 func (*KnowledgeBaseUpdate_Retriever) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Retriever) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[47]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2663,7 +2663,7 @@ func (x *KnowledgeBaseUpdate_Retriever) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseUpdate_Retriever.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Retriever) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 4}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 4}
 }
 
 func (x *KnowledgeBaseUpdate_Retriever) GetReranker() *KnowledgeBaseUpdate_Retriever_Reranker {
@@ -2682,7 +2682,7 @@ type KnowledgeBaseUpdate_Generation struct {
 
 func (x *KnowledgeBaseUpdate_Generation) Reset() {
 	*x = KnowledgeBaseUpdate_Generation{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[48]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2694,7 +2694,7 @@ func (x *KnowledgeBaseUpdate_Generation) String() string {
 func (*KnowledgeBaseUpdate_Generation) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Generation) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[48]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2707,7 +2707,7 @@ func (x *KnowledgeBaseUpdate_Generation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KnowledgeBaseUpdate_Generation.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Generation) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 5}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 5}
 }
 
 func (x *KnowledgeBaseUpdate_Generation) GetProvider() *KnowledgeBaseUpdate_Generation_Provider {
@@ -2726,7 +2726,7 @@ type KnowledgeBaseUpdate_VectorDatabase_Postgres struct {
 
 func (x *KnowledgeBaseUpdate_VectorDatabase_Postgres) Reset() {
 	*x = KnowledgeBaseUpdate_VectorDatabase_Postgres{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[49]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2738,7 +2738,7 @@ func (x *KnowledgeBaseUpdate_VectorDatabase_Postgres) String() string {
 func (*KnowledgeBaseUpdate_VectorDatabase_Postgres) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_VectorDatabase_Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[49]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2751,7 +2751,7 @@ func (x *KnowledgeBaseUpdate_VectorDatabase_Postgres) ProtoReflect() protoreflec
 
 // Deprecated: Use KnowledgeBaseUpdate_VectorDatabase_Postgres.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_VectorDatabase_Postgres) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 0, 0}
 }
 
 func (x *KnowledgeBaseUpdate_VectorDatabase_Postgres) GetDsn() string {
@@ -2774,7 +2774,7 @@ type KnowledgeBaseUpdate_EmbeddingGenerator_Provider struct {
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider) Reset() {
 	*x = KnowledgeBaseUpdate_EmbeddingGenerator_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[50]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2786,7 +2786,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider) String() string {
 func (*KnowledgeBaseUpdate_EmbeddingGenerator_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[50]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2799,7 +2799,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider) ProtoReflect() protore
 
 // Deprecated: Use KnowledgeBaseUpdate_EmbeddingGenerator_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_EmbeddingGenerator_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 1, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 1, 0}
 }
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider) GetProvider() isKnowledgeBaseUpdate_EmbeddingGenerator_Provider_Provider {
@@ -2854,7 +2854,7 @@ type KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI struct {
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) Reset() {
 	*x = KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[51]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2866,7 +2866,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) String() string
 func (*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[51]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2879,7 +2879,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) ProtoReflect() 
 
 // Deprecated: Use KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 1, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 1, 0, 0}
 }
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI) GetApiKey() string {
@@ -2899,7 +2899,7 @@ type KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere struct {
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) Reset() {
 	*x = KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[52]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2911,7 +2911,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) String() string
 func (*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[52]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2924,7 +2924,7 @@ func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) ProtoReflect() 
 
 // Deprecated: Use KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 1, 0, 1}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 1, 0, 1}
 }
 
 func (x *KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere) GetBaseUrl() string {
@@ -2951,7 +2951,7 @@ type KnowledgeBaseUpdate_Retriever_Reranker struct {
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker) Reset() {
 	*x = KnowledgeBaseUpdate_Retriever_Reranker{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[53]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2963,7 +2963,7 @@ func (x *KnowledgeBaseUpdate_Retriever_Reranker) String() string {
 func (*KnowledgeBaseUpdate_Retriever_Reranker) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[53]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2976,7 +2976,7 @@ func (x *KnowledgeBaseUpdate_Retriever_Reranker) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use KnowledgeBaseUpdate_Retriever_Reranker.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Retriever_Reranker) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 4, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 4, 0}
 }
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker) GetEnabled() bool {
@@ -3005,7 +3005,7 @@ type KnowledgeBaseUpdate_Retriever_Reranker_Provider struct {
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider) Reset() {
 	*x = KnowledgeBaseUpdate_Retriever_Reranker_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[54]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3017,7 +3017,7 @@ func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider) String() string {
 func (*KnowledgeBaseUpdate_Retriever_Reranker_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[54]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3030,7 +3030,7 @@ func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider) ProtoReflect() protore
 
 // Deprecated: Use KnowledgeBaseUpdate_Retriever_Reranker_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Retriever_Reranker_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 4, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 4, 0, 0}
 }
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider) GetProvider() isKnowledgeBaseUpdate_Retriever_Reranker_Provider_Provider {
@@ -3070,7 +3070,7 @@ type KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere struct {
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) Reset() {
 	*x = KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[55]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3082,7 +3082,7 @@ func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) String() string
 func (*KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[55]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3095,7 +3095,7 @@ func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) ProtoReflect() 
 
 // Deprecated: Use KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 4, 0, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 4, 0, 0, 0}
 }
 
 func (x *KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere) GetApiKey() string {
@@ -3124,7 +3124,7 @@ type KnowledgeBaseUpdate_Generation_Provider struct {
 
 func (x *KnowledgeBaseUpdate_Generation_Provider) Reset() {
 	*x = KnowledgeBaseUpdate_Generation_Provider{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[56]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3136,7 +3136,7 @@ func (x *KnowledgeBaseUpdate_Generation_Provider) String() string {
 func (*KnowledgeBaseUpdate_Generation_Provider) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Generation_Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[56]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3149,7 +3149,7 @@ func (x *KnowledgeBaseUpdate_Generation_Provider) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use KnowledgeBaseUpdate_Generation_Provider.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Generation_Provider) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 5, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 5, 0}
 }
 
 func (x *KnowledgeBaseUpdate_Generation_Provider) GetProvider() isKnowledgeBaseUpdate_Generation_Provider_Provider {
@@ -3188,7 +3188,7 @@ type KnowledgeBaseUpdate_Generation_Provider_OpenAI struct {
 
 func (x *KnowledgeBaseUpdate_Generation_Provider_OpenAI) Reset() {
 	*x = KnowledgeBaseUpdate_Generation_Provider_OpenAI{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[57]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3200,7 +3200,7 @@ func (x *KnowledgeBaseUpdate_Generation_Provider_OpenAI) String() string {
 func (*KnowledgeBaseUpdate_Generation_Provider_OpenAI) ProtoMessage() {}
 
 func (x *KnowledgeBaseUpdate_Generation_Provider_OpenAI) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[57]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3213,7 +3213,7 @@ func (x *KnowledgeBaseUpdate_Generation_Provider_OpenAI) ProtoReflect() protoref
 
 // Deprecated: Use KnowledgeBaseUpdate_Generation_Provider_OpenAI.ProtoReflect.Descriptor instead.
 func (*KnowledgeBaseUpdate_Generation_Provider_OpenAI) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{2, 5, 0, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{2, 5, 0, 0}
 }
 
 func (x *KnowledgeBaseUpdate_Generation_Provider_OpenAI) GetApiKey() string {
@@ -3235,7 +3235,7 @@ type ListKnowledgeBasesRequest_Filter struct {
 
 func (x *ListKnowledgeBasesRequest_Filter) Reset() {
 	*x = ListKnowledgeBasesRequest_Filter{}
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[58]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3247,7 +3247,7 @@ func (x *ListKnowledgeBasesRequest_Filter) String() string {
 func (*ListKnowledgeBasesRequest_Filter) ProtoMessage() {}
 
 func (x *ListKnowledgeBasesRequest_Filter) ProtoReflect() protoreflect.Message {
-	mi := &file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[58]
+	mi := &file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3260,7 +3260,7 @@ func (x *ListKnowledgeBasesRequest_Filter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListKnowledgeBasesRequest_Filter.ProtoReflect.Descriptor instead.
 func (*ListKnowledgeBasesRequest_Filter) Descriptor() ([]byte, []int) {
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP(), []int{7, 0}
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP(), []int{7, 0}
 }
 
 func (x *ListKnowledgeBasesRequest_Filter) GetNameContains() string {
@@ -3277,15 +3277,15 @@ func (x *ListKnowledgeBasesRequest_Filter) GetTags() map[string]string {
 	return nil
 }
 
-var File_redpanda_api_dataplane_v1alpha1_knowledge_base_proto protoreflect.FileDescriptor
+var File_redpanda_api_dataplane_v1alpha3_knowledge_base_proto protoreflect.FileDescriptor
 
-var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
+var file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDesc = []byte{
 	0x0a, 0x34, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x64,
 	0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65,
+	0x33, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x1f, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x1b, 0x62, 0x75, 0x66, 0x2f, 0x76, 0x61, 0x6c,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x1a, 0x1b, 0x62, 0x75, 0x66, 0x2f, 0x76, 0x61, 0x6c,
 	0x69, 0x64, 0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69,
 	0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f,
@@ -3314,7 +3314,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x71, 0x0a, 0x0f, 0x76, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x5f, 0x64,
 	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3d, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e,
 	0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x56, 0x65,
 	0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x42, 0x09, 0xe0, 0x41,
 	0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x0e, 0x76, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44,
@@ -3322,7 +3322,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x64, 0x69, 0x6e, 0x67, 0x5f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x18, 0x05,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x41, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65,
 	0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8,
 	0x01, 0x01, 0x52, 0x12, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e,
@@ -3332,7 +3332,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x6c, 0x41, 0x70, 0x69, 0x55, 0x72, 0x6c, 0x12, 0x7b, 0x0a, 0x04, 0x74, 0x61, 0x67, 0x73, 0x18,
 	0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x38, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x54, 0x61, 0x67, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x42,
 	0x2d, 0xba, 0x48, 0x2a, 0x9a, 0x01, 0x27, 0x10, 0x10, 0x2a, 0x23, 0x72, 0x21, 0x32, 0x1f, 0x5e,
 	0x28, 0x5b, 0x5c, 0x70, 0x7b, 0x4c, 0x7d, 0x5c, 0x70, 0x7b, 0x5a, 0x7d, 0x5c, 0x70, 0x7b, 0x4e,
@@ -3340,24 +3340,24 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x74, 0x61, 0x67, 0x73, 0x12, 0x50, 0x0a, 0x07, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x18,
 	0x08, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x36, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x07, 0x69,
 	0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x12, 0x56, 0x0a, 0x09, 0x72, 0x65, 0x74, 0x72, 0x69, 0x65,
 	0x76, 0x65, 0x72, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x38, 0x2e, 0x72, 0x65, 0x64, 0x70,
 	0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
+	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65,
 	0x76, 0x65, 0x72, 0x52, 0x09, 0x72, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x12, 0x59,
 	0x0a, 0x0a, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x0a, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x39, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70,
 	0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
+	0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
 	0x73, 0x65, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0a, 0x67,
 	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x81, 0x02, 0x0a, 0x0e, 0x56, 0x65,
 	0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x12, 0x64, 0x0a, 0x08,
 	0x70, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x46,
 	0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61,
-	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33,
 	0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x56,
 	0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x50, 0x6f,
 	0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x48, 0x00, 0x52, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72,
@@ -3374,7 +3374,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x61, 0x74, 0x6f, 0x72, 0x12, 0x71, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x4a, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64,
 	0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e,
-	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67,
 	0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x08, 0x70,
@@ -3387,14 +3387,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x6b, 0x0a, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x51, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64,
 	0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e,
-	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67,
 	0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x2e, 0x4f, 0x70, 0x65, 0x6e, 0x41, 0x49, 0x48, 0x00, 0x52, 0x06, 0x6f, 0x70, 0x65,
 	0x6e, 0x61, 0x69, 0x12, 0x6b, 0x0a, 0x06, 0x63, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x51, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
+	0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e,
 	0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e,
 	0x43, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x48, 0x00, 0x52, 0x06, 0x63, 0x6f, 0x68, 0x65, 0x72, 0x65,
@@ -3427,7 +3427,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x76, 0x65, 0x72, 0x12, 0x5d, 0x0a, 0x08, 0x72, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x41, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x2e,
 	0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x52, 0x08, 0x72, 0x65, 0x72, 0x61, 0x6e, 0x6b,
 	0x65, 0x72, 0x1a, 0xe8, 0x02, 0x0a, 0x08, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x12,
@@ -3435,14 +3435,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x52, 0x07, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x12, 0x66, 0x0a, 0x08, 0x70, 0x72, 0x6f,
 	0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x4a, 0x2e, 0x72, 0x65,
 	0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70,
-	0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e,
+	0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e,
 	0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72,
 	0x69, 0x65, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x2e, 0x50,
 	0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65,
 	0x72, 0x1a, 0xd9, 0x01, 0x0a, 0x08, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x6b,
 	0x0a, 0x06, 0x63, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x51,
 	0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61,
-	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33,
 	0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x52,
 	0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65,
 	0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x68, 0x65, 0x72,
@@ -3456,7 +3456,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x69, 0x0a, 0x08,
 	0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x42,
 	0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61,
-	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33,
 	0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x47,
 	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x08, 0x70,
@@ -3466,7 +3466,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x63, 0x0a, 0x06, 0x6f, 0x70, 0x65, 0x6e,
 	0x61, 0x69, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x49, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61,
 	0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
-	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
+	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x4f, 0x70, 0x65,
 	0x6e, 0x41, 0x49, 0x48, 0x00, 0x52, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x1a, 0x21, 0x0a,
@@ -3475,7 +3475,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x42, 0x11, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x05, 0xba, 0x48,
 	0x02, 0x08, 0x01, 0x3a, 0x53, 0xea, 0x41, 0x50, 0x0a, 0x2d, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e,
 	0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65,
-	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2f, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
 	0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2a, 0x0f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x73, 0x32, 0x0e, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
 	0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x22, 0xcb, 0x15, 0x0a, 0x13, 0x4b, 0x6e, 0x6f,
@@ -3490,7 +3490,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x77, 0x0a, 0x0f, 0x76, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x5f,
 	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x43,
 	0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61,
-	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33,
 	0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72,
 	0x65, 0x61, 0x74, 0x65, 0x2e, 0x56, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62,
 	0x61, 0x73, 0x65, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x0e,
@@ -3498,7 +3498,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x01, 0x0a, 0x13, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x67, 0x65, 0x6e,
 	0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x47, 0x2e, 0x72,
 	0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b,
+	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b,
 	0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61,
 	0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e, 0x65,
 	0x72, 0x61, 0x74, 0x6f, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01,
@@ -3506,7 +3506,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x61, 0x74, 0x6f, 0x72, 0x12, 0x81, 0x01, 0x0a, 0x04, 0x74, 0x61, 0x67, 0x73, 0x18, 0x05, 0x20,
 	0x03, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
+	0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x54, 0x61, 0x67, 0x73, 0x45, 0x6e,
 	0x74, 0x72, 0x79, 0x42, 0x2d, 0xba, 0x48, 0x2a, 0x9a, 0x01, 0x27, 0x10, 0x10, 0x2a, 0x23, 0x72,
 	0x21, 0x32, 0x1f, 0x5e, 0x28, 0x5b, 0x5c, 0x70, 0x7b, 0x4c, 0x7d, 0x5c, 0x70, 0x7b, 0x5a, 0x7d,
@@ -3514,26 +3514,26 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x29, 0x24, 0x52, 0x04, 0x74, 0x61, 0x67, 0x73, 0x12, 0x56, 0x0a, 0x07, 0x69, 0x6e, 0x64, 0x65,
 	0x78, 0x65, 0x72, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3c, 0x2e, 0x72, 0x65, 0x64, 0x70,
 	0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
+	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e,
 	0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x07, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72,
 	0x12, 0x5c, 0x0a, 0x09, 0x72, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x18, 0x07, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
+	0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65,
 	0x76, 0x65, 0x72, 0x52, 0x09, 0x72, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x12, 0x5f,
 	0x0a, 0x0a, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x08, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x3f, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70,
 	0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
+	0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
 	0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x52, 0x0a, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x1a,
 	0x87, 0x02, 0x0a, 0x0e, 0x56, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
 	0x73, 0x65, 0x12, 0x6a, 0x0a, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x4c, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x56, 0x65, 0x63, 0x74, 0x6f,
 	0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x50, 0x6f, 0x73, 0x74, 0x67, 0x72,
 	0x65, 0x73, 0x48, 0x00, 0x52, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x1a, 0x6f,
@@ -3550,7 +3550,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x12, 0x77, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x50, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70,
 	0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
+	0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
 	0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69,
 	0x6e, 0x67, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76,
 	0x69, 0x64, 0x65, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52,
@@ -3563,14 +3563,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x65, 0x72, 0x12, 0x71, 0x0a, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x57, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70,
 	0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
+	0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
 	0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69,
 	0x6e, 0x67, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76,
 	0x69, 0x64, 0x65, 0x72, 0x2e, 0x4f, 0x70, 0x65, 0x6e, 0x41, 0x49, 0x48, 0x00, 0x52, 0x06, 0x6f,
 	0x70, 0x65, 0x6e, 0x61, 0x69, 0x12, 0x71, 0x0a, 0x06, 0x63, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x57, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65,
 	0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50,
 	0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x48, 0x00,
@@ -3603,7 +3603,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x0a, 0x09, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x12, 0x63, 0x0a, 0x08, 0x72,
 	0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x47, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e,
 	0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65,
 	0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65,
 	0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x52, 0x08, 0x72, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72,
@@ -3612,7 +3612,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x12, 0x6c, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69,
 	0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x50, 0x2e, 0x72, 0x65, 0x64, 0x70,
 	0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
+	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e,
 	0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b,
 	0x65, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x52, 0x08, 0x70, 0x72, 0x6f,
@@ -3620,7 +3620,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x65, 0x72, 0x12, 0x71, 0x0a, 0x06, 0x63, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x57, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70,
 	0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
+	0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61,
 	0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76,
 	0x65, 0x72, 0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76,
 	0x69, 0x64, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x68, 0x65, 0x72, 0x65, 0x48, 0x00, 0x52, 0x06, 0x63,
@@ -3634,7 +3634,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x6f, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x48, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61,
 	0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
-	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
+	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x47,
 	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x08, 0x70,
@@ -3644,7 +3644,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x69, 0x0a, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x4f, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x2e, 0x47, 0x65, 0x6e, 0x65,
 	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e,
 	0x4f, 0x70, 0x65, 0x6e, 0x41, 0x49, 0x48, 0x00, 0x52, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69,
@@ -3664,14 +3664,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x5f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x43, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64,
 	0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55,
+	0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55,
 	0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x56, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61,
 	0x62, 0x61, 0x73, 0x65, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52,
 	0x0e, 0x76, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x12,
 	0x83, 0x01, 0x0a, 0x13, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x67, 0x65,
 	0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x47, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e,
 	0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64,
 	0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e,
 	0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01,
@@ -3679,7 +3679,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x72, 0x61, 0x74, 0x6f, 0x72, 0x12, 0x81, 0x01, 0x0a, 0x04, 0x74, 0x61, 0x67, 0x73, 0x18, 0x05,
 	0x20, 0x03, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x54, 0x61, 0x67, 0x73, 0x45,
 	0x6e, 0x74, 0x72, 0x79, 0x42, 0x2d, 0xba, 0x48, 0x2a, 0x9a, 0x01, 0x27, 0x10, 0x10, 0x2a, 0x23,
 	0x72, 0x21, 0x32, 0x1f, 0x5e, 0x28, 0x5b, 0x5c, 0x70, 0x7b, 0x4c, 0x7d, 0x5c, 0x70, 0x7b, 0x5a,
@@ -3687,26 +3687,26 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x2a, 0x29, 0x24, 0x52, 0x04, 0x74, 0x61, 0x67, 0x73, 0x12, 0x56, 0x0a, 0x07, 0x69, 0x6e, 0x64,
 	0x65, 0x78, 0x65, 0x72, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3c, 0x2e, 0x72, 0x65, 0x64,
 	0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c,
-	0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f,
+	0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f,
 	0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
 	0x2e, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x52, 0x07, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65,
 	0x72, 0x12, 0x5c, 0x0a, 0x09, 0x72, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x18, 0x07,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x3e, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69,
 	0x65, 0x76, 0x65, 0x72, 0x52, 0x09, 0x72, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x12,
 	0x5f, 0x0a, 0x0a, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x08, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x3f, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
+	0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61,
 	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0a, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e,
 	0x1a, 0xc4, 0x01, 0x0a, 0x0e, 0x56, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62,
 	0x61, 0x73, 0x65, 0x12, 0x6a, 0x0a, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x4c, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61,
 	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x56, 0x65, 0x63, 0x74,
 	0x6f, 0x72, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x50, 0x6f, 0x73, 0x74, 0x67,
 	0x72, 0x65, 0x73, 0x48, 0x00, 0x52, 0x08, 0x70, 0x6f, 0x73, 0x74, 0x67, 0x72, 0x65, 0x73, 0x1a,
@@ -3719,7 +3719,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x50, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
+	0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
 	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67,
 	0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x08, 0x70,
@@ -3727,14 +3727,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x69, 0x64, 0x65, 0x72, 0x12, 0x71, 0x0a, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x57, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d, 0x62, 0x65, 0x64,
 	0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x50, 0x72,
 	0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x4f, 0x70, 0x65, 0x6e, 0x41, 0x49, 0x48, 0x00, 0x52,
 	0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x12, 0x71, 0x0a, 0x06, 0x63, 0x6f, 0x68, 0x65, 0x72,
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x57, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e,
 	0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65,
-	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
 	0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x45, 0x6d,
 	0x62, 0x65, 0x64, 0x64, 0x69, 0x6e, 0x67, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x6f, 0x72,
 	0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x68, 0x65, 0x72, 0x65,
@@ -3767,7 +3767,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x65, 0x72, 0x12, 0x63, 0x0a, 0x08, 0x72, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x47, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69,
 	0x65, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x52, 0x08, 0x72,
 	0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x1a, 0xed, 0x02, 0x0a, 0x08, 0x52, 0x65, 0x72, 0x61,
@@ -3776,14 +3776,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x50, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
+	0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
 	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72,
 	0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b, 0x65, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x1a, 0xd8, 0x01, 0x0a,
 	0x08, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x71, 0x0a, 0x06, 0x63, 0x6f, 0x68,
 	0x65, 0x72, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x57, 0x2e, 0x72, 0x65, 0x64, 0x70,
 	0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
+	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e,
 	0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x72, 0x2e, 0x52, 0x65, 0x72, 0x61, 0x6e, 0x6b,
 	0x65, 0x72, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x68, 0x65,
@@ -3797,7 +3797,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x6f, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x48, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61,
 	0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
-	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
+	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x47,
 	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64,
 	0x65, 0x72, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x08, 0x70,
@@ -3805,7 +3805,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x69, 0x64, 0x65, 0x72, 0x12, 0x69, 0x0a, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x4f, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x50, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x2e, 0x4f,
 	0x70, 0x65, 0x6e, 0x41, 0x49, 0x48, 0x00, 0x52, 0x06, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x69, 0x1a,
@@ -3814,7 +3814,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x65, 0x79, 0x42, 0x11, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x05,
 	0xba, 0x48, 0x02, 0x08, 0x01, 0x3a, 0x53, 0xea, 0x41, 0x50, 0x0a, 0x2d, 0x72, 0x65, 0x64, 0x70,
 	0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61,
-	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x4b, 0x6e, 0x6f, 0x77,
+	0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2f, 0x4b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x2a, 0x0f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x73, 0x32, 0x0e, 0x6b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x22, 0x79, 0x0a, 0x1a, 0x43, 0x72,
@@ -3823,14 +3823,14 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x34, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
+	0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
 	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x0d, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x22, 0x74, 0x0a, 0x1b, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4b,
 	0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70,
 	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x55, 0x0a, 0x0e, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x72,
 	0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b,
+	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b,
 	0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x0d, 0x6b, 0x6e,
 	0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x22, 0x39, 0x0a, 0x17, 0x47,
 	0x65, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52,
@@ -3841,7 +3841,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x73, 0x65, 0x12, 0x55, 0x0a, 0x0e, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f,
 	0x62, 0x61, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x72, 0x65, 0x64,
 	0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c,
-	0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f,
+	0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f,
 	0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x0d, 0x6b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x22, 0xe9, 0x05, 0x0a, 0x19, 0x4c, 0x69,
 	0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x73,
@@ -3861,7 +3861,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x6e, 0x12, 0x59, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x41, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69,
 	0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
-	0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x68, 0x61, 0x33, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x46, 0x69,
 	0x6c, 0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x1a, 0xa6, 0x03, 0x0a,
 	0x06, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x8b, 0x01, 0x0a, 0x0d, 0x6e, 0x61, 0x6d, 0x65,
@@ -3876,7 +3876,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x74, 0x61, 0x69, 0x6e, 0x73, 0x12, 0xd4, 0x01, 0x0a, 0x04, 0x74, 0x61, 0x67, 0x73, 0x18, 0x02,
 	0x20, 0x03, 0x28, 0x0b, 0x32, 0x4b, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
 	0x2e, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2e, 0x54, 0x61, 0x67, 0x73, 0x45, 0x6e, 0x74, 0x72,
 	0x79, 0x42, 0x73, 0x92, 0x41, 0x43, 0x32, 0x41, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
@@ -3895,7 +3895,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x57, 0x0a, 0x0f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2e, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e,
 	0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x0e, 0x6b,
 	0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x73, 0x12, 0x26, 0x0a,
 	0x0f, 0x6e, 0x65, 0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e,
@@ -3907,7 +3907,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x52, 0x02, 0x69, 0x64, 0x12, 0x66, 0x0a, 0x0e, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x72,
 	0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b,
+	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4b,
 	0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x55, 0x70, 0x64, 0x61,
 	0x74, 0x65, 0x42, 0x09, 0xe0, 0x41, 0x02, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x0d, 0x6b,
 	0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x12, 0x3b, 0x0a, 0x0b,
@@ -3920,7 +3920,7 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x2e, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
+	0x61, 0x33, 0x2e, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
 	0x52, 0x0d, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x22,
 	0x3c, 0x0a, 0x1a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a,
@@ -3932,64 +3932,64 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0xcb, 0x01, 0x0a, 0x13, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
 	0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x12, 0x3b, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e,
 	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x3c, 0x2e, 0x72, 0x65, 0x64,
 	0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c,
-	0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x43, 0x72, 0x65,
+	0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x43, 0x72, 0x65,
 	0x61, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x39, 0x8a, 0xa6, 0x1d, 0x04, 0x08, 0x02,
 	0x10, 0x04, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x3a, 0x0e, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
 	0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x22, 0x19, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
-	0x68, 0x61, 0x31, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x2d, 0x62, 0x61,
+	0x68, 0x61, 0x33, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x2d, 0x62, 0x61,
 	0x73, 0x65, 0x73, 0x12, 0xb7, 0x01, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x12, 0x38, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61,
 	0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
-	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4b, 0x6e,
+	0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x47, 0x65, 0x74, 0x4b, 0x6e,
 	0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
 	0x73, 0x74, 0x1a, 0x39, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70,
 	0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
+	0x70, 0x68, 0x61, 0x33, 0x2e, 0x47, 0x65, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67,
 	0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e, 0x8a,
 	0xa6, 0x1d, 0x04, 0x08, 0x01, 0x10, 0x04, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x20, 0x12, 0x1e, 0x2f,
-	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x2d, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0xb8, 0x01,
 	0x0a, 0x12, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x73, 0x12, 0x3a, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c,
 	0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
 	0x1a, 0x3b, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x33, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x42, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
 	0xa6, 0x1d, 0x04, 0x08, 0x01, 0x10, 0x04, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f,
-	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x2d, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0xd0, 0x01, 0x0a, 0x13, 0x55, 0x70, 0x64,
 	0x61, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65,
 	0x12, 0x3b, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
+	0x61, 0x33, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x3c, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e,
 	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3e, 0x8a, 0xa6, 0x1d,
 	0x04, 0x08, 0x02, 0x10, 0x04, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x3a, 0x0e, 0x6b, 0x6e, 0x6f,
 	0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x5f, 0x62, 0x61, 0x73, 0x65, 0x1a, 0x1e, 0x2f, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x2d, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0xc0, 0x01, 0x0a, 0x13,
 	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42,
 	0x61, 0x73, 0x65, 0x12, 0x3b, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77,
+	0x6c, 0x70, 0x68, 0x61, 0x33, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77,
 	0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
 	0x1a, 0x3c, 0x2e, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e,
 	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
+	0x61, 0x33, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64,
 	0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e,
 	0x8a, 0xa6, 0x1d, 0x04, 0x08, 0x02, 0x10, 0x04, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x20, 0x2a, 0x1e,
-	0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
+	0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x2f, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65,
 	0x64, 0x67, 0x65, 0x2d, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x1a, 0x67,
 	0x92, 0x41, 0x64, 0x0a, 0x19, 0x52, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x20, 0x41, 0x49,
 	0x20, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x12, 0x47,
@@ -3999,169 +3999,169 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = []byte{
 	0x20, 0x28, 0x52, 0x41, 0x47, 0x29, 0x20, 0x6b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65,
 	0x20, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x42, 0xc1, 0x02, 0x0a, 0x23, 0x63, 0x6f, 0x6d, 0x2e,
 	0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x42,
 	0x12, 0x4b, 0x6e, 0x6f, 0x77, 0x6c, 0x65, 0x64, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x50, 0x72,
 	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x67, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
 	0x6d, 0x2f, 0x72, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2d, 0x64, 0x61, 0x74, 0x61, 0x2f,
 	0x63, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x65, 0x2f, 0x62, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x2f,
 	0x70, 0x6b, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x72, 0x65, 0x64,
 	0x70, 0x61, 0x6e, 0x64, 0x61, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c,
-	0x61, 0x6e, 0x65, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x64, 0x61, 0x74,
-	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02,
+	0x61, 0x6e, 0x65, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x3b, 0x64, 0x61, 0x74,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0xa2, 0x02,
 	0x03, 0x52, 0x41, 0x44, 0xaa, 0x02, 0x1f, 0x52, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x2e,
 	0x41, 0x70, 0x69, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x56, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x1f, 0x52, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0xca, 0x02, 0x1f, 0x52, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64,
 	0x61, 0x5c, 0x41, 0x70, 0x69, 0x5c, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x5c,
-	0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x2b, 0x52, 0x65, 0x64, 0x70, 0x61,
+	0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0xe2, 0x02, 0x2b, 0x52, 0x65, 0x64, 0x70, 0x61,
 	0x6e, 0x64, 0x61, 0x5c, 0x41, 0x70, 0x69, 0x5c, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
-	0x65, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
+	0x65, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
 	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x22, 0x52, 0x65, 0x64, 0x70, 0x61, 0x6e, 0x64,
 	0x61, 0x3a, 0x3a, 0x41, 0x70, 0x69, 0x3a, 0x3a, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e,
-	0x65, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x65, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x33, 0x62, 0x06, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x33,
 }
 
 var (
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescOnce sync.Once
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescData = file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescOnce sync.Once
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescData = file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDesc
 )
 
-func file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescGZIP() []byte {
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescOnce.Do(func() {
-		file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescData = protoimpl.X.CompressGZIP(file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescData)
+func file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescGZIP() []byte {
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescOnce.Do(func() {
+		file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescData = protoimpl.X.CompressGZIP(file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescData)
 	})
-	return file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDescData
+	return file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDescData
 }
 
-var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
-var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_goTypes = []any{
-	(*KnowledgeBase)(nil),                                    // 0: redpanda.api.dataplane.v1alpha1.KnowledgeBase
-	(*KnowledgeBaseCreate)(nil),                              // 1: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate
-	(*KnowledgeBaseUpdate)(nil),                              // 2: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate
-	(*CreateKnowledgeBaseRequest)(nil),                       // 3: redpanda.api.dataplane.v1alpha1.CreateKnowledgeBaseRequest
-	(*CreateKnowledgeBaseResponse)(nil),                      // 4: redpanda.api.dataplane.v1alpha1.CreateKnowledgeBaseResponse
-	(*GetKnowledgeBaseRequest)(nil),                          // 5: redpanda.api.dataplane.v1alpha1.GetKnowledgeBaseRequest
-	(*GetKnowledgeBaseResponse)(nil),                         // 6: redpanda.api.dataplane.v1alpha1.GetKnowledgeBaseResponse
-	(*ListKnowledgeBasesRequest)(nil),                        // 7: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest
-	(*ListKnowledgeBasesResponse)(nil),                       // 8: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesResponse
-	(*UpdateKnowledgeBaseRequest)(nil),                       // 9: redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseRequest
-	(*UpdateKnowledgeBaseResponse)(nil),                      // 10: redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseResponse
-	(*DeleteKnowledgeBaseRequest)(nil),                       // 11: redpanda.api.dataplane.v1alpha1.DeleteKnowledgeBaseRequest
-	(*DeleteKnowledgeBaseResponse)(nil),                      // 12: redpanda.api.dataplane.v1alpha1.DeleteKnowledgeBaseResponse
-	(*KnowledgeBase_VectorDatabase)(nil),                     // 13: redpanda.api.dataplane.v1alpha1.KnowledgeBase.VectorDatabase
-	(*KnowledgeBase_EmbeddingGenerator)(nil),                 // 14: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator
-	nil,                                                      // 15: redpanda.api.dataplane.v1alpha1.KnowledgeBase.TagsEntry
-	(*KnowledgeBase_Indexer)(nil),                            // 16: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Indexer
-	(*KnowledgeBase_Retriever)(nil),                          // 17: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever
-	(*KnowledgeBase_Generation)(nil),                         // 18: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation
-	(*KnowledgeBase_VectorDatabase_Postgres)(nil),            // 19: redpanda.api.dataplane.v1alpha1.KnowledgeBase.VectorDatabase.Postgres
-	(*KnowledgeBase_EmbeddingGenerator_Provider)(nil),        // 20: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider
-	(*KnowledgeBase_EmbeddingGenerator_Provider_OpenAI)(nil), // 21: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider.OpenAI
-	(*KnowledgeBase_EmbeddingGenerator_Provider_Cohere)(nil), // 22: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider.Cohere
-	(*KnowledgeBase_Retriever_Reranker)(nil),                 // 23: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker
-	(*KnowledgeBase_Retriever_Reranker_Provider)(nil),        // 24: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker.Provider
-	(*KnowledgeBase_Retriever_Reranker_Provider_Cohere)(nil), // 25: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker.Provider.Cohere
-	(*KnowledgeBase_Generation_Provider)(nil),                // 26: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation.Provider
-	(*KnowledgeBase_Generation_Provider_OpenAI)(nil),         // 27: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation.Provider.OpenAI
-	(*KnowledgeBaseCreate_VectorDatabase)(nil),               // 28: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.VectorDatabase
-	(*KnowledgeBaseCreate_EmbeddingGenerator)(nil),           // 29: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator
-	nil,                                    // 30: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.TagsEntry
-	(*KnowledgeBaseCreate_Indexer)(nil),    // 31: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Indexer
-	(*KnowledgeBaseCreate_Retriever)(nil),  // 32: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever
-	(*KnowledgeBaseCreate_Generation)(nil), // 33: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation
-	(*KnowledgeBaseCreate_VectorDatabase_Postgres)(nil),            // 34: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.VectorDatabase.Postgres
-	(*KnowledgeBaseCreate_EmbeddingGenerator_Provider)(nil),        // 35: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider
-	(*KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI)(nil), // 36: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider.OpenAI
-	(*KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere)(nil), // 37: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider.Cohere
-	(*KnowledgeBaseCreate_Retriever_Reranker)(nil),                 // 38: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker
-	(*KnowledgeBaseCreate_Retriever_Reranker_Provider)(nil),        // 39: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker.Provider
-	(*KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere)(nil), // 40: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker.Provider.Cohere
-	(*KnowledgeBaseCreate_Generation_Provider)(nil),                // 41: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation.Provider
-	(*KnowledgeBaseCreate_Generation_Provider_OpenAI)(nil),         // 42: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation.Provider.OpenAI
-	(*KnowledgeBaseUpdate_VectorDatabase)(nil),                     // 43: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.VectorDatabase
-	(*KnowledgeBaseUpdate_EmbeddingGenerator)(nil),                 // 44: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator
-	nil,                                    // 45: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.TagsEntry
-	(*KnowledgeBaseUpdate_Indexer)(nil),    // 46: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Indexer
-	(*KnowledgeBaseUpdate_Retriever)(nil),  // 47: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever
-	(*KnowledgeBaseUpdate_Generation)(nil), // 48: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation
-	(*KnowledgeBaseUpdate_VectorDatabase_Postgres)(nil),            // 49: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.VectorDatabase.Postgres
-	(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider)(nil),        // 50: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider
-	(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI)(nil), // 51: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.OpenAI
-	(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere)(nil), // 52: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.Cohere
-	(*KnowledgeBaseUpdate_Retriever_Reranker)(nil),                 // 53: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker
-	(*KnowledgeBaseUpdate_Retriever_Reranker_Provider)(nil),        // 54: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker.Provider
-	(*KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere)(nil), // 55: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker.Provider.Cohere
-	(*KnowledgeBaseUpdate_Generation_Provider)(nil),                // 56: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation.Provider
-	(*KnowledgeBaseUpdate_Generation_Provider_OpenAI)(nil),         // 57: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation.Provider.OpenAI
-	(*ListKnowledgeBasesRequest_Filter)(nil),                       // 58: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest.Filter
-	nil,                                                            // 59: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest.Filter.TagsEntry
+var file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
+var file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_goTypes = []any{
+	(*KnowledgeBase)(nil),                                    // 0: redpanda.api.dataplane.v1alpha3.KnowledgeBase
+	(*KnowledgeBaseCreate)(nil),                              // 1: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate
+	(*KnowledgeBaseUpdate)(nil),                              // 2: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate
+	(*CreateKnowledgeBaseRequest)(nil),                       // 3: redpanda.api.dataplane.v1alpha3.CreateKnowledgeBaseRequest
+	(*CreateKnowledgeBaseResponse)(nil),                      // 4: redpanda.api.dataplane.v1alpha3.CreateKnowledgeBaseResponse
+	(*GetKnowledgeBaseRequest)(nil),                          // 5: redpanda.api.dataplane.v1alpha3.GetKnowledgeBaseRequest
+	(*GetKnowledgeBaseResponse)(nil),                         // 6: redpanda.api.dataplane.v1alpha3.GetKnowledgeBaseResponse
+	(*ListKnowledgeBasesRequest)(nil),                        // 7: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest
+	(*ListKnowledgeBasesResponse)(nil),                       // 8: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesResponse
+	(*UpdateKnowledgeBaseRequest)(nil),                       // 9: redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseRequest
+	(*UpdateKnowledgeBaseResponse)(nil),                      // 10: redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseResponse
+	(*DeleteKnowledgeBaseRequest)(nil),                       // 11: redpanda.api.dataplane.v1alpha3.DeleteKnowledgeBaseRequest
+	(*DeleteKnowledgeBaseResponse)(nil),                      // 12: redpanda.api.dataplane.v1alpha3.DeleteKnowledgeBaseResponse
+	(*KnowledgeBase_VectorDatabase)(nil),                     // 13: redpanda.api.dataplane.v1alpha3.KnowledgeBase.VectorDatabase
+	(*KnowledgeBase_EmbeddingGenerator)(nil),                 // 14: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator
+	nil,                                                      // 15: redpanda.api.dataplane.v1alpha3.KnowledgeBase.TagsEntry
+	(*KnowledgeBase_Indexer)(nil),                            // 16: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Indexer
+	(*KnowledgeBase_Retriever)(nil),                          // 17: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever
+	(*KnowledgeBase_Generation)(nil),                         // 18: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation
+	(*KnowledgeBase_VectorDatabase_Postgres)(nil),            // 19: redpanda.api.dataplane.v1alpha3.KnowledgeBase.VectorDatabase.Postgres
+	(*KnowledgeBase_EmbeddingGenerator_Provider)(nil),        // 20: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider
+	(*KnowledgeBase_EmbeddingGenerator_Provider_OpenAI)(nil), // 21: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider.OpenAI
+	(*KnowledgeBase_EmbeddingGenerator_Provider_Cohere)(nil), // 22: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider.Cohere
+	(*KnowledgeBase_Retriever_Reranker)(nil),                 // 23: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker
+	(*KnowledgeBase_Retriever_Reranker_Provider)(nil),        // 24: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker.Provider
+	(*KnowledgeBase_Retriever_Reranker_Provider_Cohere)(nil), // 25: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker.Provider.Cohere
+	(*KnowledgeBase_Generation_Provider)(nil),                // 26: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation.Provider
+	(*KnowledgeBase_Generation_Provider_OpenAI)(nil),         // 27: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation.Provider.OpenAI
+	(*KnowledgeBaseCreate_VectorDatabase)(nil),               // 28: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.VectorDatabase
+	(*KnowledgeBaseCreate_EmbeddingGenerator)(nil),           // 29: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator
+	nil,                                    // 30: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.TagsEntry
+	(*KnowledgeBaseCreate_Indexer)(nil),    // 31: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Indexer
+	(*KnowledgeBaseCreate_Retriever)(nil),  // 32: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever
+	(*KnowledgeBaseCreate_Generation)(nil), // 33: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation
+	(*KnowledgeBaseCreate_VectorDatabase_Postgres)(nil),            // 34: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.VectorDatabase.Postgres
+	(*KnowledgeBaseCreate_EmbeddingGenerator_Provider)(nil),        // 35: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider
+	(*KnowledgeBaseCreate_EmbeddingGenerator_Provider_OpenAI)(nil), // 36: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider.OpenAI
+	(*KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere)(nil), // 37: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider.Cohere
+	(*KnowledgeBaseCreate_Retriever_Reranker)(nil),                 // 38: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker
+	(*KnowledgeBaseCreate_Retriever_Reranker_Provider)(nil),        // 39: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker.Provider
+	(*KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere)(nil), // 40: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker.Provider.Cohere
+	(*KnowledgeBaseCreate_Generation_Provider)(nil),                // 41: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation.Provider
+	(*KnowledgeBaseCreate_Generation_Provider_OpenAI)(nil),         // 42: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation.Provider.OpenAI
+	(*KnowledgeBaseUpdate_VectorDatabase)(nil),                     // 43: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.VectorDatabase
+	(*KnowledgeBaseUpdate_EmbeddingGenerator)(nil),                 // 44: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator
+	nil,                                    // 45: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.TagsEntry
+	(*KnowledgeBaseUpdate_Indexer)(nil),    // 46: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Indexer
+	(*KnowledgeBaseUpdate_Retriever)(nil),  // 47: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever
+	(*KnowledgeBaseUpdate_Generation)(nil), // 48: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation
+	(*KnowledgeBaseUpdate_VectorDatabase_Postgres)(nil),            // 49: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.VectorDatabase.Postgres
+	(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider)(nil),        // 50: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider
+	(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_OpenAI)(nil), // 51: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.OpenAI
+	(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere)(nil), // 52: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.Cohere
+	(*KnowledgeBaseUpdate_Retriever_Reranker)(nil),                 // 53: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker
+	(*KnowledgeBaseUpdate_Retriever_Reranker_Provider)(nil),        // 54: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker.Provider
+	(*KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere)(nil), // 55: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker.Provider.Cohere
+	(*KnowledgeBaseUpdate_Generation_Provider)(nil),                // 56: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation.Provider
+	(*KnowledgeBaseUpdate_Generation_Provider_OpenAI)(nil),         // 57: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation.Provider.OpenAI
+	(*ListKnowledgeBasesRequest_Filter)(nil),                       // 58: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest.Filter
+	nil,                                                            // 59: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest.Filter.TagsEntry
 	(*fieldmaskpb.FieldMask)(nil),                                  // 60: google.protobuf.FieldMask
 }
-var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_depIdxs = []int32{
-	13, // 0: redpanda.api.dataplane.v1alpha1.KnowledgeBase.vector_database:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.VectorDatabase
-	14, // 1: redpanda.api.dataplane.v1alpha1.KnowledgeBase.embedding_generator:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator
-	15, // 2: redpanda.api.dataplane.v1alpha1.KnowledgeBase.tags:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.TagsEntry
-	16, // 3: redpanda.api.dataplane.v1alpha1.KnowledgeBase.indexer:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Indexer
-	17, // 4: redpanda.api.dataplane.v1alpha1.KnowledgeBase.retriever:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever
-	18, // 5: redpanda.api.dataplane.v1alpha1.KnowledgeBase.generation:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation
-	28, // 6: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.vector_database:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.VectorDatabase
-	29, // 7: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.embedding_generator:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator
-	30, // 8: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.tags:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.TagsEntry
-	31, // 9: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.indexer:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Indexer
-	32, // 10: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.retriever:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever
-	33, // 11: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.generation:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation
-	43, // 12: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.vector_database:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.VectorDatabase
-	44, // 13: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.embedding_generator:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator
-	45, // 14: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.tags:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.TagsEntry
-	46, // 15: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.indexer:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Indexer
-	47, // 16: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.retriever:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever
-	48, // 17: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.generation:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation
-	1,  // 18: redpanda.api.dataplane.v1alpha1.CreateKnowledgeBaseRequest.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate
-	0,  // 19: redpanda.api.dataplane.v1alpha1.CreateKnowledgeBaseResponse.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase
-	0,  // 20: redpanda.api.dataplane.v1alpha1.GetKnowledgeBaseResponse.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase
-	58, // 21: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest.filter:type_name -> redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest.Filter
-	0,  // 22: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesResponse.knowledge_bases:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase
-	2,  // 23: redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseRequest.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate
-	60, // 24: redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	0,  // 25: redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseResponse.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase
-	19, // 26: redpanda.api.dataplane.v1alpha1.KnowledgeBase.VectorDatabase.postgres:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.VectorDatabase.Postgres
-	20, // 27: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider
-	23, // 28: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.reranker:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker
-	26, // 29: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation.Provider
-	21, // 30: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider.OpenAI
-	22, // 31: redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.EmbeddingGenerator.Provider.Cohere
-	24, // 32: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker.Provider
-	25, // 33: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Retriever.Reranker.Provider.Cohere
-	27, // 34: redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBase.Generation.Provider.OpenAI
-	34, // 35: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.VectorDatabase.postgres:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.VectorDatabase.Postgres
-	35, // 36: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider
-	38, // 37: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.reranker:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker
-	41, // 38: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation.Provider
-	36, // 39: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider.OpenAI
-	37, // 40: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.EmbeddingGenerator.Provider.Cohere
-	39, // 41: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker.Provider
-	40, // 42: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Retriever.Reranker.Provider.Cohere
-	42, // 43: redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseCreate.Generation.Provider.OpenAI
-	49, // 44: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.VectorDatabase.postgres:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.VectorDatabase.Postgres
-	50, // 45: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider
-	53, // 46: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.reranker:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker
-	56, // 47: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation.Provider
-	51, // 48: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.OpenAI
-	52, // 49: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.Cohere
-	54, // 50: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker.provider:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker.Provider
-	55, // 51: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Retriever.Reranker.Provider.Cohere
-	57, // 52: redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha1.KnowledgeBaseUpdate.Generation.Provider.OpenAI
-	59, // 53: redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest.Filter.tags:type_name -> redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest.Filter.TagsEntry
-	3,  // 54: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.CreateKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha1.CreateKnowledgeBaseRequest
-	5,  // 55: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.GetKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha1.GetKnowledgeBaseRequest
-	7,  // 56: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.ListKnowledgeBases:input_type -> redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesRequest
-	9,  // 57: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.UpdateKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseRequest
-	11, // 58: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.DeleteKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha1.DeleteKnowledgeBaseRequest
-	4,  // 59: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.CreateKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha1.CreateKnowledgeBaseResponse
-	6,  // 60: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.GetKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha1.GetKnowledgeBaseResponse
-	8,  // 61: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.ListKnowledgeBases:output_type -> redpanda.api.dataplane.v1alpha1.ListKnowledgeBasesResponse
-	10, // 62: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.UpdateKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha1.UpdateKnowledgeBaseResponse
-	12, // 63: redpanda.api.dataplane.v1alpha1.KnowledgeBaseService.DeleteKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha1.DeleteKnowledgeBaseResponse
+var file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_depIdxs = []int32{
+	13, // 0: redpanda.api.dataplane.v1alpha3.KnowledgeBase.vector_database:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.VectorDatabase
+	14, // 1: redpanda.api.dataplane.v1alpha3.KnowledgeBase.embedding_generator:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator
+	15, // 2: redpanda.api.dataplane.v1alpha3.KnowledgeBase.tags:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.TagsEntry
+	16, // 3: redpanda.api.dataplane.v1alpha3.KnowledgeBase.indexer:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Indexer
+	17, // 4: redpanda.api.dataplane.v1alpha3.KnowledgeBase.retriever:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever
+	18, // 5: redpanda.api.dataplane.v1alpha3.KnowledgeBase.generation:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation
+	28, // 6: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.vector_database:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.VectorDatabase
+	29, // 7: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.embedding_generator:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator
+	30, // 8: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.tags:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.TagsEntry
+	31, // 9: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.indexer:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Indexer
+	32, // 10: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.retriever:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever
+	33, // 11: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.generation:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation
+	43, // 12: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.vector_database:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.VectorDatabase
+	44, // 13: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.embedding_generator:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator
+	45, // 14: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.tags:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.TagsEntry
+	46, // 15: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.indexer:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Indexer
+	47, // 16: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.retriever:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever
+	48, // 17: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.generation:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation
+	1,  // 18: redpanda.api.dataplane.v1alpha3.CreateKnowledgeBaseRequest.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate
+	0,  // 19: redpanda.api.dataplane.v1alpha3.CreateKnowledgeBaseResponse.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase
+	0,  // 20: redpanda.api.dataplane.v1alpha3.GetKnowledgeBaseResponse.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase
+	58, // 21: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest.filter:type_name -> redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest.Filter
+	0,  // 22: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesResponse.knowledge_bases:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase
+	2,  // 23: redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseRequest.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate
+	60, // 24: redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	0,  // 25: redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseResponse.knowledge_base:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase
+	19, // 26: redpanda.api.dataplane.v1alpha3.KnowledgeBase.VectorDatabase.postgres:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.VectorDatabase.Postgres
+	20, // 27: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider
+	23, // 28: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.reranker:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker
+	26, // 29: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation.Provider
+	21, // 30: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider.OpenAI
+	22, // 31: redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.EmbeddingGenerator.Provider.Cohere
+	24, // 32: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker.Provider
+	25, // 33: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Retriever.Reranker.Provider.Cohere
+	27, // 34: redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBase.Generation.Provider.OpenAI
+	34, // 35: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.VectorDatabase.postgres:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.VectorDatabase.Postgres
+	35, // 36: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider
+	38, // 37: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.reranker:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker
+	41, // 38: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation.Provider
+	36, // 39: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider.OpenAI
+	37, // 40: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.EmbeddingGenerator.Provider.Cohere
+	39, // 41: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker.Provider
+	40, // 42: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Retriever.Reranker.Provider.Cohere
+	42, // 43: redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseCreate.Generation.Provider.OpenAI
+	49, // 44: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.VectorDatabase.postgres:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.VectorDatabase.Postgres
+	50, // 45: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider
+	53, // 46: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.reranker:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker
+	56, // 47: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation.Provider
+	51, // 48: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.OpenAI
+	52, // 49: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.EmbeddingGenerator.Provider.Cohere
+	54, // 50: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker.provider:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker.Provider
+	55, // 51: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker.Provider.cohere:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Retriever.Reranker.Provider.Cohere
+	57, // 52: redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation.Provider.openai:type_name -> redpanda.api.dataplane.v1alpha3.KnowledgeBaseUpdate.Generation.Provider.OpenAI
+	59, // 53: redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest.Filter.tags:type_name -> redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest.Filter.TagsEntry
+	3,  // 54: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.CreateKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha3.CreateKnowledgeBaseRequest
+	5,  // 55: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.GetKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha3.GetKnowledgeBaseRequest
+	7,  // 56: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.ListKnowledgeBases:input_type -> redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesRequest
+	9,  // 57: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.UpdateKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseRequest
+	11, // 58: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.DeleteKnowledgeBase:input_type -> redpanda.api.dataplane.v1alpha3.DeleteKnowledgeBaseRequest
+	4,  // 59: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.CreateKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha3.CreateKnowledgeBaseResponse
+	6,  // 60: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.GetKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha3.GetKnowledgeBaseResponse
+	8,  // 61: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.ListKnowledgeBases:output_type -> redpanda.api.dataplane.v1alpha3.ListKnowledgeBasesResponse
+	10, // 62: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.UpdateKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha3.UpdateKnowledgeBaseResponse
+	12, // 63: redpanda.api.dataplane.v1alpha3.KnowledgeBaseService.DeleteKnowledgeBase:output_type -> redpanda.api.dataplane.v1alpha3.DeleteKnowledgeBaseResponse
 	59, // [59:64] is the sub-list for method output_type
 	54, // [54:59] is the sub-list for method input_type
 	54, // [54:54] is the sub-list for extension type_name
@@ -4169,66 +4169,66 @@ var file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_depIdxs = []int32{
 	0,  // [0:54] is the sub-list for field type_name
 }
 
-func init() { file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_init() }
-func file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_init() {
-	if File_redpanda_api_dataplane_v1alpha1_knowledge_base_proto != nil {
+func init() { file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_init() }
+func file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_init() {
+	if File_redpanda_api_dataplane_v1alpha3_knowledge_base_proto != nil {
 		return
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[13].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[13].OneofWrappers = []any{
 		(*KnowledgeBase_VectorDatabase_Postgres_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[20].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[20].OneofWrappers = []any{
 		(*KnowledgeBase_EmbeddingGenerator_Provider_Openai)(nil),
 		(*KnowledgeBase_EmbeddingGenerator_Provider_Cohere_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[24].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[24].OneofWrappers = []any{
 		(*KnowledgeBase_Retriever_Reranker_Provider_Cohere_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[26].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[26].OneofWrappers = []any{
 		(*KnowledgeBase_Generation_Provider_Openai)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[28].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[28].OneofWrappers = []any{
 		(*KnowledgeBaseCreate_VectorDatabase_Postgres_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[35].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[35].OneofWrappers = []any{
 		(*KnowledgeBaseCreate_EmbeddingGenerator_Provider_Openai)(nil),
 		(*KnowledgeBaseCreate_EmbeddingGenerator_Provider_Cohere_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[39].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[39].OneofWrappers = []any{
 		(*KnowledgeBaseCreate_Retriever_Reranker_Provider_Cohere_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[41].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[41].OneofWrappers = []any{
 		(*KnowledgeBaseCreate_Generation_Provider_Openai)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[43].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[43].OneofWrappers = []any{
 		(*KnowledgeBaseUpdate_VectorDatabase_Postgres_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[50].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[50].OneofWrappers = []any{
 		(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Openai)(nil),
 		(*KnowledgeBaseUpdate_EmbeddingGenerator_Provider_Cohere_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[54].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[54].OneofWrappers = []any{
 		(*KnowledgeBaseUpdate_Retriever_Reranker_Provider_Cohere_)(nil),
 	}
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes[56].OneofWrappers = []any{
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes[56].OneofWrappers = []any{
 		(*KnowledgeBaseUpdate_Generation_Provider_Openai)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc,
+			RawDescriptor: file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   60,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_goTypes,
-		DependencyIndexes: file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_depIdxs,
-		MessageInfos:      file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_msgTypes,
+		GoTypes:           file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_goTypes,
+		DependencyIndexes: file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_depIdxs,
+		MessageInfos:      file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_msgTypes,
 	}.Build()
-	File_redpanda_api_dataplane_v1alpha1_knowledge_base_proto = out.File
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_rawDesc = nil
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_goTypes = nil
-	file_redpanda_api_dataplane_v1alpha1_knowledge_base_proto_depIdxs = nil
+	File_redpanda_api_dataplane_v1alpha3_knowledge_base_proto = out.File
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_rawDesc = nil
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_goTypes = nil
+	file_redpanda_api_dataplane_v1alpha3_knowledge_base_proto_depIdxs = nil
 }

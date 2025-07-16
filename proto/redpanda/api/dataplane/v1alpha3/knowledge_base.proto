@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package redpanda.api.dataplane.v1alpha1;
+package redpanda.api.dataplane.v1alpha3;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
@@ -12,7 +12,7 @@ import "redpanda/api/auth/v1/authorization.proto";
 
 message KnowledgeBase {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1alpha1/KnowledgeBase"
+    type: "redpanda.api.dataplane.v1alpha3/KnowledgeBase"
     singular: "knowledge_base"
     plural: "knowledge_bases"
   };
@@ -330,7 +330,7 @@ message KnowledgeBaseCreate {
 
 message KnowledgeBaseUpdate {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1alpha1/KnowledgeBase"
+    type: "redpanda.api.dataplane.v1alpha3/KnowledgeBase"
     singular: "knowledge_base"
     plural: "knowledge_bases"
   };
@@ -564,7 +564,7 @@ service KnowledgeBaseService {
 
   rpc CreateKnowledgeBase(CreateKnowledgeBaseRequest) returns (CreateKnowledgeBaseResponse) {
     option (google.api.http) = {
-      post: "/v1alpha1/knowledge-bases"
+      post: "/v1alpha3/knowledge-bases"
       body: "knowledge_base"
     };
     option (redpanda.api.auth.v1.authorization) = {
@@ -574,7 +574,7 @@ service KnowledgeBaseService {
   }
 
   rpc GetKnowledgeBase(GetKnowledgeBaseRequest) returns (GetKnowledgeBaseResponse) {
-    option (google.api.http) = {get: "/v1alpha1/knowledge-bases/{id}"};
+    option (google.api.http) = {get: "/v1alpha3/knowledge-bases/{id}"};
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
@@ -582,7 +582,7 @@ service KnowledgeBaseService {
   }
 
   rpc ListKnowledgeBases(ListKnowledgeBasesRequest) returns (ListKnowledgeBasesResponse) {
-    option (google.api.http) = {get: "/v1alpha1/knowledge-bases"};
+    option (google.api.http) = {get: "/v1alpha3/knowledge-bases"};
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
       api: API_REDPANDA_CONNECT
@@ -591,7 +591,7 @@ service KnowledgeBaseService {
 
   rpc UpdateKnowledgeBase(UpdateKnowledgeBaseRequest) returns (UpdateKnowledgeBaseResponse) {
     option (google.api.http) = {
-      put: "/v1alpha1/knowledge-bases/{id}"
+      put: "/v1alpha3/knowledge-bases/{id}"
       body: "knowledge_base"
     };
     option (redpanda.api.auth.v1.authorization) = {
@@ -601,7 +601,7 @@ service KnowledgeBaseService {
   }
 
   rpc DeleteKnowledgeBase(DeleteKnowledgeBaseRequest) returns (DeleteKnowledgeBaseResponse) {
-    option (google.api.http) = {delete: "/v1alpha1/knowledge-bases/{id}"};
+    option (google.api.http) = {delete: "/v1alpha3/knowledge-bases/{id}"};
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
       api: API_REDPANDA_CONNECT

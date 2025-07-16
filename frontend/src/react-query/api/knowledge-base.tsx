@@ -6,14 +6,14 @@ import {
   type ListKnowledgeBasesRequest,
   ListKnowledgeBasesRequestSchema,
   type ListKnowledgeBasesResponse,
-} from 'protogen/redpanda/api/dataplane/v1alpha1/knowledge_base_pb';
+} from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   createKnowledgeBase,
   deleteKnowledgeBase,
   getKnowledgeBase,
   listKnowledgeBases,
   updateKnowledgeBase,
-} from 'protogen/redpanda/api/dataplane/v1alpha1/knowledge_base-KnowledgeBaseService_connectquery';
+} from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base-KnowledgeBaseService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
