@@ -2,6 +2,9 @@ module github.com/redpanda-data/console/backend
 
 go 1.24.1
 
+// Use fork until https://github.com/twmb/franz-go/pull/1062 is merged and released.
+replace github.com/twmb/franz-go/pkg/sr v1.4.0 => github.com/weeco/franz-go/pkg/sr v0.0.0-20250716104819-91f6bce0597a
+
 toolchain go1.24.4
 
 require (
