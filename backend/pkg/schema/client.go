@@ -45,7 +45,10 @@ const mainProtoFilename = "__console_tmp.proto"
 // utilizing in-memory caches to minimize redundant fetches and compilations.
 type CachedClient struct {
 	schemaClientFactory schema.ClientFactory
-	cacheNamespace      func(context.Context) (string, error)
+	// cacheNamespace returns a unique tenant identifier for resource cache isolation.
+	// Used to generate cache keys like "{namespace}/avro-parsed-schemas/ids/{id}" for
+	// multi-tenant environments where compiled schemas must be isolated per tenant.
+	cacheNamespace func(context.Context) (string, error)
 
 	standardImportsResolver func(protocompile.Resolver) protocompile.Resolver
 
@@ -54,13 +57,15 @@ type CachedClient struct {
 
 	avroSchemaCache  *cache.Cache[string, avro.Schema]
 	protoSchemaCache *cache.Cache[string, linker.Files]
+	jsonSchemaCache  *cache.Cache[string, *jsonschema.Schema]
 }
 
 // Client defines the interface for a schema client implementation.
 type Client interface {
 	AvroSchemaByID(ctx context.Context, id int) (avro.Schema, error)
 	ProtoFilesByID(ctx context.Context, id int) (linker.Files, string, error)
-	ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema, schemaCache *avro.SchemaCache) (avro.Schema, error)
+	JSONSchemaByID(ctx context.Context, id int) (*jsonschema.Schema, error)
+	ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema) (avro.Schema, error)
 	ParseJSONSchema(ctx context.Context, sch sr.Schema) (*jsonschema.Schema, error)
 	SchemaByID(ctx context.Context, id int) (sr.Schema, error)
 	SchemaByVersion(ctx context.Context, subject string, id int) (sr.SubjectSchema, error)
@@ -71,7 +76,11 @@ var _ Client = (*CachedClient)(nil)
 
 // NewCachedClient initializes and returns a new CachedClient instance with the
 // provided schema client factory and cache namespace function. It sets up
-// caching with specific settings.
+// caching with specific settings for compiled schema resources.
+//
+// The cacheNamespaceFn should return a unique tenant identifier (e.g., virtual cluster ID,
+// tenant ID) for multi-tenant resource isolation. This ensures compiled schemas are
+// cached separately per tenant, preventing cross-tenant data leakage.
 func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn func(context.Context) (string, error)) (*CachedClient, error) {
 	cacheSettings := []cache.Opt{
 		cache.MaxAge(30 * time.Second),
@@ -94,6 +103,7 @@ func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn 
 
 		avroSchemaCache:  cache.New[string, avro.Schema](cacheSettings...),
 		protoSchemaCache: cache.New[string, linker.Files](cacheSettings...),
+		jsonSchemaCache:  cache.New[string, *jsonschema.Schema](cacheSettings...),
 	}, nil
 }
 
@@ -184,7 +194,9 @@ func (c *CachedClient) AvroSchemaByID(ctx context.Context, id int) (avro.Schema,
 			return nil, fmt.Errorf("failed to fetch schema from schema registry: %w", err)
 		}
 
-		avroSch, err := c.ParseAvroSchemaWithReferences(ctx, sch, avro.DefaultSchemaCache)
+		// Use temporary cache for reference resolution - prevents cross-tenant leakage
+		// The temporary cache is discarded after parsing, providing isolation
+		avroSch, err := c.ParseAvroSchemaWithReferences(ctx, sch)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse avro schema: %w", err)
 		}
@@ -221,6 +233,34 @@ func (c *CachedClient) ProtoFilesByID(ctx context.Context, id int) (linker.Files
 	})
 
 	return compiledProtoFiles, mainProtoFilename, err
+}
+
+// JSONSchemaByID retrieves and compiles a JSON schema by its ID, using a cached
+// value if available. If the schema isn't cached, it fetches the schema, compiles
+// it with references, and stores the result in the cache.
+func (c *CachedClient) JSONSchemaByID(ctx context.Context, id int) (*jsonschema.Schema, error) {
+	namespace, err := c.cacheNamespace(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	key := namespace + "/json-compiled-schemas/ids/" + strconv.Itoa(id)
+
+	jsonSch, err, _ := c.jsonSchemaCache.Get(key, func() (*jsonschema.Schema, error) {
+		sch, err := c.SchemaByID(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch schema from schema registry: %w", err)
+		}
+
+		compiledSchema, err := c.ParseJSONSchema(ctx, sch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse JSON schema: %w", err)
+		}
+
+		return compiledSchema, nil
+	})
+
+	return jsonSch, err
 }
 
 // CompileProtoSchemaWithReferences compiles the given schema and its referenced schemas into protobuf files.
@@ -276,32 +316,50 @@ func (c *CachedClient) CompileProtoSchemaWithReferences(
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an
 // error will be returned.
-func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema, schemaCache *avro.SchemaCache) (avro.Schema, error) {
-	if len(schema.References) == 0 {
-		return avro.Parse(schema.Schema)
-	}
+func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema) (avro.Schema, error) {
+	// Create temporary cache for this parsing operation to avoid cross-tenant leakage
+	// The cache is only used during parsing to resolve references and is discarded after
+	tempCache := &avro.SchemaCache{}
+	return c.parseAvroSchemaWithStack(ctx, schema, tempCache, make(map[string]bool))
+}
 
-	// Fetch and parse all schema references recursively. All schemas that have
-	// been parsed successfully will be cached by the avro library.
+// parseAvroSchemaWithStack parses an avro schema with circular reference protection.
+// It uses a parsing stack to detect circular dependencies and prevent infinite recursion.
+func (c *CachedClient) parseAvroSchemaWithStack(ctx context.Context, schema sr.Schema, schemaCache *avro.SchemaCache, parsingStack map[string]bool) (avro.Schema, error) {
+	// Fetch and parse all schema references recursively.
 	for _, reference := range schema.References {
+		refKey := fmt.Sprintf("%s:%d", reference.Subject, reference.Version)
+		if parsingStack[refKey] {
+			return nil, fmt.Errorf("circular reference detected: schema %s references itself", refKey)
+		}
+
 		schemaRef, err := c.SchemaByVersion(ctx, reference.Subject, reference.Version)
 		if err != nil {
 			return nil, err
 		}
 
-		if _, err := c.ParseAvroSchemaWithReferences(
+		parsingStack[refKey] = true
+
+		// The `avro.ParseWithCache` call below will add the referenced types to the cache.
+		// So we just need to recurse to ensure all dependencies are resolved first.
+		if _, err := c.parseAvroSchemaWithStack(
 			ctx,
 			schemaRef.Schema,
 			schemaCache,
+			parsingStack,
 		); err != nil {
 			return nil, fmt.Errorf(
 				"failed to parse schema reference (subject: %q, version %d): %w",
 				reference.Subject, reference.Version, err,
 			)
 		}
+
+		delete(parsingStack, refKey) // Use delete for clarity
 	}
 
-	// Parse the main schema in the end after solving all references
+	// This single call correctly parses the current schema and uses the cache.
+	// It works whether the schema has references or not.
+	// It adds any named types within this schema to the cache for others to use.
 	return avro.ParseWithCache(schema.Schema, "", schemaCache)
 }
 
