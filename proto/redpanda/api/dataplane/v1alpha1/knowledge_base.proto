@@ -12,7 +12,7 @@ import "redpanda/api/auth/v1/authorization.proto";
 
 message KnowledgeBase {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1/KnowledgeBase"
+    type: "redpanda.api.dataplane.v1alpha1/KnowledgeBase"
     singular: "knowledge_base"
     plural: "knowledge_bases"
   };
@@ -38,6 +38,7 @@ message KnowledgeBase {
     message Postgres {
       string dsn = 1 [
         (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).string.uri = true,
         (buf.validate.field).required = true
       ];
       string table = 2 [
@@ -192,6 +193,7 @@ message KnowledgeBaseCreate {
     message Postgres {
       string dsn = 1 [
         (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).string.uri = true,
         (buf.validate.field).required = true
       ];
       string table = 2 [
@@ -328,7 +330,7 @@ message KnowledgeBaseCreate {
 
 message KnowledgeBaseUpdate {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1/KnowledgeBase"
+    type: "redpanda.api.dataplane.v1alpha1/KnowledgeBase"
     singular: "knowledge_base"
     plural: "knowledge_bases"
   };
@@ -350,6 +352,7 @@ message KnowledgeBaseUpdate {
     message Postgres {
       string dsn = 1 [
         (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).string.uri = true,
         (buf.validate.field).required = true
       ];
     }

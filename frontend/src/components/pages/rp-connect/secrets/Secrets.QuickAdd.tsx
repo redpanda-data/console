@@ -118,7 +118,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     <Modal isOpen={isOpen} onClose={closeModal} isCentered={true} size={'md'}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Select secret</ModalHeader>
+        <ModalHeader>Select or add secret</ModalHeader>
         <ModalBody>
           <Flex flexDirection="column" gap={5} w={300}>
             <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
