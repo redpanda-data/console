@@ -44,8 +44,17 @@ type TestCachedClientSuite struct {
 	srClient      *sr.Client
 	clientFactory *testSchemaClientFactory
 	cachedClient  *CachedClient
-	tenantCtx     context.Context
 	namespace     string
+}
+
+// tenantKey is a custom type for context keys to avoid linter warnings
+type tenantKey string
+
+const testTenantKey tenantKey = "tenant"
+
+// getTenantContext creates a context with the given tenant ID
+func getTenantContext(tenantID string) context.Context {
+	return context.WithValue(context.Background(), testTenantKey, tenantID)
 }
 
 // SetupSuite runs once before all tests
@@ -59,7 +68,6 @@ func (s *TestCachedClientSuite) SetupSuite() {
 
 	s.clientFactory = &testSchemaClientFactory{client: s.srClient}
 	s.namespace = "test-tenant"
-	s.tenantCtx = context.WithValue(context.Background(), "tenant", s.namespace)
 }
 
 // SetupTest runs before each test
@@ -69,11 +77,14 @@ func (s *TestCachedClientSuite) SetupTest() {
 
 	var err error
 	s.cachedClient, err = NewCachedClient(s.clientFactory, func(ctx context.Context) (string, error) {
-		tenant := ctx.Value("tenant")
+		tenant := ctx.Value(testTenantKey)
 		if tenant == nil {
 			return "default", nil
 		}
-		return tenant.(string), nil
+		if tenantStr, ok := tenant.(string); ok {
+			return tenantStr, nil
+		}
+		return "default", nil
 	})
 	s.Require().NoError(err)
 }
@@ -97,8 +108,8 @@ func (s *TestCachedClientSuite) TestTenantIsolationForAvroSchemas() {
 	})
 
 	// Create two different tenant contexts
-	tenant1Ctx := context.WithValue(context.Background(), "tenant", "tenant1")
-	tenant2Ctx := context.WithValue(context.Background(), "tenant", "tenant2")
+	tenant1Ctx := context.WithValue(context.Background(), testTenantKey, "tenant1")
+	tenant2Ctx := context.WithValue(context.Background(), testTenantKey, "tenant2")
 
 	// Tenant 1 accesses the schema first
 	schema1, err := s.cachedClient.AvroSchemaByID(tenant1Ctx, 1)
@@ -182,13 +193,14 @@ func (s *TestCachedClientSuite) TestAvroSchemaWithoutReferencesNotCachedCausesBu
 
 	// Step 3: Parse Schema A first (this should add "Address" type to cache)
 	// BUG: Since Schema A has no references, it uses avro.Parse() which doesn't cache types
-	resultA, err := s.cachedClient.ParseAvroSchemaWithReferences(s.tenantCtx, schemaA)
+	tenantCtx := getTenantContext(s.namespace)
+	resultA, err := s.cachedClient.ParseAvroSchemaWithReferences(tenantCtx, schemaA)
 	s.NoError(err)
 	s.NotNil(resultA)
 
 	// Step 4: Try to parse Schema B (this should find "Address" type in cache)
 	// BUG: This will FAIL because "Address" type was never added to cache by Schema A
-	resultB, err := s.cachedClient.ParseAvroSchemaWithReferences(s.tenantCtx, schemaB)
+	resultB, err := s.cachedClient.ParseAvroSchemaWithReferences(tenantCtx, schemaB)
 
 	// EXPECTED BEHAVIOR: Should succeed because Address type should be in cache
 	// ACTUAL BEHAVIOR: Will fail with "avro: unknown type: Address"
@@ -236,7 +248,8 @@ func (s *TestCachedClientSuite) TestCircularReferenceHandling() {
 				done <- true
 			}()
 			// Use the simplified approach - temporary cache is created internally
-			result, err = s.cachedClient.ParseAvroSchemaWithReferences(s.tenantCtx, circularSchema)
+			tenantCtx := getTenantContext(s.namespace)
+			result, err = s.cachedClient.ParseAvroSchemaWithReferences(tenantCtx, circularSchema)
 		}()
 
 		select {
@@ -293,7 +306,8 @@ message SelfRef {
 				}
 				done <- true
 			}()
-			result, err = s.cachedClient.CompileProtoSchemaWithReferences(s.tenantCtx, protoCircularSchema, make(map[string]string))
+			tenantCtx := getTenantContext(s.namespace)
+			result, err = s.cachedClient.CompileProtoSchemaWithReferences(tenantCtx, protoCircularSchema, make(map[string]string))
 		}()
 
 		select {
@@ -321,8 +335,8 @@ func (s *TestCachedClientSuite) TestMultiTenantCaching() {
 	})
 
 	// Create contexts for two different tenants
-	tenant1Ctx := context.WithValue(context.Background(), "tenant", "tenant1")
-	tenant2Ctx := context.WithValue(context.Background(), "tenant", "tenant2")
+	tenant1Ctx := context.WithValue(context.Background(), testTenantKey, "tenant1")
+	tenant2Ctx := context.WithValue(context.Background(), testTenantKey, "tenant2")
 
 	// Both tenants should be able to access the same schema ID
 	schema1, err := s.cachedClient.SchemaByID(tenant1Ctx, 1)
@@ -346,7 +360,7 @@ func (s *TestCachedClientSuite) TestCacheBehavior() {
 
 	// Add interceptor to count requests
 	requestCount := 0
-	s.mockRegistry.Intercept(func(w http.ResponseWriter, r *http.Request) bool {
+	s.mockRegistry.Intercept(func(_ http.ResponseWriter, r *http.Request) bool {
 		if r.URL.Path == "/schemas/ids/1" {
 			requestCount++
 		}
@@ -354,17 +368,18 @@ func (s *TestCachedClientSuite) TestCacheBehavior() {
 	})
 
 	// First call should hit the registry
-	_, err := s.cachedClient.SchemaByID(s.tenantCtx, 1)
+	tenantCtx := getTenantContext(s.namespace)
+	_, err := s.cachedClient.SchemaByID(tenantCtx, 1)
 	s.NoError(err)
 	s.Equal(1, requestCount)
 
 	// Second call should use cache
-	_, err = s.cachedClient.SchemaByID(s.tenantCtx, 1)
+	_, err = s.cachedClient.SchemaByID(tenantCtx, 1)
 	s.NoError(err)
 	s.Equal(1, requestCount) // Should still be 1 (cache hit)
 
 	// Different tenant should hit the registry again
-	differentTenantCtx := context.WithValue(context.Background(), "tenant", "different-tenant")
+	differentTenantCtx := context.WithValue(context.Background(), testTenantKey, "different-tenant")
 	_, err = s.cachedClient.SchemaByID(differentTenantCtx, 1)
 	s.NoError(err)
 	s.Equal(2, requestCount) // Should be 2 (cache miss for different tenant)
@@ -385,7 +400,7 @@ func (s *TestCachedClientSuite) TestConcurrentAccess() {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			tenantCtx := context.WithValue(context.Background(), "tenant", fmt.Sprintf("tenant-%d", id%3))
+			tenantCtx := context.WithValue(context.Background(), testTenantKey, fmt.Sprintf("tenant-%d", id%3))
 			_, err := s.cachedClient.SchemaByID(tenantCtx, 1)
 			if err != nil {
 				errors <- err
