@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hamba/avro/v2"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -621,7 +620,7 @@ func (s *Service) ValidateSchemaRegistrySchema(
 	var parsingErr string
 	switch sch.Type {
 	case sr.TypeAvro:
-		if _, err := s.cachedSchemaClient.ParseAvroSchemaWithReferences(ctx, sch, &avro.SchemaCache{}); err != nil {
+		if _, err := s.cachedSchemaClient.ParseAvroSchemaWithReferences(ctx, sch); err != nil {
 			parsingErr = err.Error()
 		}
 	case sr.TypeJSON:
