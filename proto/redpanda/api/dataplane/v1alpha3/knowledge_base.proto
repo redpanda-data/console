@@ -38,8 +38,8 @@ message KnowledgeBase {
     message Postgres {
       string dsn = 1 [
         (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).string.uri = true,
-        (buf.validate.field).required = true
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"
       ];
       string table = 2 [
         (google.api.field_behavior) = REQUIRED,
@@ -72,7 +72,8 @@ message KnowledgeBase {
         string base_url = 1;
         string api_key = 2 [
           (google.api.field_behavior) = REQUIRED,
-          (buf.validate.field).required = true
+          (buf.validate.field).required = true,
+          (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"
         ];
       }
 
@@ -118,7 +119,7 @@ message KnowledgeBase {
     int32 chunk_size = 1;
     int32 chunk_overlap = 2;
     string redpanda_username = 3;
-    string redpanda_password = 4;
+    string redpanda_password = 4 [(buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"];
     repeated string input_topics = 5 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
@@ -134,6 +135,7 @@ message KnowledgeBase {
         message Cohere {
           string api_key = 2 [
             (google.api.field_behavior) = REQUIRED,
+            (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$",
             (buf.validate.field).required = true
           ];
           string model = 3 [
@@ -142,7 +144,6 @@ message KnowledgeBase {
           ];
         }
         oneof provider {
-          option (buf.validate.oneof).required = true;
           Cohere cohere = 1;
         }
       }
@@ -155,7 +156,7 @@ message KnowledgeBase {
   message Generation {
     message Provider {
       message OpenAI {
-        string api_key = 1;
+        string api_key = 1 [(buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"];
       }
 
       oneof provider {
@@ -175,7 +176,10 @@ message KnowledgeBase {
     ];
   }
 
-  Generation generation = 10;
+  Generation generation = 10 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 }
 
 message KnowledgeBaseCreate {
@@ -193,7 +197,6 @@ message KnowledgeBaseCreate {
     message Postgres {
       string dsn = 1 [
         (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).string.uri = true,
         (buf.validate.field).required = true
       ];
       string table = 2 [
@@ -352,7 +355,6 @@ message KnowledgeBaseUpdate {
     message Postgres {
       string dsn = 1 [
         (google.api.field_behavior) = REQUIRED,
-        (buf.validate.field).string.uri = true,
         (buf.validate.field).required = true
       ];
     }

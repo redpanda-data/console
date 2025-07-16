@@ -61,6 +61,7 @@ components:
         - display_name
         - vector_database
         - embedding_generator
+        - generation
       type: object
     KnowledgeBase.EmbeddingGenerator:
       properties:

@@ -63,8 +63,8 @@ import {
   KnowledgeBaseCreate_VectorDatabaseSchema,
   KnowledgeBaseCreateSchema,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha3/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha3/topic-TopicService_connectquery';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
 import { appGlobal } from '../../../state/appGlobal';
 import { knowledgebaseApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../utils/utils';

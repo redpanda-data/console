@@ -73,8 +73,8 @@ import {
   KnowledgeBaseUpdate_VectorDatabaseSchema,
   KnowledgeBaseUpdateSchema,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha3/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha3/topic-TopicService_connectquery';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
 import { rpcnSecretManagerApi } from '../../../state/backendApi';
 import { getMessageFieldMetadata } from '../../../utils/protobuf-reflection';
 import { ProtoDisplayField, ProtoInputField, ProtoTextareaField } from '../../misc/ProtoFormField';

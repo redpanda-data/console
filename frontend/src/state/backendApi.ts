@@ -16,7 +16,7 @@ import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
-import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha3/list_messages_pb';
+import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
 import { config as appConfig, isEmbedded } from '../config';
 import {
@@ -25,13 +25,13 @@ import {
   KafkaAclOperation,
   RedpandaCapability,
   SchemaRegistryCapability,
-} from '../protogen/redpanda/api/console/v1alpha3/authentication_pb';
-import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha3/cluster_status_pb';
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import {
   PayloadEncoding,
   PayloadEncodingSchema,
   CompressionType as ProtoCompressionType,
-} from '../protogen/redpanda/api/console/v1alpha3/common_pb';
+} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type CreateDebugBundleRequest,
   type CreateDebugBundleResponse,
@@ -39,18 +39,18 @@ import {
   DebugBundleStatus_Status,
   type GetClusterHealthResponse,
   type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
-} from '../protogen/redpanda/api/console/v1alpha3/debug_bundle_pb';
+} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import type {
   License,
   ListEnterpriseFeaturesResponse_Feature,
   SetLicenseRequest,
   SetLicenseResponse,
-} from '../protogen/redpanda/api/console/v1alpha3/license_pb';
+} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
 import type {
   PublishMessageRequest,
   PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha3/publish_messages_pb';
-import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha3/transform_pb';
+} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
   type Pipeline,

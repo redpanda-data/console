@@ -2,25 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"os"
 	"path/filepath"
 	"strings"
 
-	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
-	"connectrpc.com/connect"
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
 	"golang.org/x/exp/slices"
-	"google.golang.org/genproto/googleapis/rpc/code"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 )
 
 var (
@@ -180,29 +170,6 @@ func updateInfo(doc3 *openapi3.T) {
 	}
 }
 
-func toExample(in proto.Message, summary string, description string, emitUnpopulated bool) *openapi3.Example {
-	marshaled, err := protojson.MarshalOptions{
-		UseProtoNames:   true,
-		EmitUnpopulated: emitUnpopulated,
-	}.Marshal(in)
-	if err != nil {
-		panic(err)
-	}
-
-	rawResponse := map[string]any{}
-	if err := json.Unmarshal(marshaled, &rawResponse); err != nil {
-		panic(err)
-	}
-
-	return &openapi3.Example{
-		Extensions:    map[string]any{},
-		Summary:       summary,
-		Description:   description,
-		Value:         rawResponse,
-		ExternalValue: "",
-	}
-}
-
 // remove some dummy messages we don't want to see
 func removeDummies(doc3 *openapi3.T) {
 	for k := range doc3.Components.Schemas {
@@ -210,39 +177,4 @@ func removeDummies(doc3 *openapi3.T) {
 			delete(doc3.Components.Schemas, k)
 		}
 	}
-}
-
-func newBadRequestError(fieldValidations ...*errdetails.BadRequest_FieldViolation) *commonv1alpha1.ErrorStatus {
-	return connectErrorToErrorStatus(
-		apierrors.NewConnectError(
-			connect.CodeInvalidArgument,
-			errors.New("provided parameters are invalid"),
-			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
-			apierrors.NewBadRequest(fieldValidations...),
-		),
-	)
-}
-
-func connectErrorToErrorStatus(connectErr *connect.Error) *commonv1alpha1.ErrorStatus {
-	connectErr.Details()
-	details := make([]*anypb.Any, len(connectErr.Details()))
-
-	for i, d := range connectErr.Details() {
-		msg, err := d.Value()
-		if err != nil {
-			panic(err)
-		}
-		anyDetail, err := anypb.New(msg)
-		if err != nil {
-			panic(err)
-		}
-		details[i] = anyDetail
-	}
-	pb := commonv1alpha1.ErrorStatus{
-		Code:    code.Code(connectErr.Code()),
-		Message: connectErr.Message(),
-		Details: details,
-	}
-
-	return &pb
 }
