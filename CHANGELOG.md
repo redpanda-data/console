@@ -6,6 +6,11 @@
 - [BUGFIX] Fix misleading error messages when fetching topic partition offsets that made troubleshooting difficult.
 - [BUGFIX] Fix missing error reporting for topic partition end offset failures that were silently ignored.
 - [BUGFIX] Fix incorrect error details returned when partition access fails or start offset retrieval fails.
+- [BUGFIX] Fix Avro schema parsing with references failing due to missing cache, causing "unknown type" errors.
+- [BUGFIX] Fix missing cache for JSON schema compilation, causing repeated compilation overhead.
+- [BUGFIX] Fix incorrect caching scope for Avro schemas in multi-tenant environments.
+- [BUGFIX] Fix circular reference detection in Avro schema parsing to prevent infinite recursion.
+- [IMPROVEMENT] Add comprehensive schema registry test suite with mock package to prevent regressions.
 
 ## v2.8.7 / 2025-06-27
 
