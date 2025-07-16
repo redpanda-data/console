@@ -72,6 +72,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 	// Set default options and then apply all the provided options that will
 	// override these defaults.
 	opts := &options{
+		// Default cache namespace function for single-tenant deployments.
 		cacheNamespaceFn: func(_ context.Context) (string, error) {
 			return "single/", nil
 		},
