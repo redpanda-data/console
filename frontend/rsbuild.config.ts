@@ -11,6 +11,7 @@ import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
 import moduleFederationConfig from "./module-federation";
 import { HUBSPOT_PORTAL_ID } from './src/components/pages/agents/hubspot.helper';
+import { HEAP_APP_ID } from './src/components/pages/agents/heap.helper';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ["REACT_APP_"] });
 
@@ -43,6 +44,7 @@ export default defineConfig({
       REACT_APP_BUILD_TIMESTAMP: process.env.REACT_APP_BUILD_TIMESTAMP,
       REACT_APP_DEV_HINT: process.env.REACT_APP_DEV_HINT,
       HUBSPOT_PORTAL_ID: HUBSPOT_PORTAL_ID,
+      HEAP_APP_ID: HEAP_APP_ID,
     },
   },
   server: {

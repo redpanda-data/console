@@ -73,6 +73,7 @@ import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
+import { trackHeapUser } from '../components/pages/agents/heap.helper';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -485,13 +486,15 @@ const apiStore = {
           canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
         } as UserData;
         
-        // Track user in HubSpot after successful authentication
+        // Track user in analytics after successful authentication
         if (r.displayName) {
-          trackHubspotUser({
+          const userData = {
             firstName: r.displayName.split(' ')[0] || r.displayName,
             lastName: r.displayName.split(' ').slice(1).join(' ') || '',
             email: r.displayName, // Using displayName as email fallback
-          });
+          };
+          trackHubspotUser(userData);
+          trackHeapUser(userData);
         }
         
         // if (r.status === 401) {
