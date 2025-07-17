@@ -10,12 +10,12 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Checkbox } from '@chakra-ui/react';
 import { useQuery } from '@connectrpc/connect-query';
 import {
   Box,
   Button,
   ButtonGroup,
+  Checkbox,
   createStandaloneToast,
   Flex,
   FormControl,
@@ -1114,13 +1114,13 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
                 value: 'auto',
                 label: (
                   <VStack align="start" spacing={1}>
-                    <Text fontWeight="medium">Auto-generate credentials</Text>
+                    <Text fontWeight="medium">Auto-generate credentials (Coming Soon)</Text>
                     <Text fontSize="sm" color="gray.600">
                       We'll create a unique user and password for this knowledge base automatically
                     </Text>
                   </VStack>
                 ),
-                disabled: false,
+                disabled: true,
               },
               {
                 value: 'manual',
@@ -1139,16 +1139,15 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
         {this.formData.credentialChoice === 'manual' && (
           <Flex gap={4}>
-            <SecretDropdownField
-              label="Redpanda Username"
-              value={this.formData.redpandaUsername}
-              onChange={(value) => this.updateFormData('redpandaUsername', value)}
-              placeholder="Enter username or select from secrets"
-              onCreateNew={() => this.openAddSecret('redpandaUsername')}
-              isRequired
-              errorMessage={this.validationErrors.redpandaUsername}
-              helperText="All credentials are securely stored in your Secrets Store"
-            />
+            <FormControl isRequired isInvalid={!!this.validationErrors.redpandaUsername}>
+              <FormLabel>Redpanda Username</FormLabel>
+              <Input
+                value={this.formData.redpandaUsername}
+                onChange={(e) => this.updateFormData('redpandaUsername', e.target.value)}
+                placeholder="Enter username"
+              />
+              <FormErrorMessage>{this.validationErrors.redpandaUsername}</FormErrorMessage>
+            </FormControl>
             <SecretDropdownField
               label="Redpanda Password"
               value={this.formData.redpandaPassword}

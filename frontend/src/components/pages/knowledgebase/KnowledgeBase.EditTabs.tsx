@@ -10,13 +10,13 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Checkbox } from '@chakra-ui/react';
 import { useQuery } from '@connectrpc/connect-query';
 import {
   Badge,
   Box,
   Button,
   ButtonGroup,
+  Checkbox,
   createStandaloneToast,
   Flex,
   FormControl,
@@ -1214,12 +1214,20 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
           </>
         ) : (
           <>
-            <ProtoDisplayField
-              messageSchema={KnowledgeBaseSchema}
-              fieldName="retriever"
-              label="Reranker Enabled"
-              value={reranker?.enabled ? 'Yes' : 'No'}
-            />
+            <FormControl>
+              <Flex alignItems="center" gap={2}>
+                <Checkbox
+                  isChecked={reranker?.enabled || false}
+                  isDisabled={true}
+                />
+                <FormLabel fontWeight="medium" mb={0}>
+                  Enable Reranker (Recommended)
+                </FormLabel>
+              </Flex>
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                Reranker improves search quality by reordering retrieved documents based on relevance.
+              </Text>
+            </FormControl>
 
             {reranker?.enabled && reranker.provider && (
               <>
