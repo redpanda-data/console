@@ -1720,6 +1720,8 @@ components:
         - RESOURCE_TYPE_TRANSACTIONAL_ID
         - RESOURCE_TYPE_DELEGATION_TOKEN
         - RESOURCE_TYPE_USER
+        - RESOURCE_TYPE_REGISTRY
+        - RESOURCE_TYPE_SUBJECT
       type: string
     Resources:
       properties:
@@ -2248,6 +2250,8 @@ paths:
               - RESOURCE_TYPE_TRANSACTIONAL_ID
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
+              - RESOURCE_TYPE_REGISTRY
+              - RESOURCE_TYPE_SUBJECT
             type: string
         - description: The name of the resource this ACL targets.
           in: query
@@ -2358,6 +2362,8 @@ paths:
               - RESOURCE_TYPE_TRANSACTIONAL_ID
               - RESOURCE_TYPE_DELEGATION_TOKEN
               - RESOURCE_TYPE_USER
+              - RESOURCE_TYPE_REGISTRY
+              - RESOURCE_TYPE_SUBJECT
             type: string
         - description: The name of the resource this ACL targets.
           in: query
