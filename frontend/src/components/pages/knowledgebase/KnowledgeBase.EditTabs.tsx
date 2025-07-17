@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
+import { SASLMechanism } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import {
   Badge,
   Box,
@@ -544,6 +545,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         chunkOverlap: knowledgeBase.indexer.chunkOverlap,
         redpandaUsername: knowledgeBase.indexer.redpandaUsername,
         redpandaPassword: knowledgeBase.indexer.redpandaPassword,
+        redpandaSaslMechanism: knowledgeBase.indexer.redpandaSaslMechanism,
         inputTopics: knowledgeBase.indexer.inputTopics ? [...knowledgeBase.indexer.inputTopics] : [],
       });
     }
@@ -1109,6 +1111,18 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 helperText="All credentials are securely stored in your Secrets Store"
               />
             </Flex>
+
+            <FormControl isRequired>
+              <FormLabel>SASL Mechanism</FormLabel>
+              <SingleSelect
+                value={this.formData.indexer?.redpandaSaslMechanism || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256}
+                onChange={(value) => this.updateFormData('indexer.redpandaSaslMechanism', value)}
+                options={[
+                  { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
+                  { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },
+                ]}
+              />
+            </FormControl>
           </>
         ) : (
           <>
@@ -1147,6 +1161,13 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 value={indexer?.redpandaPassword || 'Not configured'}
               />
             </Flex>
+
+            <ProtoDisplayField
+              messageSchema={KnowledgeBaseSchema}
+              fieldName="indexer"
+              label="SASL Mechanism"
+              value={indexer?.redpandaSaslMechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256 ? 'SCRAM-SHA-256' : indexer?.redpandaSaslMechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512 ? 'SCRAM-SHA-512' : 'Not configured'}
+            />
           </>
         )}
       </VStack>

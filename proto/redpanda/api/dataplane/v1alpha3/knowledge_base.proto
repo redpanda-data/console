@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/dataplane/v1/user.proto";
 
 message KnowledgeBase {
   option (google.api.resource) = {
@@ -125,6 +126,7 @@ message KnowledgeBase {
       (buf.validate.field).required = true,
       (buf.validate.field).repeated.min_items = 1
     ];
+    redpanda.api.dataplane.v1.SASLMechanism redpanda_sasl_mechanism = 6;
   }
   Indexer indexer = 8;
 
@@ -278,6 +280,7 @@ message KnowledgeBaseCreate {
       (buf.validate.field).required = true,
       (buf.validate.field).repeated.min_items = 1
     ];
+    redpanda.api.dataplane.v1.SASLMechanism redpanda_sasl_mechanism = 6;
   }
   Indexer indexer = 6;
 
@@ -417,6 +420,7 @@ message KnowledgeBaseUpdate {
       (buf.validate.field).required = true,
       (buf.validate.field).repeated.min_items = 1
     ];
+    redpanda.api.dataplane.v1.SASLMechanism redpanda_sasl_mechanism = 6;
   }
   Indexer indexer = 6;
 

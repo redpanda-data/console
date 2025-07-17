@@ -13,17 +13,6 @@ components:
       type: object
     DeleteKnowledgeBaseResponse:
       type: object
-    Filter:
-      properties:
-        name_contains:
-          description: Any KnowledgeBase that partially match this name will be returned.
-          type: string
-        tags[string]:
-          additionalProperties:
-            type: string
-          description: KnowledgeBases that match all the provided tags will be returned.
-          type: object
-      type: object
     GetKnowledgeBaseResponse:
       properties:
         knowledge_base:
@@ -132,6 +121,8 @@ components:
           type: array
         redpanda_password:
           type: string
+        redpanda_sasl_mechanism:
+          $ref: '#/components/schemas/SASLMechanism'
         redpanda_username:
           type: string
       required:
@@ -274,6 +265,8 @@ components:
           type: array
         redpanda_password:
           type: string
+        redpanda_sasl_mechanism:
+          $ref: '#/components/schemas/SASLMechanism'
         redpanda_username:
           type: string
       required:
@@ -404,6 +397,8 @@ components:
           type: array
         redpanda_password:
           type: string
+        redpanda_sasl_mechanism:
+          $ref: '#/components/schemas/SASLMechanism'
         redpanda_username:
           type: string
       required:
@@ -448,6 +443,17 @@ components:
       required:
         - dsn
       type: object
+    ListKnowledgeBasesRequest.Filter:
+      properties:
+        name_contains:
+          description: Any KnowledgeBase that partially match this name will be returned.
+          type: string
+        tags[string]:
+          additionalProperties:
+            type: string
+          description: KnowledgeBases that match all the provided tags will be returned.
+          type: object
+      type: object
     ListKnowledgeBasesResponse:
       properties:
         knowledge_bases:
@@ -457,6 +463,12 @@ components:
         next_page_token:
           type: string
       type: object
+    SASLMechanism:
+      description: SASL mechanism to use for authentication.
+      enum:
+        - SASL_MECHANISM_SCRAM_SHA_256
+        - SASL_MECHANISM_SCRAM_SHA_512
+      type: string
     Status:
       properties:
         code:

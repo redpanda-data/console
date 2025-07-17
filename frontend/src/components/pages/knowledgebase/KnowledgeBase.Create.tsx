@@ -382,6 +382,7 @@ interface FormData {
   credentialChoice: 'auto' | 'manual';
   redpandaUsername: string;
   redpandaPassword: string;
+  redpandaSaslMechanism: SASLMechanism;
 
   // Reranker
   rerankerEnabled: boolean;
@@ -414,6 +415,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
     credentialChoice: 'manual',
     redpandaUsername: '',
     redpandaPassword: '',
+    redpandaSaslMechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
     rerankerEnabled: true,
     rerankerModel: 'rerank-v3.5',
     rerankerApiKey: '',
@@ -764,6 +766,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
     // Include credentials for both manual and auto modes
     indexerConfig.redpandaUsername = this.formData.redpandaUsername;
     indexerConfig.redpandaPassword = this.formData.redpandaPassword;
+    indexerConfig.redpandaSaslMechanism = this.formData.redpandaSaslMechanism;
 
     const indexer = create(KnowledgeBaseCreate_IndexerSchema, indexerConfig);
 
@@ -1159,6 +1162,21 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
               helperText="All credentials are securely stored in your Secrets Store"
             />
           </Flex>
+        )}
+
+        {this.formData.credentialChoice === 'manual' && (
+          <FormControl isRequired isInvalid={!!this.validationErrors.redpandaSaslMechanism}>
+            <FormLabel>SASL Mechanism</FormLabel>
+            <SingleSelect
+              value={this.formData.redpandaSaslMechanism}
+              onChange={(value) => this.updateFormData('redpandaSaslMechanism', value)}
+              options={[
+                { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
+                { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },
+              ]}
+            />
+            <FormErrorMessage>{this.validationErrors.redpandaSaslMechanism}</FormErrorMessage>
+          </FormControl>
         )}
       </VStack>
     </Box>
