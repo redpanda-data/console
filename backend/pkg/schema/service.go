@@ -76,121 +76,65 @@ func (s *Service) CheckConnectivity(ctx context.Context) error {
 
 // GetProtoDescriptors returns all file descriptors in a map where the key is the schema id.
 // The value is a set of file descriptors because each schema may references / imported proto schemas.
-//
-//nolint:gocognit,cyclop // complicated refresh logic
 func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDescriptor, error) {
 	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
 	// duplicate requests against the schema registry
 	key := "get-proto-descriptors"
 	_, err, _ := s.requestGroup.Do(key, func() (any, error) {
+		// 1. Fetch a complete, fresh state from the registry.
+		// If the fetch is incomplete (returns any errors), abort the entire refresh.
+		// This prevents us from ever working with a partial, inconsistent view.
 		schemasRes, errs := s.registryClient.GetSchemas(ctx, true)
 		if len(errs) > 0 {
 			for _, err := range errs {
-				s.logger.Error("failed to get schema from registry", zap.Error(err))
+				s.logger.Error("failed to get schema from registry during refresh", zap.Error(err))
 			}
-
-			if len(schemasRes) == 0 {
-				return nil, nil
-			}
+			return nil, fmt.Errorf("failed to fetch a complete list of schemas, aborting refresh. first error: %w", errs[0])
 		}
 
-		s.srRefreshMutex.Lock()
-		defer s.srRefreshMutex.Unlock()
-
-		if s.protoSchemasByID == nil {
-			s.protoSchemasByID = make(map[int]*SchemaVersionedResponse, len(schemasRes))
-		}
-
-		// collect existing schema IDs
-		existingSchemaIDs := make(map[int]struct{}, len(s.protoSchemasByID))
-		for id := range s.protoSchemasByID {
-			existingSchemaIDs[id] = struct{}{}
-		}
-
-		schemasToCompile := make([]*SchemaVersionedResponse, 0, len(schemasRes))
-
-		newSchemaIDs := make(map[int]struct{}, len(schemasRes))
-
-		// Index all returned schemas by their respective subject name and version as stored in the schema registry
-		// Collect the new or updated schemas to compile
+		// 2. Prepare for compilation in temporary, local structures.
+		// This ensures we don't touch the service's active state until we are done.
+		newProtoSchemasByID := make(map[int]*SchemaVersionedResponse)
 		schemasBySubjectAndVersion := make(map[string]map[int]*SchemaVersionedResponse)
-		for _, schema := range schemasRes {
-			schema := schema
 
-			if schema.Type != TypeProtobuf {
+		for _, sch := range schemasRes {
+			if sch.Type != TypeProtobuf {
 				continue
 			}
-			_, exists := schemasBySubjectAndVersion[schema.Subject]
-			if !exists {
-				schemasBySubjectAndVersion[schema.Subject] = make(map[int]*SchemaVersionedResponse)
+			newProtoSchemasByID[sch.SchemaID] = sch
+
+			// Build the lookup map for resolving references during compilation.
+			if _, exists := schemasBySubjectAndVersion[sch.Subject]; !exists {
+				schemasBySubjectAndVersion[sch.Subject] = make(map[int]*SchemaVersionedResponse)
 			}
-			schemasBySubjectAndVersion[schema.Subject][schema.Version] = schema
-
-			if existing, ok := s.protoSchemasByID[schema.SchemaID]; !ok || !strings.EqualFold(existing.Schema, schema.Schema) {
-				schemasToCompile = append(schemasToCompile, schema)
-			}
-
-			newSchemaIDs[schema.SchemaID] = struct{}{}
-
-			s.protoSchemasByID[schema.SchemaID] = schema
+			schemasBySubjectAndVersion[sch.Subject][sch.Version] = sch
 		}
 
+		// 3. Compile all fetched schemas into a new, temporary map.
+		// A single compilation failure invalidates the entire refresh attempt.
+		newProtoFDByID := make(map[int]*desc.FileDescriptor, len(newProtoSchemasByID))
 		compileStart := time.Now()
-
-		// 2. Compile each subject with each of it's references into one or more file descriptors so that they can be
-		// registered in their own proto registry.
-		newFDBySchemaID := make(map[int]*desc.FileDescriptor, len(schemasToCompile))
-		for _, schema := range schemasToCompile {
-			schema := schema
-
-			if schema.Type != TypeProtobuf {
-				continue
-			}
-
+		for _, schema := range newProtoSchemasByID {
 			fd, err := s.compileProtoSchemas(schema, schemasBySubjectAndVersion)
 			if err != nil {
-				s.logger.Warn("failed to compile proto schema",
+				s.logger.Error("failed to compile proto schema, aborting refresh",
 					zap.String("subject", schema.Subject),
 					zap.Int("schema_id", schema.SchemaID),
 					zap.Error(err))
-				continue
+				return nil, fmt.Errorf("failed to compile schema for subject %q (id %d): %w", schema.Subject, schema.SchemaID, err)
 			}
-			newFDBySchemaID[schema.SchemaID] = fd
+			newProtoFDByID[schema.SchemaID] = fd
 		}
 
-		compileDuration := time.Since(compileStart)
+		// 4. Success! Atomically swap the service's state with the new, fully compiled state.
+		s.srRefreshMutex.Lock()
+		s.protoSchemasByID = newProtoSchemasByID
+		s.protoFDByID = newProtoFDByID
+		s.srRefreshMutex.Unlock()
 
-		// merge
-		if s.protoFDByID == nil {
-			s.protoFDByID = make(map[int]*desc.FileDescriptor, len(newFDBySchemaID))
-		}
-
-		maps.Copy(s.protoFDByID, newFDBySchemaID)
-
-		schemasDeleted := 0
-
-		// remove schemas only if no errors
-		if len(errs) == 0 {
-			schemasIDsToDelete := make([]int, 0, len(s.protoSchemasByID)/2)
-
-			for id := range existingSchemaIDs {
-				if _, ok := newSchemaIDs[id]; !ok {
-					schemasIDsToDelete = append(schemasIDsToDelete, id)
-				}
-			}
-
-			for _, id := range schemasIDsToDelete {
-				delete(s.protoSchemasByID, id)
-				delete(s.protoFDByID, id)
-			}
-
-			schemasDeleted = len(schemasIDsToDelete)
-		}
-
-		s.logger.Info("compiled new schemas",
-			zap.Int("updated_schemas", len(schemasToCompile)),
-			zap.Int("deleted_schemas", schemasDeleted),
-			zap.Duration("compile_duration", compileDuration))
+		s.logger.Info("successfully refreshed and recompiled protobuf schemas",
+			zap.Int("total_schemas", len(newProtoFDByID)),
+			zap.Duration("compile_duration", time.Since(compileStart)))
 
 		return nil, nil
 	})
@@ -505,7 +449,7 @@ func (s *Service) ValidateProtobufSchema(ctx context.Context, name string, sch S
 // GetSchemaBySubjectAndVersion retrieves a schema from the schema registry
 // by a given <subject, version> tuple.
 func (s *Service) GetSchemaBySubjectAndVersion(ctx context.Context, subject string, version string) (*SchemaVersionedResponse, error) {
-	cacheKey := subject + "v" + version
+	cacheKey := fmt.Sprintf("%s::v::%s", subject, version)
 	cachedSchema, err, _ := s.schemaBySubjectVersion.Get(cacheKey, func() (*SchemaVersionedResponse, error) {
 		schema, err := s.registryClient.GetSchemaBySubject(ctx, subject, version, true)
 		if err != nil {
