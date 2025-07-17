@@ -106,7 +106,7 @@ const UserDropdown = ({
   isDisabled?: boolean;
 }) => {
   const { data: usersData, isLoading } = useListUsersQuery();
-  
+
   const userOptions = usersData?.users?.map((user) => ({
     value: user.name,
     label: user.name,
@@ -1037,6 +1037,30 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             {/* Model and Dimensions are immutable, show as read-only */}
             <ProtoDisplayField label="Model" value={embeddingGen?.model || ''} />
 
+            {embeddingGen?.provider?.provider.case === 'openai' && (
+              <Text fontSize="sm" color="gray.500" mt={-2} mb={2}>
+                See{' '}
+                <Link
+                  href="https://platform.openai.com/docs/guides/embeddings/embedding-models#embedding-models"
+                  isExternal
+                  color="blue.500"
+                >
+                  OpenAI embedding models
+                </Link>{' '}
+                for available models and dimensions.
+              </Text>
+            )}
+
+            {embeddingGen?.provider?.provider.case === 'cohere' && (
+              <Text fontSize="sm" color="gray.500" mt={-2} mb={2}>
+                See{' '}
+                <Link href="https://docs.cohere.com/docs/cohere-embed" isExternal color="blue.500">
+                  Cohere embedding models
+                </Link>{' '}
+                for available models and dimensions.
+              </Text>
+            )}
+
             <ProtoDisplayField label="Dimensions" value={embeddingGen?.dimensions?.toString() || ''} />
 
             {/* API Key based on provider */}
@@ -1104,12 +1128,19 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               label="Dimensions"
               value={embeddingGen?.dimensions || 'Not configured'}
             />
-            <ProtoDisplayField
-              messageSchema={KnowledgeBaseSchema}
-              fieldName="embedding_generator"
-              label="API Key"
-              value={embeddingGen?.provider?.provider.value?.apiKey || 'Not configured'}
-            />
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                API Key
+              </Text>
+              <Text fontSize="sm" color="gray.500" mb={2}>
+                All credentials are securely stored in your Secrets Store
+              </Text>
+              <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+                <Text fontSize="sm" color="gray.900">
+                  {embeddingGen?.provider?.provider.value?.apiKey || 'Not configured'}
+                </Text>
+              </Box>
+            </Box>
           </>
         )}
       </VStack>
@@ -1545,6 +1576,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     return (
       <VStack spacing={4} align="stretch">
         <Heading size="md">Generation</Heading>
+        <Text fontSize="sm" color="gray.600">
+          The Generation provider is used to generate the final response in the chat endpoint.
+        </Text>
 
         {isEditMode ? (
           <>
@@ -1816,12 +1850,12 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
       },
       {
         key: 'indexer',
-        name: 'Indexer',
+        name: 'Indexing',
         component: this.renderIndexerTab(),
       },
       {
         key: 'retriever',
-        name: 'Retriever',
+        name: 'Retrieval',
         component: this.renderRetrieverTab(),
       },
       {
@@ -1848,7 +1882,6 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
           onAdd={this.onAddSecret}
         />
 
-        {/* Text Preview Modal */}
         <Modal isOpen={this.isTextModalOpen} onClose={this.closeTextModal} size="4xl">
           <ModalOverlay />
           <ModalContent>
