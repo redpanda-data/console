@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
 import { SASLMechanism } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { useListUsersQuery } from '../../../react-query/api/user';
 import {
   Badge,
   Box,
@@ -86,6 +87,51 @@ import { SecretsQuickAdd } from '../rp-connect/secrets/Secrets.QuickAdd';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
+
+const UserDropdown = ({
+  label,
+  value,
+  onChange,
+  isRequired = false,
+  errorMessage,
+  helperText,
+  isDisabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  isRequired?: boolean;
+  errorMessage?: string;
+  helperText?: string;
+  isDisabled?: boolean;
+}) => {
+  const { data: usersData, isLoading } = useListUsersQuery();
+  
+  const userOptions = usersData?.users?.map((user) => ({
+    value: user.name,
+    label: user.name,
+  })) || [];
+
+  return (
+    <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
+      <FormLabel fontWeight="medium">{label}</FormLabel>
+      {helperText && (
+        <Text fontSize="sm" color="gray.500" mb={2}>
+          {helperText}
+        </Text>
+      )}
+      <SingleSelect
+        value={value}
+        onChange={onChange}
+        options={userOptions}
+        placeholder={isLoading ? 'Loading users...' : 'Select a user...'}
+        isLoading={isLoading}
+        isDisabled={isDisabled}
+      />
+      {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
+    </FormControl>
+  );
+};
 
 const SecretDropdownField = ({
   label,
@@ -259,71 +305,81 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
           Input Topics
         </Text>
         <Text fontSize="sm" color="gray.500" mb={2}>
-          Topics configured for this knowledge base:
+          Select topics or enter regex patterns (e.g., my-topics-prefix-.*) to index for this knowledge base.
         </Text>
-        <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
-          {selectedTopics?.length > 0 ? (
-            <VStack spacing={3} align="stretch">
-              {/* Show exact topics first */}
-              {selectedTopics.filter((topic) => !isRegexPattern(topic)).length > 0 && (
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" mb={2}>
-                    Exact topics ({selectedTopics.filter((topic) => !isRegexPattern(topic)).length}):
-                  </Text>
-                  <Box pl={2}>
-                    {selectedTopics
-                      .filter((topic) => !isRegexPattern(topic))
-                      .map((topic, idx) => (
-                        <Text key={idx} fontSize="sm" color="gray.700" mb={1}>
-                          • {topic}
-                        </Text>
-                      ))}
-                  </Box>
-                </Box>
-              )}
 
-              {/* Show regex patterns with their matches */}
-              {selectedTopics
-                .filter((topic) => isRegexPattern(topic))
-                .map((topic, index) => {
-                  const matchingTopics = getMatchingTopics(topic);
+        <Select
+          isMulti
+          isSearchable={false}
+          placeholder="Topics configured"
+          options={[]}
+          value={selectedValues}
+          onChange={() => {}} // No-op for read-only
+          isDisabled
+        />
 
-                  return (
-                    <Box key={index}>
-                      <Text fontSize="sm" fontWeight="medium" color="blue.600" mb={1}>
-                        {topic}{' '}
-                        <Text as="span" fontSize="xs" color="gray.500">
-                          (regex pattern)
-                        </Text>
-                      </Text>
-                      {matchingTopics.length > 0 ? (
-                        <Box pl={2}>
-                          <Text fontSize="xs" color="gray.600" mb={1}>
-                            Matches {matchingTopics.length} topics:
-                          </Text>
-                          <Box maxH="100px" overflowY="auto">
-                            {matchingTopics.map((matchedTopic, idx) => (
-                              <Text key={idx} fontSize="xs" color="gray.700" mb={1}>
-                                • {matchedTopic}
-                              </Text>
-                            ))}
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Text fontSize="xs" color="red.500" pl={2}>
-                          No topics match this pattern
-                        </Text>
-                      )}
-                    </Box>
-                  );
-                })}
-            </VStack>
-          ) : (
-            <Text fontSize="sm" color="gray.400" fontStyle="italic">
-              No topics configured
+        {/* Show preview of what each selected item matches */}
+        {selectedTopics.length > 0 && (
+          <Box mt={2}>
+            <Text fontSize="sm" fontWeight="medium" mb={2}>
+              Preview of selected topics:
             </Text>
-          )}
-        </Box>
+
+            {/* Show exact topics first */}
+            {selectedTopics.filter((topic) => !isRegexPattern(topic)).length > 0 && (
+              <Box mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+                <Text fontSize="sm" fontWeight="medium" mb={1}>
+                  Exact topics ({selectedTopics.filter((topic) => !isRegexPattern(topic)).length}):
+                </Text>
+                <Box maxH="100px" overflowY="auto">
+                  {selectedTopics
+                    .filter((topic) => !isRegexPattern(topic))
+                    .map((topic, idx) => (
+                      <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                        • {topic}
+                      </Text>
+                    ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Show regex patterns with their matches */}
+            {selectedTopics
+              .filter((topic) => isRegexPattern(topic))
+              .map((topic, index) => {
+                const matchingTopics = getMatchingTopics(topic);
+
+                return (
+                  <Box key={index} mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+                    <Text fontSize="sm" fontWeight="medium" color="blue.600">
+                      {topic}{' '}
+                      <Text as="span" fontSize="xs" color="gray.500">
+                        (regex pattern)
+                      </Text>
+                    </Text>
+                    {matchingTopics.length > 0 ? (
+                      <Box mt={1}>
+                        <Text fontSize="xs" color="gray.600" mb={1}>
+                          Matches {matchingTopics.length} topics:
+                        </Text>
+                        <Box maxH="100px" overflowY="auto">
+                          {matchingTopics.map((matchedTopic, idx) => (
+                            <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                              • {matchedTopic}
+                            </Text>
+                          ))}
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Text fontSize="xs" color="red.500" mt={1}>
+                        No topics match this pattern
+                      </Text>
+                    )}
+                  </Box>
+                );
+              })}
+          </Box>
+        )}
       </Box>
     );
   }
@@ -1094,13 +1150,12 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             />
 
             <Flex gap={4}>
-              <SecretDropdownField
+              <UserDropdown
                 label="Redpanda Username"
                 value={this.formData.indexer?.redpandaUsername || ''}
                 onChange={(value) => this.updateFormData('indexer.redpandaUsername', value)}
-                placeholder="Enter username or select from secrets"
-                onCreateNew={() => this.openAddSecret('indexer.redpandaUsername')}
-                helperText="All credentials are securely stored in your Secrets Store"
+                isRequired
+                helperText="Select from existing Redpanda users"
               />
               <SecretDropdownField
                 label="Redpanda Password"
@@ -1127,18 +1182,22 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         ) : (
           <>
             <Flex gap={4}>
-              <ProtoDisplayField
-                messageSchema={KnowledgeBaseSchema}
-                fieldName="indexer"
-                label="Chunk Size"
-                value={indexer?.chunkSize || 'Not configured'}
-              />
-              <ProtoDisplayField
-                messageSchema={KnowledgeBaseSchema}
-                fieldName="indexer"
-                label="Chunk Overlap"
-                value={indexer?.chunkOverlap || 'Not configured'}
-              />
+              <FormControl>
+                <FormLabel>Chunk Size</FormLabel>
+                <Input
+                  type="number"
+                  value={indexer?.chunkSize || 512}
+                  isDisabled
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Chunk Overlap</FormLabel>
+                <Input
+                  type="number"
+                  value={indexer?.chunkOverlap || 100}
+                  isDisabled
+                />
+              </FormControl>
             </Flex>
 
             <TopicSelector
@@ -1148,26 +1207,41 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             />
 
             <Flex gap={4}>
-              <ProtoDisplayField
-                messageSchema={KnowledgeBaseSchema}
-                fieldName="indexer"
+              <UserDropdown
                 label="Redpanda Username"
-                value={indexer?.redpandaUsername || 'Not configured'}
+                value={indexer?.redpandaUsername || ''}
+                onChange={() => {}} // No-op for read-only
+                isRequired
+                helperText="Select from existing Redpanda users"
+                isDisabled
               />
-              <ProtoDisplayField
-                messageSchema={KnowledgeBaseSchema}
-                fieldName="indexer"
-                label="Redpanda Password"
-                value={indexer?.redpandaPassword || 'Not configured'}
-              />
+              <FormControl isRequired>
+                <FormLabel fontWeight="medium">Redpanda Password</FormLabel>
+                <Text fontSize="sm" color="gray.500" mb={2}>
+                  All credentials are securely stored in your Secrets Store
+                </Text>
+                <SingleSelect
+                  value={indexer?.redpandaPassword || ''}
+                  onChange={() => {}} // No-op for read-only
+                  options={[]}
+                  placeholder="Password configured"
+                  isDisabled
+                />
+              </FormControl>
             </Flex>
 
-            <ProtoDisplayField
-              messageSchema={KnowledgeBaseSchema}
-              fieldName="indexer"
-              label="SASL Mechanism"
-              value={indexer?.redpandaSaslMechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256 ? 'SCRAM-SHA-256' : indexer?.redpandaSaslMechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512 ? 'SCRAM-SHA-512' : 'Not configured'}
-            />
+            <FormControl isRequired>
+              <FormLabel>SASL Mechanism</FormLabel>
+              <SingleSelect
+                value={indexer?.redpandaSaslMechanism || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256}
+                onChange={() => {}} // No-op for read-only
+                options={[
+                  { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
+                  { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },
+                ]}
+                isDisabled
+              />
+            </FormControl>
           </>
         )}
       </VStack>

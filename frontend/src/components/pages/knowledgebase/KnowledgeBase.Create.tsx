@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
+import { useListUsersQuery } from '../../../react-query/api/user';
 import {
   Box,
   Button,
@@ -139,6 +140,48 @@ const SecretDropdownField = ({
         onChange={handleChange}
         options={allOptions}
         placeholder={placeholder || 'Select a secret...'}
+      />
+      {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
+    </FormControl>
+  );
+};
+
+const UserDropdown = ({
+  label,
+  value,
+  onChange,
+  isRequired = false,
+  errorMessage,
+  helperText,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  isRequired?: boolean;
+  errorMessage?: string;
+  helperText?: string;
+}) => {
+  const { data: usersData, isLoading } = useListUsersQuery();
+  
+  const userOptions = usersData?.users?.map((user) => ({
+    value: user.name,
+    label: user.name,
+  })) || [];
+
+  return (
+    <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
+      <FormLabel fontWeight="medium">{label}</FormLabel>
+      {helperText && (
+        <Text fontSize="sm" color="gray.500" mb={2}>
+          {helperText}
+        </Text>
+      )}
+      <SingleSelect
+        value={value}
+        onChange={onChange}
+        options={userOptions}
+        placeholder={isLoading ? 'Loading users...' : 'Select a user...'}
+        isLoading={isLoading}
       />
       {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
     </FormControl>
@@ -1142,15 +1185,14 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
         {this.formData.credentialChoice === 'manual' && (
           <Flex gap={4}>
-            <FormControl isRequired isInvalid={!!this.validationErrors.redpandaUsername}>
-              <FormLabel>Redpanda Username</FormLabel>
-              <Input
-                value={this.formData.redpandaUsername}
-                onChange={(e) => this.updateFormData('redpandaUsername', e.target.value)}
-                placeholder="Enter username"
-              />
-              <FormErrorMessage>{this.validationErrors.redpandaUsername}</FormErrorMessage>
-            </FormControl>
+            <UserDropdown
+              label="Redpanda Username"
+              value={this.formData.redpandaUsername}
+              onChange={(value) => this.updateFormData('redpandaUsername', value)}
+              isRequired
+              errorMessage={this.validationErrors.redpandaUsername}
+              helperText="Select from existing Redpanda users"
+            />
             <SecretDropdownField
               label="Redpanda Password"
               value={this.formData.redpandaPassword}
