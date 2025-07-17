@@ -999,12 +999,19 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             helperText="All credentials are securely stored in your Secrets Store"
           />
         ) : (
-          <ProtoDisplayField
-            messageSchema={KnowledgeBase_VectorDatabase_PostgresSchema}
-            fieldName="dsn"
-            label="PostgreSQL DSN"
-            value={postgres?.dsn || 'Not configured'}
-          />
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+              PostgreSQL DSN
+            </Text>
+            <Text fontSize="sm" color="gray.500" mb={2}>
+              All credentials are securely stored in your Secrets Store
+            </Text>
+            <Box p={3} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+              <Text fontSize="sm" color="gray.900">
+                {postgres?.dsn || 'Not configured'}
+              </Text>
+            </Box>
+          </Box>
         )}
 
         {postgres && (
@@ -1604,10 +1611,9 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         ) : (
           <>
             {/* Display fields for view mode */}
-            <ProtoDisplayField
-              label="Provider"
-              value={generation?.provider?.provider.case === 'openai' ? 'OpenAI' : 'OpenAI'}
-            />
+            <Heading size="sm">
+              {generation?.provider?.provider.case === 'openai' ? 'OpenAI' : 'OpenAI'} Configuration
+            </Heading>
 
             <ProtoDisplayField label="Model" value={generation?.model || ''} />
 
