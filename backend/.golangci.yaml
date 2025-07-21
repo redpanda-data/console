@@ -1,65 +1,11 @@
-# We may as well allow multiple golangci-lint invocations at once.
+version: "2"
 run:
-  allow-parallel-runners: true
   build-tags:
     - integration
-
-# golangci-lint by default ignores some staticcheck and vet raised issues that
-# are actually important to catch. The following ensures that we do not ignore
-# those tools ever.
-issues:
-  exclude-rules:
-    - path: (.+)_test.go
-      linters:
-        - bodyclose
-        - stylecheck
-        - goconst
-        - gosec
-    - path: (.+)_integration_test.go
-      linters:
-        - gocognit
-        - gocritic
-        - gocyclo
-        - cyclop
-        - revive # We are working a lot with high confidence type assertions when using the kfake pkg
-    - path: pkg/api/connect/integration/(.+)_test.go
-      linters:
-        - gocognit
-    # there is a bunch of test in the connectors documentation, we don't want
-    # to enforce any style on writting it.
-    - path: /connector/interceptor/(.+)_hook.go
-      linters:
-        - goconst
-    - path: (.+).go
-      linters: [gosec]
-      text: "G115: integer overflow conversion int -> int32"
-    - path: (.+).go
-      linters: [gosec]
-      text: "G115: integer overflow conversion uint32 -> int32"
-    - path: (.+)_v1alpha1_test.go
-      linters: [staticcheck]
-      text: "SA1019:"
-    - path: pkg/api/routes.go
-      linters: [staticcheck]
-      text: "SA1019: dataplanev1alpha1connect"
-    - path: (.+)/v1alpha1/service.go
-      linters: [staticcheck]
-      text: "SA1019: dataplanev1alpha1connect"
-    - path: (.+).go
-      linters: [staticcheck]
-      text: "SA1019.*jhump/protoreflect"
-  exclude-use-default: false
-  max-same-issues: 0 # 0 is unlimited
+  allow-parallel-runners: true
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Enabled by default linters: we want all except errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    # Not enabled by default: we want a good chunk
     - asasalint
     - asciicheck
     - bidichk
@@ -70,17 +16,15 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - gci
     - gocheckcompilerdirectives
     - gocognit
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - gofumpt
-    - goimports
     - goprintffuncname
     - gosec
+    - govet
+    - ineffassign
     - misspell
     - nakedret
     - nilerr
@@ -90,122 +34,161 @@ linters:
     - revive
     - rowserrcheck
     - sqlclosecheck
-    - stylecheck
-    - typecheck
+    - staticcheck
     - unconvert
     - unparam
+    - unused
     - usestdlibvars
     - wastedassign
     - whitespace
-linters-settings:
-  # A default case ensures we have checked everything. We should not require
-  # every enum to be checked if we want to default.
-  exhaustive:
-    default-signifies-exhaustive: true
-  # If we want to opt out of a lint, we require an explanation.
-  nolintlint:
-    allow-unused: false
-    require-explanation: true
-    require-specific: true
-  # We do not want every usage of fmt.Errorf to use %w.
-  errorlint:
-    errorf: false
-  gosec:
-    excludes:
-      - G104 # unhandled errors, we exclude for the same reason we do not use errcheck
-      - G115 # Go has no built-in solution to check the overflow
-  # Complexity analysis: the recommendations are to be between 10-20, with a
-  # default of 30 for gocyclo and gocognit, and a default of 10 for cyclop. We
-  # will choose the middle of the range for cyclo analysis, which should be
-  # good enough for a lot of cases. We can bump to 20 later if necessary.  The
-  # cognitive analysis is a bit overly sensitive for large switch statements
-  # (say a function just switches to return a bunch of different strings), so
-  # we will keep its larger default of 30.
-  #
-  # cyclop provides no extra benefit to gocyclo because we are not using
-  # package average, but that's a weird metric nothing else adds.
-  cyclop:
-    max-complexity: 16
-  gocyclo:
-    min-complexity: 30
-  gocognit:
-    min-complexity: 30
-  gci:
-    sections:
-      - standard # stdlib
-      - default # everything not std, not within project
-      - prefix(github.com/redpanda-data/console/backend)
-  # Gocritic is a meta linter that has very good lints, and most of the
-  # experimental ones are very good too. There are only a few we want to opt
-  # out of specifically.
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - evalOrder
-      - importShadow
-      # disabled due to 1.18 failures
-      - hugeParam
-      - rangeValCopy
-      - typeDefFirst
-      - paramTypeCombine
-      - unnamedResult
-      #settings:
-      #  hugeParam:
-      #    sizeThreshold: 256
-      #  rangeValCopy:
-      #    sizeThreshold: 256
-  # Revive is yet another metalinter with a bunch of useful lints. The below
-  # opts in to all of the ones we would like to use.
-  revive:
-    ignore-generated-header: true
-    enable-all-rules: true
-    severity: warning
-    confidence: 0.7
+  settings:
+    cyclop:
+      max-complexity: 16
+    errorlint:
+      errorf: false
+    exhaustive:
+      default-signifies-exhaustive: true
+    gocognit:
+      min-complexity: 30
+    gocritic:
+      disabled-checks:
+        - evalOrder
+        - importShadow
+        - hugeParam
+        - rangeValCopy
+        - typeDefFirst
+        - paramTypeCombine
+        - unnamedResult
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 30
+    gosec:
+      excludes:
+        - G104
+        - G115
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+    revive:
+      confidence: 0.7
+      severity: warning
+      enable-all-rules: true
+      rules:
+        - name: redundant-import-alias
+          disabled: true
+        - name: add-constant
+          disabled: true
+        - name: argument-limit
+          disabled: true
+        - name: banned-characters
+          disabled: true
+        - name: cognitive-complexity
+          disabled: true
+        - name: confusing-naming
+          disabled: true
+        - name: cyclomatic
+          disabled: true
+        - name: file-header
+          disabled: true
+        - name: flag-parameter
+          disabled: true
+        - name: function-result-limit
+          disabled: true
+        - name: function-length
+          disabled: true
+        - name: import-shadowing
+          disabled: true
+        - name: line-length-limit
+          disabled: true
+        - name: max-public-structs
+          disabled: true
+        - name: modifies-parameter
+          disabled: true
+        - name: nested-structs
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: redefines-builtin-id
+          disabled: true
+        - name: unhandled-error
+          disabled: true
+        - name: var-naming
+          disabled: true
+        - name: enforce-switch-style
+          disabled: true
+  exclusions:
+    generated: lax
     rules:
-      # removed because replacing the version of a proto is easier if we use it
-      # as alias
-      - name: redundant-import-alias
-        disabled: true
-      - name: add-constant
-        disabled: true
-      - name: argument-limit
-        disabled: true
-      - name: banned-characters
-        disabled: true
-      - name: cognitive-complexity
-        disabled: true
-      - name: confusing-naming
-        disabled: true
-      - name: cyclomatic
-        disabled: true
-      - name: file-header
-        disabled: true
-      - name: flag-parameter
-        disabled: true
-      - name: function-result-limit
-        disabled: true
-      - name: function-length
-        disabled: true
-      - name: import-shadowing
-        disabled: true
-      - name: line-length-limit
-        disabled: true
-      - name: max-public-structs
-        disabled: true
-      - name: modifies-parameter
-        disabled: true
-      - name: nested-structs
-        disabled: true
-      - name: package-comments # https://github.com/mgechev/revive/issues/740; stylecheck's ST1000 is better
-        disabled: true
-      - name: redefines-builtin-id
-        disabled: true
-      - name: unhandled-error
-        disabled: true
-      - name: var-naming
-        disabled: true
+      - linters:
+          - bodyclose
+          - goconst
+          - gosec
+          - staticcheck
+        path: (.+)_test.go
+      - linters:
+          - cyclop
+          - gocognit
+          - gocritic
+          - gocyclo
+          - revive
+        path: (.+)_integration_test.go
+      - linters:
+          - gocognit
+        path: pkg/api/connect/integration/(.+)_test.go
+      - linters:
+          - goconst
+        path: /connector/interceptor/(.+)_hook.go
+      - linters:
+          - gosec
+        path: (.+).go
+        text: 'G115: integer overflow conversion int -> int32'
+      - linters:
+          - gosec
+        path: (.+).go
+        text: 'G115: integer overflow conversion uint32 -> int32'
+      - linters:
+          - staticcheck
+        path: (.+)_v1alpha1_test.go
+        text: 'SA1019:'
+      - linters:
+          - staticcheck
+        path: pkg/api/routes.go
+        text: 'SA1019: dataplanev1alpha1connect'
+      - linters:
+          - staticcheck
+        path: (.+)/v1alpha1/service.go
+        text: 'SA1019: dataplanev1alpha1connect'
+      - linters:
+          - staticcheck
+        path: (.+).go
+        text: SA1019.*jhump/protoreflect
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/redpanda-data/console/backend)
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
