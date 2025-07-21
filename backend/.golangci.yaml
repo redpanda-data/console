@@ -33,6 +33,7 @@ linters:
     - reassign
     - revive
     - rowserrcheck
+    - sloglint
     - sqlclosecheck
     - staticcheck
     - unconvert
@@ -75,6 +76,18 @@ linters:
       require-explanation: true
       require-specific: true
       allow-unused: false
+    sloglint:
+      attr-only: true
+      no-global: all
+      context: all
+      msgstyle: lowercased
+      key-naming-case: snake
+      forbidden-keys:
+        - time
+        - level
+        - msg
+        - source
+        - err # Use "error"
     revive:
       confidence: 0.7
       severity: warning
@@ -129,6 +142,8 @@ linters:
           - bodyclose
           - goconst
           - gosec
+          - noctx
+          - sloglint
           - staticcheck
         path: (.+)_test.go
       - linters:
