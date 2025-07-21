@@ -25,6 +25,8 @@ message License {
   Type type = 2;
   // UnixEpochSeconds is the timestamp when the license is going to expire.
   int64 expires_at = 3;
+  // Organization is the organization name of the license.
+  string organization = 4;
 }
 
 message ListLicensesRequest {}

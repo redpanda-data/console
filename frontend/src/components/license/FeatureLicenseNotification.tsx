@@ -14,8 +14,10 @@ import {
   getMillisecondsToExpiration,
   getPrettyExpirationDate,
   getPrettyTimeToExpiration,
+  isBakedInTrial,
   LICENSE_WEIGHT,
   MS_IN_DAY,
+  RegisterButton,
   UpgradeButton,
   UploadLicenseButton,
 } from './licenseUtils';
@@ -25,11 +27,29 @@ const getLicenseAlertContentForFeature = (
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
-  if (license === undefined || license.type !== License_Type.TRIAL) {
+  if (license === undefined) {
     return null;
   }
 
   const msToExpiration = getMillisecondsToExpiration(license);
+  const bakedInTrial = isBakedInTrial(license);
+
+
+  if(license.type === License_Type.TRIAL && api.isRedpanda) {
+    if (bakedInTrial) {
+      return {
+        message: (
+          <Box>
+            <Text>This is an enterprise feature. Register for an additional 30 days of enterprise features.</Text>
+            <Flex gap={2} my={2}>
+              <RegisterButton />
+            </Flex>
+          </Box>
+        ),
+        status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
+      }; 
+    }
+  }
 
   // Redpanda
   if (api.isRedpanda) {
