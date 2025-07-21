@@ -4263,7 +4263,8 @@ func serializeShopV1_2(jsonInput string, schemaID int) ([]byte, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx,
 		"go",
 		"run",
 		cmdPath,
@@ -4289,7 +4290,8 @@ func deserializeShopV1_2(binInput []byte, schemaID int) (string, error) {
 		return "", err
 	}
 
-	cmd := exec.Command(
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx,
 		"go",
 		"run",
 		cmdPath,
