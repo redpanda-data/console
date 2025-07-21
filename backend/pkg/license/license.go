@@ -34,9 +34,9 @@ type License struct {
 // NewOpenSourceCoreLicense creates a new default open source License.
 func NewOpenSourceCoreLicense() License {
 	return License{
-		Source:    SourceRedpanda,
-		Type:      TypeOpenSource,
-		ExpiresAt: math.MaxInt32,
+		Source:       SourceRedpanda,
+		Type:         TypeOpenSource,
+		ExpiresAt:    math.MaxInt32,
 		Organization: "",
 	}
 }

@@ -24,6 +24,17 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
   [License_Type.ENTERPRISE]: 3,
 };
 
+
+/**
+ * Checks if a license is a built-in trial license by examining its organization field.
+ * 
+ * @param {License} license - The license object to check
+ * @returns {boolean} Returns `true` if the license is a built-in trial (organization is 'Redpanda Built-In Evaluation Period'), 
+ * otherwise `false`
+ */
+
+export const isBakedInTrial = (license: License): boolean => license.organization === 'Redpanda Built-In Evaluation Period';
+
 /**
  * Checks if a list of enterprise features includes enabled features for authentication,
  * specifically 'sso' (Single Sign-On) or 'rbac' (Reassign Partitions).
@@ -360,6 +371,7 @@ export const UploadLicenseButton = () =>
       Upload license
     </Button>
   ) : null;
+
 export const UpgradeButton = () => (
   <Button
     variant="outline"
@@ -372,5 +384,11 @@ export const UpgradeButton = () => (
     }}
   >
     Upgrade
+  </Button>
+);
+
+export const RegisterButton = () => (
+  <Button variant="ghost" size="sm">
+    Register TODO
   </Button>
 );

@@ -131,7 +131,8 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 	licenses = append(licenses, coreProtoLicense)
 
 	requireGating := s.requireGating(ctx)
-	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: isViolation, RequireGating: requireGating }), nil
+
+	return connect.NewResponse(&v1alpha1.ListLicensesResponse{Licenses: licenses, Violation: isViolation, RequireGating: requireGating}), nil
 }
 
 // SetLicense installs a new license into the Redpanda cluster.
