@@ -163,7 +163,7 @@ func splitRule(s string) (jsonPath string, regexMapping string, err error) {
 	}
 
 	// Allow either dot notation ($.field) or bracket notation ($["field"])
-	if !(strings.HasPrefix(s, "$.") || strings.HasPrefix(s, "$[")) {
+	if !strings.HasPrefix(s, "$.") && !strings.HasPrefix(s, "$[") {
 		return "", "", errors.New(`rule must start with "$." or "$["`)
 	}
 

@@ -33,7 +33,7 @@ func (r *Regexp) UnmarshalText(b []byte) error {
 // MarshalText marshals regexp.Regexp as string
 func (r *Regexp) MarshalText() ([]byte, error) {
 	if r.Regexp != nil {
-		return []byte(r.Regexp.String()), nil
+		return []byte(r.String()), nil
 	}
 
 	return nil, nil
@@ -50,7 +50,7 @@ func (r *RegexpOrLiteral) String() string {
 		return r.literal
 	}
 	if r.Regexp != nil {
-		return r.Regexp.String()
+		return r.String()
 	}
 	return ""
 }
@@ -68,7 +68,7 @@ func (r *RegexpOrLiteral) UnmarshalText(b []byte) error {
 // MarshalText marshals regexp.Regexp as string
 func (r *RegexpOrLiteral) MarshalText() ([]byte, error) {
 	if r.Regexp != nil {
-		return []byte(r.Regexp.String()), nil
+		return []byte(r.String()), nil
 	}
 
 	return []byte(r.literal), nil

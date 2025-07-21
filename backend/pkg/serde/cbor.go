@@ -135,7 +135,7 @@ func (d CborSerde) isTopicAllowed(topic string) bool {
 	}
 
 	if d.Config.TopicName.Regexp != nil {
-		return d.Config.TopicName.Regexp.MatchString(topic)
+		return d.Config.TopicName.MatchString(topic)
 	}
 
 	return d.Config.TopicName.String() == topic
