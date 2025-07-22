@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -551,7 +552,10 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 	defer wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
-			s.logger.Error("recovered from panic in message worker", zap.Any("error", r))
+			s.logger.Error("recovered from panic in message worker",
+				zap.Any("error", r),
+				zap.String("stack_trace", string(debug.Stack())),
+				zap.String("topic", consumeReq.TopicName))
 		}
 	}()
 
