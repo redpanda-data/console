@@ -80,7 +80,7 @@ linters:
       attr-only: true
       no-global: all
       context: all
-      msgstyle: lowercased
+      msg-style: lowercased
       key-naming-case: snake
       forbidden-keys:
         - time
