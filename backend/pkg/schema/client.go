@@ -69,6 +69,7 @@ type Client interface {
 	ParseJSONSchema(ctx context.Context, sch sr.Schema) (*jsonschema.Schema, error)
 	SchemaByID(ctx context.Context, id int) (sr.Schema, error)
 	SchemaByVersion(ctx context.Context, subject string, id int) (sr.SubjectSchema, error)
+	CompileProtoSchemaWithReferences(ctx context.Context, schema sr.Schema, accessorMap map[string]string) (linker.Files, error)
 }
 
 // Ensure CachedClient implements the Client interface.
