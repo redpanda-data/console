@@ -13,3 +13,8 @@
     display: none;
 }
 
+.soft-deleted-row {
+    background-color: var(--chakra-colors-gray-50) !important;
+    color: var(--chakra-colors-gray-400) !important;
+}
+

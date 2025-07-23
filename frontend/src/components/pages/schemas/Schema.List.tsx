@@ -283,6 +283,7 @@ class SchemaList extends PageComponent<{}> {
             data={filteredSubjects}
             pagination
             sorting
+            rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
             columns={[
               {
                 header: 'Name',
