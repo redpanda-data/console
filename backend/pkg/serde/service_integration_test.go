@@ -2734,6 +2734,142 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal(string(PayloadEncodingUtf8WithControlChars), dr.Key.Troubleshooting[10].SerdeName)
 		assert.Equal("payload does not contain UTF8 control characters", dr.Key.Troubleshooting[10].Message)
 	})
+
+	t.Run("avro with disabled schema registry", func(t *testing.T) {
+		// This test reproduces the panic scenario that was reported: https://github.com/redpanda-data/console/issues/1842
+		// Trying to deserialize Avro messages when schema registry is disabled
+		// should fail gracefully, not panic with nil pointer dereference
+
+		testTopicName := testutil.TopicNameForTest("serde_avro_disabled_sr")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+		require.NoError(err)
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		// Step 1: Produce an Avro-encoded message (with schema registry enabled)
+		simpleSchemaStr := `{
+			"type": "record",
+			"name": "SimpleRecord",
+			"namespace": "io.test.simple",
+			"fields": [
+				{"name": "id", "type": "string"},
+				{"name": "value", "type": "long"}
+			]
+		}`
+
+		simpleSchema, err := avro.Parse(simpleSchemaStr)
+		require.NoError(err)
+
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(ctx, testTopicName+"-value", sr.Schema{
+			Schema: simpleSchemaStr,
+			Type:   sr.TypeAvro,
+		})
+		require.NoError(err)
+
+		type SimpleRecord struct {
+			ID    string `avro:"id" json:"id"`
+			Value int64  `avro:"value" json:"value"`
+		}
+
+		var srSerde sr.Serde
+		srSerde.Register(
+			ss.ID,
+			&SimpleRecord{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return avro.Marshal(simpleSchema, v.(*SimpleRecord))
+			}),
+			sr.DecodeFn(func(b []byte, v any) error {
+				return avro.Unmarshal(simpleSchema, b, v.(*SimpleRecord))
+			}),
+		)
+
+		testRecord := &SimpleRecord{ID: "test_123", Value: 42}
+		avroData, err := srSerde.Encode(testRecord)
+		require.NoError(err)
+
+		record := &kgo.Record{
+			Key:   []byte(testRecord.ID),
+			Value: avroData,
+			Topic: testTopicName,
+		}
+
+		produceClient := s.consumerClientForTopic(testTopicName)
+		result := produceClient.ProduceSync(ctx, record)
+		require.NoError(result.FirstErr())
+
+		// Step 2: Create serde service with DISABLED schema registry
+		// This reproduces the original nil interface issue
+
+		disabledCfg := s.createBaseConfig()
+		disabledCfg.SchemaRegistry.Enabled = false // Key: disable schema registry!
+
+		schemaClientFactory, err := schemafactory.NewSingleClientProvider(&disabledCfg)
+		require.NoError(err)
+
+		cacheNamespaceFn := func(context.Context) (string, error) {
+			return "disabled-test/", nil
+		}
+
+		// This was the problematic pattern that caused the panic:
+		// nil schema client passed to serde service
+		var cachedSchemaClient schemacache.Client
+		if disabledCfg.SchemaRegistry.Enabled {
+			cachedSchemaClient, err = schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
+			require.NoError(err)
+		}
+		// cachedSchemaClient remains nil here when schema registry disabled
+
+		disabledSerdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, cborConfig)
+		require.NoError(err)
+
+		// Step 3: Consume the Avro message and attempt deserialization
+		// Before fix: This would panic with "invalid memory address or nil pointer dereference"
+		// After fix: Should return proper error message
+
+		consumerClient := s.consumerClientForTopic(testTopicName)
+		fetches := consumerClient.PollFetches(ctx)
+		require.NoError(fetches.Err())
+
+		var consumedRecord *kgo.Record
+		fetches.EachPartition(func(p kgo.FetchTopicPartition) {
+			for _, record := range p.Records {
+				consumedRecord = record
+				break
+			}
+		})
+		require.NotNil(consumedRecord, "Should have consumed the produced record")
+
+		// Step 4: Attempt deserialization - this should NOT panic
+		opts := DeserializationOptions{Troubleshoot: true}
+		deserializedRecord := disabledSerdeSvc.DeserializeRecord(ctx, consumedRecord, opts)
+		require.NotNil(deserializedRecord)
+
+		// Verify graceful error handling instead of panic
+		assert.NotNil(deserializedRecord.Value.Troubleshooting)
+		assert.Greater(len(deserializedRecord.Value.Troubleshooting), 0)
+
+		// The serde service tries multiple encoders - if Avro fails due to missing schema registry,
+		// it might successfully decode with another encoder like utf8WithControlChars
+		// The important thing is that it didn't panic and we got an Avro troubleshooting entry
+
+		// Find the Avro troubleshooting entry and verify proper error message
+		var avroTroubleshooting *TroubleshootingReport
+		for _, tr := range deserializedRecord.Value.Troubleshooting {
+			if tr.SerdeName == string(PayloadEncodingAvro) {
+				avroTroubleshooting = &tr
+				break
+			}
+		}
+		require.NotNil(avroTroubleshooting, "Should have Avro troubleshooting entry")
+		assert.Contains(avroTroubleshooting.Message, "no schema registry configured",
+			"Expected error about missing schema registry, got: %s", avroTroubleshooting.Message)
+	})
 }
 
 /*

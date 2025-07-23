@@ -28,6 +28,7 @@ linters:
     - misspell
     - nakedret
     - nilerr
+    - nilnesserr
     - noctx
     - nolintlint
     - reassign

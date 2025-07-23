@@ -43,7 +43,7 @@ type Service struct {
 	redpandaClientFactory redpandafactory.ClientFactory
 	gitSvc                *git.Service // Git service can be nil if not configured
 	connectSvc            *connect.Service
-	cachedSchemaClient    *schemacache.CachedClient
+	cachedSchemaClient    schemacache.Client
 	serdeSvc              *serde.Service
 	protoSvc              *proto.Service
 	logger                *zap.Logger
@@ -96,7 +96,7 @@ func NewService(
 		}
 	}
 
-	var cachedSchemaClient *schemacache.CachedClient
+	var cachedSchemaClient schemacache.Client
 	if cfg.SchemaRegistry.Enabled {
 		cachedSchemaClient, err = schemacache.NewCachedClient(schemaClientFactory, cacheNamespaceFn)
 		if err != nil {
