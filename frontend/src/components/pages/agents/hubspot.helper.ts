@@ -6,6 +6,7 @@ interface Fields {
   [key: string]: string | number;
 }
 
+// HubSpot Configuration Constants
 export const HUBSPOT_REGION = 'na1';
 export const HUBSPOT_PORTAL_ID = '7733588';
 export const HUBSPOT_TRACKING_COOKIE_TOKEN = 'hubspotutk';
@@ -17,6 +18,21 @@ interface HubspotSubmitProps {
   portalId?: string;
   onSuccess?: (data: any) => void;
   onError?: (error: any) => void;
+}
+
+interface HubspotUserData {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  avatarUrl?: string;
+  [key: string]: string | number | undefined;
+}
+
+declare global {
+  interface Window {
+    _hsq: any[];
+  }
 }
 
 export const hubspotSubmit = ({
@@ -48,3 +64,23 @@ export const hubspotSubmit = ({
       if (onError) onError(error);
     });
 };
+
+/**
+ * Track user in HubSpot using the _hsq.push(['identify', data]) method
+ * @param userData - User data to track in HubSpot
+ */
+export const trackHubspotUser = (userData: HubspotUserData) => {
+  window._hsq = window._hsq || [];
+  window._hsq.push(['identify', userData]);
+};
+
+/**
+ * Track page navigation in HubSpot using the _hsq.push(['setPath', { path }]) method
+ * @param path - The current page path to track
+ */
+export const trackHubspotPage = (path: string) => {
+  window._hsq = window._hsq || [];
+  window._hsq.push(['setPath', { path }]);
+};
+
+
