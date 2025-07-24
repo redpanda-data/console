@@ -113,7 +113,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 	for i, topic := range topics {
 		substitutedPartitions := make([]kmsg.OffsetCommitRequestTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
-			switch partition.Partition {
+			switch partition.Offset {
 			case TimestampLatest:
 				offset, exists := endOffsets.Lookup(topic.Topic, partition.Partition)
 				if !exists {
