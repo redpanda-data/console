@@ -226,22 +226,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	grp.SetLimit(10)
 
 	grp.Go(func() error {
-		// 2. Retrieve subject config (subject compatibility level)
-		compatibilityRes := srClient.Compatibility(grpCtx, subjectName)
-		compatibility := compatibilityRes[0]
-		if err := compatibility.Err; err != nil {
-			var schemaErr *sr.ResponseError
-			if errors.As(err, &schemaErr) && schemaErr.ErrorCode == 40408 {
-				// Subject compatibility not configured, this means the default compatibility will be used
-				compatLevel = "DEFAULT"
-				return nil
-			}
-			// For other errors, log warning and leave compatLevel as nil
-			compatLevel = "UNKNOWN"
-			s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
-			return nil
-		}
-		compatLevel = compatibility.Level.String()
+		compatLevel = s.getSubjectCompatibilityLevel(grpCtx, srClient, subjectName)
 		return nil
 	})
 
@@ -384,6 +369,24 @@ func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *s
 	})
 
 	return response, nil
+}
+
+// getSubjectCompatibilityLevel retrieves the compatibility level for a subject,
+// handling the case where no specific compatibility is configured.
+func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *sr.Client, subjectName string) string {
+	compatibilityRes := srClient.Compatibility(ctx, subjectName)
+	compatibility := compatibilityRes[0]
+	if err := compatibility.Err; err != nil {
+		var schemaErr *sr.ResponseError
+		if errors.As(err, &schemaErr) && schemaErr.ErrorCode == 40408 {
+			// Subject compatibility not configured, this means the default compatibility will be used
+			return "DEFAULT"
+		}
+		// For other errors, log warning and return UNKNOWN
+		s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
+		return "UNKNOWN"
+	}
+	return compatibility.Level.String()
 }
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
