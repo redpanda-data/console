@@ -19,10 +19,11 @@ import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils
 import { PageComponent, type PageInitHelper } from '../Page';
 
 import './Schema.List.scss';
-import { TrashIcon } from '@heroicons/react/outline';
+import { TrashIcon, ArchiveIcon } from '@heroicons/react/outline';
 import {
   Alert,
   AlertIcon,
+  Badge,
   Box,
   Checkbox,
   createStandaloneToast,
@@ -41,6 +42,7 @@ import {
   Skeleton,
   Spinner,
   Text,
+  Tooltip,
   VStack,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
@@ -291,16 +293,28 @@ class SchemaList extends PageComponent<{}> {
                 size: Number.POSITIVE_INFINITY,
                 cell: ({
                   row: {
-                    original: { name },
+                    original: { name, isSoftDeleted },
                   },
                 }) => (
                   <Box wordBreak="break-word" whiteSpace="break-spaces">
-                    <Link
-                      data-testid="schema-registry-table-name"
-                      to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
-                    >
-                      {name}
-                    </Link>
+                    <Flex alignItems="center" gap={2}>
+                      <Link
+                        data-testid="schema-registry-table-name"
+                        to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
+                      >
+                        {name}
+                      </Link>
+                      {isSoftDeleted && (
+                        <Tooltip
+                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
+                          hasArrow
+                        >
+                          <Box>
+                            <ArchiveIcon width={16} height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} />
+                          </Box>
+                        </Tooltip>
+                      )}
+                    </Flex>
                   </Box>
                 ),
               },
@@ -402,7 +416,26 @@ const SchemaTypeColumn = observer((p: { name: string }) => {
     return <Skeleton height="15px" />;
   }
 
-  return <>{details.type}</>;
+  const getSchemaTypeBadgeProps = (type: string) => {
+    switch (type) {
+      case 'AVRO':
+        return { bg: 'blue.50', color: 'blue.700', variant: 'subtle' as const };
+      case 'PROTOBUF':
+        return { bg: 'teal.50', color: 'teal.700', variant: 'subtle' as const };
+      case 'JSON':
+        return { bg: 'orange.50', color: 'orange.700', variant: 'subtle' as const };
+      default:
+        return { bg: 'gray.50', color: 'gray.700', variant: 'subtle' as const };
+    }
+  };
+
+  const badgeProps = getSchemaTypeBadgeProps(details.type);
+
+  return (
+    <Badge size="sm" {...badgeProps}>
+      {details.type}
+    </Badge>
+  );
 });
 
 const SchemaCompatibilityColumn = observer((p: { name: string }) => {
@@ -423,7 +456,7 @@ const LatestVersionColumn = observer((p: { name: string }) => {
   }
 
   if (details.latestActiveVersion < 0) {
-    return null;
+    return <Text color="gray.500">None</Text>;
   }
 
   return <>{details.latestActiveVersion}</>;
