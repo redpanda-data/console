@@ -128,9 +128,6 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 		if err != nil {
 			return err
 		}
-		if err != nil {
-			return err
-		}
 		for _, subject := range res {
 			subjectsWithDeleted[subject] = struct{}{}
 		}
@@ -163,7 +160,7 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 type SchemaRegistrySubjectDetails struct {
 	Name                string                                `json:"name"`
 	Type                sr.SchemaType                         `json:"type"`
-	Compatibility       *sr.CompatibilityLevel                `json:"compatibility"`
+	Compatibility       string                                `json:"compatibility"`
 	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
 	LatestActiveVersion int                                   `json:"latestActiveVersion"`
 	Schemas             []SchemaRegistryVersionedSchema       `json:"schemas"`
@@ -223,7 +220,7 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	}
 
 	// 2. Retrieve schemas and compat level concurrently
-	var compatLevel *sr.CompatibilityLevel
+	var compatLevel string
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.SetLimit(10)
@@ -233,10 +230,18 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		compatibilityRes := srClient.Compatibility(grpCtx, subjectName)
 		compatibility := compatibilityRes[0]
 		if err := compatibility.Err; err != nil {
+			var schemaErr *sr.ResponseError
+			if errors.As(err, &schemaErr) && schemaErr.ErrorCode == 40408 {
+				// Subject compatibility not configured, this means the default compatibility will be used
+				compatLevel = "DEFAULT"
+				return nil
+			}
+			// For other errors, log warning and leave compatLevel as nil
+			compatLevel = "UNKNOWN"
 			s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
 			return nil
 		}
-		compatLevel = &compatibility.Level
+		compatLevel = compatibility.Level.String()
 		return nil
 	})
 
