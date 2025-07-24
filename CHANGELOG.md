@@ -10,7 +10,10 @@
 - [BUGFIX] Fix missing cache for JSON schema compilation, causing repeated compilation overhead.
 - [BUGFIX] Fix incorrect caching scope for Avro schemas in multi-tenant environments.
 - [BUGFIX] Fix circular reference detection in Avro schema parsing to prevent infinite recursion.
+- [BUGFIX] Fix schema registry compatibility configuration error handling to gracefully handle unconfigured subjects.
 - [IMPROVEMENT] Add comprehensive schema registry test suite with mock package to prevent regressions.
+- [IMPROVEMENT] Add visual indicators for soft-deleted schema registry subjects with archive icons and tooltips.
+- [IMPROVEMENT] Add colored badges for schema types (AVRO, PROTOBUF, JSON) in schema registry list view.
 
 ## v2.8.7 / 2025-06-27
 
