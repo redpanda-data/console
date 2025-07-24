@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v3.1.3 / 2025-07-25
 
 - [BUGFIX] Fix transactional record production always appearing to fail even when records were successfully produced and committed.
 - [BUGFIX] Fix misleading error messages when fetching topic partition offsets that made troubleshooting difficult.
