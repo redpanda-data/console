@@ -156,7 +156,7 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 	// it will return a NotConfigured connect.Error.
 
 	if opts.schemaClientProvider == nil {
-		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
+		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg, logger.Named("schema_registry"))
 		if err != nil {
 			logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
 		}
