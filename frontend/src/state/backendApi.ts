@@ -66,6 +66,11 @@ import {
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1/secret_pb';
+import type {
+  KnowledgeBase,
+  KnowledgeBaseCreate,
+  KnowledgeBaseUpdate,
+} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
@@ -2239,6 +2244,77 @@ export const pipelinesApi = observable({
     if (!client) throw new Error('pipelines client is not initialized');
 
     await client.stopPipeline({ request: { id } });
+  },
+});
+
+export const knowledgebaseApi = observable({
+  knowledgeBases: undefined as undefined | KnowledgeBase[],
+  knowledgeBasesError: null as ConnectError | null,
+
+  async refreshKnowledgeBases(_force: boolean): Promise<void> {
+    const client = appConfig.knowledgebaseClient;
+    if (!client) throw new Error('knowledgebase client is not initialized');
+
+    const knowledgeBases = [];
+    this.knowledgeBasesError = null;
+
+    let nextPageToken = '';
+    while (true) {
+      const res = await client
+        .listKnowledgeBases({ pageSize: 10, pageToken: nextPageToken })
+        .catch((error: ConnectError) => {
+          this.knowledgeBasesError = error;
+          return undefined;
+        });
+
+      // Handle response structure (some APIs return res.response, others return res directly)
+      const response = (res as any)?.response || res;
+      if (!response) break;
+
+      knowledgeBases.push(...response.knowledgeBases);
+
+      if (!response.nextPageToken || response.nextPageToken.length === 0) break;
+      nextPageToken = response.nextPageToken;
+    }
+
+    this.knowledgeBases = knowledgeBases;
+  },
+
+  async deleteKnowledgeBase(id: string) {
+    const client = appConfig.knowledgebaseClient;
+    if (!client) throw new Error('knowledgebase client is not initialized');
+
+    await client.deleteKnowledgeBase({ id });
+  },
+  async createKnowledgeBase(knowledgeBase: KnowledgeBaseCreate) {
+    const client = appConfig.knowledgebaseClient;
+    if (!client) throw new Error('knowledgebase client is not initialized');
+    const result = await client.createKnowledgeBase({ knowledgeBase });
+    return result;
+  },
+  async updateKnowledgeBase(id: string, knowledgeBaseUpdate: KnowledgeBaseUpdate, updateMask?: string[]) {
+    const client = appConfig.knowledgebaseClient;
+    if (!client) throw new Error('knowledgebase client is not initialized');
+
+    await client.updateKnowledgeBase({
+      id,
+      knowledgeBase: knowledgeBaseUpdate,
+      updateMask: updateMask
+        ? {
+            paths: updateMask,
+          }
+        : undefined,
+    });
+  },
+  async getKnowledgeBase(id: string): Promise<KnowledgeBase> {
+    const client = appConfig.knowledgebaseClient;
+    if (!client) throw new Error('knowledgebase client is not initialized');
+
+    const response = await client.getKnowledgeBase({ id });
+    if (!response.knowledgeBase) {
+      throw new Error('Knowledge base not found');
+    }
+    return response.knowledgeBase;
   },
 });
 
