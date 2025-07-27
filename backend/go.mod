@@ -14,7 +14,7 @@ require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/carlmjohnson/requests v0.24.3
-	github.com/cloudhut/common v0.10.0
+	github.com/cloudhut/common v0.11.0
 	github.com/cloudhut/connect-client v0.0.0-20240523140316-27c93e339567
 	github.com/docker/go-connections v0.5.0
 	github.com/dop251/goja v0.0.0-20250531102226-cb187b08699c
@@ -56,13 +56,12 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.11.2
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/franz-go/pkg/sr v1.5.0
-	github.com/twmb/franz-go/plugin/kzap v1.1.2
+	github.com/twmb/franz-go/plugin/kslog v1.0.0
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/mock v0.5.2
-	go.uber.org/zap v1.27.0
 	go.vallahaye.net/connect-gateway v0.11.0
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	golang.org/x/net v0.41.0
@@ -186,6 +185,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
@@ -218,9 +218,10 @@ require (
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
 	gopkg.in/linkedin/goavro.v1 v1.0.5 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

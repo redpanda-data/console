@@ -13,6 +13,7 @@ package transform
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strconv"
@@ -21,7 +22,6 @@ import (
 	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -35,7 +35,7 @@ var _ dataplanev1connect.TransformServiceHandler = (*Service)(nil)
 // Service is the implementation of the transform service.
 type Service struct {
 	cfg                    *config.Config
-	logger                 *zap.Logger
+	logger                 *slog.Logger
 	validator              protovalidate.Validator
 	redpandaClientProvider redpandafactory.ClientFactory
 	mapper                 mapper
@@ -45,7 +45,7 @@ type Service struct {
 
 // NewService creates a new transform service handler.
 func NewService(cfg *config.Config,
-	logger *zap.Logger,
+	logger *slog.Logger,
 	protoValidator protovalidate.Validator,
 	redpandaClientProvider redpandafactory.ClientFactory,
 ) *Service {
@@ -63,12 +63,12 @@ func NewService(cfg *config.Config,
 // writeError writes an error using connect.ErrorWriter and also logs this event.
 func (s *Service) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	childLogger := s.logger.With(
-		zap.String("request_method", r.Method),
-		zap.String("request_path", r.URL.Path),
+		slog.String("request_method", r.Method),
+		slog.String("request_path", r.URL.Path),
 	)
 
 	apierrors.HandleHTTPError(r.Context(), w, r, err)
-	childLogger.Warn("", zap.Error(err))
+	childLogger.WarnContext(r.Context(), "", slog.Any("error", err))
 }
 
 // ListTransforms lists all the transforms matching the filter deployed to Redpanda

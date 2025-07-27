@@ -12,11 +12,11 @@ package connect
 import (
 	"context"
 	"crypto/tls"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 
 	con "github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connector/interceptor"
@@ -25,7 +25,7 @@ import (
 // Service provides the API for interacting with all configured Kafka connect clusters.
 type Service struct {
 	Cfg    config.KafkaConnect
-	Logger *zap.Logger
+	Logger *slog.Logger
 	// ClientsByCluster holds the Client and config. The key is the clusters' name
 	ClientsByCluster map[string]*ClientWithConfig
 	Interceptor      *interceptor.Interceptor
@@ -40,7 +40,7 @@ type ClientWithConfig struct {
 
 // NewService creates a new connect.Service. It tests the connectivity for each configured
 // Kafka connect cluster proactively.
-func NewService(cfg config.KafkaConnect, logger *zap.Logger) (*Service, error) {
+func NewService(cfg config.KafkaConnect, logger *slog.Logger) (*Service, error) {
 	clientsByCluster := make(map[string]*ClientWithConfig)
 
 	if len(cfg.Clusters) == 0 {
@@ -58,8 +58,8 @@ func NewService(cfg config.KafkaConnect, logger *zap.Logger) (*Service, error) {
 	for _, clusterCfg := range cfg.Clusters {
 		// Create dedicated KafkaConnect HTTP Client for each cluster
 		childLogger := logger.With(
-			zap.String("cluster_name", clusterCfg.Name),
-			zap.String("cluster_address", clusterCfg.URL))
+			slog.String("cluster_name", clusterCfg.Name),
+			slog.String("cluster_address", clusterCfg.URL))
 
 		opts := []con.ClientOption{
 			con.WithTimeout(cfg.ReadTimeout),
@@ -70,7 +70,7 @@ func NewService(cfg config.KafkaConnect, logger *zap.Logger) (*Service, error) {
 		// TLS Config
 		tlsCfg, err := clusterCfg.TLS.TLSConfig()
 		if err != nil {
-			childLogger.Error("failed to create TLS config for Kafka connect HTTP client, fallback to default TLS config", zap.Error(err))
+			childLogger.Error("failed to create TLS config for Kafka connect HTTP client, fallback to default TLS config", slog.Any("error", err))
 			tlsCfg = &tls.Config{MinVersion: tls.VersionTLS12}
 		}
 		opts = append(opts, con.WithTLSConfig(tlsCfg))
@@ -121,17 +121,17 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 			defer wg.Done()
 			_, err := c.GetRoot(ctx)
 			if err != nil {
-				s.Logger.Warn("connect cluster is not reachable",
-					zap.String("cluster_name", cfg.Name),
-					zap.String("cluster_address", cfg.URL),
-					zap.Error(err))
+				s.Logger.WarnContext(ctx, "connect cluster is not reachable",
+					slog.String("cluster_name", cfg.Name),
+					slog.String("cluster_address", cfg.URL),
+					slog.Any("error", err))
 				return
 			}
 			atomic.AddUint32(&successfulChecks, 1)
 		}(clientInfo.Cfg, clientInfo.Client)
 	}
 	wg.Wait()
-	s.Logger.Info("tested Kafka connect cluster connectivity",
-		zap.Uint32("successful_clusters", successfulChecks),
-		zap.Uint32("failed_clusters", uint32(len(s.ClientsByCluster))-successfulChecks))
+	s.Logger.InfoContext(ctx, "tested Kafka connect cluster connectivity",
+		slog.Int("successful_clusters", int(successfulChecks)),
+		slog.Int("failed_clusters", len(s.ClientsByCluster)-int(successfulChecks)))
 }

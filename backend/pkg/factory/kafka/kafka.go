@@ -15,6 +15,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"strings"
@@ -34,12 +35,12 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
-	"github.com/twmb/franz-go/plugin/kzap"
+	"github.com/twmb/franz-go/plugin/kslog"
 	"github.com/twmb/go-cache/cache"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 // ClientFactory defines the interface for creating and retrieving Kafka clients.
@@ -62,13 +63,13 @@ var _ ClientFactory = (*CachedClientProvider)(nil)
 // Kafka-specific settings.
 type CachedClientProvider struct {
 	cfg         *config.Config
-	logger      *zap.Logger
+	logger      *slog.Logger
 	clientCache *cache.Cache[string, *kgo.Client]
 }
 
 // NewCachedClientProvider creates a new CachedClientProvider with the specified
 // configuration and logger, initializing the client cache with defined settings.
-func NewCachedClientProvider(cfg *config.Config, logger *zap.Logger) *CachedClientProvider {
+func NewCachedClientProvider(cfg *config.Config, logger *slog.Logger) *CachedClientProvider {
 	cacheSettings := []cache.Opt{
 		cache.MaxAge(30 * time.Second),
 		cache.MaxErrorAge(time.Second),
@@ -115,8 +116,8 @@ func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 // If TLS certificates can't be read an error will be returned.
 //
 //nolint:gocognit,cyclop // This function is lengthy, but it's only plumbing configurations. Seems okay to me.
-func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string) ([]kgo.Opt, error) {
-	metricHooks := newClientHooks(logger.Named("kafka_client_hooks"), metricsNamespace)
+func NewKgoConfig(cfg config.Kafka, logger *slog.Logger, metricsNamespace string) ([]kgo.Opt, error) {
+	metricHooks := newClientHooks(loggerpkg.Named(logger, "kafka_client_hooks"), metricsNamespace)
 
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
@@ -128,7 +129,7 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 		kgo.KeepControlRecords(),
 		// Refresh metadata more often than the default, when the client notices that it's stale.
 		kgo.MetadataMinAge(time.Second),
-		kgo.WithLogger(kzap.New(logger.Named("kafka_client"))),
+		kgo.WithLogger(kslog.New(loggerpkg.Named(logger, "kafka_client"))),
 		kgo.WithHooks(metricHooks),
 	}
 

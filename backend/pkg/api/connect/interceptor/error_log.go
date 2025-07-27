@@ -11,14 +11,14 @@ package interceptor
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/redpanda-data/console/backend/pkg/logging"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 var _ connect.Interceptor = &ErrorLogInterceptor{}
@@ -85,15 +85,15 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 		}
 
 		// 6. Log error details with decorated logger
-		logger := logging.FromContext(ctx)
-		logger.Warn("",
-			zap.String("timestamp", start.Format(time.RFC3339)),
-			zap.String("procedure", procedure),
-			zap.String("request_duration", requestDuration.String()),
-			zap.String("status_code", statusCodeStr),
-			zap.Int("request_size_bytes", requestSize),
-			zap.String("peer_address", req.Peer().Addr), // Will be empty for requests made through gRPC GW
-			zap.Error(err),
+		logger := loggerpkg.FromContext(ctx)
+		logger.WarnContext(ctx, "",
+			slog.String("timestamp", start.Format(time.RFC3339)),
+			slog.String("procedure", procedure),
+			slog.String("request_duration", requestDuration.String()),
+			slog.String("status_code", statusCodeStr),
+			slog.Int("request_size_bytes", requestSize),
+			slog.String("peer_address", req.Peer().Addr), // Will be empty for requests made through gRPC GW
+			slog.Any("error", err),
 		)
 		return response, err
 	}

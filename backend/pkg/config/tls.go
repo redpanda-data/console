@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"log/slog"
 	"time"
 
 	"github.com/twmb/tlscfg"
-	"go.uber.org/zap"
 
 	tlspkg "github.com/redpanda-data/console/backend/pkg/tls"
 )
@@ -73,7 +73,7 @@ func (c *TLS) TLSConfig(overrides ...func(cfg *tls.Config) error) (*tls.Config, 
 // TLSConfigWithReloader returns the TLS Config from the configured parameters
 // and additionally starts a goroutine to hot refresh certificates at
 // RefreshInterval
-func (c *TLS) TLSConfigWithReloader(ctx context.Context, logger *zap.Logger, hostname string, overrides ...func(cfg *tls.Config) error) (*tls.Config, error) {
+func (c *TLS) TLSConfigWithReloader(ctx context.Context, logger *slog.Logger, hostname string, overrides ...func(cfg *tls.Config) error) (*tls.Config, error) {
 	if !c.Enabled {
 		return &tls.Config{
 			MinVersion: tls.VersionTLS12,

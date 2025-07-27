@@ -14,6 +14,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -24,10 +25,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -74,8 +75,10 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	require.NoError(err)
 
 	// new connect service
-	log, err := zap.NewProduction()
-	require.NoError(err)
+	log := loggerpkg.NewSlogLogger(
+		loggerpkg.WithFormat(loggerpkg.FormatText),
+		loggerpkg.WithLevel(slog.LevelInfo),
+	)
 
 	connectCfg := config.KafkaConnect{}
 	connectCfg.SetDefaults()

@@ -12,13 +12,13 @@ package console
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/backoff"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -27,6 +27,7 @@ import (
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
 	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
@@ -46,7 +47,7 @@ type Service struct {
 	cachedSchemaClient    schemacache.Client
 	serdeSvc              *serde.Service
 	protoSvc              *proto.Service
-	logger                *zap.Logger
+	logger                *slog.Logger
 	cfg                   *config.Config
 
 	// configExtensionsByName contains additional metadata about Topic or BrokerWithLogDirs configs.
@@ -58,7 +59,7 @@ type Service struct {
 // NewService for the Console package
 func NewService(
 	cfg *config.Config,
-	logger *zap.Logger,
+	logger *slog.Logger,
 	kafkaClientFactory kafkafactory.ClientFactory,
 	schemaClientFactory schemafactory.ClientFactory,
 	redpandaClientFactory redpandafactory.ClientFactory,
@@ -82,7 +83,7 @@ func NewService(
 
 	var protoSvc *proto.Service
 	if cfg.Serde.Protobuf.Enabled {
-		protoSvc, err = proto.NewService(cfg.Serde.Protobuf, logger.Named("proto_service"))
+		protoSvc, err = proto.NewService(cfg.Serde.Protobuf, loggerpkg.Named(logger, "proto_service"))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
 		}
@@ -164,7 +165,7 @@ func (s *Service) testKafkaConnectivity(ctx context.Context) error {
 		connectionCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 
-		s.logger.Info("connecting to Kafka seed brokers, trying to fetch cluster metadata", zap.Strings("seed_brokers", s.cfg.Kafka.Brokers))
+		s.logger.InfoContext(connectionCtx, "connecting to Kafka seed brokers, trying to fetch cluster metadata", slog.Any("seed_brokers", s.cfg.Kafka.Brokers))
 		req := kmsg.NewMetadataRequest()
 		res, err := req.RequestWith(connectionCtx, kafkaCl)
 		if err != nil {
@@ -183,11 +184,11 @@ func (s *Service) testKafkaConnectivity(ctx context.Context) error {
 		}
 		versions := kversion.FromApiVersionsResponse(versionsRes)
 
-		s.logger.Info("successfully connected to kafka cluster",
-			zap.Int("advertised_broker_count", len(res.Brokers)),
-			zap.Int("topic_count", len(res.Topics)),
-			zap.Int32("controller_id", res.ControllerID),
-			zap.String("kafka_version", versions.VersionGuess()))
+		s.logger.InfoContext(connectionCtx, "successfully connected to kafka cluster",
+			slog.Int("advertised_broker_count", len(res.Brokers)),
+			slog.Int("topic_count", len(res.Topics)),
+			slog.Int("controller_id", int(res.ControllerID)),
+			slog.String("kafka_version", versions.VersionGuess()))
 
 		return nil
 	}
@@ -214,9 +215,9 @@ func (s *Service) testKafkaConnectivity(ctx context.Context) error {
 		}
 
 		backoffDuration := eb.Backoff(attempt)
-		s.logger.Warn(
+		s.logger.WarnContext(ctx,
 			fmt.Sprintf("failed to test Kafka connection, going to retry in %s", backoffDuration),
-			zap.Int("remaining_retries", s.cfg.Kafka.Startup.MaxRetries-attempt),
+			slog.Int("remaining_retries", s.cfg.Kafka.Startup.MaxRetries-attempt),
 		)
 		attempt++
 		time.Sleep(backoffDuration)

@@ -12,10 +12,10 @@ package console
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
@@ -176,7 +176,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 					endpointSupported = s.checkRedpandaFeature(ctx, adminAPICl, endpointReq.RedpandaFeature)
 				} else {
 					endpointSupported = false
-					s.logger.Warn("failed to retrieve a redpanda api client to check endpoint compatibility", zap.Error(err))
+					s.logger.WarnContext(ctx, "failed to retrieve a redpanda api client to check endpoint compatibility", slog.Any("error", err))
 				}
 			}
 		}

@@ -13,13 +13,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // CreateACL creates an ACL resource in your target Kafka cluster.
@@ -37,7 +36,7 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to execute create ACL command: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.Any("create_acl_req", createReq)},
+			InternalLogs: []slog.Attr{slog.Any("create_acl_req", createReq)},
 			IsSilent:     false,
 		}
 	}
@@ -47,7 +46,7 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 			Err:          errors.New("unexpected number of results in create ACL response"),
 			Status:       http.StatusInternalServerError,
 			Message:      fmt.Sprintf("Failed to execute delete topic command: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.Int("results_length", len(res.Results))},
+			InternalLogs: []slog.Attr{slog.Int("results_length", len(res.Results))},
 			IsSilent:     false,
 		}
 	}
@@ -59,7 +58,7 @@ func (s *Service) CreateACL(ctx context.Context, createReq kmsg.CreateACLsReques
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to execute create ACL command: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.Any("create_acl_req", createReq)},
+			InternalLogs: []slog.Attr{slog.Any("create_acl_req", createReq)},
 			IsSilent:     false,
 		}
 	}

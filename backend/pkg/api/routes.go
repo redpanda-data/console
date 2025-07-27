@@ -10,6 +10,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -22,11 +23,9 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commoninterceptor "github.com/redpanda-data/common-go/api/interceptor"
 	"github.com/redpanda-data/common-go/api/metrics"
-	"go.uber.org/zap"
 	connectgateway "go.vallahaye.net/connect-gateway"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -50,6 +49,7 @@ import (
 	apiusersvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1"
 	apiusersvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1alpha1"
 	apiusersvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/user/v1alpha2"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha1/dataplanev1alpha1connect"
@@ -62,24 +62,24 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	// Setup Interceptors
 	v, err := protovalidate.New()
 	if err != nil {
-		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to create proto validator", slog.Any("error", err))
 	}
 
 	// Define interceptors that shall be used in the community version of Console. We may add further
 	// interceptors by calling the hooks.
 	apiProm, err := metrics.NewPrometheus(
-		metrics.WithRegistry(prometheus.DefaultRegisterer),
+		metrics.WithRegistry(api.PrometheusRegistry),
 		metrics.WithMetricsNamespace("redpanda_api"),
 	)
 	if err != nil {
-		api.Logger.Fatal("failed to create prometheus adapter", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to create prometheus adapter", slog.Any("error", err))
 	}
 	observerInterceptor := commoninterceptor.NewObserver(apiProm.ObserverAdapter())
 	baseInterceptors := []connect.Interceptor{
 		observerInterceptor,
 		interceptor.NewErrorLogInterceptor(),
-		interceptor.NewRequestValidationInterceptor(v, api.Logger.Named("validator")),
-		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, api.Logger.Named("endpoint_checker")),
+		interceptor.NewRequestValidationInterceptor(v, loggerpkg.Named(api.Logger, "validator")),
+		interceptor.NewEndpointCheckInterceptor(&api.Cfg.Console.API, loggerpkg.Named(api.Logger, "endpoint_checker")),
 	}
 
 	api.Hooks.Route.InitConnectRPCRouter(r)
@@ -114,20 +114,20 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	)
 
 	// v1
-	aclSvcV1 := apiaclsvcv1.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
-	topicSvcV1 := topicsvcv1.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
-	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(api.Cfg, api.Logger.Named("user_service"), api.ConsoleSvc, api.RedpandaClientProvider)
-	transformSvcV1 := transformsvcv1.NewService(api.Cfg, api.Logger.Named("transform_service"), v, api.RedpandaClientProvider)
-	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
+	aclSvcV1 := apiaclsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_service"), api.ConsoleSvc)
+	topicSvcV1 := topicsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
+	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "user_service"), api.ConsoleSvc, api.RedpandaClientProvider)
+	transformSvcV1 := transformsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
+	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvcV1 := &transformsvcv1.ConsoleService{Impl: transformSvcV1}
 
 	// v1alpha2
 
-	aclSvcV1alpha2 := apiaclsvcv1alpha2.NewService(api.Cfg, api.Logger.Named("kafka_service"), api.ConsoleSvc)
-	topicSvcV1alpha2 := topicsvcv1alpha2.NewService(api.Cfg, api.Logger.Named("topic_service"), api.ConsoleSvc)
-	var userSvcV1alpha2 dataplanev1alpha2connect.UserServiceHandler = apiusersvcv1alpha2.NewService(api.Cfg, api.Logger.Named("user_service"), api.RedpandaClientProvider, api.ConsoleSvc)
-	transformSvcV1alpha2 := transformsvcv1alpha2.NewService(api.Cfg, api.Logger.Named("transform_service"), v, api.RedpandaClientProvider)
-	kafkaConnectSvcV1alpha2 := apikafkaconnectsvcv1alpha2.NewService(api.Cfg, api.Logger.Named("kafka_connect_service"), api.ConnectSvc)
+	aclSvcV1alpha2 := apiaclsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_service"), api.ConsoleSvc)
+	topicSvcV1alpha2 := topicsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
+	var userSvcV1alpha2 dataplanev1alpha2connect.UserServiceHandler = apiusersvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "user_service"), api.RedpandaClientProvider, api.ConsoleSvc)
+	transformSvcV1alpha2 := transformsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
+	kafkaConnectSvcV1alpha2 := apikafkaconnectsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 
 	// v1alpha1
 
@@ -137,14 +137,14 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	kafkaConnectSvcV1alpha1 := apikafkaconnectsvcv1alpha1.NewService(kafkaConnectSvcV1alpha2)
 	topicSvcV1alpha1 := topicsvcv1alpha1.NewService(topicSvcV1alpha2)
 	transformSvcV1alpha1 := transformsvcv1alpha1.NewService(transformSvcV1alpha2)
-	consoleSvc := consolesvc.NewService(api.Logger.Named("console_service"), api.ConsoleSvc)
-	licenseSvc, err := licensesvc.NewService(api.Logger.Named("license_service"), api.RedpandaClientProvider, api.License)
+	consoleSvc := consolesvc.NewService(loggerpkg.Named(api.Logger, "console_service"), api.ConsoleSvc)
+	licenseSvc, err := licensesvc.NewService(loggerpkg.Named(api.Logger, "license_service"), api.RedpandaClientProvider, api.License)
 	if err != nil {
-		api.Logger.Fatal("failed to create license service", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to create license service", slog.Any("error", err))
 	}
 	clusterStatusSvc := clusterstatus.NewService(
 		api.Cfg,
-		api.Logger.Named("redpanda_cluster_status_service"),
+		loggerpkg.Named(api.Logger, "redpanda_cluster_status_service"),
 		api.KafkaClientProvider,
 		api.RedpandaClientProvider,
 		api.SchemaClientProvider,
@@ -478,9 +478,9 @@ func (api *API) routes() *chi.Mux {
 
 	v, err := protovalidate.New()
 	if err != nil {
-		api.Logger.Fatal("failed to create proto validator", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to create proto validator", slog.Any("error", err))
 	}
-	transformSvc := transformsvcv1alpha2.NewService(api.Cfg, api.Logger.Named("transform_service"), v, api.RedpandaClientProvider)
+	transformSvc := transformsvcv1alpha2.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}
@@ -497,7 +497,7 @@ func (api *API) routes() *chi.Mux {
 		AllowOriginFunc: func(r *http.Request, _ string) bool {
 			isAllowed := checkOriginFn(r)
 			if !isAllowed {
-				api.Logger.Debug("CORS check failed", zap.String("request_origin", r.Header.Get("Origin")))
+				api.Logger.Debug("CORS check failed", slog.String("request_origin", r.Header.Get("Origin")))
 			}
 			return isAllowed
 		},
@@ -515,7 +515,7 @@ func (api *API) routes() *chi.Mux {
 	baseRouter.Group(func(router chi.Router) {
 		// Init middlewares - Do set up of any shared/third-party middleware and handlers
 		if api.Cfg.REST.CompressionLevel > 0 {
-			api.Logger.Debug("using compression for all http routes", zap.Int("level", api.Cfg.REST.CompressionLevel))
+			api.Logger.Debug("using compression for all http routes", slog.Int("level", api.Cfg.REST.CompressionLevel))
 			compressor := chimiddleware.NewCompressor(api.Cfg.REST.CompressionLevel)
 			router.Use(compressor.Handler)
 		}
