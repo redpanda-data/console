@@ -15,11 +15,11 @@ package license
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/rpadmin"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
@@ -34,7 +34,7 @@ var _ consolev1alpha1connect.LicenseServiceHandler = (*Service)(nil)
 // Service that implements the UserServiceHandler interface. This includes all
 // RPCs to manage Redpanda or Kafka users.
 type Service struct {
-	logger                 *zap.Logger
+	logger                 *slog.Logger
 	redpandaClientProvider redpandafactory.ClientFactory
 	consoleLicense         license.License
 	mapper                 mapper
@@ -44,7 +44,7 @@ type Service struct {
 // provided configuration, logger, and hooks. It returns an error if the admin
 // client setup fails.
 func NewService(
-	logger *zap.Logger,
+	logger *slog.Logger,
 	redpandaClientProvider redpandafactory.ClientFactory,
 	consoleLicense license.License,
 ) (*Service, error) {
@@ -79,11 +79,11 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 				errStr = errorBody.Message
 			}
 
-			s.logger.Info("failed to retrieve license info from Redpanda cluster",
-				zap.Int("status_code", httpErr.Response.StatusCode),
-				zap.String("message", errStr))
+			s.logger.InfoContext(ctx, "failed to retrieve license info from Redpanda cluster",
+				slog.Int("status_code", httpErr.Response.StatusCode),
+				slog.String("message", errStr))
 		} else {
-			s.logger.Info("failed to retrieve license info from Redpanda cluster", zap.Error(err))
+			s.logger.InfoContext(ctx, "failed to retrieve license info from Redpanda cluster", slog.Any("error", err))
 		}
 	}
 

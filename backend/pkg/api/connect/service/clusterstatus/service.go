@@ -15,12 +15,12 @@ package clusterstatus
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -41,7 +41,7 @@ var _ consolev1alpha1connect.ClusterStatusServiceHandler = (*Service)(nil)
 // RPCs to retrieve cluster information about all connected APIs.
 type Service struct {
 	cfg    *config.Config
-	logger *zap.Logger
+	logger *slog.Logger
 
 	kafkaClientProvider    kafkafactory.ClientFactory
 	redpandaClientProvider redpanda.ClientFactory
@@ -55,7 +55,7 @@ type Service struct {
 // NewService creates a new Service that serves the RPCs for retrieving cluster statuses.
 func NewService(
 	cfg *config.Config,
-	logger *zap.Logger,
+	logger *slog.Logger,
 	kafkaClientProvider kafkafactory.ClientFactory,
 	redpandaClientProvider redpanda.ClientFactory,
 	schemaClientProvider schema.ClientFactory,
@@ -105,11 +105,11 @@ func (s *Service) GetKafkaInfo(ctx context.Context, _ *connect.Request[v1alpha1.
 
 		apiVersions, err := adminCl.ApiVersions(ctx)
 		if err != nil {
-			s.logger.Warn("failed to request kafka version", zap.Error(err))
+			s.logger.Warn("failed to request kafka version", slog.Any("error", err))
 		}
 		apiVersions.Each(func(versions kadm.BrokerApiVersions) {
 			if versions.Err != nil {
-				s.logger.Warn("failed to request kafka version", zap.Int32("broker_id", versions.NodeID), zap.Error(versions.Err))
+				s.logger.Warn("failed to request kafka version", slog.Int("broker_id", int(versions.NodeID)), slog.Any("error", versions.Err))
 				return
 			}
 			clusterVersion = versions.VersionGuess()
@@ -206,7 +206,7 @@ func (s *Service) GetRedpandaInfo(ctx context.Context, _ *connect.Request[v1alph
 	grp.Go(func() error {
 		brokers, err := redpandaCl.Brokers(grpCtx)
 		if err != nil {
-			s.logger.Warn("failed to request redpanda brokers", zap.Error(err))
+			s.logger.Warn("failed to request redpanda brokers", slog.Any("error", err))
 		} else {
 			version = s.redpandaStatusChecker.clusterVersionFromBrokerList(brokers)
 		}
@@ -217,7 +217,7 @@ func (s *Service) GetRedpandaInfo(ctx context.Context, _ *connect.Request[v1alph
 	grp.Go(func() error {
 		users, err := redpandaCl.ListUsers(ctx)
 		if err != nil {
-			s.logger.Warn("failed to list users via redpanda admin api", zap.Error(err))
+			s.logger.Warn("failed to list users via redpanda admin api", slog.Any("error", err))
 		} else {
 			userCount = int32(len(users))
 		}

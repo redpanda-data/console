@@ -12,13 +12,14 @@ package proto
 import (
 	"bytes"
 	"encoding/binary"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 func Test_decodeConfluentBinaryWrapper(t *testing.T) {
@@ -49,7 +50,10 @@ func TestService_getMatchingMapping(t *testing.T) {
 	topic1.UnmarshalText([]byte(`/some-topic-prefix-.*/`))
 	assert.NotNil(t, topic1.Regexp)
 
-	logger, _ := zap.NewProduction()
+	logger := loggerpkg.NewSlogLogger(
+		loggerpkg.WithFormat(loggerpkg.FormatText),
+		loggerpkg.WithLevel(slog.LevelDebug),
+	)
 	svc, err := NewService(config.Proto{
 		Mappings: []config.ProtoTopicMapping{
 			{

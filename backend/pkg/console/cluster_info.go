@@ -11,11 +11,11 @@ package console
 
 import (
 	"context"
+	"log/slog"
 	"sort"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -78,13 +78,13 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		if s.cfg.Redpanda.AdminAPI.Enabled {
 			adminAPICl, err := s.redpandaClientFactory.GetRedpandaAPIClient(ctx)
 			if err != nil {
-				s.logger.Warn("failed to retrieve redpanda admin api client to retrieve cluster version", zap.Error(err))
+				s.logger.WarnContext(ctx, "failed to retrieve redpanda admin api client to retrieve cluster version", slog.Any("error", err))
 				return nil
 			}
 
 			kafkaVersion, err = s.redpandaClusterVersion(childCtx, adminAPICl)
 			if err != nil { //nolint:revive // error check first
-				s.logger.Warn("failed to retrieve cluster version via redpanda admin api", zap.Error(err))
+				s.logger.WarnContext(childCtx, "failed to retrieve cluster version via redpanda admin api", slog.Any("error", err))
 			} else {
 				return nil
 			}
@@ -93,7 +93,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		// If Redpanda Admin API failed or not available, try to get cluster version via Kafka API.
 		kafkaVersion, err = s.GetKafkaVersion(childCtx)
 		if err != nil {
-			s.logger.Warn("failed to request kafka version via Kafka API", zap.Error(err))
+			s.logger.WarnContext(childCtx, "failed to request kafka version via Kafka API", slog.Any("error", err))
 		}
 
 		return nil
@@ -103,7 +103,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		var err error
 		configsByBrokerID, err = s.GetAllBrokerConfigs(childCtx)
 		if err != nil {
-			s.logger.Warn("failed to request broker configs", zap.Error(err))
+			s.logger.WarnContext(childCtx, "failed to request broker configs", slog.Any("error", err))
 		}
 		return nil
 	})

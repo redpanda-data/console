@@ -12,8 +12,9 @@ package api
 import (
 	"context"
 	"io/fs"
+	"log/slog"
 
-	"go.uber.org/zap"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/redpanda-data/console/backend/pkg/factory/kafka"
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
@@ -27,8 +28,9 @@ type options struct {
 	kafkaClientProvider    kafka.ClientFactory
 	redpandaClientProvider redpandafactory.ClientFactory
 	schemaClientProvider   schema.ClientFactory
-	logger                 *zap.Logger
+	logger                 *slog.Logger
 	cacheNamespaceFn       func(context.Context) (string, error)
+	prometheusRegistry     prometheus.Registerer
 }
 
 // Option is a function that applies some configuration to the options struct.
@@ -81,9 +83,10 @@ func WithSchemaClientFactory(factory schema.ClientFactory) Option {
 	}
 }
 
-// WithLogger allows to plug in your own pre-configured zap.Logger. If provided
-// we will not try to set up our own logger.
-func WithLogger(logger *zap.Logger) Option {
+// WithLogger sets a custom logger instance to use instead of creating one from config.
+// This allows enterprise to provide a fully configured logger with custom handlers,
+// formatters, and other enterprise-specific logging features.
+func WithLogger(logger *slog.Logger) Option {
 	return func(o *options) {
 		o.logger = logger
 	}
@@ -105,5 +108,13 @@ func WithLogger(logger *zap.Logger) Option {
 func WithCacheNamespaceFn(fn func(context.Context) (string, error)) Option {
 	return func(o *options) {
 		o.cacheNamespaceFn = fn
+	}
+}
+
+// WithPrometheusRegistry sets the Prometheus registry to use for registering metrics.
+// This registry is used exclusively for registering application metrics.
+func WithPrometheusRegistry(registry prometheus.Registerer) Option {
+	return func(o *options) {
+		o.prometheusRegistry = registry
 	}
 }

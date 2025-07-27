@@ -13,12 +13,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 )
 
 // BrokerConfig contains all broker configurations for a broker.
@@ -72,7 +72,7 @@ func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConf
 			cfg, restErr := s.GetBrokerConfig(ctx, bID)
 			errMsg := ""
 			if restErr != nil {
-				s.logger.Warn("failed to describe broker config", zap.Int32("broker_id", bID), zap.Error(restErr.Err))
+				s.logger.Warn("failed to describe broker config", slog.Int("broker_id", int(bID)), slog.Any("error", restErr.Err))
 				errMsg = restErr.Err.Error()
 			}
 			resCh <- BrokerConfig{

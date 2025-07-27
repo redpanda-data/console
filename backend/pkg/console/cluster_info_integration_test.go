@@ -13,14 +13,15 @@ package console
 
 import (
 	"context"
+	"log/slog"
 	"net"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -30,10 +31,10 @@ func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
+	log := loggerpkg.NewSlogLogger(
+		loggerpkg.WithFormat(loggerpkg.FormatText),
+		loggerpkg.WithLevel(slog.LevelInfo),
+	)
 
 	testSeedBroker := s.testSeedBroker
 

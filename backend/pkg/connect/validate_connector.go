@@ -12,12 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
@@ -44,7 +43,7 @@ func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName strin
 			Err:          fmt.Errorf("failed to validate connector config: %w", err),
 			Status:       http.StatusOK,
 			Message:      fmt.Sprintf("Failed to validate Connector config: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("plugin_class_name", pluginClassName)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("plugin_class_name", pluginClassName)},
 			IsSilent:     false,
 		}
 	}

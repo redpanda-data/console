@@ -13,12 +13,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 )
 
 // TopicConfig is a TopicName along with all it's config entries
@@ -177,7 +177,7 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 	for _, res := range response.Resources {
 		kafkaErr := newKafkaError(res.ErrorCode)
 		if kafkaErr != nil {
-			s.logger.Warn("config resource response has an error", zap.String("resource_name", res.ResourceName), zap.Error(kafkaErr))
+			s.logger.WarnContext(ctx, "config resource response has an error", slog.String("resource_name", res.ResourceName), slog.Any("error", kafkaErr))
 		}
 
 		entries := make([]*TopicConfigEntry, len(res.Configs))

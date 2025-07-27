@@ -40,7 +40,7 @@ func Example_withPrometheus() {
 	// Create logger with Prometheus metrics
 	log := logger.NewSlogLogger(
 		logger.WithLevel(slog.LevelInfo),
-		logger.WithPrometheusRegistry(registry),
+		logger.WithPrometheusRegistry(registry, "console"),
 	)
 
 	ctx := context.Background()
@@ -166,7 +166,7 @@ func Example_productionConfiguration() {
 	log := logger.NewSlogLogger(
 		logger.WithFormat(logger.FormatJSON),
 		logger.WithLevel(slog.LevelInfo),
-		logger.WithPrometheusRegistry(registry),
+		logger.WithPrometheusRegistry(registry, "console"),
 		logger.WithDefaultAttrs(
 			slog.String("service", "redpanda-console"),
 			slog.String("version", "1.0.0"),

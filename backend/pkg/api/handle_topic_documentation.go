@@ -10,10 +10,10 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
@@ -27,7 +27,7 @@ func (api *API) handleGetTopicDocumentation() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
-		logger := api.Logger.With(zap.String("topic_name", topicName))
+		logger := api.Logger.With(slog.String("topic_name", topicName))
 
 		doc := api.ConsoleSvc.GetTopicDocumentation(topicName)
 

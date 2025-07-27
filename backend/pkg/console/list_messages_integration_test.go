@@ -15,6 +15,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,7 +31,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/mock/gomock"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
@@ -43,10 +44,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	testTopicName := testutil.TopicNameForTest("list_messages")
 
@@ -54,7 +52,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 	testutil.CreateTestData(t, ctx, s.kafkaClient, s.kafkaAdminClient, testTopicName)
 
-	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicNameProto)
+	_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicNameProto)
 	require.NoError(err)
 
 	ssIDs := testutil.ProduceOrdersWithSchemas(t, ctx, s.kafkaClient, s.kafkaSRClient, testTopicNameProto)
@@ -772,7 +770,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 	})
 }
 
-func createNewTestService(t *testing.T, log *zap.Logger,
+func createNewTestService(t *testing.T, log *slog.Logger,
 	testName string, seedBrokers string, registryAddr string,
 ) Servicer {
 	metricName := testutil.MetricNameForTest(strings.ReplaceAll(testName, " ", ""))

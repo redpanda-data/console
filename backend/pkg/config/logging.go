@@ -12,15 +12,14 @@ package config
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 // Logging config for a zap logger
 type Logging struct {
 	LogLevelInput string `yaml:"level"`
-	LogLevel      zap.AtomicLevel
+	SlogLevel     slog.Level
 }
 
 // RegisterFlags adds the flags required to config the server
@@ -38,20 +37,20 @@ func (l *Logging) String() string {
 func (l *Logging) Set(logLevel string) error {
 	switch strings.ToLower(logLevel) {
 	case "", "info":
-		l.LogLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
+		l.SlogLevel = slog.LevelInfo
 	case "debug":
-		l.LogLevel = zap.NewAtomicLevelAt(zap.DebugLevel)
+		l.SlogLevel = slog.LevelDebug
 	case "warn":
-		l.LogLevel = zap.NewAtomicLevelAt(zap.WarnLevel)
+		l.SlogLevel = slog.LevelWarn
 	case "error":
-		l.LogLevel = zap.NewAtomicLevelAt(zap.ErrorLevel)
+		l.SlogLevel = slog.LevelError
 	case "panic":
-		l.LogLevel = zap.NewAtomicLevelAt(zap.PanicLevel)
+		l.SlogLevel = slog.LevelError
 	case "fatal":
-		l.LogLevel = zap.NewAtomicLevelAt(zap.FatalLevel)
+		l.SlogLevel = slog.LevelError
 	default:
 		fmt.Printf("Invalid log level supplied: '%s'. Defaulting to info.", logLevel)
-		l.LogLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
+		l.SlogLevel = slog.LevelInfo
 	}
 	l.LogLevelInput = logLevel
 
@@ -61,5 +60,5 @@ func (l *Logging) Set(logLevel string) error {
 // SetDefaults for logging config.
 func (l *Logging) SetDefaults() {
 	l.LogLevelInput = "info"
-	l.LogLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
+	l.SlogLevel = slog.LevelInfo
 }

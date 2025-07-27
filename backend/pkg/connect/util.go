@@ -11,11 +11,10 @@ package connect
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // getMapValueOrString returns the map entry for the given key. If this entry does not exist it will return the
@@ -37,7 +36,7 @@ func (s *Service) getConnectClusterByName(clusterName string) (*ClientWithConfig
 			Err:          errors.New("a client for the given cluster name does not exist"),
 			Status:       http.StatusNotFound,
 			Message:      "There's no configured cluster with the given connect cluster name",
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName)},
 			IsSilent:     false,
 		}
 	}

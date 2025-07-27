@@ -14,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
 	"github.com/redpanda-data/common-go/api/pagination"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -36,7 +36,7 @@ var _ dataplanev1alpha2connect.KafkaConnectServiceHandler = (*Service)(nil)
 // Service that implements the KafkaConnect interface. This include the RPCs to Handle the KafkaConnect endpoints
 type Service struct {
 	cfg        *config.Config
-	logger     *zap.Logger
+	logger     *slog.Logger
 	connectSvc *kafkaconnect.Service
 	mapper     *mapper
 	defaulter  defaulter
@@ -44,7 +44,7 @@ type Service struct {
 
 // NewService creates a new user service handler.
 func NewService(cfg *config.Config,
-	logger *zap.Logger,
+	logger *slog.Logger,
 	kafkaConnectSrv *kafkaconnect.Service,
 ) *Service {
 	return &Service{
@@ -65,12 +65,12 @@ func (s *Service) ListConnectors(ctx context.Context, req *connect.Request[v1alp
 		return nil, s.matchError(err)
 	}
 
-	s.logger.Info("list connectors for connect cluster", zap.String("cluster", req.Msg.ClusterName))
+	s.logger.InfoContext(ctx, "list connectors for connect cluster", slog.String("cluster", req.Msg.ClusterName))
 
 	listConnectorsResponse, mapperError := s.mapper.connectorsHTTPResponseToProto(response)
 
 	if mapperError != nil {
-		s.logger.Error("unable to map list connectors response", zap.Error(mapperError))
+		s.logger.ErrorContext(ctx, "unable to map list connectors response", slog.Any("error", mapperError))
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			errors.New("not able to parse response"),
@@ -107,7 +107,7 @@ func (s *Service) ListConnectors(ctx context.Context, req *connect.Request[v1alp
 func (s *Service) CreateConnector(ctx context.Context, req *connect.Request[v1alpha2.CreateConnectorRequest]) (*connect.Response[v1alpha2.CreateConnectorResponse], error) {
 	kafkaConnectResponse, mapperError := s.mapper.createConnectorProtoToClientRequest(req.Msg)
 	if mapperError != nil {
-		s.logger.Error("unable to map create connector request", zap.Error(mapperError))
+		s.logger.ErrorContext(ctx, "unable to map create connector request", slog.Any("error", mapperError))
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			errors.New("unable create connector request"),
@@ -159,7 +159,7 @@ func (s *Service) GetConnectorStatus(ctx context.Context, req *connect.Request[v
 
 	status, err := s.mapper.connectorStatusToProto(httpRes)
 	if err != nil {
-		s.logger.Error("error mapping response for connector", zap.Error(err), zap.String("cluster", req.Msg.ClusterName), zap.String("connector", req.Msg.Name))
+		s.logger.ErrorContext(ctx, "error mapping response for connector", slog.Any("error", err), slog.String("cluster", req.Msg.ClusterName), slog.String("connector", req.Msg.Name))
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
 			err,
@@ -249,7 +249,7 @@ func (s *Service) ListConnectClusters(ctx context.Context, _ *connect.Request[v1
 	clustersProto, err := s.mapper.connectorInfoListToProto(clusters)
 	if err != nil {
 		// We log the error but continue since some of the clusters responses might be correct
-		s.logger.Error("there are some errors getting kakfa connect clusters", zap.Error(err))
+		s.logger.ErrorContext(ctx, "there are some errors getting kakfa connect clusters", slog.Any("error", err))
 	}
 
 	return connect.NewResponse(&v1alpha2.ListConnectClustersResponse{
