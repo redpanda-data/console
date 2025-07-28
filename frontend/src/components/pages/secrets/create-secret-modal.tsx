@@ -27,7 +27,6 @@ import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/se
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import type { z } from 'zod';
 import { secretSchema } from './form/secret-schema';
-import { useState } from 'react';
 
 interface CreateSecretModalProps {
   isOpen: boolean;
@@ -40,16 +39,13 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
-
-  const [error, setError] = useState<string | null>(null);
+  const { mutateAsync: createSecret, isPending: isCreateSecretPending, error: createSecretError } = useCreateSecretMutation();
 
   const finalSchema = secretSchema(customSecretSchema);
 
   const handleClose = () => {
     onClose(undefined);
     form.reset();
-    setError(null);
   };
 
   // Form type
@@ -73,7 +69,6 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
       onChange: finalSchema,
     },
     onSubmit: async ({ value }) => {
-      setError(null);
       const labelsMap: { [key: string]: string } = {};
       for (const label of value.labels) {
         if (label.key && label.value) {
@@ -89,17 +84,8 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
         labels: labelsMap,
       });
 
-      try {
-        await createSecret({ request });
-        handleClose();
-      } catch (err: any) {
-        // Try to extract a user-friendly error message
-        let message = 'Failed to create secret.';
-        if (err?.message) {
-          message = err.message;
-        }
-        setError(message);
-      }
+      await createSecret({ request });
+      handleClose();
     },
   });
 
@@ -115,10 +101,10 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={2}>
-                {error && (
+                {createSecretError && (
                   <Alert status="error" variant="subtle" data-testid="create-secret-error">
                     <AlertIcon />
-                    {error}
+                    {createSecretError.message}
                   </Alert>
                 )}
                 <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
