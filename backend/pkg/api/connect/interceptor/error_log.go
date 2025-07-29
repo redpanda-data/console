@@ -17,8 +17,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/protobuf/proto"
-
-	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 var _ connect.Interceptor = &ErrorLogInterceptor{}
@@ -28,11 +26,13 @@ var _ connect.Interceptor = &ErrorLogInterceptor{}
 // are written before the interceptors would be called, such as:
 // - Authentication errors (enterprise HTTP middleware)
 // - JSON Unmarshalling errors of request body (happens prior calling interceptors)
-type ErrorLogInterceptor struct{}
+type ErrorLogInterceptor struct {
+	logger *slog.Logger
+}
 
 // NewErrorLogInterceptor creates a new ErrorLogInterceptor.
-func NewErrorLogInterceptor() *ErrorLogInterceptor {
-	return &ErrorLogInterceptor{}
+func NewErrorLogInterceptor(logger *slog.Logger) *ErrorLogInterceptor {
+	return &ErrorLogInterceptor{logger: logger}
 }
 
 // WrapUnary creates an interceptor to validate Connect requests.
@@ -85,8 +85,7 @@ func (in *ErrorLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFu
 		}
 
 		// 6. Log error details with decorated logger
-		logger := loggerpkg.FromContext(ctx)
-		logger.WarnContext(ctx, "",
+		in.logger.WarnContext(ctx, "",
 			slog.String("timestamp", start.Format(time.RFC3339)),
 			slog.String("procedure", procedure),
 			slog.String("request_duration", requestDuration.String()),
