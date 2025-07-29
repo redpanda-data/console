@@ -1,9 +1,6 @@
 module github.com/redpanda-data/console/backend
 
-go 1.24.1
-
-// Use fork until https://github.com/twmb/franz-go/pull/1062 is merged and released.
-replace github.com/twmb/franz-go/pkg/sr v1.4.0 => github.com/weeco/franz-go/pkg/sr v0.0.0-20250716104819-91f6bce0597a
+go 1.24.3
 
 toolchain go1.24.4
 
@@ -44,6 +41,7 @@ require (
 	github.com/linkedin/goavro v2.1.0+incompatible
 	github.com/ohler55/ojg v1.26.6
 	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_model v0.6.2
 	github.com/redpanda-data/benthos/v4 v4.53.0
 	github.com/redpanda-data/common-go/api v0.0.0-20250701102610-07660e078862
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
@@ -57,7 +55,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250620172413-c17130ef7765
 	github.com/twmb/franz-go/pkg/kmsg v1.11.2
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	github.com/twmb/franz-go/pkg/sr v1.4.0
+	github.com/twmb/franz-go/pkg/sr v1.5.0
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
@@ -188,7 +186,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
