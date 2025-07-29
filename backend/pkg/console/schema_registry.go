@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hamba/avro/v2"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -129,9 +128,6 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 		if err != nil {
 			return err
 		}
-		if err != nil {
-			return err
-		}
 		for _, subject := range res {
 			subjectsWithDeleted[subject] = struct{}{}
 		}
@@ -164,7 +160,7 @@ func (s *Service) GetSchemaRegistrySubjects(ctx context.Context) ([]SchemaRegist
 type SchemaRegistrySubjectDetails struct {
 	Name                string                                `json:"name"`
 	Type                sr.SchemaType                         `json:"type"`
-	Compatibility       *sr.CompatibilityLevel                `json:"compatibility"`
+	Compatibility       string                                `json:"compatibility"`
 	RegisteredVersions  []SchemaRegistrySubjectDetailsVersion `json:"versions"`
 	LatestActiveVersion int                                   `json:"latestActiveVersion"`
 	Schemas             []SchemaRegistryVersionedSchema       `json:"schemas"`
@@ -224,20 +220,13 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 	}
 
 	// 2. Retrieve schemas and compat level concurrently
-	var compatLevel *sr.CompatibilityLevel
+	var compatLevel string
 
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.SetLimit(10)
 
 	grp.Go(func() error {
-		// 2. Retrieve subject config (subject compatibility level)
-		compatibilityRes := srClient.Compatibility(grpCtx, subjectName)
-		compatibility := compatibilityRes[0]
-		if err := compatibility.Err; err != nil {
-			s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
-			return nil
-		}
-		compatLevel = &compatibility.Level
+		compatLevel = s.getSubjectCompatibilityLevel(grpCtx, srClient, subjectName)
 		return nil
 	})
 
@@ -380,6 +369,24 @@ func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *s
 	})
 
 	return response, nil
+}
+
+// getSubjectCompatibilityLevel retrieves the compatibility level for a subject,
+// handling the case where no specific compatibility is configured.
+func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *sr.Client, subjectName string) string {
+	compatibilityRes := srClient.Compatibility(ctx, subjectName)
+	compatibility := compatibilityRes[0]
+	if err := compatibility.Err; err != nil {
+		var schemaErr *sr.ResponseError
+		if errors.As(err, &schemaErr) && schemaErr.ErrorCode == 40408 {
+			// Subject compatibility not configured, this means the default compatibility will be used
+			return "DEFAULT"
+		}
+		// For other errors, log warning and return UNKNOWN
+		s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
+		return "UNKNOWN"
+	}
+	return compatibility.Level.String()
 }
 
 // SchemaRegistryVersionedSchema describes a retrieved schema.
@@ -621,7 +628,7 @@ func (s *Service) ValidateSchemaRegistrySchema(
 	var parsingErr string
 	switch sch.Type {
 	case sr.TypeAvro:
-		if _, err := s.cachedSchemaClient.ParseAvroSchemaWithReferences(ctx, sch, &avro.SchemaCache{}); err != nil {
+		if _, err := s.cachedSchemaClient.ParseAvroSchemaWithReferences(ctx, sch); err != nil {
 			parsingErr = err.Error()
 		}
 	case sr.TypeJSON:

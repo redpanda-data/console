@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.1.3 / 2025-07-25
+
+- [BUGFIX] Fix transactional record production always appearing to fail even when records were successfully produced and committed.
+- [BUGFIX] Fix misleading error messages when fetching topic partition offsets that made troubleshooting difficult.
+- [BUGFIX] Fix missing error reporting for topic partition end offset failures that were silently ignored.
+- [BUGFIX] Fix incorrect error details returned when partition access fails or start offset retrieval fails.
+- [BUGFIX] Fix Avro schema parsing with references failing due to missing cache, causing "unknown type" errors.
+- [BUGFIX] Fix missing cache for JSON schema compilation, causing repeated compilation overhead.
+- [BUGFIX] Fix incorrect caching scope for Avro schemas in multi-tenant environments.
+- [BUGFIX] Fix circular reference detection in Avro schema parsing to prevent infinite recursion.
+- [BUGFIX] Fix schema registry compatibility configuration error handling to gracefully handle unconfigured subjects.
+- [IMPROVEMENT] Add comprehensive schema registry test suite with mock package to prevent regressions.
+- [IMPROVEMENT] Add visual indicators for soft-deleted schema registry subjects with archive icons and tooltips.
+- [IMPROVEMENT] Add colored badges for schema types (AVRO, PROTOBUF, JSON) in schema registry list view.
+
 ## v2.8.7 / 2025-06-27
 
 - [IMPROVEMENT] Update key dependencies (e.g. franz-go) to latest version.

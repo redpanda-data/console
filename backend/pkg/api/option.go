@@ -90,13 +90,18 @@ func WithLogger(logger *zap.Logger) Option {
 }
 
 // WithCacheNamespaceFn is an option to set a function that determines the
-// namespace for caching objects such as schemas. This should be set in
-// multi-tenant environments where users and tenants should be strictly isolated
+// namespace for caching compiled resources such as schemas. This is specifically
+// used for resource caching (compiled Avro/Protobuf/JSON schemas) and should be
+// set in multi-tenant environments where tenants should be strictly isolated
 // from each other.
 //
-// The function has to return a unique identifier for the currently logged-in
-// user that can be used as a namespace for caching. Only within that namespace
-// cache objects will be stored and looked-up then.
+// The function must return a unique identifier for the current tenant that can
+// be used as a namespace for resource caching. Examples include virtual cluster IDs,
+// tenant IDs, or organization IDs. Only within that namespace resources will be cached
+// and looked-up.
+//
+// Note: This function is NOT used for client caching (Kafka, Schema Registry, Admin API clients).
+// It only affects the caching of compiled/processed resources.
 func WithCacheNamespaceFn(fn func(context.Context) (string, error)) Option {
 	return func(o *options) {
 		o.cacheNamespaceFn = fn

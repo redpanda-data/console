@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -187,7 +188,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 		// Check if the requested partitionID is available
 		if pInfo.Err != nil {
-			return fmt.Errorf("requested partitionID (%v) is not available: %w", listReq.PartitionID, err)
+			return fmt.Errorf("requested partitionID (%v) is not available: %w", listReq.PartitionID, pInfo.Err)
 		}
 		partitionIDs = []int32{listReq.PartitionID}
 	}
@@ -206,7 +207,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		return fmt.Errorf("failed to get end offsets: %w", err)
 	}
 	if startOffsets.Error() != nil {
-		return fmt.Errorf("failed to get end offsets: %w", endOffsets.Error())
+		return fmt.Errorf("failed to get start offsets: %w", startOffsets.Error())
 	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
@@ -551,7 +552,10 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 	defer wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
-			s.logger.Error("recovered from panic in message worker", zap.Any("error", r))
+			s.logger.Error("recovered from panic in message worker",
+				zap.Any("error", r),
+				zap.String("stack_trace", string(debug.Stack())),
+				zap.String("topic", consumeReq.TopicName))
 		}
 	}()
 

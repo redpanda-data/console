@@ -28,9 +28,9 @@ jobs:
           # go-version: 'stable'
           go-version-file: 'backend/go.mod'
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.64
+          version: v2.3
           working-directory: backend
           args: --timeout=10m --config=.golangci.yaml
       - name: Install Task

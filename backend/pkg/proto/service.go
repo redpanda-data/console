@@ -114,7 +114,7 @@ func (s *Service) getMatchingMapping(topicName string) (mapping config.ProtoTopi
 
 	var match bool
 	for _, rMapping := range s.mappingsByTopic {
-		if rMapping.TopicName.Regexp != nil && rMapping.TopicName.Regexp.MatchString(topicName) {
+		if rMapping.TopicName.Regexp != nil && rMapping.TopicName.MatchString(topicName) {
 			mapping = rMapping
 			s.mappingsByTopic[topicName] = mapping
 			match = true

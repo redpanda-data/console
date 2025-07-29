@@ -21,6 +21,8 @@ message ACL {
     RESOURCE_TYPE_TRANSACTIONAL_ID = 5;
     RESOURCE_TYPE_DELEGATION_TOKEN = 6;
     RESOURCE_TYPE_USER = 7;
+    RESOURCE_TYPE_REGISTRY = 8;
+    RESOURCE_TYPE_SUBJECT = 9;
   }
 
   // The pattern to use for matching the specified resource_name

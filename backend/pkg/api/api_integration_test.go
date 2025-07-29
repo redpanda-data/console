@@ -120,9 +120,12 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	httpServerAddress := net.JoinHostPort("localhost", strconv.Itoa(httpListenPort))
 	retries := 60
 	for retries > 0 {
-		if _, err := net.DialTimeout("tcp", httpServerAddress, 100*time.Millisecond); err == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		if _, err := (&net.Dialer{}).DialContext(ctx, "tcp", httpServerAddress); err == nil {
+			cancel()
 			break
 		}
+		cancel()
 		time.Sleep(100 * time.Millisecond)
 		retries--
 	}

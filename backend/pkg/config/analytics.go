@@ -1,4 +1,4 @@
-// Copyright 2022 Redpanda Data, Inc.
+// Copyright 2025 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
 // included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -22,8 +22,7 @@ func (c *Analytics) SetDefaults() {
 }
 
 // Validate Analytics configurations.
-func (c *Analytics) Validate() error {
+func (*Analytics) Validate() error {
 	// No validation needed for analytics config
-	_ = c // avoid unused receiver warning
 	return nil
 }

@@ -26,7 +26,7 @@ func (s *Service) DeleteConsumerGroup(ctx context.Context, groupID string) error
 		return fmt.Errorf("failed to delete group: %w", err)
 	}
 	if res.Err != nil {
-		return fmt.Errorf("failed to delete group: %w", err)
+		return fmt.Errorf("failed to delete group: %w", res.Err)
 	}
 
 	return nil

@@ -129,7 +129,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		return nil, &rest.Error{
 			Err:          err,
 			Status:       http.StatusInternalServerError,
-			Message:      fmt.Sprintf("Failed to list topic start offsets: %v", err.Error()),
+			Message:      fmt.Sprintf("Failed to list topic end offsets: %v", err.Error()),
 			InternalLogs: nil,
 		}
 	}
@@ -158,7 +158,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 			endOffset, _ := endOffsets.Lookup(topic.TopicName, partition.ID)
 			offsetErr := errorToString(startOffset.Err)
 			if offsetErr == "" {
-				errorToString(endOffset.Err)
+				offsetErr = errorToString(endOffset.Err)
 			}
 
 			// Get log dirs for the current partitions. We can rest assured that the map is fully initialized and we

@@ -2229,13 +2229,13 @@ export const pipelinesApi = observable({
     const client = appConfig.pipelinesClient;
     if (!client) throw new Error('pipelines client is not initialized');
 
-    await client.createPipeline({ request: { pipeline } });
+    return await client.createPipeline({ request: { pipeline } });
   },
   async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
     const client = appConfig.pipelinesClient;
     if (!client) throw new Error('pipelines client is not initialized');
 
-    await client.updatePipeline({
+    return await client.updatePipeline({
       request: {
         id,
         pipeline: pipelineUpdate,
