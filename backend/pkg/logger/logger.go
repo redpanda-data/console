@@ -13,7 +13,6 @@
 package logger
 
 import (
-	"context"
 	"io"
 	"log/slog"
 	"os"
@@ -149,30 +148,4 @@ func Fatal(logger *slog.Logger, msg string, args ...any) {
 // compatibility with the previous key name standard.
 func Named(logger *slog.Logger, name string) *slog.Logger {
 	return logger.With(slog.String("logger", name))
-}
-
-type loggerKey struct{}
-
-// ContextWithLogger returns a new context containing the provided logger.
-// TODO: This is a transitional approach. In the future, we should leverage
-// slog handlers to inject individual fields instead of attaching the whole logger.
-func ContextWithLogger(ctx context.Context, logger *slog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey{}, logger)
-}
-
-// FromContext retrieves the logger stored in the context (if any). If none is
-// found, returns a new slog logger with default configuration.
-// TODO: This is a transitional approach. In the future, we should leverage
-// slog handlers to inject individual fields instead of retrieving the whole logger.
-func FromContext(ctx context.Context) *slog.Logger {
-	l, ok := ctx.Value(loggerKey{}).(*slog.Logger)
-	if ok && l != nil {
-		return l
-	}
-
-	// Return a default slog logger
-	return NewSlogLogger(
-		WithFormat(FormatJSON),
-		WithLevel(slog.LevelInfo),
-	)
 }
