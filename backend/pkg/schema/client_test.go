@@ -20,7 +20,7 @@ import (
 	"github.com/hamba/avro/v2"
 	"github.com/stretchr/testify/suite"
 	"github.com/twmb/franz-go/pkg/sr"
-	"github.com/twmb/franz-go/pkg/sr/mock"
+	"github.com/twmb/franz-go/pkg/sr/srfake"
 
 	"github.com/redpanda-data/console/backend/pkg/factory/schema"
 )
@@ -40,7 +40,7 @@ func (f *testSchemaClientFactory) GetSchemaRegistryClient(context.Context) (*sr.
 // TestCachedClientSuite contains essential tests for CachedClient
 type TestCachedClientSuite struct {
 	suite.Suite
-	mockRegistry  *mock.Registry
+	mockRegistry  *srfake.Registry
 	srClient      *sr.Client
 	clientFactory *testSchemaClientFactory
 	cachedClient  *CachedClient
@@ -59,7 +59,7 @@ func getTenantContext(tenantID string) context.Context {
 
 // SetupSuite runs once before all tests
 func (s *TestCachedClientSuite) SetupSuite() {
-	s.mockRegistry = mock.New()
+	s.mockRegistry = srfake.New()
 	s.Require().NotNil(s.mockRegistry)
 
 	var err error
