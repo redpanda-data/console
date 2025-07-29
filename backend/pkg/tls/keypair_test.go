@@ -28,7 +28,8 @@ func TestMaybeWithDynamicDiskKeyPair(t *testing.T) {
 	defer os.RemoveAll(testSetup.TmpDir)
 
 	t.Run("empty paths return nil", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		cfg := &tls.Config{}
 
 		configFunc := MaybeWithDynamicDiskKeyPair(ctx, "", "", tlscfg.ForServer, 5*time.Minute, testSetup.Logger)
@@ -40,7 +41,8 @@ func TestMaybeWithDynamicDiskKeyPair(t *testing.T) {
 	})
 
 	t.Run("server certificate is loaded", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		cfg := &tls.Config{}
 
 		configFunc := MaybeWithDynamicDiskKeyPair(ctx, testSetup.CertPath, testSetup.KeyPath, tlscfg.ForServer, 5*time.Minute, testSetup.Logger)
@@ -57,7 +59,8 @@ func TestMaybeWithDynamicDiskKeyPair(t *testing.T) {
 	})
 
 	t.Run("client certificate is loaded", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		cfg := &tls.Config{}
 
 		configFunc := MaybeWithDynamicDiskKeyPair(ctx, testSetup.CertPath, testSetup.KeyPath, tlscfg.ForClient, 5*time.Minute, testSetup.Logger)

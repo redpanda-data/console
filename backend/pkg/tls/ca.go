@@ -28,10 +28,11 @@ import (
 // It is intended to be used on a client configuration to set the server CA it
 // expects to talk to.
 //
+// The context is used to cancel the background reloader goroutine.
 // Asynchronous reloading is triggered when a new request is served, not before
-// 5 minutes from last reload.
+// the specified refresh interval.
 func MaybeWithDynamicClientCA(
-	quitCtx context.Context,
+	ctx context.Context,
 	caPath string,
 	hostname string,
 	refreshInterval time.Duration,
@@ -42,7 +43,7 @@ func MaybeWithDynamicClientCA(
 			return nil
 		}
 
-		r, err := newCAReloader(quitCtx, cfg, caPath, refreshInterval, logger)
+		r, err := newCAReloader(ctx, cfg, caPath, refreshInterval, logger)
 		if err != nil {
 			return err
 		}
@@ -74,7 +75,7 @@ type caReloader struct {
 	logger *zap.Logger
 }
 
-func newCAReloader(quitCtx context.Context, initCfg *libtls.Config, caPath string, refreshInterval time.Duration,
+func newCAReloader(ctx context.Context, initCfg *libtls.Config, caPath string, refreshInterval time.Duration,
 	logger *zap.Logger,
 ) (*caReloader, error) {
 	r := caReloader{
@@ -85,17 +86,18 @@ func newCAReloader(quitCtx context.Context, initCfg *libtls.Config, caPath strin
 	if err := r.load(); err != nil {
 		return nil, err
 	}
-	go r.reloader(quitCtx, refreshInterval)
+	go r.reloader(ctx, refreshInterval)
 	return &r, nil
 }
 
-func (r *caReloader) reloader(quitCtx context.Context, refreshInterval time.Duration) {
+func (r *caReloader) reloader(ctx context.Context, refreshInterval time.Duration) {
 	ticker := time.NewTicker(refreshInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-quitCtx.Done():
+		case <-ctx.Done():
+			r.logger.Info("stopped TLS CA reloader", zap.String("reason", "context cancelled"))
 			return
 		case <-ticker.C:
 			if err := r.load(); err != nil {

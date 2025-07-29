@@ -28,7 +28,8 @@ func TestMaybeWithDynamicClientCA(t *testing.T) {
 	defer os.RemoveAll(testSetup.TmpDir)
 
 	t.Run("empty CA path returns nil", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		cfg := &tls.Config{}
 
 		configFunc := MaybeWithDynamicClientCA(ctx, "", "localhost", 5*time.Minute, testSetup.Logger)
@@ -37,7 +38,8 @@ func TestMaybeWithDynamicClientCA(t *testing.T) {
 	})
 
 	t.Run("valid CA path configures TLS", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		cfg := &tls.Config{}
 
 		configFunc := MaybeWithDynamicClientCA(ctx, testSetup.CAPath, "localhost", 5*time.Minute, testSetup.Logger)
@@ -53,7 +55,8 @@ func TestMaybeWithDynamicClientCA(t *testing.T) {
 	})
 
 	t.Run("non-existent CA path returns error", func(t *testing.T) {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		cfg := &tls.Config{}
 		nonExistentPath := filepath.Join(testSetup.TmpDir, "nonexistent.crt")
 

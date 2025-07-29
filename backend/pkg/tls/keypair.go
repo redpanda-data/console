@@ -27,9 +27,9 @@ import (
 // on the tls Config that is read from a pair of files on disk and updated
 // whenever the content of those files changes.
 //
-// Files are polled every 5 minutes for modifications.
+// The context is used to cancel the background reloader goroutine.
 func MaybeWithDynamicDiskKeyPair(
-	quitCtx context.Context,
+	ctx context.Context,
 	certPath string,
 	keyPath string,
 	forKind tlscfg.ForKind,
@@ -41,7 +41,7 @@ func MaybeWithDynamicDiskKeyPair(
 			return nil
 		}
 
-		r, err := newKeyPairReloader(quitCtx, certPath, keyPath, refreshInterval, logger)
+		r, err := newKeyPairReloader(ctx, certPath, keyPath, refreshInterval, logger)
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ type keyPairReloader struct {
 	logger     *zap.Logger
 }
 
-func newKeyPairReloader(quitCtx context.Context, certPath, keyPath string, refreshInterval time.Duration, logger *zap.Logger) (*keyPairReloader, error) {
+func newKeyPairReloader(ctx context.Context, certPath, keyPath string, refreshInterval time.Duration, logger *zap.Logger) (*keyPairReloader, error) {
 	r := keyPairReloader{
 		certPath:   certPath,
 		keyPath:    keyPath,
@@ -79,17 +79,18 @@ func newKeyPairReloader(quitCtx context.Context, certPath, keyPath string, refre
 	if err := r.load(); err != nil {
 		return nil, err
 	}
-	go r.reloader(quitCtx)
+	go r.reloader(ctx)
 	return &r, nil
 }
 
-func (r *keyPairReloader) reloader(quitCtx context.Context) {
+func (r *keyPairReloader) reloader(ctx context.Context) {
 	ticker := time.NewTicker(r.reloadTime)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-quitCtx.Done():
+		case <-ctx.Done():
+			r.logger.Info("stopped TLS keypair reloader", zap.String("reason", "context cancelled"))
 			return
 		case <-ticker.C:
 			if err := r.load(); err != nil {

@@ -4,6 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/twmb/tlscfg"
@@ -73,12 +76,22 @@ func (c *TLS) TLSConfig(overrides ...func(cfg *tls.Config) error) (*tls.Config, 
 // TLSConfigWithReloader returns the TLS Config from the configured parameters
 // and additionally starts a goroutine to hot refresh certificates at
 // RefreshInterval
-func (c *TLS) TLSConfigWithReloader(ctx context.Context, logger *zap.Logger, hostname string, overrides ...func(cfg *tls.Config) error) (*tls.Config, error) {
+func (c *TLS) TLSConfigWithReloader(logger *zap.Logger, hostname string, overrides ...func(cfg *tls.Config) error) (*tls.Config, error) {
 	if !c.Enabled {
 		return &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		}, nil
 	}
+
+	// Create a context that gets cancelled on SIGINT or SIGTERM
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		signalCh := make(chan os.Signal, 1)
+		signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
+		<-signalCh
+		logger.Info("received shutdown signal, stopping TLS certificate reloaders")
+		cancel()
+	}()
 
 	opts := []tlscfg.Opt{
 		tlscfg.WithOverride(func(cfg *tls.Config) error {
