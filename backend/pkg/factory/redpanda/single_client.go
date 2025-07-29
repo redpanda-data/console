@@ -49,7 +49,7 @@ func NewSingleClientProvider(cfg *config.Config, l *zap.Logger) (ClientFactory, 
 }
 
 // GetRedpandaAPIClient returns a redpanda admin api for the given context.
-func (p *SingleClientProvider) GetRedpandaAPIClient(ctx context.Context, opts ...ClientOption) (AdminAPIClient, error) {
+func (p *SingleClientProvider) GetRedpandaAPIClient(_ context.Context, opts ...ClientOption) (AdminAPIClient, error) {
 	cfg := &ClientOptions{
 		URLs: p.cfg.URLs,
 	}
@@ -70,7 +70,6 @@ func (p *SingleClientProvider) GetRedpandaAPIClient(ctx context.Context, opts ..
 
 	// Build admin client with provided credentials with reloader
 	tlsCfg, err := p.cfg.TLS.TLSConfigWithReloader(
-		ctx,
 		p.logger,
 		hostname,
 	)
