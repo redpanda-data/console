@@ -1,6 +1,7 @@
 import axios from 'axios';
 // biome-ignore lint/performance/noNamespaceImport: part of es-cookie
 import * as Cookies from 'es-cookie';
+import { isAnalyticsEnabled } from '../../../utils/analytics';
 
 interface Fields {
   [key: string]: string | number;
@@ -42,6 +43,8 @@ export const hubspotSubmit = ({
   onSuccess,
   onError,
 }: HubspotSubmitProps) => {
+  // Check if analytics is enabled
+  if (!isAnalyticsEnabled()) return;
   const prepareFields = (fields: Fields) =>
     Object.entries(fields).map(([name, value]) => ({
       name,
@@ -70,6 +73,7 @@ export const hubspotSubmit = ({
  * @param userData - User data to track in HubSpot
  */
 export const trackHubspotUser = (userData: HubspotUserData) => {
+  if (!isAnalyticsEnabled()) return;
   window._hsq = window._hsq || [];
   window._hsq.push(['identify', userData]);
 };
@@ -79,6 +83,7 @@ export const trackHubspotUser = (userData: HubspotUserData) => {
  * @param path - The current page path to track
  */
 export const trackHubspotPage = (path: string) => {
+  if (!isAnalyticsEnabled()) return;
   window._hsq = window._hsq || [];
   window._hsq.push(['setPath', { path }]);
 };

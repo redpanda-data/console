@@ -39,8 +39,16 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 	if err != nil {
 		api.Logger.Fatal("failed to load index.html from embedded filesystem", zap.Error(err))
 	}
-	enabledFeatures := strings.Join(api.Hooks.Console.EnabledFeatures(), ",")
-	indexOriginal = bytes.ReplaceAll(indexOriginal, enabledFeaturesMarker, []byte(enabledFeatures))
+	// Get enabled features from hooks
+	enabledFeatures := api.Hooks.Console.EnabledFeatures()
+
+	// Add no_analytics feature if analytics is disabled
+	if !api.Cfg.Analytics.Enabled {
+		enabledFeatures = append(enabledFeatures, "no_analytics")
+	}
+
+	enabledFeaturesStr := strings.Join(enabledFeatures, ",")
+	indexOriginal = bytes.ReplaceAll(indexOriginal, enabledFeaturesMarker, []byte(enabledFeaturesStr))
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		index := indexOriginal
