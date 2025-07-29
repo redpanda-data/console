@@ -162,7 +162,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	mspPackSvc, err := ms.NewService(cfg.Serde.MessagePack)
 	require.NoError(err)
 
-	schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg)
+	schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg, logger)
 	require.NoError(err)
 
 	cacheNamespaceFn := func(context.Context) (string, error) {
@@ -2167,7 +2167,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		err = protoSvc.Start()
 		require.NoError(err)
 
-		schemaClientFactory2, err := schemafactory.NewSingleClientProvider(&cfg)
+		schemaClientFactory2, err := schemafactory.NewSingleClientProvider(&cfg, logger)
 		require.NoError(err)
 
 		cacheNamespaceFn := func(context.Context) (string, error) {
@@ -2576,7 +2576,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		mspPackSvc, err := ms.NewService(cfg.Serde.MessagePack)
 		require.NoError(err)
 
-		schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg)
+		schemaClientFactory, err := schemafactory.NewSingleClientProvider(&cfg, logger)
 		require.NoError(err)
 
 		cacheNamespaceFn := func(context.Context) (string, error) {
@@ -2809,7 +2809,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		disabledCfg := s.createBaseConfig()
 		disabledCfg.SchemaRegistry.Enabled = false // Key: disable schema registry!
 
-		schemaClientFactory, err := schemafactory.NewSingleClientProvider(&disabledCfg)
+		logger, err := zap.NewProduction()
+		require.NoError(err)
+
+		schemaClientFactory, err := schemafactory.NewSingleClientProvider(&disabledCfg, logger)
 		require.NoError(err)
 
 		cacheNamespaceFn := func(context.Context) (string, error) {
