@@ -26,6 +26,7 @@ import (
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
+	netpkg "github.com/redpanda-data/common-go/net"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
@@ -273,7 +274,14 @@ func NewKgoConfig(cfg config.Kafka, logger *zap.Logger, metricsNamespace string)
 	}
 
 	if cfg.TLS.Enabled {
-		tlsConfig, err := cfg.TLS.TLSConfig()
+		// Extract hostname from the first broker URL
+		_, host, err := netpkg.ParseHostMaybeScheme(cfg.Brokers[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse broker url scheme: %w", err)
+		}
+		hostname, _ := netpkg.SplitHostPortDefault(host, 9092)
+
+		tlsConfig, err := cfg.TLS.TLSConfigWithReloader(logger, hostname)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build tls config: %w", err)
 		}

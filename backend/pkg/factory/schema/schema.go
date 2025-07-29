@@ -17,7 +17,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redpanda-data/common-go/net"
 	"github.com/twmb/franz-go/pkg/sr"
+	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -34,7 +36,8 @@ var _ ClientFactory = (*SingleClientProvider)(nil)
 // SingleClientProvider is a struct that holds a single instance of the Schema
 // Registry client. It implements the ClientFactory interface.
 type SingleClientProvider struct {
-	srClient *sr.Client
+	cfg    *config.Config
+	logger *zap.Logger
 }
 
 // NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
@@ -42,15 +45,32 @@ type SingleClientProvider struct {
 //
 // If schema registry is not configured an instance of DisabledClientProvider is returned.
 // Otherwise, returns an instance of SingleClientProvider or an error if client creation fails.
-func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
+func NewSingleClientProvider(cfg *config.Config, l *zap.Logger) (ClientFactory, error) {
 	schemaCfg := cfg.SchemaRegistry
 
 	if !schemaCfg.Enabled {
 		return &DisabledClientProvider{}, nil
 	}
 
+	return &SingleClientProvider{
+		cfg:    cfg,
+		logger: l,
+	}, nil
+}
+
+// GetSchemaRegistryClient returns a schema registry client for the given context.
+func (p *SingleClientProvider) GetSchemaRegistryClient(_ context.Context) (*sr.Client, error) {
+	schemaCfg := p.cfg.SchemaRegistry
+	// Extract hostname from the first URL
+	_, host, err := net.ParseHostMaybeScheme(schemaCfg.URLs[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse schema registry url scheme: %w", err)
+	}
+
+	hostname, _ := net.SplitHostPortDefault(host, 443)
+
 	// If TLS is not enabled this will return the default TLS config.
-	tlsCfg, err := schemaCfg.TLS.TLSConfig()
+	tlsCfg, err := schemaCfg.TLS.TLSConfigWithReloader(p.logger, hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating tls config: %w", err)
 	}
@@ -69,17 +89,5 @@ func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
 		opts = append(opts, sr.BearerToken(schemaCfg.Authentication.BearerToken))
 	}
 
-	srClient, err := sr.NewClient(opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SingleClientProvider{
-		srClient: srClient,
-	}, nil
-}
-
-// GetSchemaRegistryClient returns a schema registry client for the given context.
-func (p *SingleClientProvider) GetSchemaRegistryClient(_ context.Context) (*sr.Client, error) {
-	return p.srClient, nil
+	return sr.NewClient(opts...)
 }
