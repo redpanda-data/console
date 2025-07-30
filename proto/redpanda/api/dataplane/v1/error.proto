@@ -31,4 +31,7 @@ enum Reason {
 
   // The Redpanda enterprise license has expired and is no longer valid.
   REASON_ENTERPRISE_LICENSE_EXPIRED = 9;
+
+  // Redpanda Schema Registry returned and error.
+  REASON_REDPANDA_SCHEMA_REGISTRY_ERROR = 10;
 }
