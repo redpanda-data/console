@@ -41,6 +41,7 @@ import (
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
+	signupsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/signup/v1alpha1"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
 	topicsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha2"
@@ -142,6 +143,12 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	if err != nil {
 		api.Logger.Fatal("failed to create license service", zap.Error(err))
 	}
+
+	// TODO: replace gatekeeper url with the correct productio url and potentially move it to internal config
+	signupSvc, err := signupsvcv1alpha1.NewService(api.Logger.Named("signup_service"), "https://api.ign.cloud.redpanda.com")
+	if err != nil {
+		api.Logger.Fatal("failed to create signup service", zap.Error(err))
+	}
 	clusterStatusSvc := clusterstatus.NewService(
 		api.Cfg,
 		api.Logger.Named("redpanda_cluster_status_service"),
@@ -164,6 +171,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.ConsoleServiceName:        consoleSvc,
 			consolev1alpha1connect.SecurityServiceName:       consolev1alpha1connect.UnimplementedSecurityServiceHandler{},
 			consolev1alpha1connect.LicenseServiceName:        licenseSvc,
+			consolev1alpha1connect.SignupServiceName:         signupSvc,
 			consolev1alpha1connect.TransformServiceName:      consoleTransformSvcV1,
 			consolev1alpha1connect.AuthenticationServiceName: &AuthenticationDefaultHandler{},
 			consolev1alpha1connect.ClusterStatusServiceName:  clusterStatusSvc,
@@ -240,6 +248,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	signupSvcPath, signupSvcHandler := consolev1alpha1connect.NewSignupServiceHandler(hookOutput.Services[consolev1alpha1connect.SignupServiceName].(consolev1alpha1connect.SignupServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	authenticationSvcPath, authenticationSvcHandler := consolev1alpha1connect.NewAuthenticationServiceHandler(hookOutput.Services[consolev1alpha1connect.AuthenticationServiceName].(consolev1alpha1connect.AuthenticationServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
@@ -347,6 +357,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.LicenseServiceName,
 			MountPath:   licenseSvcPath,
 			Handler:     licenseSvcHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.SignupServiceName,
+			MountPath:   signupSvcPath,
+			Handler:     signupSvcHandler,
 		},
 		{
 			ServiceName: consolev1alpha1connect.ClusterStatusServiceName,
