@@ -44,9 +44,9 @@ func (mapper) adminAPILicenseInformationToProto(in rpadmin.License) *v1alpha1.Li
 	}
 
 	return &v1alpha1.License{
-		Source:    v1alpha1.License_SOURCE_REDPANDA_CORE,
-		Type:      licenseType,
-		ExpiresAt: expiresAt,
+		Source:       v1alpha1.License_SOURCE_REDPANDA_CORE,
+		Type:         licenseType,
+		ExpiresAt:    expiresAt,
 		Organization: organization,
 	}
 }
