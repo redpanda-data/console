@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
@@ -293,7 +294,7 @@ type SchemaRegistrySubjectDetailsVersion struct {
 // This will submit two versions requests where one includes softDeletedVersions.
 // This is done to retrieve a list with all versions including a flag whether it's
 // a soft-deleted or active version.
-func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *sr.Client, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
+func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *rpsr.Client, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
 	type chResponse struct {
 		Res             []int
 		WithSoftDeleted bool
@@ -373,7 +374,7 @@ func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *s
 
 // getSubjectCompatibilityLevel retrieves the compatibility level for a subject,
 // handling the case where no specific compatibility is configured.
-func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *sr.Client, subjectName string) string {
+func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rpsr.Client, subjectName string) string {
 	compatibilityRes := srClient.Compatibility(ctx, subjectName)
 	compatibility := compatibilityRes[0]
 	if err := compatibility.Err; err != nil {
@@ -678,4 +679,13 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]Sche
 	}
 
 	return schemaVersions, nil
+}
+
+// ListSRACLs lists Schema Registry ACLs based on the provided filter
+func (s *Service) ListSRACLs(ctx context.Context, filter []rpsr.ACL) ([]rpsr.ACL, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return srClient.ListACLsBatch(ctx, filter)
 }

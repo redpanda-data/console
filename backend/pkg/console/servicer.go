@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -102,4 +103,8 @@ type SchemaRegistryServicer interface {
 	CreateSchemaRegistrySchema(ctx context.Context, subjectName string, schema sr.Schema) (*CreateSchemaResponse, error)
 	ValidateSchemaRegistrySchema(ctx context.Context, subjectName string, version int, schema sr.Schema) (*SchemaRegistrySchemaValidation, error)
 	GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]SchemaVersion, error)
+
+	// Custom Redpanda-only methods for managing ACLs within the schema registry.
+
+	ListSRACLs(ctx context.Context, filters []rpsr.ACL) ([]rpsr.ACL, error)
 }
