@@ -680,3 +680,12 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]Sche
 
 	return schemaVersions, nil
 }
+
+// ListSRACLs lists Schema Registry ACLs based on the provided filter
+func (s *Service) ListSRACLs(ctx context.Context, filter []rpsr.ACL) ([]rpsr.ACL, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return srClient.ListACLsBatch(ctx, filter)
+}
