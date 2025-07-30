@@ -14,6 +14,7 @@ package signup
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -57,15 +58,12 @@ func NewService(logger *zap.Logger, gatekeeperBaseURL string) (*Service, error) 
 // LicenseSignup processes a license signup request by forwarding it to the gatekeeper service.
 // This endpoint forwards the signup request to the external gatekeeper service and returns the response.
 func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha1.LicenseSignupRequest]) (*connect.Response[v1alpha1.LicenseSignupResponse], error) {
-	s.logger.Info("forwarding license signup request to gatekeeper",
-		zap.String("email", req.Msg.GetEmail()),
-		zap.String("company_name", req.Msg.GetCompanyName()),
-		zap.String("given_name", req.Msg.GetGivenName()),
-		zap.String("family_name", req.Msg.GetFamilyName()))
+	s.logger.Info("forwarding license signup request to gatekeeper")
 
 	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
-		return nil, err
+		// this
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get redpanda admin api client: %w", err))
 	}
 
 	// Create gatekeeper request
@@ -85,7 +83,7 @@ func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha
 	gatekeeperResp, err := s.gatekeeperClient.LicenseSignup(ctx, connect.NewRequest(gatekeeperReq))
 	if err != nil {
 		s.logger.Error("failed to forward signup request to gatekeeper", zap.Error(err))
-		return nil, err
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to forward signup request to gatekeeper: %w", err))
 	}
 
 	licenseInput := strings.NewReader(gatekeeperResp.Msg.GetLicense().GetLicenseKey())
@@ -101,9 +99,6 @@ func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha
 		},
 	}
 
-	s.logger.Info("license signup completed successfully via gatekeeper",
-		zap.String("email", req.Msg.GetEmail()),
-		zap.String("license_key", consoleResp.License.GetLicenseKey()))
-
+	s.logger.Info("license signup completed successfully via gatekeeper")
 	return connect.NewResponse(consoleResp), nil
 }
