@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/hamba/avro/v2"
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/stretchr/testify/suite"
 	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/twmb/franz-go/pkg/sr/srfake"
@@ -27,13 +28,13 @@ import (
 
 // testSchemaClientFactory is a mock implementation of the schema.ClientFactory interface
 type testSchemaClientFactory struct {
-	client *sr.Client
+	client *rpsr.Client
 }
 
 // Ensure testSchemaClientFactory implements the ClientFactory interface
 var _ schema.ClientFactory = (*testSchemaClientFactory)(nil)
 
-func (f *testSchemaClientFactory) GetSchemaRegistryClient(context.Context) (*sr.Client, error) {
+func (f *testSchemaClientFactory) GetSchemaRegistryClient(context.Context) (*rpsr.Client, error) {
 	return f.client, nil
 }
 
@@ -41,7 +42,7 @@ func (f *testSchemaClientFactory) GetSchemaRegistryClient(context.Context) (*sr.
 type TestCachedClientSuite struct {
 	suite.Suite
 	mockRegistry  *srfake.Registry
-	srClient      *sr.Client
+	srClient      *rpsr.Client
 	clientFactory *testSchemaClientFactory
 	cachedClient  *CachedClient
 	namespace     string
@@ -63,7 +64,9 @@ func (s *TestCachedClientSuite) SetupSuite() {
 	s.Require().NotNil(s.mockRegistry)
 
 	var err error
-	s.srClient, err = sr.NewClient(sr.URLs(s.mockRegistry.URL()))
+	srClient, err := sr.NewClient(sr.URLs(s.mockRegistry.URL()))
+	s.Require().NoError(err)
+	s.srClient, err = rpsr.NewClient(srClient)
 	s.Require().NoError(err)
 
 	s.clientFactory = &testSchemaClientFactory{client: s.srClient}

@@ -400,6 +400,8 @@ github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7 h1:M
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7/go.mod h1:UJIi/yUxGOBYXUrfUsOkxfYxcb/ll7mZrwae/i+U2kc=
 github.com/redpanda-data/common-go/rpadmin v0.1.14 h1:G/rlh9cHsGhTsNpkwrISdpGA8fPZ7ul57rzxbPiJhs0=
 github.com/redpanda-data/common-go/rpadmin v0.1.14/go.mod h1:zgE/M2UihQZRdivHfbm4x9Rb3Vm/crO5kiX3GQrxhG4=
+github.com/redpanda-data/common-go/rpsr v0.1.1 h1:3935qYNvAhbs8s3TrmXzXMs/Tc0+ukNjgsVxskh99kI=
+github.com/redpanda-data/common-go/rpsr v0.1.1/go.mod h1:2j2416onosg5FKaKz52NooRE+q/9EJqQn0kyTcTXWHc=
 github.com/rickb777/period v1.0.15 h1:nWR4rgCtImT0CXw5kAsjHv+ExCEFt/18zAySOi7pWI8=
 github.com/rickb777/period v1.0.15/go.mod h1:3lWluyeZEk6n1jfLCPG4dH3C0N3NxjmYL4Dmcxip3es=
 github.com/rickb777/plural v1.4.4 h1:OpZU8uRr9P2NkYAbkLMwlKNVJyJ5HvRcRBFyXGJtKGI=

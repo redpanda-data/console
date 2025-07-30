@@ -12,7 +12,7 @@ package schema
 import (
 	"context"
 
-	"github.com/twmb/franz-go/pkg/sr"
+	"github.com/redpanda-data/common-go/rpsr"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 )
@@ -25,6 +25,6 @@ var _ ClientFactory = (*DisabledClientProvider)(nil)
 type DisabledClientProvider struct{}
 
 // GetSchemaRegistryClient returns a standard error for an unconfigured schema registry when invoked.
-func (*DisabledClientProvider) GetSchemaRegistryClient(context.Context) (*sr.Client, error) {
+func (*DisabledClientProvider) GetSchemaRegistryClient(context.Context) (*rpsr.Client, error) {
 	return nil, apierrors.NewSchemaRegistryNotConfiguredError()
 }
