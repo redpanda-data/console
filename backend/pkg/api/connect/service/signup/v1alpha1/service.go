@@ -14,6 +14,7 @@ package signup
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go/redpanda/api/gatekeeper/v1alpha1/gatekeeperv1alpha1connect"
@@ -59,11 +60,17 @@ func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha
 		return nil, err
 	}
 
+	companyName := req.Msg.GetCompanyName()
+
+	if companyName == "" {
+		companyName = fmt.Sprintf("Console Trial - %s", req.Msg.GetEmail())
+	}
+
 	// Create gatekeeper request
 	gatekeeperReq := &gatekeeperv1alpha1.LicenseSignupRequest{
 		GivenName:   req.Msg.GetGivenName(),
 		FamilyName:  req.Msg.GetFamilyName(),
-		CompanyName: req.Msg.GetCompanyName(),
+		CompanyName: companyName,
 		Email:       req.Msg.GetEmail(),
 		ClusterInfo: &gatekeeperv1alpha1.EnterpriseClusterInfo{
 			ClusterId: uuid.Nil.String(), // TODO: fetch the actual cluster_id
