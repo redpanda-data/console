@@ -14,7 +14,6 @@ package signup
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	"buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go/redpanda/api/gatekeeper/v1alpha1/gatekeeperv1alpha1connect"
@@ -42,26 +41,18 @@ type Service struct {
 
 // NewService creates a new instance of Service, initializing it with the
 // provided logger and gatekeeper client.
-func NewService(logger *zap.Logger, gatekeeperBaseURL string) (*Service, error) {
-	gatekeeperClient := gatekeeperv1alpha1connect.NewEnterpriseServiceClient(
-		http.DefaultClient,
-		gatekeeperBaseURL,
-	)
-
+func NewService(logger *zap.Logger, gatekeeperClient gatekeeperv1alpha1connect.EnterpriseServiceClient, rpClientFactory redpandafactory.ClientFactory) (*Service, error) {
 	return &Service{
-		logger:           logger,
-		gatekeeperClient: gatekeeperClient,
+		logger:                 logger,
+		gatekeeperClient:       gatekeeperClient,
+		redpandaClientProvider: rpClientFactory,
 	}, nil
 }
 
 // LicenseSignup processes a license signup request by forwarding it to the gatekeeper service.
 // This endpoint forwards the signup request to the external gatekeeper service and returns the response.
 func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha1.LicenseSignupRequest]) (*connect.Response[v1alpha1.LicenseSignupResponse], error) {
-	s.logger.Info("forwarding license signup request to gatekeeper",
-		zap.String("email", req.Msg.GetEmail()),
-		zap.String("company_name", req.Msg.GetCompanyName()),
-		zap.String("given_name", req.Msg.GetGivenName()),
-		zap.String("family_name", req.Msg.GetFamilyName()))
+	s.logger.Info("forwarding license signup request to gatekeeper")
 
 	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
@@ -101,9 +92,7 @@ func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha
 		},
 	}
 
-	s.logger.Info("license signup completed successfully via gatekeeper",
-		zap.String("email", req.Msg.GetEmail()),
-		zap.String("license_key", consoleResp.License.GetLicenseKey()))
+	s.logger.Info("license signup completed successfully via gatekeeper")
 
 	return connect.NewResponse(consoleResp), nil
 }
