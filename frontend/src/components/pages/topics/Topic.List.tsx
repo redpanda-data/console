@@ -10,7 +10,6 @@
  */
 
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   AlertDialog,
@@ -35,13 +34,11 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { type FC, useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { type FC, useRef, useState } from 'react';
+import React, { type FC, useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import { observable } from 'mobx';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { api } from '../../../state/backendApi';
@@ -51,12 +48,10 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
-import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { renderLogDirSummary } from '../../misc/common';
-import { PageComponent, type PageInitHelper } from '../Page';
 import {
   CreateTopicModalContent,
   type CreateTopicModalState,
@@ -64,23 +59,19 @@ import {
   type RetentionTimeUnit,
 } from './CreateTopicModal/CreateTopicModal';
 import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
-import { observable } from 'mobx';
+import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 
 const TopicList: FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [localSearchValue, setLocalSearchValue] = useState(searchParams.get('q') || '');
-  const [showInternalTopics, setShowInternalTopics] = useState(false);
+  const [localSearchValue, setLocalSearchValue] = useQueryState("q", parseAsString.withDefault(''));
+  
+  const [showInternalTopics, setShowInternalTopics] = useQueryState<boolean>("showInternal", parseAsBoolean.withDefault(false));
 
+  // set internal topics
   useEffect(() => {
-    setSearchParams((searchParams) => {
-      if(localSearchValue) {
-        searchParams.set("q", localSearchValue);
-      } else {
-        searchParams.delete("q");
-      }
-      return searchParams;
-    });
-  }, [localSearchValue, searchParams, setSearchParams]);
+    if(showInternalTopics === null) {
+      setShowInternalTopics(uiSettings.topicList.hideInternalTopics);
+    }
+  }, []);
 
   const { data, isLoading, isError } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
@@ -172,7 +163,10 @@ const TopicList: FC = () => {
           <Checkbox
             data-testid="show-internal-topics-checkbox"
             isChecked={showInternalTopics}
-            onChange={(x) => setShowInternalTopics(x.target.checked)}
+            onChange={(x) => {
+              uiSettings.topicList.hideInternalTopics = x.target.checked;
+              setShowInternalTopics(x.target.checked);
+            }}
             style={{ marginLeft: 'auto' }}
           >
             Show internal topics
