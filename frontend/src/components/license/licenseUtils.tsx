@@ -1,5 +1,6 @@
 import { Button, Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { useState } from 'react';
 import {
   type License,
   License_Source,
@@ -9,6 +10,7 @@ import {
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
 import { prettyMilliseconds } from '../../utils/utils';
+import { RegisterModal } from './RegisterModal';
 
 enum Platform {
   PLATFORM_REDPANDA = 1,
@@ -387,8 +389,17 @@ export const UpgradeButton = () => (
   </Button>
 );
 
-export const RegisterButton = () => (
-  <Button variant="ghost" size="sm">
-    Register TODO
-  </Button>
-);
+
+
+export const RegisterButton = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(true)}>
+        Register
+      </Button>
+      <RegisterModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
+  );
+};
