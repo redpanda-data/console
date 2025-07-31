@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"time"
 
+	"buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go/redpanda/api/gatekeeper/v1alpha1/gatekeeperv1alpha1connect"
 	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
@@ -145,7 +146,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	}
 
 	// TODO: replace gatekeeper url with the correct productio url and potentially move it to internal config
-	signupSvc, err := signupsvcv1alpha1.NewService(api.Logger.Named("signup_service"), "https://api.ign.cloud.redpanda.com")
+	gatekeeperClient := gatekeeperv1alpha1connect.NewEnterpriseServiceClient(
+		http.DefaultClient,
+		"https://api.ign.cloud.redpanda.com",
+	)
+	signupSvc, err := signupsvcv1alpha1.NewService(api.Logger.Named("signup_service"), gatekeeperClient, api.RedpandaClientProvider)
 	if err != nil {
 		api.Logger.Fatal("failed to create signup service", zap.Error(err))
 	}
@@ -250,7 +255,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	signupSvcPath, signupSvcHandler := consolev1alpha1connect.NewSignupServiceHandler(hookOutput.Services[consolev1alpha1connect.SignupServiceName].(consolev1alpha1connect.SignupServiceHandler),
-		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+		connect.WithInterceptors(hookOutput.Interceptors...))
 	authenticationSvcPath, authenticationSvcHandler := consolev1alpha1connect.NewAuthenticationServiceHandler(hookOutput.Services[consolev1alpha1connect.AuthenticationServiceName].(consolev1alpha1connect.AuthenticationServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	clusterStatusSvcPath, clusterStatusSvcHandler := consolev1alpha1connect.NewClusterStatusServiceHandler(hookOutput.Services[consolev1alpha1connect.ClusterStatusServiceName].(consolev1alpha1connect.ClusterStatusServiceHandler),
