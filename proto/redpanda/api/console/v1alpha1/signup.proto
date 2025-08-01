@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+service SignupService {
+  rpc LicenseSignup(LicenseSignupRequest) returns (LicenseSignupResponse) {}
+}
+
+message LicenseSignupRequest {
+  string given_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      pattern: "^[\\p{L}\\p{M}\\p{N} '_-]+$"
+      min_len: 1
+      max_len: 255
+    }
+  ];
+  string family_name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      pattern: "^[\\p{L}\\p{M}\\p{N} '_-]+$"
+      min_len: 1
+      max_len: 255
+    }
+  ];
+  string company_name = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_DEFAULT_VALUE,
+    (buf.validate.field).string = {
+      pattern: "^[\\p{L}\\p{M}\\p{N} '_-]+$"
+      min_len: 1
+      max_len: 255
+    }
+  ];
+  string email = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.email = true
+  ];
+}
+
+message LicenseSignupResponse {
+  message License {
+    string license_key = 1;
+    google.protobuf.Timestamp expiration = 2;
+  }
+  License license = 2;
+}
