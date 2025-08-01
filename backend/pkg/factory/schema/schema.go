@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -25,7 +26,7 @@ import (
 // ClientFactory defines the interface for creating and retrieving Kafka clients.
 type ClientFactory interface {
 	// GetSchemaRegistryClient retrieves a schema registry client based on the context.
-	GetSchemaRegistryClient(ctx context.Context) (*sr.Client, error)
+	GetSchemaRegistryClient(ctx context.Context) (*rpsr.Client, error)
 }
 
 // Ensure CachedClientProvider implements ClientFactory interface
@@ -34,7 +35,7 @@ var _ ClientFactory = (*SingleClientProvider)(nil)
 // SingleClientProvider is a struct that holds a single instance of the Schema
 // Registry client. It implements the ClientFactory interface.
 type SingleClientProvider struct {
-	srClient *sr.Client
+	srClient *rpsr.Client
 }
 
 // NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
@@ -74,12 +75,17 @@ func NewSingleClientProvider(cfg *config.Config) (ClientFactory, error) {
 		return nil, err
 	}
 
+	client, err := rpsr.NewClient(srClient)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SingleClientProvider{
-		srClient: srClient,
+		srClient: client,
 	}, nil
 }
 
 // GetSchemaRegistryClient returns a schema registry client for the given context.
-func (p *SingleClientProvider) GetSchemaRegistryClient(_ context.Context) (*sr.Client, error) {
+func (p *SingleClientProvider) GetSchemaRegistryClient(_ context.Context) (*rpsr.Client, error) {
 	return p.srClient, nil
 }

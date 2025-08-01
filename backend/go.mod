@@ -46,6 +46,7 @@ require (
 	github.com/redpanda-data/common-go/api v0.0.0-20250701102610-07660e078862
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/redpanda-data/common-go/rpadmin v0.1.14
+	github.com/redpanda-data/common-go/rpsr v0.1.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0

@@ -13,6 +13,7 @@ package acl
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -36,6 +37,7 @@ type Service struct {
 	consoleSvc console.Servicer
 
 	kafkaClientMapper *kafkaClientMapper
+	srClientMapper    *schemaRegistryMapper
 	defaulter         *defaulter
 }
 
@@ -49,6 +51,7 @@ func NewService(cfg *config.Config,
 		logger:            logger,
 		consoleSvc:        consoleSvc,
 		kafkaClientMapper: &kafkaClientMapper{},
+		srClientMapper:    &schemaRegistryMapper{},
 		defaulter:         &defaulter{},
 	}
 }
@@ -105,6 +108,36 @@ func (s *Service) ListACLs(ctx context.Context, req *connect.Request[v1.ListACLs
 		}
 		resources[i] = aclResProto
 	}
+
+	// TODO: how to tell if authz is enabled for Schema Registry reliably? - Listing is not guarded against license
+	//  and a user can create an ACL before authz is enabled.
+	// Filter can be nil if the filter contains no fields that are relevant
+	// for Schema Registry ACLs.
+	srFilter := s.srClientMapper.listACLFilterToDescribeACLSR(req.Msg.Filter)
+	checkSchemaRegistryACLs := srFilter != nil && s.cfg.SchemaRegistry.Enabled
+	if !checkSchemaRegistryACLs {
+		return connect.NewResponse(&v1.ListACLsResponse{Resources: resources}), nil
+	}
+
+	srACLres, err := s.consoleSvc.ListSRACLs(ctx, srFilter)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			fmt.Errorf("error listing Schema Registry ACLs: %w", err),
+			apierrors.NewErrorInfo(v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String()),
+		)
+	}
+	srResources, err := s.srClientMapper.describeSRACLsResourceToProto(srACLres)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			fmt.Errorf("error mapping Schema Registry ACLs response: %w", err),
+			apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
+	}
+	// We can safely append the Schema Registry resources to the Kafka
+	// resources as they will always have different resource types.
+	resources = append(resources, srResources...)
 
 	return connect.NewResponse(&v1.ListACLsResponse{Resources: resources}), nil
 }
