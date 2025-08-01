@@ -1,4 +1,7 @@
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Box,
   Button,
   Flex,
@@ -13,12 +16,28 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
+  VStack,
 } from '@redpanda-data/ui';
+import { CheckIcon } from '@chakra-ui/icons';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
+import { ConnectError } from '@connectrpc/connect';
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backendApi';
+
+type FieldViolation = {
+  field: string;
+  description: string;
+};
+
+type BadRequest = {
+  fieldViolations: FieldViolation[];
+};
+
+function isBadRequest(obj: any): obj is { type: string; debug: BadRequest } {
+  return obj && obj.type === 'google.rpc.BadRequest';
+}
 
 interface RegisterFormData {
   givenName: string;
@@ -34,6 +53,8 @@ interface RegisterModalProps {
 
 export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isSuccess, setIsSuccess] = useState(false);
   const signupMutation = useLicenseSignupMutation();
 
   const {
@@ -52,22 +73,37 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
 
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
+    setFieldErrors({}); // Clear previous field errors
+    
     try {
       await signupMutation.mutateAsync({
         givenName: data.givenName,
         familyName: data.familyName,
         email: data.email,
-        companyName: data.companyName || '',
+        companyName: data.companyName || 'unknown',
       });
       
       // Refresh licenses after successful registration
       api.listLicenses();
       
-      // Close modal and reset form
-      onClose();
-      reset();
+      // Show success state
+      setIsSuccess(true);
     } catch (error) {
-      // Error is handled by the mutation
+      // Handle field-level errors from the API response
+      if (error instanceof ConnectError) {
+        const newFieldErrors: Record<string, string> = {};
+        
+        error.details?.forEach(detail => {
+          if (isBadRequest(detail)) {
+            detail.debug.fieldViolations.forEach(violation => {
+              newFieldErrors[violation.field] = violation.description;
+            });
+          }
+        });
+        
+        setFieldErrors(newFieldErrors);
+      }
+      
       console.error('Registration failed:', error);
     } finally {
       setIsSubmitting(false);
@@ -76,7 +112,15 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
 
   const handleClose = () => {
     reset();
+    setFieldErrors({});
+    setIsSuccess(false);
+    signupMutation.reset();
     onClose();
+
+    if(isSuccess) {
+      // Refetch license data and enterprise features after successful registration
+      api.listLicenses();
+    }
   };
 
   return (
@@ -86,17 +130,49 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
         <ModalHeader>Register</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Box>
-            <Text mb={4} color="gray.600">
-              Register this cluster for an additional 30 days of enterprise features.
-            </Text>
-            
-            <form onSubmit={handleSubmit(onSubmit)}>
+          {isSuccess ? (
+            <VStack spacing={6} align="center" py={4}>
+              <Box
+                w="80px"
+                h="80px"
+                borderRadius="full"
+                bg="green.100"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <CheckIcon w="40px" h="40px" color="green.500" />
+              </Box>
+              <VStack spacing={2} align="center">
+                <Text fontSize="lg" fontWeight="bold" textAlign="center">
+                  This cluster has been successfully registered
+                </Text>
+                <Text color="gray.600" textAlign="center">
+                  Enjoy 30 more days of enterprise features.
+                </Text>
+              </VStack>
+            </VStack>
+          ) : (
+            <Box>
+              <Text mb={4} color="gray.600">
+                Register this cluster for an additional 30 days of enterprise features.
+              </Text>
+              
+              {signupMutation.error && Object.keys(fieldErrors).length === 0 && (
+                <Alert status="error" variant="left-accent" mb={4}>
+                  <AlertIcon />
+                  <AlertDescription>
+                    {signupMutation.error.message || 'Registration failed. Please try again.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <form onSubmit={handleSubmit(onSubmit)}>
               <Flex gap={4} mb={4}>
                 <FormField
                   label="First name"
-                  isInvalid={!!errors.givenName}
-                  errorText={errors.givenName?.message}
+                  isInvalid={!!errors.givenName || !!fieldErrors.givenName}
+                  errorText={errors.givenName?.message || fieldErrors.givenName}
                   flex={1}
                 >
                   <Controller
@@ -129,8 +205,8 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
 
                 <FormField
                   label="Last name"
-                  isInvalid={!!errors.familyName}
-                  errorText={errors.familyName?.message}
+                  isInvalid={!!errors.familyName || !!fieldErrors.familyName}
+                  errorText={errors.familyName?.message || fieldErrors.familyName}
                   flex={1}
                 >
                   <Controller
@@ -164,8 +240,8 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
 
               <FormField
                 label="Email address"
-                isInvalid={!!errors.email}
-                errorText={errors.email?.message}
+                isInvalid={!!errors.email || !!fieldErrors.email}
+                errorText={errors.email?.message || fieldErrors.email}
                 mb={4}
               >
                 <Controller
@@ -202,19 +278,29 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
               </Text>
             </form>
           </Box>
+          )}
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="ghost" onClick={handleClose} mr={3}>
-            Close
-          </Button>
-          <Button
-            onClick={handleSubmit(onSubmit)}
-            isLoading={isSubmitting}
-            loadingText="Registering..."
-          >
-            Register
-          </Button>
+          {isSuccess ? (
+            <Button onClick={handleClose}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={handleClose} mr={3}>
+                Close
+              </Button>
+              <Button
+                onClick={handleSubmit(onSubmit)}
+                isLoading={isSubmitting || signupMutation.isPending}
+                loadingText="Registering..."
+                isDisabled={signupMutation.isPending}
+              >
+                Register
+              </Button>
+            </>
+          )}
         </ModalFooter>
       </ModalContent>
     </Modal>
