@@ -396,7 +396,7 @@ export const RegisterButton = () => {
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(true)}>
+      <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
         Register
       </Button>
       <RegisterModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
