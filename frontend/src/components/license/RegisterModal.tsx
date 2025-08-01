@@ -267,11 +267,11 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
 
               <Text fontSize="sm" color="gray.600" mb={4}>
                 By registering you acknowledge having read and accepted our{' '}
-                <Link href="https://redpanda.com/privacy" target="_blank" color="blue.500">
+                <Link href="https://www.redpanda.com/legal/privacy-policy" target="_blank" color="blue.500">
                   Privacy Policy
                 </Link>{' '}
                 and{' '}
-                <Link href="https://redpanda.com/terms" target="_blank" color="blue.500">
+                <Link href="https://www.redpanda.com/legal/redpanda-subscription-terms-and-conditions" target="_blank" color="blue.500">
                   Terms of Service
                 </Link>
                 .
