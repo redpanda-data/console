@@ -13,12 +13,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // DeleteTopic deletes a Kafka Topic (if possible and not disabled).
@@ -43,7 +42,7 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to execute delete topic command: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("topic_name", topicName)},
+			InternalLogs: []slog.Attr{slog.String("topic_name", topicName)},
 			IsSilent:     false,
 		}
 	}
@@ -53,7 +52,7 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 			Err:          errors.New("topics array in response is empty"),
 			Status:       http.StatusServiceUnavailable,
 			Message:      "Unexpected Kafka response: No topics set in the response",
-			InternalLogs: []zapcore.Field{zap.String("topic_name", topicName)},
+			InternalLogs: []slog.Attr{slog.String("topic_name", topicName)},
 			IsSilent:     false,
 		}
 	}
@@ -64,7 +63,7 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to delete Kafka topic: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("topic_name", topicName)},
+			InternalLogs: []slog.Attr{slog.String("topic_name", topicName)},
 			IsSilent:     false,
 		}
 	}

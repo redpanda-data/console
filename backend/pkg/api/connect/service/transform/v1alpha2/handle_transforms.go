@@ -14,12 +14,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	commonv1alpha1 "buf.build/gen/go/redpandadata/common/protocolbuffers/go/redpanda/api/common/v1alpha1"
 	"buf.build/go/protovalidate"
 	"connectrpc.com/connect"
-	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -165,7 +165,7 @@ func (s *Service) HandleDeployTransform() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if _, err := w.Write(jsonBytes); err != nil {
-			s.logger.Error("failed to write response to deploy wasm transform request", zap.Error(err))
+			s.logger.ErrorContext(r.Context(), "failed to write response to deploy wasm transform request", slog.Any("error", err))
 		}
 	}
 }
@@ -197,9 +197,9 @@ func (s *Service) validateProtoMessage(msg proto.Message) error {
 		}
 		badRequest = apierrors.NewBadRequest(fieldViolations...)
 	case errors.As(err, &runtimeErr):
-		s.logger.Error("validation runtime error", zap.Error(runtimeErr))
+		s.logger.Error("validation runtime error", slog.Any("error", runtimeErr))
 	case errors.As(err, &compilationErr):
-		s.logger.Error("validation compilation error", zap.Error(compilationErr))
+		s.logger.Error("validation compilation error", slog.Any("error", compilationErr))
 	}
 
 	return apierrors.NewConnectError(

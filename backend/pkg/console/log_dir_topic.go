@@ -13,10 +13,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/twmb/franz-go/pkg/kadm"
-	"go.uber.org/zap"
 )
 
 // TopicLogDirSummary provides log dir / size information for a single topic. Because each broker
@@ -160,11 +160,11 @@ func (s *Service) logDirsByTopic(ctx context.Context) (map[string]TopicLogDirSum
 		if se.AllFailed {
 			return nil, fmt.Errorf("failed to describe all log dirs: %w", err)
 		}
-		s.logger.Warn("failed to describe log dirs from some shards", zap.Int("failed_shards", len(se.Errs)))
+		s.logger.WarnContext(ctx, "failed to describe log dirs from some shards", slog.Int("failed_shards", len(se.Errs)))
 		for _, shardErr := range se.Errs {
-			s.logger.Warn("shard error for describing log dirs",
-				zap.Int32("broker_id", shardErr.Broker.NodeID),
-				zap.Error(shardErr.Err))
+			s.logger.WarnContext(ctx, "shard error for describing log dirs",
+				slog.Int("broker_id", int(shardErr.Broker.NodeID)),
+				slog.Any("error", shardErr.Err))
 			shardErrors[shardErr.Broker.NodeID] = shardErr
 		}
 	}

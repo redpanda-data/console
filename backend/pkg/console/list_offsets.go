@@ -16,6 +16,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 // TopicOffset contains all topics' partitions offsets.
@@ -120,7 +122,7 @@ func (s *Service) listOffsets(ctx context.Context, kafkaCl *kgo.Client, topicPar
 		if err != nil {
 			shardReq, ok := shard.Req.(*kmsg.ListOffsetsRequest)
 			if !ok {
-				s.logger.Fatal("failed to cast ListOffsetsRequest")
+				loggerpkg.Fatal(s.logger, "failed to cast ListOffsetsRequest")
 			}
 
 			// Create an entry for each failed shard so that we each failed partition is visible too
@@ -145,7 +147,7 @@ func (s *Service) listOffsets(ctx context.Context, kafkaCl *kgo.Client, topicPar
 		// Create an entry for each successfully requested partition
 		res, ok := shard.Resp.(*kmsg.ListOffsetsResponse)
 		if !ok {
-			s.logger.Fatal("failed to cast ListOffsetsResponse")
+			loggerpkg.Fatal(s.logger, "failed to cast ListOffsetsResponse")
 		}
 		for _, topic := range res.Topics {
 			partitions, ok := partitionsByTopic[topic.Topic]

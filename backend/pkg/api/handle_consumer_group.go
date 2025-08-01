@@ -12,12 +12,11 @@ package api
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
@@ -220,7 +219,7 @@ func (api *API) handleDeleteConsumerGroup() http.HandlerFunc {
 				Err:          fmt.Errorf("failed to delete consumer group: %w", err),
 				Status:       http.StatusServiceUnavailable,
 				Message:      fmt.Sprintf("Failed to delete consumer group: %v", err.Error()),
-				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
+				InternalLogs: []slog.Attr{slog.String("group_id", groupID)},
 				IsSilent:     false,
 			})
 			return

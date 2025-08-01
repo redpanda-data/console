@@ -15,12 +15,16 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/cloudhut/common/rest"
-	"go.uber.org/zap"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
@@ -33,15 +37,15 @@ import (
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/license"
-	"github.com/redpanda-data/console/backend/pkg/logging"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
-// API represents the server and all it's dependencies to serve incoming user requests
+// API represents the server and all its dependencies to serve incoming user requests
 type API struct {
 	Cfg *config.Config
 
-	Logger     *zap.Logger
+	Logger     *slog.Logger
 	ConsoleSvc console.Servicer
 	ConnectSvc *connect.Service
 	GitSvc     *git.Service
@@ -63,12 +67,15 @@ type API struct {
 	// Hooks to add additional functionality from the outside at different places
 	Hooks *Hooks
 
-	// internal server intance
+	// PrometheusRegistry is the registry used for metrics registration
+	PrometheusRegistry prometheus.Registerer
+
+	// internal server instance
 	server *rest.Server
 }
 
 // New creates a new API instance
-func New(cfg *config.Config, inputOpts ...Option) *API {
+func New(cfg *config.Config, inputOpts ...Option) (*API, error) {
 	// Set default options and then apply all the provided options that will
 	// override these defaults.
 	opts := &options{
@@ -76,40 +83,52 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		cacheNamespaceFn: func(_ context.Context) (string, error) {
 			return "single/", nil
 		},
+		prometheusRegistry: prometheus.NewRegistry(),
 	}
 	for _, opt := range inputOpts {
 		opt.apply(opts)
 	}
 
-	// We don't initialize the logger for the default options to avoid
-	// duplicate initialization of the logger with all its metrics.
-	var logger *zap.Logger
-	if opts.logger == nil {
-		logger = logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
-	} else {
+	// Register default Go runtime and process collectors to maintain same metrics as DefaultRegisterer
+	opts.prometheusRegistry.MustRegister(collectors.NewGoCollector())
+	opts.prometheusRegistry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+
+	var logger *slog.Logger
+	if opts.logger != nil {
+		// Enterprise provided a custom logger
 		logger = opts.logger
+	} else {
+		// Create default logger from config
+		logger = loggerpkg.NewSlogLogger(
+			loggerpkg.WithLevel(cfg.Logger.SlogLevel),
+			loggerpkg.WithFormat(loggerpkg.FormatJSON),
+			loggerpkg.WithPrometheusRegistry(opts.prometheusRegistry, cfg.MetricsNamespace),
+		)
 	}
+	slog.SetDefault(logger)
 
 	logger.Info("started Redpanda Console",
-		zap.String("version", version.Version),
-		zap.String("built_at", version.BuiltAt))
+		slog.String("version", version.Version),
+		slog.String("built_at", version.BuiltAt))
 
 	// Create default client factories if none are provided
-	setDefaultClientProviders(cfg, logger, opts)
+	if err := setDefaultClientProviders(cfg, logger, opts); err != nil {
+		return nil, fmt.Errorf("set default client providers: %w", err)
+	}
 
 	// Use default frontend resources from embeds. We don't use hooks here because
 	// we may want to use the API struct without providing all hooks.
 	if opts.frontendResources == nil {
 		fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
 		if err != nil {
-			logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
+			return nil, fmt.Errorf("failed to build subtree from embedded frontend files: %w", err)
 		}
 		opts.frontendResources = fsys
 	}
 
 	connectSvc, err := connect.NewService(cfg.KafkaConnect, logger)
 	if err != nil {
-		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
+		return nil, fmt.Errorf("failed to create Kafka connect service: %w", err)
 	}
 
 	consoleSvc, err := console.NewService(
@@ -122,7 +141,7 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		connectSvc,
 	)
 	if err != nil {
-		logger.Fatal("failed to create console service", zap.Error(err))
+		return nil, fmt.Errorf("failed to create console service: %w", err)
 	}
 
 	year := 24 * time.Hour * 365
@@ -136,16 +155,17 @@ func New(cfg *config.Config, inputOpts ...Option) *API {
 		RedpandaClientProvider: opts.redpandaClientProvider,
 		Hooks:                  newDefaultHooks(),
 		FrontendResources:      opts.frontendResources,
+		PrometheusRegistry:     opts.prometheusRegistry,
 		License: license.License{
 			Source:    license.SourceConsole,
 			Type:      license.TypeOpenSource,
 			ExpiresAt: time.Now().Add(year * 10).Unix(),
 		},
-	}
+	}, nil
 }
 
 // Set default client providers if none provided
-func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *options) {
+func setDefaultClientProviders(cfg *config.Config, logger *slog.Logger, opts *options) error {
 	if opts.kafkaClientProvider == nil {
 		opts.kafkaClientProvider = kafkafactory.NewCachedClientProvider(cfg, logger)
 	}
@@ -158,55 +178,54 @@ func setDefaultClientProviders(cfg *config.Config, logger *zap.Logger, opts *opt
 	if opts.schemaClientProvider == nil {
 		schemaClientProvider, err := schemafactory.NewSingleClientProvider(cfg)
 		if err != nil {
-			logger.Fatal("failed to create the schema registry client provider", zap.Error(err))
+			return fmt.Errorf("failed to create the schema registry client provider: %w", err)
 		}
 		opts.schemaClientProvider = schemaClientProvider
 	}
 
 	if opts.redpandaClientProvider == nil {
-		redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg, logger.Named("admin-api"))
+		redpandaClientProvider, err := redpandafactory.NewSingleClientProvider(cfg, loggerpkg.Named(logger, "admin-api"))
 		if err != nil {
-			logger.Fatal("failed to create the Redpanda client provider", zap.Error(err))
+			return fmt.Errorf("failed to create the Redpanda client provider: %w", err)
 		}
 		opts.redpandaClientProvider = redpandaClientProvider
 	}
+	return nil
 }
 
-// Start the API server and block
-func (api *API) Start() {
-	// Assume 6s for other initializations and up to max startup time before we cancel
-	// the context and force to return early.
-	maxStartTime := 6*time.Second + api.Cfg.Kafka.Startup.TotalMaxTime()
-	startCtx, cancel := context.WithTimeout(context.Background(), maxStartTime)
-	defer cancel()
-
-	err := api.ConsoleSvc.Start(startCtx)
-	if err != nil {
-		api.Logger.Fatal("failed to start console service", zap.Error(err))
+// Start the API server
+func (api *API) Start(ctx context.Context) error {
+	if err := api.ConsoleSvc.Start(ctx); err != nil {
+		return fmt.Errorf("start console service: %w", err)
 	}
 
 	mux := api.routes()
-
-	// Server
-	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, mux)
+	srv, err := rest.NewServer(&api.Cfg.REST.Config, api.Logger, mux)
 	if err != nil {
-		api.Logger.Fatal("failed to create HTTP server", zap.Error(err))
+		return fmt.Errorf("new HTTP server: %w", err)
 	}
+	api.server = srv
 
 	// need this to make gRPC protocol work
 	api.server.Server.Handler = h2c.NewHandler(mux, &http2.Server{})
 
-	err = api.server.Start()
-	if err != nil {
-		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
+	if err := api.server.Start(); err != nil {
+		// Don't treat a graceful shutdown as an error.
+		if !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("HTTP server: %w", err)
+		}
 	}
+	return nil
 }
 
 // Stop gracefully stops the API.
 func (api *API) Stop(ctx context.Context) error {
-	err := api.server.Server.Shutdown(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to shutdown HTTP server: %w", err)
+	if api.server == nil {
+		return nil // idempotent
 	}
+	if err := api.server.Server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("shutdown HTTP server: %w", err)
+	}
+	api.ConsoleSvc.Stop()
 	return nil
 }

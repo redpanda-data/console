@@ -13,12 +13,13 @@ package console
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
@@ -29,13 +30,10 @@ func (s *ConsoleIntegrationTestSuite) TestListACLs() {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	testTopicName := testutil.TopicNameForTest("test_list_acls_topic")
-	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
+	_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
 	require.NoError(err)
 
 	timer1 := time.NewTimer(30 * time.Millisecond)

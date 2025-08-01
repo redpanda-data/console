@@ -16,7 +16,7 @@ require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/carlmjohnson/requests v0.24.3
-	github.com/cloudhut/common v0.10.0
+	github.com/cloudhut/common v0.11.0
 	github.com/cloudhut/connect-client v0.0.0-20240523140316-27c93e339567
 	github.com/docker/go-connections v0.5.0
 	github.com/dop251/goja v0.0.0-20250531102226-cb187b08699c
@@ -58,7 +58,7 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.11.2
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/franz-go/pkg/sr v1.5.0
-	github.com/twmb/franz-go/plugin/kzap v1.1.2
+	github.com/twmb/franz-go/plugin/kslog v1.0.0
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -189,7 +189,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/segmentio/ksuid v1.0.4 // indirect
@@ -222,7 +222,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
 	gopkg.in/linkedin/goavro.v1 v1.0.5 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

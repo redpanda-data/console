@@ -14,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/api/httptypes"
@@ -32,13 +32,13 @@ import (
 
 // Service that implements the ConsoleServiceHandler interface.
 type Service struct {
-	logger     *zap.Logger
+	logger     *slog.Logger
 	consoleSvc console.Servicer
 }
 
 // NewService creates a new Console service handler.
 func NewService(
-	logger *zap.Logger,
+	logger *slog.Logger,
 	consoleSvc console.Servicer,
 ) *Service {
 	return &Service{

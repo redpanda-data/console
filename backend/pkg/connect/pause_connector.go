@@ -12,11 +12,10 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // PauseConnector pauses the connector and its tasks, which stops message processing until the connector is resumed.
@@ -33,7 +32,7 @@ func (s *Service) PauseConnector(ctx context.Context, clusterName string, connec
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector", connector)},
 			IsSilent:     false,
 		}
 	}

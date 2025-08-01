@@ -30,7 +30,7 @@ func TestPrometheusHandler(t *testing.T) {
 	logger := NewSlogLogger(
 		WithOutput(&buf),
 		WithLevel(slog.LevelDebug),
-		WithPrometheusRegistry(reg),
+		WithPrometheusRegistry(reg, "test"),
 	)
 
 	// Log messages at different levels
@@ -49,12 +49,12 @@ func TestPrometheusHandler(t *testing.T) {
 	// Find our metric
 	var logMetric *dto.MetricFamily
 	for _, m := range metrics {
-		if m.GetName() == "log_messages_total" {
+		if m.GetName() == "test_log_messages_total" {
 			logMetric = m
 			break
 		}
 	}
-	require.NotNil(t, logMetric, "log_messages_total metric not found")
+	require.NotNil(t, logMetric, "test_log_messages_total metric not found")
 
 	// Check metric type and help
 	assert.Equal(t, dto.MetricType_COUNTER, *logMetric.Type)
@@ -85,20 +85,20 @@ func TestPrometheusHandlerInitialization(t *testing.T) {
 	var buf bytes.Buffer
 	_ = NewSlogLogger(
 		WithOutput(&buf),
-		WithPrometheusRegistry(reg),
+		WithPrometheusRegistry(reg, "test"),
 	)
 
 	// Check that all counters are initialized to 0
 	expectedMetrics := `
-# HELP log_messages_total Total number of log messages, labeled by level.
-# TYPE log_messages_total counter
-log_messages_total{level="DEBUG"} 0
-log_messages_total{level="ERROR"} 0
-log_messages_total{level="INFO"} 0
-log_messages_total{level="WARN"} 0
+# HELP test_log_messages_total Total number of log messages, labeled by level.
+# TYPE test_log_messages_total counter
+test_log_messages_total{level="DEBUG"} 0
+test_log_messages_total{level="ERROR"} 0
+test_log_messages_total{level="INFO"} 0
+test_log_messages_total{level="WARN"} 0
 `
 
-	err := testutil.GatherAndCompare(reg, bytes.NewBufferString(expectedMetrics), "log_messages_total")
+	err := testutil.GatherAndCompare(reg, bytes.NewBufferString(expectedMetrics), "test_log_messages_total")
 	assert.NoError(t, err)
 }
 
@@ -109,7 +109,7 @@ func TestPrometheusHandlerWithGroups(t *testing.T) {
 	var buf bytes.Buffer
 	logger := NewSlogLogger(
 		WithOutput(&buf),
-		WithPrometheusRegistry(reg),
+		WithPrometheusRegistry(reg, "test"),
 	)
 
 	// Create a logger with groups
@@ -124,7 +124,7 @@ func TestPrometheusHandlerWithGroups(t *testing.T) {
 
 	var logMetric *dto.MetricFamily
 	for _, m := range metrics {
-		if m.GetName() == "log_messages_total" {
+		if m.GetName() == "test_log_messages_total" {
 			logMetric = m
 			break
 		}
@@ -150,14 +150,14 @@ func TestPrometheusHandlerRegistrationSafety(t *testing.T) {
 
 	// First logger
 	_ = NewSlogLogger(
-		WithPrometheusRegistry(reg),
+		WithPrometheusRegistry(reg, "test"),
 	)
 
 	// Second logger with the same registry
 	// This should not panic due to AlreadyRegisteredError being handled gracefully
 	assert.NotPanics(t, func() {
 		_ = NewSlogLogger(
-			WithPrometheusRegistry(reg),
+			WithPrometheusRegistry(reg, "test"),
 		)
 	})
 }

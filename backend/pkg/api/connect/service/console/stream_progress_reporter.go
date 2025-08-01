@@ -11,12 +11,12 @@ package console
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"connectrpc.com/connect"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
@@ -24,7 +24,7 @@ import (
 
 // streamProgressReporter is in charge of sending status updates and messages regularly to the frontend.
 type streamProgressReporter struct {
-	logger  *zap.Logger
+	logger  *slog.Logger
 	request *console.ListMessageRequest
 	stream  *connect.ServerStream[v1alpha.ListMessagesResponse]
 
@@ -86,7 +86,7 @@ func (p *streamProgressReporter) reportProgress() {
 			},
 		},
 	); err != nil {
-		p.logger.Error("send error in stream reportProgress", zap.Error(err))
+		p.logger.Error("send error in stream reportProgress", slog.Any("error", err))
 	}
 }
 
@@ -105,7 +105,7 @@ func (p *streamProgressReporter) OnPhase(name string) {
 			},
 		},
 	); err != nil {
-		p.logger.Error("send error in stream OnPhase", zap.Error(err))
+		p.logger.Error("send error in stream OnPhase", slog.Any("error", err))
 	}
 }
 
@@ -212,7 +212,7 @@ func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 			},
 		},
 	); err != nil {
-		p.logger.Error("send error in stream OnMessage", zap.Error(err))
+		p.logger.Error("send error in stream OnMessage", slog.Any("error", err))
 	}
 }
 
@@ -234,7 +234,7 @@ func (p *streamProgressReporter) OnComplete(elapsedMs int64, isCancelled bool) {
 			},
 		},
 	); err != nil {
-		p.logger.Error("send error in stream OnComplete", zap.Error(err))
+		p.logger.Error("send error in stream OnComplete", slog.Any("error", err))
 	}
 }
 
@@ -253,6 +253,6 @@ func (p *streamProgressReporter) OnError(message string) {
 			},
 		},
 	); err != nil {
-		p.logger.Error("send error in stream OnError", zap.Error(err))
+		p.logger.Error("send error in stream OnError", slog.Any("error", err))
 	}
 }

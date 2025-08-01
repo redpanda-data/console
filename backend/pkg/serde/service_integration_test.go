@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,7 +36,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/genproto/googleapis/type/dayofweek"
 	"google.golang.org/genproto/googleapis/type/decimal"
@@ -150,8 +150,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 	cfg := s.createBaseConfig()
 
-	logger, err := zap.NewProduction()
-	require.NoError(err)
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	protoSvc, err := protopkg.NewService(cfg.Serde.Protobuf, logger)
 	require.NoError(err)
@@ -2564,8 +2563,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Metadata EventDataRecord `avro:"metadata" json:"metadata"`
 		}
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		protoSvc, err := protopkg.NewService(cfg.Serde.Protobuf, logger)
 		require.NoError(err)
@@ -2895,8 +2893,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -2958,8 +2955,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		cfg.Serde.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
 		cfg.Serde.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3032,8 +3028,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		cfg.Serde.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
 		cfg.Serde.Protobuf.FileSystem.Paths = []string{"testdata/proto"}
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3174,8 +3169,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3268,8 +3262,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3386,8 +3379,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3494,8 +3486,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3639,8 +3630,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3799,8 +3789,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -3923,8 +3912,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -4082,8 +4070,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 		// test
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)
@@ -4306,8 +4293,7 @@ func (s *SerdeIntegrationTestSuite) TestSerializeRecord() {
 
 		cfg := s.createBaseConfig()
 
-		logger, err := zap.NewProduction()
-		require.NoError(err)
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 		schemaSvc, err := schema.NewService(cfg.Kafka.Schema, logger)
 		require.NoError(err)

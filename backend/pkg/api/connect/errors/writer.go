@@ -1,14 +1,13 @@
 package errors
 
 import (
+	"log/slog"
 	"net/http"
-	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 )
 
@@ -28,11 +27,11 @@ type ConnectRPCErrorWriter interface {
 // not clear.
 type ConsoleErrorWriter struct {
 	connectRPCErrorWriter ConnectRPCErrorWriter
-	logger                *zap.Logger
+	logger                *slog.Logger
 }
 
 // NewConsoleErrorWriter returns a new instance of ConsoleErrorWriter.
-func NewConsoleErrorWriter(logger *zap.Logger) *ConsoleErrorWriter {
+func NewConsoleErrorWriter(logger *slog.Logger) *ConsoleErrorWriter {
 	return &ConsoleErrorWriter{
 		connectRPCErrorWriter: connect.NewErrorWriter(
 			// If this option is not set, the errorwriter will always write connect errors
@@ -50,15 +49,18 @@ func (c *ConsoleErrorWriter) WriteError(
 	w http.ResponseWriter,
 	r *http.Request,
 	connectErr *connect.Error,
-	loggingFields ...zap.Field,
+	loggingFields ...slog.Attr,
 ) {
-	fields := []zap.Field{
-		zap.String("route", r.URL.Path),
-		zap.String("method", r.Method),
-		zap.Int64("request_size_bytes", r.ContentLength),
-		zap.String("remote_address", r.RemoteAddr),
+	logger := c.logger.With(
+		slog.String("route", r.URL.Path),
+		slog.String("method", r.Method),
+		slog.Int64("request_size_bytes", r.ContentLength),
+		slog.String("remote_address", r.RemoteAddr),
+	)
+
+	for _, attr := range loggingFields {
+		logger = logger.With(attr)
 	}
-	logger := c.logger.With(slices.Concat(fields, loggingFields)...)
 
 	isConnectRPCOrGrpc := c.connectRPCErrorWriter.IsSupported(r)
 	isProgrammaticAPI := strings.HasPrefix(r.URL.Path, "/v1")
@@ -66,18 +68,17 @@ func (c *ConsoleErrorWriter) WriteError(
 	switch {
 	case isConnectRPCOrGrpc:
 		// Log error and delegate to Connect/GRPC error writer.
-		logger.Error("ConnectRPC/GRPC error encountered",
-
-			zap.Error(connectErr),
+		logger.ErrorContext(r.Context(), "connectRPC/GRPC error encountered",
+			slog.Any("error", connectErr),
 		)
 		if err := c.connectRPCErrorWriter.Write(w, r, connectErr); err != nil {
 			// Optionally log if the writer itself fails.
-			logger.Error("Failed to write ConnectRPC/GRPC error", zap.Error(err))
+			logger.ErrorContext(r.Context(), "failed to write connectRPC/GRPC error", slog.Any("error", err))
 		}
 
 	case isProgrammaticAPI:
 		// Log error and delegate to your programmatic HTTP error handler.
-		c.logger.Error("Programmatic API error encountered", zap.Error(connectErr))
+		c.logger.ErrorContext(r.Context(), "programmatic API error encountered", slog.Any("error", connectErr))
 		HandleHTTPError(r.Context(), w, r, connectErr)
 
 	default:

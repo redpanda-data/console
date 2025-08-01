@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
@@ -27,7 +28,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
@@ -37,7 +37,7 @@ import (
 type Service struct {
 	Cfg    config.Git
 	auth   transport.AuthMethod
-	logger *zap.Logger
+	logger *slog.Logger
 
 	// TopicDocumentation in memory git
 	memFs billy.Filesystem
@@ -51,8 +51,8 @@ type Service struct {
 }
 
 // NewService creates a new Git service with preconfigured Auth
-func NewService(cfg config.Git, logger *zap.Logger, onFilesUpdatedHook func()) (*Service, error) {
-	childLogger := logger.With(zap.String("repository_url", cfg.Repository.URL))
+func NewService(cfg config.Git, logger *slog.Logger, onFilesUpdatedHook func()) (*Service, error) {
+	childLogger := logger.With(slog.String("repository_url", cfg.Repository.URL))
 
 	var auth transport.AuthMethod
 	var err error
@@ -108,7 +108,7 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 	if c.Cfg.Repository.Branch != "" {
 		referenceName = plumbing.NewBranchReferenceName(c.Cfg.Repository.Branch)
 	}
-	c.logger.Info("cloning git repository", zap.String("url", c.Cfg.Repository.URL))
+	c.logger.InfoContext(ctx, "cloning git repository", slog.String("url", c.Cfg.Repository.URL))
 	cloneOptions := &git.CloneOptions{
 		URL:           c.Cfg.Repository.URL,
 		Auth:          c.auth,
@@ -134,8 +134,8 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 	}
 	c.setFileContents(files)
 
-	c.logger.Info("successfully cloned git repository",
-		zap.String("base_directory", c.Cfg.Repository.BaseDirectory), zap.Int("read_files", len(files)))
+	c.logger.InfoContext(ctx, "successfully cloned git repository",
+		slog.String("base_directory", c.Cfg.Repository.BaseDirectory), slog.Int("read_files", len(files)))
 
 	if c.OnFilesUpdatedHook != nil {
 		c.OnFilesUpdatedHook()
@@ -155,7 +155,7 @@ func (c *Service) SyncRepo() {
 
 	tree, err := c.repo.Worktree()
 	if err != nil {
-		c.logger.Error("failed to get work tree from repository. stopping git sync", zap.Error(err))
+		c.logger.Error("failed to get work tree from repository. stopping git sync", slog.Any("error", err))
 		return
 	}
 
@@ -167,7 +167,7 @@ func (c *Service) SyncRepo() {
 	for {
 		select {
 		case <-quit:
-			c.logger.Info("stopped sync", zap.String("reason", "received signal"))
+			c.logger.Info("stopped sync", slog.String("reason", "received signal"))
 			return
 		case <-ticker.C:
 			var referenceName plumbing.ReferenceName
@@ -179,7 +179,7 @@ func (c *Service) SyncRepo() {
 				if errors.Is(err, git.NoErrAlreadyUpToDate) {
 					continue
 				}
-				c.logger.Error("pulling the repo has failed", zap.Error(err))
+				c.logger.Error("pulling the repo has failed", slog.Any("error", err))
 				continue
 			}
 
@@ -187,12 +187,12 @@ func (c *Service) SyncRepo() {
 			empty := make(map[string]filesystem.File)
 			files, err := c.readFiles(c.memFs, empty, c.Cfg.Repository.BaseDirectory, c.Cfg.Repository.MaxDepth)
 			if err != nil {
-				c.logger.Error("failed to read files after pulling", zap.Error(err))
+				c.logger.Error("failed to read files after pulling", slog.Any("error", err))
 				continue
 			}
 			c.setFileContents(files)
 			c.logger.Info("successfully pulled git repository",
-				zap.Int("read_files", len(files)))
+				slog.Int("read_files", len(files)))
 
 			if c.OnFilesUpdatedHook != nil {
 				c.OnFilesUpdatedHook()

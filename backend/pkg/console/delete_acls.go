@@ -12,12 +12,11 @@ package console
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // DeleteACLsResponse is the response to deleting ACL resources.
@@ -43,7 +42,7 @@ func (s *Service) DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestF
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to execute delete topic command: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.Any("delete_acl_req", filter)},
+			InternalLogs: []slog.Attr{slog.Any("delete_acl_req", filter)},
 			IsSilent:     false,
 		}
 	}
@@ -60,7 +59,7 @@ func (s *Service) DeleteACLs(ctx context.Context, filter kmsg.DeleteACLsRequestF
 				Err:          err,
 				Status:       http.StatusServiceUnavailable,
 				Message:      fmt.Sprintf("Failed to delete Kafka ACL: %v", err.Error()),
-				InternalLogs: []zapcore.Field{zap.Any("delete_acl_req", filter)},
+				InternalLogs: []slog.Attr{slog.Any("delete_acl_req", filter)},
 				IsSilent:     false,
 			}
 		}

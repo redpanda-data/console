@@ -14,6 +14,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -25,7 +26,6 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"github.com/twmb/franz-go/pkg/sr"
-	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/runtime/protoiface"
 
@@ -51,7 +51,7 @@ const (
 // This service is also in charge of reading the proto source files from the configured provider.
 type Service struct {
 	cfg    config.Proto
-	logger *zap.Logger
+	logger *slog.Logger
 
 	mappingsByTopic map[string]config.ProtoTopicMapping
 	gitSvc          *git.Service
@@ -69,7 +69,7 @@ type Service struct {
 }
 
 // NewService creates a new proto.Service.
-func NewService(cfg config.Proto, logger *zap.Logger) (*Service, error) {
+func NewService(cfg config.Proto, logger *slog.Logger) (*Service, error) {
 	var err error
 
 	var gitSvc *git.Service
@@ -388,7 +388,7 @@ func (s *Service) tryCreateProtoRegistry() {
 	s.sfGroup.Do("tryCreateProtoRegistry", func() (any, error) {
 		err := s.createProtoRegistry()
 		if err != nil {
-			s.logger.Error("failed to update proto registry", zap.Error(err))
+			s.logger.Error("failed to update proto registry", slog.Any("error", err))
 		}
 
 		return nil, nil
@@ -405,14 +405,14 @@ func (s *Service) createProtoRegistry() error {
 			files[name] = file
 		}
 		s.logger.Debug("fetched .proto files from git service cache",
-			zap.Int("fetched_proto_files", len(files)))
+			slog.Int("fetched_proto_files", len(files)))
 	}
 	if s.fsSvc != nil {
 		for name, file := range s.fsSvc.GetFilesByFilename() {
 			files[name] = file
 		}
 		s.logger.Debug("fetched .proto files from filesystem service cache",
-			zap.Int("fetched_proto_files", len(files)))
+			slog.Int("fetched_proto_files", len(files)))
 	}
 
 	fileDescriptors, err := s.protoFileToDescriptor(files)
@@ -425,7 +425,7 @@ func (s *Service) createProtoRegistry() error {
 	for _, descriptor := range fileDescriptors {
 		registry.AddFile("", descriptor)
 	}
-	s.logger.Info("registered proto types in Console's local proto registry", zap.Int("registered_types", len(fileDescriptors)))
+	s.logger.Info("registered proto types in Console's local proto registry", slog.Int("registered_types", len(fileDescriptors)))
 
 	s.registryMutex.Lock()
 	defer s.registryMutex.Unlock()
@@ -442,8 +442,8 @@ func (s *Service) createProtoRegistry() error {
 			}
 			if messageDesc == nil {
 				s.logger.Warn("protobuf type from configured topic mapping does not exist",
-					zap.String("topic_name", mapping.TopicName.String()),
-					zap.String("value_proto_type", mapping.ValueProtoType))
+					slog.String("topic_name", mapping.TopicName.String()),
+					slog.String("value_proto_type", mapping.ValueProtoType))
 				missingTypes++
 			} else {
 				foundTypes++
@@ -456,8 +456,8 @@ func (s *Service) createProtoRegistry() error {
 			}
 			if messageDesc == nil {
 				s.logger.Info("protobuf type from configured topic mapping does not exist",
-					zap.String("topic_name", mapping.TopicName.String()),
-					zap.String("key_proto_type", mapping.KeyProtoType))
+					slog.String("topic_name", mapping.TopicName.String()),
+					slog.String("key_proto_type", mapping.KeyProtoType))
 				missingTypes++
 			} else {
 				foundTypes++
@@ -468,10 +468,10 @@ func (s *Service) createProtoRegistry() error {
 	totalDuration := time.Since(startTime)
 
 	s.logger.Info("checked whether all mapped proto types also exist in the local registry",
-		zap.Int("types_found", foundTypes),
-		zap.Int("types_missing", missingTypes),
-		zap.Int("registered_types", len(fileDescriptors)),
-		zap.Duration("operation_duration", totalDuration))
+		slog.Int("types_found", foundTypes),
+		slog.Int("types_missing", missingTypes),
+		slog.Int("registered_types", len(fileDescriptors)),
+		slog.Duration("operation_duration", totalDuration))
 
 	return nil
 }
@@ -523,9 +523,9 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 	errorReporter := func(err protoparse.ErrorWithPos) error {
 		position := err.GetPosition()
 		s.logger.Warn("failed to parse proto file to descriptor",
-			zap.String("file", position.Filename),
-			zap.Int("line", position.Line),
-			zap.Error(err))
+			slog.String("file", position.Filename),
+			slog.Int("line", position.Line),
+			slog.Any("error", err))
 		return nil
 	}
 
