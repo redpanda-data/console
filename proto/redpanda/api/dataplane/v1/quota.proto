@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+message Quota {
+  // The type of entity that the quota applies to.
+  enum EntityType {
+    ENTITY_TYPE_UNSPECIFIED = 0;
+    ENTITY_TYPE_ANY = 1;
+    ENTITY_TYPE_CLIENT_ID = 2;
+    ENTITY_TYPE_CLIENT_ID_PREFIX = 3;
+    ENTITY_TYPE_USER = 4; // Not supported in Redpanda
+    ENTITY_TYPE_IP = 5; // Not supported in Redpanda
+  }
+
+  // The type of value that the quota represents.
+  enum ValueType {
+    VALUE_TYPE_UNSPECIFIED = 0;
+    VALUE_TYPE_ANY = 1;
+    VALUE_TYPE_PRODUCER_BYTE_RATE = 2;
+    VALUE_TYPE_CONSUMER_BYTE_RATE = 3;
+  }
+}
+
+message ListQuotasRequest {
+  // If the filter_type is FILTER_TYPE_NAME, then the name of the entity must be specified.
+  option (buf.validate.message).cel = {
+    id: "name_required_for_filter_type_name"
+    message: "name is required when filter_type is FILTER_TYPE_NAME"
+    expression: "this.filter_type != 1 || this.name != ''"
+  };
+  // FilterType defines the type of filter to apply when listing quotas.
+  enum FilterType {
+    FILTER_TYPE_UNSPECIFIED = 0;
+    // The filter type any will return quotas for all entities.
+    FILTER_TYPE_ANY = 1;
+    // The filter type name when specified with name
+    // will return quotas for the specified client id.
+    FILTER_TYPE_NAME = 2;
+    // The filter type default returns the default client id
+    FILTER_TYPE_DEFAULT = 3;
+  }
+  Quota.EntityType entity_type = 1;
+  FilterType filter_type = 2;
+  string name = 3;
+}
+
+message ListQuotasResponse {
+  // QuotaEntry represents the quota for a specific entity type.
+  message QuotaEntry {
+    Quota.EntityType entity = 1;
+    repeated Quota.ValueType values = 2;
+  }
+  repeated QuotaEntry quotas = 1;
+}
+
+message RequestEntity {
+  option (buf.validate.message).cel = {
+    id: "name_required_for_entity_request_type_name"
+    message: "entity_name is required when entity_request_type is ENTITY_REQUEST_TYPE_NAME"
+    expression: "this.entity_request_type != 1 || this.entity_name != ''"
+  };
+
+  Quota.EntityType entity_type = 1 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0,
+        1,
+        4,
+        5
+      ] /* Disallow unspecified, any, user, and ip */
+    },
+    (buf.validate.field).required = true
+  ];
+
+  // Entity can be defined by its name or use the default value.
+  enum EntityRequestType {
+    ENTITY_REQUEST_TYPE_UNSPECIFIED = 0;
+    ENTITY_REQUEST_TYPE_NAME = 1;
+    ENTITY_REQUEST_TYPE_DEFAULT = 2;
+  }
+
+  EntityRequestType entity_request_type = 2 [(buf.validate.field).required = true];
+
+  // Either the client ID or the client ID prefix, depending on the entity_request_type
+  // If entity_request_type is ENTITY_REQUEST_TYPE_DEFAULT, this field can be empty
+  string entity_name = 3;
+}
+
+message CreateQuotaRequest {
+  message RequestValue {
+    Quota.ValueType value_type = 1 [
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [
+          0,
+          1
+        ] /* Disallow unspecified and any */
+      },
+      (buf.validate.field).required = true
+    ];
+    int64 value = 2;
+  }
+
+  // To specify multiple entities to apply the same quota
+  repeated RequestEntity entities = 1 [(buf.validate.field).required = true];
+  repeated RequestValue values = 2 [(buf.validate.field).required = true];
+}
+
+message CreateQuotaResponse {}
+
+message DeleteQuotaRequest {
+  option (buf.validate.message).cel = {
+    id: "value_types_not_unspecified_or_any"
+    message: "value_type entries cannot be VALUE_TYPE_UNSPECIFIED (0) or VALUE_TYPE_ANY (1)"
+    expression: "this.value_type.all(v, v != 0 && v != 1)"
+  };
+
+  repeated RequestEntity entities = 1 [(buf.validate.field).required = true];
+
+  // List of values that should be deleted for the specified entities
+  repeated Quota.ValueType value_type = 2 [(buf.validate.field).required = true];
+}
+
+// todo: Add a response message for DeleteQuotaResponse
+message DeleteQuotaResponse {}
+
+service QuotaService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Quotas"
+    description: "Manage client throughput limits. See [Redpanda Client Throughput Limits](https://docs.redpanda.com/current/manage/cluster-maintenance/manage-throughput/#client-throughput-limits) for more information."
+  };
+
+  rpc ListQuotas(ListQuotasRequest) returns (ListQuotasResponse) {
+    option (google.api.http) = {get: "/v1/quotas"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List quotas"
+      description: "List client quotas. Use filter parameters to narrow results by entity type and filter criteria."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListQuotasResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  rpc CreateQuota(CreateQuotaRequest) returns (CreateQuotaResponse) {
+    option (google.api.http) = {
+      post: "/v1/quotas"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create quota"
+      description: "Create client throughput quotas for specified entities."
+      responses: {
+        key: "201"
+        value: {
+          description: "Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateQuotaResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_KAFKA
+    };
+  }
+
+  rpc DeleteQuota(DeleteQuotaRequest) returns (DeleteQuotaResponse) {
+    option (google.api.http) = {delete: "/v1/quotas"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete quotas"
+      description: "Delete client quotas for specified entities and value types."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteQuotaResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_KAFKA
+    };
+  }
+}
