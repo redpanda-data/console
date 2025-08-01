@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v6'
 import {
   BeakerIcon,
   CollectionIcon,
@@ -259,7 +260,9 @@ function MakeRoute<TRouteParams>(
       key={path}
       element={
         <ProtectedRoute path={path}>
-          <RouteRenderer route={route} />
+          <NuqsAdapter>
+            <RouteRenderer route={route} />
+          </NuqsAdapter>
         </ProtectedRoute>
       }
     />

@@ -34,15 +34,13 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { AnimatePresence, motion } from 'framer-motion';
-import { autorun, computed, type IReactionDisposer, makeObservable, observable } from 'mobx';
-import { observer } from 'mobx-react';
-import React, { type FC, useRef, useState } from 'react';
+import React, { type FC, useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import { observable } from 'mobx';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
-import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { type Topic, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -50,100 +48,88 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
-import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
-import { PageComponent, type PageInitHelper } from '../Page';
+import { renderLogDirSummary } from '../../misc/common';
 import {
   CreateTopicModalContent,
   type CreateTopicModalState,
   type RetentionSizeUnit,
   type RetentionTimeUnit,
 } from './CreateTopicModal/CreateTopicModal';
+import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
+import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 
-@observer
-class TopicList extends PageComponent {
-  quickSearchReaction: IReactionDisposer;
+const TopicList: FC = () => {
+  const [localSearchValue, setLocalSearchValue] = useQueryState("q", parseAsString.withDefault(''));
+  
+  const [showInternalTopics, setShowInternalTopics] = useQueryState<boolean>("showInternal", parseAsBoolean.withDefault(false));
 
-  @observable topicToDelete: null | Topic = null;
-  @observable filteredTopics: Topic[] = [];
+  // set internal topics
+  useEffect(() => {
+    if(showInternalTopics === null) {
+      setShowInternalTopics(uiSettings.topicList.hideInternalTopics);
+    }
+  }, []);
 
-  CreateTopicModal;
-  showCreateTopicModal;
+  const { data, isLoading, isError } = useLegacyListTopicsQuery();
+  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(() => makeCreateTopicModal(), []);
 
-  constructor(p: any) {
-    super(p);
-    makeObservable(this);
-
-    const m = makeCreateTopicModal(this);
-    this.CreateTopicModal = m.Component;
-    this.showCreateTopicModal = m.show;
-  }
-
-  initPage(p: PageInitHelper): void {
-    p.title = 'Topics';
-    p.addBreadcrumb('Topics', '/topics');
-
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
-
-  componentDidMount() {
-    // 1. use 'q' parameter for quick search (if it exists)
-    editQuery((query) => {
-      uiSettings.topicList.quickSearch = query.q ? String(query.q) : '';
-    });
-
-    // 2. whenever the quick search box changes, update the url
-    this.quickSearchReaction = autorun(() => {
-      editQuery((query) => {
-        const q = String(uiSettings.topicList.quickSearch);
-        query.q = q ? String(q) : '';
-      });
-    });
-  }
-  componentWillUnmount() {
-    if (this.quickSearchReaction) this.quickSearchReaction();
-  }
-
-  refreshData(force: boolean) {
-    api.refreshTopics(force);
+  const refreshData = useCallback((force: boolean) => {
     api.refreshClusterOverview();
     void api.refreshClusterHealth();
-  }
+  }, []);
 
-  @computed get topics() {
-    let topics = api.topics ?? [];
-    if (uiSettings.topicList.hideInternalTopics) {
+  const topics = useMemo(() => {
+    let topics = data.topics ?? [];
+    if (!showInternalTopics) {
       topics = topics.filter((x) => !x.isInternal && !x.topicName.startsWith('_'));
     }
 
-    if (uiSettings.topicList.quickSearch) {
+    const searchQuery = localSearchValue;
+    if (searchQuery) {
       try {
-        const quickSearchRegExp = new RegExp(uiSettings.topicList.quickSearch, 'i');
+        const quickSearchRegExp = new RegExp(searchQuery, 'i');
         topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
       } catch (_e) {
         console.warn('Invalid expression');
-        const searchLower = uiSettings.topicList.quickSearch.toLowerCase();
+        const searchLower = searchQuery.toLowerCase();
         topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
       }
     }
 
     return topics;
-  }
+  }, [data.topics, showInternalTopics, localSearchValue]);
 
-  SearchBar = observer(() => {
-    return (
-      <Flex gap={2}>
+  if (isLoading) return DefaultSkeleton;
+
+  if(isError) return <div>Error</div>
+
+  const partitionCount = topics.sum((x) => x.partitionCount);
+  const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
+
+  return (
+    <PageContent>
+      <Section>
+        <Flex>
+          <Statistic title="Total topics" value={topics.length} />
+          <Statistic title="Total partitions" value={partitionCount} />
+          <Statistic title="Total replicas" value={replicaCount} />
+        </Flex>
+      </Section>
+
+      <Box pt={6}>
+        <Flex gap={2}>
         <SearchField
           width="350px"
           placeholderText="Enter search term/regex"
-          searchText={uiSettings.topicList.quickSearch}
-          setSearchText={(x) => (uiSettings.topicList.quickSearch = x)}
+          searchText={localSearchValue}
+          setSearchText={setLocalSearchValue}
         />
         <AnimatePresence>
-          {uiSettings.topicList.quickSearch && (
+          {localSearchValue && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -153,84 +139,62 @@ class TopicList extends PageComponent {
             >
               <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
                 <Text fontWeight="bold" display="inline">
-                  {this.topics.length}
+                  {topics.length}
                 </Text>{' '}
-                {this.topics.length === 1 ? 'result' : 'results'}
+                {topics.length === 1 ? 'result' : 'results'}
               </Text>
             </motion.div>
           )}
         </AnimatePresence>
       </Flex>
-    );
-  });
+      </Box>
+      <Section>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+          <Button
+            variant="solid"
+            colorScheme="brand"
+            onClick={() => showCreateTopicModal()}
+            style={{ minWidth: '160px', marginBottom: '12px' }}
+            data-testid="create-topic-button"
+          >
+            Create topic
+          </Button>
 
-  render() {
-    if (!api.topics) return DefaultSkeleton;
+          <Checkbox
+            data-testid="show-internal-topics-checkbox"
+            isChecked={showInternalTopics}
+            onChange={(x) => {
+              uiSettings.topicList.hideInternalTopics = x.target.checked;
+              setShowInternalTopics(x.target.checked);
+            }}
+            style={{ marginLeft: 'auto' }}
+          >
+            Show internal topics
+          </Checkbox>
 
-    const topics = this.topics;
-
-    const partitionCount = topics.sum((x) => x.partitionCount);
-    const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
-
-    return (
-      <PageContent>
-        <Section>
-          <Flex>
-            <Statistic title="Total topics" value={topics.length} />
-            <Statistic title="Total partitions" value={partitionCount} />
-            <Statistic title="Total replicas" value={replicaCount} />
-          </Flex>
-        </Section>
-
-        <Box pt={6}>
-          <this.SearchBar />
+          <CreateTopicModal />
+        </div>
+        <Box my={4}>
+          <TopicsTable
+            topics={topics}
+            onDelete={(record) => {
+              setTopicToDelete(record);
+            }}
+          />
         </Box>
-        <Section>
-          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
-            <Button
-              variant="solid"
-              colorScheme="brand"
-              onClick={() => this.showCreateTopicModal()}
-              style={{ minWidth: '160px', marginBottom: '12px' }}
-              data-testid="create-topic-button"
-            >
-              Create topic
-            </Button>
+      </Section>
 
-            <Checkbox
-              data-testid="show-internal-topics-checkbox"
-              isChecked={!uiSettings.topicList.hideInternalTopics}
-              onChange={(x) => (uiSettings.topicList.hideInternalTopics = !x.target.checked)}
-              style={{ marginLeft: 'auto' }}
-            >
-              Show internal topics
-            </Checkbox>
-
-            <this.CreateTopicModal />
-          </div>
-          <Box my={4}>
-            <TopicsTable
-              topics={this.topics}
-              onDelete={(record) => {
-                this.topicToDelete = record;
-              }}
-            />
-          </Box>
-        </Section>
-
-        <ConfirmDeletionModal
-          topicToDelete={this.topicToDelete}
-          onCancel={() => (this.topicToDelete = null)}
-          onFinish={() => {
-            this.topicToDelete = null;
-            this.refreshData(true);
-          }}
-        />
-      </PageContent>
-    );
-  }
-}
-export default TopicList;
+      <ConfirmDeletionModal
+        topicToDelete={topicToDelete}
+        onCancel={() => setTopicToDelete(null)}
+        onFinish={() => {
+          setTopicToDelete(null);
+          refreshData(true);
+        }}
+      />
+    </PageContent>
+  );
+};
 
 const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
   const paginationParams = usePaginationParams(topics.length, uiSettings.topicList.pageSize);
@@ -524,7 +488,7 @@ function hasDeletePrivilege() {
   return true;
 }
 
-function makeCreateTopicModal(parent: TopicList) {
+function makeCreateTopicModal() {
   api.refreshCluster(); // get brokers (includes configs) to display default values
   const tryGetBrokerConfig = (configName: string): string | undefined => {
     return (
@@ -646,11 +610,15 @@ function makeCreateTopicModal(parent: TopicList) {
 
       setVal('cleanup.policy', state.cleanupPolicy);
 
-      const result = await api.createTopic({
-        topicName: state.topicName,
-        partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
-        replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-        configs: config.filter((x) => x.name.length > 0),
+      const { mutateAsync: createTopic } = useCreateTopicMutation();
+      const result = await createTopic({
+        topic: {
+          name: state.topicName,
+          partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
+          replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
+          configs: config.filter((x) => x.name.length > 0).map(x => ({ name: x.name, value: x.value })),
+        },
+        validateOnly: false,
       });
 
       return (
@@ -678,8 +646,11 @@ function makeCreateTopicModal(parent: TopicList) {
       );
     },
     onSuccess: (_state, _result) => {
-      parent.refreshData(true);
+      api.refreshClusterOverview();
+      void api.refreshClusterHealth();
     },
     content: (state) => <CreateTopicModalContent state={state} />,
   });
 }
+
+export default TopicList
