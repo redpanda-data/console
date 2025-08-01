@@ -35,6 +35,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
+const unknownVersion = "unknown"
+
 var _ consolev1alpha1connect.ClusterStatusServiceHandler = (*Service)(nil)
 
 // Service that implements the ClusterStatusServiceHandler interface. This includes all
@@ -99,7 +101,7 @@ func (s *Service) GetKafkaInfo(ctx context.Context, _ *connect.Request[v1alpha1.
 	})
 
 	// Fetch Kafka API version
-	clusterVersion := "unknown"
+	clusterVersion := unknownVersion
 	grp.Go(func() error {
 		var err error
 
@@ -202,7 +204,7 @@ func (s *Service) GetRedpandaInfo(ctx context.Context, _ *connect.Request[v1alph
 
 	grp, grpCtx := errgroup.WithContext(childCtx)
 
-	version := "unknown"
+	version := unknownVersion
 	grp.Go(func() error {
 		brokers, err := redpandaCl.Brokers(grpCtx)
 		if err != nil {
