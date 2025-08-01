@@ -25,11 +25,9 @@ export const useLicenseSignupMutation = () => {
       });
     },
     onError: (error) => {
-      return formatToastErrorMessageGRPC({
-        error,
-        action: 'register',
-        entity: 'license',
-      });
+      // Don't show toast for registration errors as they're handled in the modal
+      console.error('License signup failed:', error);
+      return error;
     },
   });
 }; 
