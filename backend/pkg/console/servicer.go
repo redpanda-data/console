@@ -30,7 +30,8 @@ type Servicer interface {
 	DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error)
 	DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	DeleteTopicRecords(ctx context.Context, deleteReq kmsg.DeleteRecordsRequestTopic) (DeleteTopicRecordsResponse, *rest.Error)
-	DescribeQuotas(ctx context.Context) QuotaResponse
+	DescribeQuotas(ctx context.Context, request kmsg.DescribeClientQuotasRequest) QuotaResponse
+	AlterQuotas(ctx context.Context, request kmsg.AlterClientQuotasRequest) error
 	EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, *rest.Error)
 	EditTopicConfig(ctx context.Context, topicName string, configs []kmsg.IncrementalAlterConfigsRequestResourceConfig) error
 	GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error)
