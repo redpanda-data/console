@@ -40,6 +40,7 @@ import (
 	apikafkaconnectsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha1"
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
+	quotasvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/quota/v1"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
 	topicsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha2"
@@ -117,6 +118,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	aclSvcV1 := apiaclsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_service"), api.ConsoleSvc)
 	topicSvcV1 := topicsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
 	var userSvcV1 dataplanev1connect.UserServiceHandler = apiusersvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "user_service"), api.ConsoleSvc, api.RedpandaClientProvider)
+	quotaSvcV1 := quotasvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "quota_service"), api.ConsoleSvc)
 	transformSvcV1 := transformsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvcV1 := &transformsvcv1.ConsoleService{Impl: transformSvcV1}
@@ -177,6 +179,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.ACLServiceName:                aclSvcV1,
 			dataplanev1connect.TopicServiceName:              topicSvcV1,
 			dataplanev1connect.UserServiceName:               userSvcV1,
+			dataplanev1connect.QuotaServiceName:              quotaSvcV1,
 			dataplanev1connect.TransformServiceName:          transformSvcV1,
 			dataplanev1connect.KafkaConnectServiceName:       kafkaConnectSvcV1,
 			dataplanev1connect.CloudStorageServiceName:       dataplanev1connect.UnimplementedCloudStorageServiceHandler{},
@@ -281,6 +284,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	userSvcPathV1, userSvcHandlerV1 := dataplanev1connect.NewUserServiceHandler(
 		hookOutput.Services[dataplanev1connect.UserServiceName].(dataplanev1connect.UserServiceHandler),
+		connect.WithInterceptors(hookOutput.Interceptors...))
+	quotaSvcPathV1, quotaSvcHandlerV1 := dataplanev1connect.NewQuotaServiceHandler(
+		hookOutput.Services[dataplanev1connect.QuotaServiceName].(dataplanev1connect.QuotaServiceHandler),
 		connect.WithInterceptors(hookOutput.Interceptors...))
 	transformSvcPathV1, transformSvcHandlerV1 := dataplanev1connect.NewTransformServiceHandler(
 		hookOutput.Services[dataplanev1connect.TransformServiceName].(dataplanev1connect.TransformServiceHandler),
@@ -399,6 +405,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			Handler:     userSvcHandlerV1,
 		},
 		{
+			ServiceName: dataplanev1connect.QuotaServiceName,
+			MountPath:   quotaSvcPathV1,
+			Handler:     quotaSvcHandlerV1,
+		},
+		{
 			ServiceName: dataplanev1connect.TransformServiceName,
 			MountPath:   transformSvcPathV1,
 			Handler:     transformSvcHandlerV1,
@@ -458,6 +469,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	dataplanev1connect.RegisterACLServiceHandlerGatewayServer(gwMux, aclSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterTopicServiceHandlerGatewayServer(gwMux, topicSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterUserServiceHandlerGatewayServer(gwMux, userSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
+	dataplanev1connect.RegisterQuotaServiceHandlerGatewayServer(gwMux, quotaSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterTransformServiceHandlerGatewayServer(gwMux, transformSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterKafkaConnectServiceHandlerGatewayServer(gwMux, kafkaConnectSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
 	dataplanev1connect.RegisterCloudStorageServiceHandlerGatewayServer(gwMux, cloudStorageSvcV1, connectgateway.WithInterceptors(hookOutput.Interceptors...))
