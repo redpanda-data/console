@@ -235,6 +235,10 @@ const defaultUiSettings = {
     quickSearch: '',
   },
 
+  knowledgeBaseList: {
+    quickSearch: '',
+  },
+
   rpcnSecretList: {
     quickSearch: '',
   },
