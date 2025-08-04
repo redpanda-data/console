@@ -76,6 +76,12 @@ message RequestEntity {
     expression: "this.entity_request_type != 1 || this.entity_name != ''"
   };
 
+  option (buf.validate.message).cel = {
+    id: "client_id_prefix_requires_name_request_type"
+    message: "CLIENT_ID_PREFIX entity_type requires ENTITY_REQUEST_TYPE_NAME, not ENTITY_REQUEST_TYPE_DEFAULT"
+    expression: "this.entity_type != 3 || this.entity_request_type == 1"
+  };
+
   Quota.EntityType entity_type = 1 [
     (buf.validate.field).enum = {
       defined_only: true
