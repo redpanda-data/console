@@ -38,7 +38,7 @@ type QuotaResponseSetting struct {
 }
 
 // DescribeQuotas fetches the configured quota settings in the target cluster.
-func (s *Service) DescribeQuotas(ctx context.Context) QuotaResponse {
+func (s *Service) DescribeQuotas(ctx context.Context, request kmsg.DescribeClientQuotasRequest) QuotaResponse {
 	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
 		return QuotaResponse{
@@ -47,8 +47,7 @@ func (s *Service) DescribeQuotas(ctx context.Context) QuotaResponse {
 	}
 
 	items := make([]QuotaResponseItem, 0)
-	req := kmsg.NewDescribeClientQuotasRequest()
-	quotas, err := req.RequestWith(ctx, cl)
+	quotas, err := request.RequestWith(ctx, cl)
 	if err != nil {
 		return QuotaResponse{
 			Error: fmt.Errorf("kafka request has failed: %w", err).Error(),

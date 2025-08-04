@@ -47,7 +47,7 @@ func (s *ConsoleIntegrationTestSuite) SetupSuite() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	container, err := redpanda.Run(ctx, "redpandadata/redpanda:v23.3.18")
+	container, err := redpanda.Run(ctx, "redpandadata/redpanda:v25.2.1")
 	require.NoError(err)
 	s.redpandaContainer = container
 
