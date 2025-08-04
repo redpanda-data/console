@@ -13,9 +13,6 @@ package console
 
 import (
 	"context"
-	"github.com/redpanda-data/console/backend/pkg/connect"
-	"github.com/redpanda-data/console/backend/pkg/factory/redpanda"
-	"github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"log/slog"
 	"testing"
 
@@ -24,7 +21,40 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/factory/kafka"
+	"github.com/redpanda-data/console/backend/pkg/factory/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/factory/schema"
+)
+
+const (
+	// Entity types
+	entityTypeClientID       = "client-id"
+	entityTypeClientIDPrefix = "client-id-prefix"
+
+	// Quota keys
+	producerByteRateKey = "producer_byte_rate"
+	consumerByteRateKey = "consumer_byte_rate"
+
+	// Default entity name
+	defaultEntityName = "<default>"
+
+	// Test client IDs
+	testClient1      = "test-client-1"
+	testClientDelete = "test-client-delete"
+	testClientFlow   = "test-client-flow"
+	testPrefix       = "test-prefix"
+
+	// Quota values (bytes per second)
+	producerRate1MB   = 1000000.0 // 1MB/s
+	consumerRate2MB   = 2000000.0 // 2MB/s
+	producerRate500KB = 500000.0  // 500KB/s
+	consumerRate1_5MB = 1500000.0 // 1.5MB/s
+	producerRate800KB = 800000.0  // 800KB/s
+
+	// Match types for describe requests
+	matchTypeSpecific = 0 // Match specific entity
+	matchTypeDefault  = 1 // Match default entity
 )
 
 func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
@@ -36,7 +66,7 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 	cfg.Kafka.Brokers = []string{s.testSeedBroker}
 	logger := slog.Default()
 
-	kafkaClientFactory := kafkafactory.NewCachedClientProvider(cfg, logger)
+	kafkaClientFactory := kafka.NewCachedClientProvider(cfg, logger)
 
 	var (
 		nilSchemaClientFactory   schema.ClientFactory
@@ -57,25 +87,25 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 	require.NoError(t, err)
 
 	t.Run("create quota for specific client-id", func(t *testing.T) {
-		clientID := "test-client-1"
+		clientID := testClient1
 		request := kmsg.AlterClientQuotasRequest{
 			Entries: []kmsg.AlterClientQuotasRequestEntry{
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id",
+							Type: entityTypeClientID,
 							Name: &clientID,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "producer_byte_rate",
-							Value:  1000000,
+							Key:    producerByteRateKey,
+							Value:  producerRate1MB,
 							Remove: false,
 						},
 						{
-							Key:    "consumer_byte_rate",
-							Value:  2000000,
+							Key:    consumerByteRateKey,
+							Value:  consumerRate2MB,
 							Remove: false,
 						},
 					},
@@ -83,14 +113,14 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 			},
 		}
 
-		err := consoleService.CreateQuotas(ctx, request)
+		err := consoleService.AlterQuotas(ctx, request)
 		require.NoError(t, err)
 
 		describeReq := kmsg.DescribeClientQuotasRequest{
 			Components: []kmsg.DescribeClientQuotasRequestComponent{
 				{
-					EntityType: "client-id",
-					MatchType:  0,
+					EntityType: entityTypeClientID,
+					MatchType:  matchTypeSpecific,
 					Match:      &clientID,
 				},
 			},
@@ -102,20 +132,20 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 
 		found := false
 		for _, item := range resp.Items {
-			if item.EntityType == "client-id" && item.EntityName == clientID {
+			if item.EntityType == entityTypeClientID && item.EntityName == clientID {
 				found = true
 				assert.Len(t, item.Settings, 2)
 
 				producerFound := false
 				consumerFound := false
 				for _, setting := range item.Settings {
-					if setting.Key == "producer_byte_rate" {
+					if setting.Key == producerByteRateKey {
 						producerFound = true
-						assert.Equal(t, 1000000.0, setting.Value)
+						assert.Equal(t, producerRate1MB, setting.Value)
 					}
-					if setting.Key == "consumer_byte_rate" {
+					if setting.Key == consumerByteRateKey {
 						consumerFound = true
-						assert.Equal(t, 2000000.0, setting.Value)
+						assert.Equal(t, consumerRate2MB, setting.Value)
 					}
 				}
 				assert.True(t, producerFound, "producer_byte_rate setting not found")
@@ -133,14 +163,14 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id",
+							Type: entityTypeClientID,
 							Name: nil,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "producer_byte_rate",
-							Value:  500000.0,
+							Key:    producerByteRateKey,
+							Value:  producerRate500KB,
 							Remove: false,
 						},
 					},
@@ -148,14 +178,14 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 			},
 		}
 
-		err := consoleService.CreateQuotas(ctx, request)
+		err := consoleService.AlterQuotas(ctx, request)
 		require.NoError(t, err)
 
 		describeReq := kmsg.DescribeClientQuotasRequest{
 			Components: []kmsg.DescribeClientQuotasRequestComponent{
 				{
-					EntityType: "client-id",
-					MatchType:  1,
+					EntityType: entityTypeClientID,
+					MatchType:  matchTypeDefault,
 					Match:      nil,
 				},
 			},
@@ -167,11 +197,11 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 
 		found := false
 		for _, item := range resp.Items {
-			if item.EntityType == "client-id" && item.EntityName == "<default>" {
+			if item.EntityType == entityTypeClientID && item.EntityName == defaultEntityName {
 				found = true
 				assert.Len(t, item.Settings, 1)
-				assert.Equal(t, "producer_byte_rate", item.Settings[0].Key)
-				assert.Equal(t, 500000.0, item.Settings[0].Value)
+				assert.Equal(t, producerByteRateKey, item.Settings[0].Key)
+				assert.Equal(t, producerRate500KB, item.Settings[0].Value)
 				break
 			}
 		}
@@ -179,20 +209,20 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 	})
 
 	t.Run("create quota for client-id-prefix", func(t *testing.T) {
-		prefix := "test-prefix"
+		prefix := testPrefix
 		request := kmsg.AlterClientQuotasRequest{
 			Entries: []kmsg.AlterClientQuotasRequestEntry{
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id-prefix",
+							Type: entityTypeClientIDPrefix,
 							Name: &prefix,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "consumer_byte_rate",
-							Value:  1500000.0,
+							Key:    consumerByteRateKey,
+							Value:  consumerRate1_5MB,
 							Remove: false,
 						},
 					},
@@ -200,14 +230,14 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 			},
 		}
 
-		err := consoleService.CreateQuotas(ctx, request)
+		err := consoleService.AlterQuotas(ctx, request)
 		require.NoError(t, err)
 
 		describeReq := kmsg.DescribeClientQuotasRequest{
 			Components: []kmsg.DescribeClientQuotasRequestComponent{
 				{
-					EntityType: "client-id-prefix",
-					MatchType:  0,
+					EntityType: entityTypeClientIDPrefix,
+					MatchType:  matchTypeSpecific,
 					Match:      &prefix,
 				},
 			},
@@ -219,11 +249,11 @@ func (s *ConsoleIntegrationTestSuite) TestCreateQuotas() {
 
 		found := false
 		for _, item := range resp.Items {
-			if item.EntityType == "client-id-prefix" && item.EntityName == prefix {
+			if item.EntityType == entityTypeClientIDPrefix && item.EntityName == prefix {
 				found = true
 				assert.Len(t, item.Settings, 1)
-				assert.Equal(t, "consumer_byte_rate", item.Settings[0].Key)
-				assert.Equal(t, 1500000.0, item.Settings[0].Value)
+				assert.Equal(t, consumerByteRateKey, item.Settings[0].Key)
+				assert.Equal(t, consumerRate1_5MB, item.Settings[0].Value)
 				break
 			}
 		}
@@ -240,7 +270,7 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 	cfg.Kafka.Brokers = []string{s.testSeedBroker}
 	logger := slog.Default()
 
-	kafkaClientFactory := kafkafactory.NewCachedClientProvider(cfg, logger)
+	kafkaClientFactory := kafka.NewCachedClientProvider(cfg, logger)
 
 	var (
 		nilSchemaClientFactory   schema.ClientFactory
@@ -261,26 +291,26 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 	require.NoError(t, err)
 
 	t.Run("delete specific quota values", func(t *testing.T) {
-		clientID := "test-client-delete"
+		clientID := testClientDelete
 
 		createReq := kmsg.AlterClientQuotasRequest{
 			Entries: []kmsg.AlterClientQuotasRequestEntry{
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id",
+							Type: entityTypeClientID,
 							Name: &clientID,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "producer_byte_rate",
-							Value:  1000000.0,
+							Key:    producerByteRateKey,
+							Value:  producerRate1MB,
 							Remove: false,
 						},
 						{
-							Key:    "consumer_byte_rate",
-							Value:  2000000.0,
+							Key:    consumerByteRateKey,
+							Value:  consumerRate2MB,
 							Remove: false,
 						},
 					},
@@ -288,7 +318,7 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 			},
 		}
 
-		err := consoleService.CreateQuotas(ctx, createReq)
+		err := consoleService.AlterQuotas(ctx, createReq)
 		require.NoError(t, err)
 
 		deleteReq := kmsg.AlterClientQuotasRequest{
@@ -296,13 +326,13 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id",
+							Type: entityTypeClientID,
 							Name: &clientID,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "producer_byte_rate",
+							Key:    producerByteRateKey,
 							Remove: true,
 						},
 					},
@@ -310,14 +340,14 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 			},
 		}
 
-		err = consoleService.DeleteQuotas(ctx, deleteReq)
+		err = consoleService.AlterQuotas(ctx, deleteReq)
 		require.NoError(t, err)
 
 		describeReq := kmsg.DescribeClientQuotasRequest{
 			Components: []kmsg.DescribeClientQuotasRequestComponent{
 				{
-					EntityType: "client-id",
-					MatchType:  0,
+					EntityType: entityTypeClientID,
+					MatchType:  matchTypeSpecific,
 					Match:      &clientID,
 				},
 			},
@@ -329,10 +359,10 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 
 		found := false
 		for _, item := range resp.Items {
-			if item.EntityType == "client-id" && item.EntityName == clientID {
+			if item.EntityType == entityTypeClientID && item.EntityName == clientID {
 				found = true
 				assert.Len(t, item.Settings, 1)
-				assert.Equal(t, "consumer_byte_rate", item.Settings[0].Key)
+				assert.Equal(t, consumerByteRateKey, item.Settings[0].Key)
 				assert.Equal(t, 2000000.0, item.Settings[0].Value)
 				break
 			}
@@ -341,21 +371,21 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 	})
 
 	t.Run("create and delete flow", func(t *testing.T) {
-		clientID := "test-client-flow"
+		clientID := testClientFlow
 
 		createReq := kmsg.AlterClientQuotasRequest{
 			Entries: []kmsg.AlterClientQuotasRequestEntry{
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id",
+							Type: entityTypeClientID,
 							Name: &clientID,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "producer_byte_rate",
-							Value:  800000.0,
+							Key:    producerByteRateKey,
+							Value:  producerRate800KB,
 							Remove: false,
 						},
 					},
@@ -363,7 +393,7 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 			},
 		}
 
-		err := consoleService.CreateQuotas(ctx, createReq)
+		err := consoleService.AlterQuotas(ctx, createReq)
 		require.NoError(t, err)
 
 		deleteReq := kmsg.AlterClientQuotasRequest{
@@ -371,13 +401,13 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 				{
 					Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 						{
-							Type: "client-id",
+							Type: entityTypeClientID,
 							Name: &clientID,
 						},
 					},
 					Ops: []kmsg.AlterClientQuotasRequestEntryOp{
 						{
-							Key:    "producer_byte_rate",
+							Key:    producerByteRateKey,
 							Remove: true,
 						},
 					},
@@ -385,14 +415,14 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 			},
 		}
 
-		err = consoleService.DeleteQuotas(ctx, deleteReq)
+		err = consoleService.AlterQuotas(ctx, deleteReq)
 		require.NoError(t, err)
 
 		describeReq := kmsg.DescribeClientQuotasRequest{
 			Components: []kmsg.DescribeClientQuotasRequestComponent{
 				{
-					EntityType: "client-id",
-					MatchType:  0,
+					EntityType: entityTypeClientID,
+					MatchType:  matchTypeSpecific,
 					Match:      &clientID,
 				},
 			},
@@ -402,7 +432,7 @@ func (s *ConsoleIntegrationTestSuite) TestDeleteQuotas() {
 		require.Empty(t, resp.Error)
 
 		for _, item := range resp.Items {
-			if item.EntityType == "client-id" && item.EntityName == clientID {
+			if item.EntityType == entityTypeClientID && item.EntityName == clientID {
 				assert.Empty(t, item.Settings, "quota settings should be empty after deletion")
 			}
 		}
