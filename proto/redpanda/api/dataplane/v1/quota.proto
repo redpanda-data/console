@@ -25,6 +25,16 @@ message Quota {
     VALUE_TYPE_PRODUCER_BYTE_RATE = 2;
     VALUE_TYPE_CONSUMER_BYTE_RATE = 3;
   }
+
+  message Entity {
+    Quota.EntityType entity_type = 1;
+    string entity_name = 2;
+  }
+
+  message Value {
+    Quota.ValueType value_type = 1;
+    int64 value = 2;
+  }
 }
 
 message ListQuotasRequest {
@@ -32,7 +42,7 @@ message ListQuotasRequest {
   option (buf.validate.message).cel = {
     id: "name_required_for_filter_type_name"
     message: "name is required when filter_type is FILTER_TYPE_NAME"
-    expression: "this.filter_type != 1 || this.name != ''"
+    expression: "this.filter_type != 2 || this.name != ''"
   };
   // FilterType defines the type of filter to apply when listing quotas.
   enum FilterType {
@@ -53,8 +63,8 @@ message ListQuotasRequest {
 message ListQuotasResponse {
   // QuotaEntry represents the quota for a specific entity type.
   message QuotaEntry {
-    Quota.EntityType entity = 1;
-    repeated Quota.ValueType values = 2;
+    Quota.Entity entity = 1;
+    repeated Quota.Value values = 2;
   }
   repeated QuotaEntry quotas = 1;
 }

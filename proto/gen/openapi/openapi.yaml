@@ -597,6 +597,13 @@ components:
         - input_topic_name
         - output_topic_names
       type: object
+    Entity:
+      properties:
+        entity_name:
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+      type: object
     EntityRequestType:
       description: Entity can be defined by its name or use the default value.
       enum:
@@ -1608,14 +1615,22 @@ components:
           description: The user for whom this ACL applies.
           type: string
       type: object
+    Quota.Value:
+      properties:
+        value:
+          format: int64
+          type: string
+        value_type:
+          $ref: '#/components/schemas/ValueType'
+      type: object
     QuotaEntry:
       description: QuotaEntry represents the quota for a specific entity type.
       properties:
         entity:
-          $ref: '#/components/schemas/EntityType'
+          $ref: '#/components/schemas/Entity'
         values:
           items:
-            $ref: '#/components/schemas/ValueType'
+            $ref: '#/components/schemas/Quota.Value'
           type: array
       type: object
     QuotaFailure:
