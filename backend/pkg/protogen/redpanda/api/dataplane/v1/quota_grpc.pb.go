@@ -31,6 +31,9 @@ const (
 type QuotaServiceClient interface {
 	ListQuotas(ctx context.Context, in *ListQuotasRequest, opts ...grpc.CallOption) (*ListQuotasResponse, error)
 	CreateQuota(ctx context.Context, in *CreateQuotaRequest, opts ...grpc.CallOption) (*CreateQuotaResponse, error)
+	// Delete quota for a specific entity and value type.
+	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
+	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
 	DeleteQuota(ctx context.Context, in *DeleteQuotaRequest, opts ...grpc.CallOption) (*DeleteQuotaResponse, error)
 }
 
@@ -78,6 +81,9 @@ func (c *quotaServiceClient) DeleteQuota(ctx context.Context, in *DeleteQuotaReq
 type QuotaServiceServer interface {
 	ListQuotas(context.Context, *ListQuotasRequest) (*ListQuotasResponse, error)
 	CreateQuota(context.Context, *CreateQuotaRequest) (*CreateQuotaResponse, error)
+	// Delete quota for a specific entity and value type.
+	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
+	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
 	DeleteQuota(context.Context, *DeleteQuotaRequest) (*DeleteQuotaResponse, error)
 	mustEmbedUnimplementedQuotaServiceServer()
 }

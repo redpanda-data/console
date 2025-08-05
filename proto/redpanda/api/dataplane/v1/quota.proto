@@ -133,18 +133,17 @@ message CreateQuotaResponse {}
 
 message DeleteQuotaRequest {
   option (buf.validate.message).cel = {
-    id: "value_types_not_unspecified_or_any"
-    message: "value_type entries cannot be VALUE_TYPE_UNSPECIFIED (0) or VALUE_TYPE_ANY (1)"
-    expression: "this.value_type.all(v, v != 0 && v != 1)"
+    id: "value_type_not_unspecified_or_any"
+    message: "value_type cannot be VALUE_TYPE_UNSPECIFIED (0) or VALUE_TYPE_ANY (1)"
+    expression: "this.value_type != 0 && this.value_type != 1"
   };
 
-  repeated RequestEntity entities = 1 [(buf.validate.field).required = true];
+  RequestEntity entity = 1 [(buf.validate.field).required = true];
 
   // List of values that should be deleted for the specified entities
-  repeated Quota.ValueType value_type = 2 [(buf.validate.field).required = true];
+  Quota.ValueType value_type = 2 [(buf.validate.field).required = true];
 }
 
-// todo: Add a response message for DeleteQuotaResponse
 message DeleteQuotaResponse {}
 
 service QuotaService {
@@ -198,8 +197,11 @@ service QuotaService {
     };
   }
 
+  // Delete quota for a specific entity and value type.
+  // If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
+  // If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
   rpc DeleteQuota(DeleteQuotaRequest) returns (DeleteQuotaResponse) {
-    option (google.api.http) = {delete: "/v1/quotas"};
+    option (google.api.http) = {delete: "/v1/quotas:delete"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete quotas"
       description: "Delete client quotas for specified entities and value types."

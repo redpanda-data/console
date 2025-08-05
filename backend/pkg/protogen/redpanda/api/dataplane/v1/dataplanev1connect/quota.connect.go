@@ -57,6 +57,9 @@ var (
 type QuotaServiceClient interface {
 	ListQuotas(context.Context, *connect.Request[v1.ListQuotasRequest]) (*connect.Response[v1.ListQuotasResponse], error)
 	CreateQuota(context.Context, *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error)
+	// Delete quota for a specific entity and value type.
+	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
+	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
 	DeleteQuota(context.Context, *connect.Request[v1.DeleteQuotaRequest]) (*connect.Response[v1.DeleteQuotaResponse], error)
 }
 
@@ -117,6 +120,9 @@ func (c *quotaServiceClient) DeleteQuota(ctx context.Context, req *connect.Reque
 type QuotaServiceHandler interface {
 	ListQuotas(context.Context, *connect.Request[v1.ListQuotasRequest]) (*connect.Response[v1.ListQuotasResponse], error)
 	CreateQuota(context.Context, *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error)
+	// Delete quota for a specific entity and value type.
+	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
+	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
 	DeleteQuota(context.Context, *connect.Request[v1.DeleteQuotaRequest]) (*connect.Response[v1.DeleteQuotaResponse], error)
 }
 

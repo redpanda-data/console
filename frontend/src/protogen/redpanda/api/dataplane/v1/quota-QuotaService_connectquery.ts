@@ -15,6 +15,10 @@ export const listQuotas = QuotaService.method.listQuotas;
 export const createQuota = QuotaService.method.createQuota;
 
 /**
+ * Delete quota for a specific entity and value type.
+ * If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
+ * If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+ *
  * @generated from rpc redpanda.api.dataplane.v1.QuotaService.DeleteQuota
  */
 export const deleteQuota = QuotaService.method.deleteQuota;

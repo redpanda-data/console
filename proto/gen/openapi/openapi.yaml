@@ -554,7 +554,6 @@ components:
     DeletePipelineResponse:
       type: object
     DeleteQuotaResponse:
-      title: 'todo: Add a response message for DeleteQuotaResponse'
       type: object
     DeleteRoleResponse:
       description: DeleteRoleResponse is the response for DeleteRole.
@@ -3870,49 +3869,6 @@ paths:
       tags:
         - Secrets
   /v1/quotas:
-    delete:
-      description: Delete client quotas for specified entities and value types.
-      operationId: QuotaService_DeleteQuota
-      parameters:
-        - description: List of values that should be deleted for the specified entities
-          in: query
-          name: value_type
-          schema:
-            items:
-              enum:
-                - VALUE_TYPE_ANY
-                - VALUE_TYPE_PRODUCER_BYTE_RATE
-                - VALUE_TYPE_CONSUMER_BYTE_RATE
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteQuotaResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Delete quotas
-      tags:
-        - Quotas
     get:
       description: List client quotas. Use filter parameters to narrow results by entity type and filter criteria.
       operationId: QuotaService_ListQuotas
@@ -4011,6 +3967,75 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Create quota
+      tags:
+        - Quotas
+  /v1/quotas:delete:
+    delete:
+      description: Delete client quotas for specified entities and value types.
+      operationId: QuotaService_DeleteQuota
+      parameters:
+        - description: |2-
+             - ENTITY_TYPE_USER: Not supported in Redpanda
+             - ENTITY_TYPE_IP: Not supported in Redpanda
+          in: query
+          name: entity.entity_type
+          schema:
+            enum:
+              - ENTITY_TYPE_ANY
+              - ENTITY_TYPE_CLIENT_ID
+              - ENTITY_TYPE_CLIENT_ID_PREFIX
+              - ENTITY_TYPE_USER
+              - ENTITY_TYPE_IP
+            type: string
+        - in: query
+          name: entity.entity_request_type
+          schema:
+            enum:
+              - ENTITY_REQUEST_TYPE_NAME
+              - ENTITY_REQUEST_TYPE_DEFAULT
+            type: string
+        - description: |-
+            Either the client ID or the client ID prefix, depending on the entity_request_type
+            If entity_request_type is ENTITY_REQUEST_TYPE_DEFAULT, this field can be empty
+          in: query
+          name: entity.entity_name
+          schema:
+            type: string
+        - description: List of values that should be deleted for the specified entities
+          in: query
+          name: value_type
+          schema:
+            enum:
+              - VALUE_TYPE_ANY
+              - VALUE_TYPE_PRODUCER_BYTE_RATE
+              - VALUE_TYPE_CONSUMER_BYTE_RATE
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteQuotaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete quotas
       tags:
         - Quotas
   /v1/redpanda-connect/config-schema:
