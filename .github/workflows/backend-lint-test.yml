@@ -30,7 +30,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.60
+          version: v1.64.8
           working-directory: backend
           args: --timeout=10m --config=.golangci.yaml
       - name: Install Task
