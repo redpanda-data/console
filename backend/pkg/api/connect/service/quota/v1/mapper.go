@@ -166,18 +166,20 @@ func (k kafkaClientMapper) createQuotaRequestToKafka(req *v1.CreateQuotaRequest)
 }
 
 func (k kafkaClientMapper) deleteQuotaRequestToKafka(req *v1.DeleteQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
-	operations := make([]kmsg.AlterClientQuotasRequestEntryOp, len(req.ValueType))
-	for i, valueType := range req.ValueType {
-		key, err := k.mapValueTypeToKey(valueType)
-		if err != nil {
-			return nil, err
-		}
-		operations[i] = kmsg.AlterClientQuotasRequestEntryOp{
+	key, err := k.mapValueTypeToKey(req.ValueType)
+	if err != nil {
+		return nil, err
+	}
+
+	operations := []kmsg.AlterClientQuotasRequestEntryOp{
+		{
 			Key:    key,
 			Remove: true,
-		}
+		},
 	}
-	return k.alterQuotaRequestToKafka(req.Entities, operations)
+
+	entities := []*v1.RequestEntity{req.Entity}
+	return k.alterQuotaRequestToKafka(entities, operations)
 }
 
 func (kafkaClientMapper) mapEntityType(entityType v1.Quota_EntityType) (string, error) {

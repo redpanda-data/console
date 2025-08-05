@@ -589,18 +589,17 @@ func (s *APISuite) TestDeleteQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		deleteReq := &v1.DeleteQuotaRequest{
-			Entities: []*v1.RequestEntity{
-				{
-					EntityType:        v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityRequestType: v1.RequestEntity_ENTITY_REQUEST_TYPE_NAME,
-					EntityName:        "console-delete-test-client",
-				},
+			Entity: &v1.RequestEntity{
+				EntityType:        v1.Quota_ENTITY_TYPE_CLIENT_ID,
+				EntityRequestType: v1.RequestEntity_ENTITY_REQUEST_TYPE_NAME,
+				EntityName:        "console-delete-test-client",
 			},
-			ValueType: []v1.Quota_ValueType{
-				v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
-				v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
-			},
+			ValueType: v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
 		}
+		_, err = client.DeleteQuota(ctx, connect.NewRequest(deleteReq))
+		require.NoError(err)
+
+		deleteReq.ValueType = v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE
 		_, err = client.DeleteQuota(ctx, connect.NewRequest(deleteReq))
 		require.NoError(err)
 
@@ -653,15 +652,11 @@ func (s *APISuite) TestDeleteQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		deleteReq := &v1.DeleteQuotaRequest{
-			Entities: []*v1.RequestEntity{
-				{
-					EntityType:        v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityRequestType: v1.RequestEntity_ENTITY_REQUEST_TYPE_DEFAULT,
-				},
+			Entity: &v1.RequestEntity{
+				EntityType:        v1.Quota_ENTITY_TYPE_CLIENT_ID,
+				EntityRequestType: v1.RequestEntity_ENTITY_REQUEST_TYPE_DEFAULT,
 			},
-			ValueType: []v1.Quota_ValueType{
-				v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
-			},
+			ValueType: v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
 		}
 		_, err = client.DeleteQuota(ctx, connect.NewRequest(deleteReq))
 		require.NoError(err)
@@ -689,16 +684,12 @@ func (s *APISuite) TestDeleteQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		deleteReq := &v1.DeleteQuotaRequest{
-			Entities: []*v1.RequestEntity{
-				{
-					EntityType:        v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityRequestType: v1.RequestEntity_ENTITY_REQUEST_TYPE_NAME,
-					EntityName:        "test",
-				},
+			Entity: &v1.RequestEntity{
+				EntityType:        v1.Quota_ENTITY_TYPE_CLIENT_ID,
+				EntityRequestType: v1.RequestEntity_ENTITY_REQUEST_TYPE_NAME,
+				EntityName:        "test",
 			},
-			ValueType: []v1.Quota_ValueType{
-				v1.Quota_ValueType(999),
-			},
+			ValueType: v1.Quota_ValueType(999),
 		}
 		_, err := client.DeleteQuota(ctx, connect.NewRequest(deleteReq))
 		assert.Error(err)
@@ -736,35 +727,14 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		_, err := createReq.RequestWith(ctx, s.kafkaClient)
 		require.NoError(err)
 
-		type deleteQuotaRequest struct {
-			Entities []struct {
-				EntityType        string `json:"entity_type"`
-				EntityRequestType string `json:"entity_request_type"`
-				EntityName        string `json:"entity_name"`
-			} `json:"entities"`
-			ValueType []string `json:"value_type"`
-		}
-
-		httpReq := deleteQuotaRequest{
-			Entities: []struct {
-				EntityType        string `json:"entity_type"`
-				EntityRequestType string `json:"entity_request_type"`
-				EntityName        string `json:"entity_name"`
-			}{
-				{
-					EntityType:        "ENTITY_TYPE_CLIENT_ID",
-					EntityRequestType: "ENTITY_REQUEST_TYPE_NAME",
-					EntityName:        "http-delete-test-client",
-				},
-			},
-			ValueType: []string{"VALUE_TYPE_PRODUCER_BYTE_RATE"},
-		}
-
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1/quotas:delete").
-			BodyJSON(&httpReq).
-			Post().
+			URL(s.httpAddress()+"/v1/quotas").
+			Param("entity.entity_type", "ENTITY_TYPE_CLIENT_ID").
+			Param("entity.entity_request_type", "ENTITY_REQUEST_TYPE_NAME").
+			Param("entity.entity_name", "http-delete-test-client").
+			Param("value_type", "VALUE_TYPE_PRODUCER_BYTE_RATE").
+			Delete().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
