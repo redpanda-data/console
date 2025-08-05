@@ -762,9 +762,9 @@ func (s *APISuite) TestDeleteQuota_v1() {
 
 		var errResponse string
 		err = requests.
-			URL(s.httpAddress() + "/v1/quotas").
+			URL(s.httpAddress() + "/v1/quotas:delete").
 			BodyJSON(&httpReq).
-			Delete().
+			Post().
 			AddValidator(requests.ValidatorHandler(
 				requests.CheckStatus(http.StatusOK),
 				requests.ToString(&errResponse),
