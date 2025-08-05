@@ -1,6 +1,8 @@
 module github.com/redpanda-data/console/backend
 
-go 1.23.0
+go 1.23.8
+
+toolchain go1.24.5
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.35.2-20241127180247-a33202765966.1
@@ -48,7 +50,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20241202133023-293b7c4c56bb
 	github.com/twmb/franz-go/pkg/kmsg v1.9.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	github.com/twmb/franz-go/pkg/sr v1.2.0
+	github.com/twmb/franz-go/pkg/sr v1.5.0
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
