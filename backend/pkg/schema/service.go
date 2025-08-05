@@ -11,6 +11,7 @@ package schema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"strconv"
@@ -113,7 +114,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 		// 3. Compile all fetched schemas into a new, temporary map.
 		// Skip schemas that fail compilation instead of aborting the entire refresh.
 		newProtoFDByID := make(map[int]*desc.FileDescriptor)
-		var compilationErrors []error
+		failedCount := 0
 		compileStart := time.Now()
 		for _, schema := range newProtoSchemasByID {
 			fd, err := s.compileProtoSchemas(schema, schemasBySubjectAndVersion)
@@ -122,7 +123,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 					zap.String("subject", schema.Subject),
 					zap.Int("schema_id", schema.SchemaID),
 					zap.Error(err))
-				compilationErrors = append(compilationErrors, err)
+				failedCount++
 				continue // Skip this schema, continue with others
 			}
 			newProtoFDByID[schema.SchemaID] = fd
@@ -130,7 +131,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 
 		// Only fail if NO schemas could be compiled and we had schemas to compile
 		if len(newProtoFDByID) == 0 && len(newProtoSchemasByID) > 0 {
-			return nil, fmt.Errorf("failed to compile any protobuf schemas. First error: %w", compilationErrors[0])
+			return nil, fmt.Errorf("failed to compile any protobuf schemas (%d schemas failed)", failedCount)
 		}
 
 		// 4. Success! Atomically swap the service's state with the new, fully compiled state.
@@ -141,7 +142,7 @@ func (s *Service) GetProtoDescriptors(ctx context.Context) (map[int]*desc.FileDe
 
 		s.logger.Info("successfully refreshed and recompiled protobuf schemas",
 			zap.Int("successful_schemas", len(newProtoFDByID)),
-			zap.Int("failed_schemas", len(compilationErrors)),
+			zap.Int("failed_schemas", failedCount),
 			zap.Int("total_schemas", len(newProtoSchemasByID)),
 			zap.Duration("compile_duration", time.Since(compileStart)))
 
