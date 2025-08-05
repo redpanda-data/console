@@ -11,7 +11,6 @@ package schema
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"strconv"
