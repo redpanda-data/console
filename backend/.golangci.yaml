@@ -207,3 +207,5 @@ linters-settings:
         disabled: true
       - name: var-naming
         disabled: true
+      - name: use-errors-new
+        disabled: true
