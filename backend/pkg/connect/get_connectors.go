@@ -414,7 +414,7 @@ type holisticConnectorState struct {
 	Errors []ClusterConnectorInfoError
 }
 
-//nolint:cyclop // lots of inspection of state and tasks to determine status and errors
+//nolint:cyclop,gocognit // lots of inspection of state and tasks to determine status and errors
 func getHolisticStateFromConnector(status con.ConnectorStateInfo, aggregatedTasksStatus aggregatedConnectorTasksStatus) holisticConnectorState {
 	// LOGIC:
 	// HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
