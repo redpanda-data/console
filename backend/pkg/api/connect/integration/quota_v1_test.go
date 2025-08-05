@@ -19,7 +19,7 @@ import (
 	v1connect "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
 
-func (s *APISuite) CleanupQuotas(ctx context.Context) error {
+func (s *APISuite) cleanupQuotas(ctx context.Context) error {
 	listReq := kmsg.NewDescribeClientQuotasRequest()
 	listReq.Components = []kmsg.DescribeClientQuotasRequestComponent{
 		{
@@ -75,7 +75,7 @@ func (s *APISuite) TestCreateQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -138,7 +138,7 @@ func (s *APISuite) TestCreateQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -191,7 +191,7 @@ func (s *APISuite) TestCreateQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -300,7 +300,7 @@ func (s *APISuite) TestCreateQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -367,7 +367,7 @@ func (s *APISuite) TestListQuotas_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -439,7 +439,7 @@ func (s *APISuite) TestListQuotas_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -500,7 +500,7 @@ func (s *APISuite) TestListQuotas_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -529,7 +529,7 @@ func (s *APISuite) TestListQuotas_v1() {
 				} `json:"entity"`
 				Values []struct {
 					ValueType string `json:"value_type"`
-					Value     int64  `json:"value"`
+					Value     string `json:"value"`
 				} `json:"values"`
 			} `json:"quotas"`
 		}
@@ -565,7 +565,7 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -630,7 +630,7 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 
@@ -715,7 +715,7 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
-			err := s.CleanupQuotas(ctx)
+			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
 		}()
 

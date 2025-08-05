@@ -43,9 +43,25 @@ func (s *APISuite) TestListLicenses() {
 		licensesRes, err := connectClient.ListLicenses(ctx, connect.NewRequest(&consolev1alpha1.ListLicensesRequest{}))
 		require.NoError(err)
 
-		assert.Len(licensesRes.Msg.GetLicenses(), 2)
-		for _, l := range licensesRes.Msg.GetLicenses() {
-			assert.Equal(consolev1alpha1.License_TYPE_COMMUNITY.String(), l.Type.String())
+		licenses := licensesRes.Msg.GetLicenses()
+		assert.Len(licenses, 2, "should have exactly 2 licenses")
+
+		// Count license types
+		trialCount := 0
+		communityCount := 0
+		for _, l := range licenses {
+			switch l.Type {
+			case consolev1alpha1.License_TYPE_TRIAL:
+				trialCount++
+			case consolev1alpha1.License_TYPE_COMMUNITY:
+				communityCount++
+			default:
+				t.Errorf("unexpected license type: %v", l.Type)
+			}
 		}
+
+		// Verify we have exactly one of each type
+		assert.Equal(1, trialCount, "should have exactly one trial license")
+		assert.Equal(1, communityCount, "should have exactly one community license")
 	})
 }

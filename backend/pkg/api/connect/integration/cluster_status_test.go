@@ -70,6 +70,7 @@ func (s *APISuite) TestClusterStatus() {
 		statuses := []string{
 			v1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_READY.String(),
 			v1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_IN_PROGRESS.String(),
+			v1alpha1.GetRedpandaPartitionBalancerStatusResponse_STATUS_STARTING.String(),
 		}
 		assert.Contains(t, statuses, pbs.Msg.GetStatus().String())
 	})
