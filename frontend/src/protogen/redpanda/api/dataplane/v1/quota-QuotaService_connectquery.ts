@@ -10,15 +10,24 @@ import { QuotaService } from "./quota_pb";
 export const listQuotas = QuotaService.method.listQuotas;
 
 /**
- * @generated from rpc redpanda.api.dataplane.v1.QuotaService.CreateQuota
+ * @generated from rpc redpanda.api.dataplane.v1.QuotaService.SetQuota
  */
-export const createQuota = QuotaService.method.createQuota;
+export const setQuota = QuotaService.method.setQuota;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.QuotaService.BatchSetQuota
+ */
+export const batchSetQuota = QuotaService.method.batchSetQuota;
 
 /**
  * Delete quota for a specific entity and value type.
- * If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
- * If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+ * If value type is unspecified, all values for the entity will be deleted.
  *
  * @generated from rpc redpanda.api.dataplane.v1.QuotaService.DeleteQuota
  */
 export const deleteQuota = QuotaService.method.deleteQuota;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.QuotaService.BatchDeleteQuota
+ */
+export const batchDeleteQuota = QuotaService.method.batchDeleteQuota;

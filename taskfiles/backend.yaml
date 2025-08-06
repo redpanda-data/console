@@ -169,7 +169,7 @@ tasks:
       - install-tparse
     cmds:
       - |
-        {{ .PATH_PREFIX }} go test -race --tags=integration -json -p=1 {{.CLI_ARGS | default "./..." }} | {{ .BUILD_ROOT }}/bin/go/tparse -notests
+        {{ .PATH_PREFIX }} go test -race --tags=integration -json -p=1 {{.CLI_ARGS | default "./..." }} | {{ .BUILD_ROOT }}/bin/go/tparse
 
   cover:
     dir: "{{.BACKEND_ROOT}}"

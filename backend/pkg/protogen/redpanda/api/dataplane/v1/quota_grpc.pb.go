@@ -20,9 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	QuotaService_ListQuotas_FullMethodName  = "/redpanda.api.dataplane.v1.QuotaService/ListQuotas"
-	QuotaService_CreateQuota_FullMethodName = "/redpanda.api.dataplane.v1.QuotaService/CreateQuota"
-	QuotaService_DeleteQuota_FullMethodName = "/redpanda.api.dataplane.v1.QuotaService/DeleteQuota"
+	QuotaService_ListQuotas_FullMethodName       = "/redpanda.api.dataplane.v1.QuotaService/ListQuotas"
+	QuotaService_SetQuota_FullMethodName         = "/redpanda.api.dataplane.v1.QuotaService/SetQuota"
+	QuotaService_BatchSetQuota_FullMethodName    = "/redpanda.api.dataplane.v1.QuotaService/BatchSetQuota"
+	QuotaService_DeleteQuota_FullMethodName      = "/redpanda.api.dataplane.v1.QuotaService/DeleteQuota"
+	QuotaService_BatchDeleteQuota_FullMethodName = "/redpanda.api.dataplane.v1.QuotaService/BatchDeleteQuota"
 )
 
 // QuotaServiceClient is the client API for QuotaService service.
@@ -30,11 +32,12 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QuotaServiceClient interface {
 	ListQuotas(ctx context.Context, in *ListQuotasRequest, opts ...grpc.CallOption) (*ListQuotasResponse, error)
-	CreateQuota(ctx context.Context, in *CreateQuotaRequest, opts ...grpc.CallOption) (*CreateQuotaResponse, error)
+	SetQuota(ctx context.Context, in *SetQuotaRequest, opts ...grpc.CallOption) (*SetQuotaResponse, error)
+	BatchSetQuota(ctx context.Context, in *BatchSetQuotaRequest, opts ...grpc.CallOption) (*BatchSetQuotaResponse, error)
 	// Delete quota for a specific entity and value type.
-	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
-	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+	// If value type is unspecified, all values for the entity will be deleted.
 	DeleteQuota(ctx context.Context, in *DeleteQuotaRequest, opts ...grpc.CallOption) (*DeleteQuotaResponse, error)
+	BatchDeleteQuota(ctx context.Context, in *BatchDeleteQuotaRequest, opts ...grpc.CallOption) (*BatchDeleteQuotaResponse, error)
 }
 
 type quotaServiceClient struct {
@@ -55,10 +58,20 @@ func (c *quotaServiceClient) ListQuotas(ctx context.Context, in *ListQuotasReque
 	return out, nil
 }
 
-func (c *quotaServiceClient) CreateQuota(ctx context.Context, in *CreateQuotaRequest, opts ...grpc.CallOption) (*CreateQuotaResponse, error) {
+func (c *quotaServiceClient) SetQuota(ctx context.Context, in *SetQuotaRequest, opts ...grpc.CallOption) (*SetQuotaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateQuotaResponse)
-	err := c.cc.Invoke(ctx, QuotaService_CreateQuota_FullMethodName, in, out, cOpts...)
+	out := new(SetQuotaResponse)
+	err := c.cc.Invoke(ctx, QuotaService_SetQuota_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *quotaServiceClient) BatchSetQuota(ctx context.Context, in *BatchSetQuotaRequest, opts ...grpc.CallOption) (*BatchSetQuotaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchSetQuotaResponse)
+	err := c.cc.Invoke(ctx, QuotaService_BatchSetQuota_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -75,16 +88,27 @@ func (c *quotaServiceClient) DeleteQuota(ctx context.Context, in *DeleteQuotaReq
 	return out, nil
 }
 
+func (c *quotaServiceClient) BatchDeleteQuota(ctx context.Context, in *BatchDeleteQuotaRequest, opts ...grpc.CallOption) (*BatchDeleteQuotaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchDeleteQuotaResponse)
+	err := c.cc.Invoke(ctx, QuotaService_BatchDeleteQuota_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QuotaServiceServer is the server API for QuotaService service.
 // All implementations must embed UnimplementedQuotaServiceServer
 // for forward compatibility.
 type QuotaServiceServer interface {
 	ListQuotas(context.Context, *ListQuotasRequest) (*ListQuotasResponse, error)
-	CreateQuota(context.Context, *CreateQuotaRequest) (*CreateQuotaResponse, error)
+	SetQuota(context.Context, *SetQuotaRequest) (*SetQuotaResponse, error)
+	BatchSetQuota(context.Context, *BatchSetQuotaRequest) (*BatchSetQuotaResponse, error)
 	// Delete quota for a specific entity and value type.
-	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
-	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+	// If value type is unspecified, all values for the entity will be deleted.
 	DeleteQuota(context.Context, *DeleteQuotaRequest) (*DeleteQuotaResponse, error)
+	BatchDeleteQuota(context.Context, *BatchDeleteQuotaRequest) (*BatchDeleteQuotaResponse, error)
 	mustEmbedUnimplementedQuotaServiceServer()
 }
 
@@ -98,11 +122,17 @@ type UnimplementedQuotaServiceServer struct{}
 func (UnimplementedQuotaServiceServer) ListQuotas(context.Context, *ListQuotasRequest) (*ListQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListQuotas not implemented")
 }
-func (UnimplementedQuotaServiceServer) CreateQuota(context.Context, *CreateQuotaRequest) (*CreateQuotaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateQuota not implemented")
+func (UnimplementedQuotaServiceServer) SetQuota(context.Context, *SetQuotaRequest) (*SetQuotaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetQuota not implemented")
+}
+func (UnimplementedQuotaServiceServer) BatchSetQuota(context.Context, *BatchSetQuotaRequest) (*BatchSetQuotaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchSetQuota not implemented")
 }
 func (UnimplementedQuotaServiceServer) DeleteQuota(context.Context, *DeleteQuotaRequest) (*DeleteQuotaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteQuota not implemented")
+}
+func (UnimplementedQuotaServiceServer) BatchDeleteQuota(context.Context, *BatchDeleteQuotaRequest) (*BatchDeleteQuotaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchDeleteQuota not implemented")
 }
 func (UnimplementedQuotaServiceServer) mustEmbedUnimplementedQuotaServiceServer() {}
 func (UnimplementedQuotaServiceServer) testEmbeddedByValue()                      {}
@@ -143,20 +173,38 @@ func _QuotaService_ListQuotas_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _QuotaService_CreateQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateQuotaRequest)
+func _QuotaService_SetQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetQuotaRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QuotaServiceServer).CreateQuota(ctx, in)
+		return srv.(QuotaServiceServer).SetQuota(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: QuotaService_CreateQuota_FullMethodName,
+		FullMethod: QuotaService_SetQuota_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QuotaServiceServer).CreateQuota(ctx, req.(*CreateQuotaRequest))
+		return srv.(QuotaServiceServer).SetQuota(ctx, req.(*SetQuotaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuotaService_BatchSetQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchSetQuotaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuotaServiceServer).BatchSetQuota(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QuotaService_BatchSetQuota_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuotaServiceServer).BatchSetQuota(ctx, req.(*BatchSetQuotaRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -179,6 +227,24 @@ func _QuotaService_DeleteQuota_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QuotaService_BatchDeleteQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchDeleteQuotaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuotaServiceServer).BatchDeleteQuota(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QuotaService_BatchDeleteQuota_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuotaServiceServer).BatchDeleteQuota(ctx, req.(*BatchDeleteQuotaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // QuotaService_ServiceDesc is the grpc.ServiceDesc for QuotaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,12 +257,20 @@ var QuotaService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QuotaService_ListQuotas_Handler,
 		},
 		{
-			MethodName: "CreateQuota",
-			Handler:    _QuotaService_CreateQuota_Handler,
+			MethodName: "SetQuota",
+			Handler:    _QuotaService_SetQuota_Handler,
+		},
+		{
+			MethodName: "BatchSetQuota",
+			Handler:    _QuotaService_BatchSetQuota_Handler,
 		},
 		{
 			MethodName: "DeleteQuota",
 			Handler:    _QuotaService_DeleteQuota_Handler,
+		},
+		{
+			MethodName: "BatchDeleteQuota",
+			Handler:    _QuotaService_BatchDeleteQuota_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

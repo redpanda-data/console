@@ -17,18 +17,22 @@ import (
 // QuotaServiceGatewayServer implements the gRPC server API for the QuotaService service.
 type QuotaServiceGatewayServer struct {
 	v1.UnimplementedQuotaServiceServer
-	listQuotas  connect_gateway.UnaryHandler[v1.ListQuotasRequest, v1.ListQuotasResponse]
-	createQuota connect_gateway.UnaryHandler[v1.CreateQuotaRequest, v1.CreateQuotaResponse]
-	deleteQuota connect_gateway.UnaryHandler[v1.DeleteQuotaRequest, v1.DeleteQuotaResponse]
+	listQuotas       connect_gateway.UnaryHandler[v1.ListQuotasRequest, v1.ListQuotasResponse]
+	setQuota         connect_gateway.UnaryHandler[v1.SetQuotaRequest, v1.SetQuotaResponse]
+	batchSetQuota    connect_gateway.UnaryHandler[v1.BatchSetQuotaRequest, v1.BatchSetQuotaResponse]
+	deleteQuota      connect_gateway.UnaryHandler[v1.DeleteQuotaRequest, v1.DeleteQuotaResponse]
+	batchDeleteQuota connect_gateway.UnaryHandler[v1.BatchDeleteQuotaRequest, v1.BatchDeleteQuotaResponse]
 }
 
 // NewQuotaServiceGatewayServer constructs a Connect-Gateway gRPC server for the QuotaService
 // service.
 func NewQuotaServiceGatewayServer(svc QuotaServiceHandler, opts ...connect_gateway.HandlerOption) *QuotaServiceGatewayServer {
 	return &QuotaServiceGatewayServer{
-		listQuotas:  connect_gateway.NewUnaryHandler(QuotaServiceListQuotasProcedure, svc.ListQuotas, opts...),
-		createQuota: connect_gateway.NewUnaryHandler(QuotaServiceCreateQuotaProcedure, svc.CreateQuota, opts...),
-		deleteQuota: connect_gateway.NewUnaryHandler(QuotaServiceDeleteQuotaProcedure, svc.DeleteQuota, opts...),
+		listQuotas:       connect_gateway.NewUnaryHandler(QuotaServiceListQuotasProcedure, svc.ListQuotas, opts...),
+		setQuota:         connect_gateway.NewUnaryHandler(QuotaServiceSetQuotaProcedure, svc.SetQuota, opts...),
+		batchSetQuota:    connect_gateway.NewUnaryHandler(QuotaServiceBatchSetQuotaProcedure, svc.BatchSetQuota, opts...),
+		deleteQuota:      connect_gateway.NewUnaryHandler(QuotaServiceDeleteQuotaProcedure, svc.DeleteQuota, opts...),
+		batchDeleteQuota: connect_gateway.NewUnaryHandler(QuotaServiceBatchDeleteQuotaProcedure, svc.BatchDeleteQuota, opts...),
 	}
 }
 
@@ -36,12 +40,20 @@ func (s *QuotaServiceGatewayServer) ListQuotas(ctx context.Context, req *v1.List
 	return s.listQuotas(ctx, req)
 }
 
-func (s *QuotaServiceGatewayServer) CreateQuota(ctx context.Context, req *v1.CreateQuotaRequest) (*v1.CreateQuotaResponse, error) {
-	return s.createQuota(ctx, req)
+func (s *QuotaServiceGatewayServer) SetQuota(ctx context.Context, req *v1.SetQuotaRequest) (*v1.SetQuotaResponse, error) {
+	return s.setQuota(ctx, req)
+}
+
+func (s *QuotaServiceGatewayServer) BatchSetQuota(ctx context.Context, req *v1.BatchSetQuotaRequest) (*v1.BatchSetQuotaResponse, error) {
+	return s.batchSetQuota(ctx, req)
 }
 
 func (s *QuotaServiceGatewayServer) DeleteQuota(ctx context.Context, req *v1.DeleteQuotaRequest) (*v1.DeleteQuotaResponse, error) {
 	return s.deleteQuota(ctx, req)
+}
+
+func (s *QuotaServiceGatewayServer) BatchDeleteQuota(ctx context.Context, req *v1.BatchDeleteQuotaRequest) (*v1.BatchDeleteQuotaResponse, error) {
+	return s.batchDeleteQuota(ctx, req)
 }
 
 // RegisterQuotaServiceHandlerGatewayServer registers the Connect handlers for the QuotaService

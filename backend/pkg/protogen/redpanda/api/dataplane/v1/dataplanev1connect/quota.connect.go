@@ -37,30 +37,38 @@ const (
 const (
 	// QuotaServiceListQuotasProcedure is the fully-qualified name of the QuotaService's ListQuotas RPC.
 	QuotaServiceListQuotasProcedure = "/redpanda.api.dataplane.v1.QuotaService/ListQuotas"
-	// QuotaServiceCreateQuotaProcedure is the fully-qualified name of the QuotaService's CreateQuota
-	// RPC.
-	QuotaServiceCreateQuotaProcedure = "/redpanda.api.dataplane.v1.QuotaService/CreateQuota"
+	// QuotaServiceSetQuotaProcedure is the fully-qualified name of the QuotaService's SetQuota RPC.
+	QuotaServiceSetQuotaProcedure = "/redpanda.api.dataplane.v1.QuotaService/SetQuota"
+	// QuotaServiceBatchSetQuotaProcedure is the fully-qualified name of the QuotaService's
+	// BatchSetQuota RPC.
+	QuotaServiceBatchSetQuotaProcedure = "/redpanda.api.dataplane.v1.QuotaService/BatchSetQuota"
 	// QuotaServiceDeleteQuotaProcedure is the fully-qualified name of the QuotaService's DeleteQuota
 	// RPC.
 	QuotaServiceDeleteQuotaProcedure = "/redpanda.api.dataplane.v1.QuotaService/DeleteQuota"
+	// QuotaServiceBatchDeleteQuotaProcedure is the fully-qualified name of the QuotaService's
+	// BatchDeleteQuota RPC.
+	QuotaServiceBatchDeleteQuotaProcedure = "/redpanda.api.dataplane.v1.QuotaService/BatchDeleteQuota"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	quotaServiceServiceDescriptor           = v1.File_redpanda_api_dataplane_v1_quota_proto.Services().ByName("QuotaService")
-	quotaServiceListQuotasMethodDescriptor  = quotaServiceServiceDescriptor.Methods().ByName("ListQuotas")
-	quotaServiceCreateQuotaMethodDescriptor = quotaServiceServiceDescriptor.Methods().ByName("CreateQuota")
-	quotaServiceDeleteQuotaMethodDescriptor = quotaServiceServiceDescriptor.Methods().ByName("DeleteQuota")
+	quotaServiceServiceDescriptor                = v1.File_redpanda_api_dataplane_v1_quota_proto.Services().ByName("QuotaService")
+	quotaServiceListQuotasMethodDescriptor       = quotaServiceServiceDescriptor.Methods().ByName("ListQuotas")
+	quotaServiceSetQuotaMethodDescriptor         = quotaServiceServiceDescriptor.Methods().ByName("SetQuota")
+	quotaServiceBatchSetQuotaMethodDescriptor    = quotaServiceServiceDescriptor.Methods().ByName("BatchSetQuota")
+	quotaServiceDeleteQuotaMethodDescriptor      = quotaServiceServiceDescriptor.Methods().ByName("DeleteQuota")
+	quotaServiceBatchDeleteQuotaMethodDescriptor = quotaServiceServiceDescriptor.Methods().ByName("BatchDeleteQuota")
 )
 
 // QuotaServiceClient is a client for the redpanda.api.dataplane.v1.QuotaService service.
 type QuotaServiceClient interface {
 	ListQuotas(context.Context, *connect.Request[v1.ListQuotasRequest]) (*connect.Response[v1.ListQuotasResponse], error)
-	CreateQuota(context.Context, *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error)
+	SetQuota(context.Context, *connect.Request[v1.SetQuotaRequest]) (*connect.Response[v1.SetQuotaResponse], error)
+	BatchSetQuota(context.Context, *connect.Request[v1.BatchSetQuotaRequest]) (*connect.Response[v1.BatchSetQuotaResponse], error)
 	// Delete quota for a specific entity and value type.
-	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
-	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+	// If value type is unspecified, all values for the entity will be deleted.
 	DeleteQuota(context.Context, *connect.Request[v1.DeleteQuotaRequest]) (*connect.Response[v1.DeleteQuotaResponse], error)
+	BatchDeleteQuota(context.Context, *connect.Request[v1.BatchDeleteQuotaRequest]) (*connect.Response[v1.BatchDeleteQuotaResponse], error)
 }
 
 // NewQuotaServiceClient constructs a client for the redpanda.api.dataplane.v1.QuotaService service.
@@ -79,10 +87,16 @@ func NewQuotaServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(quotaServiceListQuotasMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		createQuota: connect.NewClient[v1.CreateQuotaRequest, v1.CreateQuotaResponse](
+		setQuota: connect.NewClient[v1.SetQuotaRequest, v1.SetQuotaResponse](
 			httpClient,
-			baseURL+QuotaServiceCreateQuotaProcedure,
-			connect.WithSchema(quotaServiceCreateQuotaMethodDescriptor),
+			baseURL+QuotaServiceSetQuotaProcedure,
+			connect.WithSchema(quotaServiceSetQuotaMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		batchSetQuota: connect.NewClient[v1.BatchSetQuotaRequest, v1.BatchSetQuotaResponse](
+			httpClient,
+			baseURL+QuotaServiceBatchSetQuotaProcedure,
+			connect.WithSchema(quotaServiceBatchSetQuotaMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		deleteQuota: connect.NewClient[v1.DeleteQuotaRequest, v1.DeleteQuotaResponse](
@@ -91,14 +105,22 @@ func NewQuotaServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(quotaServiceDeleteQuotaMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		batchDeleteQuota: connect.NewClient[v1.BatchDeleteQuotaRequest, v1.BatchDeleteQuotaResponse](
+			httpClient,
+			baseURL+QuotaServiceBatchDeleteQuotaProcedure,
+			connect.WithSchema(quotaServiceBatchDeleteQuotaMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // quotaServiceClient implements QuotaServiceClient.
 type quotaServiceClient struct {
-	listQuotas  *connect.Client[v1.ListQuotasRequest, v1.ListQuotasResponse]
-	createQuota *connect.Client[v1.CreateQuotaRequest, v1.CreateQuotaResponse]
-	deleteQuota *connect.Client[v1.DeleteQuotaRequest, v1.DeleteQuotaResponse]
+	listQuotas       *connect.Client[v1.ListQuotasRequest, v1.ListQuotasResponse]
+	setQuota         *connect.Client[v1.SetQuotaRequest, v1.SetQuotaResponse]
+	batchSetQuota    *connect.Client[v1.BatchSetQuotaRequest, v1.BatchSetQuotaResponse]
+	deleteQuota      *connect.Client[v1.DeleteQuotaRequest, v1.DeleteQuotaResponse]
+	batchDeleteQuota *connect.Client[v1.BatchDeleteQuotaRequest, v1.BatchDeleteQuotaResponse]
 }
 
 // ListQuotas calls redpanda.api.dataplane.v1.QuotaService.ListQuotas.
@@ -106,9 +128,14 @@ func (c *quotaServiceClient) ListQuotas(ctx context.Context, req *connect.Reques
 	return c.listQuotas.CallUnary(ctx, req)
 }
 
-// CreateQuota calls redpanda.api.dataplane.v1.QuotaService.CreateQuota.
-func (c *quotaServiceClient) CreateQuota(ctx context.Context, req *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error) {
-	return c.createQuota.CallUnary(ctx, req)
+// SetQuota calls redpanda.api.dataplane.v1.QuotaService.SetQuota.
+func (c *quotaServiceClient) SetQuota(ctx context.Context, req *connect.Request[v1.SetQuotaRequest]) (*connect.Response[v1.SetQuotaResponse], error) {
+	return c.setQuota.CallUnary(ctx, req)
+}
+
+// BatchSetQuota calls redpanda.api.dataplane.v1.QuotaService.BatchSetQuota.
+func (c *quotaServiceClient) BatchSetQuota(ctx context.Context, req *connect.Request[v1.BatchSetQuotaRequest]) (*connect.Response[v1.BatchSetQuotaResponse], error) {
+	return c.batchSetQuota.CallUnary(ctx, req)
 }
 
 // DeleteQuota calls redpanda.api.dataplane.v1.QuotaService.DeleteQuota.
@@ -116,14 +143,20 @@ func (c *quotaServiceClient) DeleteQuota(ctx context.Context, req *connect.Reque
 	return c.deleteQuota.CallUnary(ctx, req)
 }
 
+// BatchDeleteQuota calls redpanda.api.dataplane.v1.QuotaService.BatchDeleteQuota.
+func (c *quotaServiceClient) BatchDeleteQuota(ctx context.Context, req *connect.Request[v1.BatchDeleteQuotaRequest]) (*connect.Response[v1.BatchDeleteQuotaResponse], error) {
+	return c.batchDeleteQuota.CallUnary(ctx, req)
+}
+
 // QuotaServiceHandler is an implementation of the redpanda.api.dataplane.v1.QuotaService service.
 type QuotaServiceHandler interface {
 	ListQuotas(context.Context, *connect.Request[v1.ListQuotasRequest]) (*connect.Response[v1.ListQuotasResponse], error)
-	CreateQuota(context.Context, *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error)
+	SetQuota(context.Context, *connect.Request[v1.SetQuotaRequest]) (*connect.Response[v1.SetQuotaResponse], error)
+	BatchSetQuota(context.Context, *connect.Request[v1.BatchSetQuotaRequest]) (*connect.Response[v1.BatchSetQuotaResponse], error)
 	// Delete quota for a specific entity and value type.
-	// If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
-	// If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+	// If value type is unspecified, all values for the entity will be deleted.
 	DeleteQuota(context.Context, *connect.Request[v1.DeleteQuotaRequest]) (*connect.Response[v1.DeleteQuotaResponse], error)
+	BatchDeleteQuota(context.Context, *connect.Request[v1.BatchDeleteQuotaRequest]) (*connect.Response[v1.BatchDeleteQuotaResponse], error)
 }
 
 // NewQuotaServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -138,10 +171,16 @@ func NewQuotaServiceHandler(svc QuotaServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(quotaServiceListQuotasMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	quotaServiceCreateQuotaHandler := connect.NewUnaryHandler(
-		QuotaServiceCreateQuotaProcedure,
-		svc.CreateQuota,
-		connect.WithSchema(quotaServiceCreateQuotaMethodDescriptor),
+	quotaServiceSetQuotaHandler := connect.NewUnaryHandler(
+		QuotaServiceSetQuotaProcedure,
+		svc.SetQuota,
+		connect.WithSchema(quotaServiceSetQuotaMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	quotaServiceBatchSetQuotaHandler := connect.NewUnaryHandler(
+		QuotaServiceBatchSetQuotaProcedure,
+		svc.BatchSetQuota,
+		connect.WithSchema(quotaServiceBatchSetQuotaMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	quotaServiceDeleteQuotaHandler := connect.NewUnaryHandler(
@@ -150,14 +189,24 @@ func NewQuotaServiceHandler(svc QuotaServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(quotaServiceDeleteQuotaMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	quotaServiceBatchDeleteQuotaHandler := connect.NewUnaryHandler(
+		QuotaServiceBatchDeleteQuotaProcedure,
+		svc.BatchDeleteQuota,
+		connect.WithSchema(quotaServiceBatchDeleteQuotaMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1.QuotaService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case QuotaServiceListQuotasProcedure:
 			quotaServiceListQuotasHandler.ServeHTTP(w, r)
-		case QuotaServiceCreateQuotaProcedure:
-			quotaServiceCreateQuotaHandler.ServeHTTP(w, r)
+		case QuotaServiceSetQuotaProcedure:
+			quotaServiceSetQuotaHandler.ServeHTTP(w, r)
+		case QuotaServiceBatchSetQuotaProcedure:
+			quotaServiceBatchSetQuotaHandler.ServeHTTP(w, r)
 		case QuotaServiceDeleteQuotaProcedure:
 			quotaServiceDeleteQuotaHandler.ServeHTTP(w, r)
+		case QuotaServiceBatchDeleteQuotaProcedure:
+			quotaServiceBatchDeleteQuotaHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -171,10 +220,18 @@ func (UnimplementedQuotaServiceHandler) ListQuotas(context.Context, *connect.Req
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.QuotaService.ListQuotas is not implemented"))
 }
 
-func (UnimplementedQuotaServiceHandler) CreateQuota(context.Context, *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.QuotaService.CreateQuota is not implemented"))
+func (UnimplementedQuotaServiceHandler) SetQuota(context.Context, *connect.Request[v1.SetQuotaRequest]) (*connect.Response[v1.SetQuotaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.QuotaService.SetQuota is not implemented"))
+}
+
+func (UnimplementedQuotaServiceHandler) BatchSetQuota(context.Context, *connect.Request[v1.BatchSetQuotaRequest]) (*connect.Response[v1.BatchSetQuotaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.QuotaService.BatchSetQuota is not implemented"))
 }
 
 func (UnimplementedQuotaServiceHandler) DeleteQuota(context.Context, *connect.Request[v1.DeleteQuotaRequest]) (*connect.Response[v1.DeleteQuotaResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.QuotaService.DeleteQuota is not implemented"))
+}
+
+func (UnimplementedQuotaServiceHandler) BatchDeleteQuota(context.Context, *connect.Request[v1.BatchDeleteQuotaRequest]) (*connect.Response[v1.BatchDeleteQuotaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.QuotaService.BatchDeleteQuota is not implemented"))
 }

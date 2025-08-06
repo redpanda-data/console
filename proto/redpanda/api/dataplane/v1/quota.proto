@@ -66,7 +66,6 @@ message ListQuotasRequest {
 
   // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
   string page_token = 3;
-
 }
 
 message ListQuotasResponse {
@@ -77,11 +76,7 @@ message ListQuotasResponse {
   }
   repeated QuotaEntry quotas = 1;
 
-  string page_token = 2 [
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Token to retrieve the next page of results. If empty, there are no more results."
-    }
-  ];
+  string page_token = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Token to retrieve the next page of results. If empty, there are no more results."}];
 }
 
 message RequestQuotaEntity {
@@ -94,9 +89,7 @@ message RequestQuotaEntity {
   Quota.EntityType entity_type = 1 [
     (buf.validate.field).enum = {
       defined_only: true
-      not_in: [
-        0
-      ] // Disallow unspecified
+      not_in: [0] /* Disallow unspecified */
     },
     (buf.validate.field).required = true
   ];
@@ -111,15 +104,12 @@ message RequestQuotaValue {
   Quota.ValueType value_type = 1 [
     (buf.validate.field).enum = {
       defined_only: true
-      not_in: [
-        0
-      ] // Disallow VALUE_TYPE_UNSPECIFIED
+      not_in: [0] /* Disallow VALUE_TYPE_UNSPECIFIED */
     },
     (buf.validate.field).required = true
   ];
   int64 value = 2;
 }
-
 
 message BatchSetQuotaRequest {
   // To specify multiple entities to apply the same quota
@@ -127,6 +117,8 @@ message BatchSetQuotaRequest {
   // The values that should be set for the specified entities.
   repeated RequestQuotaValue values = 2 [(buf.validate.field).required = true];
 }
+
+message BatchSetQuotaResponse {}
 
 message SetQuotaRequest {
   // The entity for which the quota is being set.
@@ -142,23 +134,21 @@ message BatchDeleteQuotaRequest {
 
   // Value that should be deleted for the specified entity
   repeated Quota.ValueType value_type = 2 [
-    (buf.validate.field).enum = {
+    (buf.validate.field).repeated.items.enum = {
       defined_only: true
-      not_in: [
-        0
-      ] // Disallow VALUE_TYPE_UNSPECIFIED
+      not_in: [0] /* Disallow VALUE_TYPE_UNSPECIFIED */
     },
     (buf.validate.field).required = true
   ];
 }
 
+message BatchDeleteQuotaResponse {}
+
 message DeleteQuotaRequest {
   RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
 
   // Value that should be deleted for the specified entity
-  Quota.ValueType value_type = 2 [
-    (buf.validate.field).required = true
-  ];
+  Quota.ValueType value_type = 2 [(buf.validate.field).required = true];
 }
 
 message DeleteQuotaResponse {}
@@ -201,9 +191,9 @@ service QuotaService {
       responses: {
         key: "201"
         value: {
-          description: "Created"
+          description: "Quota Set"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateQuotaResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.SetQuotaResponse"}
           }
         }
       }
@@ -214,9 +204,9 @@ service QuotaService {
     };
   }
 
-  rpc BatchSetQuota(BatchSetQuotaRequest) returns (SetQuotaResponse) {
+  rpc BatchSetQuota(BatchSetQuotaRequest) returns (BatchSetQuotaResponse) {
     option (google.api.http) = {
-      post: "/v1/quotas:batch"
+      post: "/v1/quotas:batchSet"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -225,9 +215,9 @@ service QuotaService {
       responses: {
         key: "201"
         value: {
-          description: "Created"
+          description: "Quotas Set"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateQuotaResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.BatchSetQuotaResponse"}
           }
         }
       }
@@ -261,8 +251,11 @@ service QuotaService {
     };
   }
 
-  rpc BatchDeleteQuota(BatchDeleteQuotaRequest) returns (DeleteQuotaResponse) {
-    option (google.api.http) = {delete: "/v1/quotas"};
+  rpc BatchDeleteQuota(BatchDeleteQuotaRequest) returns (BatchDeleteQuotaResponse) {
+    option (google.api.http) = {
+      post: "/v1/quotas:batchDelete"
+      body: "*"
+    };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete multiple quotas"
       description: "Delete client quotas for multiple entities and values in a single request."
@@ -271,7 +264,7 @@ service QuotaService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteQuotaResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.BatchDeleteQuotaResponse"}
           }
         }
       }

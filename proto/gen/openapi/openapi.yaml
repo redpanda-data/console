@@ -84,6 +84,35 @@ components:
           type: array
       title: BadRequest
       type: object
+    BatchDeleteQuotaRequest:
+      properties:
+        entity:
+          items:
+            $ref: '#/components/schemas/RequestQuotaEntity'
+          type: array
+        value_type:
+          items:
+            $ref: '#/components/schemas/ValueType'
+          title: Value that should be deleted for the specified entity
+          type: array
+      type: object
+    BatchDeleteQuotaResponse:
+      type: object
+    BatchSetQuotaRequest:
+      properties:
+        entities:
+          items:
+            $ref: '#/components/schemas/RequestQuotaEntity'
+          title: To specify multiple entities to apply the same quota
+          type: array
+        values:
+          description: The values that should be set for the specified entities.
+          items:
+            $ref: '#/components/schemas/RequestQuotaValue'
+          type: array
+      type: object
+    BatchSetQuotaResponse:
+      type: object
     Config:
       properties:
         name:
@@ -374,20 +403,6 @@ components:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
       type: object
-    CreateQuotaRequest:
-      properties:
-        entities:
-          items:
-            $ref: '#/components/schemas/RequestEntity'
-          title: To specify multiple entities to apply the same quota
-          type: array
-        values:
-          items:
-            $ref: '#/components/schemas/RequestValue'
-          type: array
-      type: object
-    CreateQuotaResponse:
-      type: object
     CreateRoleResponse:
       description: CreateRoleResponse is the response for CreateRole.
       properties:
@@ -603,12 +618,6 @@ components:
         entity_type:
           $ref: '#/components/schemas/EntityType'
       type: object
-    EntityRequestType:
-      description: Entity can be defined by its name or use the default value.
-      enum:
-        - ENTITY_REQUEST_TYPE_NAME
-        - ENTITY_REQUEST_TYPE_DEFAULT
-      type: string
     EntityType:
       description: |-
         The type of entity that the quota applies to.
@@ -616,7 +625,6 @@ components:
          - ENTITY_TYPE_USER: Not supported in Redpanda
          - ENTITY_TYPE_IP: Not supported in Redpanda
       enum:
-        - ENTITY_TYPE_ANY
         - ENTITY_TYPE_CLIENT_ID
         - ENTITY_TYPE_CLIENT_ID_PREFIX
         - ENTITY_TYPE_USER
@@ -754,19 +762,6 @@ components:
             which represents UPPER_SNAKE_CASE.
           type: string
       type: object
-    FilterType:
-      description: |-
-        FilterType defines the type of filter to apply when listing quotas.
-
-         - FILTER_TYPE_ANY: The filter type any will return quotas for all entities.
-         - FILTER_TYPE_NAME: The filter type name when specified with name
-        will return quotas for the specified client id.
-         - FILTER_TYPE_DEFAULT: The filter type default returns the default client id
-      enum:
-        - FILTER_TYPE_ANY
-        - FILTER_TYPE_NAME
-        - FILTER_TYPE_DEFAULT
-      type: string
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -1056,8 +1051,19 @@ components:
             $ref: '#/components/schemas/Pipeline'
           type: array
       type: object
+    ListQuotasRequest.Filter:
+      properties:
+        entity_name:
+          description: 'Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.'
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+      type: object
     ListQuotasResponse:
       properties:
+        page_token:
+          description: Token to retrieve the next page of results. If empty, there are no more results.
+          type: string
         quotas:
           items:
             $ref: '#/components/schemas/QuotaEntry'
@@ -1764,19 +1770,18 @@ components:
             type: integer
           type: array
       type: object
-    RequestEntity:
+    RequestQuotaEntity:
       properties:
         entity_name:
-          title: |-
-            Either the client ID or the client ID prefix, depending on the entity_request_type
-            If entity_request_type is ENTITY_REQUEST_TYPE_DEFAULT, this field can be empty
+          description: |-
+            Entity name is the name of the entity type specified.
+            If left empty, the entity will be treated as a default entity (e.g., all clients).
+            If entity_type is ENTITY_TYPE_CLIENT_ID_PREFIX, this field must be set.
           type: string
-        entity_request_type:
-          $ref: '#/components/schemas/EntityRequestType'
         entity_type:
           $ref: '#/components/schemas/EntityType'
       type: object
-    RequestValue:
+    RequestQuotaValue:
       properties:
         value:
           format: int64
@@ -1929,6 +1934,15 @@ components:
           items:
             $ref: '#/components/schemas/AlterTopicPartitionStatus'
           type: array
+      type: object
+    SetQuotaRequest:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        value:
+          $ref: '#/components/schemas/RequestQuotaValue'
+      type: object
+    SetQuotaResponse:
       type: object
     SetTopicConfigurationsResponse:
       properties:
@@ -2244,11 +2258,20 @@ components:
           $ref: '#/components/schemas/ConnectorSpec'
       type: object
     ValueType:
-      description: The type of value that the quota represents.
+      description: |-
+        The type of value that the quota represents.
+
+         - VALUE_TYPE_PRODUCER_BYTE_RATE: The rate at which producers can send data.
+         - VALUE_TYPE_CONSUMER_BYTE_RATE: The rate at which consumers can fetch data.
+         - VALUE_TYPE_CONTROLLER_MUTATION_RATE: The rate at which topic mutation requests can be made.
+         - VALUE_TYPE_REQUEST_PERCENTAGE: The percentage of the total throughput that can be used by the entity.
+
+        Not supported in Redpanda
       enum:
-        - VALUE_TYPE_ANY
         - VALUE_TYPE_PRODUCER_BYTE_RATE
         - VALUE_TYPE_CONSUMER_BYTE_RATE
+        - VALUE_TYPE_CONTROLLER_MUTATION_RATE
+        - VALUE_TYPE_REQUEST_PERCENTAGE
       type: string
     rpc.Status:
       description: |-
@@ -3870,7 +3893,7 @@ paths:
         - Secrets
   /v1/quotas:
     delete:
-      description: Delete client quotas for specified entities and value types.
+      description: Delete client quotas for single entity and value.
       operationId: QuotaService_DeleteQuota
       parameters:
         - description: |2-
@@ -3880,34 +3903,36 @@ paths:
           name: entity.entity_type
           schema:
             enum:
-              - ENTITY_TYPE_ANY
               - ENTITY_TYPE_CLIENT_ID
               - ENTITY_TYPE_CLIENT_ID_PREFIX
               - ENTITY_TYPE_USER
               - ENTITY_TYPE_IP
             type: string
-        - in: query
-          name: entity.entity_request_type
-          schema:
-            enum:
-              - ENTITY_REQUEST_TYPE_NAME
-              - ENTITY_REQUEST_TYPE_DEFAULT
-            type: string
         - description: |-
-            Either the client ID or the client ID prefix, depending on the entity_request_type
-            If entity_request_type is ENTITY_REQUEST_TYPE_DEFAULT, this field can be empty
+            Entity name is the name of the entity type specified.
+            If left empty, the entity will be treated as a default entity (e.g., all clients).
+            If entity_type is ENTITY_TYPE_CLIENT_ID_PREFIX, this field must be set.
           in: query
           name: entity.entity_name
           schema:
             type: string
-        - description: List of values that should be deleted for the specified entities
+        - description: |-
+            Value that should be deleted for the specified entity
+
+             - VALUE_TYPE_PRODUCER_BYTE_RATE: The rate at which producers can send data.
+             - VALUE_TYPE_CONSUMER_BYTE_RATE: The rate at which consumers can fetch data.
+             - VALUE_TYPE_CONTROLLER_MUTATION_RATE: The rate at which topic mutation requests can be made.
+             - VALUE_TYPE_REQUEST_PERCENTAGE: The percentage of the total throughput that can be used by the entity.
+
+            Not supported in Redpanda
           in: query
           name: value_type
           schema:
             enum:
-              - VALUE_TYPE_ANY
               - VALUE_TYPE_PRODUCER_BYTE_RATE
               - VALUE_TYPE_CONSUMER_BYTE_RATE
+              - VALUE_TYPE_CONTROLLER_MUTATION_RATE
+              - VALUE_TYPE_REQUEST_PERCENTAGE
             type: string
       responses:
         "200":
@@ -3934,41 +3959,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Delete quotas
+      summary: Delete a quota
       tags:
         - Quotas
     get:
       description: List client quotas. Use filter parameters to narrow results by entity type and filter criteria.
       operationId: QuotaService_ListQuotas
       parameters:
-        - description: |2-
+        - description: |-
+            The type of entity to filter by. If not specified, all entities will be returned.
+
              - ENTITY_TYPE_USER: Not supported in Redpanda
              - ENTITY_TYPE_IP: Not supported in Redpanda
           in: query
-          name: entity_type
+          name: filter.entity_type
           schema:
             enum:
-              - ENTITY_TYPE_ANY
               - ENTITY_TYPE_CLIENT_ID
               - ENTITY_TYPE_CLIENT_ID_PREFIX
               - ENTITY_TYPE_USER
               - ENTITY_TYPE_IP
             type: string
-        - description: |2-
-             - FILTER_TYPE_ANY: The filter type any will return quotas for all entities.
-             - FILTER_TYPE_NAME: The filter type name when specified with name
-            will return quotas for the specified client id.
-             - FILTER_TYPE_DEFAULT: The filter type default returns the default client id
+        - description: 'Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.'
           in: query
-          name: filter_type
+          name: filter.entity_name
           schema:
-            enum:
-              - FILTER_TYPE_ANY
-              - FILTER_TYPE_NAME
-              - FILTER_TYPE_DEFAULT
             type: string
-        - in: query
-          name: name
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
           schema:
             type: string
       responses:
@@ -4000,13 +4025,13 @@ paths:
       tags:
         - Quotas
     post:
-      description: Create client throughput quotas for specified entities.
-      operationId: QuotaService_CreateQuota
+      description: Create or update client throughput quotas for a single entity. This operation is an upsert.
+      operationId: QuotaService_SetQuota
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateQuotaRequest'
+              $ref: '#/components/schemas/SetQuotaRequest'
         required: true
         x-originalParamName: body
       responses:
@@ -4014,8 +4039,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateQuotaResponse'
-          description: Created
+                $ref: '#/components/schemas/SetQuotaResponse'
+          description: Quota Set
         "401":
           content:
             application/json:
@@ -4034,7 +4059,85 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Create quota
+      summary: Set a quota
+      tags:
+        - Quotas
+  /v1/quotas:batchDelete:
+    post:
+      description: Delete client quotas for multiple entities and values in a single request.
+      operationId: QuotaService_BatchDeleteQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchDeleteQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchDeleteQuotaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete multiple quotas
+      tags:
+        - Quotas
+  /v1/quotas:batchSet:
+    post:
+      description: Create or update client throughput quotas for multiple entities in a single request.
+      operationId: QuotaService_BatchSetQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchSetQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchSetQuotaResponse'
+          description: Quotas Set
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Set multiple quotas
       tags:
         - Quotas
   /v1/redpanda-connect/config-schema:

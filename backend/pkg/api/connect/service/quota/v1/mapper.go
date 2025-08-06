@@ -25,44 +25,39 @@ const (
 
 	producerByteRateKey = "producer_byte_rate"
 	consumerByteRateKey = "consumer_byte_rate"
+
+	defaultEntityValue = "<default>"
 )
 
 type kafkaClientMapper struct{}
 
 func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*kmsg.DescribeClientQuotasRequest, error) {
 	var (
-		entityType string
-		matchType  kmsg.QuotasMatchType
-		match      *string
+		entityType    string
+		matchType     kmsg.QuotasMatchType
+		defaultEntity = defaultEntityValue
+		match         = &defaultEntity
 	)
 
 	// Match entity type and filter type from the request
-	switch req.GetEntityType() {
+	switch req.Filter.GetEntityType() {
 	case v1.Quota_ENTITY_TYPE_CLIENT_ID:
 		entityType = clientIDEntityType
 	case v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX:
 		entityType = clientIDPrefixEntityType
+		match = nil // Client ID Prefix does not support matching on default entity name
 	case v1.Quota_ENTITY_TYPE_USER:
 		entityType = userEntityType
+
 	case v1.Quota_ENTITY_TYPE_IP:
 		entityType = ipEntityType
+
 	default:
-		return nil, fmt.Errorf("invalid entity type: %v", req.GetEntityType())
+		return nil, fmt.Errorf("invalid entity type: %v", req.Filter.GetEntityType())
 	}
 
-	switch req.GetFilterType() {
-	case v1.ListQuotasRequest_FILTER_TYPE_NAME:
-		matchType = kmsg.QuotasMatchTypeExact
-	case v1.ListQuotasRequest_FILTER_TYPE_DEFAULT:
-		matchType = kmsg.QuotasMatchTypeDefault
-	case v1.ListQuotasRequest_FILTER_TYPE_ANY:
-		matchType = kmsg.QuotasMatchTypeAny
-	default:
-		return nil, fmt.Errorf("invalid filter type: %v", req.GetFilterType())
-	}
-
-	if req.GetName() != "" {
-		match = &req.Name
+	if req.Filter.GetEntityName() != "" {
+		match = &req.Filter.EntityName
 	}
 
 	return &kmsg.DescribeClientQuotasRequest{
@@ -124,7 +119,7 @@ func (k kafkaClientMapper) mapQuotaEntry(entity kmsg.DescribeClientQuotasRespons
 		return nil, err
 	}
 
-	entityName := "<default>"
+	entityName := defaultEntityValue
 	if entity.Name != nil {
 		entityName = *entity.Name
 	}
@@ -162,7 +157,7 @@ func (kafkaClientMapper) mapKafkaEntityType(entityType string) (v1.Quota_EntityT
 	}
 }
 
-func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestEntity, operations []kmsg.AlterClientQuotasRequestEntryOp) (*kmsg.AlterClientQuotasRequest, error) {
+func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestQuotaEntity, operations []kmsg.AlterClientQuotasRequestEntryOp) (*kmsg.AlterClientQuotasRequest, error) {
 	var entries []kmsg.AlterClientQuotasRequestEntry
 
 	for _, entity := range entities {
@@ -171,16 +166,13 @@ func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestEntity
 			return nil, err
 		}
 
-		entityName, err := k.mapEntityName(entity)
-		if err != nil {
-			return nil, err
-		}
+		entityName := k.mapEntityName(entity)
 
 		entries = append(entries, kmsg.AlterClientQuotasRequestEntry{
 			Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 				{
 					Type: entityType,
-					Name: entityName,
+					Name: &entityName,
 				},
 			},
 			Ops: operations,
@@ -192,7 +184,7 @@ func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestEntity
 	}, nil
 }
 
-func (k kafkaClientMapper) createQuotaRequestToKafka(req *v1.CreateQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
+func (k kafkaClientMapper) batchSetQuotaRequestToKafka(req *v1.BatchSetQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
 	operations := make([]kmsg.AlterClientQuotasRequestEntryOp, len(req.Values))
 	for i, value := range req.Values {
 		key, err := k.mapValueTypeToKey(value.ValueType)
@@ -221,8 +213,44 @@ func (k kafkaClientMapper) deleteQuotaRequestToKafka(req *v1.DeleteQuotaRequest)
 		},
 	}
 
-	entities := []*v1.RequestEntity{req.Entity}
+	entities := []*v1.RequestQuotaEntity{req.Entity}
 	return k.alterQuotaRequestToKafka(entities, operations)
+}
+
+func (k kafkaClientMapper) setQuotaRequestToKafka(req *v1.SetQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
+	key, err := k.mapValueTypeToKey(req.Value.ValueType)
+	if err != nil {
+		return nil, err
+	}
+
+	operations := []kmsg.AlterClientQuotasRequestEntryOp{
+		{
+			Key:    key,
+			Value:  float64(req.Value.Value),
+			Remove: false,
+		},
+	}
+
+	entities := []*v1.RequestQuotaEntity{req.Entity}
+	return k.alterQuotaRequestToKafka(entities, operations)
+}
+
+func (k kafkaClientMapper) batchDeleteQuotaRequestToKafka(req *v1.BatchDeleteQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
+	var operations []kmsg.AlterClientQuotasRequestEntryOp
+
+	for _, valueType := range req.ValueType {
+		key, err := k.mapValueTypeToKey(valueType)
+		if err != nil {
+			return nil, err
+		}
+
+		operations = append(operations, kmsg.AlterClientQuotasRequestEntryOp{
+			Key:    key,
+			Remove: true,
+		})
+	}
+
+	return k.alterQuotaRequestToKafka(req.Entity, operations)
 }
 
 func (kafkaClientMapper) mapEntityType(entityType v1.Quota_EntityType) (string, error) {
@@ -236,16 +264,12 @@ func (kafkaClientMapper) mapEntityType(entityType v1.Quota_EntityType) (string, 
 	}
 }
 
-// mapEntityName converts protobuf entity to Kafka entity name.
-func (kafkaClientMapper) mapEntityName(entity *v1.RequestEntity) (*string, error) {
-	switch entity.EntityRequestType {
-	case v1.RequestEntity_ENTITY_REQUEST_TYPE_NAME:
-		return &entity.EntityName, nil
-	case v1.RequestEntity_ENTITY_REQUEST_TYPE_DEFAULT:
-		return nil, nil // nil represents default quota
-	default:
-		return nil, fmt.Errorf("invalid entity request type: %v", entity.EntityRequestType)
+// mapEntityName sets default entity name if not provided.
+func (kafkaClientMapper) mapEntityName(entity *v1.RequestQuotaEntity) string {
+	if entity.EntityName == "" {
+		return defaultEntityValue
 	}
+	return entity.EntityName
 }
 
 // mapValueTypeToKey converts protobuf value type to Kafka quota key.

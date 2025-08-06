@@ -14,8 +14,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 
 	"connectrpc.com/connect"
+	"github.com/redpanda-data/common-go/api/pagination"
 	"github.com/twmb/franz-go/pkg/kerr"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -71,16 +73,39 @@ func (s *Service) ListQuotas(ctx context.Context, req *connect.Request[v1.ListQu
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to map quota items to proto: %w", err))
 	}
 
+	// Add pagination
+	var nextPageToken string
+	if req.Msg.GetPageSize() > 0 {
+		sort.SliceStable(quotaEntries, func(i, j int) bool {
+			if quotaEntries[i].Entity.EntityType != quotaEntries[j].Entity.EntityType {
+				return quotaEntries[i].Entity.EntityType < quotaEntries[j].Entity.EntityType
+			}
+			return quotaEntries[i].Entity.EntityName < quotaEntries[j].Entity.EntityName
+		})
+		page, token, err := pagination.SliceToPaginatedWithToken(quotaEntries, int(req.Msg.PageSize), req.Msg.GetPageToken(), "quotaEntry", func(x *v1.ListQuotasResponse_QuotaEntry) string {
+			return fmt.Sprintf("%d_%s", x.Entity.EntityType, x.Entity.EntityName)
+		})
+		if err != nil {
+			return nil, connect.NewError(
+				connect.CodeInternal,
+				fmt.Errorf("failed to apply pagination: %w", err),
+			)
+		}
+		quotaEntries = page
+		nextPageToken = token
+	}
+
 	response := &v1.ListQuotasResponse{
-		Quotas: quotaEntries,
+		Quotas:    quotaEntries,
+		PageToken: nextPageToken,
 	}
 
 	return connect.NewResponse(response), nil
 }
 
-// CreateQuota creates client throughput quotas for specified entities.
-func (s *Service) CreateQuota(ctx context.Context, req *connect.Request[v1.CreateQuotaRequest]) (*connect.Response[v1.CreateQuotaResponse], error) {
-	kafkaReq, err := s.kafkaClientMapper.createQuotaRequestToKafka(req.Msg)
+// BatchSetQuota creates client throughput quotas for specified entities.
+func (s *Service) BatchSetQuota(ctx context.Context, req *connect.Request[v1.BatchSetQuotaRequest]) (*connect.Response[v1.BatchSetQuotaResponse], error) {
+	kafkaReq, err := s.kafkaClientMapper.batchSetQuotaRequestToKafka(req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -90,7 +115,7 @@ func (s *Service) CreateQuota(ctx context.Context, req *connect.Request[v1.Creat
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create quota: %w", err))
 	}
 
-	response := &v1.CreateQuotaResponse{}
+	response := &v1.BatchSetQuotaResponse{}
 
 	return connect.NewResponse(response), nil
 }
@@ -108,6 +133,40 @@ func (s *Service) DeleteQuota(ctx context.Context, req *connect.Request[v1.Delet
 	}
 
 	response := &v1.DeleteQuotaResponse{}
+
+	return connect.NewResponse(response), nil
+}
+
+// SetQuota creates or updates client throughput quotas for a single entity.
+func (s *Service) SetQuota(ctx context.Context, req *connect.Request[v1.SetQuotaRequest]) (*connect.Response[v1.SetQuotaResponse], error) {
+	kafkaReq, err := s.kafkaClientMapper.setQuotaRequestToKafka(req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to set quota: %w", err))
+	}
+
+	response := &v1.SetQuotaResponse{}
+
+	return connect.NewResponse(response), nil
+}
+
+// BatchDeleteQuota deletes client quotas for multiple entities and value types.
+func (s *Service) BatchDeleteQuota(ctx context.Context, req *connect.Request[v1.BatchDeleteQuotaRequest]) (*connect.Response[v1.BatchDeleteQuotaResponse], error) {
+	kafkaReq, err := s.kafkaClientMapper.batchDeleteQuotaRequestToKafka(req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to batch delete quota: %w", err))
+	}
+
+	response := &v1.BatchDeleteQuotaResponse{}
 
 	return connect.NewResponse(response), nil
 }
