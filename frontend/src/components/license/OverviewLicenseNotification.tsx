@@ -13,19 +13,29 @@ import {
   isBakedInTrial,
   MS_IN_DAY,
   RegisterButton,
+  SERVERLESS_LINK,
   UpgradeButton,
   UploadLicenseButton,
 } from './licenseUtils';
 
 const getLicenseAlertContent = (
-  license: License | undefined,
+  licenses: License[],
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
-  if (license === undefined || license.type !== License_Type.TRIAL) {
+  if (licenses.length === 0) {
     return null;
   }
 
-  // Trial is either baked-in or extended.
-  const bakedInTrial = isBakedInTrial(license);
+  // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
+  // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where, 
+  // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
+  const bakedInTrial = licenses.every(license => isBakedInTrial(license));
+  
+  // Choose the license with the latest expiration time
+  const license = licenses.reduce((latest, current) => {
+    const latestExpiration = Number(latest.expiresAt);
+    const currentExpiration = Number(current.expiresAt);
+    return currentExpiration > latestExpiration ? current : latest;
+  });
 
   const msToExpiration = getMillisecondsToExpiration(license);
 
@@ -57,7 +67,7 @@ const getLicenseAlertContent = (
         return {
           message: (
             <Box>
-              This cluster is on an Enterprise Trial. Register for an additional 30 days of <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              This cluster is on an Enterprise trial. Register for an additional 30 days of <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
                 enterprise features
               </Link>.
 
@@ -76,7 +86,7 @@ const getLicenseAlertContent = (
           return {
             message: (
               <Box>
-                This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. SSO/RBAC is enabled and Console will be inaccessible after license expiry. Disable SSO/RBAC, or register for an additional 30 days of enterprise features.
+                This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. SSO/RBAC is enabled and Console will be inaccessible after license expiry. Disable SSO/RBAC, or register for an additional 30 days of <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">enterprise features</Link>.
 
                 <Flex gap={2} my={2}>
                 <UploadLicenseButton />
@@ -90,7 +100,7 @@ const getLicenseAlertContent = (
           return {
             message: (
               <Box>
-                This cluster's Enterprise Trial will expire in {getPrettyTimeToExpiration(license)}. Register for an additional 30 days of enterprise features
+                This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. Register for an additional 30 days of <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">enterprise features</Link>.
 
                 <Flex gap={2} my={2}>
                 <UploadLicenseButton />
@@ -110,12 +120,7 @@ const getLicenseAlertContent = (
         return {
           message: (
             <Box>
-              This cluster's Extended Enterprise Trial has expired. Try Redpanda Serverless, the fastest way to access advanced features. 
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <RegisterButton />
-              </Flex>
-
+              This Extended Enterprise trial has expired. The fastest way to continue is with <Link href={SERVERLESS_LINK} target="_blank">Redpanda Serverless</Link>.
             </Box>
           ),
           status: 'warning',
@@ -127,12 +132,7 @@ const getLicenseAlertContent = (
         return {
           message: (
             <Box>
-              This cluster is on an Extended Enterprise Trial. Try Redpanda Serverless, the fastest way to access advanced features. 
-
-              <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <RegisterButton />
-              </Flex>
+              This cluster is on an Extended Enterprise trial. When your trial expires, the fastest way to continue is with <Link href={SERVERLESS_LINK} target="_blank">Redpanda Serverless</Link>.
             </Box>
           ),
           status: 'info',
@@ -144,12 +144,10 @@ const getLicenseAlertContent = (
           return {
             message: (
               <Box>
-                This cluster's Extended Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. SSO/RBAC is enabled and Console will be inaccessible after license expiry. Disable SSO/RBAC, or try Redpanda Serverless, the fastest way to access advanced features.
-
+                This Extended Enterprise trial expires in {getPrettyTimeToExpiration(license)}. Enterprise features like SSO/RBAC will be unavailable after the trial expires. When your trial expires, the fastest way to continue is with <Link href={SERVERLESS_LINK} target="_blank">Redpanda Serverless</Link>.
                 <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <RegisterButton />
-              </Flex>
+                  <UploadLicenseButton />
+                </Flex>
               </Box>
             ),
             status: 'warning',
@@ -158,12 +156,10 @@ const getLicenseAlertContent = (
           return {
             message: (
               <Box>
-                This cluster's Extended Enterprise Trial will expire in {getPrettyTimeToExpiration(license)}. Try Redpanda Serverless, the fastest way to access advanced features. 
-
+                This Extended Enterprise trial expires in {getPrettyTimeToExpiration(license)}. When your trial expires, the fastest way to continue is with <Link href={SERVERLESS_LINK} target="_blank">Redpanda Serverless</Link>.
                 <Flex gap={2} my={2}>
-                <UploadLicenseButton />
-                <RegisterButton />
-              </Flex>
+                  <UploadLicenseButton />
+                </Flex>
               </Box>
             ),
             status: 'warning',
@@ -235,16 +231,16 @@ export const OverviewLicenseNotification: FC = observer(() => {
     void api.listLicenses();
   }, []);
 
-  const license = api.licenses.filter((license) => license.type === License_Type.TRIAL).first();
+  const trialLicenses = api.licenses.filter((license) => license.type === License_Type.TRIAL);
 
-  const alertContent = getLicenseAlertContent(license);
+  const alertContent = getLicenseAlertContent(trialLicenses);
 
   // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (api.clusterOverview === null) {
     return null;
   }
 
-  if (!license) {
+  if (trialLicenses.length === 0) {
     return null;
   }
 

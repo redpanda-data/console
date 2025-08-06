@@ -367,6 +367,8 @@ export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/
 export const ENTERPRISE_FEATURES_DOCS_LINK =
   'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
 
+export const SERVERLESS_LINK = 'https://www.redpanda.com/product/serverless'
+
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
     <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
