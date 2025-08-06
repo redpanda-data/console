@@ -15,17 +15,16 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
-// AlterQuotas modifies client quotas in the Kafka cluster.
+// AlterClientQuotas modifies client quotas in the Kafka cluster.
 // This method can be used to both create and delete quotas by setting the Remove field
 // in the AlterClientQuotasRequestEntryOp operations:
 // - Remove: false - Creates or updates quota values
 // - Remove: true  - Deletes existing quota values
-func (s *Service) AlterQuotas(ctx context.Context, request kmsg.AlterClientQuotasRequest) error {
+func (s *Service) AlterClientQuotas(ctx context.Context, req *kmsg.AlterClientQuotasRequest) (*kmsg.AlterClientQuotasResponse, error) {
 	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = request.RequestWith(ctx, cl)
-	return err
+	return req.RequestWith(ctx, cl)
 }

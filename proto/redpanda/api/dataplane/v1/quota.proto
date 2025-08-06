@@ -11,19 +11,23 @@ message Quota {
   // The type of entity that the quota applies to.
   enum EntityType {
     ENTITY_TYPE_UNSPECIFIED = 0;
-    ENTITY_TYPE_ANY = 1;
-    ENTITY_TYPE_CLIENT_ID = 2;
-    ENTITY_TYPE_CLIENT_ID_PREFIX = 3;
-    ENTITY_TYPE_USER = 4; // Not supported in Redpanda
-    ENTITY_TYPE_IP = 5; // Not supported in Redpanda
+    ENTITY_TYPE_CLIENT_ID = 1;
+    ENTITY_TYPE_CLIENT_ID_PREFIX = 2;
+    ENTITY_TYPE_USER = 3; // Not supported in Redpanda
+    ENTITY_TYPE_IP = 4; // Not supported in Redpanda
   }
 
   // The type of value that the quota represents.
   enum ValueType {
     VALUE_TYPE_UNSPECIFIED = 0;
-    VALUE_TYPE_ANY = 1;
-    VALUE_TYPE_PRODUCER_BYTE_RATE = 2;
-    VALUE_TYPE_CONSUMER_BYTE_RATE = 3;
+    // The rate at which producers can send data.
+    VALUE_TYPE_PRODUCER_BYTE_RATE = 1;
+    // The rate at which consumers can fetch data.
+    VALUE_TYPE_CONSUMER_BYTE_RATE = 2;
+    // The rate at which topic mutation requests can be made.
+    VALUE_TYPE_CONTROLLER_MUTATION_RATE = 3;
+    // The percentage of the total throughput that can be used by the entity.
+    VALUE_TYPE_REQUEST_PERCENTAGE = 4; // Not supported in Redpanda
   }
 
   message Entity {
@@ -38,26 +42,31 @@ message Quota {
 }
 
 message ListQuotasRequest {
-  // If the filter_type is FILTER_TYPE_NAME, then the name of the entity must be specified.
-  option (buf.validate.message).cel = {
-    id: "name_required_for_filter_type_name"
-    message: "name is required when filter_type is FILTER_TYPE_NAME"
-    expression: "this.filter_type != 2 || this.name != ''"
-  };
-  // FilterType defines the type of filter to apply when listing quotas.
-  enum FilterType {
-    FILTER_TYPE_UNSPECIFIED = 0;
-    // The filter type any will return quotas for all entities.
-    FILTER_TYPE_ANY = 1;
-    // The filter type name when specified with name
-    // will return quotas for the specified client id.
-    FILTER_TYPE_NAME = 2;
-    // The filter type default returns the default client id
-    FILTER_TYPE_DEFAULT = 3;
+  message Filter {
+    // The type of entity to filter by. If not specified, all entities will be returned.
+    Quota.EntityType entity_type = 1;
+
+    // Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
+    string entity_name = 2;
   }
-  Quota.EntityType entity_type = 1;
-  FilterType filter_type = 2;
-  string name = 3;
+
+  Filter filter = 1;
+
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 1000
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 1000
+    }
+  ];
+
+  // Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+
 }
 
 message ListQuotasResponse {
@@ -67,80 +76,89 @@ message ListQuotasResponse {
     repeated Quota.Value values = 2;
   }
   repeated QuotaEntry quotas = 1;
+
+  string page_token = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Token to retrieve the next page of results. If empty, there are no more results."
+    }
+  ];
 }
 
-message RequestEntity {
+message RequestQuotaEntity {
   option (buf.validate.message).cel = {
-    id: "name_required_for_entity_request_type_name"
-    message: "entity_name is required when entity_request_type is ENTITY_REQUEST_TYPE_NAME"
-    expression: "this.entity_request_type != 1 || this.entity_name != ''"
-  };
-  option (buf.validate.message).cel = {
-    id: "client_id_prefix_requires_name_request_type"
-    message: "CLIENT_ID_PREFIX entity_type requires ENTITY_REQUEST_TYPE_NAME, not ENTITY_REQUEST_TYPE_DEFAULT"
-    expression: "this.entity_type != 3 || this.entity_request_type == 1"
+    id: "client_id_prefix_requires_entity_name"
+    message: "entity_name is required when entity_type is CLIENT_ID_PREFIX"
+    expression: "this.entity_type != 2 || this.entity_name != ''"
   };
 
   Quota.EntityType entity_type = 1 [
     (buf.validate.field).enum = {
       defined_only: true
       not_in: [
-        0,
-        1,
-        4,
-        5
-      ] /* Disallow unspecified, any, user, and ip */
+        0
+      ] // Disallow unspecified
     },
     (buf.validate.field).required = true
   ];
 
-  // Entity can be defined by its name or use the default value.
-  enum EntityRequestType {
-    ENTITY_REQUEST_TYPE_UNSPECIFIED = 0;
-    ENTITY_REQUEST_TYPE_NAME = 1;
-    ENTITY_REQUEST_TYPE_DEFAULT = 2;
-  }
-
-  EntityRequestType entity_request_type = 2 [(buf.validate.field).required = true];
-
-  // Either the client ID or the client ID prefix, depending on the entity_request_type
-  // If entity_request_type is ENTITY_REQUEST_TYPE_DEFAULT, this field can be empty
-  string entity_name = 3;
+  // Entity name is the name of the entity type specified.
+  // If left empty, the entity will be treated as a default entity (e.g., all clients).
+  // If entity_type is ENTITY_TYPE_CLIENT_ID_PREFIX, this field must be set.
+  string entity_name = 2;
 }
 
-message CreateQuotaRequest {
-  message RequestValue {
-    Quota.ValueType value_type = 1 [
-      (buf.validate.field).enum = {
-        defined_only: true
-        not_in: [
-          0,
-          1
-        ] /* Disallow unspecified and any */
-      },
-      (buf.validate.field).required = true
-    ];
-    int64 value = 2;
-  }
+message RequestQuotaValue {
+  Quota.ValueType value_type = 1 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0
+      ] // Disallow VALUE_TYPE_UNSPECIFIED
+    },
+    (buf.validate.field).required = true
+  ];
+  int64 value = 2;
+}
 
+
+message BatchSetQuotaRequest {
   // To specify multiple entities to apply the same quota
-  repeated RequestEntity entities = 1 [(buf.validate.field).required = true];
-  repeated RequestValue values = 2 [(buf.validate.field).required = true];
+  repeated RequestQuotaEntity entities = 1 [(buf.validate.field).required = true];
+  // The values that should be set for the specified entities.
+  repeated RequestQuotaValue values = 2 [(buf.validate.field).required = true];
 }
 
-message CreateQuotaResponse {}
+message SetQuotaRequest {
+  // The entity for which the quota is being set.
+  RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
+  // The value that should be set for the specified entity.
+  RequestQuotaValue value = 2 [(buf.validate.field).required = true];
+}
+
+message SetQuotaResponse {}
+
+message BatchDeleteQuotaRequest {
+  repeated RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
+
+  // Value that should be deleted for the specified entity
+  repeated Quota.ValueType value_type = 2 [
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [
+        0
+      ] // Disallow VALUE_TYPE_UNSPECIFIED
+    },
+    (buf.validate.field).required = true
+  ];
+}
 
 message DeleteQuotaRequest {
-  option (buf.validate.message).cel = {
-    id: "value_type_not_unspecified_or_any"
-    message: "value_type cannot be VALUE_TYPE_UNSPECIFIED (0) or VALUE_TYPE_ANY (1)"
-    expression: "this.value_type != 0 && this.value_type != 1"
-  };
+  RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
 
-  RequestEntity entity = 1 [(buf.validate.field).required = true];
-
-  // List of values that should be deleted for the specified entities
-  Quota.ValueType value_type = 2 [(buf.validate.field).required = true];
+  // Value that should be deleted for the specified entity
+  Quota.ValueType value_type = 2 [
+    (buf.validate.field).required = true
+  ];
 }
 
 message DeleteQuotaResponse {}
@@ -172,14 +190,38 @@ service QuotaService {
     };
   }
 
-  rpc CreateQuota(CreateQuotaRequest) returns (CreateQuotaResponse) {
+  rpc SetQuota(SetQuotaRequest) returns (SetQuotaResponse) {
     option (google.api.http) = {
       post: "/v1/quotas"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Create quota"
-      description: "Create client throughput quotas for specified entities."
+      summary: "Set a quota"
+      description: "Create or update client throughput quotas for a single entity. This operation is an upsert."
+      responses: {
+        key: "201"
+        value: {
+          description: "Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateQuotaResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_KAFKA
+    };
+  }
+
+  rpc BatchSetQuota(BatchSetQuotaRequest) returns (SetQuotaResponse) {
+    option (google.api.http) = {
+      post: "/v1/quotas:batch"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Set multiple quotas"
+      description: "Create or update client throughput quotas for multiple entities in a single request."
       responses: {
         key: "201"
         value: {
@@ -197,13 +239,33 @@ service QuotaService {
   }
 
   // Delete quota for a specific entity and value type.
-  // If the value type is VALUE_TYPE_ANY, all values for the entity will be deleted
-  // If the value type is VALUE_TYPE_UNSPECIFIED, the request will be rejected.
+  // If value type is unspecified, all values for the entity will be deleted.
   rpc DeleteQuota(DeleteQuotaRequest) returns (DeleteQuotaResponse) {
     option (google.api.http) = {delete: "/v1/quotas"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete quotas"
-      description: "Delete client quotas for specified entities and value types."
+      summary: "Delete a quota"
+      description: "Delete client quotas for single entity and value."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteQuotaResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_KAFKA
+    };
+  }
+
+  rpc BatchDeleteQuota(BatchDeleteQuotaRequest) returns (DeleteQuotaResponse) {
+    option (google.api.http) = {delete: "/v1/quotas"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete multiple quotas"
+      description: "Delete client quotas for multiple entities and values in a single request."
       responses: {
         key: "200"
         value: {

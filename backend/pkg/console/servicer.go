@@ -30,8 +30,7 @@ type Servicer interface {
 	DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error)
 	DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	DeleteTopicRecords(ctx context.Context, deleteReq kmsg.DeleteRecordsRequestTopic) (DeleteTopicRecordsResponse, *rest.Error)
-	DescribeQuotas(ctx context.Context, request kmsg.DescribeClientQuotasRequest) QuotaResponse
-	AlterQuotas(ctx context.Context, request kmsg.AlterClientQuotasRequest) error
+	DescribeQuotas(ctx context.Context) QuotaResponse
 	EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, *rest.Error)
 	EditTopicConfig(ctx context.Context, topicName string, configs []kmsg.IncrementalAlterConfigsRequestResourceConfig) error
 	GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error)
@@ -82,6 +81,10 @@ type Servicer interface {
 	AddPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error)
 	// Sets partition counts to existing topics.
 	SetPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error)
+	// DescribeClientQuotas proxies the request/response for describing client quotas via the Kafka API.
+	DescribeClientQuotas(ctx context.Context, req *kmsg.DescribeClientQuotasRequest) (*kmsg.DescribeClientQuotasResponse, error)
+	// AlterClientQuotas proxies the request/response for altering client quotas via the Kafka API.
+	AlterClientQuotas(ctx context.Context, req *kmsg.AlterClientQuotasRequest) (*kmsg.AlterClientQuotasResponse, error)
 }
 
 // SchemaRegistryServicer is the interface for schema registry servicer

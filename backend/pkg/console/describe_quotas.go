@@ -38,7 +38,7 @@ type QuotaResponseSetting struct {
 }
 
 // DescribeQuotas fetches the configured quota settings in the target cluster.
-func (s *Service) DescribeQuotas(ctx context.Context, request kmsg.DescribeClientQuotasRequest) QuotaResponse {
+func (s *Service) DescribeQuotas(ctx context.Context) QuotaResponse {
 	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
 	if err != nil {
 		return QuotaResponse{
@@ -47,7 +47,8 @@ func (s *Service) DescribeQuotas(ctx context.Context, request kmsg.DescribeClien
 	}
 
 	items := make([]QuotaResponseItem, 0)
-	quotas, err := request.RequestWith(ctx, cl)
+	req := kmsg.NewDescribeClientQuotasRequest()
+	quotas, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return QuotaResponse{
 			Error: fmt.Errorf("kafka request has failed: %w", err).Error(),
@@ -91,4 +92,14 @@ func (s *Service) DescribeQuotas(ctx context.Context, request kmsg.DescribeClien
 		Error: "",
 		Items: items,
 	}
+}
+
+// DescribeClientQuotas proxies the request/response for describing client quotas via the Kafka API.
+func (s *Service) DescribeClientQuotas(ctx context.Context, req *kmsg.DescribeClientQuotasRequest) (*kmsg.DescribeClientQuotasResponse, error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.RequestWith(ctx, cl)
 }

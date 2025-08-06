@@ -14,13 +14,14 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 
-	"github.com/redpanda-data/console/backend/pkg/console"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
 const (
 	clientIDEntityType       = "client-id"
 	clientIDPrefixEntityType = "client-id-prefix"
+	userEntityType           = "user"
+	ipEntityType             = "ip"
 
 	producerByteRateKey = "producer_byte_rate"
 	consumerByteRateKey = "consumer_byte_rate"
@@ -41,6 +42,10 @@ func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*k
 		entityType = clientIDEntityType
 	case v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX:
 		entityType = clientIDPrefixEntityType
+	case v1.Quota_ENTITY_TYPE_USER:
+		entityType = userEntityType
+	case v1.Quota_ENTITY_TYPE_IP:
+		entityType = ipEntityType
 	default:
 		return nil, fmt.Errorf("invalid entity type: %v", req.GetEntityType())
 	}
@@ -72,51 +77,89 @@ func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*k
 }
 
 // quotaItemsToProto maps console quota items to protobuf response.
-func (kafkaClientMapper) quotaItemsToProto(items []console.QuotaResponseItem) ([]*v1.ListQuotasResponse_QuotaEntry, error) {
+func (k kafkaClientMapper) quotaItemsToProto(entries []kmsg.DescribeClientQuotasResponseEntry) ([]*v1.ListQuotasResponse_QuotaEntry, error) {
 	var quotaEntries []*v1.ListQuotasResponse_QuotaEntry
 
-	for _, item := range items {
-		// Map entity type from string to protobuf enum
-		var entityType v1.Quota_EntityType
-		switch item.EntityType {
-		case clientIDEntityType:
-			entityType = v1.Quota_ENTITY_TYPE_CLIENT_ID
-		case clientIDPrefixEntityType:
-			entityType = v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX
-		default:
-			return nil, fmt.Errorf("invalid entity type: %s", item.EntityType)
+	for _, entry := range entries {
+		values, err := k.mapQuotaValues(entry.Values)
+		if err != nil {
+			return nil, err
 		}
 
-		// Convert settings to quota values
-		var values []*v1.Quota_Value
-		for _, setting := range item.Settings {
-			var valueType v1.Quota_ValueType
-			switch setting.Key {
-			case producerByteRateKey:
-				valueType = v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE
-			case consumerByteRateKey:
-				valueType = v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE
-			default:
-				return nil, fmt.Errorf("invalid value type: %s", setting.Key)
+		for _, entity := range entry.Entity {
+			quotaEntry, err := k.mapQuotaEntry(entity, values)
+			if err != nil {
+				return nil, err
 			}
-
-			values = append(values, &v1.Quota_Value{
-				ValueType: valueType,
-				Value:     int64(setting.Value),
-			})
+			quotaEntries = append(quotaEntries, quotaEntry)
 		}
-
-		// Create quota entry for this item
-		quotaEntries = append(quotaEntries, &v1.ListQuotasResponse_QuotaEntry{
-			Entity: &v1.Quota_Entity{
-				EntityType: entityType,
-				EntityName: item.EntityName,
-			},
-			Values: values,
-		})
 	}
 
 	return quotaEntries, nil
+}
+
+// mapQuotaValues converts Kafka quota values to protobuf values.
+func (kafkaClientMapper) mapQuotaValues(values []kmsg.DescribeClientQuotasResponseEntryValue) ([]*v1.Quota_Value, error) {
+	var protoValues []*v1.Quota_Value
+
+	for _, value := range values {
+		valueType, err := kafkaClientMapper{}.mapKeyToValueType(value.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		protoValues = append(protoValues, &v1.Quota_Value{
+			ValueType: valueType,
+			Value:     int64(value.Value),
+		})
+	}
+
+	return protoValues, nil
+}
+
+// mapQuotaEntry creates a protobuf quota entry from Kafka entity and values.
+func (k kafkaClientMapper) mapQuotaEntry(entity kmsg.DescribeClientQuotasResponseEntryEntity, values []*v1.Quota_Value) (*v1.ListQuotasResponse_QuotaEntry, error) {
+	entityType, err := k.mapKafkaEntityType(entity.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	entityName := "<default>"
+	if entity.Name != nil {
+		entityName = *entity.Name
+	}
+
+	return &v1.ListQuotasResponse_QuotaEntry{
+		Entity: &v1.Quota_Entity{
+			EntityType: entityType,
+			EntityName: entityName,
+		},
+		Values: values,
+	}, nil
+}
+
+// mapKeyToValueType converts Kafka quota key to protobuf value type.
+func (kafkaClientMapper) mapKeyToValueType(key string) (v1.Quota_ValueType, error) {
+	switch key {
+	case producerByteRateKey:
+		return v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE, nil
+	case consumerByteRateKey:
+		return v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE, nil
+	default:
+		return 0, fmt.Errorf("invalid value type: %s", key)
+	}
+}
+
+// mapKafkaEntityType converts Kafka entity type to protobuf entity type.
+func (kafkaClientMapper) mapKafkaEntityType(entityType string) (v1.Quota_EntityType, error) {
+	switch entityType {
+	case clientIDEntityType:
+		return v1.Quota_ENTITY_TYPE_CLIENT_ID, nil
+	case clientIDPrefixEntityType:
+		return v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX, nil
+	default:
+		return 0, fmt.Errorf("invalid entity type: %s", entityType)
+	}
 }
 
 func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestEntity, operations []kmsg.AlterClientQuotasRequestEntryOp) (*kmsg.AlterClientQuotasRequest, error) {

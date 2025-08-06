@@ -13,12 +13,11 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 func (api *API) handleGetQuotas() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		quotas := api.ConsoleSvc.DescribeQuotas(r.Context(), kmsg.NewDescribeClientQuotasRequest())
+		quotas := api.ConsoleSvc.DescribeQuotas(r.Context())
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, quotas)
 	}

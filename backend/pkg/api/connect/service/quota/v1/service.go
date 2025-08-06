@@ -16,6 +16,7 @@ import (
 	"log/slog"
 
 	"connectrpc.com/connect"
+	"github.com/twmb/franz-go/pkg/kerr"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -54,15 +55,18 @@ func (s *Service) ListQuotas(ctx context.Context, req *connect.Request[v1.ListQu
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	resp := s.consoleSvc.DescribeQuotas(ctx, *kafkaReq)
+	resp, err := s.consoleSvc.DescribeClientQuotas(ctx, kafkaReq)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to describe quotas: %w", err))
+	}
 
 	// Handle errors from the console service
-	if resp.Error != "" {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to describe quotas: %s", resp.Error))
+	if err = kerr.ErrorForCode(resp.ErrorCode); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to describe quotas: %s", err))
 	}
 
 	// Map console response to protobuf response
-	quotaEntries, err := s.kafkaClientMapper.quotaItemsToProto(resp.Items)
+	quotaEntries, err := s.kafkaClientMapper.quotaItemsToProto(resp.Entries)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to map quota items to proto: %w", err))
 	}
@@ -81,7 +85,7 @@ func (s *Service) CreateQuota(ctx context.Context, req *connect.Request[v1.Creat
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	err = s.consoleSvc.AlterQuotas(ctx, *kafkaReq)
+	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create quota: %w", err))
 	}
@@ -98,7 +102,7 @@ func (s *Service) DeleteQuota(ctx context.Context, req *connect.Request[v1.Delet
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	err = s.consoleSvc.AlterQuotas(ctx, *kafkaReq)
+	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete quota: %w", err))
 	}

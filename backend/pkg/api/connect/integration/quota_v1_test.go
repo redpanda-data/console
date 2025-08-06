@@ -81,12 +81,12 @@ func (s *APISuite) TestCreateQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		createReq := &v1.CreateQuotaRequest{
@@ -144,12 +144,12 @@ func (s *APISuite) TestCreateQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		createReq := &v1.CreateQuotaRequest{
@@ -197,12 +197,12 @@ func (s *APISuite) TestCreateQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		createReq := &v1.CreateQuotaRequest{
@@ -306,12 +306,12 @@ func (s *APISuite) TestCreateQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		type createQuotaRequest struct {
 			Entities []struct {
@@ -373,12 +373,12 @@ func (s *APISuite) TestListQuotas_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		createReq := kmsg.NewAlterClientQuotasRequest()
 		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
@@ -445,12 +445,12 @@ func (s *APISuite) TestListQuotas_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		createReq := kmsg.NewAlterClientQuotasRequest()
 		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
@@ -506,12 +506,12 @@ func (s *APISuite) TestListQuotas_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		createReq := kmsg.NewAlterClientQuotasRequest()
 		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
@@ -571,12 +571,12 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		createReq := kmsg.NewAlterClientQuotasRequest()
 		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
@@ -635,12 +635,12 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		createReq := kmsg.NewAlterClientQuotasRequest()
 		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
@@ -712,12 +712,12 @@ func (s *APISuite) TestDeleteQuota_v1() {
 		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 		defer cancel()
 
-		defer func() {
+		t.Cleanup(func() {
 			ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 			defer cancel()
 			err := s.cleanupQuotas(ctx)
 			assert.NoError(err, "failed to delete all quotas")
-		}()
+		})
 
 		createReq := kmsg.NewAlterClientQuotasRequest()
 		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
