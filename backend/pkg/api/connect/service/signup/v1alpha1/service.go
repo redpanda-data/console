@@ -15,13 +15,13 @@ package signup
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go/redpanda/api/gatekeeper/v1alpha1/gatekeeperv1alpha1connect"
 	gatekeeperv1alpha1 "buf.build/gen/go/redpandadata/gatekeeper/protocolbuffers/go/redpanda/api/gatekeeper/v1alpha1"
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
@@ -35,14 +35,14 @@ var _ consolev1alpha1connect.SignupServiceHandler = (*Service)(nil)
 // Service that implements the SignupServiceHandler interface. This includes all
 // RPCs to manage license signups.
 type Service struct {
-	logger                 *zap.Logger
+	logger                 *slog.Logger
 	gatekeeperClient       gatekeeperv1alpha1connect.EnterpriseServiceClient
 	redpandaClientProvider redpandafactory.ClientFactory
 }
 
 // NewService creates a new instance of Service, initializing it with the
 // provided logger and gatekeeper client.
-func NewService(logger *zap.Logger, gatekeeperClient gatekeeperv1alpha1connect.EnterpriseServiceClient, rpClientFactory redpandafactory.ClientFactory) (*Service, error) {
+func NewService(logger *slog.Logger, gatekeeperClient gatekeeperv1alpha1connect.EnterpriseServiceClient, rpClientFactory redpandafactory.ClientFactory) (*Service, error) {
 	return &Service{
 		logger:                 logger,
 		gatekeeperClient:       gatekeeperClient,
@@ -53,7 +53,7 @@ func NewService(logger *zap.Logger, gatekeeperClient gatekeeperv1alpha1connect.E
 // LicenseSignup processes a license signup request by forwarding it to the gatekeeper service.
 // This endpoint forwards the signup request to the external gatekeeper service and returns the response.
 func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha1.LicenseSignupRequest]) (*connect.Response[v1alpha1.LicenseSignupResponse], error) {
-	s.logger.Info("forwarding license signup request to gatekeeper")
+	s.logger.InfoContext(ctx, "forwarding license signup request to gatekeeper")
 
 	adminCl, err := s.redpandaClientProvider.GetRedpandaAPIClient(ctx)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha
 	// Forward to gatekeeper service
 	gatekeeperResp, err := s.gatekeeperClient.LicenseSignup(ctx, connect.NewRequest(gatekeeperReq))
 	if err != nil {
-		s.logger.Error("failed to forward signup request to gatekeeper", zap.Error(err))
+		s.logger.ErrorContext(ctx, "failed to forward signup request to gatekeeper", slog.Any("error", err))
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func (s Service) LicenseSignup(ctx context.Context, req *connect.Request[v1alpha
 		},
 	}
 
-	s.logger.Info("license signup completed successfully via gatekeeper")
+	s.logger.InfoContext(ctx, "license signup completed successfully via gatekeeper")
 
 	return connect.NewResponse(consoleResp), nil
 }

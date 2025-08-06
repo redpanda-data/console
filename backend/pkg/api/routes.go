@@ -150,9 +150,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		http.DefaultClient,
 		"https://api.ign.cloud.redpanda.com",
 	)
-	signupSvc, err := signupsvcv1alpha1.NewService(api.Logger.Named("signup_service"), gatekeeperClient, api.RedpandaClientProvider)
+	signupSvc, err := signupsvcv1alpha1.NewService(loggerpkg.Named(api.Logger, "signup_service"), gatekeeperClient, api.RedpandaClientProvider)
 	if err != nil {
-		api.Logger.Fatal("failed to create signup service", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to create signup service", slog.Any("error", err))
 	}
 	clusterStatusSvc := clusterstatus.NewService(
 		api.Cfg,
