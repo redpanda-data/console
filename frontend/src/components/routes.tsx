@@ -22,7 +22,6 @@ import {
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
-import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
@@ -44,10 +43,6 @@ import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
 import AdminPageDebugBundleProgress from './pages/admin/Admin.DebugBundleProgress';
 import LicenseExpiredPage from './pages/admin/LicenseExpiredPage';
 import UploadLicensePage from './pages/admin/UploadLicensePage';
-import { AgentListPage, getAgentSidebarItemTitle } from './pages/agents/agent-list-page';
-import { CreateAgentPage } from './pages/agents/create/create-agent-page';
-import { CreateAgentHTTP } from './pages/agents/create/templates/http/create-agent-http';
-import { AgentDetailsPage } from './pages/agents/details/agent-details-page';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import CreateConnector from './pages/connect/CreateConnector';
@@ -113,11 +108,8 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
-      // Handle AI Agents and Knowledge Base routes with beta badge
-      const title =
-        entry.path === '/agents' || entry.path === '/knowledgebases'
-          ? getAgentSidebarItemTitle({ route: entry })
-          : entry.title;
+      // Handle Knowledge Base routes with beta badge
+      const title = entry.title;
 
       return {
         title: title as string | JSX.Element,
@@ -227,20 +219,15 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
  * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.
  */
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
-  const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
   const isKnowledgeBaseFeatureEnabled = isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi');
   const location = useLocation();
 
   useEffect(() => {
-    if (!isAgentFeatureEnabled && path.includes('/agents') && location.pathname !== '/overview') {
-      appGlobal.historyPush('/overview');
-      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
-    }
     if (!isKnowledgeBaseFeatureEnabled && path.includes('/knowledgebases') && location.pathname !== '/overview') {
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-  }, [isAgentFeatureEnabled, isKnowledgeBaseFeatureEnabled, path, location.pathname]);
+  }, [isKnowledgeBaseFeatureEnabled, path, location.pathname]);
 
   return children;
 };
@@ -375,23 +362,6 @@ export const APP_ROUTES: IRouteEntry[] = [
     routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
 
-  MakeRoute<{}>(
-    '/agents',
-    AgentListPage,
-    'AI Agents',
-    HiOutlinePuzzlePiece,
-    true,
-    routeVisibility(
-      // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
-      () => isEmbedded() && isFeatureFlagEnabled('enableAiAgentsInConsoleUi'), // Needed to pass flags to current routing solution
-      [Feature.PipelineService],
-      [],
-      [],
-    ),
-  ),
-  MakeRoute<{}>('/agents/create', CreateAgentPage, 'AI Agents', undefined, true, undefined),
-  MakeRoute<{}>('/agents/create/http', CreateAgentHTTP, 'AI Agents', undefined, true, undefined),
-  MakeRoute<{ agentId: string }>('/agents/:agentId', AgentDetailsPage, 'AI Agents', undefined, true, undefined),
 
   MakeRoute<{}>(
     '/knowledgebases',

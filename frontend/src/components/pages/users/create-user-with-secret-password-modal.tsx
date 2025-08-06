@@ -22,8 +22,12 @@ import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/se
 import { getSASLMechanism, useCreateUserMutation, useLegacyListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
-import { passwordSchema, usernameSchema } from '../agents/create/templates/http/create-agent-http-schema';
-import { SASL_MECHANISM_OPTIONS } from '../agents/create/templates/http/redpanda-user-and-permissions-form';
+// Schemas previously defined in agent components
+const usernameSchema = z.string().min(1, 'Username is required');
+const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
+
+// SASL mechanism options previously defined in agent components
+const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 import { CreateUserConfirmationModal } from './create-user-confirmation-modal';
 
 export const createUserWithSecretPasswordSchema = z.object({
