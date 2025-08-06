@@ -1,5 +1,6 @@
 import { Button, Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
+import { useState } from 'react';
 import {
   type License,
   License_Source,
@@ -9,6 +10,7 @@ import {
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
 import { prettyMilliseconds } from '../../utils/utils';
+import { RegisterModal } from './RegisterModal';
 
 enum Platform {
   PLATFORM_REDPANDA = 1,
@@ -23,6 +25,17 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
   [License_Type.TRIAL]: 2,
   [License_Type.ENTERPRISE]: 3,
 };
+
+
+/**
+ * Checks if a license is a built-in trial license by examining its organization field.
+ * 
+ * @param {License} license - The license object to check
+ * @returns {boolean} Returns `true` if the license is a built-in trial (organization is 'Redpanda Built-In Evaluation Period'), 
+ * otherwise `false`
+ */
+
+export const isBakedInTrial = (license: License): boolean => license.organization === 'Redpanda Built-In Evaluation Period';
 
 /**
  * Checks if a list of enterprise features includes enabled features for authentication,
@@ -354,12 +367,15 @@ export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/
 export const ENTERPRISE_FEATURES_DOCS_LINK =
   'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
 
+export const SERVERLESS_LINK = 'https://www.redpanda.com/product/serverless'
+
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
     <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
       Upload license
     </Button>
   ) : null;
+
 export const UpgradeButton = () => (
   <Button
     variant="outline"
@@ -374,3 +390,18 @@ export const UpgradeButton = () => (
     Upgrade
   </Button>
 );
+
+
+
+export const RegisterButton = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
+        Register
+      </Button>
+      <RegisterModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
+  );
+};

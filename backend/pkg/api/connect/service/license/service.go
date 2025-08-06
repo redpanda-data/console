@@ -70,6 +70,8 @@ func (s Service) ListLicenses(ctx context.Context, _ *connect.Request[v1alpha1.L
 	}
 
 	coreLicense, err := adminCl.GetLicenseInfo(ctx)
+	s.logger.InfoContext(ctx, "core license info", slog.Any("license", coreLicense))
+
 	if err != nil {
 		var httpErr *rpadmin.HTTPResponseError
 		if errors.As(err, &httpErr) {
