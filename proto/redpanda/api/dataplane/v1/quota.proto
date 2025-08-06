@@ -43,10 +43,11 @@ message Quota {
 
 message ListQuotasRequest {
   message Filter {
-    // The type of entity to filter by. If not specified, all entities will be returned.
+    // The type of entity to filter by. If  unspecified, all entities will be returned.
     Quota.EntityType entity_type = 1;
 
     // Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
+    // Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
     string entity_name = 2;
   }
 
@@ -130,10 +131,10 @@ message SetQuotaRequest {
 message SetQuotaResponse {}
 
 message BatchDeleteQuotaRequest {
-  repeated RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
+  repeated RequestQuotaEntity entities = 1 [(buf.validate.field).required = true];
 
   // Value that should be deleted for the specified entity
-  repeated Quota.ValueType value_type = 2 [
+  repeated Quota.ValueType value_types = 2 [
     (buf.validate.field).repeated.items.enum = {
       defined_only: true
       not_in: [0] /* Disallow VALUE_TYPE_UNSPECIFIED */

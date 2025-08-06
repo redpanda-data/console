@@ -52,10 +52,7 @@ func NewService(cfg *config.Config,
 
 // ListQuotas lists client quotas based on filter criteria.
 func (s *Service) ListQuotas(ctx context.Context, req *connect.Request[v1.ListQuotasRequest]) (*connect.Response[v1.ListQuotasResponse], error) {
-	kafkaReq, err := s.kafkaClientMapper.listQuotasRequestToKafka(req.Msg)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
+	kafkaReq := s.kafkaClientMapper.listQuotasRequestToKafka(req.Msg)
 
 	resp, err := s.consoleSvc.DescribeClientQuotas(ctx, kafkaReq)
 	if err != nil {

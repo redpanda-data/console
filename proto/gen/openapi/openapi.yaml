@@ -86,11 +86,11 @@ components:
       type: object
     BatchDeleteQuotaRequest:
       properties:
-        entity:
+        entities:
           items:
             $ref: '#/components/schemas/RequestQuotaEntity'
           type: array
-        value_type:
+        value_types:
           items:
             $ref: '#/components/schemas/ValueType'
           title: Value that should be deleted for the specified entity
@@ -1054,7 +1054,9 @@ components:
     ListQuotasRequest.Filter:
       properties:
         entity_name:
-          description: 'Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.'
+          description: |-
+            Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
+            Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
           type: string
         entity_type:
           $ref: '#/components/schemas/EntityType'
@@ -3967,7 +3969,7 @@ paths:
       operationId: QuotaService_ListQuotas
       parameters:
         - description: |-
-            The type of entity to filter by. If not specified, all entities will be returned.
+            The type of entity to filter by. If  unspecified, all entities will be returned.
 
              - ENTITY_TYPE_USER: Not supported in Redpanda
              - ENTITY_TYPE_IP: Not supported in Redpanda
@@ -3980,7 +3982,9 @@ paths:
               - ENTITY_TYPE_USER
               - ENTITY_TYPE_IP
             type: string
-        - description: 'Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.'
+        - description: |-
+            Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
+            Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
           in: query
           name: filter.entity_name
           schema:
@@ -6110,7 +6114,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

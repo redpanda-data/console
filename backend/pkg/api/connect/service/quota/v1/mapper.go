@@ -23,20 +23,21 @@ const (
 	userEntityType           = "user"
 	ipEntityType             = "ip"
 
-	producerByteRateKey = "producer_byte_rate"
-	consumerByteRateKey = "consumer_byte_rate"
+	producerByteRateKey       = "producer_byte_rate"
+	consumerByteRateKey       = "consumer_byte_rate"
+	controllerMutationRateKey = "controller_mutation_rate"
+	requestPercentageKey      = "request_percentage"
 
 	defaultEntityValue = "<default>"
 )
 
 type kafkaClientMapper struct{}
 
-func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*kmsg.DescribeClientQuotasRequest, error) {
+func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) *kmsg.DescribeClientQuotasRequest {
 	var (
-		entityType    string
-		matchType     kmsg.QuotasMatchType
-		defaultEntity = defaultEntityValue
-		match         = &defaultEntity
+		entityType string
+		matchType  kmsg.QuotasMatchType
+		match      *string
 	)
 
 	// Match entity type and filter type from the request
@@ -45,7 +46,6 @@ func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*k
 		entityType = clientIDEntityType
 	case v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX:
 		entityType = clientIDPrefixEntityType
-		match = nil // Client ID Prefix does not support matching on default entity name
 	case v1.Quota_ENTITY_TYPE_USER:
 		entityType = userEntityType
 
@@ -53,11 +53,17 @@ func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*k
 		entityType = ipEntityType
 
 	default:
-		return nil, fmt.Errorf("invalid entity type: %v", req.Filter.GetEntityType())
+		return &kmsg.DescribeClientQuotasRequest{}
 	}
 
-	if req.Filter.GetEntityName() != "" {
+	switch req.Filter.GetEntityName() {
+	case defaultEntityValue:
+		matchType = kmsg.QuotasMatchTypeDefault
+	case "":
+		matchType = kmsg.QuotasMatchTypeAny
+	default:
 		match = &req.Filter.EntityName
+		matchType = kmsg.QuotasMatchTypeExact
 	}
 
 	return &kmsg.DescribeClientQuotasRequest{
@@ -68,7 +74,7 @@ func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) (*k
 				Match:      match,
 			},
 		},
-	}, nil
+	}
 }
 
 // quotaItemsToProto maps console quota items to protobuf response.
@@ -94,11 +100,11 @@ func (k kafkaClientMapper) quotaItemsToProto(entries []kmsg.DescribeClientQuotas
 }
 
 // mapQuotaValues converts Kafka quota values to protobuf values.
-func (kafkaClientMapper) mapQuotaValues(values []kmsg.DescribeClientQuotasResponseEntryValue) ([]*v1.Quota_Value, error) {
+func (k kafkaClientMapper) mapQuotaValues(values []kmsg.DescribeClientQuotasResponseEntryValue) ([]*v1.Quota_Value, error) {
 	var protoValues []*v1.Quota_Value
 
 	for _, value := range values {
-		valueType, err := kafkaClientMapper{}.mapKeyToValueType(value.Key)
+		valueType, err := k.mapKeyToValueType(value.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -140,6 +146,10 @@ func (kafkaClientMapper) mapKeyToValueType(key string) (v1.Quota_ValueType, erro
 		return v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE, nil
 	case consumerByteRateKey:
 		return v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE, nil
+	case controllerMutationRateKey:
+		return v1.Quota_VALUE_TYPE_CONTROLLER_MUTATION_RATE, nil
+	case requestPercentageKey:
+		return v1.Quota_VALUE_TYPE_REQUEST_PERCENTAGE, nil
 	default:
 		return 0, fmt.Errorf("invalid value type: %s", key)
 	}
@@ -152,6 +162,10 @@ func (kafkaClientMapper) mapKafkaEntityType(entityType string) (v1.Quota_EntityT
 		return v1.Quota_ENTITY_TYPE_CLIENT_ID, nil
 	case clientIDPrefixEntityType:
 		return v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX, nil
+	case userEntityType:
+		return v1.Quota_ENTITY_TYPE_USER, nil
+	case ipEntityType:
+		return v1.Quota_ENTITY_TYPE_IP, nil
 	default:
 		return 0, fmt.Errorf("invalid entity type: %s", entityType)
 	}
@@ -172,7 +186,7 @@ func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestQuotaE
 			Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
 				{
 					Type: entityType,
-					Name: &entityName,
+					Name: entityName,
 				},
 			},
 			Ops: operations,
@@ -238,7 +252,7 @@ func (k kafkaClientMapper) setQuotaRequestToKafka(req *v1.SetQuotaRequest) (*kms
 func (k kafkaClientMapper) batchDeleteQuotaRequestToKafka(req *v1.BatchDeleteQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
 	var operations []kmsg.AlterClientQuotasRequestEntryOp
 
-	for _, valueType := range req.ValueType {
+	for _, valueType := range req.ValueTypes {
 		key, err := k.mapValueTypeToKey(valueType)
 		if err != nil {
 			return nil, err
@@ -250,7 +264,7 @@ func (k kafkaClientMapper) batchDeleteQuotaRequestToKafka(req *v1.BatchDeleteQuo
 		})
 	}
 
-	return k.alterQuotaRequestToKafka(req.Entity, operations)
+	return k.alterQuotaRequestToKafka(req.Entities, operations)
 }
 
 func (kafkaClientMapper) mapEntityType(entityType v1.Quota_EntityType) (string, error) {
@@ -259,17 +273,21 @@ func (kafkaClientMapper) mapEntityType(entityType v1.Quota_EntityType) (string, 
 		return clientIDEntityType, nil
 	case v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX:
 		return clientIDPrefixEntityType, nil
+	case v1.Quota_ENTITY_TYPE_USER:
+		return userEntityType, nil
+	case v1.Quota_ENTITY_TYPE_IP:
+		return ipEntityType, nil
 	default:
 		return "", fmt.Errorf("invalid entity type: %v", entityType)
 	}
 }
 
 // mapEntityName sets default entity name if not provided.
-func (kafkaClientMapper) mapEntityName(entity *v1.RequestQuotaEntity) string {
-	if entity.EntityName == "" {
-		return defaultEntityValue
+func (kafkaClientMapper) mapEntityName(entity *v1.RequestQuotaEntity) *string {
+	if entity.EntityName == "" || entity.EntityName == defaultEntityValue {
+		return nil
 	}
-	return entity.EntityName
+	return &entity.EntityName
 }
 
 // mapValueTypeToKey converts protobuf value type to Kafka quota key.
@@ -279,6 +297,11 @@ func (kafkaClientMapper) mapValueTypeToKey(valueType v1.Quota_ValueType) (string
 		return producerByteRateKey, nil
 	case v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE:
 		return consumerByteRateKey, nil
+	case v1.Quota_VALUE_TYPE_CONTROLLER_MUTATION_RATE:
+		return controllerMutationRateKey, nil
+	case v1.Quota_VALUE_TYPE_REQUEST_PERCENTAGE:
+		return requestPercentageKey, nil
+
 	default:
 		return "", fmt.Errorf("invalid value type: %v", valueType)
 	}
