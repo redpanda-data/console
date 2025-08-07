@@ -48,7 +48,11 @@ message ListQuotasRequest {
 
     // Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
     // Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
-    string entity_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by entity name. If unspecified will return all entities for specified entity type."}];
+    string entity_name = 2 [
+      (buf.validate.field).string.max_len = 249,
+      (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$",
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by entity name. If unspecified will return all entities for specified entity type."}
+    ];
 
     bool match_default = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If true, the entity_name will match the default entity (e.g., default client-id)."}];
   }
