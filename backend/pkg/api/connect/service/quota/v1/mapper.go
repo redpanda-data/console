@@ -56,10 +56,10 @@ func (kafkaClientMapper) listQuotasRequestToKafka(req *v1.ListQuotasRequest) *km
 		return &kmsg.DescribeClientQuotasRequest{}
 	}
 
-	switch req.Filter.GetEntityName() {
-	case defaultEntityValue:
+	switch {
+	case req.Filter.MatchDefault:
 		matchType = kmsg.QuotasMatchTypeDefault
-	case "":
+	case req.Filter.GetEntityName() == "":
 		matchType = kmsg.QuotasMatchTypeAny
 	default:
 		match = &req.Filter.EntityName
@@ -111,7 +111,7 @@ func (k kafkaClientMapper) mapQuotaValues(values []kmsg.DescribeClientQuotasResp
 
 		protoValues = append(protoValues, &v1.Quota_Value{
 			ValueType: valueType,
-			Value:     int64(value.Value),
+			Value:     value.Value,
 		})
 	}
 
@@ -199,19 +199,19 @@ func (k kafkaClientMapper) alterQuotaRequestToKafka(entities []*v1.RequestQuotaE
 }
 
 func (k kafkaClientMapper) batchSetQuotaRequestToKafka(req *v1.BatchSetQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
-	operations := make([]kmsg.AlterClientQuotasRequestEntryOp, len(req.Values))
-	for i, value := range req.Values {
-		key, err := k.mapValueTypeToKey(value.ValueType)
+	var entries []kmsg.AlterClientQuotasRequestEntry
+
+	for _, setting := range req.Settings {
+		entry, err := k.createKafkaEntryWithValues(setting.Entity, setting.Values, false)
 		if err != nil {
 			return nil, err
 		}
-		operations[i] = kmsg.AlterClientQuotasRequestEntryOp{
-			Key:    key,
-			Value:  float64(value.Value),
-			Remove: false,
-		}
+		entries = append(entries, entry)
 	}
-	return k.alterQuotaRequestToKafka(req.Entities, operations)
+
+	return &kmsg.AlterClientQuotasRequest{
+		Entries: entries,
+	}, nil
 }
 
 func (k kafkaClientMapper) deleteQuotaRequestToKafka(req *v1.DeleteQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
@@ -250,21 +250,28 @@ func (k kafkaClientMapper) setQuotaRequestToKafka(req *v1.SetQuotaRequest) (*kms
 }
 
 func (k kafkaClientMapper) batchDeleteQuotaRequestToKafka(req *v1.BatchDeleteQuotaRequest) (*kmsg.AlterClientQuotasRequest, error) {
-	var operations []kmsg.AlterClientQuotasRequestEntryOp
+	var entries []kmsg.AlterClientQuotasRequestEntry
 
-	for _, valueType := range req.ValueTypes {
-		key, err := k.mapValueTypeToKey(valueType)
+	for _, deletion := range req.Deletions {
+		// Map deletion values to QuotaValue with 0 value. This keeps the API consistent with the single deletion case.
+		// Also keeps the api clear for deletion of specific value types.
+		values := make([]*v1.RequestQuotaValue, len(deletion.ValueTypes))
+		for i, valueType := range deletion.ValueTypes {
+			values[i] = &v1.RequestQuotaValue{
+				ValueType: valueType,
+			}
+		}
+
+		entry, err := k.createKafkaEntryWithValues(deletion.Entity, values, true)
 		if err != nil {
 			return nil, err
 		}
-
-		operations = append(operations, kmsg.AlterClientQuotasRequestEntryOp{
-			Key:    key,
-			Remove: true,
-		})
+		entries = append(entries, entry)
 	}
 
-	return k.alterQuotaRequestToKafka(req.Entities, operations)
+	return &kmsg.AlterClientQuotasRequest{
+		Entries: entries,
+	}, nil
 }
 
 func (kafkaClientMapper) mapEntityType(entityType v1.Quota_EntityType) (string, error) {
@@ -305,4 +312,108 @@ func (kafkaClientMapper) mapValueTypeToKey(valueType v1.Quota_ValueType) (string
 	default:
 		return "", fmt.Errorf("invalid value type: %v", valueType)
 	}
+}
+
+// mapKafkaEntityFromAlterResponse converts entities from AlterClientQuotas response to proto format
+func (k kafkaClientMapper) mapKafkaEntityFromAlterResponse(entities []kmsg.AlterClientQuotasResponseEntryEntity) (v1.Quota_EntityType, string) {
+	// Take the first entity (typically there's only one per entry)
+	entity := entities[0]
+
+	entityType, err := k.mapKafkaEntityType(entity.Type)
+	if err != nil {
+		entityType = v1.Quota_ENTITY_TYPE_UNSPECIFIED
+	}
+
+	entityName := ""
+	if entity.Name != nil {
+		entityName = *entity.Name
+	}
+
+	return entityType, entityName
+}
+
+// mapAlterClientQuotasResponse converts AlterClientQuotas response entries to successful and failed entities
+func (k kafkaClientMapper) mapAlterClientQuotasResponse(entries []kmsg.AlterClientQuotasResponseEntry) ([]*v1.QuotaOperationResult_SuccessfulEntity, []*v1.QuotaOperationResult_FailedEntity) {
+	var successfulEntities []*v1.QuotaOperationResult_SuccessfulEntity
+	var failedEntities []*v1.QuotaOperationResult_FailedEntity
+
+	for _, entry := range entries {
+		// Skip entries with no entity information
+		if len(entry.Entity) == 0 {
+			continue
+		}
+
+		entityType, entityName := k.mapKafkaEntityFromAlterResponse(entry.Entity)
+
+		if entry.ErrorCode == 0 {
+			successfulEntities = append(successfulEntities, &v1.QuotaOperationResult_SuccessfulEntity{
+				EntityType: entityType,
+				EntityName: entityName,
+			})
+			continue
+		}
+
+		errorMessage := ""
+		if entry.ErrorMessage != nil {
+			errorMessage = *entry.ErrorMessage
+		}
+		failedEntities = append(failedEntities, &v1.QuotaOperationResult_FailedEntity{
+			EntityType:   entityType,
+			EntityName:   entityName,
+			ErrorCode:    int32(entry.ErrorCode),
+			ErrorMessage: errorMessage,
+		})
+	}
+
+	return successfulEntities, failedEntities
+}
+
+// createOperation creates a quota operation with the given parameters
+func (k kafkaClientMapper) createOperation(valueType v1.Quota_ValueType, value float64, remove bool) (kmsg.AlterClientQuotasRequestEntryOp, error) {
+	key, err := k.mapValueTypeToKey(valueType)
+	if err != nil {
+		return kmsg.AlterClientQuotasRequestEntryOp{}, err
+	}
+
+	return kmsg.AlterClientQuotasRequestEntryOp{
+		Key:    key,
+		Value:  value,
+		Remove: remove,
+	}, nil
+}
+
+// createKafkaEntry creates a Kafka entry for a given entity and operations
+func (k kafkaClientMapper) createKafkaEntry(entity *v1.RequestQuotaEntity, operations []kmsg.AlterClientQuotasRequestEntryOp) (kmsg.AlterClientQuotasRequestEntry, error) {
+	entityType, err := k.mapEntityType(entity.EntityType)
+	if err != nil {
+		return kmsg.AlterClientQuotasRequestEntry{}, err
+	}
+
+	entityName := k.mapEntityName(entity)
+
+	return kmsg.AlterClientQuotasRequestEntry{
+		Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
+			{
+				Type: entityType,
+				Name: entityName,
+			},
+		},
+		Ops: operations,
+	}, nil
+}
+
+// createKafkaEntryWithValues creates a Kafka entry from an entity and either values or value types
+func (k kafkaClientMapper) createKafkaEntryWithValues(entity *v1.RequestQuotaEntity, values []*v1.RequestQuotaValue, remove bool) (kmsg.AlterClientQuotasRequestEntry, error) {
+	var operations []kmsg.AlterClientQuotasRequestEntryOp
+
+	for _, value := range values {
+		op, err := k.createOperation(value.ValueType, value.Value, remove)
+		if err != nil {
+			return kmsg.AlterClientQuotasRequestEntry{}, err
+		}
+		operations = append(operations, op)
+	}
+
+	// Create entry with the operations
+	return k.createKafkaEntry(entity, operations)
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/redpanda-data/common-go/api/pagination"
 	"github.com/twmb/franz-go/pkg/kerr"
 
+	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
@@ -61,7 +62,7 @@ func (s *Service) ListQuotas(ctx context.Context, req *connect.Request[v1.ListQu
 
 	// Handle errors from the console service
 	if err = kerr.ErrorForCode(resp.ErrorCode); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to describe quotas: %s", err))
+		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(resp.ErrorCode, resp.ErrorMessage)
 	}
 
 	// Map console response to protobuf response
@@ -83,9 +84,10 @@ func (s *Service) ListQuotas(ctx context.Context, req *connect.Request[v1.ListQu
 			return fmt.Sprintf("%d_%s", x.Entity.EntityType, x.Entity.EntityName)
 		})
 		if err != nil {
-			return nil, connect.NewError(
+			return nil, apierrors.NewConnectError(
 				connect.CodeInternal,
 				fmt.Errorf("failed to apply pagination: %w", err),
+				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
 			)
 		}
 		quotaEntries = page
@@ -107,12 +109,17 @@ func (s *Service) BatchSetQuota(ctx context.Context, req *connect.Request[v1.Bat
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
+	resp, err := s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create quota: %w", err))
 	}
 
-	response := &v1.BatchSetQuotaResponse{}
+	successfulEntities, failedEntities := s.kafkaClientMapper.mapAlterClientQuotasResponse(resp.Entries)
+
+	response := &v1.BatchSetQuotaResponse{
+		SuccessfulEntities: successfulEntities,
+		FailedEntities:     failedEntities,
+	}
 
 	return connect.NewResponse(response), nil
 }
@@ -124,14 +131,19 @@ func (s *Service) DeleteQuota(ctx context.Context, req *connect.Request[v1.Delet
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
+	resp, err := s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete quota: %w", err))
 	}
+	// For single delete quota requests, we expect a single entry in the response
+	// loop through the entries and return if any error occurs
+	for _, entry := range resp.Entries {
+		if err = kerr.ErrorForCode(entry.ErrorCode); err != nil {
+			return nil, apierrors.NewConnectErrorFromKafkaErrorCode(entry.ErrorCode, entry.ErrorMessage)
+		}
+	}
 
-	response := &v1.DeleteQuotaResponse{}
-
-	return connect.NewResponse(response), nil
+	return connect.NewResponse(&v1.DeleteQuotaResponse{}), nil
 }
 
 // SetQuota creates or updates client throughput quotas for a single entity.
@@ -141,9 +153,16 @@ func (s *Service) SetQuota(ctx context.Context, req *connect.Request[v1.SetQuota
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
+	resp, err := s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to set quota: %w", err))
+	}
+	// For single set quota requests, we expect a single entry in the response
+	// loop through the entries and return if any error occurs
+	for _, entry := range resp.Entries {
+		if err = kerr.ErrorForCode(entry.ErrorCode); err != nil {
+			return nil, apierrors.NewConnectErrorFromKafkaErrorCode(entry.ErrorCode, entry.ErrorMessage)
+		}
 	}
 
 	response := &v1.SetQuotaResponse{}
@@ -158,12 +177,17 @@ func (s *Service) BatchDeleteQuota(ctx context.Context, req *connect.Request[v1.
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	_, err = s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
+	resp, err := s.consoleSvc.AlterClientQuotas(ctx, kafkaReq)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to batch delete quota: %w", err))
 	}
 
-	response := &v1.BatchDeleteQuotaResponse{}
+	successfulEntities, failedEntities := s.kafkaClientMapper.mapAlterClientQuotasResponse(resp.Entries)
+
+	response := &v1.BatchDeleteQuotaResponse{
+		SuccessfulEntities: successfulEntities,
+		FailedEntities:     failedEntities,
+	}
 
 	return connect.NewResponse(response), nil
 }

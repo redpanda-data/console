@@ -278,36 +278,68 @@ func (s *APISuite) TestBatchSetQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		batchSetReq := &v1.BatchSetQuotaRequest{
-			Entities: []*v1.RequestQuotaEntity{
+			Settings: []*v1.BatchSetQuotaRequest_QuotaSetting{
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityName: "batch-test-client-1",
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
+						EntityName: "batch-test-client-1",
+					},
+					Values: []*v1.RequestQuotaValue{
+						{
+							ValueType: v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
+							Value:     1024000.0,
+						},
+						{
+							ValueType: v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
+							Value:     2048000.0,
+						},
+					},
 				},
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityName: "batch-test-client-2",
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
+						EntityName: "batch-test-client-2",
+					},
+					Values: []*v1.RequestQuotaValue{
+						{
+							ValueType: v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
+							Value:     1024000.0,
+						},
+						{
+							ValueType: v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
+							Value:     2048000.0,
+						},
+					},
 				},
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX,
-					EntityName: "batch-test-prefix",
-				},
-			},
-			Values: []*v1.RequestQuotaValue{
-				{
-					ValueType: v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
-					Value:     1024000,
-				},
-				{
-					ValueType: v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
-					Value:     2048000,
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID_PREFIX,
+						EntityName: "batch-test-prefix",
+					},
+					Values: []*v1.RequestQuotaValue{
+						{
+							ValueType: v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
+							Value:     1024000.0,
+						},
+						{
+							ValueType: v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
+							Value:     2048000.0,
+						},
+					},
 				},
 			},
 		}
-		_, err := client.BatchSetQuota(ctx, connect.NewRequest(batchSetReq))
+		res, err := client.BatchSetQuota(ctx, connect.NewRequest(batchSetReq))
 		require.NoError(err)
+		require.NotNil(res.Msg)
+
+		// Verify response structure
+		require.Len(res.Msg.SuccessfulEntities, 3, "expected 3 successful entities")
+		require.Len(res.Msg.FailedEntities, 0, "expected no failed entities")
 
 		// Verify all quotas were set
-		for i, entity := range batchSetReq.Entities {
+		for i, setting := range batchSetReq.Settings {
+			entity := setting.Entity
 			var entityType string
 			var matchType kmsg.QuotasMatchType
 			var match *string
@@ -325,9 +357,9 @@ func (s *APISuite) TestBatchSetQuota_v1() {
 				require.Failf("invalid entity type", "unknown entity type %v for entity %d", entity.EntityType, i)
 			}
 
-			if entity.EntityName == "" {
-				matchType = kmsg.QuotasMatchTypeDefault
-			} else {
+			matchType = kmsg.QuotasMatchTypeDefault
+
+			if entity.EntityName != "" {
 				matchType = kmsg.QuotasMatchTypeExact
 				match = &entity.EntityName
 			}
@@ -372,21 +404,28 @@ func (s *APISuite) TestBatchSetQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		batchSetReq := &v1.BatchSetQuotaRequest{
-			Entities: []*v1.RequestQuotaEntity{
+			Settings: []*v1.BatchSetQuotaRequest_QuotaSetting{
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityName: "", // Default quota
-				},
-			},
-			Values: []*v1.RequestQuotaValue{
-				{
-					ValueType: v1.Quota_VALUE_TYPE_CONTROLLER_MUTATION_RATE,
-					Value:     50,
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
+						EntityName: "", // Default quota
+					},
+					Values: []*v1.RequestQuotaValue{
+						{
+							ValueType: v1.Quota_VALUE_TYPE_CONTROLLER_MUTATION_RATE,
+							Value:     50.0,
+						},
+					},
 				},
 			},
 		}
-		_, err := client.BatchSetQuota(ctx, connect.NewRequest(batchSetReq))
+		res, err := client.BatchSetQuota(ctx, connect.NewRequest(batchSetReq))
 		require.NoError(err)
+		require.NotNil(res.Msg)
+
+		// Verify response structure
+		require.Len(res.Msg.SuccessfulEntities, 1, "expected 1 successful entity")
+		require.Len(res.Msg.FailedEntities, 0, "expected no failed entities")
 
 		// Verify default quota was set
 		describeReq := kmsg.NewDescribeClientQuotasRequest()
@@ -476,12 +515,12 @@ func (s *APISuite) TestListQuotas_v1() {
 		assert.Equal("console-test-client", foundQuota.Entity.EntityName)
 		require.Len(foundQuota.Values, 2)
 
-		quotaValues := make(map[v1.Quota_ValueType]int64)
+		quotaValues := make(map[v1.Quota_ValueType]float64)
 		for _, value := range foundQuota.Values {
 			quotaValues[value.ValueType] = value.Value
 		}
-		assert.Equal(int64(1024000), quotaValues[v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE])
-		assert.Equal(int64(2048000), quotaValues[v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE])
+		assert.Equal(float64(1024000), quotaValues[v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE])
+		assert.Equal(float64(2048000), quotaValues[v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE])
 	})
 
 	t.Run("list quotas with entity name filter (connect-go)", func(t *testing.T) {
@@ -604,6 +643,68 @@ func (s *APISuite) TestListQuotas_v1() {
 			require.NotNil(res2.Msg)
 			assert.GreaterOrEqual(len(res2.Msg.Quotas), 1)
 		}
+	})
+
+	t.Run("list quotas with match_default filter (connect-go)", func(t *testing.T) {
+		require := require.New(t)
+		assert := assert.New(t)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		t.Cleanup(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			err := s.cleanupQuotas(ctx)
+			assert.NoError(err, "failed to delete all quotas")
+		})
+
+		// Create both default and named quotas to test filtering
+		createReq := kmsg.NewAlterClientQuotasRequest()
+		createReq.Entries = []kmsg.AlterClientQuotasRequestEntry{
+			{
+				Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
+					{
+						Type: "client-id",
+						Name: nil, // Default quota
+					},
+				},
+				Ops: []kmsg.AlterClientQuotasRequestEntryOp{
+					{Key: "producer_byte_rate", Value: 1024000, Remove: false},
+				},
+			},
+			{
+				Entity: []kmsg.AlterClientQuotasRequestEntryEntity{
+					{
+						Type: "client-id",
+						Name: kmsg.StringPtr("named-client"),
+					},
+				},
+				Ops: []kmsg.AlterClientQuotasRequestEntryOp{
+					{Key: "producer_byte_rate", Value: 2048000, Remove: false},
+				},
+			},
+		}
+		_, err := createReq.RequestWith(ctx, s.kafkaClient)
+		require.NoError(err)
+
+		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
+
+		// Test with match_default = true - should only return default quota
+		res, err := client.ListQuotas(ctx, connect.NewRequest(&v1.ListQuotasRequest{
+			Filter: &v1.ListQuotasRequest_Filter{
+				EntityType:   v1.Quota_ENTITY_TYPE_CLIENT_ID,
+				MatchDefault: true,
+			},
+		}))
+		require.NoError(err)
+		require.NotNil(res.Msg)
+
+		// Should find exactly one default quota
+		require.Len(res.Msg.Quotas, 1)
+		quota := res.Msg.Quotas[0]
+		assert.Equal(v1.Quota_ENTITY_TYPE_CLIENT_ID, quota.Entity.EntityType)
+		assert.Equal("<default>", quota.Entity.EntityName)
 	})
 }
 
@@ -780,26 +881,40 @@ func (s *APISuite) TestBatchDeleteQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		batchDeleteReq := &v1.BatchDeleteQuotaRequest{
-			Entities: []*v1.RequestQuotaEntity{
+			Deletions: []*v1.BatchDeleteQuotaRequest_QuotaDeletion{
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityName: "batch-delete-client-1",
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
+						EntityName: "batch-delete-client-1",
+					},
+					ValueTypes: []v1.Quota_ValueType{
+						v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
+						v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
+					},
 				},
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityName: "batch-delete-client-2",
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
+						EntityName: "batch-delete-client-2",
+					},
+					ValueTypes: []v1.Quota_ValueType{
+						v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
+						v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
+					},
 				},
-			},
-			ValueTypes: []v1.Quota_ValueType{
-				v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
-				v1.Quota_VALUE_TYPE_CONSUMER_BYTE_RATE,
 			},
 		}
-		_, err = client.BatchDeleteQuota(ctx, connect.NewRequest(batchDeleteReq))
+		res, err := client.BatchDeleteQuota(ctx, connect.NewRequest(batchDeleteReq))
 		require.NoError(err)
+		require.NotNil(res.Msg)
+
+		// Verify response structure
+		require.Len(res.Msg.SuccessfulEntities, 2, "expected 2 successful entities")
+		require.Len(res.Msg.FailedEntities, 0, "expected no failed entities")
 
 		// Verify quotas were deleted
-		for _, entity := range batchDeleteReq.Entities {
+		for _, deletion := range batchDeleteReq.Deletions {
+			entity := deletion.Entity
 			describeReq := kmsg.NewDescribeClientQuotasRequest()
 			describeReq.Components = []kmsg.DescribeClientQuotasRequestComponent{
 				{
@@ -850,18 +965,25 @@ func (s *APISuite) TestBatchDeleteQuota_v1() {
 
 		client := v1connect.NewQuotaServiceClient(http.DefaultClient, s.httpAddress())
 		batchDeleteReq := &v1.BatchDeleteQuotaRequest{
-			Entities: []*v1.RequestQuotaEntity{
+			Deletions: []*v1.BatchDeleteQuotaRequest_QuotaDeletion{
 				{
-					EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
-					EntityName: "partial-delete-client",
+					Entity: &v1.RequestQuotaEntity{
+						EntityType: v1.Quota_ENTITY_TYPE_CLIENT_ID,
+						EntityName: "partial-delete-client",
+					},
+					ValueTypes: []v1.Quota_ValueType{
+						v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
+					},
 				},
 			},
-			ValueTypes: []v1.Quota_ValueType{
-				v1.Quota_VALUE_TYPE_PRODUCER_BYTE_RATE,
-			},
 		}
-		_, err = client.BatchDeleteQuota(ctx, connect.NewRequest(batchDeleteReq))
+		res, err := client.BatchDeleteQuota(ctx, connect.NewRequest(batchDeleteReq))
 		require.NoError(err)
+		require.NotNil(res.Msg)
+
+		// Verify response structure
+		require.Len(res.Msg.SuccessfulEntities, 1, "expected 1 successful entity")
+		require.Len(res.Msg.FailedEntities, 0, "expected no failed entities")
 
 		// Verify only one quota was deleted, others remain
 		describeReq := kmsg.NewDescribeClientQuotasRequest()

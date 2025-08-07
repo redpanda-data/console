@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1/quota.proto.
  */
 export const file_redpanda_api_dataplane_v1_quota: GenFile = /*@__PURE__*/
-  fileDesc("CiVyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL3F1b3RhLnByb3RvEhlyZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxIo8ECgVRdW90YRpfCgZFbnRpdHkSQAoLZW50aXR5X3R5cGUYASABKA4yKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlF1b3RhLkVudGl0eVR5cGUSEwoLZW50aXR5X25hbWUYAiABKAkaVgoFVmFsdWUSPgoKdmFsdWVfdHlwZRgBIAEoDjIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuVmFsdWVUeXBlEg0KBXZhbHVlGAIgASgDIpABCgpFbnRpdHlUeXBlEhsKF0VOVElUWV9UWVBFX1VOU1BFQ0lGSUVEEAASGQoVRU5USVRZX1RZUEVfQ0xJRU5UX0lEEAESIAocRU5USVRZX1RZUEVfQ0xJRU5UX0lEX1BSRUZJWBACEhQKEEVOVElUWV9UWVBFX1VTRVIQAxISCg5FTlRJVFlfVFlQRV9JUBAEIrkBCglWYWx1ZVR5cGUSGgoWVkFMVUVfVFlQRV9VTlNQRUNJRklFRBAAEiEKHVZBTFVFX1RZUEVfUFJPRFVDRVJfQllURV9SQVRFEAESIQodVkFMVUVfVFlQRV9DT05TVU1FUl9CWVRFX1JBVEUQAhInCiNWQUxVRV9UWVBFX0NPTlRST0xMRVJfTVVUQVRJT05fUkFURRADEiEKHVZBTFVFX1RZUEVfUkVRVUVTVF9QRVJDRU5UQUdFEAQi7wIKEUxpc3RRdW90YXNSZXF1ZXN0EkMKBmZpbHRlchgBIAEoCzIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFF1b3Rhc1JlcXVlc3QuRmlsdGVyEp8BCglwYWdlX3NpemUYAiABKAVCiwGSQXUyYUxpbWl0IHRoZSBwYWdpbmF0ZWQgcmVzcG9uc2UgdG8gYSBudW1iZXIgb2YgaXRlbXMuIERlZmF1bHRzIHRvIDEwMC4gVXNlIC0xIHRvIGRpc2FibGUgcGFnaW5hdGlvbi5ZAAAAAABAj0BpAAAAAAAA8L+6SBAaDhjoByj///////////8BEhIKCnBhZ2VfdG9rZW4YAyABKAkaXwoGRmlsdGVyEkAKC2VudGl0eV90eXBlGAEgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YS5FbnRpdHlUeXBlEhMKC2VudGl0eV9uYW1lGAIgASgJIsgCChJMaXN0UXVvdGFzUmVzcG9uc2USSAoGcXVvdGFzGAEgAygLMjgucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0UXVvdGFzUmVzcG9uc2UuUXVvdGFFbnRyeRJpCgpwYWdlX3Rva2VuGAIgASgJQlWSQVIyUFRva2VuIHRvIHJldHJpZXZlIHRoZSBuZXh0IHBhZ2Ugb2YgcmVzdWx0cy4gSWYgZW1wdHksIHRoZXJlIGFyZSBubyBtb3JlIHJlc3VsdHMuGn0KClF1b3RhRW50cnkSNwoGZW50aXR5GAEgASgLMicucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YS5FbnRpdHkSNgoGdmFsdWVzGAIgAygLMiYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YS5WYWx1ZSKaAgoSUmVxdWVzdFF1b3RhRW50aXR5Ek8KC2VudGl0eV90eXBlGAEgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YS5FbnRpdHlUeXBlQg26SArIAQGCAQQQASAAEhMKC2VudGl0eV9uYW1lGAIgASgJOp0BukiZARqWAQolY2xpZW50X2lkX3ByZWZpeF9yZXF1aXJlc19lbnRpdHlfbmFtZRI8ZW50aXR5X25hbWUgaXMgcmVxdWlyZWQgd2hlbiBlbnRpdHlfdHlwZSBpcyBDTElFTlRfSURfUFJFRklYGi90aGlzLmVudGl0eV90eXBlICE9IDIgfHwgdGhpcy5lbnRpdHlfbmFtZSAhPSAnJyJxChFSZXF1ZXN0UXVvdGFWYWx1ZRJNCgp2YWx1ZV90eXBlGAEgASgOMioucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YS5WYWx1ZVR5cGVCDbpICsgBAYIBBBABIAASDQoFdmFsdWUYAiABKAMipQEKFEJhdGNoU2V0UXVvdGFSZXF1ZXN0EkcKCGVudGl0aWVzGAEgAygLMi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5SZXF1ZXN0UXVvdGFFbnRpdHlCBrpIA8gBARJECgZ2YWx1ZXMYAiADKAsyLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJlcXVlc3RRdW90YVZhbHVlQga6SAPIAQEiFwoVQmF0Y2hTZXRRdW90YVJlc3BvbnNlIp0BCg9TZXRRdW90YVJlcXVlc3QSRQoGZW50aXR5GAEgASgLMi0ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5SZXF1ZXN0UXVvdGFFbnRpdHlCBrpIA8gBARJDCgV2YWx1ZRgCIAEoCzIsLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVxdWVzdFF1b3RhVmFsdWVCBrpIA8gBASISChBTZXRRdW90YVJlc3BvbnNlIrcBChdCYXRjaERlbGV0ZVF1b3RhUmVxdWVzdBJHCghlbnRpdGllcxgBIAMoCzItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVxdWVzdFF1b3RhRW50aXR5Qga6SAPIAQESUwoLdmFsdWVfdHlwZXMYAiADKA4yKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlF1b3RhLlZhbHVlVHlwZUISukgPyAEBkgEJIgeCAQQQASAAIhoKGEJhdGNoRGVsZXRlUXVvdGFSZXNwb25zZSKjAQoSRGVsZXRlUXVvdGFSZXF1ZXN0EkUKBmVudGl0eRgBIAEoCzItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVxdWVzdFF1b3RhRW50aXR5Qga6SAPIAQESRgoKdmFsdWVfdHlwZRgCIAEoDjIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuVmFsdWVUeXBlQga6SAPIAQEiFQoTRGVsZXRlUXVvdGFSZXNwb25zZTKgDgoMUXVvdGFTZXJ2aWNlErgCCgpMaXN0UXVvdGFzEiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0UXVvdGFzUmVxdWVzdBotLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFF1b3Rhc1Jlc3BvbnNlIswBkkGuARILTGlzdCBxdW90YXMaX0xpc3QgY2xpZW50IHF1b3Rhcy4gVXNlIGZpbHRlciBwYXJhbWV0ZXJzIHRvIG5hcnJvdyByZXN1bHRzIGJ5IGVudGl0eSB0eXBlIGFuZCBmaWx0ZXIgY3JpdGVyaWEuSj4KAzIwMBI3CgJPSxIxCi8aLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RRdW90YXNSZXNwb25zZYqmHQQIARABgtPkkwIMEgovdjEvcXVvdGFzErYCCghTZXRRdW90YRIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0UXVvdGFSZXF1ZXN0GisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5TZXRRdW90YVJlc3BvbnNlItABkkGvARILU2V0IGEgcXVvdGEaW0NyZWF0ZSBvciB1cGRhdGUgY2xpZW50IHRocm91Z2hwdXQgcXVvdGFzIGZvciBhIHNpbmdsZSBlbnRpdHkuIFRoaXMgb3BlcmF0aW9uIGlzIGFuIHVwc2VydC5KQwoDMjAxEjwKCVF1b3RhIFNldBIvCi0aKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFF1b3RhUmVzcG9uc2WKph0ECAMQAYLT5JMCDzoBKiIKL3YxL3F1b3RhcxLVAgoNQmF0Y2hTZXRRdW90YRIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hTZXRRdW90YVJlcXVlc3QaMC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkJhdGNoU2V0UXVvdGFSZXNwb25zZSLgAZJBtgESE1NldCBtdWx0aXBsZSBxdW90YXMaVENyZWF0ZSBvciB1cGRhdGUgY2xpZW50IHRocm91Z2hwdXQgcXVvdGFzIGZvciBtdWx0aXBsZSBlbnRpdGllcyBpbiBhIHNpbmdsZSByZXF1ZXN0LkpJCgMyMDESQgoKUXVvdGFzIFNldBI0CjIaMC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkJhdGNoU2V0UXVvdGFSZXNwb25zZYqmHQQIAxABgtPkkwIYOgEqIhMvdjEvcXVvdGFzOmJhdGNoU2V0EpECCgtEZWxldGVRdW90YRItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlUXVvdGFSZXF1ZXN0Gi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVRdW90YVJlc3BvbnNlIqIBkkGEARIORGVsZXRlIGEgcXVvdGEaMURlbGV0ZSBjbGllbnQgcXVvdGFzIGZvciBzaW5nbGUgZW50aXR5IGFuZCB2YWx1ZS5KPwoDMjAwEjgKAk9LEjIKMBouLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlUXVvdGFSZXNwb25zZYqmHQQIAxABgtPkkwIMKgovdjEvcXVvdGFzEtUCChBCYXRjaERlbGV0ZVF1b3RhEjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5CYXRjaERlbGV0ZVF1b3RhUmVxdWVzdBozLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hEZWxldGVRdW90YVJlc3BvbnNlItcBkkGqARIWRGVsZXRlIG11bHRpcGxlIHF1b3RhcxpKRGVsZXRlIGNsaWVudCBxdW90YXMgZm9yIG11bHRpcGxlIGVudGl0aWVzIGFuZCB2YWx1ZXMgaW4gYSBzaW5nbGUgcmVxdWVzdC5KRAoDMjAwEj0KAk9LEjcKNRozLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hEZWxldGVRdW90YVJlc3BvbnNliqYdBAgDEAGC0+STAhs6ASoiFi92MS9xdW90YXM6YmF0Y2hEZWxldGUa1wGSQdMBCgZRdW90YXMSyAFNYW5hZ2UgY2xpZW50IHRocm91Z2hwdXQgbGltaXRzLiBTZWUgW1JlZHBhbmRhIENsaWVudCBUaHJvdWdocHV0IExpbWl0c10oaHR0cHM6Ly9kb2NzLnJlZHBhbmRhLmNvbS9jdXJyZW50L21hbmFnZS9jbHVzdGVyLW1haW50ZW5hbmNlL21hbmFnZS10aHJvdWdocHV0LyNjbGllbnQtdGhyb3VnaHB1dC1saW1pdHMpIGZvciBtb3JlIGluZm9ybWF0aW9uLkKPAgodY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFCClF1b3RhUHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
+  fileDesc("CiVyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxL3F1b3RhLnByb3RvEhlyZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxIo8ECgVRdW90YRpfCgZFbnRpdHkSQAoLZW50aXR5X3R5cGUYASABKA4yKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlF1b3RhLkVudGl0eVR5cGUSEwoLZW50aXR5X25hbWUYAiABKAkaVgoFVmFsdWUSPgoKdmFsdWVfdHlwZRgBIAEoDjIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuVmFsdWVUeXBlEg0KBXZhbHVlGAIgASgBIpABCgpFbnRpdHlUeXBlEhsKF0VOVElUWV9UWVBFX1VOU1BFQ0lGSUVEEAASGQoVRU5USVRZX1RZUEVfQ0xJRU5UX0lEEAESIAocRU5USVRZX1RZUEVfQ0xJRU5UX0lEX1BSRUZJWBACEhQKEEVOVElUWV9UWVBFX1VTRVIQAxISCg5FTlRJVFlfVFlQRV9JUBAEIrkBCglWYWx1ZVR5cGUSGgoWVkFMVUVfVFlQRV9VTlNQRUNJRklFRBAAEiEKHVZBTFVFX1RZUEVfUFJPRFVDRVJfQllURV9SQVRFEAESIQodVkFMVUVfVFlQRV9DT05TVU1FUl9CWVRFX1JBVEUQAhInCiNWQUxVRV9UWVBFX0NPTlRST0xMRVJfTVVUQVRJT05fUkFURRADEiEKHVZBTFVFX1RZUEVfUkVRVUVTVF9QRVJDRU5UQUdFEAQivwQKEUxpc3RRdW90YXNSZXF1ZXN0EkMKBmZpbHRlchgBIAEoCzIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFF1b3Rhc1JlcXVlc3QuRmlsdGVyEp8BCglwYWdlX3NpemUYAiABKAVCiwGSQXUyYUxpbWl0IHRoZSBwYWdpbmF0ZWQgcmVzcG9uc2UgdG8gYSBudW1iZXIgb2YgaXRlbXMuIERlZmF1bHRzIHRvIDEwMC4gVXNlIC0xIHRvIGRpc2FibGUgcGFnaW5hdGlvbi5ZAAAAAABAj0BpAAAAAAAA8L+6SBAaDhjoByj///////////8BEhIKCnBhZ2VfdG9rZW4YAyABKAkargIKBkZpbHRlchJACgtlbnRpdHlfdHlwZRgBIAEoDjIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuRW50aXR5VHlwZRJzCgtlbnRpdHlfbmFtZRgCIAEoCUJekkFbMllGaWx0ZXIgYnkgZW50aXR5IG5hbWUuIElmIHVuc3BlY2lmaWVkIHdpbGwgcmV0dXJuIGFsbCBlbnRpdGllcyBmb3Igc3BlY2lmaWVkIGVudGl0eSB0eXBlLhJtCg1tYXRjaF9kZWZhdWx0GAMgASgIQlaSQVMyUUlmIHRydWUsIHRoZSBlbnRpdHlfbmFtZSB3aWxsIG1hdGNoIHRoZSBkZWZhdWx0IGVudGl0eSAoZS5nLiwgZGVmYXVsdCBjbGllbnQtaWQpLiLIAgoSTGlzdFF1b3Rhc1Jlc3BvbnNlEkgKBnF1b3RhcxgBIAMoCzI4LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFF1b3Rhc1Jlc3BvbnNlLlF1b3RhRW50cnkSaQoKcGFnZV90b2tlbhgCIAEoCUJVkkFSMlBUb2tlbiB0byByZXRyaWV2ZSB0aGUgbmV4dCBwYWdlIG9mIHJlc3VsdHMuIElmIGVtcHR5LCB0aGVyZSBhcmUgbm8gbW9yZSByZXN1bHRzLhp9CgpRdW90YUVudHJ5EjcKBmVudGl0eRgBIAEoCzInLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuRW50aXR5EjYKBnZhbHVlcxgCIAMoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuVmFsdWUimgIKElJlcXVlc3RRdW90YUVudGl0eRJPCgtlbnRpdHlfdHlwZRgBIAEoDjIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuRW50aXR5VHlwZUINukgKyAEBggEEEAEgABITCgtlbnRpdHlfbmFtZRgCIAEoCTqdAbpImQEalgEKJWNsaWVudF9pZF9wcmVmaXhfcmVxdWlyZXNfZW50aXR5X25hbWUSPGVudGl0eV9uYW1lIGlzIHJlcXVpcmVkIHdoZW4gZW50aXR5X3R5cGUgaXMgQ0xJRU5UX0lEX1BSRUZJWBovdGhpcy5lbnRpdHlfdHlwZSAhPSAyIHx8IHRoaXMuZW50aXR5X25hbWUgIT0gJycicQoRUmVxdWVzdFF1b3RhVmFsdWUSTQoKdmFsdWVfdHlwZRgBIAEoDjIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuVmFsdWVUeXBlQg26SArIAQGCAQQQASAAEg0KBXZhbHVlGAIgASgBIowCChRCYXRjaFNldFF1b3RhUmVxdWVzdBJWCghzZXR0aW5ncxgBIAMoCzI8LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hTZXRRdW90YVJlcXVlc3QuUXVvdGFTZXR0aW5nQga6SAPIAQEamwEKDFF1b3RhU2V0dGluZxJFCgZlbnRpdHkYASABKAsyLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJlcXVlc3RRdW90YUVudGl0eUIGukgDyAEBEkQKBnZhbHVlcxgCIAMoCzIsLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVxdWVzdFF1b3RhVmFsdWVCBrpIA8gBASKUAgoUUXVvdGFPcGVyYXRpb25SZXN1bHQaaQoQU3VjY2Vzc2Z1bEVudGl0eRJACgtlbnRpdHlfdHlwZRgBIAEoDjIrLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuRW50aXR5VHlwZRITCgtlbnRpdHlfbmFtZRgCIAEoCRqQAQoMRmFpbGVkRW50aXR5EkAKC2VudGl0eV90eXBlGAEgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YS5FbnRpdHlUeXBlEhMKC2VudGl0eV9uYW1lGAIgASgJEhIKCmVycm9yX2NvZGUYAyABKAUSFQoNZXJyb3JfbWVzc2FnZRgEIAEoCSLNAQoVQmF0Y2hTZXRRdW90YVJlc3BvbnNlEl0KE3N1Y2Nlc3NmdWxfZW50aXRpZXMYASADKAsyQC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlF1b3RhT3BlcmF0aW9uUmVzdWx0LlN1Y2Nlc3NmdWxFbnRpdHkSVQoPZmFpbGVkX2VudGl0aWVzGAIgAygLMjwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5RdW90YU9wZXJhdGlvblJlc3VsdC5GYWlsZWRFbnRpdHkinQEKD1NldFF1b3RhUmVxdWVzdBJFCgZlbnRpdHkYASABKAsyLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlJlcXVlc3RRdW90YUVudGl0eUIGukgDyAEBEkMKBXZhbHVlGAIgASgLMiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5SZXF1ZXN0UXVvdGFWYWx1ZUIGukgDyAEBIhIKEFNldFF1b3RhUmVzcG9uc2UipAIKF0JhdGNoRGVsZXRlUXVvdGFSZXF1ZXN0ElsKCWRlbGV0aW9ucxgBIAMoCzJALnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hEZWxldGVRdW90YVJlcXVlc3QuUXVvdGFEZWxldGlvbkIGukgDyAEBGqsBCg1RdW90YURlbGV0aW9uEkUKBmVudGl0eRgBIAEoCzItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVxdWVzdFF1b3RhRW50aXR5Qga6SAPIAQESUwoLdmFsdWVfdHlwZXMYAiADKA4yKi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlF1b3RhLlZhbHVlVHlwZUISukgPyAEBkgEJIgeCAQQQASAAItABChhCYXRjaERlbGV0ZVF1b3RhUmVzcG9uc2USXQoTc3VjY2Vzc2Z1bF9lbnRpdGllcxgBIAMoCzJALnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGFPcGVyYXRpb25SZXN1bHQuU3VjY2Vzc2Z1bEVudGl0eRJVCg9mYWlsZWRfZW50aXRpZXMYAiADKAsyPC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlF1b3RhT3BlcmF0aW9uUmVzdWx0LkZhaWxlZEVudGl0eSKjAQoSRGVsZXRlUXVvdGFSZXF1ZXN0EkUKBmVudGl0eRgBIAEoCzItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUmVxdWVzdFF1b3RhRW50aXR5Qga6SAPIAQESRgoKdmFsdWVfdHlwZRgCIAEoDjIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuUXVvdGEuVmFsdWVUeXBlQga6SAPIAQEiFQoTRGVsZXRlUXVvdGFSZXNwb25zZTKgDgoMUXVvdGFTZXJ2aWNlErgCCgpMaXN0UXVvdGFzEiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5MaXN0UXVvdGFzUmVxdWVzdBotLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuTGlzdFF1b3Rhc1Jlc3BvbnNlIswBkkGuARILTGlzdCBxdW90YXMaX0xpc3QgY2xpZW50IHF1b3Rhcy4gVXNlIGZpbHRlciBwYXJhbWV0ZXJzIHRvIG5hcnJvdyByZXN1bHRzIGJ5IGVudGl0eSB0eXBlIGFuZCBmaWx0ZXIgY3JpdGVyaWEuSj4KAzIwMBI3CgJPSxIxCi8aLS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkxpc3RRdW90YXNSZXNwb25zZYqmHQQIARABgtPkkwIMEgovdjEvcXVvdGFzErYCCghTZXRRdW90YRIqLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuU2V0UXVvdGFSZXF1ZXN0GisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5TZXRRdW90YVJlc3BvbnNlItABkkGvARILU2V0IGEgcXVvdGEaW0NyZWF0ZSBvciB1cGRhdGUgY2xpZW50IHRocm91Z2hwdXQgcXVvdGFzIGZvciBhIHNpbmdsZSBlbnRpdHkuIFRoaXMgb3BlcmF0aW9uIGlzIGFuIHVwc2VydC5KQwoDMjAxEjwKCVF1b3RhIFNldBIvCi0aKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLlNldFF1b3RhUmVzcG9uc2WKph0ECAMQAYLT5JMCDzoBKiIKL3YxL3F1b3RhcxLVAgoNQmF0Y2hTZXRRdW90YRIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hTZXRRdW90YVJlcXVlc3QaMC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkJhdGNoU2V0UXVvdGFSZXNwb25zZSLgAZJBtgESE1NldCBtdWx0aXBsZSBxdW90YXMaVENyZWF0ZSBvciB1cGRhdGUgY2xpZW50IHRocm91Z2hwdXQgcXVvdGFzIGZvciBtdWx0aXBsZSBlbnRpdGllcyBpbiBhIHNpbmdsZSByZXF1ZXN0LkpJCgMyMDESQgoKUXVvdGFzIFNldBI0CjIaMC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxLkJhdGNoU2V0UXVvdGFSZXNwb25zZYqmHQQIAxABgtPkkwIYOgEqIhMvdjEvcXVvdGFzOmJhdGNoU2V0EpECCgtEZWxldGVRdW90YRItLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlUXVvdGFSZXF1ZXN0Gi4ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5EZWxldGVRdW90YVJlc3BvbnNlIqIBkkGEARIORGVsZXRlIGEgcXVvdGEaMURlbGV0ZSBjbGllbnQgcXVvdGFzIGZvciBzaW5nbGUgZW50aXR5IGFuZCB2YWx1ZS5KPwoDMjAwEjgKAk9LEjIKMBouLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuRGVsZXRlUXVvdGFSZXNwb25zZYqmHQQIAxABgtPkkwIMKgovdjEvcXVvdGFzEtUCChBCYXRjaERlbGV0ZVF1b3RhEjIucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MS5CYXRjaERlbGV0ZVF1b3RhUmVxdWVzdBozLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hEZWxldGVRdW90YVJlc3BvbnNlItcBkkGqARIWRGVsZXRlIG11bHRpcGxlIHF1b3RhcxpKRGVsZXRlIGNsaWVudCBxdW90YXMgZm9yIG11bHRpcGxlIGVudGl0aWVzIGFuZCB2YWx1ZXMgaW4gYSBzaW5nbGUgcmVxdWVzdC5KRAoDMjAwEj0KAk9LEjcKNRozLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjEuQmF0Y2hEZWxldGVRdW90YVJlc3BvbnNliqYdBAgDEAGC0+STAhs6ASoiFi92MS9xdW90YXM6YmF0Y2hEZWxldGUa1wGSQdMBCgZRdW90YXMSyAFNYW5hZ2UgY2xpZW50IHRocm91Z2hwdXQgbGltaXRzLiBTZWUgW1JlZHBhbmRhIENsaWVudCBUaHJvdWdocHV0IExpbWl0c10oaHR0cHM6Ly9kb2NzLnJlZHBhbmRhLmNvbS9jdXJyZW50L21hbmFnZS9jbHVzdGVyLW1haW50ZW5hbmNlL21hbmFnZS10aHJvdWdocHV0LyNjbGllbnQtdGhyb3VnaHB1dC1saW1pdHMpIGZvciBtb3JlIGluZm9ybWF0aW9uLkKPAgodY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFCClF1b3RhUHJvdG9QAVpbZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MTtkYXRhcGxhbmV2MaICA1JBRKoCGVJlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjHKAhlSZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYx4gIlUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMVxHUEJNZXRhZGF0YeoCHFJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.Quota
@@ -61,9 +61,9 @@ export type Quota_Value = Message<"redpanda.api.dataplane.v1.Quota.Value"> & {
   valueType: Quota_ValueType;
 
   /**
-   * @generated from field: int64 value = 2;
+   * @generated from field: double value = 2;
    */
-  value: bigint;
+  value: number;
 };
 
 /**
@@ -210,6 +210,11 @@ export type ListQuotasRequest_Filter = Message<"redpanda.api.dataplane.v1.ListQu
    * @generated from field: string entity_name = 2;
    */
   entityName: string;
+
+  /**
+   * @generated from field: bool match_default = 3;
+   */
+  matchDefault: boolean;
 };
 
 /**
@@ -301,9 +306,9 @@ export type RequestQuotaValue = Message<"redpanda.api.dataplane.v1.RequestQuotaV
   valueType: Quota_ValueType;
 
   /**
-   * @generated from field: int64 value = 2;
+   * @generated from field: double value = 2;
    */
-  value: bigint;
+  value: number;
 };
 
 /**
@@ -318,18 +323,12 @@ export const RequestQuotaValueSchema: GenMessage<RequestQuotaValue> = /*@__PURE_
  */
 export type BatchSetQuotaRequest = Message<"redpanda.api.dataplane.v1.BatchSetQuotaRequest"> & {
   /**
-   * To specify multiple entities to apply the same quota
+   * A list of quota settings to apply. Each setting pairs an entity
+   * with the specific values to be set for it.
    *
-   * @generated from field: repeated redpanda.api.dataplane.v1.RequestQuotaEntity entities = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1.BatchSetQuotaRequest.QuotaSetting settings = 1;
    */
-  entities: RequestQuotaEntity[];
-
-  /**
-   * The values that should be set for the specified entities.
-   *
-   * @generated from field: repeated redpanda.api.dataplane.v1.RequestQuotaValue values = 2;
-   */
-  values: RequestQuotaValue[];
+  settings: BatchSetQuotaRequest_QuotaSetting[];
 };
 
 /**
@@ -340,9 +339,107 @@ export const BatchSetQuotaRequestSchema: GenMessage<BatchSetQuotaRequest> = /*@_
   messageDesc(file_redpanda_api_dataplane_v1_quota, 5);
 
 /**
+ * @generated from message redpanda.api.dataplane.v1.BatchSetQuotaRequest.QuotaSetting
+ */
+export type BatchSetQuotaRequest_QuotaSetting = Message<"redpanda.api.dataplane.v1.BatchSetQuotaRequest.QuotaSetting"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.RequestQuotaEntity entity = 1;
+   */
+  entity?: RequestQuotaEntity;
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.RequestQuotaValue values = 2;
+   */
+  values: RequestQuotaValue[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.BatchSetQuotaRequest.QuotaSetting.
+ * Use `create(BatchSetQuotaRequest_QuotaSettingSchema)` to create a new message.
+ */
+export const BatchSetQuotaRequest_QuotaSettingSchema: GenMessage<BatchSetQuotaRequest_QuotaSetting> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 5, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.QuotaOperationResult
+ */
+export type QuotaOperationResult = Message<"redpanda.api.dataplane.v1.QuotaOperationResult"> & {
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.QuotaOperationResult.
+ * Use `create(QuotaOperationResultSchema)` to create a new message.
+ */
+export const QuotaOperationResultSchema: GenMessage<QuotaOperationResult> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 6);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.QuotaOperationResult.SuccessfulEntity
+ */
+export type QuotaOperationResult_SuccessfulEntity = Message<"redpanda.api.dataplane.v1.QuotaOperationResult.SuccessfulEntity"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.Quota.EntityType entity_type = 1;
+   */
+  entityType: Quota_EntityType;
+
+  /**
+   * @generated from field: string entity_name = 2;
+   */
+  entityName: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.QuotaOperationResult.SuccessfulEntity.
+ * Use `create(QuotaOperationResult_SuccessfulEntitySchema)` to create a new message.
+ */
+export const QuotaOperationResult_SuccessfulEntitySchema: GenMessage<QuotaOperationResult_SuccessfulEntity> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 6, 0);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.QuotaOperationResult.FailedEntity
+ */
+export type QuotaOperationResult_FailedEntity = Message<"redpanda.api.dataplane.v1.QuotaOperationResult.FailedEntity"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.Quota.EntityType entity_type = 1;
+   */
+  entityType: Quota_EntityType;
+
+  /**
+   * @generated from field: string entity_name = 2;
+   */
+  entityName: string;
+
+  /**
+   * @generated from field: int32 error_code = 3;
+   */
+  errorCode: number;
+
+  /**
+   * @generated from field: string error_message = 4;
+   */
+  errorMessage: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.QuotaOperationResult.FailedEntity.
+ * Use `create(QuotaOperationResult_FailedEntitySchema)` to create a new message.
+ */
+export const QuotaOperationResult_FailedEntitySchema: GenMessage<QuotaOperationResult_FailedEntity> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 6, 1);
+
+/**
  * @generated from message redpanda.api.dataplane.v1.BatchSetQuotaResponse
  */
 export type BatchSetQuotaResponse = Message<"redpanda.api.dataplane.v1.BatchSetQuotaResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.QuotaOperationResult.SuccessfulEntity successful_entities = 1;
+   */
+  successfulEntities: QuotaOperationResult_SuccessfulEntity[];
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.QuotaOperationResult.FailedEntity failed_entities = 2;
+   */
+  failedEntities: QuotaOperationResult_FailedEntity[];
 };
 
 /**
@@ -350,7 +447,7 @@ export type BatchSetQuotaResponse = Message<"redpanda.api.dataplane.v1.BatchSetQ
  * Use `create(BatchSetQuotaResponseSchema)` to create a new message.
  */
 export const BatchSetQuotaResponseSchema: GenMessage<BatchSetQuotaResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 6);
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 7);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.SetQuotaRequest
@@ -376,7 +473,7 @@ export type SetQuotaRequest = Message<"redpanda.api.dataplane.v1.SetQuotaRequest
  * Use `create(SetQuotaRequestSchema)` to create a new message.
  */
 export const SetQuotaRequestSchema: GenMessage<SetQuotaRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 7);
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 8);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.SetQuotaResponse
@@ -389,16 +486,33 @@ export type SetQuotaResponse = Message<"redpanda.api.dataplane.v1.SetQuotaRespon
  * Use `create(SetQuotaResponseSchema)` to create a new message.
  */
 export const SetQuotaResponseSchema: GenMessage<SetQuotaResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 8);
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 9);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.BatchDeleteQuotaRequest
  */
 export type BatchDeleteQuotaRequest = Message<"redpanda.api.dataplane.v1.BatchDeleteQuotaRequest"> & {
   /**
-   * @generated from field: repeated redpanda.api.dataplane.v1.RequestQuotaEntity entities = 1;
+   * @generated from field: repeated redpanda.api.dataplane.v1.BatchDeleteQuotaRequest.QuotaDeletion deletions = 1;
    */
-  entities: RequestQuotaEntity[];
+  deletions: BatchDeleteQuotaRequest_QuotaDeletion[];
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1.BatchDeleteQuotaRequest.
+ * Use `create(BatchDeleteQuotaRequestSchema)` to create a new message.
+ */
+export const BatchDeleteQuotaRequestSchema: GenMessage<BatchDeleteQuotaRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 10);
+
+/**
+ * @generated from message redpanda.api.dataplane.v1.BatchDeleteQuotaRequest.QuotaDeletion
+ */
+export type BatchDeleteQuotaRequest_QuotaDeletion = Message<"redpanda.api.dataplane.v1.BatchDeleteQuotaRequest.QuotaDeletion"> & {
+  /**
+   * @generated from field: redpanda.api.dataplane.v1.RequestQuotaEntity entity = 1;
+   */
+  entity?: RequestQuotaEntity;
 
   /**
    * Value that should be deleted for the specified entity
@@ -409,16 +523,25 @@ export type BatchDeleteQuotaRequest = Message<"redpanda.api.dataplane.v1.BatchDe
 };
 
 /**
- * Describes the message redpanda.api.dataplane.v1.BatchDeleteQuotaRequest.
- * Use `create(BatchDeleteQuotaRequestSchema)` to create a new message.
+ * Describes the message redpanda.api.dataplane.v1.BatchDeleteQuotaRequest.QuotaDeletion.
+ * Use `create(BatchDeleteQuotaRequest_QuotaDeletionSchema)` to create a new message.
  */
-export const BatchDeleteQuotaRequestSchema: GenMessage<BatchDeleteQuotaRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 9);
+export const BatchDeleteQuotaRequest_QuotaDeletionSchema: GenMessage<BatchDeleteQuotaRequest_QuotaDeletion> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 10, 0);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.BatchDeleteQuotaResponse
  */
 export type BatchDeleteQuotaResponse = Message<"redpanda.api.dataplane.v1.BatchDeleteQuotaResponse"> & {
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.QuotaOperationResult.SuccessfulEntity successful_entities = 1;
+   */
+  successfulEntities: QuotaOperationResult_SuccessfulEntity[];
+
+  /**
+   * @generated from field: repeated redpanda.api.dataplane.v1.QuotaOperationResult.FailedEntity failed_entities = 2;
+   */
+  failedEntities: QuotaOperationResult_FailedEntity[];
 };
 
 /**
@@ -426,7 +549,7 @@ export type BatchDeleteQuotaResponse = Message<"redpanda.api.dataplane.v1.BatchD
  * Use `create(BatchDeleteQuotaResponseSchema)` to create a new message.
  */
 export const BatchDeleteQuotaResponseSchema: GenMessage<BatchDeleteQuotaResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 10);
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 11);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.DeleteQuotaRequest
@@ -450,7 +573,7 @@ export type DeleteQuotaRequest = Message<"redpanda.api.dataplane.v1.DeleteQuotaR
  * Use `create(DeleteQuotaRequestSchema)` to create a new message.
  */
 export const DeleteQuotaRequestSchema: GenMessage<DeleteQuotaRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 11);
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 12);
 
 /**
  * @generated from message redpanda.api.dataplane.v1.DeleteQuotaResponse
@@ -463,7 +586,7 @@ export type DeleteQuotaResponse = Message<"redpanda.api.dataplane.v1.DeleteQuota
  * Use `create(DeleteQuotaResponseSchema)` to create a new message.
  */
 export const DeleteQuotaResponseSchema: GenMessage<DeleteQuotaResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1_quota, 12);
+  messageDesc(file_redpanda_api_dataplane_v1_quota, 13);
 
 /**
  * @generated from service redpanda.api.dataplane.v1.QuotaService

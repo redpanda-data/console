@@ -86,32 +86,42 @@ components:
       type: object
     BatchDeleteQuotaRequest:
       properties:
-        entities:
+        deletions:
           items:
-            $ref: '#/components/schemas/RequestQuotaEntity'
-          type: array
-        value_types:
-          items:
-            $ref: '#/components/schemas/ValueType'
-          title: Value that should be deleted for the specified entity
+            $ref: '#/components/schemas/QuotaDeletion'
           type: array
       type: object
     BatchDeleteQuotaResponse:
+      properties:
+        failed_entities:
+          items:
+            $ref: '#/components/schemas/FailedEntity'
+          type: array
+        successful_entities:
+          items:
+            $ref: '#/components/schemas/SuccessfulEntity'
+          type: array
       type: object
     BatchSetQuotaRequest:
       properties:
-        entities:
+        settings:
+          description: |-
+            A list of quota settings to apply. Each setting pairs an entity
+            with the specific values to be set for it.
           items:
-            $ref: '#/components/schemas/RequestQuotaEntity'
-          title: To specify multiple entities to apply the same quota
-          type: array
-        values:
-          description: The values that should be set for the specified entities.
-          items:
-            $ref: '#/components/schemas/RequestQuotaValue'
+            $ref: '#/components/schemas/QuotaSetting'
           type: array
       type: object
     BatchSetQuotaResponse:
+      properties:
+        failed_entities:
+          items:
+            $ref: '#/components/schemas/FailedEntity'
+          type: array
+        successful_entities:
+          items:
+            $ref: '#/components/schemas/SuccessfulEntity'
+          type: array
       type: object
     Config:
       properties:
@@ -704,6 +714,18 @@ components:
           type: string
       title: ErrorInfo
       type: object
+    FailedEntity:
+      properties:
+        entity_name:
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        error_code:
+          format: int32
+          type: integer
+        error_message:
+          type: string
+      type: object
     FieldViolation:
       description: A message type used to describe a single bad request field.
       properties:
@@ -1054,12 +1076,13 @@ components:
     ListQuotasRequest.Filter:
       properties:
         entity_name:
-          description: |-
-            Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
-            Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
+          description: Filter by entity name. If unspecified will return all entities for specified entity type.
           type: string
         entity_type:
           $ref: '#/components/schemas/EntityType'
+        match_default:
+          description: If true, the entity_name will match the default entity (e.g., default client-id).
+          type: boolean
       type: object
     ListQuotasResponse:
       properties:
@@ -1625,10 +1648,20 @@ components:
     Quota.Value:
       properties:
         value:
-          format: int64
-          type: string
+          format: double
+          type: number
         value_type:
           $ref: '#/components/schemas/ValueType'
+      type: object
+    QuotaDeletion:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        value_types:
+          items:
+            $ref: '#/components/schemas/ValueType'
+          title: Value that should be deleted for the specified entity
+          type: array
       type: object
     QuotaEntry:
       description: QuotaEntry represents the quota for a specific entity type.
@@ -1759,6 +1792,15 @@ components:
             developer project id>".
           type: string
       type: object
+    QuotaSetting:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        values:
+          items:
+            $ref: '#/components/schemas/RequestQuotaValue'
+          type: array
+      type: object
     ReplicaAssignment:
       properties:
         partition_id:
@@ -1786,8 +1828,8 @@ components:
     RequestQuotaValue:
       properties:
         value:
-          format: int64
-          type: string
+          format: double
+          type: number
         value_type:
           $ref: '#/components/schemas/ValueType'
       type: object
@@ -1985,6 +2027,13 @@ components:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
+      type: object
+    SuccessfulEntity:
+      properties:
+        entity_name:
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
       type: object
     TaskInfo:
       properties:
@@ -3982,13 +4031,16 @@ paths:
               - ENTITY_TYPE_USER
               - ENTITY_TYPE_IP
             type: string
-        - description: |-
-            Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
-            Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
+        - description: Filter by entity name. If unspecified will return all entities for specified entity type.
           in: query
           name: filter.entity_name
           schema:
             type: string
+        - description: If true, the entity_name will match the default entity (e.g., default client-id).
+          in: query
+          name: filter.match_default
+          schema:
+            type: boolean
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size
@@ -6114,7 +6166,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

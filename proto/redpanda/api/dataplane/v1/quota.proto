@@ -37,7 +37,7 @@ message Quota {
 
   message Value {
     Quota.ValueType value_type = 1;
-    int64 value = 2;
+    double value = 2;
   }
 }
 
@@ -48,7 +48,9 @@ message ListQuotasRequest {
 
     // Optional: The exact name of the entity to filter by. If not specified, all entities of the specified type will be returned.
     // Defaults to returning all entities of the specified type. To return default entity (e.g., default client-id), use "<default>".
-    string entity_name = 2;
+    string entity_name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by entity name. If unspecified will return all entities for specified entity type."}];
+
+    bool match_default = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If true, the entity_name will match the default entity (e.g., default client-id)."}];
   }
 
   Filter filter = 1;
@@ -109,17 +111,38 @@ message RequestQuotaValue {
     },
     (buf.validate.field).required = true
   ];
-  int64 value = 2;
+  double value = 2;
 }
 
 message BatchSetQuotaRequest {
-  // To specify multiple entities to apply the same quota
-  repeated RequestQuotaEntity entities = 1 [(buf.validate.field).required = true];
-  // The values that should be set for the specified entities.
-  repeated RequestQuotaValue values = 2 [(buf.validate.field).required = true];
+  message QuotaSetting {
+    RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
+    repeated RequestQuotaValue values = 2 [(buf.validate.field).required = true];
+  }
+
+  // A list of quota settings to apply. Each setting pairs an entity
+  // with the specific values to be set for it.
+  repeated QuotaSetting settings = 1 [(buf.validate.field).required = true];
 }
 
-message BatchSetQuotaResponse {}
+message QuotaOperationResult {
+  message SuccessfulEntity {
+    Quota.EntityType entity_type = 1;
+    string entity_name = 2;
+  }
+
+  message FailedEntity {
+    Quota.EntityType entity_type = 1;
+    string entity_name = 2;
+    int32 error_code = 3;
+    string error_message = 4;
+  }
+}
+
+message BatchSetQuotaResponse {
+  repeated QuotaOperationResult.SuccessfulEntity successful_entities = 1;
+  repeated QuotaOperationResult.FailedEntity failed_entities = 2;
+}
 
 message SetQuotaRequest {
   // The entity for which the quota is being set.
@@ -131,19 +154,26 @@ message SetQuotaRequest {
 message SetQuotaResponse {}
 
 message BatchDeleteQuotaRequest {
-  repeated RequestQuotaEntity entities = 1 [(buf.validate.field).required = true];
+  message QuotaDeletion {
+    RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
 
-  // Value that should be deleted for the specified entity
-  repeated Quota.ValueType value_types = 2 [
-    (buf.validate.field).repeated.items.enum = {
-      defined_only: true
-      not_in: [0] /* Disallow VALUE_TYPE_UNSPECIFIED */
-    },
-    (buf.validate.field).required = true
-  ];
+    // Value that should be deleted for the specified entity
+    repeated Quota.ValueType value_types = 2 [
+      (buf.validate.field).repeated.items.enum = {
+        defined_only: true
+        not_in: [0] /* Disallow VALUE_TYPE_UNSPECIFIED */
+      },
+      (buf.validate.field).required = true
+    ];
+  }
+
+  repeated QuotaDeletion deletions = 1 [(buf.validate.field).required = true];
 }
 
-message BatchDeleteQuotaResponse {}
+message BatchDeleteQuotaResponse {
+  repeated QuotaOperationResult.SuccessfulEntity successful_entities = 1;
+  repeated QuotaOperationResult.FailedEntity failed_entities = 2;
+}
 
 message DeleteQuotaRequest {
   RequestQuotaEntity entity = 1 [(buf.validate.field).required = true];
