@@ -165,9 +165,11 @@ tasks:
   test-integration:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests
+    deps:
+      - install-tparse
     cmds:
       - |
-        {{ .PATH_PREFIX }} go test -v -race --tags=integration -p=1 {{.CLI_ARGS | default "./..." }}
+        {{ .PATH_PREFIX }} go test -race --tags=integration -json -p=1 {{.CLI_ARGS | default "./..." }} | {{ .BUILD_ROOT }}/bin/go/tparse
 
   cover:
     dir: "{{.BACKEND_ROOT}}"

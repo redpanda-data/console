@@ -84,6 +84,45 @@ components:
           type: array
       title: BadRequest
       type: object
+    BatchDeleteQuotaRequest:
+      properties:
+        deletions:
+          items:
+            $ref: '#/components/schemas/QuotaDeletion'
+          type: array
+      type: object
+    BatchDeleteQuotaResponse:
+      properties:
+        failed_entities:
+          items:
+            $ref: '#/components/schemas/FailedEntity'
+          type: array
+        successful_entities:
+          items:
+            $ref: '#/components/schemas/SuccessfulEntity'
+          type: array
+      type: object
+    BatchSetQuotaRequest:
+      properties:
+        settings:
+          description: |-
+            A list of quota settings to apply. Each setting pairs an entity
+            with the specific values to be set for it.
+          items:
+            $ref: '#/components/schemas/QuotaSetting'
+          type: array
+      type: object
+    BatchSetQuotaResponse:
+      properties:
+        failed_entities:
+          items:
+            $ref: '#/components/schemas/FailedEntity'
+          type: array
+        successful_entities:
+          items:
+            $ref: '#/components/schemas/SuccessfulEntity'
+          type: array
+      type: object
     Config:
       properties:
         name:
@@ -539,6 +578,15 @@ components:
       type: object
     DeletePipelineResponse:
       type: object
+    DeleteQuotaRequest:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        value_type:
+          $ref: '#/components/schemas/ValueType'
+      type: object
+    DeleteQuotaResponse:
+      type: object
     DeleteRoleResponse:
       description: DeleteRoleResponse is the response for DeleteRole.
       type: object
@@ -580,6 +628,25 @@ components:
         - input_topic_name
         - output_topic_names
       type: object
+    Entity:
+      properties:
+        entity_name:
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+      type: object
+    EntityType:
+      description: |-
+        The type of entity that the quota applies to.
+
+         - ENTITY_TYPE_USER: Not supported in Redpanda
+         - ENTITY_TYPE_IP: Not supported in Redpanda
+      enum:
+        - ENTITY_TYPE_CLIENT_ID
+        - ENTITY_TYPE_CLIENT_ID_PREFIX
+        - ENTITY_TYPE_USER
+        - ENTITY_TYPE_IP
+      type: string
     EnvironmentVariable:
       properties:
         key:
@@ -653,6 +720,18 @@ components:
             UPPER_SNAKE_CASE.
           type: string
       title: ErrorInfo
+      type: object
+    FailedEntity:
+      properties:
+        entity_name:
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        error_code:
+          format: int32
+          type: integer
+        error_message:
+          type: string
       type: object
     FieldViolation:
       description: A message type used to describe a single bad request field.
@@ -999,6 +1078,27 @@ components:
         pipelines:
           items:
             $ref: '#/components/schemas/Pipeline'
+          type: array
+      type: object
+    ListQuotasRequest.Filter:
+      properties:
+        entity_name:
+          description: Filter by entity name. If unspecified will return all entities for specified entity type.
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        match_default:
+          description: If true, the entity_name will match the default entity (e.g., default client-id).
+          type: boolean
+      type: object
+    ListQuotasResponse:
+      properties:
+        page_token:
+          description: Token to retrieve the next page of results. If empty, there are no more results.
+          type: string
+        quotas:
+          items:
+            $ref: '#/components/schemas/QuotaEntry'
           type: array
       type: object
     ListRoleMembersRequest.Filter:
@@ -1552,6 +1652,34 @@ components:
           description: The user for whom this ACL applies.
           type: string
       type: object
+    Quota.Value:
+      properties:
+        value:
+          format: double
+          type: number
+        value_type:
+          $ref: '#/components/schemas/ValueType'
+      type: object
+    QuotaDeletion:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        value_types:
+          items:
+            $ref: '#/components/schemas/ValueType'
+          title: Value that should be deleted for the specified entity
+          type: array
+      type: object
+    QuotaEntry:
+      description: QuotaEntry represents the quota for a specific entity type.
+      properties:
+        entity:
+          $ref: '#/components/schemas/Entity'
+        values:
+          items:
+            $ref: '#/components/schemas/Quota.Value'
+          type: array
+      type: object
     QuotaFailure:
       description: |-
         Describes how a quota check failed.
@@ -1671,6 +1799,15 @@ components:
             developer project id>".
           type: string
       type: object
+    QuotaSetting:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        values:
+          items:
+            $ref: '#/components/schemas/RequestQuotaValue'
+          type: array
+      type: object
     ReplicaAssignment:
       properties:
         partition_id:
@@ -1683,6 +1820,25 @@ components:
             format: int32
             type: integer
           type: array
+      type: object
+    RequestQuotaEntity:
+      properties:
+        entity_name:
+          description: |-
+            Entity name is the name of the entity type specified.
+            If left empty, the entity will be treated as a default entity (e.g., all clients).
+            If entity_type is ENTITY_TYPE_CLIENT_ID_PREFIX, this field must be set.
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+      type: object
+    RequestQuotaValue:
+      properties:
+        value:
+          format: double
+          type: number
+        value_type:
+          $ref: '#/components/schemas/ValueType'
       type: object
     Resource:
       properties:
@@ -1830,6 +1986,15 @@ components:
             $ref: '#/components/schemas/AlterTopicPartitionStatus'
           type: array
       type: object
+    SetQuotaRequest:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        value:
+          $ref: '#/components/schemas/RequestQuotaValue'
+      type: object
+    SetQuotaResponse:
+      type: object
     SetTopicConfigurationsResponse:
       properties:
         configurations:
@@ -1869,6 +2034,13 @@ components:
       properties:
         pipeline:
           $ref: '#/components/schemas/Pipeline'
+      type: object
+    SuccessfulEntity:
+      properties:
+        entity_name:
+          type: string
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
       type: object
     TaskInfo:
       properties:
@@ -2143,6 +2315,22 @@ components:
         connector:
           $ref: '#/components/schemas/ConnectorSpec'
       type: object
+    ValueType:
+      description: |-
+        The type of value that the quota represents.
+
+         - VALUE_TYPE_PRODUCER_BYTE_RATE: The rate at which producers can send data.
+         - VALUE_TYPE_CONSUMER_BYTE_RATE: The rate at which consumers can fetch data.
+         - VALUE_TYPE_CONTROLLER_MUTATION_RATE: The rate at which topic mutation requests can be made.
+         - VALUE_TYPE_REQUEST_PERCENTAGE: The percentage of the total throughput that can be used by the entity.
+
+        Not supported in Redpanda
+      enum:
+        - VALUE_TYPE_PRODUCER_BYTE_RATE
+        - VALUE_TYPE_CONSUMER_BYTE_RATE
+        - VALUE_TYPE_CONTROLLER_MUTATION_RATE
+        - VALUE_TYPE_REQUEST_PERCENTAGE
+      type: string
     rpc.Status:
       description: |-
         The `Status` type defines a logical error model that is suitable for
@@ -3761,6 +3949,229 @@ paths:
       summary: Update Connect Cluster Secret
       tags:
         - Secrets
+  /v1/quotas:
+    get:
+      description: List client quotas. Use filter parameters to narrow results by entity type and filter criteria.
+      operationId: QuotaService_ListQuotas
+      parameters:
+        - description: |-
+            The type of entity to filter by. If  unspecified, all entities will be returned.
+
+             - ENTITY_TYPE_USER: Not supported in Redpanda
+             - ENTITY_TYPE_IP: Not supported in Redpanda
+          in: query
+          name: filter.entity_type
+          schema:
+            enum:
+              - ENTITY_TYPE_CLIENT_ID
+              - ENTITY_TYPE_CLIENT_ID_PREFIX
+              - ENTITY_TYPE_USER
+              - ENTITY_TYPE_IP
+            type: string
+        - description: Filter by entity name. If unspecified will return all entities for specified entity type.
+          in: query
+          name: filter.entity_name
+          schema:
+            type: string
+        - description: If true, the entity_name will match the default entity (e.g., default client-id).
+          in: query
+          name: filter.match_default
+          schema:
+            type: boolean
+        - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
+          in: query
+          name: page_size
+          schema:
+            format: int32
+            type: integer
+        - description: Value of the next_page_token field returned by the previous response. If not provided, the system assumes the first page is requested.
+          in: query
+          name: page_token
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListQuotasResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List quotas
+      tags:
+        - Quotas
+    post:
+      description: Create or update client throughput quotas for a single entity. This operation is an upsert.
+      operationId: QuotaService_SetQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetQuotaResponse'
+          description: Quota Set
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Set a quota
+      tags:
+        - Quotas
+  /v1/quotas:batchDelete:
+    post:
+      description: Delete client quotas for multiple entities and values in a single request.
+      operationId: QuotaService_BatchDeleteQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchDeleteQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchDeleteQuotaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete multiple quotas
+      tags:
+        - Quotas
+  /v1/quotas:batchSet:
+    post:
+      description: Create or update client throughput quotas for multiple entities in a single request.
+      operationId: QuotaService_BatchSetQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchSetQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchSetQuotaResponse'
+          description: Quotas Set
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Set multiple quotas
+      tags:
+        - Quotas
+  /v1/quotas:delete:
+    post:
+      description: Delete client quotas for single entity and value.
+      operationId: QuotaService_DeleteQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteQuotaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete a quota
+      tags:
+        - Quotas
   /v1/redpanda-connect/config-schema:
     get:
       description: The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
@@ -6151,6 +6562,8 @@ tags:
     name: Redpanda Connect Pipeline
   - description: Create and manage Redpanda Connect MCP servers and their configurations.
     name: Redpanda Connect MCP servers
+  - description: Manage client throughput limits. See [Redpanda Client Throughput Limits](https://docs.redpanda.com/current/manage/cluster-maintenance/manage-throughput/#client-throughput-limits) for more information.
+    name: Quotas
   - description: Manage [secrets](https://docs.redpanda.com/redpanda-cloud/security/secrets) for Redpanda Cloud.
     name: Secrets
   - description: Manage Redpanda roles.

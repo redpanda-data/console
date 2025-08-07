@@ -93,3 +93,13 @@ func (s *Service) DescribeQuotas(ctx context.Context) QuotaResponse {
 		Items: items,
 	}
 }
+
+// DescribeClientQuotas proxies the request/response for describing client quotas via the Kafka API.
+func (s *Service) DescribeClientQuotas(ctx context.Context, req *kmsg.DescribeClientQuotasRequest) (*kmsg.DescribeClientQuotasResponse, error) {
+	cl, _, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.RequestWith(ctx, cl)
+}
