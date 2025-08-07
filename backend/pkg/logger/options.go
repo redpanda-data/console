@@ -39,10 +39,10 @@ func WithOutput(w io.Writer) Option {
 }
 
 // WithPrometheusRegistry configures the logger to emit metrics to the provided registry.
-func WithPrometheusRegistry(reg prometheus.Registerer) Option {
+func WithPrometheusRegistry(reg prometheus.Registerer, metricsNamespace string) Option {
 	return func(c *config) {
 		// Create and add the Prometheus handler
-		promHandler := NewPrometheusHandler(reg)
+		promHandler := NewPrometheusHandler(reg, metricsNamespace)
 		c.handlers = append(c.handlers, promHandler)
 	}
 }

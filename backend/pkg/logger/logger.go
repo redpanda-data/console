@@ -121,3 +121,31 @@ func formatTimestamp(attr slog.Attr, format string) slog.Attr {
 	// Use the format as a time layout string
 	return slog.String(slog.TimeKey, t.Format(format))
 }
+
+// FatalStartup logs a fatal startup message and exits. This is used for
+// exiting the program before anything could be loaded successfully: we do
+// not know how the logger should yet be configured, so we assume production
+// defaults and exit.
+func FatalStartup(msg string, args ...any) {
+	logger := NewSlogLogger(
+		WithFormat(FormatJSON),
+		WithLevel(slog.LevelInfo),
+		WithTimestampFormat(time.RFC3339),
+	)
+	logger.Error(msg, args...)
+	os.Exit(1) //nolint:revive // Fatal functions are intended to exit
+}
+
+// Fatal logs at error level using the provided slog.Logger and exits.
+// Use this for unrecoverable runtime errors when you already have a logger instance.
+func Fatal(logger *slog.Logger, msg string, args ...any) {
+	logger.Error(msg, args...)
+	os.Exit(1) //nolint:revive // Fatal functions are intended to exit
+}
+
+// Named creates a new logger with a "logger" attribute.
+// This is the slog equivalent of zap's logger.Named() and maintains
+// compatibility with the previous key name standard.
+func Named(logger *slog.Logger, name string) *slog.Logger {
+	return logger.With(slog.String("logger", name))
+}

@@ -12,12 +12,11 @@ package console
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // CreateTopicResponse is the response that is sent after creating a topic successfully.
@@ -42,11 +41,11 @@ func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTop
 		return CreateTopicResponse{}, errorToRestError(err)
 	}
 
-	internalLogs := []zapcore.Field{
-		zap.String("topic_name", createTopicReq.Topic),
-		zap.Int32("partition_count", createTopicReq.NumPartitions),
-		zap.Int16("replication_factor", createTopicReq.ReplicationFactor),
-		zap.Int("configuration_count", len(createTopicReq.Configs)),
+	internalLogs := []slog.Attr{
+		slog.String("topic_name", createTopicReq.Topic),
+		slog.Int("partition_count", int(createTopicReq.NumPartitions)),
+		slog.Int("replication_factor", int(createTopicReq.ReplicationFactor)),
+		slog.Int("configuration_count", len(createTopicReq.Configs)),
 	}
 
 	req := kmsg.NewCreateTopicsRequest()

@@ -12,11 +12,10 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // GetConnectorConfig gets the connector configuration.
@@ -35,7 +34,7 @@ func (s *Service) GetConnectorConfig(ctx context.Context, clusterName string, co
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
 			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector", connector)},
 			IsSilent:     false,
 		}
 	}

@@ -14,6 +14,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"go.uber.org/zap"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -121,7 +121,7 @@ func (c *Config) SetDefaults() {
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.
-func LoadConfig(logger *zap.Logger) (Config, error) {
+func LoadConfig(logger *slog.Logger) (Config, error) {
 	k := koanf.New(".")
 	var cfg Config
 	cfg.SetDefaults()

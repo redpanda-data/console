@@ -10,24 +10,37 @@
 package main
 
 import (
-	"go.uber.org/zap"
+	"context"
+	"time"
 
 	"github.com/redpanda-data/console/backend/pkg/api"
 	"github.com/redpanda-data/console/backend/pkg/config"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 func main() {
-	startupLogger := zap.NewExample()
+	defaultLogger := loggerpkg.NewSlogLogger()
 
-	cfg, err := config.LoadConfig(startupLogger)
+	cfg, err := config.LoadConfig(defaultLogger)
 	if err != nil {
-		startupLogger.Fatal("failed to load config", zap.Error(err))
+		loggerpkg.FatalStartup("failed to load config", err)
 	}
 	err = cfg.Validate()
 	if err != nil {
-		startupLogger.Fatal("failed to validate config", zap.Error(err))
+		loggerpkg.FatalStartup("failed to validate config", err)
 	}
 
-	a := api.New(&cfg)
-	a.Start()
+	a, err := api.New(&cfg)
+	if err != nil {
+		loggerpkg.FatalStartup("failed to create API", err)
+	}
+
+	// Create startup context with timeout
+	startupTimeout := 6*time.Second + cfg.Kafka.Startup.TotalMaxTime()
+	ctx, cancel := context.WithTimeout(context.Background(), startupTimeout)
+	defer cancel()
+
+	if err := a.Start(ctx); err != nil {
+		loggerpkg.FatalStartup("failed to start API", err)
+	}
 }

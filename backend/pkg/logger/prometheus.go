@@ -28,11 +28,12 @@ var _ slog.Handler = (*PrometheusHandler)(nil)
 
 // NewPrometheusHandler creates a handler that emits Prometheus metrics for log messages.
 // It pre-initializes counters for all log levels to ensure they start at 0.
-func NewPrometheusHandler(reg prometheus.Registerer) HandlerFunc {
+func NewPrometheusHandler(reg prometheus.Registerer, metricsNamespace string) HandlerFunc {
 	return func(next slog.Handler) slog.Handler {
 		messageCounterVec := prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "log_messages_total",
-			Help: "Total number of log messages, labeled by level.",
+			Namespace: metricsNamespace,
+			Name:      "log_messages_total",
+			Help:      "Total number of log messages, labeled by level.",
 		}, []string{"level"})
 
 		// Register the counter vector safely
@@ -41,7 +42,6 @@ func NewPrometheusHandler(reg prometheus.Registerer) HandlerFunc {
 			if !errors.As(err, &alreadyRegisteredError) {
 				// Log unexpected registration errors for debugging
 				// Use slog.Default() to respect any global slog configuration
-				//nolint:sloglint,noctx // Using global logger is intentional here to avoid circular dependency
 				slog.Default().Warn("logger: failed to register prometheus metrics", slog.Any("error", err))
 			}
 		}

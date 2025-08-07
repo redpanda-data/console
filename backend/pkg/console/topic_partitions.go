@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -22,7 +23,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 )
 
 // TopicDetails contains all a topic's partition metadata (low/high watermark, metadata, log dirs etc).
@@ -205,7 +205,7 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, adminCl *kadm.C
 			TopicName: topic.Topic,
 		}
 		if topic.Err != nil {
-			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topic.Topic), zap.Error(topic.Err))
+			s.logger.WarnContext(ctx, "failed to get metadata for topic", slog.String("topic", topic.Topic), slog.Any("error", topic.Err))
 
 			// Propagate the failed response and do not even try any further requests for that topic.
 			topicOverview.Error = fmt.Sprintf("Failed to get metadata for topic: %v", topic.Err.Error())

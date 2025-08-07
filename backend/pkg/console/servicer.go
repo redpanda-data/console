@@ -81,6 +81,10 @@ type Servicer interface {
 	AddPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error)
 	// Sets partition counts to existing topics.
 	SetPartitionsToTopics(ctx context.Context, add int, topicNames []string, validateOnly bool) (kadm.CreatePartitionsResponses, error)
+	// DescribeClientQuotas proxies the request/response for describing client quotas via the Kafka API.
+	DescribeClientQuotas(ctx context.Context, req *kmsg.DescribeClientQuotasRequest) (*kmsg.DescribeClientQuotasResponse, error)
+	// AlterClientQuotas proxies the request/response for altering client quotas via the Kafka API.
+	AlterClientQuotas(ctx context.Context, req *kmsg.AlterClientQuotasRequest) (*kmsg.AlterClientQuotasResponse, error)
 }
 
 // SchemaRegistryServicer is the interface for schema registry servicer

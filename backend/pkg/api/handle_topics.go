@@ -12,14 +12,13 @@ package api
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
@@ -58,7 +57,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
-		logger := api.Logger.With(zap.String("topic_name", topicName))
+		logger := api.Logger.With(slog.String("topic_name", topicName))
 
 		topicDetails, restErr := api.ConsoleSvc.GetTopicDetails(r.Context(), []string{topicName})
 		if restErr != nil {
@@ -93,7 +92,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
-		logger := api.Logger.With(zap.String("topic_name", topicName))
+		logger := api.Logger.With(slog.String("topic_name", topicName))
 
 		description, restErr := api.ConsoleSvc.GetTopicConfigs(r.Context(), topicName, nil)
 		if restErr != nil {
@@ -265,7 +264,7 @@ func (api *API) handleEditTopicConfig() http.HandlerFunc {
 				Err:          fmt.Errorf("failed to edit topic config: %w", err),
 				Status:       http.StatusServiceUnavailable,
 				Message:      fmt.Sprintf("Failed to edit topic config: %v", err.Error()),
-				InternalLogs: []zapcore.Field{zap.String("topic_name", topicName)},
+				InternalLogs: []slog.Attr{slog.String("topic_name", topicName)},
 				IsSilent:     false,
 			})
 			return
@@ -295,7 +294,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 			configKeys = strings.Split(requestedConfigKeys, ",")
 		}
 
-		logger := api.Logger.With(zap.Int("topics_length", len(topicNames)), zap.Int("config_keys_length", len(configKeys)))
+		logger := api.Logger.With(slog.Int("topics_length", len(topicNames)), slog.Int("config_keys_length", len(configKeys)))
 
 		// 2. Fetch all topic names from metadata as no topic filter has been specified
 		if len(topicNames) == 0 {
@@ -346,7 +345,7 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := rest.GetURLParam(r, "topicName")
-		logger := api.Logger.With(zap.String("topic_name", topicName))
+		logger := api.Logger.With(slog.String("topic_name", topicName))
 
 		consumers, err := api.ConsoleSvc.ListTopicConsumers(r.Context(), topicName)
 		if err != nil {

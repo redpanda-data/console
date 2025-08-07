@@ -11,11 +11,11 @@ package git
 
 import (
 	"fmt"
+	"log/slog"
 	"path"
 	"strings"
 
 	"github.com/go-git/go-billy/v5"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 )
@@ -54,7 +54,7 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]filesystem.File,
 	// This case should only be entered when currentPath equals to a directory that is not existent. This could happen
 	// if the configured base directory does not exist.
 	if fileInfos == nil {
-		c.logger.Warn("visited git directory does not exist", zap.String("current_path", currentPath))
+		c.logger.Warn("visited git directory does not exist", slog.String("current_path", currentPath))
 		return res, nil
 	}
 
@@ -73,8 +73,8 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]filesystem.File,
 		content, err := readFile(filePath, fs, c.Cfg.MaxFileSize)
 		if err != nil {
 			c.logger.Error("failed to read file from git. file will be skipped",
-				zap.String("file_name", name),
-				zap.String("path", currentPath), zap.Error(err))
+				slog.String("file_name", name),
+				slog.String("path", currentPath), slog.Any("error", err))
 			continue
 		}
 

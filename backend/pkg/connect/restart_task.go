@@ -12,11 +12,10 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // RestartConnectorTask restart an individual task.
@@ -32,10 +31,10 @@ func (s *Service) RestartConnectorTask(ctx context.Context, clusterName string, 
 			Err:     err,
 			Status:  http.StatusServiceUnavailable,
 			Message: fmt.Sprintf("Failed to restart connector task: %v", err.Error()),
-			InternalLogs: []zapcore.Field{
-				zap.String("cluster_name", clusterName),
-				zap.String("connector", connector),
-				zap.Int("task_id", taskID),
+			InternalLogs: []slog.Attr{
+				slog.String("cluster_name", clusterName),
+				slog.String("connector", connector),
+				slog.Int("task_id", taskID),
 			},
 			IsSilent: false,
 		}

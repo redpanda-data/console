@@ -15,12 +15,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"go.uber.org/zap"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
 
 // handleFrontendIndex takes care of delivering the index.html file from the SPA. It has some
@@ -37,7 +38,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 	// Load index.html file
 	indexOriginal, err := fs.ReadFile(api.FrontendResources, "index.html")
 	if err != nil {
-		api.Logger.Fatal("failed to load index.html from embedded filesystem", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to load index.html from embedded filesystem", "error", err)
 	}
 	// Get enabled features from hooks
 	enabledFeatures := api.Hooks.Console.EnabledFeatures()
@@ -80,7 +81,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 		}
 
 		if _, err := w.Write(index); err != nil {
-			api.Logger.Error("failed to write index file to response writer", zap.Error(err))
+			api.Logger.Error("failed to write index file to response writer", slog.Any("error", err))
 		}
 	}
 }
@@ -92,7 +93,7 @@ func (api *API) handleFrontendResources() http.HandlerFunc {
 	fsHandler := http.StripPrefix("/", http.FileServer(httpFs))
 	fileHashes, err := getHashes(api.FrontendResources)
 	if err != nil {
-		api.Logger.Fatal("failed to calculate file hashes", zap.Error(err))
+		loggerpkg.Fatal(api.Logger, "failed to calculate file hashes", "error", err)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +105,7 @@ func (api *API) handleFrontendResources() http.HandlerFunc {
 		f, err := httpFs.Open(r.URL.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				api.Logger.Debug("requested file not found", zap.String("requestURI", r.RequestURI), zap.String("path", r.URL.Path))
+				api.Logger.Debug("requested file not found", slog.String("request_uri", r.RequestURI), slog.String("path", r.URL.Path))
 			}
 			handleIndex(w, r) // everything else goes to index as well
 			return

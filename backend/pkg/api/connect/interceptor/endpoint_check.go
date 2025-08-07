@@ -12,10 +12,10 @@ package interceptor
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -27,7 +27,7 @@ import (
 // should pass or not. An endpoint can be enabled or disabled via the Console config.
 type EndpointCheckInterceptor struct {
 	cfg    *config.ConsoleAPI
-	logger *zap.Logger
+	logger *slog.Logger
 
 	// alwaysEnabledProcedures are endpoints that should always pass this check
 	// regardless whether the API is enabled or what procedures have been
@@ -36,7 +36,7 @@ type EndpointCheckInterceptor struct {
 }
 
 // NewEndpointCheckInterceptor creates a new EndpointCheckInterceptor.
-func NewEndpointCheckInterceptor(cfg *config.ConsoleAPI, logger *zap.Logger) *EndpointCheckInterceptor {
+func NewEndpointCheckInterceptor(cfg *config.ConsoleAPI, logger *slog.Logger) *EndpointCheckInterceptor {
 	return &EndpointCheckInterceptor{
 		cfg:    cfg,
 		logger: logger,

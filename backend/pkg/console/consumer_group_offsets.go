@@ -13,9 +13,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/twmb/franz-go/pkg/kadm"
-	"go.uber.org/zap"
 )
 
 type partitionOffsets map[int32]int64
@@ -48,12 +48,12 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 	var lastErr error
 	fetchOffsetResponses.EachError(func(shardRes kadm.FetchOffsetsResponse) {
 		s.logger.Warn("failed to fetch group offset",
-			zap.String("group", shardRes.Group),
-			zap.Error(shardRes.Err))
+			slog.String("group", shardRes.Group),
+			slog.Any("error", shardRes.Err))
 		lastErr = shardRes.Err
 	})
 	if fetchOffsetResponses.AllFailed() {
-		s.logger.Error("failed to list consumer group offsets", zap.Error(lastErr))
+		s.logger.ErrorContext(ctx, "failed to list consumer group offsets", slog.Any("error", lastErr))
 		return nil, fmt.Errorf("all requests for fetchinf group offsets have failed, last error is: %w", lastErr)
 	}
 
@@ -69,10 +69,10 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 		offsetResponses.Fetched.Each(func(offsetResponse kadm.OffsetResponse) {
 			if offsetResponse.Err != nil {
 				s.logger.Warn("failed to retrieve group offset",
-					zap.String("group", group),
-					zap.String("topic", offsetResponse.Topic),
-					zap.Int32("partition", offsetResponse.Partition),
-					zap.Error(offsetResponse.Err))
+					slog.String("group", group),
+					slog.String("topic", offsetResponse.Topic),
+					slog.Int("partition", int(offsetResponse.Partition)),
+					slog.Any("error", offsetResponse.Err))
 				return
 			}
 
@@ -90,7 +90,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 
 	metadata, err := adminCl.Metadata(ctx, topicsWithOffsets...)
 	if err != nil {
-		s.logger.Error("failed to get topic metadata", zap.Strings("topics", topicsWithOffsets), zap.Error(err))
+		s.logger.ErrorContext(ctx, "failed to get topic metadata", slog.Any("topics", topicsWithOffsets), slog.Any("error", err))
 		return nil, fmt.Errorf("failed to get topic metadata: %w", err)
 	}
 
@@ -143,11 +143,11 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 
 		for topic, partitionOffsets := range groupOffsets[group] {
 			// In this scope we iterate on a single group's, single topic's offset
-			childLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
+			childLogger := s.logger.With(slog.String("group", group), slog.String("topic", topic))
 
 			highWaterMarks, ok := partitionInfoByIDAndTopic[topic]
 			if !ok {
-				childLogger.Error("no partition watermark for the group's topic available")
+				childLogger.ErrorContext(ctx, "no partition watermark for the group's topic available")
 				return nil, errors.New("no partition watermark for the group's topic available")
 			}
 

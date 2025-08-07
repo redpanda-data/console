@@ -10,6 +10,7 @@
 package serde
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,11 +22,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	protopkg "github.com/redpanda-data/console/backend/pkg/proto"
 	shopv1 "github.com/redpanda-data/console/backend/pkg/serde/testdata/proto/gen/shop/v1"
 )
@@ -37,8 +38,10 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	logger, err := zap.NewProduction()
-	require.NoError(t, err)
+	logger := loggerpkg.NewSlogLogger(
+		loggerpkg.WithFormat(loggerpkg.FormatText),
+		loggerpkg.WithLevel(slog.LevelDebug),
+	)
 
 	topic0 := config.RegexpOrLiteral{}
 	topic0.UnmarshalText([]byte("protobuf_serde_test_orders"))
@@ -164,8 +167,10 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 }
 
 func TestProtobufSerde_SerializeObject(t *testing.T) {
-	logger, err := zap.NewProduction()
-	require.NoError(t, err)
+	logger := loggerpkg.NewSlogLogger(
+		loggerpkg.WithFormat(loggerpkg.FormatText),
+		loggerpkg.WithLevel(slog.LevelDebug),
+	)
 
 	topic0 := config.RegexpOrLiteral{}
 	topic0.UnmarshalText([]byte("protobuf_serde_test_orders"))

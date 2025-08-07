@@ -12,12 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // ClusterInfo provides information about the Kafka connect cluster we are talking to.
@@ -44,7 +43,7 @@ func (s *Service) GetClusterInfo(ctx context.Context, clusterName string) (Clust
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to get cluster info: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName)},
 			IsSilent:     false,
 		}
 	}
@@ -55,7 +54,7 @@ func (s *Service) GetClusterInfo(ctx context.Context, clusterName string) (Clust
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to get cluster plugins: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName)},
 			IsSilent:     false,
 		}
 	}
