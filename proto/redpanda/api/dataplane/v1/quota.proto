@@ -262,7 +262,10 @@ service QuotaService {
   // Delete quota for a specific entity and value type.
   // If value type is unspecified, all values for the entity will be deleted.
   rpc DeleteQuota(DeleteQuotaRequest) returns (DeleteQuotaResponse) {
-    option (google.api.http) = {delete: "/v1/quotas"};
+    option (google.api.http) = {
+      post: "/v1/quotas:delete"
+      body: "*"
+    };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete a quota"
       description: "Delete client quotas for single entity and value."

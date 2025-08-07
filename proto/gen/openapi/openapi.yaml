@@ -578,6 +578,13 @@ components:
       type: object
     DeletePipelineResponse:
       type: object
+    DeleteQuotaRequest:
+      properties:
+        entity:
+          $ref: '#/components/schemas/RequestQuotaEntity'
+        value_type:
+          $ref: '#/components/schemas/ValueType'
+      type: object
     DeleteQuotaResponse:
       type: object
     DeleteRoleResponse:
@@ -3943,76 +3950,6 @@ paths:
       tags:
         - Secrets
   /v1/quotas:
-    delete:
-      description: Delete client quotas for single entity and value.
-      operationId: QuotaService_DeleteQuota
-      parameters:
-        - description: |2-
-             - ENTITY_TYPE_USER: Not supported in Redpanda
-             - ENTITY_TYPE_IP: Not supported in Redpanda
-          in: query
-          name: entity.entity_type
-          schema:
-            enum:
-              - ENTITY_TYPE_CLIENT_ID
-              - ENTITY_TYPE_CLIENT_ID_PREFIX
-              - ENTITY_TYPE_USER
-              - ENTITY_TYPE_IP
-            type: string
-        - description: |-
-            Entity name is the name of the entity type specified.
-            If left empty, the entity will be treated as a default entity (e.g., all clients).
-            If entity_type is ENTITY_TYPE_CLIENT_ID_PREFIX, this field must be set.
-          in: query
-          name: entity.entity_name
-          schema:
-            type: string
-        - description: |-
-            Value that should be deleted for the specified entity
-
-             - VALUE_TYPE_PRODUCER_BYTE_RATE: The rate at which producers can send data.
-             - VALUE_TYPE_CONSUMER_BYTE_RATE: The rate at which consumers can fetch data.
-             - VALUE_TYPE_CONTROLLER_MUTATION_RATE: The rate at which topic mutation requests can be made.
-             - VALUE_TYPE_REQUEST_PERCENTAGE: The percentage of the total throughput that can be used by the entity.
-
-            Not supported in Redpanda
-          in: query
-          name: value_type
-          schema:
-            enum:
-              - VALUE_TYPE_PRODUCER_BYTE_RATE
-              - VALUE_TYPE_CONSUMER_BYTE_RATE
-              - VALUE_TYPE_CONTROLLER_MUTATION_RATE
-              - VALUE_TYPE_REQUEST_PERCENTAGE
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteQuotaResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Delete a quota
-      tags:
-        - Quotas
     get:
       description: List client quotas. Use filter parameters to narrow results by entity type and filter criteria.
       operationId: QuotaService_ListQuotas
@@ -4194,6 +4131,45 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Set multiple quotas
+      tags:
+        - Quotas
+  /v1/quotas:delete:
+    post:
+      description: Delete client quotas for single entity and value.
+      operationId: QuotaService_DeleteQuota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteQuotaRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteQuotaResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Delete a quota
       tags:
         - Quotas
   /v1/redpanda-connect/config-schema:
@@ -6166,7 +6142,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
