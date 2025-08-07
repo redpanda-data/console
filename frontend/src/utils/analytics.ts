@@ -12,10 +12,10 @@
 /**
  * Check if analytics/tracking is enabled based on the backend configuration.
  * This should be used to conditionally load tracking scripts and enable analytics features.
- * 
+ *
  * @returns true if analytics is enabled, false otherwise
  */
 export function isAnalyticsEnabled(): boolean {
   const enabledFeatures = (window as any).ENABLED_FEATURES ? (window as any).ENABLED_FEATURES.split(',') : [];
-  return !enabledFeatures.includes('no_analytics');
-} 
+  return enabledFeatures.includes('analytics_enabled');
+}

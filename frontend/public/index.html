@@ -50,7 +50,7 @@
         // Function to load analytics scripts
         window.loadAnalyticsScripts = function() {
             const enabledFeatures = window.ENABLED_FEATURES ? window.ENABLED_FEATURES.split(',') : [];
-            const isAnalyticsEnabled = !enabledFeatures.includes('no_analytics');
+            const isAnalyticsEnabled = enabledFeatures.includes('analytics_enabled');
             if (isAnalyticsEnabled) {
                 // Load Hubspot script
                 const script = document.createElement('script');

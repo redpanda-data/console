@@ -42,9 +42,9 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 	// Get enabled features from hooks
 	enabledFeatures := api.Hooks.Console.EnabledFeatures()
 
-	// Add no_analytics feature if analytics is disabled
-	if !api.Cfg.Analytics.Enabled {
-		enabledFeatures = append(enabledFeatures, "no_analytics")
+	// Add analytics_enabled feature if analytics is enabled
+	if api.Cfg.Analytics.Enabled {
+		enabledFeatures = append(enabledFeatures, "analytics_enabled")
 	}
 
 	enabledFeaturesStr := strings.Join(enabledFeatures, ",")
