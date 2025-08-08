@@ -1,9 +1,17 @@
 import { Box } from '@redpanda-data/ui';
-import type { ChatMessage } from 'database/chat-db';
 import ReactMarkdown from 'react-markdown';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
 import { ChatCodeBlock } from './chat-code-block';
+
+export interface ChatMessage {
+  id: string;
+  agentId: string;
+  content: string;
+  sender: 'user' | 'system';
+  timestamp: Date;
+  failure: boolean;
+}
 
 interface ChatMarkdownProps {
   message: ChatMessage;
