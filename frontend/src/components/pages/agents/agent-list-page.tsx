@@ -34,6 +34,7 @@ import { HUBSPOT_AI_AGENTS_FORM_ID, HUBSPOT_PORTAL_ID, HUBSPOT_REGION } from './
 import HubspotModal from './hubspot-modal';
 import { buttonCss, errorCss, errorMessageCss } from './hubspot-styles';
 
+
 export interface TokenPayload extends JwtPayload {
   'https://cloud.redpanda.com/client_organization_id': string;
   'https://cloud.redpanda.com/user_type': string;
