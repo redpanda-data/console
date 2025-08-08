@@ -1,4 +1,6 @@
 import {
+  Alert,
+  AlertIcon,
   Box,
   Button,
   ButtonGroup,
@@ -27,7 +29,7 @@ export interface DeleteSecretModalProps {
 
 export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretModalProps) => {
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
-  const { mutateAsync: deleteSecret, isPending: isDeleteSecretPending } = useDeleteSecretMutation();
+  const { mutateAsync: deleteSecret, isPending: isDeleteSecretPending, error: deleteSecretError } = useDeleteSecretMutation();
 
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
@@ -62,6 +64,12 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
             <ModalHeader>Delete Secret</ModalHeader>
             <ModalBody mb={4}>
               <Stack spacing={4}>
+                {deleteSecretError && (
+                  <Alert status="error" variant="subtle" data-testid="delete-secret-error">
+                    <AlertIcon />
+                    {deleteSecretError.message}
+                  </Alert>
+                )}
                 <Text>
                   This action will cause data loss. To confirm, type <Code>{secretId}</Code> into the confirmation box
                   below.
@@ -89,7 +97,7 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
                     id="delete-modal-btn"
                     loadingText="Deleting"
                   />
-                  <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>
+                  <Button variant="ghost" data-testid="cancel-button" onClick={handleClose}>
                     Cancel
                   </Button>
                 </ButtonGroup>

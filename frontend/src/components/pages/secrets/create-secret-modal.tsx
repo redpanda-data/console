@@ -1,5 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import {
+  Alert,
+  AlertIcon,
   Button,
   ButtonGroup,
   FormErrorMessage,
@@ -37,7 +39,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
+  const { mutateAsync: createSecret, isPending: isCreateSecretPending, error: createSecretError } = useCreateSecretMutation();
 
   const finalSchema = secretSchema(customSecretSchema);
 
@@ -99,6 +101,12 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={2}>
+                {createSecretError && (
+                  <Alert status="error" variant="subtle" data-testid="create-secret-error">
+                    <AlertIcon />
+                    {createSecretError.message}
+                  </Alert>
+                )}
                 <Text>Secrets are stored securely and cannot be read by Console after creation.</Text>
 
                 <form.AppField
@@ -186,7 +194,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                   variant="ghost"
                   data-testid="cancel-button"
                   onClick={() => {
-                    onClose(undefined);
+                    handleClose();
                   }}
                 >
                   Cancel
