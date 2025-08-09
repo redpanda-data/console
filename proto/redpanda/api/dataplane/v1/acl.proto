@@ -112,9 +112,9 @@ message CreateACLRequest {
   option (buf.validate.message).cel = {
     id: "resource_name_must_be_set_except_for_cluster_resource_type"
     expression:
-      "this.resource_type == 4 && size(this.resource_name) == 0 ? ''"
+      "(this.resource_type == 4 || this.resource_type == 8) && size(this.resource_name) == 0 ? ''"
       ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
-      ": this.resource_type != 4 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
+      ": this.resource_type != 4 && this.resource_type != 8 && size(this.resource_name) == 0 ? 'Field resource_name must be set'"
       ": ''"
   };
 
