@@ -288,6 +288,17 @@ func (srm *schemaRegistryMapper) describeSRACLsResourceToProto(res []rpsr.ACL) (
 	return response, nil
 }
 
+func (*schemaRegistryMapper) isSRResourceTypeOrAny(rt v1.ACL_ResourceType) bool {
+	schemaRegistryACLs := map[v1.ACL_ResourceType]struct{}{
+		v1.ACL_RESOURCE_TYPE_REGISTRY: {},
+		v1.ACL_RESOURCE_TYPE_SUBJECT:  {},
+		v1.ACL_RESOURCE_TYPE_ANY:      {},
+	}
+
+	_, ok := schemaRegistryACLs[rt]
+	return ok
+}
+
 // listACLFilterToDescribeACLSR converts a protobuf ACL filter to Schema
 // Registry ACL filters. It returns nil if the filter is not relevant for Schema
 // Registry resources, an empty slice for nil filter (meaning all ACLs), or a
@@ -298,35 +309,24 @@ func (srm *schemaRegistryMapper) listACLFilterToDescribeACLSR(filter *v1.ListACL
 		// empty slice that effectively means "all ACLs".
 		return []rpsr.ACL{}
 	}
-	if filter.ResourceType == v1.ACL_RESOURCE_TYPE_REGISTRY || filter.ResourceType == v1.ACL_RESOURCE_TYPE_SUBJECT || filter.ResourceType == v1.ACL_RESOURCE_TYPE_ANY {
-		var principal, resourceName, host string
-		if filter.Principal != nil {
-			principal = *filter.Principal
-		}
-		if filter.ResourceName != nil {
-			resourceName = *filter.ResourceName
-		}
-		if filter.Host != nil {
-			host = *filter.Host
-		}
-
-		// rpsr can receive multiple filters, but we only support one filter
-		// at a time. We return a slice to simplify the usage downstream.
-		return []rpsr.ACL{
-			{
-				Principal:    principal,
-				Resource:     resourceName,
-				ResourceType: srm.protoResourceTypeToSR(filter.ResourceType),
-				PatternType:  srm.protoPatternTypeToSR(filter.ResourcePatternType),
-				Host:         host,
-				Operation:    srm.protoOperationToSR(filter.Operation),
-				Permission:   srm.protoPermissionToSR(filter.PermissionType),
-			},
-		}
+	if !srm.isSRResourceTypeOrAny(filter.GetResourceType()) {
+		// Returning nil means that the filter is not relevant for Schema Registry
+		// hence, we don't want to even query for ACLs.
+		return nil
 	}
-	// Returning nil means that the filter is not relevant for Schema Registry
-	// hence, we don't want to even query for ACLs.
-	return nil
+	// rpsr can receive multiple filters, but we only support one filter
+	// at a time. We return a slice to simplify the usage downstream.
+	return []rpsr.ACL{
+		{
+			Principal:    filter.GetPrincipal(),
+			Resource:     filter.GetResourceName(),
+			ResourceType: srm.protoResourceTypeToSR(filter.GetResourceType()),
+			PatternType:  srm.protoPatternTypeToSR(filter.GetResourcePatternType()),
+			Host:         filter.GetHost(),
+			Operation:    srm.protoOperationToSR(filter.GetOperation()),
+			Permission:   srm.protoPermissionToSR(filter.GetPermissionType()),
+		},
+	}
 }
 
 func (srm *schemaRegistryMapper) srACLToProto(acl rpsr.ACL) (*v1.ListACLsResponse_Policy, error) {
@@ -348,130 +348,93 @@ func (srm *schemaRegistryMapper) srACLToProto(acl rpsr.ACL) (*v1.ListACLsRespons
 	}, nil
 }
 
-func (*schemaRegistryMapper) srACLResourceTypeToProto(resourceType rpsr.ResourceType) (v1.ACL_ResourceType, error) {
-	switch resourceType {
-	case rpsr.ResourceTypeAny:
-		return v1.ACL_RESOURCE_TYPE_ANY, nil
-	case rpsr.ResourceTypeRegistry:
-		return v1.ACL_RESOURCE_TYPE_REGISTRY, nil
-	case rpsr.ResourceTypeSubject:
-		return v1.ACL_RESOURCE_TYPE_SUBJECT, nil
-	default:
-		return v1.ACL_RESOURCE_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry resource type %q to proto", resourceType)
+// aclCreateRequestToSR maps a proto CreateACLRequest to Schema Registry ACL format.
+// Returns nil if the request is not for Schema Registry resource types.
+func (srm *schemaRegistryMapper) aclCreateRequestToSR(req *v1.CreateACLRequest) []rpsr.ACL {
+	// Only handle Schema Registry resource types
+	if req.GetResourceType() != v1.ACL_RESOURCE_TYPE_REGISTRY && req.GetResourceType() != v1.ACL_RESOURCE_TYPE_SUBJECT {
+		return nil
+	}
+
+	return []rpsr.ACL{
+		{
+			Principal:    req.GetPrincipal(),
+			Resource:     req.GetResourceName(),
+			ResourceType: srm.protoResourceTypeToSR(req.GetResourceType()),
+			PatternType:  srm.protoPatternTypeToSR(req.GetResourcePatternType()),
+			Host:         req.GetHost(),
+			Operation:    srm.protoOperationToSR(req.GetOperation()),
+			Permission:   srm.protoPermissionToSR(req.GetPermissionType()),
+		},
 	}
 }
 
-func (*schemaRegistryMapper) srACLPatternTypeToProto(patternType rpsr.PatternType) (v1.ACL_ResourcePatternType, error) {
-	switch patternType {
-	case rpsr.PatternTypeAny:
-		return v1.ACL_RESOURCE_PATTERN_TYPE_ANY, nil
-	case rpsr.PatternTypeLiteral:
-		return v1.ACL_RESOURCE_PATTERN_TYPE_LITERAL, nil
-	case rpsr.PatternTypePrefix:
-		return v1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED, nil
-	default:
-		return v1.ACL_RESOURCE_PATTERN_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry pattern type %q to proto", patternType)
+// deleteACLFilterToSR maps a proto DeleteACLsRequest_Filter to Schema Registry ACL format.
+// Returns nil if the filter is not for Schema Registry resource types.
+// The logic is identical to listACLFilterToDescribeACLSR since both use the
+// same filter structure.
+func (srm *schemaRegistryMapper) deleteACLFilterToSR(filter *v1.DeleteACLsRequest_Filter) []rpsr.ACL {
+	if filter == nil {
+		return []rpsr.ACL{}
+	}
+	if !srm.isSRResourceTypeOrAny(filter.GetResourceType()) {
+		// Returning nil means that the filter is not relevant for Schema Registry
+		// hence, we don't want to even query for ACLs.
+		return nil
+	}
+	return []rpsr.ACL{
+		{
+			Principal:    filter.GetPrincipal(),
+			Resource:     filter.GetResourceName(),
+			ResourceType: srm.protoResourceTypeToSR(filter.ResourceType),
+			PatternType:  srm.protoPatternTypeToSR(filter.ResourcePatternType),
+			Host:         filter.GetHost(),
+			Operation:    srm.protoOperationToSR(filter.Operation),
+			Permission:   srm.protoPermissionToSR(filter.PermissionType),
+		},
 	}
 }
 
-func (*schemaRegistryMapper) srACLOperationToProto(operation rpsr.Operation) (v1.ACL_Operation, error) {
-	switch operation {
-	case rpsr.OperationAny:
-		return v1.ACL_OPERATION_ANY, nil
-	case rpsr.OperationAll:
-		return v1.ACL_OPERATION_ALL, nil
-	case rpsr.OperationRead:
-		return v1.ACL_OPERATION_READ, nil
-	case rpsr.OperationWrite:
-		return v1.ACL_OPERATION_WRITE, nil
-	case rpsr.OperationDelete:
-		return v1.ACL_OPERATION_DELETE, nil
-	case rpsr.OperationDescribe:
-		return v1.ACL_OPERATION_DESCRIBE, nil
-	case rpsr.OperationDescribeConfig:
-		return v1.ACL_OPERATION_DESCRIBE_CONFIGS, nil
-	case rpsr.OperationAlter:
-		return v1.ACL_OPERATION_ALTER, nil
-	case rpsr.OperationAlterConfig:
-		return v1.ACL_OPERATION_ALTER_CONFIGS, nil
-	default:
-		return v1.ACL_OPERATION_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry operation %q to proto", operation)
+func (srm *schemaRegistryMapper) deleteACLMatchingResultToProto(acl rpsr.ACL) (*v1.DeleteACLsResponse_MatchingACL, error) {
+	resourceType, err := srm.srACLResourceTypeToProto(acl.ResourceType)
+	if err != nil {
+		return nil, err
 	}
+
+	operation, err := srm.srACLOperationToProto(acl.Operation)
+	if err != nil {
+		return nil, err
+	}
+
+	permissionType, err := srm.srACLPermissionToProto(acl.Permission)
+	if err != nil {
+		return nil, err
+	}
+
+	resourcePatternType, err := srm.srACLPatternTypeToProto(acl.PatternType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.DeleteACLsResponse_MatchingACL{
+		ResourceType:        resourceType,
+		ResourceName:        acl.Resource,
+		ResourcePatternType: resourcePatternType,
+		Principal:           acl.Principal,
+		Host:                acl.Host,
+		Operation:           operation,
+		PermissionType:      permissionType,
+	}, nil
 }
 
-func (*schemaRegistryMapper) srACLPermissionToProto(permission rpsr.Permission) (v1.ACL_PermissionType, error) {
-	switch permission {
-	case rpsr.PermissionAny:
-		return v1.ACL_PERMISSION_TYPE_ANY, nil
-	case rpsr.PermissionAllow:
-		return v1.ACL_PERMISSION_TYPE_ALLOW, nil
-	case rpsr.PermissionDeny:
-		return v1.ACL_PERMISSION_TYPE_DENY, nil
-	default:
-		return v1.ACL_PERMISSION_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry permission %q to proto", permission)
+func (srm *schemaRegistryMapper) deleteACLMatchingResultsToProtos(acls []rpsr.ACL) ([]*v1.DeleteACLsResponse_MatchingACL, error) {
+	matchingACLs := make([]*v1.DeleteACLsResponse_MatchingACL, len(acls))
+	for i, acl := range acls {
+		protoACL, err := srm.deleteACLMatchingResultToProto(acl)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map matching acl to proto: %w", err)
+		}
+		matchingACLs[i] = protoACL
 	}
-}
-
-func (*schemaRegistryMapper) protoResourceTypeToSR(resourceType v1.ACL_ResourceType) rpsr.ResourceType {
-	switch resourceType {
-	case v1.ACL_RESOURCE_TYPE_REGISTRY:
-		return rpsr.ResourceTypeRegistry
-	case v1.ACL_RESOURCE_TYPE_SUBJECT:
-		return rpsr.ResourceTypeSubject
-	case v1.ACL_RESOURCE_TYPE_ANY:
-		return "" // TODO: temporary solution, RP doesn't support ANY yet.
-	default:
-		return ""
-	}
-}
-
-func (*schemaRegistryMapper) protoPatternTypeToSR(patternType v1.ACL_ResourcePatternType) rpsr.PatternType {
-	switch patternType {
-	case v1.ACL_RESOURCE_PATTERN_TYPE_LITERAL:
-		return rpsr.PatternTypeLiteral
-	case v1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED:
-		return rpsr.PatternTypePrefix
-	case v1.ACL_RESOURCE_PATTERN_TYPE_ANY:
-		return "" // TODO: temporary solution, RP doesn't support ANY yet.
-	default:
-		return ""
-	}
-}
-
-func (*schemaRegistryMapper) protoOperationToSR(operation v1.ACL_Operation) rpsr.Operation {
-	switch operation {
-	case v1.ACL_OPERATION_READ:
-		return rpsr.OperationRead
-	case v1.ACL_OPERATION_WRITE:
-		return rpsr.OperationWrite
-	case v1.ACL_OPERATION_DELETE:
-		return rpsr.OperationDelete
-	case v1.ACL_OPERATION_DESCRIBE:
-		return rpsr.OperationDescribe
-	case v1.ACL_OPERATION_DESCRIBE_CONFIGS:
-		return rpsr.OperationDescribeConfig
-	case v1.ACL_OPERATION_ALTER:
-		return rpsr.OperationAlter
-	case v1.ACL_OPERATION_ALTER_CONFIGS:
-		return rpsr.OperationAlterConfig
-	case v1.ACL_OPERATION_ALL:
-		return rpsr.OperationAll
-	case v1.ACL_OPERATION_ANY:
-		return "" // TODO: temporary solution, RP doesn't support ANY yet.
-	default:
-		return ""
-	}
-}
-
-func (*schemaRegistryMapper) protoPermissionToSR(permissionType v1.ACL_PermissionType) rpsr.Permission {
-	switch permissionType {
-	case v1.ACL_PERMISSION_TYPE_ALLOW:
-		return rpsr.PermissionAllow
-	case v1.ACL_PERMISSION_TYPE_DENY:
-		return rpsr.PermissionDeny
-	case v1.ACL_PERMISSION_TYPE_ANY:
-		return "" // TODO: temporary solution, RP doesn't support ANY yet.
-	default:
-		return ""
-	}
+	return matchingACLs, nil
 }
