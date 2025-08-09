@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -681,6 +682,40 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]Sche
 	return schemaVersions, nil
 }
 
+// CheckSchemaRegistryACLSupport checks if the Schema Registry supports ACL
+// operations by making a test call to the ACL endpoint.
+func (s *Service) CheckSchemaRegistryACLSupport(ctx context.Context) bool {
+	if !s.cfg.SchemaRegistry.Enabled {
+		return false
+	}
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return false
+	}
+
+	faultyACL := []rpsr.ACL{{
+		ResourceType: "NOT_A_RESOURCE_TYPE",
+		PatternType:  "_CONSOLE_TEST",
+	}}
+	err = srClient.CreateACLs(ctx, faultyACL)
+	if err != nil {
+		var se *sr.ResponseError
+		if errors.As(err, &se) {
+			switch se.StatusCode {
+			case http.StatusNotFound:
+				return false
+			case http.StatusForbidden:
+				if strings.Contains(err.Error(), "license") {
+					return false
+				}
+			}
+		}
+		// Other errors (e.g., permissions) mean the endpoint exists
+		return true
+	}
+	return true
+}
+
 // ListSRACLs lists Schema Registry ACLs based on the provided filter
 func (s *Service) ListSRACLs(ctx context.Context, filter []rpsr.ACL) ([]rpsr.ACL, error) {
 	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
@@ -688,4 +723,22 @@ func (s *Service) ListSRACLs(ctx context.Context, filter []rpsr.ACL) ([]rpsr.ACL
 		return nil, err
 	}
 	return srClient.ListACLsBatch(ctx, filter)
+}
+
+// CreateSRACLs creates Schema Registry ACLs based on the provided ACL.
+func (s *Service) CreateSRACLs(ctx context.Context, acls []rpsr.ACL) error {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return err
+	}
+	return srClient.CreateACLs(ctx, acls)
+}
+
+// DeleteSRACLs deletes Schema Registry ACLs based on the provided ACL.
+func (s *Service) DeleteSRACLs(ctx context.Context, acls []rpsr.ACL) error {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return err
+	}
+	return srClient.DeleteACLs(ctx, acls)
 }
