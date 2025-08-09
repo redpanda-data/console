@@ -33,11 +33,11 @@ import (
 func (s *APISuite) DeleteAllACLs_v1(ctx context.Context) error {
 	acls := kadm.NewACLs().
 		Allow().
+		Deny().
+		AnyResource().
+		AllowHosts().
+		DenyHosts().
 		ResourcePatternType(kadm.ACLPatternAny).
-		Groups().
-		Topics().
-		TransactionalIDs().
-		Clusters().
 		Operations(kadm.OpAny)
 	if err := acls.ValidateDelete(); err != nil {
 		return fmt.Errorf("failed to validate delete acl request: %w", err)
