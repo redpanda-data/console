@@ -14,12 +14,12 @@ import {
   Box,
   Button,
   Link as ChLink,
+  type CreateToastFnReturn,
   Flex,
   FormField,
   Input,
   NumberInput,
   useToast,
-  CreateToastFnReturn,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -100,8 +100,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         >
           Update
         </Button>
-      )
-    }
+      );
+    };
 
     return (
       <PageContent>

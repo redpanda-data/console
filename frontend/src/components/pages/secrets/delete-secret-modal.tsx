@@ -29,7 +29,11 @@ export interface DeleteSecretModalProps {
 
 export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretModalProps) => {
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
-  const { mutateAsync: deleteSecret, isPending: isDeleteSecretPending, error: deleteSecretError } = useDeleteSecretMutation();
+  const {
+    mutateAsync: deleteSecret,
+    isPending: isDeleteSecretPending,
+    error: deleteSecretError,
+  } = useDeleteSecretMutation();
 
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 

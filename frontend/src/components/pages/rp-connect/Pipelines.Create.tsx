@@ -17,7 +17,7 @@ import {
   Box,
   Button,
   Link as ChLink,
-  createStandaloneToast,
+  type CreateToastFnReturn,
   Flex,
   FormField,
   Heading,
@@ -26,7 +26,6 @@ import {
   Text,
   useDisclosure,
   useToast,
-  CreateToastFnReturn,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -43,7 +42,7 @@ import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
-import { MAX_TASKS, MIN_TASKS, tasksToCPU, cpuToTasks } from './tasks';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 
 const exampleContent = `
 `;
@@ -101,8 +100,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         >
           Create
         </Button>
-      )
-    }
+      );
+    };
 
     return (
       <PageContent>

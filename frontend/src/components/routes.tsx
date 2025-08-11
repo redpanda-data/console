@@ -60,7 +60,9 @@ import KnowledgeBaseList from './pages/knowledgebase/KnowledgeBase.List';
 import { BrokerDetails } from './pages/overview/Broker.Details';
 import Overview from './pages/overview/Overview';
 import type { PageComponentType, PageProps } from './pages/Page';
-import QuotasList from './pages/quotas/Quotas.List';
+import { QuotaCreatePage } from './pages/quotas/quota-create-page';
+import { QuotaEditPage } from './pages/quotas/quota-edit-page';
+import { QuotaListPage } from './pages/quotas/quota-list-page';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
@@ -426,12 +428,14 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>(
     '/quotas',
-    QuotasList,
+    QuotaListPage,
     'Quotas',
     ScaleIcon,
     true,
     routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
   ),
+  MakeRoute<{}>('/quotas/create', QuotaCreatePage, 'Quotas', undefined, true, undefined),
+  MakeRoute<{ quotaId: string }>('/quotas/:quotaId/edit', QuotaEditPage, 'Quotas', undefined, true, undefined),
 
   MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
     if (isServerless()) {
