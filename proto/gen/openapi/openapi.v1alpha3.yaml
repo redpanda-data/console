@@ -6,6 +6,12 @@ components:
         '@type':
           type: string
       type: object
+    ComponentType:
+      description: Component type for this tool.
+      enum:
+        - COMPONENT_TYPE_PROCESSOR
+        - COMPONENT_TYPE_CACHE
+      type: string
     ConfigurationFileSchema:
       properties:
         config_schema:
@@ -679,7 +685,7 @@ components:
       description: A configuration file for the MCP server.
       properties:
         component_type:
-          type: string
+          $ref: '#/components/schemas/ComponentType'
         config_yaml:
           description: The contents of the configuration file in YAML format.
           type: string

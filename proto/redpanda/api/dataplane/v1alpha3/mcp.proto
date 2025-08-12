@@ -14,7 +14,7 @@ import "redpanda/api/dataplane/v1/pipeline.proto";
 // Defines the MCP server resource.
 message MCPServer {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1alpha3alpha3/MCPServer"
+    type: "redpanda.api.dataplane.v1alpha3/MCPServer"
     singular: "mcp_server"
     plural: "mcp_servers"
   };
@@ -39,7 +39,14 @@ message MCPServer {
 
   // A configuration file for the MCP server.
   message Tool {
-    string component_type = 1;
+    // Component type for this tool.
+    enum ComponentType {
+      COMPONENT_TYPE_UNSPECIFIED = 0;
+      COMPONENT_TYPE_PROCESSOR = 1;
+      COMPONENT_TYPE_CACHE = 2;
+    }
+
+    ComponentType component_type = 1;
     // The contents of the configuration file in YAML format.
     string config_yaml = 2 [
       (google.api.field_behavior) = REQUIRED,
@@ -328,7 +335,7 @@ service MCPServerService {
 // MCPServerCreate contains the details for the MCP Server creation request.
 message MCPServerCreate {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1alpha3alpha3/MCPServerCreate"
+    type: "redpanda.api.dataplane.v1alpha3/MCPServerCreate"
     singular: "mcp_server"
     plural: "mcp_servers"
   };
@@ -445,7 +452,7 @@ message ListMCPServersResponse {
 
 message MCPServerUpdate {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1alpha3alpha3/MCPServerUpdate"
+    type: "redpanda.api.dataplane.v1alpha3/MCPServerUpdate"
     singular: "mcp_server"
     plural: "mcp_servers"
   };
