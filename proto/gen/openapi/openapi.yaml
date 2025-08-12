@@ -171,6 +171,39 @@ components:
         - CONFIG_TYPE_CLASS
         - CONFIG_TYPE_PASSWORD
       type: string
+    Configuration:
+      properties:
+        config_synonyms:
+          description: |-
+            If no config value is set at the topic level, it will inherit the value
+            set at the broker or cluster level. `name` is the corresponding config
+            key whose value is inherited. `source` indicates whether the inherited
+            config is default, broker, etc.
+          items:
+            $ref: '#/components/schemas/ConfigSynonym'
+          type: array
+        documentation:
+          description: Config documentation.
+          nullable: true
+          type: string
+        name:
+          description: A topic-level config key (e.g. `segment.bytes`).
+          type: string
+        read_only:
+          description: Whether the config is read-only, or is dynamic and can be altered.
+          type: boolean
+        sensitive:
+          description: Whether this is a sensitive config key and value.
+          type: boolean
+        source:
+          $ref: '#/components/schemas/ConfigSource'
+        type:
+          $ref: '#/components/schemas/ConfigType'
+        value:
+          description: A topic-level config value (e.g. 1073741824).
+          nullable: true
+          type: string
+      type: object
     ConfigurationFileSchema:
       properties:
         config_schema:
@@ -881,7 +914,7 @@ components:
       properties:
         configurations:
           items:
-            $ref: '#/components/schemas/Topic.Configuration'
+            $ref: '#/components/schemas/Configuration'
           type: array
       type: object
     GetTransformResponse:
@@ -1278,11 +1311,6 @@ components:
     MCPServer:
       description: Defines the MCP server resource.
       properties:
-        config_files:
-          additionalProperties:
-            $ref: '#/components/schemas/MCPServer.Configuration'
-          description: The Redpanda Connect MCP server configuration in files.
-          type: object
         description:
           description: Optional MCP server description.
           type: string
@@ -1305,6 +1333,11 @@ components:
             Tags are key-value pairs that can be assigned to a MCP server resource.
             They help organize MCP servers and enable filtering when listing them.
           type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP server configuration in files.
+          type: object
         url:
           readOnly: true
           title: URL to connect to the MCP server
@@ -1312,16 +1345,7 @@ components:
       required:
         - id
         - display_name
-        - config_files
-      type: object
-    MCPServer.Configuration:
-      description: A configuration file for the MCP server.
-      properties:
-        contents:
-          description: The contents of the configuration file in YAML format.
-          type: string
-      required:
-        - contents
+        - tools
       type: object
     MCPServer.State:
       description: |-
@@ -1348,11 +1372,6 @@ components:
     MCPServerCreate:
       description: MCPServerCreate contains the details for the MCP Server creation request.
       properties:
-        config_files:
-          additionalProperties:
-            $ref: '#/components/schemas/MCPServer.Configuration'
-          description: The Redpanda Connect MCP server configuration in files..
-          type: object
         description:
           description: MCP server description.
           type: string
@@ -1366,17 +1385,17 @@ components:
             type: string
           description: Optional list of tags to attach to a MCP server.
           type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP server configuration in files..
+          type: object
       required:
         - display_name
-        - config_files
+        - tools
       type: object
     MCPServerUpdate:
       properties:
-        config_files:
-          additionalProperties:
-            $ref: '#/components/schemas/MCPServer.Configuration'
-          description: The Redpanda Connect MCP server configuration in files.
-          type: object
         description:
           description: MCP server description.
           type: string
@@ -1391,6 +1410,11 @@ components:
           description: |-
             A map of tags to add, update or delete.
             If a tag's value is empty, the server interprets that as a deletion.
+          type: object
+        tools:
+          additionalProperties:
+            $ref: '#/components/schemas/Tool'
+          description: The Redpanda Connect MCP server configuration in files.
           type: object
       type: object
     MatchingACL:
@@ -2000,7 +2024,7 @@ components:
         configurations:
           description: Topic's complete set of configurations after this update.
           items:
-            $ref: '#/components/schemas/Topic.Configuration'
+            $ref: '#/components/schemas/Configuration'
           type: array
       type: object
     SetTopicPartitionsBody:
@@ -2068,38 +2092,16 @@ components:
           description: ID of worker that the task is assigned to.
           type: string
       type: object
-    Topic.Configuration:
+    Tool:
+      description: A configuration file for the MCP server.
       properties:
-        config_synonyms:
-          description: |-
-            If no config value is set at the topic level, it will inherit the value
-            set at the broker or cluster level. `name` is the corresponding config
-            key whose value is inherited. `source` indicates whether the inherited
-            config is default, broker, etc.
-          items:
-            $ref: '#/components/schemas/ConfigSynonym'
-          type: array
-        documentation:
-          description: Config documentation.
-          nullable: true
+        component_type:
           type: string
-        name:
-          description: A topic-level config key (e.g. `segment.bytes`).
+        config_yaml:
+          description: The contents of the configuration file in YAML format.
           type: string
-        read_only:
-          description: Whether the config is read-only, or is dynamic and can be altered.
-          type: boolean
-        sensitive:
-          description: Whether this is a sensitive config key and value.
-          type: boolean
-        source:
-          $ref: '#/components/schemas/ConfigSource'
-        type:
-          $ref: '#/components/schemas/ConfigType'
-        value:
-          description: A topic-level config value (e.g. 1073741824).
-          nullable: true
-          type: string
+      required:
+        - config_yaml
       type: object
     TopicLocation:
       properties:
@@ -2283,7 +2285,7 @@ components:
         configurations:
           description: Topic's complete set of configurations after applying this partial patch.
           items:
-            $ref: '#/components/schemas/Topic.Configuration'
+            $ref: '#/components/schemas/Configuration'
           type: array
       type: object
     UpdateUserRequest.User:
@@ -6142,7 +6144,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
