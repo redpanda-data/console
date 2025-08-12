@@ -111,6 +111,11 @@ message ListACLsResponse {
 message CreateACLRequest {
   option (buf.validate.message).cel = {
     id: "resource_name_must_be_set_except_for_cluster_resource_type"
+    // Validation rules for resource_name based on resource_type:
+    //  - If resource_type is CLUSTER (4) or REGISTRY (8) and resource_name is empty = OK
+    //  - If resource_type is CLUSTER (4) and resource_name is not empty, it must be "kafka-cluster"
+    //  - If resource_type is neither CLUSTER (4) nor REGISTRY (8), resource_name must be non-empty
+    //  - Otherwise = OK
     expression:
       "(this.resource_type == 4 || this.resource_type == 8) && size(this.resource_name) == 0 ? ''"
       ": this.resource_type == 4 && this.resource_name != 'kafka-cluster' ? 'Field resource_name must be set to \"kafka-cluster\" or empty when using resource_type=CLUSTER'"
