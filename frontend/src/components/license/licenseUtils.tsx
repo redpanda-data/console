@@ -8,6 +8,7 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
+import { prettyMilliseconds } from 'utils/utils';
 
 enum Platform {
   PLATFORM_REDPANDA = 1,

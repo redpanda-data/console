@@ -9,7 +9,7 @@ export const useLicenseSignupMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(licenseSignup, {
-    onSuccess: async (response) => {
+    onSuccess: async () => {
       // Invalidate license-related queries to refresh the license data
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
