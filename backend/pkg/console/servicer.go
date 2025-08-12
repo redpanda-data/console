@@ -106,5 +106,8 @@ type SchemaRegistryServicer interface {
 
 	// Custom Redpanda-only methods for managing ACLs within the schema registry.
 
+	CheckSchemaRegistryACLSupport(ctx context.Context) bool
 	ListSRACLs(ctx context.Context, filters []rpsr.ACL) ([]rpsr.ACL, error)
+	CreateSRACLs(ctx context.Context, acls []rpsr.ACL) error
+	DeleteSRACLs(ctx context.Context, acls []rpsr.ACL) error
 }

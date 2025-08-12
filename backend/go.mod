@@ -46,7 +46,7 @@ require (
 	github.com/redpanda-data/common-go/api v0.0.0-20250701102610-07660e078862
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
 	github.com/redpanda-data/common-go/rpadmin v0.1.14
-	github.com/redpanda-data/common-go/rpsr v0.1.1
+	github.com/redpanda-data/common-go/rpsr v0.1.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
@@ -66,7 +66,7 @@ require (
 	go.vallahaye.net/connect-gateway v0.11.0
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	golang.org/x/net v0.41.0
-	golang.org/x/sync v0.15.0
+	golang.org/x/sync v0.16.0
 	golang.org/x/text v0.26.0
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822

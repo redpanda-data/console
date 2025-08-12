@@ -12,6 +12,7 @@ package acl
 import (
 	"fmt"
 
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
@@ -178,5 +179,133 @@ func (*kafkaClientMapper) aclResourceTypeToProto(resourceType kmsg.ACLResourceTy
 		return v1.ACL_RESOURCE_TYPE_USER, nil
 	default:
 		return v1.ACL_RESOURCE_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given ACL resource type %q to proto", resourceType.String())
+	}
+}
+
+func (*schemaRegistryMapper) srACLResourceTypeToProto(resourceType rpsr.ResourceType) (v1.ACL_ResourceType, error) {
+	switch resourceType {
+	case rpsr.ResourceTypeAny:
+		return v1.ACL_RESOURCE_TYPE_ANY, nil
+	case rpsr.ResourceTypeRegistry:
+		return v1.ACL_RESOURCE_TYPE_REGISTRY, nil
+	case rpsr.ResourceTypeSubject:
+		return v1.ACL_RESOURCE_TYPE_SUBJECT, nil
+	default:
+		return v1.ACL_RESOURCE_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry resource type %q to proto", resourceType)
+	}
+}
+
+func (*schemaRegistryMapper) srACLPatternTypeToProto(patternType rpsr.PatternType) (v1.ACL_ResourcePatternType, error) {
+	switch patternType {
+	case rpsr.PatternTypeAny:
+		return v1.ACL_RESOURCE_PATTERN_TYPE_ANY, nil
+	case rpsr.PatternTypeLiteral:
+		return v1.ACL_RESOURCE_PATTERN_TYPE_LITERAL, nil
+	case rpsr.PatternTypePrefix:
+		return v1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED, nil
+	default:
+		return v1.ACL_RESOURCE_PATTERN_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry pattern type %q to proto", patternType)
+	}
+}
+
+func (*schemaRegistryMapper) srACLOperationToProto(operation rpsr.Operation) (v1.ACL_Operation, error) {
+	switch operation {
+	case rpsr.OperationAny:
+		return v1.ACL_OPERATION_ANY, nil
+	case rpsr.OperationAll:
+		return v1.ACL_OPERATION_ALL, nil
+	case rpsr.OperationRead:
+		return v1.ACL_OPERATION_READ, nil
+	case rpsr.OperationWrite:
+		return v1.ACL_OPERATION_WRITE, nil
+	case rpsr.OperationDelete:
+		return v1.ACL_OPERATION_DELETE, nil
+	case rpsr.OperationDescribe:
+		return v1.ACL_OPERATION_DESCRIBE, nil
+	case rpsr.OperationDescribeConfig:
+		return v1.ACL_OPERATION_DESCRIBE_CONFIGS, nil
+	case rpsr.OperationAlter:
+		return v1.ACL_OPERATION_ALTER, nil
+	case rpsr.OperationAlterConfig:
+		return v1.ACL_OPERATION_ALTER_CONFIGS, nil
+	default:
+		return v1.ACL_OPERATION_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry operation %q to proto", operation)
+	}
+}
+
+func (*schemaRegistryMapper) srACLPermissionToProto(permission rpsr.Permission) (v1.ACL_PermissionType, error) {
+	switch permission {
+	case rpsr.PermissionAny:
+		return v1.ACL_PERMISSION_TYPE_ANY, nil
+	case rpsr.PermissionAllow:
+		return v1.ACL_PERMISSION_TYPE_ALLOW, nil
+	case rpsr.PermissionDeny:
+		return v1.ACL_PERMISSION_TYPE_DENY, nil
+	default:
+		return v1.ACL_PERMISSION_TYPE_UNSPECIFIED, fmt.Errorf("failed to map given Schema Registry permission %q to proto", permission)
+	}
+}
+
+func (*schemaRegistryMapper) protoResourceTypeToSR(resourceType v1.ACL_ResourceType) rpsr.ResourceType {
+	switch resourceType {
+	case v1.ACL_RESOURCE_TYPE_REGISTRY:
+		return rpsr.ResourceTypeRegistry
+	case v1.ACL_RESOURCE_TYPE_SUBJECT:
+		return rpsr.ResourceTypeSubject
+	case v1.ACL_RESOURCE_TYPE_ANY:
+		return "" // TODO: temporary solution, RP doesn't support ANY yet.
+	default:
+		return ""
+	}
+}
+
+func (*schemaRegistryMapper) protoPatternTypeToSR(patternType v1.ACL_ResourcePatternType) rpsr.PatternType {
+	switch patternType {
+	case v1.ACL_RESOURCE_PATTERN_TYPE_LITERAL:
+		return rpsr.PatternTypeLiteral
+	case v1.ACL_RESOURCE_PATTERN_TYPE_PREFIXED:
+		return rpsr.PatternTypePrefix
+	case v1.ACL_RESOURCE_PATTERN_TYPE_ANY:
+		return "" // TODO: temporary solution, RP doesn't support ANY yet.
+	default:
+		return ""
+	}
+}
+
+func (*schemaRegistryMapper) protoOperationToSR(operation v1.ACL_Operation) rpsr.Operation {
+	switch operation {
+	case v1.ACL_OPERATION_READ:
+		return rpsr.OperationRead
+	case v1.ACL_OPERATION_WRITE:
+		return rpsr.OperationWrite
+	case v1.ACL_OPERATION_DELETE:
+		return rpsr.OperationDelete
+	case v1.ACL_OPERATION_DESCRIBE:
+		return rpsr.OperationDescribe
+	case v1.ACL_OPERATION_DESCRIBE_CONFIGS:
+		return rpsr.OperationDescribeConfig
+	case v1.ACL_OPERATION_ALTER:
+		return rpsr.OperationAlter
+	case v1.ACL_OPERATION_ALTER_CONFIGS:
+		return rpsr.OperationAlterConfig
+	case v1.ACL_OPERATION_ALL:
+		return rpsr.OperationAll
+	case v1.ACL_OPERATION_ANY:
+		return "" // TODO: temporary solution, RP doesn't support ANY yet.
+	default:
+		return ""
+	}
+}
+
+func (*schemaRegistryMapper) protoPermissionToSR(permissionType v1.ACL_PermissionType) rpsr.Permission {
+	switch permissionType {
+	case v1.ACL_PERMISSION_TYPE_ALLOW:
+		return rpsr.PermissionAllow
+	case v1.ACL_PERMISSION_TYPE_DENY:
+		return rpsr.PermissionDeny
+	case v1.ACL_PERMISSION_TYPE_ANY:
+		return "" // TODO: temporary solution, RP doesn't support ANY yet.
+	default:
+		return ""
 	}
 }
