@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package redpanda.api.dataplane.v1;
+package redpanda.api.dataplane.v1alpha3;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
@@ -14,7 +14,7 @@ import "redpanda/api/dataplane/v1/pipeline.proto";
 // Defines the MCP server resource.
 message MCPServer {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1/MCPServer"
+    type: "redpanda.api.dataplane.v1alpha3alpha3/MCPServer"
     singular: "mcp_server"
     plural: "mcp_servers"
   };
@@ -59,7 +59,7 @@ message MCPServer {
   ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
-  Pipeline.Resources resources = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The requested amount of resources for the MCP server. Depending on the backend, the resources might be guaranteed, or might be tweaked based on the utilization of the MCP server."}];
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The requested amount of resources for the MCP server. Depending on the backend, the resources might be guaranteed, or might be tweaked based on the utilization of the MCP server."}];
 
   // Tags are key-value pairs that can be assigned to a MCP server resource.
   // They help organize MCP servers and enable filtering when listing them.
@@ -110,7 +110,7 @@ service MCPServerService {
   // CreateMCPServer creates a Redpanda Connect MCP Server in the Redpanda cluster.
   rpc CreateMCPServer(CreateMCPServerRequest) returns (CreateMCPServerResponse) {
     option (google.api.http) = {
-      post: "/v1/redpanda-connect/mcp-servers"
+      post: "/v1alpha3/redpanda-connect/mcp-servers"
       body: "mcp_server"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -121,7 +121,7 @@ service MCPServerService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.MCPServer"}
           }
         }
       }
@@ -134,7 +134,7 @@ service MCPServerService {
 
   // GetMCPServer gets a specific Redpanda Connect MCP Server.
   rpc GetMCPServer(GetMCPServerRequest) returns (GetMCPServerResponse) {
-    option (google.api.http) = {get: "/v1/redpanda-connect/mcp-servers/{id}"};
+    option (google.api.http) = {get: "/v1alpha3/redpanda-connect/mcp-servers/{id}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Redpanda Connect MCP server"
       description: "Get a specific Redpanda Connect MCP server."
@@ -143,7 +143,7 @@ service MCPServerService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.MCPServer"}
           }
         }
       }
@@ -166,7 +166,7 @@ service MCPServerService {
   // ListMCPServers implements the list mcp_servers method which lists the MCP servers
   // in the Redpanda cluster.
   rpc ListMCPServers(ListMCPServersRequest) returns (ListMCPServersResponse) {
-    option (google.api.http) = {get: "/v1/redpanda-connect/mcp-servers"};
+    option (google.api.http) = {get: "/v1alpha3/redpanda-connect/mcp-servers"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List Redpanda Connect MCP Servers"
       description: "List Redpanda Connect MCP Servers. Optional: filter based on MCP server name."
@@ -175,7 +175,7 @@ service MCPServerService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListMCPServersResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListMCPServersResponse"}
           }
         }
       }
@@ -189,7 +189,7 @@ service MCPServerService {
   // Update MCPServer updates a specific Redpanda Connect MCP server configuration.
   rpc UpdateMCPServer(UpdateMCPServerRequest) returns (UpdateMCPServerResponse) {
     option (google.api.http) = {
-      put: "/v1/redpanda-connect/mcp-servers/{id}"
+      put: "/v1alpha3/redpanda-connect/mcp-servers/{id}"
       body: "mcp_server"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -200,7 +200,7 @@ service MCPServerService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.MCPServer"}
           }
         }
       }
@@ -213,7 +213,7 @@ service MCPServerService {
 
   // DeleteMCPServer deletes a specific Redpanda Connect MCP server.
   rpc DeleteMCPServer(DeleteMCPServerRequest) returns (DeleteMCPServerResponse) {
-    option (google.api.http) = {delete: "/v1/redpanda-connect/mcp-servers/{id}"};
+    option (google.api.http) = {delete: "/v1alpha3/redpanda-connect/mcp-servers/{id}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Delete a Redpanda Connect MCP server"
       description: "Delete a Redpanda Connect MCP server."
@@ -242,7 +242,7 @@ service MCPServerService {
 
   // StopMCPServer stops a specific Redpanda Connect MCP server.
   rpc StopMCPServer(StopMCPServerRequest) returns (StopMCPServerResponse) {
-    option (google.api.http) = {post: "/v1/redpanda-connect/mcp-servers/{id}:stop"};
+    option (google.api.http) = {post: "/v1alpha3/redpanda-connect/mcp-servers/{id}:stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Stops a Redpanda Connect MCP server"
       description: "Stop a running Redpanda Connect MCP server."
@@ -251,7 +251,7 @@ service MCPServerService {
         value: {
           description: "Stopped"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.MCPServer"}
           }
         }
       }
@@ -273,7 +273,7 @@ service MCPServerService {
 
   // StartMCPServer starts a specific Redpanda Connect MCP server that has been previously stopped.
   rpc StartMCPServer(StartMCPServerRequest) returns (StartMCPServerResponse) {
-    option (google.api.http) = {post: "/v1/redpanda-connect/mcp-servers/{id}:start"};
+    option (google.api.http) = {post: "/v1alpha3/redpanda-connect/mcp-servers/{id}:start"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Start a Redpanda Connect MCP server"
       description: "Start a stopped Redpanda Connect MCP server."
@@ -282,7 +282,7 @@ service MCPServerService {
         value: {
           description: "Started"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.MCPServer"}
           }
         }
       }
@@ -304,7 +304,7 @@ service MCPServerService {
 
   // The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
   rpc GetMCPServerServiceConfigSchema(GetMCPServerServiceConfigSchemaRequest) returns (GetMCPServerServiceConfigSchemaResponse) {
-    option (google.api.http) = {get: "/v1/redpanda-connect/mcp-servers:getConfigSchema"};
+    option (google.api.http) = {get: "/v1alpha3/redpanda-connect/mcp-servers:getConfigSchema"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Retrieve the schema for Redpanda Connect MCP Servers configurations."
       description: "The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance."
@@ -313,7 +313,7 @@ service MCPServerService {
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetMCPServerServiceConfigSchemaResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetMCPServerServiceConfigSchemaResponse"}
           }
         }
       }
@@ -328,7 +328,7 @@ service MCPServerService {
 // MCPServerCreate contains the details for the MCP Server creation request.
 message MCPServerCreate {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1/MCPServerCreate"
+    type: "redpanda.api.dataplane.v1alpha3alpha3/MCPServerCreate"
     singular: "mcp_server"
     plural: "mcp_servers"
   };
@@ -356,7 +356,7 @@ message MCPServerCreate {
   ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
-  Pipeline.Resources resources = 4;
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 4;
 
   // Optional list of tags to attach to a MCP server.
   map<string, string> tags = 5 [(buf.validate.field).map = {
@@ -445,7 +445,7 @@ message ListMCPServersResponse {
 
 message MCPServerUpdate {
   option (google.api.resource) = {
-    type: "redpanda.api.dataplane.v1/MCPServerUpdate"
+    type: "redpanda.api.dataplane.v1alpha3alpha3/MCPServerUpdate"
     singular: "mcp_server"
     plural: "mcp_servers"
   };
@@ -465,7 +465,7 @@ message MCPServerUpdate {
   map<string, MCPServer.Tool> tools = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files."}];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
-  Pipeline.Resources resources = 4;
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 4;
 
   // A map of tags to add, update or delete.
   // If a tag's value is empty, the server interprets that as a deletion.
