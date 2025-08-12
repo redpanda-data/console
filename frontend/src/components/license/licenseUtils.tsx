@@ -393,15 +393,10 @@ export const UpgradeButton = () => (
 
 
 
-export const RegisterButton = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: () => void }) => {
   return (
-    <>
-      <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
-        Register
-      </Button>
-      <RegisterModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-    </>
+    <Button variant="outline" size="sm" onClick={onRegisterModalOpen}>
+      Register
+    </Button>
   );
 };

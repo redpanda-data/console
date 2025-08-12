@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { type FC, type ReactElement, useEffect } from 'react';
+import { type FC, type ReactElement, useEffect, useState } from 'react';
 import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import {
@@ -17,9 +17,11 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './licenseUtils';
+import { RegisterModal } from './RegisterModal';
 
 const getLicenseAlertContent = (
   licenses: License[],
+  onRegisterModalOpen: () => void,
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (licenses.length === 0) {
     return null;
@@ -54,7 +56,7 @@ const getLicenseAlertContent = (
 
               <Flex gap={2} my={2}>
                 <UploadLicenseButton />
-                <RegisterButton />
+                <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
               </Flex>
             </Box>
           ),
@@ -73,7 +75,7 @@ const getLicenseAlertContent = (
 
               <Flex gap={2} my={2}>
                 <UploadLicenseButton />
-                <RegisterButton />
+                <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
               </Flex>
             </Box>
           ),
@@ -90,7 +92,7 @@ const getLicenseAlertContent = (
 
                 <Flex gap={2} my={2}>
                 <UploadLicenseButton />
-                <RegisterButton />
+                <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
               </Flex>
               </Box>
             ),
@@ -104,7 +106,7 @@ const getLicenseAlertContent = (
 
                 <Flex gap={2} my={2}>
                 <UploadLicenseButton />
-                <RegisterButton />
+                <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
               </Flex>
               </Box>
             ),
@@ -226,6 +228,8 @@ const getLicenseAlertContent = (
 };
 
 export const OverviewLicenseNotification: FC = observer(() => {
+  const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
+
   useEffect(() => {
     void api.refreshClusterOverview();
     void api.listLicenses();
@@ -233,7 +237,9 @@ export const OverviewLicenseNotification: FC = observer(() => {
 
   const trialLicenses = api.licenses.filter((license) => license.type === License_Type.TRIAL);
 
-  const alertContent = getLicenseAlertContent(trialLicenses);
+  const alertContent = getLicenseAlertContent(trialLicenses, () => {
+    setIsRegisterModalOpen(true);
+  });
 
   // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (api.clusterOverview === null) {
@@ -256,6 +262,8 @@ export const OverviewLicenseNotification: FC = observer(() => {
         <AlertIcon />
         <AlertDescription>{message}</AlertDescription>
       </Alert>
+
+      <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
     </Box>
   );
 });

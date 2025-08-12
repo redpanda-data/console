@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { type FC, type ReactElement, useEffect } from 'react';
+import { type FC, type ReactElement, useEffect, useState } from 'react';
 import {
   type License,
   License_Type,
@@ -21,12 +21,14 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './licenseUtils';
+import { RegisterModal } from './RegisterModal';
 
 const getLicenseAlertContentForFeature = (
   _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
+  onRegisterModalOpen: () => void,
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (license === undefined) {
     return null;
@@ -41,7 +43,7 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>This is an enterprise feature. Register for an additional 30 days of enterprise features.</Text>
             <Flex gap={2} my={2}>
-              <RegisterButton />
+              <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
             </Flex>
           </Box>
         ),
@@ -166,6 +168,8 @@ const getLicenseAlertContentForFeature = (
 
 export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' | 'rbac' }> = observer(
   ({ featureName }) => {
+    const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
+    
     useEffect(() => {
       void api.refreshClusterOverview();
       void api.listLicenses();
@@ -188,7 +192,9 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     const bakedInTrial = licenses.every(license => isBakedInTrial(license));
 
     const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
-    const alertContent = getLicenseAlertContentForFeature(featureName, license, enterpriseFeaturesUsed, bakedInTrial);
+    const alertContent = getLicenseAlertContentForFeature(featureName, license, enterpriseFeaturesUsed, bakedInTrial, () => {
+      setIsRegisterModalOpen(true);
+    });
 
     // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
     if (api.clusterOverview === null) {
@@ -211,6 +217,8 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
           <AlertIcon />
           <AlertDescription>{message}</AlertDescription>
         </Alert>
+
+        <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
       </Box>
     );
   },
