@@ -1,14 +1,9 @@
-import { create } from '@bufbuild/protobuf';
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  type LicenseSignupRequest,
-  LicenseSignupRequestSchema,
-  type LicenseSignupResponse,
   SignupService,
 } from 'protogen/redpanda/api/console/v1alpha1/signup_pb';
 import { licenseSignup } from 'protogen/redpanda/api/console/v1alpha1/signup-SignupService_connectquery';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useLicenseSignupMutation = () => {
   const queryClient = useQueryClient();

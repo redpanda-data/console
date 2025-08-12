@@ -1,6 +1,5 @@
 import { Button, Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { useState } from 'react';
 import {
   type License,
   License_Source,
@@ -9,8 +8,6 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
-import { prettyMilliseconds } from '../../utils/utils';
-import { RegisterModal } from './RegisterModal';
 
 enum Platform {
   PLATFORM_REDPANDA = 1,
@@ -338,6 +335,9 @@ export const licensesToSimplifiedPreview = (
   });
 };
 
+export const TRY_ENTERPRISE_LINK = 'https://redpanda.com/try-enterprise';
+export const UPGRADE_LINK = 'https://redpanda.com/upgrade';
+
 type EnterpriseLinkType = 'tryEnterprise' | 'upgrade';
 export const resolveEnterpriseCTALink = (
   type: EnterpriseLinkType,
@@ -345,8 +345,8 @@ export const resolveEnterpriseCTALink = (
   isRedpanda: boolean,
 ) => {
   const urls: Record<EnterpriseLinkType, string> = {
-    tryEnterprise: 'https://redpanda.com/try-enterprise',
-    upgrade: 'https://redpanda.com/upgrade',
+    tryEnterprise: TRY_ENTERPRISE_LINK,
+    upgrade: UPGRADE_LINK,
   };
 
   const baseUrl = urls[type];
@@ -398,4 +398,4 @@ export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: (
     <Button variant="outline" size="sm" onClick={onRegisterModalOpen}>
       Register
     </Button>
-  ) : null;
+  ) : <Button variant="outline" size="sm" as={Link} target="_blank" href={getEnterpriseCTALink('tryEnterprise')}>Register</Button>
