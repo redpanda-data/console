@@ -25,6 +25,7 @@ import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { ConnectError } from '@connectrpc/connect';
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backendApi';
+import { capitalizeFirst } from 'utils/utils';
 
 type FieldViolation = {
   field: string;
@@ -162,7 +163,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                 <Alert status="error" variant="left-accent" mb={4}>
                   <AlertIcon />
                   <AlertDescription>
-                    {signupMutation.error.message || 'Registration failed. Please try again.'}
+                    {capitalizeFirst(signupMutation.error.rawMessage) || 'Registration failed. Please try again.'}
                   </AlertDescription>
                 </Alert>
               )}
