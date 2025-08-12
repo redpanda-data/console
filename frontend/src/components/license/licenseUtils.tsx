@@ -393,10 +393,9 @@ export const UpgradeButton = () => (
 
 
 
-export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: () => void }) => {
-  return (
+export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: () => void }) =>
+  api.isAdminApiConfigured ? (
     <Button variant="outline" size="sm" onClick={onRegisterModalOpen}>
       Register
     </Button>
-  );
-};
+  ) : null;
