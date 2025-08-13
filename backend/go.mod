@@ -7,8 +7,6 @@ toolchain go1.24.4
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250613105001-9f2d3c737feb.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.6-20250623133515-cbe59d22e104.1
-	buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go v1.18.1-20250718023048-c8884e04c25e.1
-	buf.build/gen/go/redpandadata/gatekeeper/protocolbuffers/go v1.36.2-20250718023048-c8884e04c25e.1
 	buf.build/go/protovalidate v1.0.0-rc.3
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/grpcreflect v1.3.0
