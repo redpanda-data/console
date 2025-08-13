@@ -6,10 +6,6 @@ buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233f
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1/go.mod h1:v0PWlly2hqVEW2IZSPlvPHELTvdHD5hBsA0+KlCfTQk=
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.6-20250623133515-cbe59d22e104.1 h1:H1OQRoy/xuIh3vvAv9Gb59p/ZsrTTQyYxPyMSOQaVlc=
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.6-20250623133515-cbe59d22e104.1/go.mod h1:yA5Jg45dsAoOvAx1XHbDwwcWkkYW568MUeKJsa9bgrY=
-buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go v1.18.1-20250718023048-c8884e04c25e.1 h1:kXGjchtiqT47cINsAq3cyBAoE8Ouiap6AwTUeWXE7mo=
-buf.build/gen/go/redpandadata/gatekeeper/connectrpc/go v1.18.1-20250718023048-c8884e04c25e.1/go.mod h1:sUXnStdpv+EaJjR2fhZtcoZMUoxAYUJ3H5TEu/YZpZo=
-buf.build/gen/go/redpandadata/gatekeeper/protocolbuffers/go v1.36.2-20250718023048-c8884e04c25e.1 h1:7TYkmvifhp4BAslIH1kY71wWNSK4b9kbOWaERnoyCr0=
-buf.build/gen/go/redpandadata/gatekeeper/protocolbuffers/go v1.36.2-20250718023048-c8884e04c25e.1/go.mod h1:PKzXWoX7QpcGFylfhPWzr9wN5WlmOfmqh961ZNNiWX8=
 buf.build/go/protovalidate v1.0.0-rc.3 h1:tWeuVY0nnmGdBugRCV8Smr1Ska8BX5ng5vLxMT31oyo=
 buf.build/go/protovalidate v1.0.0-rc.3/go.mod h1:C/QcOn/CjXRn5udUwYBiLs8y1TGy7RS+GOSKqjS77aU=
 cel.dev/expr v0.24.0 h1:56OvJKSH3hDGL0ml5uSxZmz3/3Pq4tJ+fb1unVLAFcY=
