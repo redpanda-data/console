@@ -268,7 +268,7 @@ export function isServerless() {
   return config.isServerless;
 }
 
-const routesIgnoredInEmbedded = ['/overview', '/quotas', '/reassign-partitions', '/admin'];
+const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
