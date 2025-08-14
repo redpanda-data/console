@@ -43,6 +43,7 @@ type Config struct {
 	Serde          Serde        `yaml:"serde"`
 	SchemaRegistry Schema       `yaml:"schemaRegistry"`
 	Logger         Logging      `yaml:"logger"`
+	Analytics      Analytics    `yaml:"analytics"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -95,6 +96,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	err = c.Analytics.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Analytics config: %w", err)
+	}
+
 	return nil
 }
 
@@ -111,6 +117,7 @@ func (c *Config) SetDefaults() {
 	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
 	c.KafkaConnect.SetDefaults()
+	c.Analytics.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.
