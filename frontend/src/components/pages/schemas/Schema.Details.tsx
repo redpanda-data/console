@@ -38,7 +38,7 @@ import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from
 import { uiState } from '../../../state/uiState';
 import { editQuery } from '../../../utils/queryHelper';
 import { Button, DefaultSkeleton, Label } from '../../../utils/tsxUtils';
-import { decodeURIComponentPercents } from '../../../utils/utils';
+import { decodeURIComponentPercents, encodeURIComponentPercents } from '../../../utils/utils';
 import { KowlDiffEditor } from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
@@ -291,13 +291,34 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
   const subject = p.subject;
 
   const queryVersion = getVersionFromQuery();
-  const defaultVersion =
-    queryVersion && queryVersion !== 'latest'
-      ? queryVersion
-      : subject.latestActiveVersion === -1 // if we don't have a latestActiveVersion, use the last version there is
-        ? subject.schemas.last()?.version
-        : subject.latestActiveVersion;
+
+  // Determine fallback version when no specific version is requested
+  const fallbackVersion =
+    subject.latestActiveVersion === -1 ? subject.schemas.last()?.version : subject.latestActiveVersion;
+
+  // Check if requested version exists in available schemas
+  const requestedVersionExists = queryVersion !== undefined && queryVersion !== 'latest' 
+    ? subject.schemas.some(s => s.version === queryVersion)
+    : true;
+
+  // Use URL parameter if provided and exists, otherwise fall back to latest active version
+  const defaultVersion = queryVersion !== undefined 
+    ? (queryVersion === 'latest' || !requestedVersionExists ? fallbackVersion : queryVersion)
+    : fallbackVersion;
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
+
+  // Show notification and update URL if requested version doesn't exist
+  if (queryVersion !== undefined && queryVersion !== 'latest' && !requestedVersionExists) {
+    toast({
+      status: 'warning',
+      title: `Version ${queryVersion} not found`,
+      description: `Showing version ${fallbackVersion} instead`,
+      duration: 5000,
+      isClosable: true,
+    });
+    // Update URL to reflect the actual version being shown
+    editQuery((x) => (x.version = String(fallbackVersion)));
+  }
 
   const schema = subject.schemas.first((x) => x.version === selectedVersion);
 
@@ -618,13 +639,24 @@ const SchemaReferences = observer(
         {schema.references.length > 0 ? (
           <UnorderedList>
             {schema.references.map((ref) => {
+              // Schema references contain two distinct identifiers:
+              // - ref.name: The import string used within the schema (e.g., "foo/bar/baz.proto")
+              // - ref.subject: The actual Schema Registry subject name (e.g., "foo.bar.baz")
+              //
+              // For consistent UX, we display the subject name (what users navigate to)
+              // rather than the import string. Both "References" and "Referenced By"
+              // sections now consistently show subject names.
+              //
+              // Navigation uses encodeURIComponentPercents() instead of encodeURIComponent()
+              // because schema subject names with periods/slashes cause URL parsing issues
+              // in React Router. The special encoder replaces % with ﹪ to avoid conflicts.
               return (
                 <ListItem key={ref.name + ref.subject + ref.version}>
                   <Link
                     as={ReactRouterLink}
-                    to={`/schema-registry/subjects/${encodeURIComponent(ref.subject)}?version=${ref.version}`}
+                    to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                   >
-                    {ref.name}
+                    {ref.subject}
                   </Link>
                 </ListItem>
               );
@@ -647,11 +679,15 @@ const SchemaReferences = observer(
             {referencedBy
               .flatMap((x) => x.usages)
               .map((ref) => {
+                // Referenced By data only contains subject names (not import strings),
+                // so this section was already displaying correctly. However, we use
+                // encodeURIComponentPercents() for consistent navigation behavior
+                // with the References section above.
                 return (
                   <ListItem key={ref.subject + ref.version}>
                     <Link
                       as={ReactRouterLink}
-                      to={`/schema-registry/subjects/${encodeURIComponent(ref.subject)}?version=${ref.version}`}
+                      to={`/schema-registry/subjects/${encodeURIComponentPercents(ref.subject)}?version=${ref.version}`}
                     >
                       {ref.subject}
                     </Link>

@@ -151,7 +151,7 @@ func (*defaultHooks) ConfigConnectRPC(req ConfigConnectRPCRequest) ConfigConnect
 
 // Console hooks
 func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) license.License {
-	return license.License{Source: license.SourceConsole, Type: license.TypeOpenSource, ExpiresAt: math.MaxInt32}
+	return license.License{Source: license.SourceConsole, Type: license.TypeOpenSource, ExpiresAt: math.MaxInt32, Organization: ""}
 }
 
 func (*defaultHooks) EnabledFeatures() []string {
