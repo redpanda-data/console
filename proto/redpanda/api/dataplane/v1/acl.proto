@@ -155,8 +155,7 @@ message CreateACLRequest {
   // authorizer, you must include the prefix "User:" with the user name.
   string principal = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
-    (buf.validate.field).string.prefix = "User:"
+    (buf.validate.field).required = true
   ];
 
   // The host address to use for this ACL. To allow a principal
