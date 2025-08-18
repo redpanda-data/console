@@ -60,3 +60,11 @@ export const startMCPServer = MCPServerService.method.startMCPServer;
  * @generated from rpc redpanda.api.dataplane.v1alpha3.MCPServerService.GetMCPServerServiceConfigSchema
  */
 export const getMCPServerServiceConfigSchema = MCPServerService.method.getMCPServerServiceConfigSchema;
+
+/**
+ * Lints a Redpanda Connect MCP tools configuration and returns zero or more
+ * issues (“hints”). An empty list means the config passed all lint checks.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.MCPServerService.LintMCPConfig
+ */
+export const lintMCPConfig = MCPServerService.method.lintMCPConfig;

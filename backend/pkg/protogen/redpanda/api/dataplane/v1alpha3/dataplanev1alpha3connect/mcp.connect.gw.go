@@ -25,6 +25,7 @@ type MCPServerServiceGatewayServer struct {
 	stopMCPServer                   connect_gateway.UnaryHandler[v1alpha3.StopMCPServerRequest, v1alpha3.StopMCPServerResponse]
 	startMCPServer                  connect_gateway.UnaryHandler[v1alpha3.StartMCPServerRequest, v1alpha3.StartMCPServerResponse]
 	getMCPServerServiceConfigSchema connect_gateway.UnaryHandler[v1alpha3.GetMCPServerServiceConfigSchemaRequest, v1alpha3.GetMCPServerServiceConfigSchemaResponse]
+	lintMCPConfig                   connect_gateway.UnaryHandler[v1alpha3.LintMCPConfigRequest, v1alpha3.LintMCPConfigResponse]
 }
 
 // NewMCPServerServiceGatewayServer constructs a Connect-Gateway gRPC server for the
@@ -39,6 +40,7 @@ func NewMCPServerServiceGatewayServer(svc MCPServerServiceHandler, opts ...conne
 		stopMCPServer:                   connect_gateway.NewUnaryHandler(MCPServerServiceStopMCPServerProcedure, svc.StopMCPServer, opts...),
 		startMCPServer:                  connect_gateway.NewUnaryHandler(MCPServerServiceStartMCPServerProcedure, svc.StartMCPServer, opts...),
 		getMCPServerServiceConfigSchema: connect_gateway.NewUnaryHandler(MCPServerServiceGetMCPServerServiceConfigSchemaProcedure, svc.GetMCPServerServiceConfigSchema, opts...),
+		lintMCPConfig:                   connect_gateway.NewUnaryHandler(MCPServerServiceLintMCPConfigProcedure, svc.LintMCPConfig, opts...),
 	}
 }
 
@@ -72,6 +74,10 @@ func (s *MCPServerServiceGatewayServer) StartMCPServer(ctx context.Context, req 
 
 func (s *MCPServerServiceGatewayServer) GetMCPServerServiceConfigSchema(ctx context.Context, req *v1alpha3.GetMCPServerServiceConfigSchemaRequest) (*v1alpha3.GetMCPServerServiceConfigSchemaResponse, error) {
 	return s.getMCPServerServiceConfigSchema(ctx, req)
+}
+
+func (s *MCPServerServiceGatewayServer) LintMCPConfig(ctx context.Context, req *v1alpha3.LintMCPConfigRequest) (*v1alpha3.LintMCPConfigResponse, error) {
+	return s.lintMCPConfig(ctx, req)
 }
 
 // RegisterMCPServerServiceHandlerGatewayServer registers the Connect handlers for the
