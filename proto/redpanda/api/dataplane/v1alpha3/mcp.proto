@@ -330,6 +330,32 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
   }
+
+  // Lints a Redpanda Connect MCP tools configuration and returns zero or more
+  // issues (“hints”). An empty list means the config passed all lint checks.
+  rpc LintMCPConfig(LintMCPConfigRequest) returns (LintMCPConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/redpanda-connect/mcp-servers:lint-config"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Lint a Redpanda Connect MCP tools configuration"
+      description: "Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty."
+      responses: {
+        key: "200"
+        value: {
+          description: "Linting finished. See `lint_hints` for details."
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.LintMCPConfigResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 }
 
 // MCPServerCreate contains the details for the MCP Server creation request.
@@ -560,4 +586,17 @@ message GetMCPServerServiceConfigSchemaResponse {
     (buf.validate.field).repeated.min_items = 1,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The configuration schema for the MCP Server."}
   ];
+}
+
+message LintMCPConfigRequest {
+  // The Redpanda Connect MCP tools configuration in YAML format.
+  map<string, MCPServer.Tool> tools = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message LintPipelineConfigResponse {
+  // A list of linting issues.
+  map<string, common.v1.LintHint> lint_hints = 1;
 }
