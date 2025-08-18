@@ -37,7 +37,7 @@ message MCPServer {
   // Optional MCP server description.
   string description = 3 [(buf.validate.field).string.max_len = 256];
 
-  // A configuration file for the MCP server.
+  // A configuration tool for the MCP server.
   message Tool {
     // Component type for this tool.
     enum ComponentType {
@@ -47,7 +47,7 @@ message MCPServer {
     }
 
     ComponentType component_type = 1;
-    // The contents of the configuration file in YAML format.
+    // The contents of the configuration tool in YAML format.
     string config_yaml = 2 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
@@ -55,14 +55,13 @@ message MCPServer {
     ];
   }
 
-  // All the configuration files for the MCP server.
-  // The key in the map is the path to the configuration file, this path must be relative and also valid in to layout in a filesystem,
-  // when considering many paths in a full configuration (so it's not valid to have both entries for `foo/bar` and `foo/bar/baz`).
+  // All the configuration tools for the MCP server.
+  // The key in the map is the name of the tool.
   map<string, Tool> tools = 4 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).map.min_pairs = 1,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}
   ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
@@ -378,14 +377,13 @@ message MCPServerCreate {
   // MCP server description.
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
-  // All the configuration files for the MCP server.
-  // The key in the map is the path to the configuration file, this path must be relative and also valid in to layout in a filesystem,
-  // when considering many paths in a full configuration (so it's not valid to have both entries for `foo/bar` and `foo/bar/baz`).
+  // All the configuration tools for the MCP server.
+  // The key in the map is the tool name.
   map<string, MCPServer.Tool> tools = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).map.min_pairs = 1,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files.."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}
   ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
@@ -494,8 +492,8 @@ message MCPServerUpdate {
   // MCP server description.
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
-  // All the configuration files for the MCP server.
-  map<string, MCPServer.Tool> tools = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files."}];
+  // All the configuration tools for the MCP server.
+  map<string, MCPServer.Tool> tools = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 4;
