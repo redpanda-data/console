@@ -577,7 +577,7 @@ message GetMCPServerServiceConfigSchemaRequest {}
 message GetMCPServerServiceConfigSchemaResponse {
   message ConfigurationYAMLSchema {
     // The component type of the schema.
-    string component_type = 1;
+    MCPServer.Tool.ComponentType component_type = 1;
     // JSON schema of the configuration components that are allowed for MCP Servers.
     string config_schema = 2;
   }
