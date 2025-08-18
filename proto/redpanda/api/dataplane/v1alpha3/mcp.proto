@@ -44,6 +44,8 @@ message MCPServer {
       COMPONENT_TYPE_UNSPECIFIED = 0;
       COMPONENT_TYPE_PROCESSOR = 1;
       COMPONENT_TYPE_CACHE = 2;
+      COMPONENT_TYPE_INPUT = 3;
+      COMPONENT_TYPE_OUTPUT = 4;
     }
 
     ComponentType component_type = 1;
