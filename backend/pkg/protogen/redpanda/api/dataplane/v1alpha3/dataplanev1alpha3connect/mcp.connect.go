@@ -59,6 +59,9 @@ const (
 	// MCPServerServiceGetMCPServerServiceConfigSchemaProcedure is the fully-qualified name of the
 	// MCPServerService's GetMCPServerServiceConfigSchema RPC.
 	MCPServerServiceGetMCPServerServiceConfigSchemaProcedure = "/redpanda.api.dataplane.v1alpha3.MCPServerService/GetMCPServerServiceConfigSchema"
+	// MCPServerServiceLintMCPConfigProcedure is the fully-qualified name of the MCPServerService's
+	// LintMCPConfig RPC.
+	MCPServerServiceLintMCPConfigProcedure = "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -72,6 +75,7 @@ var (
 	mCPServerServiceStopMCPServerMethodDescriptor                   = mCPServerServiceServiceDescriptor.Methods().ByName("StopMCPServer")
 	mCPServerServiceStartMCPServerMethodDescriptor                  = mCPServerServiceServiceDescriptor.Methods().ByName("StartMCPServer")
 	mCPServerServiceGetMCPServerServiceConfigSchemaMethodDescriptor = mCPServerServiceServiceDescriptor.Methods().ByName("GetMCPServerServiceConfigSchema")
+	mCPServerServiceLintMCPConfigMethodDescriptor                   = mCPServerServiceServiceDescriptor.Methods().ByName("LintMCPConfig")
 )
 
 // MCPServerServiceClient is a client for the redpanda.api.dataplane.v1alpha3.MCPServerService
@@ -94,6 +98,9 @@ type MCPServerServiceClient interface {
 	StartMCPServer(context.Context, *connect.Request[v1alpha3.StartMCPServerRequest]) (*connect.Response[v1alpha3.StartMCPServerResponse], error)
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error)
+	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
+	// issues (“hints”). An empty list means the config passed all lint checks.
+	LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error)
 }
 
 // NewMCPServerServiceClient constructs a client for the
@@ -155,6 +162,12 @@ func NewMCPServerServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(mCPServerServiceGetMCPServerServiceConfigSchemaMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		lintMCPConfig: connect.NewClient[v1alpha3.LintMCPConfigRequest, v1alpha3.LintMCPConfigResponse](
+			httpClient,
+			baseURL+MCPServerServiceLintMCPConfigProcedure,
+			connect.WithSchema(mCPServerServiceLintMCPConfigMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -168,6 +181,7 @@ type mCPServerServiceClient struct {
 	stopMCPServer                   *connect.Client[v1alpha3.StopMCPServerRequest, v1alpha3.StopMCPServerResponse]
 	startMCPServer                  *connect.Client[v1alpha3.StartMCPServerRequest, v1alpha3.StartMCPServerResponse]
 	getMCPServerServiceConfigSchema *connect.Client[v1alpha3.GetMCPServerServiceConfigSchemaRequest, v1alpha3.GetMCPServerServiceConfigSchemaResponse]
+	lintMCPConfig                   *connect.Client[v1alpha3.LintMCPConfigRequest, v1alpha3.LintMCPConfigResponse]
 }
 
 // CreateMCPServer calls redpanda.api.dataplane.v1alpha3.MCPServerService.CreateMCPServer.
@@ -211,6 +225,11 @@ func (c *mCPServerServiceClient) GetMCPServerServiceConfigSchema(ctx context.Con
 	return c.getMCPServerServiceConfigSchema.CallUnary(ctx, req)
 }
 
+// LintMCPConfig calls redpanda.api.dataplane.v1alpha3.MCPServerService.LintMCPConfig.
+func (c *mCPServerServiceClient) LintMCPConfig(ctx context.Context, req *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error) {
+	return c.lintMCPConfig.CallUnary(ctx, req)
+}
+
 // MCPServerServiceHandler is an implementation of the
 // redpanda.api.dataplane.v1alpha3.MCPServerService service.
 type MCPServerServiceHandler interface {
@@ -231,6 +250,9 @@ type MCPServerServiceHandler interface {
 	StartMCPServer(context.Context, *connect.Request[v1alpha3.StartMCPServerRequest]) (*connect.Response[v1alpha3.StartMCPServerResponse], error)
 	// The configuration schema includes available components and processors in this Redpanda Connect MCP Server instance.
 	GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error)
+	// Lints a Redpanda Connect MCP tools configuration and returns zero or more
+	// issues (“hints”). An empty list means the config passed all lint checks.
+	LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error)
 }
 
 // NewMCPServerServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -287,6 +309,12 @@ func NewMCPServerServiceHandler(svc MCPServerServiceHandler, opts ...connect.Han
 		connect.WithSchema(mCPServerServiceGetMCPServerServiceConfigSchemaMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	mCPServerServiceLintMCPConfigHandler := connect.NewUnaryHandler(
+		MCPServerServiceLintMCPConfigProcedure,
+		svc.LintMCPConfig,
+		connect.WithSchema(mCPServerServiceLintMCPConfigMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha3.MCPServerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case MCPServerServiceCreateMCPServerProcedure:
@@ -305,6 +333,8 @@ func NewMCPServerServiceHandler(svc MCPServerServiceHandler, opts ...connect.Han
 			mCPServerServiceStartMCPServerHandler.ServeHTTP(w, r)
 		case MCPServerServiceGetMCPServerServiceConfigSchemaProcedure:
 			mCPServerServiceGetMCPServerServiceConfigSchemaHandler.ServeHTTP(w, r)
+		case MCPServerServiceLintMCPConfigProcedure:
+			mCPServerServiceLintMCPConfigHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -344,4 +374,8 @@ func (UnimplementedMCPServerServiceHandler) StartMCPServer(context.Context, *con
 
 func (UnimplementedMCPServerServiceHandler) GetMCPServerServiceConfigSchema(context.Context, *connect.Request[v1alpha3.GetMCPServerServiceConfigSchemaRequest]) (*connect.Response[v1alpha3.GetMCPServerServiceConfigSchemaResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.MCPServerService.GetMCPServerServiceConfigSchema is not implemented"))
+}
+
+func (UnimplementedMCPServerServiceHandler) LintMCPConfig(context.Context, *connect.Request[v1alpha3.LintMCPConfigRequest]) (*connect.Response[v1alpha3.LintMCPConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.MCPServerService.LintMCPConfig is not implemented"))
 }

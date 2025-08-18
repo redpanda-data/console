@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/common/v1/linthint.proto";
 import "redpanda/api/dataplane/v1/pipeline.proto";
 
 // Defines the MCP server resource.
@@ -37,17 +38,23 @@ message MCPServer {
   // Optional MCP server description.
   string description = 3 [(buf.validate.field).string.max_len = 256];
 
-  // A configuration file for the MCP server.
+  // A configuration tool for the MCP server.
   message Tool {
     // Component type for this tool.
     enum ComponentType {
       COMPONENT_TYPE_UNSPECIFIED = 0;
       COMPONENT_TYPE_PROCESSOR = 1;
       COMPONENT_TYPE_CACHE = 2;
+      COMPONENT_TYPE_INPUT = 3;
+      COMPONENT_TYPE_OUTPUT = 4;
     }
 
-    ComponentType component_type = 1;
-    // The contents of the configuration file in YAML format.
+    ComponentType component_type = 1 [(buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }];
+
+    // The contents of the configuration tool in YAML format.
     string config_yaml = 2 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
@@ -55,14 +62,13 @@ message MCPServer {
     ];
   }
 
-  // All the configuration files for the MCP server.
-  // The key in the map is the path to the configuration file, this path must be relative and also valid in to layout in a filesystem,
-  // when considering many paths in a full configuration (so it's not valid to have both entries for `foo/bar` and `foo/bar/baz`).
+  // All the configuration tools for the MCP server.
+  // The key in the map is the name of the tool.
   map<string, Tool> tools = 4 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).map.min_pairs = 1,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}
   ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
@@ -330,6 +336,32 @@ service MCPServerService {
       api: API_MCP_SERVER
     };
   }
+
+  // Lints a Redpanda Connect MCP tools configuration and returns zero or more
+  // issues (“hints”). An empty list means the config passed all lint checks.
+  rpc LintMCPConfig(LintMCPConfigRequest) returns (LintMCPConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/redpanda-connect/mcp-servers:lint-config"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Lint a Redpanda Connect MCP tools configuration"
+      description: "Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty."
+      responses: {
+        key: "200"
+        value: {
+          description: "Linting finished. See `lint_hints` for details."
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.LintMCPConfigResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_CONNECT
+    };
+  }
 }
 
 // MCPServerCreate contains the details for the MCP Server creation request.
@@ -352,14 +384,13 @@ message MCPServerCreate {
   // MCP server description.
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
-  // All the configuration files for the MCP server.
-  // The key in the map is the path to the configuration file, this path must be relative and also valid in to layout in a filesystem,
-  // when considering many paths in a full configuration (so it's not valid to have both entries for `foo/bar` and `foo/bar/baz`).
+  // All the configuration tools for the MCP server.
+  // The key in the map is the tool name.
   map<string, MCPServer.Tool> tools = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).map.min_pairs = 1,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files.."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}
   ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
@@ -468,8 +499,8 @@ message MCPServerUpdate {
   // MCP server description.
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
-  // All the configuration files for the MCP server.
-  map<string, MCPServer.Tool> tools = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration in files."}];
+  // All the configuration tools for the MCP server.
+  map<string, MCPServer.Tool> tools = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 4;
@@ -546,18 +577,27 @@ message StartMCPServerResponse {
 message GetMCPServerServiceConfigSchemaRequest {}
 
 message GetMCPServerServiceConfigSchemaResponse {
-  message ConfigurationFileSchema {
-    // The glob pattern that matches the configuration file paths.
-    //
-    // Example: "o11y/*.yaml" or "processors/*.yaml"
-    //
-    // Single and double asterisks are supported.
-    string path_pattern = 1;
+  message ConfigurationYAMLSchema {
+    // The component type of the schema.
+    MCPServer.Tool.ComponentType component_type = 1;
     // JSON schema of the configuration components that are allowed for MCP Servers.
     string config_schema = 2;
   }
-  repeated ConfigurationFileSchema configuration_files = 1 [
+  repeated ConfigurationYAMLSchema configuration_yamls = 1 [
     (buf.validate.field).repeated.min_items = 1,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The configuration schema for the MCP Server."}
   ];
+}
+
+message LintMCPConfigRequest {
+  // The Redpanda Connect MCP tools configuration in YAML format.
+  map<string, MCPServer.Tool> tools = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message LintMCPConfigResponse {
+  // A list of linting issues.
+  map<string, common.v1.LintHint> lint_hints = 1;
 }
