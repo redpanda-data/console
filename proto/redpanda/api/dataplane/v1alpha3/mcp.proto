@@ -572,17 +572,13 @@ message StartMCPServerResponse {
 message GetMCPServerServiceConfigSchemaRequest {}
 
 message GetMCPServerServiceConfigSchemaResponse {
-  message ConfigurationFileSchema {
-    // The glob pattern that matches the configuration file paths.
-    //
-    // Example: "o11y/*.yaml" or "processors/*.yaml"
-    //
-    // Single and double asterisks are supported.
-    string path_pattern = 1;
+  message ConfigurationYAMLSchema {
+    // The component type of the schema.
+    string component_type = 1;
     // JSON schema of the configuration components that are allowed for MCP Servers.
     string config_schema = 2;
   }
-  repeated ConfigurationFileSchema configuration_files = 1 [
+  repeated ConfigurationYAMLSchema configuration_yamls = 1 [
     (buf.validate.field).repeated.min_items = 1,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The configuration schema for the MCP Server."}
   ];
