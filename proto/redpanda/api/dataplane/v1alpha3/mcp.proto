@@ -48,7 +48,10 @@ message MCPServer {
       COMPONENT_TYPE_OUTPUT = 4;
     }
 
-    ComponentType component_type = 1;
+    ComponentType component_type = 1 [
+      (buf.validate.field).enum.defined_only = true,
+      (buf.validate.field).enum.not_in = [0]
+    ];
     // The contents of the configuration tool in YAML format.
     string config_yaml = 2 [
       (google.api.field_behavior) = REQUIRED,
