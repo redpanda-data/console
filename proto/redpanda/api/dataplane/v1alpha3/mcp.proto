@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/common/v1/linthint.proto";
 import "redpanda/api/dataplane/v1/pipeline.proto";
 
 // Defines the MCP server resource.
@@ -48,10 +49,11 @@ message MCPServer {
       COMPONENT_TYPE_OUTPUT = 4;
     }
 
-    ComponentType component_type = 1 [
-      (buf.validate.field).enum.defined_only = true,
-      (buf.validate.field).enum.not_in = [0]
-    ];
+    ComponentType component_type = 1 [(buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }];
+
     // The contents of the configuration tool in YAML format.
     string config_yaml = 2 [
       (google.api.field_behavior) = REQUIRED,
@@ -350,7 +352,7 @@ service MCPServerService {
         value: {
           description: "Linting finished. See `lint_hints` for details."
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.LintMCPConfigResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.LintMCPConfigResponse"}
           }
         }
       }
@@ -595,7 +597,7 @@ message LintMCPConfigRequest {
   ];
 }
 
-message LintPipelineConfigResponse {
+message LintMCPConfigResponse {
   // A list of linting issues.
   map<string, common.v1.LintHint> lint_hints = 1;
 }
