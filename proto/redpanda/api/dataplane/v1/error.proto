@@ -31,4 +31,7 @@ enum Reason {
 
   // The Redpanda enterprise license has expired and is no longer valid.
   REASON_ENTERPRISE_LICENSE_EXPIRED = 9;
+
+  // Invalid MCP tool configuration.
+  REASON_CONNECT_INVALID_MCP_TOOL_CONFIGURATION = 10;
 }
