@@ -206,6 +206,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 
 	r.Mount("/v1alpha1", gwMux)
 	r.Mount("/v1alpha2", gwMux)
+	r.Mount("/v1alpha3", gwMux)
 	r.Mount("/v1", gwMux)
 
 	// Wasm Transforms
