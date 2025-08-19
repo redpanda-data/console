@@ -80,7 +80,7 @@ linters:
     sloglint:
       attr-only: true
       no-global: all
-      context: all
+      context: scope
       msg-style: lowercased
       key-naming-case: snake
       forbidden-keys:
@@ -184,6 +184,10 @@ linters:
           - staticcheck
         path: (.+).go
         text: SA1019.*jhump/protoreflect
+      - linters:
+          - noctx
+        path: (.+).go
+        text: '.*slog.*'
     paths:
       - third_party$
       - builtin$

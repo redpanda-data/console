@@ -15,12 +15,12 @@ import (
 	"crypto/sha256"
 	libtls "crypto/tls"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync/atomic"
 	"time"
 
 	"github.com/twmb/tlscfg"
-	"go.uber.org/zap"
 )
 
 // MaybeWithDynamicDiskKeyPair returns a function that configures a certificate
@@ -34,7 +34,7 @@ func MaybeWithDynamicDiskKeyPair(
 	keyPath string,
 	forKind tlscfg.ForKind,
 	refreshInterval time.Duration,
-	logger *zap.Logger,
+	logger *slog.Logger,
 ) func(*libtls.Config) error {
 	return func(cfg *libtls.Config) error {
 		if certPath == "" && keyPath == "" {
@@ -66,10 +66,10 @@ type keyPairReloader struct {
 	certPath   string
 	keyPath    string
 	reloadTime time.Duration
-	logger     *zap.Logger
+	logger     *slog.Logger
 }
 
-func newKeyPairReloader(quitCtx context.Context, certPath, keyPath string, refreshInterval time.Duration, logger *zap.Logger) (*keyPairReloader, error) {
+func newKeyPairReloader(quitCtx context.Context, certPath, keyPath string, refreshInterval time.Duration, logger *slog.Logger) (*keyPairReloader, error) {
 	r := keyPairReloader{
 		certPath:   certPath,
 		keyPath:    keyPath,
@@ -93,7 +93,7 @@ func (r *keyPairReloader) reloader(quitCtx context.Context) {
 			return
 		case <-ticker.C:
 			if err := r.load(); err != nil {
-				r.logger.Error("error while reloading the certificate key pair", zap.Any("err", err))
+				r.logger.ErrorContext(quitCtx, "error while reloading the certificate key pair", slog.Any("error", err))
 			}
 		}
 	}
@@ -112,7 +112,7 @@ func (r *keyPairReloader) load() error {
 	id2 := sha256.Sum256(key)
 	digest := sha256.Sum256(append(id1[:], id2[:]...))
 	if digest == r.digest {
-		r.logger.Debug("TLS key pair did not change", zap.String("certPath", r.certPath), zap.String("keyPath", r.keyPath))
+		r.logger.Debug("TLS key pair did not change", slog.String("cert_path", r.certPath), slog.String("key_path", r.keyPath))
 		return nil
 	}
 	kp, err := libtls.X509KeyPair(cert, key)
@@ -120,9 +120,9 @@ func (r *keyPairReloader) load() error {
 		return fmt.Errorf("cannot create key pair: %w", err)
 	}
 	r.logger.Info("loaded new TLS key pair from disk",
-		zap.String("certPath", r.certPath),
-		zap.String("keyPath", r.keyPath),
-		zap.String("combinedDigest", fmt.Sprintf("%x", digest)),
+		slog.String("cert_path", r.certPath),
+		slog.String("key_path", r.keyPath),
+		slog.String("combined_digest", fmt.Sprintf("%x", digest)),
 	)
 	r.cert.Store(&kp)
 	r.digest = digest

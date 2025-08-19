@@ -16,11 +16,10 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync/atomic"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 // MaybeWithDynamicClientCA returns a function that configures a CA on the tls
@@ -35,7 +34,7 @@ func MaybeWithDynamicClientCA(
 	caPath string,
 	hostname string,
 	refreshInterval time.Duration,
-	logger *zap.Logger,
+	logger *slog.Logger,
 ) func(*libtls.Config) error {
 	return func(cfg *libtls.Config) error {
 		if caPath == "" {
@@ -71,11 +70,11 @@ type caReloader struct {
 	digest [sha256.Size]byte
 
 	caPath string
-	logger *zap.Logger
+	logger *slog.Logger
 }
 
 func newCAReloader(quitCtx context.Context, initCfg *libtls.Config, caPath string, refreshInterval time.Duration,
-	logger *zap.Logger,
+	logger *slog.Logger,
 ) (*caReloader, error) {
 	r := caReloader{
 		caPath: caPath,
@@ -99,7 +98,7 @@ func (r *caReloader) reloader(quitCtx context.Context, refreshInterval time.Dura
 			return
 		case <-ticker.C:
 			if err := r.load(); err != nil {
-				r.logger.Error("error while reloading the CA", zap.Any("err", err))
+				r.logger.ErrorContext(quitCtx, "error while reloading the CA", slog.Any("error", err))
 			}
 		}
 	}
@@ -112,7 +111,7 @@ func (r *caReloader) load() error {
 	}
 	digest := sha256.Sum256(ca)
 	if digest == r.digest {
-		r.logger.Debug("CA cert did not change", zap.String("path", r.caPath))
+		r.logger.Debug("CA cert did not change", slog.String("path", r.caPath))
 		return nil
 	}
 	cfg := r.tc.Load().Clone()
@@ -126,8 +125,8 @@ func (r *caReloader) load() error {
 	// assumption that CA rotation is rare enough that we will restart
 	// before the list is problematic.
 	r.logger.Info("loaded new CA cert from disk and added to pool",
-		zap.String("caPath", r.caPath),
-		zap.String("caDigest", fmt.Sprintf("%x", digest)),
+		slog.String("ca_path", r.caPath),
+		slog.String("ca_digest", fmt.Sprintf("%x", digest)),
 	)
 	r.tc.Store(cfg)
 	r.digest = digest

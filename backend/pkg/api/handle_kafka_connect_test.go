@@ -12,13 +12,13 @@ package api
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 // TestHandlePutConnectorConfigParsesRequestBody ensures the endpoint properly parses the request body
@@ -38,7 +38,7 @@ func TestHandlePutConnectorConfigParsesRequestBody(t *testing.T) {
 
 		api := &API{
 			ConnectSvc: nil, // Should not be reached due to parsing failure
-			Logger:     zap.NewNop(),
+			Logger:     slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})),
 		}
 
 		w := httptest.NewRecorder()
@@ -63,7 +63,7 @@ func TestHandlePutConnectorConfigParsesRequestBody(t *testing.T) {
 
 		api := &API{
 			ConnectSvc: nil, // Should not be reached due to parsing failure
-			Logger:     zap.NewNop(),
+			Logger:     slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})),
 		}
 
 		w := httptest.NewRecorder()

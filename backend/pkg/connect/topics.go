@@ -12,12 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // ListConnectorTopics returns a list of connector topic names. There is no defined
@@ -35,7 +34,7 @@ func (s *Service) ListConnectorTopics(ctx context.Context, clusterName string, c
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to list connector topics: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector", connector)},
 			IsSilent:     false,
 		}
 	}
@@ -59,7 +58,7 @@ func (s *Service) ResetConnectorTopics(ctx context.Context, clusterName string, 
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to restart connector topics: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector", connector)},
 			IsSilent:     false,
 		}
 	}

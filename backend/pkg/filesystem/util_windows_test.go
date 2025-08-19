@@ -12,6 +12,7 @@
 package filesystem
 
 import (
+	"log/slog"
 	"os"
 	"syscall"
 	"testing"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -28,7 +28,7 @@ type FileSystemTestSuite struct {
 	suite.Suite
 
 	cfg              config.Filesystem
-	log              *zap.Logger
+	log              *slog.Logger
 	workingDirectory string
 }
 
@@ -87,10 +87,7 @@ func (s *FileSystemTestSuite) SetupSuite() {
 
 	s.cfg = s.createBaseConfig()
 
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	s.log = log
 }

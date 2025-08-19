@@ -12,12 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // RestartConnector restarts the connector. Return 409 (Conflict) if rebalance is in process.
@@ -33,7 +32,7 @@ func (s *Service) RestartConnector(ctx context.Context, clusterName string, conn
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
 			Message:      fmt.Sprintf("Failed to restart connector: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector", connector)},
 			IsSilent:     false,
 		}
 	}

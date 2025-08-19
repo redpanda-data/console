@@ -722,12 +722,13 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 		}))
 		assert.NoError(err)
 
-		// Ensure the transform no longer exists
-		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
-			Name: tfName,
-		}))
-		assert.Error(err)
-		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
+		// Ensure the transform no longer exists (with retry for eventual consistency)
+		require.Eventually(func() bool {
+			_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
+				Name: tfName,
+			}))
+			return err != nil && connect.CodeOf(err) == connect.CodeNotFound
+		}, 5*time.Second, 100*time.Millisecond, "transform should eventually be deleted")
 	})
 
 	t.Run("delete transform with valid request (http)", func(t *testing.T) {
@@ -757,12 +758,13 @@ func (s *APISuite) TestDeleteTransforms_v1alpha2() {
 			Fetch(ctx)
 		assert.NoError(err)
 
-		// Ensure the transform no longer exists
-		_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
-			Name: tfName,
-		}))
-		assert.Error(err)
-		assert.Equal(connect.CodeNotFound.String(), connect.CodeOf(err).String())
+		// Ensure the transform no longer exists (with retry for eventual consistency)
+		require.Eventually(func() bool {
+			_, err = transformClient.GetTransform(ctx, connect.NewRequest(&v1alpha2.GetTransformRequest{
+				Name: tfName,
+			}))
+			return err != nil && connect.CodeOf(err) == connect.CodeNotFound
+		}, 5*time.Second, 100*time.Millisecond, "transform should eventually be deleted")
 	})
 
 	t.Run("try to delete non-existent transform (connect-go)", func(t *testing.T) {

@@ -12,11 +12,10 @@ package console
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 // DocumentationState denotes whether topic documentation is available for a certain
@@ -67,9 +66,9 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	for _, topic := range metadata.Topics {
 		topicName := topic.Topic
 		if topic.Err != nil {
-			s.logger.Error("failed to get topic metadata while listing topics",
-				zap.String("topic_name", topicName),
-				zap.Error(topic.Err))
+			s.logger.ErrorContext(ctx, "failed to get topic metadata while listing topics",
+				slog.String("topic_name", topicName),
+				slog.Any("error", topic.Err))
 			return nil, topic.Err
 		}
 
@@ -90,7 +89,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		defer wg.Done()
 		configs, err = s.GetTopicsConfigs(childCtx, topicNames, []string{"cleanup.policy"})
 		if err != nil {
-			s.logger.Warn("failed to fetch topic configs to return cleanup.policy", zap.Error(err))
+			s.logger.Warn("failed to fetch topic configs to return cleanup.policy", slog.Any("error", err))
 		}
 	}()
 	go func() {
@@ -99,7 +98,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		if err == nil {
 			logDirsByTopic = logDirs
 		} else {
-			s.logger.Warn("failed to retrieve log dirs by topic", zap.Error(err))
+			s.logger.Warn("failed to retrieve log dirs by topic", slog.Any("error", err))
 			logDirErrorMsg = err.Error()
 		}
 	}()

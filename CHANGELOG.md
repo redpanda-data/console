@@ -1,5 +1,9 @@
 # Changelog
 
+## Master / Unreleased
+
+- [BUGFIX] Fix schema registry References and Referenced By sections displaying inconsistent information and navigation failures for schema names with periods/slashes.
+
 ## v3.1.3 / 2025-07-25
 
 - [BUGFIX] Fix transactional record production always appearing to fail even when records were successfully produced and committed.

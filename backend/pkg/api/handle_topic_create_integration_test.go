@@ -24,7 +24,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -40,8 +39,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	// Using slog for logging in tests
 
 	t.Run("happy path", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
@@ -236,7 +234,8 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		newConfig.MetricsNamespace = "create_topic_fail"
 
 		// new console service
-		newApi := New(newConfig)
+		newApi, err := New(newConfig)
+		require.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc

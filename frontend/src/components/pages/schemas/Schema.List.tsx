@@ -19,7 +19,7 @@ import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils
 import { PageComponent, type PageInitHelper } from '../Page';
 
 import './Schema.List.scss';
-import { TrashIcon, ArchiveIcon } from '@heroicons/react/outline';
+import { ArchiveIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
   AlertIcon,

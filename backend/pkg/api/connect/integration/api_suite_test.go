@@ -70,7 +70,7 @@ func (s *APISuite) SetupSuite() {
 
 	// 2. Start Redpanda Docker container
 	container, err := redpanda.Run(ctx,
-		"redpandadata/redpanda:v23.3.5",
+		"redpandadata/redpanda:v25.2.1",
 		redpanda.WithEnableWasmTransform(),
 		network.WithNetwork([]string{"redpanda"}, s.network),
 		redpanda.WithListener("redpanda:29092"),
@@ -139,9 +139,14 @@ func (s *APISuite) SetupSuite() {
 			},
 		},
 	}
-	s.api = api.New(s.cfg)
+	s.api, err = api.New(s.cfg)
+	require.NoError(err)
 
-	go s.api.Start()
+	go func() {
+		if err := s.api.Start(context.Background()); err != nil {
+			s.T().Errorf("failed to start API: %v", err)
+		}
+	}()
 
 	// 5. Wait until Console API is up
 	httpServerAddress := net.JoinHostPort("localhost", strconv.Itoa(httpListenPort))

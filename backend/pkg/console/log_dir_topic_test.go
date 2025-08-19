@@ -12,6 +12,7 @@ package console
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
@@ -212,8 +212,8 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, fakeCluster.MoveTopicPartition(topicName, 2, 2))
 
 		consoleSvc := Service{
-			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, zap.NewNop()),
-			logger:             zap.NewNop(),
+			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1}))),
+			logger:             slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})),
 		}
 
 		logDirsByTopic, err := consoleSvc.logDirsByTopic(t.Context())
@@ -288,8 +288,8 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, fakeCluster.MoveTopicPartition(topicName, 2, 2))
 
 		consoleSvc := Service{
-			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, zap.NewNop()),
-			logger:             zap.NewNop(),
+			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1}))),
+			logger:             slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})),
 		}
 
 		logDirsByTopic, err := consoleSvc.logDirsByTopic(t.Context())

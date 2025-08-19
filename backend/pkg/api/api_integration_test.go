@@ -112,9 +112,14 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	s.cfg.Serde.Protobuf.FileSystem.RefreshInterval = 1 * time.Minute
 	s.cfg.Serde.Protobuf.FileSystem.Paths = []string{absProtoPath}
 
-	s.api = New(s.cfg)
+	s.api, err = New(s.cfg)
+	require.NoError(err)
 
-	go s.api.Start()
+	go func() {
+		if err := s.api.Start(context.Background()); err != nil {
+			s.T().Errorf("failed to start API: %v", err)
+		}
+	}()
 
 	// allow for server to start
 	httpServerAddress := net.JoinHostPort("localhost", strconv.Itoa(httpListenPort))
@@ -137,7 +142,7 @@ func (s *APIIntegrationTestSuite) TearDownSuite() {
 
 	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
 
-	assert.NoError(s.api.server.Server.Shutdown(context.Background()))
+	assert.NoError(s.api.Stop(context.Background()))
 }
 
 func (s *APIIntegrationTestSuite) httpAddress() string {

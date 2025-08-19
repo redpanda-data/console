@@ -12,10 +12,10 @@ package redpanda
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/redpanda-data/common-go/net"
 	"github.com/redpanda-data/common-go/rpadmin"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
@@ -27,7 +27,7 @@ var _ ClientFactory = (*SingleClientProvider)(nil)
 // Admin API client. It implements the ClientFactory interface.
 type SingleClientProvider struct {
 	cfg    config.RedpandaAdminAPI
-	logger *zap.Logger
+	logger *slog.Logger
 }
 
 // NewSingleClientProvider creates a new SingleClientProvider with the given configuration and logger.
@@ -35,7 +35,7 @@ type SingleClientProvider struct {
 //
 // If schema registry is not configured an instance of DisabledClientProvider is returned.
 // Otherwise, returns an instance of SingleClientProvider or an error if client creation fails.
-func NewSingleClientProvider(cfg *config.Config, l *zap.Logger) (ClientFactory, error) {
+func NewSingleClientProvider(cfg *config.Config, l *slog.Logger) (ClientFactory, error) {
 	redpandaCfg := cfg.Redpanda.AdminAPI
 
 	if !redpandaCfg.Enabled {

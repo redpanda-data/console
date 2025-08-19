@@ -16,6 +16,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"log/slog"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -23,13 +24,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 )
 
 // tlsTestSetup holds common test artifacts for TLS tests
 type tlsTestSetup struct {
-	Logger     *zap.Logger
+	Logger     *slog.Logger
 	TmpDir     string
 	CAPath     string
 	CACert     *x509.Certificate
@@ -41,7 +40,7 @@ type tlsTestSetup struct {
 
 // setupTLSTest prepares the test environment and certificates
 func setupTLSTest(t *testing.T) *tlsTestSetup {
-	logger := zaptest.NewLogger(t)
+	logger := slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1}))
 
 	// Create temporary directory for test certificates
 	tmpDir := t.TempDir()

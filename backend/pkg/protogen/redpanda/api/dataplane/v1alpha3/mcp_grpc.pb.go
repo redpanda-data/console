@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             (unknown)
-// source: redpanda/api/dataplane/v1/mcp.proto
+// source: redpanda/api/dataplane/v1alpha3/mcp.proto
 
-package dataplanev1
+package dataplanev1alpha3
 
 import (
 	context "context"
@@ -20,14 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MCPServerService_CreateMCPServer_FullMethodName                 = "/redpanda.api.dataplane.v1.MCPServerService/CreateMCPServer"
-	MCPServerService_GetMCPServer_FullMethodName                    = "/redpanda.api.dataplane.v1.MCPServerService/GetMCPServer"
-	MCPServerService_ListMCPServers_FullMethodName                  = "/redpanda.api.dataplane.v1.MCPServerService/ListMCPServers"
-	MCPServerService_UpdateMCPServer_FullMethodName                 = "/redpanda.api.dataplane.v1.MCPServerService/UpdateMCPServer"
-	MCPServerService_DeleteMCPServer_FullMethodName                 = "/redpanda.api.dataplane.v1.MCPServerService/DeleteMCPServer"
-	MCPServerService_StopMCPServer_FullMethodName                   = "/redpanda.api.dataplane.v1.MCPServerService/StopMCPServer"
-	MCPServerService_StartMCPServer_FullMethodName                  = "/redpanda.api.dataplane.v1.MCPServerService/StartMCPServer"
-	MCPServerService_GetMCPServerServiceConfigSchema_FullMethodName = "/redpanda.api.dataplane.v1.MCPServerService/GetMCPServerServiceConfigSchema"
+	MCPServerService_CreateMCPServer_FullMethodName                 = "/redpanda.api.dataplane.v1alpha3.MCPServerService/CreateMCPServer"
+	MCPServerService_GetMCPServer_FullMethodName                    = "/redpanda.api.dataplane.v1alpha3.MCPServerService/GetMCPServer"
+	MCPServerService_ListMCPServers_FullMethodName                  = "/redpanda.api.dataplane.v1alpha3.MCPServerService/ListMCPServers"
+	MCPServerService_UpdateMCPServer_FullMethodName                 = "/redpanda.api.dataplane.v1alpha3.MCPServerService/UpdateMCPServer"
+	MCPServerService_DeleteMCPServer_FullMethodName                 = "/redpanda.api.dataplane.v1alpha3.MCPServerService/DeleteMCPServer"
+	MCPServerService_StopMCPServer_FullMethodName                   = "/redpanda.api.dataplane.v1alpha3.MCPServerService/StopMCPServer"
+	MCPServerService_StartMCPServer_FullMethodName                  = "/redpanda.api.dataplane.v1alpha3.MCPServerService/StartMCPServer"
+	MCPServerService_GetMCPServerServiceConfigSchema_FullMethodName = "/redpanda.api.dataplane.v1alpha3.MCPServerService/GetMCPServerServiceConfigSchema"
 )
 
 // MCPServerServiceClient is the client API for MCPServerService service.
@@ -371,7 +371,7 @@ func _MCPServerService_GetMCPServerServiceConfigSchema_Handler(srv interface{}, 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MCPServerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "redpanda.api.dataplane.v1.MCPServerService",
+	ServiceName: "redpanda.api.dataplane.v1alpha3.MCPServerService",
 	HandlerType: (*MCPServerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -408,5 +408,5 @@ var MCPServerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "redpanda/api/dataplane/v1/mcp.proto",
+	Metadata: "redpanda/api/dataplane/v1alpha3/mcp.proto",
 }

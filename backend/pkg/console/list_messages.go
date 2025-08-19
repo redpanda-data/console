@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"runtime/debug"
 	"sync"
@@ -22,7 +23,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/serde"
 )
@@ -319,9 +319,9 @@ func (s *Service) calculateConsumeRequests(
 			// Request start offset by timestamp first and then consider it like a normal forward consuming / custom offset
 			offset, exists := startOffsetByPartitionID[startOffset.Partition]
 			if !exists {
-				s.logger.Warn("resolved start offset (by timestamp) does not exist for this partition",
-					zap.String("topic", listReq.TopicName),
-					zap.Int32("partition_id", startOffset.Partition))
+				s.logger.WarnContext(ctx, "resolved start offset (by timestamp) does not exist for this partition",
+					slog.String("topic", listReq.TopicName),
+					slog.Int("partition_id", int(startOffset.Partition)))
 			}
 			if offset < 0 {
 				// If there's no newer message than the given offset is -1 here, let's replace this with the newest
@@ -462,7 +462,7 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 		// Setup JavaScript interpreter
 		isMessageOK, err := s.setupInterpreter(consumeReq.FilterInterpreterCode)
 		if err != nil {
-			s.logger.Error("failed to setup interpreter", zap.Error(err))
+			s.logger.ErrorContext(ctx, "failed to setup interpreter", slog.Any("error", err))
 			progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
 			return err
 		}
@@ -552,10 +552,10 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 	defer wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
-			s.logger.Error("recovered from panic in message worker",
-				zap.Any("error", r),
-				zap.String("stack_trace", string(debug.Stack())),
-				zap.String("topic", consumeReq.TopicName))
+			s.logger.ErrorContext(ctx, "recovered from panic in message worker",
+				slog.Any("error", r),
+				slog.String("stack_trace", string(debug.Stack())),
+				slog.String("topic", consumeReq.TopicName))
 		}
 	}()
 
@@ -616,7 +616,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 		isOK, err := isMessageOK(args)
 		var errMessage string
 		if err != nil {
-			s.logger.Debug("failed to check if message is ok", zap.Error(err))
+			s.logger.DebugContext(ctx, "failed to check if message is ok", slog.Any("error", err))
 			errMessage = fmt.Sprintf("Failed to check if message is ok (partition: '%v', offset: '%v'). Err: %v", record.Partition, record.Offset, err)
 		}
 
@@ -663,10 +663,10 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 				// We cancel the context when we know the search is complete, hence this is expected and
 				// should not be logged as error in this case.
 				if !errors.Is(err.Err, context.Canceled) {
-					s.logger.Error("errors while fetching records",
-						zap.String("topic_name", err.Topic),
-						zap.Int32("partition", err.Partition),
-						zap.Error(err.Err))
+					s.logger.ErrorContext(ctx, "errors while fetching records",
+						slog.String("topic_name", err.Topic),
+						slog.Int("partition", int(err.Partition)),
+						slog.Any("error", err.Err))
 				}
 			}
 			iter := fetches.RecordIter()

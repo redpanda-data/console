@@ -13,12 +13,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // CreateConnector applies a new connector configuration on the target Kafka connect cluster.
@@ -53,7 +52,7 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 			Err:          fmt.Errorf("failed to create connector: %w", err),
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to create Connector: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName)},
 			IsSilent:     false,
 		}
 	}

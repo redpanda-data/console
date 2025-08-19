@@ -13,10 +13,11 @@ package console
 
 import (
 	"context"
+	"log/slog"
+	"os"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	kafkafactory "github.com/redpanda-data/console/backend/pkg/factory/kafka"
@@ -29,16 +30,13 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	require := require.New(t)
 
 	ctx := context.Background()
-	logCfg := zap.NewDevelopmentConfig()
-	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := logCfg.Build()
-	require.NoError(err)
+	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	testSeedBroker := s.testSeedBroker
 	topicName := testutil.TopicNameForTest("get_topic_configs")
 
 	// setup
-	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+	_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
 	require.NoError(err)
 
 	cfg := config.Config{}

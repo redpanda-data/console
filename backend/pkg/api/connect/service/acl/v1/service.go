@@ -13,12 +13,12 @@ package acl
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"connectrpc.com/connect"
 	"github.com/twmb/franz-go/pkg/kerr"
-	"go.uber.org/zap"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -32,7 +32,7 @@ var _ dataplanev1connect.ACLServiceHandler = (*Service)(nil)
 // Service implements the handlers for ACL endpoints.
 type Service struct {
 	cfg        *config.Config
-	logger     *zap.Logger
+	logger     *slog.Logger
 	consoleSvc console.Servicer
 
 	kafkaClientMapper *kafkaClientMapper
@@ -41,7 +41,7 @@ type Service struct {
 
 // NewService creates a new ACL service handler.
 func NewService(cfg *config.Config,
-	logger *zap.Logger,
+	logger *slog.Logger,
 	consoleSvc console.Servicer,
 ) *Service {
 	return &Service{

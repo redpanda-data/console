@@ -13,11 +13,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/twmb/franz-go/pkg/sr"
-	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 )
@@ -383,7 +383,7 @@ func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *sr
 			return "DEFAULT"
 		}
 		// For other errors, log warning and return UNKNOWN
-		s.logger.Warn("failed to get subject config", zap.String("subject", subjectName), zap.Error(err))
+		s.logger.WarnContext(ctx, "failed to get subject config", slog.String("subject", subjectName), slog.Any("error", err))
 		return "UNKNOWN"
 	}
 	return compatibility.Level.String()

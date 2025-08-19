@@ -13,12 +13,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // PutConnectorConfig overwrites an existent connector config.
@@ -53,7 +52,7 @@ func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, co
 			Err:          fmt.Errorf("failed to patch connector config: %w", err),
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to patch Connector config: %v", err.Error()),
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector_name", connectorName)},
+			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector_name", connectorName)},
 			IsSilent:     false,
 		}
 	}

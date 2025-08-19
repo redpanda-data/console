@@ -14,6 +14,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"go.uber.org/zap"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -43,6 +43,7 @@ type Config struct {
 	Serde          Serde        `yaml:"serde"`
 	SchemaRegistry Schema       `yaml:"schemaRegistry"`
 	Logger         Logging      `yaml:"logger"`
+	Analytics      Analytics    `yaml:"analytics"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -95,6 +96,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	err = c.Analytics.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Analytics config: %w", err)
+	}
+
 	return nil
 }
 
@@ -111,10 +117,11 @@ func (c *Config) SetDefaults() {
 	c.Redpanda.SetDefaults()
 	c.Console.SetDefaults()
 	c.KafkaConnect.SetDefaults()
+	c.Analytics.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.
-func LoadConfig(logger *zap.Logger) (Config, error) {
+func LoadConfig(logger *slog.Logger) (Config, error) {
 	k := koanf.New(".")
 	var cfg Config
 	cfg.SetDefaults()

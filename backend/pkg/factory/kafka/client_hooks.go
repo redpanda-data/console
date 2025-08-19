@@ -10,6 +10,7 @@
 package kafka
 
 import (
+	"log/slog"
 	"net"
 	"sync"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 )
 
 var ( // interface checks to ensure we implement the hooks properly
@@ -30,7 +30,7 @@ var ( // interface checks to ensure we implement the hooks properly
 // clientHooks implements the various hook interfaces from the franz-go (kafka) library. We can use these hooks to
 // log additional information, collect Prometheus metrics and similar.
 type clientHooks struct {
-	logger *zap.Logger
+	logger *slog.Logger
 
 	requestSentCount prometheus.Counter
 	bytesSent        prometheus.Counter
@@ -52,7 +52,7 @@ var (
 	promBytesReceived    prometheus.Counter
 )
 
-func newClientHooks(logger *zap.Logger, metricsNamespace string) *clientHooks {
+func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
 	promInitOnce.Do(func() {
 		promRequestSent = promauto.NewCounter(prometheus.CounterOpts{
 			Namespace: metricsNamespace,
@@ -92,19 +92,19 @@ func newClientHooks(logger *zap.Logger, metricsNamespace string) *clientHooks {
 // Kafka cluster.
 func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Duration, _ net.Conn, err error) {
 	if err != nil {
-		c.logger.Debug("kafka connection failed", zap.String("broker_host", meta.Host), zap.Error(err))
+		c.logger.Debug("kafka connection failed", slog.String("broker_host", meta.Host), slog.Any("error", err))
 		return
 	}
 	c.logger.Debug("kafka connection succeeded",
-		zap.String("host", meta.Host),
-		zap.Duration("dial_duration", dialDur))
+		slog.String("host", meta.Host),
+		slog.Duration("dial_duration", dialDur))
 }
 
 // OnBrokerDisconnect is called when the client disconnects from any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
 	c.logger.Debug("kafka broker disconnected",
-		zap.String("host", meta.Host))
+		slog.String("host", meta.Host))
 }
 
 // OnBrokerRead is passed the broker metadata, the key for the response that
