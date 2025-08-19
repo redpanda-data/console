@@ -661,7 +661,7 @@ func RegisterMCPServerServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig", runtime.WithHTTPPathPattern("/v1/redpanda-connect/mcp-servers:lint-config"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig", runtime.WithHTTPPathPattern("/v1alpha3/redpanda-connect/mcp-servers:lint-config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -901,7 +901,7 @@ func RegisterMCPServerServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig", runtime.WithHTTPPathPattern("/v1/redpanda-connect/mcp-servers:lint-config"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.MCPServerService/LintMCPConfig", runtime.WithHTTPPathPattern("/v1alpha3/redpanda-connect/mcp-servers:lint-config"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -937,7 +937,7 @@ var (
 
 	pattern_MCPServerService_GetMCPServerServiceConfigSchema_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "redpanda-connect", "mcp-servers"}, "getConfigSchema"))
 
-	pattern_MCPServerService_LintMCPConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "redpanda-connect", "mcp-servers"}, "lint-config"))
+	pattern_MCPServerService_LintMCPConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "redpanda-connect", "mcp-servers"}, "lint-config"))
 )
 
 var (
