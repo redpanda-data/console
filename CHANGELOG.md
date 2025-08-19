@@ -2,7 +2,23 @@
 
 ## Master / Unreleased
 
-- [BUGFIX] Fix schema registry References and Referenced By sections displaying inconsistent information and navigation failures for schema names with periods/slashes.
+## v3.2.0 / 2025-08-19
+
+- [IMPROVEMENT] Add Redpanda news integration to keep users informed of updates
+- [IMPROVEMENT] Add trial license banner notifications and signup modal for extended trial access
+- [IMPROVEMENT] Add sunset header to deprecated API endpoints for smooth migration
+- [IMPROVEMENT] Add support for Kafka quota APIs in dataplane operations
+- [BUGFIX] Fix schema registry References and Referenced By sections displaying inconsistent information and navigation failures for schema names with periods/slashes
+- [BUGFIX] Fix consumer group offset handling for special values like start/end positions
+- [BUGFIX] Fix error handling for secret creation and deletion operations with proper user feedback
+- [CHANGE] Migrate logging from zap to structured slog for better observability
+- [CHANGE] Replace analytics disable flag with analytics_enabled for clearer configuration
+
+## v2.8.9 / 2025-08-05
+
+- [BUGFIX] Implement fault-tolerant protobuf schema compilation to handle broken schema references.
+- [BUGFIX] Fix time format in enterprise features to include proper ISO8601 timestamp (enterprise feature).
+- [IMPROVEMENT] Update franz-go schema registry dependency to v1.5.0 for enhanced reliability.
 
 ## v3.1.3 / 2025-07-25
 
@@ -18,6 +34,11 @@
 - [IMPROVEMENT] Add comprehensive schema registry test suite with mock package to prevent regressions.
 - [IMPROVEMENT] Add visual indicators for soft-deleted schema registry subjects with archive icons and tooltips.
 - [IMPROVEMENT] Add colored badges for schema types (AVRO, PROTOBUF, JSON) in schema registry list view.
+
+
+## v2.8.8 / 2025-07-18
+
+- [BUGFIX] Fix proto schema cache corruption and key collision.
 
 ## v2.8.7 / 2025-06-27
 
