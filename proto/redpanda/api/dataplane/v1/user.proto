@@ -142,7 +142,7 @@ service UserService {
     };
 
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Create User"
+      summary: "Create user"
       description: "Create a new user."
       responses: {
         key: "201"
@@ -174,7 +174,7 @@ service UserService {
       body: "user"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Update User"
+      summary: "Update user"
       description: "Update a user's credentials."
       responses: {
         key: "200"
@@ -203,7 +203,7 @@ service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {get: "/v1/users"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Users"
+      summary: "List users"
       description: "List users. Optional: filter based on username."
       responses: {
         key: "200"
@@ -223,7 +223,7 @@ service UserService {
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {delete: "/v1/users/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete User"
+      summary: "Delete user"
       description: "Delete the specified user"
       responses: {
         key: "204"
