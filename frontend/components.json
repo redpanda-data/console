@@ -1,5 +1,5 @@
 {
-  "$schema": "https://ui.shadcn.com/schema.json",
+  "$schema": "https://redpanda-ui-registry.netlify.app/r/registry.json",
   "style": "new-york",
   "rsc": false,
   "tsx": true,
@@ -11,11 +11,11 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "components",
-    "utils": "lib/utils",
-    "ui": "components/ui",
-    "lib": "lib",
-    "hooks": "hooks"
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/redpanda-ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
   },
   "iconLibrary": "lucide"
 }

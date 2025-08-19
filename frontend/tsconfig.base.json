@@ -19,6 +19,9 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": "src",
+    "paths": {
+      "@/*": ["./*"],
+    },
     "incremental": true,
     "strictPropertyInitialization": false,
     "noFallthroughCasesInSwitch": true,
