@@ -35,9 +35,12 @@ import { AnimatePresence } from '../utils/animationProps';
 import { type AppFeature, AppFeatures } from '../utils/env';
 import { Section } from './misc/common';
 import AclList, { type AclListTab } from './pages/acls/Acl.List';
-import RoleCreatePage from './pages/acls/RoleCreate';
-import RoleDetailsPage from './pages/acls/RoleDetails';
-import RoleEditPage from './pages/acls/RoleEditPage';
+import AclCreatePage from './pages/acls/new-acl/AclCreatePage';
+import AclDetailPage from './pages/acls/new-acl/AclDetailPage';
+import AclUpdatePage from './pages/acls/new-acl/AclUpdatePage';
+import RoleCreatePage from './pages/roles/RoleCreatePage';
+import RoleDetailPage from './pages/roles/RoleDetailPage';
+import RoleUpdatePage from './pages/roles/RoleUpdatePage';
 import UserCreatePage from './pages/acls/UserCreate';
 import UserDetailsPage from './pages/acls/UserDetails';
 import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
@@ -417,12 +420,16 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
+  MakeRoute<{}>('/security/acls/create', AclCreatePage, 'Create ACL'),
+  MakeRoute<{}>('/security/acls/:aclName/update', AclUpdatePage, 'Update ACL'),
+  MakeRoute<{}>('/security/acls/:aclName/details', AclDetailPage, 'ACL details'),
+
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
   MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
 
   MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
-  MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),
-  MakeRoute<{ roleName: string }>('/security/roles/:roleName/edit', RoleEditPage, 'Security'),
+  MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailPage, 'Security'),
+  MakeRoute<{ roleName: string }>('/security/roles/:roleName/update', RoleUpdatePage, 'Security'),
 
   MakeRoute<{}>(
     '/quotas',
