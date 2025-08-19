@@ -341,7 +341,7 @@ service MCPServerService {
   // issues (“hints”). An empty list means the config passed all lint checks.
   rpc LintMCPConfig(LintMCPConfigRequest) returns (LintMCPConfigResponse) {
     option (google.api.http) = {
-      post: "/v1/redpanda-connect/mcp-servers:lint-config"
+      post: "/v1alpha3/redpanda-connect/mcp-servers:lint-config"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
