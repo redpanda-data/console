@@ -125,7 +125,7 @@ message Pipeline {
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 service PipelineService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Redpanda Connect Pipeline"
+    name: "Redpanda Connect Pipelines"
     description: "Create and manage [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipelines and their configurations."
   };
 
@@ -328,7 +328,7 @@ service PipelineService {
   rpc GetPipelineServiceConfigSchema(GetPipelineServiceConfigSchemaRequest) returns (GetPipelineServiceConfigSchemaResponse) {
     option (google.api.http) = {get: "/v1/redpanda-connect/config-schema"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Retrieve the schema for Redpanda Connect pipeline configurations."
+      summary: "Retrieve the schema for Redpanda Connect pipeline configurations"
       description: "The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance."
       responses: {
         key: "200"

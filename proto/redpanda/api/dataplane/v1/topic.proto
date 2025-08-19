@@ -334,7 +334,7 @@ service TopicService {
       body: "topic"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Create Topic"
+      summary: "Create topic"
       description: "Create a [topic](https://docs.redpanda.com/redpanda-cloud/get-started/create-topic/)."
       responses: {
         key: "201"
@@ -355,7 +355,7 @@ service TopicService {
   rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
     option (google.api.http) = {get: "/v1/topics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Topics"
+      summary: "List topics"
       description: "List topics, with partition count and replication factor. Optional: filter based on topic name."
       responses: {
         key: "200"
@@ -376,7 +376,7 @@ service TopicService {
   rpc DeleteTopic(DeleteTopicRequest) returns (DeleteTopicResponse) {
     option (google.api.http) = {delete: "/v1/topics/{topic_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete Topic"
+      summary: "Delete topic"
       description: "Delete the Kafka topic with the requested name."
       responses: {
         key: "204"
@@ -404,7 +404,7 @@ service TopicService {
   rpc GetTopicConfigurations(GetTopicConfigurationsRequest) returns (GetTopicConfigurationsResponse) {
     option (google.api.http) = {get: "/v1/topics/{topic_name}/configurations"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Topic Configurations"
+      summary: "Get topic configurations"
       description: "Get key-value configs for a topic."
       responses: {
         key: "200"
@@ -437,7 +437,7 @@ service TopicService {
       body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Update Topic Configuration"
+      summary: "Update topic configuration"
       description: "Update a subset of the topic configurations."
       responses: {
         key: "200"
@@ -470,7 +470,7 @@ service TopicService {
       body: "configurations"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Set Topic Configurations"
+      summary: "Set topic configurations"
       description: "Update the entire set of key-value configurations for a topic. Config entries that are not provided in the request are removed and will fall back to their default values."
       responses: {
         key: "200"
@@ -503,7 +503,7 @@ service TopicService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Add Topic Partitions"
+      summary: "Add topic partitions"
       description: "Add partitions to an existing topic. Depending on the partitioning strategy used, this may impact ordering guarantees."
       responses: {
         key: "200"
@@ -536,7 +536,7 @@ service TopicService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Set Topic Partitions"
+      summary: "Set topic partitions"
       description: "Set partitions to an existing topic. New value must be equal to or larger than the current count of partitions in the topic. Depending on the partitioning strategy used, this may impact ordering guarantees."
       responses: {
         key: "200"
@@ -569,7 +569,7 @@ service TopicService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Add Topic Partitions"
+      summary: "Add topic partitions"
       description: "Add partitions to existing topics. Depending on the partitioning strategy used, this may impact ordering guarantees."
       responses: {
         key: "200"
@@ -602,7 +602,7 @@ service TopicService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Set Topic Partitions"
+      summary: "Set topic partitions"
       description: "Set partition counts for existing topics. New value must be equal to or larger than the current count of partitions in the topic. All topics will have the same final count of partitions. Depending on the partitioning strategy used, this may impact ordering guarantees."
       responses: {
         key: "200"
