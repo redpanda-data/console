@@ -41,14 +41,13 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { type FC, useEffect, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import ErrorResult from '../../../components/misc/ErrorResult';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
-import { clone } from '../../../utils/jsonUtils';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
@@ -602,6 +601,8 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
   const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
   const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
 
+  const nav = useNavigate();
+
   let groups = p.principalGroups.filter((g) => g.principalType === 'User');
   try {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
@@ -657,6 +658,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
           data-testid="create-acls"
           variant="outline"
           onClick={() => {
+            nav('create');
             setEditorType('create');
             setEdittingPrincipalGroup(
               observable({
@@ -694,8 +696,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                       type="button"
                       className="hoverLink"
                       onClick={() => {
-                        setEditorType('edit');
-                        setEdittingPrincipalGroup(observable(clone(record)));
+                        nav(`/security/acls/${record.principalName}/details`);
                       }}
                     >
                       <Flex>
