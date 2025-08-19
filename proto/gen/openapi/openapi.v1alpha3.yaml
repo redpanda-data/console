@@ -760,33 +760,6 @@ info:
   version: v1
 openapi: 3.0.3
 paths:
-  /v1/redpanda-connect/mcp-servers:lint-config:
-    post:
-      description: Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty.
-      operationId: MCPServerService_LintMCPConfig
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LintMCPConfigRequest'
-        required: true
-        x-originalParamName: body
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LintMCPConfigResponse'
-          description: Linting finished. See `lint_hints` for details.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Lint a Redpanda Connect MCP tools configuration
-      tags:
-        - Redpanda Connect MCP servers
   /v1alpha3/knowledge-bases:
     get:
       operationId: KnowledgeBaseService_ListKnowledgeBases
@@ -1164,6 +1137,33 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Retrieve the schema for Redpanda Connect MCP Servers configurations.
+      tags:
+        - Redpanda Connect MCP servers
+  /v1alpha3/redpanda-connect/mcp-servers:lint-config:
+    post:
+      description: Validates a supplied Redpanda Connect MCP tools YAML and returns a list of linting hints. If no problems are found, the list is empty.
+      operationId: MCPServerService_LintMCPConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LintMCPConfigRequest'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LintMCPConfigResponse'
+          description: Linting finished. See `lint_hints` for details.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Lint a Redpanda Connect MCP tools configuration
       tags:
         - Redpanda Connect MCP servers
 security:
