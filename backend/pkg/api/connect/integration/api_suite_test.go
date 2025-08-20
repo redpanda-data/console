@@ -21,6 +21,7 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	adminapi "github.com/redpanda-data/common-go/rpadmin"
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -28,6 +29,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/api"
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -37,12 +39,13 @@ import (
 type APISuite struct {
 	suite.Suite
 
-	redpandaContainer   *redpanda.Container
-	kConnectContainer   testcontainers.Container
-	network             *testcontainers.DockerNetwork
-	kafkaClient         *kgo.Client
-	kafkaAdminClient    *kadm.Client
-	redpandaAdminClient *adminapi.AdminAPI
+	redpandaContainer    *redpanda.Container
+	kConnectContainer    testcontainers.Container
+	network              *testcontainers.DockerNetwork
+	kafkaClient          *kgo.Client
+	kafkaAdminClient     *kadm.Client
+	redpandaAdminClient  *adminapi.AdminAPI
+	schemaRegistryClient *rpsr.Client
 
 	cfg *config.Config
 	api *api.API
@@ -110,6 +113,12 @@ func (s *APISuite) SetupSuite() {
 	adminApiClient, err := adminapi.NewAdminAPI([]string{adminApiAddr}, &adminapi.NopAuth{}, nil)
 	require.NoError(err)
 	s.redpandaAdminClient = adminApiClient
+
+	srCl, err := sr.NewClient(sr.URLs(schemaRegistryAddress))
+	require.NoError(err)
+	rpsrCl, err := rpsr.NewClient(srCl)
+	require.NoError(err)
+	s.schemaRegistryClient = rpsrCl
 
 	// 5. Configure & start Redpanda Console
 	httpListenPort := rand.Intn(50000) + 10000
