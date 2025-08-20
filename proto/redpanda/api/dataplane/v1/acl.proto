@@ -155,7 +155,16 @@ message CreateACLRequest {
   // authorizer, you must include the prefix "User:" with the user name.
   string principal = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
+    (buf.validate.field).required = true,
+    (buf.validate.field).cel = {
+      id: "principal_prefix_required"
+      // Validate that the principal contains at least one colon with characters
+      // before and after. Useful to validate prefixed principals like
+      // "User:alice" or "RedpandaRole:admins".
+      expression:
+        "this.matches('^[^:]+:.+$') ? ''"
+        ": 'principal must contain a principal prefix followed by a principal name (e.g. User:alice)'"
+    }
   ];
 
   // The host address to use for this ACL. To allow a principal
