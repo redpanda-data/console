@@ -18,6 +18,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
@@ -141,6 +142,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			HasRedpandaAPI:  true,
 			RedpandaFeature: redpandaFeatureDebugBundle,
 		},
+		{
+			URL:             dataplanev1connect.ACLServiceName,
+			Method:          "POST",
+			RedpandaFeature: redpandaFeatureSchemaRegistryACL,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
@@ -179,6 +185,12 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 					s.logger.WarnContext(ctx, "failed to retrieve a redpanda api client to check endpoint compatibility", slog.Any("error", err))
 				}
 			}
+		}
+
+		// Special case for Schema Registry ACL feature - requires Schema
+		// Registry API support
+		if endpointReq.RedpandaFeature == redpandaFeatureSchemaRegistryACL {
+			endpointSupported = s.CheckSchemaRegistryACLSupport(ctx)
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{
