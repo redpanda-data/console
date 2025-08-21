@@ -38,11 +38,11 @@ import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
+import ConsoleSidebar from './components/console-sidebar';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
 import RequireAuth from './components/RequireAuth';
-import ConsoleSidebar from './components/console-sidebar';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -51,7 +51,6 @@ import {
   setup,
 } from './config';
 import { getBasePath } from './utils/env';
-
 
 const App = () => {
   const developerView = useDeveloperView();
@@ -76,13 +75,7 @@ const App = () => {
           <TransportProvider transport={transport}>
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
-                <RequireAuth>
-                  {isEmbedded() ? (
-                    <AppContent />
-                  ) : (
-                    <ConsoleSidebar />
-                  )}
-                </RequireAuth>
+                <RequireAuth>{isEmbedded() ? <AppContent /> : <ConsoleSidebar />}</RequireAuth>
               </ErrorBoundary>
               <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
               <StagewiseToolbar

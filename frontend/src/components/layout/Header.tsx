@@ -15,15 +15,22 @@ import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import React from 'react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '../redpanda-ui/components/breadcrumb';
-import { Separator } from '../redpanda-ui/components/separator';
-import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
 import { UserPreferencesButton } from '../misc/UserPreferences';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '../redpanda-ui/components/breadcrumb';
+import { Separator } from '../redpanda-ui/components/separator';
+import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
