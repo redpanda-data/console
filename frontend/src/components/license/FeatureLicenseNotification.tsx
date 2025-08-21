@@ -1,12 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
-import {
-  type License,
-  License_Type,
-  type ListEnterpriseFeaturesResponse_Feature,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api } from '../../state/backendApi';
+
 import {
   coreHasEnterpriseFeatures,
   ENTERPRISE_FEATURES_DOCS_LINK,
@@ -22,6 +17,12 @@ import {
   UploadLicenseButton,
 } from './licenseUtils';
 import { RegisterModal } from './RegisterModal';
+import {
+  type License,
+  License_Type,
+  type ListEnterpriseFeaturesResponse_Feature,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 
 const getLicenseAlertContentForFeature = (
   _featureName: 'rbac' | 'reassignPartitions',
@@ -49,16 +50,15 @@ const getLicenseAlertContentForFeature = (
         ),
         status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
       };
-    } else {
-      return {
-        message: (
-          <Box>
-            <Text>This is an enterprise feature.</Text>
-          </Box>
-        ),
-        status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
-      };
     }
+    return {
+      message: (
+        <Box>
+          <Text>This is an enterprise feature.</Text>
+        </Box>
+      ),
+      status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
+    };
   }
 
   // Redpanda
@@ -169,7 +169,7 @@ const getLicenseAlertContentForFeature = (
 export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' | 'rbac' }> = observer(
   ({ featureName }) => {
     const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
-    
+
     useEffect(() => {
       void api.refreshClusterOverview();
       void api.listLicenses();
@@ -177,7 +177,7 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
 
     const licenses = api.licenses
       .filter((license) => license.type === License_Type.TRIAL || license.type === License_Type.COMMUNITY)
-      .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]) // Sort by priority
+      .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
 
     // Choose the license with the latest expiration time
     const license = licenses.reduce((latest, current) => {
@@ -187,14 +187,20 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     });
 
     // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
-    // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where, 
+    // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
     // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
-    const bakedInTrial = licenses.every(license => isBakedInTrial(license));
+    const bakedInTrial = licenses.every((license) => isBakedInTrial(license));
 
     const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
-    const alertContent = getLicenseAlertContentForFeature(featureName, license, enterpriseFeaturesUsed, bakedInTrial, () => {
-      setIsRegisterModalOpen(true);
-    });
+    const alertContent = getLicenseAlertContentForFeature(
+      featureName,
+      license,
+      enterpriseFeaturesUsed,
+      bakedInTrial,
+      () => {
+        setIsRegisterModalOpen(true);
+      },
+    );
 
     // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
     if (api.clusterOverview === null) {

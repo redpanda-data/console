@@ -25,7 +25,6 @@ import './globals.css';
 
 /* end tailwind styles */
 
-import queryClient from 'queryClient';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, Container, Grid, redpandaTheme, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
@@ -38,6 +37,7 @@ import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
+
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
@@ -53,6 +53,7 @@ import {
 } from './config';
 import { uiSettings } from './state/ui';
 import { getBasePath } from './utils/env';
+import queryClient from 'queryClient';
 
 const AppSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');

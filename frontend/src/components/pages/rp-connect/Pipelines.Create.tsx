@@ -17,6 +17,7 @@ import {
   Box,
   Button,
   Link as ChLink,
+  type CreateToastFnReturn,
   Flex,
   FormField,
   Heading,
@@ -25,7 +26,6 @@ import {
   Text,
   useDisclosure,
   useToast,
-  CreateToastFnReturn,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -33,6 +33,10 @@ import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+
+import { formatPipelineError } from './errors';
+import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -40,9 +44,6 @@ import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { formatPipelineError } from './errors';
-import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
-import { MAX_TASKS, MIN_TASKS, tasksToCPU, cpuToTasks } from './tasks';
 
 const exampleContent = `
 `;
@@ -100,8 +101,8 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         >
           Create
         </Button>
-      )
-    }
+      );
+    };
 
     return (
       <PageContent>

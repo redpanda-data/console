@@ -13,15 +13,16 @@ import { Box, DataTable, Empty } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
+import { BandwidthSlider } from './components/BandwidthSlider';
+import type ReassignPartitions from './ReassignPartitions';
+import type { PartitionSelection } from './ReassignPartitions';
 import { api } from '../../../state/backendApi';
 import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
 import { BrokerList } from '../../misc/BrokerList';
-import { BandwidthSlider } from './components/BandwidthSlider';
-import type ReassignPartitions from './ReassignPartitions';
-import type { PartitionSelection } from './ReassignPartitions';
 
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];

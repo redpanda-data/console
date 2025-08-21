@@ -12,10 +12,11 @@
 import { Avatar, Button, Popover, PopoverBody, PopoverContent, PopoverHeader, PopoverTrigger } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import { UserPreferencesDialog } from './UserPreferences';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api } from '../../state/backendApi';
 import { AppFeatures } from '../../utils/env';
-import { UserPreferencesDialog } from './UserPreferences';
 
 export const UserProfile = observer(() => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);

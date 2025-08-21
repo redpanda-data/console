@@ -13,15 +13,16 @@ import { Box, Button, Link as ChakraLink, DataTable, Flex, Heading, SearchField,
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
+import { principalGroupsView } from './Models';
+import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
-import { principalGroupsView } from './Models';
-import { AclPrincipalGroupPermissionsTable } from './UserDetails';
 
 @observer
 class RoleDetailsPage extends PageComponent<{ roleName: string }> {

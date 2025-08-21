@@ -34,11 +34,7 @@ import { comparer } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
-import { api } from '../../../state/backendApi';
-import { AclOperation, type AclStrOperation, type AclStrResourceType } from '../../../state/restInterfaces';
-import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
-import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
-import { SingleSelect } from '../../misc/Select';
+
 import {
   type AclPrincipalGroup,
   createEmptyClusterAcl,
@@ -50,6 +46,11 @@ import {
   unpackPrincipalGroup,
 } from './Models';
 import { Operation } from './Operation';
+import { api } from '../../../state/backendApi';
+import { AclOperation, type AclStrOperation, type AclStrResourceType } from '../../../state/restInterfaces';
+import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
+import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
+import { SingleSelect } from '../../misc/Select';
 
 export const AclPrincipalGroupEditor = observer(
   (p: { principalGroup: AclPrincipalGroup; type: 'create' | 'edit'; onClose: () => void }) => {

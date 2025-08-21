@@ -28,6 +28,7 @@ import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { AiOutlineDelete } from 'react-icons/ai';
 import { Link } from 'react-router-dom';
+
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import type { KnowledgeBase } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { DeleteKnowledgeBaseRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';

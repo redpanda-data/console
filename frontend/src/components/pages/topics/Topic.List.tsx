@@ -40,6 +40,13 @@ import React, { type FC, useRef, useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { Link } from 'react-router-dom';
+
+import {
+  CreateTopicModalContent,
+  type CreateTopicModalState,
+  type RetentionSizeUnit,
+  type RetentionTimeUnit,
+} from './CreateTopicModal/CreateTopicModal';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { appGlobal } from '../../../state/appGlobal';
@@ -55,12 +62,6 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
-import {
-  CreateTopicModalContent,
-  type CreateTopicModalState,
-  type RetentionSizeUnit,
-  type RetentionTimeUnit,
-} from './CreateTopicModal/CreateTopicModal';
 
 @observer
 class TopicList extends PageComponent {

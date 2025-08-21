@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
-import { useListUsersQuery } from '../../../react-query/api/user';
 import {
   Box,
   Button,
@@ -39,6 +38,7 @@ import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { AiOutlineDelete, AiOutlinePlus } from 'react-icons/ai';
 import { Link as RouterLink } from 'react-router-dom';
+
 import { config as appConfig } from '../../../config';
 import { CreateSecretRequestSchema, Scope } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -46,6 +46,8 @@ import {
   CreateUserRequestSchema,
   SASLMechanism,
 } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
 import type { KnowledgeBaseCreate as KnowledgeBaseCreateType } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_CohereSchema,
@@ -64,8 +66,7 @@ import {
   KnowledgeBaseCreate_VectorDatabaseSchema,
   KnowledgeBaseCreateSchema,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
+import { useListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/appGlobal';
 import { knowledgebaseApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../utils/utils';
@@ -162,11 +163,12 @@ const UserDropdown = ({
   helperText?: string;
 }) => {
   const { data: usersData, isLoading } = useListUsersQuery();
-  
-  const userOptions = usersData?.users?.map((user) => ({
-    value: user.name,
-    label: user.name,
-  })) || [];
+
+  const userOptions =
+    usersData?.users?.map((user) => ({
+      value: user.name,
+      label: user.name,
+    })) || [];
 
   return (
     <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
@@ -1076,7 +1078,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
           <Input
             type="number"
             value={this.formData.embeddingDimensions}
-            onChange={(e) => this.updateFormData('embeddingDimensions', Number.parseInt(e.target.value) || 1536)}
+            onChange={(e) => this.updateFormData('embeddingDimensions', Number.parseInt(e.target.value, 10) || 1536)}
             placeholder="1536"
           />
           <FormErrorMessage>{this.validationErrors.embeddingDimensions}</FormErrorMessage>
@@ -1123,7 +1125,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
             <Input
               type="number"
               value={this.formData.chunkSize}
-              onChange={(e) => this.updateFormData('chunkSize', Number.parseInt(e.target.value) || 512)}
+              onChange={(e) => this.updateFormData('chunkSize', Number.parseInt(e.target.value, 10) || 512)}
               placeholder="512"
             />
             <FormErrorMessage>{this.validationErrors.chunkSize}</FormErrorMessage>
@@ -1133,7 +1135,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
             <Input
               type="number"
               value={this.formData.chunkOverlap}
-              onChange={(e) => this.updateFormData('chunkOverlap', Number.parseInt(e.target.value) || 100)}
+              onChange={(e) => this.updateFormData('chunkOverlap', Number.parseInt(e.target.value, 10) || 100)}
               placeholder="100"
             />
             <FormErrorMessage>{this.validationErrors.chunkOverlap}</FormErrorMessage>

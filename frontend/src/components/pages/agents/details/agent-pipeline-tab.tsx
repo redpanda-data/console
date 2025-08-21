@@ -2,6 +2,7 @@ import { Box, Button, ButtonGroup, Grid, Stack, Text, useDisclosure } from '@red
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode } from 'react';
 import { useGetPipelineQuery } from 'react-query/api/pipeline';
+
 import { AGENT_POLLING_INTERVAL } from './agent-details-page';
 import { AgentPipelineTabLogs } from './agent-pipeline-tab-logs';
 import { AgentStateDisplayValue } from './agent-state-display-value';

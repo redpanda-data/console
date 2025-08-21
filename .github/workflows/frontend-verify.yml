@@ -17,9 +17,19 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: bun install --frozen-lockfile
-      - name: Run lint
+      - name: Get Biome version
         working-directory: frontend
-        run: bun run lint
+        id: biome-version
+        run: echo "version=$(jq -r '.devDependencies["@biomejs/biome"]' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+        with:
+          version: ${{ steps.biome-version.outputs.version }}
+
+      - name: Run Biome
+        working-directory: frontend
+        run: bun run lint:check
       - name: Run typecheck
         working-directory: frontend
         run: bun run type:check

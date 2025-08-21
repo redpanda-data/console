@@ -1,3 +1,5 @@
+import { CheckIcon } from '@chakra-ui/icons';
+import { ConnectError } from '@connectrpc/connect';
 import {
   Alert,
   AlertDescription,
@@ -18,14 +20,13 @@ import {
   Text,
   VStack,
 } from '@redpanda-data/ui';
-import { CheckIcon } from '@chakra-ui/icons';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
-import { ConnectError } from '@connectrpc/connect';
+import { capitalizeFirst } from 'utils/utils';
+
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backendApi';
-import { capitalizeFirst } from 'utils/utils';
 
 type FieldViolation = {
   field: string;
@@ -75,7 +76,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
     setFieldErrors({}); // Clear previous field errors
-    
+
     try {
       await signupMutation.mutateAsync({
         givenName: data.givenName,
@@ -83,28 +84,28 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
         email: data.email,
         companyName: data.companyName || 'unknown',
       });
-      
+
       // Refresh licenses after successful registration
       api.listLicenses();
-      
+
       // Show success state
       setIsSuccess(true);
     } catch (error) {
       // Handle field-level errors from the API response
       if (error instanceof ConnectError) {
         const newFieldErrors: Record<string, string> = {};
-        
-        error.details?.forEach(detail => {
+
+        error.details?.forEach((detail) => {
           if (isBadRequest(detail)) {
-            detail.debug.fieldViolations.forEach(violation => {
+            detail.debug.fieldViolations.forEach((violation) => {
               newFieldErrors[violation.field] = violation.description;
             });
           }
         });
-        
+
         setFieldErrors(newFieldErrors);
       }
-      
+
       console.error('Registration failed:', error);
     } finally {
       setIsSubmitting(false);
@@ -118,7 +119,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
     signupMutation.reset();
     onClose();
 
-    if(isSuccess) {
+    if (isSuccess) {
       // Refetch license data and enterprise features after successful registration
       api.listLicenses();
     }
@@ -158,7 +159,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
               <Text mb={4} color="gray.600">
                 Register this cluster for an additional 30 days of enterprise features.
               </Text>
-              
+
               {signupMutation.error && Object.keys(fieldErrors).length === 0 && (
                 <Alert status="error" variant="left-accent" mb={4}>
                   <AlertIcon />
@@ -167,126 +168,111 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                   </AlertDescription>
                 </Alert>
               )}
-              
+
               <form onSubmit={handleSubmit(onSubmit)}>
-              <Flex gap={4} mb={4}>
-                <FormField
-                  label="First name"
-                  isInvalid={!!errors.givenName || !!fieldErrors.givenName}
-                  errorText={errors.givenName?.message || fieldErrors.givenName}
-                  flex={1}
-                >
-                  <Controller
-                    name="givenName"
-                    control={control}
-                    rules={{
-                      required: 'First name is required',
-                      pattern: {
-                        value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
-                        message: 'First name contains invalid characters',
-                      },
-                      minLength: {
-                        value: 1,
-                        message: 'First name is required',
-                      },
-                      maxLength: {
-                        value: 255,
-                        message: 'First name is too long',
-                      },
-                    }}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        placeholder="First name"
-                        autoComplete="given-name"
-                      />
-                    )}
-                  />
-                </FormField>
-
-                <FormField
-                  label="Last name"
-                  isInvalid={!!errors.familyName || !!fieldErrors.familyName}
-                  errorText={errors.familyName?.message || fieldErrors.familyName}
-                  flex={1}
-                >
-                  <Controller
-                    name="familyName"
-                    control={control}
-                    rules={{
-                      required: 'Last name is required',
-                      pattern: {
-                        value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
-                        message: 'Last name contains invalid characters',
-                      },
-                      minLength: {
-                        value: 1,
-                        message: 'Last name is required',
-                      },
-                      maxLength: {
-                        value: 255,
-                        message: 'Last name is too long',
-                      },
-                    }}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        placeholder="Last name"
-                        autoComplete="family-name"
-                      />
-                    )}
-                  />
-                </FormField>
-              </Flex>
-
-              <FormField
-                label="Email address"
-                isInvalid={!!errors.email || !!fieldErrors.email}
-                errorText={errors.email?.message || fieldErrors.email}
-                mb={4}
-              >
-                <Controller
-                  name="email"
-                  control={control}
-                  rules={{
-                    required: 'Email address is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Please enter a valid email address',
-                    },
-                  }}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      type="email"
-                      placeholder="Email address"
-                      autoComplete="email"
+                <Flex gap={4} mb={4}>
+                  <FormField
+                    label="First name"
+                    isInvalid={!!errors.givenName || !!fieldErrors.givenName}
+                    errorText={errors.givenName?.message || fieldErrors.givenName}
+                    flex={1}
+                  >
+                    <Controller
+                      name="givenName"
+                      control={control}
+                      rules={{
+                        required: 'First name is required',
+                        pattern: {
+                          value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
+                          message: 'First name contains invalid characters',
+                        },
+                        minLength: {
+                          value: 1,
+                          message: 'First name is required',
+                        },
+                        maxLength: {
+                          value: 255,
+                          message: 'First name is too long',
+                        },
+                      }}
+                      render={({ field }) => <Input {...field} placeholder="First name" autoComplete="given-name" />}
                     />
-                  )}
-                />
-              </FormField>
+                  </FormField>
 
-              <Text fontSize="sm" color="gray.600" mb={4}>
-                By registering you acknowledge having read and accepted our{' '}
-                <Link href="https://www.redpanda.com/legal/privacy-policy" target="_blank" color="blue.500">
-                  Privacy Policy
-                </Link>{' '}
-                and{' '}
-                <Link href="https://www.redpanda.com/legal/redpanda-subscription-terms-and-conditions" target="_blank" color="blue.500">
-                  Terms of Service
-                </Link>
-                .
-              </Text>
-            </form>
-          </Box>
+                  <FormField
+                    label="Last name"
+                    isInvalid={!!errors.familyName || !!fieldErrors.familyName}
+                    errorText={errors.familyName?.message || fieldErrors.familyName}
+                    flex={1}
+                  >
+                    <Controller
+                      name="familyName"
+                      control={control}
+                      rules={{
+                        required: 'Last name is required',
+                        pattern: {
+                          value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
+                          message: 'Last name contains invalid characters',
+                        },
+                        minLength: {
+                          value: 1,
+                          message: 'Last name is required',
+                        },
+                        maxLength: {
+                          value: 255,
+                          message: 'Last name is too long',
+                        },
+                      }}
+                      render={({ field }) => <Input {...field} placeholder="Last name" autoComplete="family-name" />}
+                    />
+                  </FormField>
+                </Flex>
+
+                <FormField
+                  label="Email address"
+                  isInvalid={!!errors.email || !!fieldErrors.email}
+                  errorText={errors.email?.message || fieldErrors.email}
+                  mb={4}
+                >
+                  <Controller
+                    name="email"
+                    control={control}
+                    rules={{
+                      required: 'Email address is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Please enter a valid email address',
+                      },
+                    }}
+                    render={({ field }) => (
+                      <Input {...field} type="email" placeholder="Email address" autoComplete="email" />
+                    )}
+                  />
+                </FormField>
+
+                <Text fontSize="sm" color="gray.600" mb={4}>
+                  By registering you acknowledge having read and accepted our{' '}
+                  <Link href="https://www.redpanda.com/legal/privacy-policy" target="_blank" color="blue.500">
+                    Privacy Policy
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    href="https://www.redpanda.com/legal/redpanda-subscription-terms-and-conditions"
+                    target="_blank"
+                    color="blue.500"
+                  >
+                    Terms of Service
+                  </Link>
+                  .
+                </Text>
+              </form>
+            </Box>
           )}
         </ModalBody>
 
         <ModalFooter>
           {isSuccess ? (
-            <Button onClick={handleClose}>
-              Close
-            </Button>
+            <Button onClick={handleClose}>Close</Button>
           ) : (
             <>
               <Button variant="ghost" onClick={handleClose} mr={3}>
@@ -306,4 +292,4 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
       </ModalContent>
     </Modal>
   );
-}); 
+});

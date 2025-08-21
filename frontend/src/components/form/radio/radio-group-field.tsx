@@ -1,8 +1,9 @@
 import { FormControl, FormHelperText, FormLabel, Stack, type StackDirection } from '@redpanda-data/ui';
 import { type ReactNode, useId } from 'react';
+
+import { RadioCard, type Sizes } from './radio-card';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
-import { RadioCard, type Sizes } from './radio-card';
 
 interface RadioGroupOption {
   value: string;

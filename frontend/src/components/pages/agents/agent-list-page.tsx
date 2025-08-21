@@ -27,13 +27,13 @@ import { AiOutlineDelete } from 'react-icons/ai';
 import { useListAgentsQuery } from 'react-query/api/agent';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import { uiState } from 'state/uiState';
-import { SidebarItemBadge } from '../../misc/sidebar-item-badge';
+
 import { DeleteAgentModal } from './delete-agent-modal';
 import { AgentStateDisplayValue } from './details/agent-state-display-value';
 import { HUBSPOT_AI_AGENTS_FORM_ID, HUBSPOT_PORTAL_ID, HUBSPOT_REGION } from './hubspot.helper';
 import HubspotModal from './hubspot-modal';
 import { buttonCss, errorCss, errorMessageCss } from './hubspot-styles';
-
+import { SidebarItemBadge } from '../../misc/sidebar-item-badge';
 
 export interface TokenPayload extends JwtPayload {
   'https://cloud.redpanda.com/client_organization_id': string;

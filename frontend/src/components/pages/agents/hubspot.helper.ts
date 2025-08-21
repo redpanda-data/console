@@ -12,6 +12,7 @@
 import axios from 'axios';
 // biome-ignore lint/performance/noNamespaceImport: part of es-cookie
 import * as Cookies from 'es-cookie';
+
 import { isAnalyticsEnabled } from '../../../utils/analytics';
 
 interface Fields {
@@ -98,5 +99,3 @@ export const trackHubspotPage = (path: string) => {
   window._hsq = window._hsq || [];
   window._hsq.push(['setPath', { path }]);
 };
-
-

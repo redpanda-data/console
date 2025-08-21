@@ -1,6 +1,7 @@
 import { type ChatMessage, chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
+
 import { SendMessageButton } from './send-message-button';
 import { sendMessageToApi } from './send-message-to-api';
 
@@ -144,6 +145,7 @@ export const ChatInput = ({
         }}
       >
         <div className="relative">
+          {/** biome-ignore lint/correctness/useUniqueElementIds: needs to be a fixed id to ensure chat can be rendered */}
           <textarea
             ref={textareaRef}
             id="chat-input"

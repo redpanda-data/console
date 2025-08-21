@@ -1,5 +1,6 @@
 import { Box, Flex, Link, Skeleton, Text } from '@redpanda-data/ui';
 import React from 'react';
+
 import { useNewsFeed } from '../../../hooks/useNewsFeed';
 import { api } from '../../../state/backendApi';
 

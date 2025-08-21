@@ -18,67 +18,7 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
-import { config as appConfig, isEmbedded } from '../config';
-import {
-  AuthenticationMethod,
-  type GetIdentityResponse,
-  KafkaAclOperation,
-  RedpandaCapability,
-  SchemaRegistryCapability,
-} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import {
-  PayloadEncoding,
-  PayloadEncodingSchema,
-  CompressionType as ProtoCompressionType,
-} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import {
-  type CreateDebugBundleRequest,
-  type CreateDebugBundleResponse,
-  type DebugBundleStatus,
-  DebugBundleStatus_Status,
-  type GetClusterHealthResponse,
-  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
-} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import type {
-  License,
-  ListEnterpriseFeaturesResponse_Feature,
-  SetLicenseRequest,
-  SetLicenseResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import type {
-  PublishMessageRequest,
-  PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
-import {
-  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
-  type Pipeline,
-  type PipelineCreate,
-  type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import {
-  type CreateSecretRequest,
-  type DeleteSecretRequest,
-  type ListSecretScopesRequest,
-  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
-  Scope,
-  type Secret,
-  type UpdateSecretRequest,
-} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
-import type {
-  KnowledgeBase,
-  KnowledgeBaseCreate,
-  KnowledgeBaseUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { getBasePath } from '../utils/env';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import { toJson } from '../utils/jsonUtils';
-import { LazyMap } from '../utils/LazyMap';
-import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
-import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
-import { trackHeapUser } from '../components/pages/agents/heap.helper';
+
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -171,6 +111,67 @@ import {
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './uiState';
+import { trackHeapUser } from '../components/pages/agents/heap.helper';
+import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
+import { config as appConfig, isEmbedded } from '../config';
+import {
+  AuthenticationMethod,
+  type GetIdentityResponse,
+  KafkaAclOperation,
+  RedpandaCapability,
+  SchemaRegistryCapability,
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import {
+  PayloadEncoding,
+  PayloadEncodingSchema,
+  CompressionType as ProtoCompressionType,
+} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import {
+  type CreateDebugBundleRequest,
+  type CreateDebugBundleResponse,
+  type DebugBundleStatus,
+  DebugBundleStatus_Status,
+  type GetClusterHealthResponse,
+  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
+} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import type {
+  License,
+  ListEnterpriseFeaturesResponse_Feature,
+  SetLicenseRequest,
+  SetLicenseResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import type {
+  PublishMessageRequest,
+  PublishMessageResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
+import {
+  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import {
+  type CreateSecretRequest,
+  type DeleteSecretRequest,
+  type ListSecretScopesRequest,
+  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  Scope,
+  type Secret,
+  type UpdateSecretRequest,
+} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
+import type {
+  KnowledgeBase,
+  KnowledgeBaseCreate,
+  KnowledgeBaseUpdate,
+} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { getBasePath } from '../utils/env';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import { toJson } from '../utils/jsonUtils';
+import { LazyMap } from '../utils/LazyMap';
+import { ObjToKv } from '../utils/tsxUtils';
+import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -490,7 +491,7 @@ const apiStore = {
           canViewDebugBundle: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_DEBUG_BUNDLE),
           canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
         } as UserData;
-        
+
         // Track user in analytics after successful authentication
         if (r.displayName) {
           const userData = {
@@ -501,7 +502,7 @@ const apiStore = {
           trackHubspotUser(userData);
           trackHeapUser(userData);
         }
-        
+
         // if (r.status === 401) {
         //   // unauthorized / not logged in
         //   api.userData = null;
@@ -1260,7 +1261,7 @@ const apiStore = {
 
         let subjectVersions = this.schemaReferencedBy.get(subjectName);
         if (!subjectVersions) {
-          // @ts-ignore MobX does not play nice with TypeScript 5: Type 'ObservableMap<number, SchemaReferencedByEntry[]>' is not assignable to type 'Map<number, SchemaReferencedByEntry[]>'.
+          // @ts-expect-error MobX does not play nice with TypeScript 5: Type 'ObservableMap<number, SchemaReferencedByEntry[]>' is not assignable to type 'Map<number, SchemaReferencedByEntry[]>'.
           subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
           if (subjectVersions) {
             this.schemaReferencedBy.set(subjectName, subjectVersions);

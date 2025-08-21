@@ -1,6 +1,7 @@
 import { Heading, Stack, Text } from '@redpanda-data/ui';
 import { withForm } from 'components/form/form';
 import { useListAgentsQuery } from 'react-query/api/agent';
+
 import {
   AGENT_DESCRIPTION_DESCRIPTION,
   AGENT_NAME_DESCRIPTION,

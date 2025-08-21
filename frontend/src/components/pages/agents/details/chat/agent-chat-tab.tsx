@@ -3,13 +3,14 @@ import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
-import { AgentStateDisplayValue } from '../agent-state-display-value';
+
 import { AgentChatBlankState } from './agent-chat-blank-state';
 import { AgentChatNotification } from './agent-chat-notification';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
 import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
+import { AgentStateDisplayValue } from '../agent-state-display-value';
 
 interface AgentChatTabProps {
   pipeline?: Pipeline;

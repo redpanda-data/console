@@ -43,6 +43,7 @@ import {
   MdOutlinePauseCircle,
   MdOutlineWarningAmber,
 } from 'react-icons/md';
+
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';

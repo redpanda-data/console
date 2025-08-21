@@ -2,6 +2,7 @@ import { PlusIcon, XIcon } from '@primer/octicons-react';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, useEffect, useState } from 'react';
+
 import type { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
@@ -22,6 +23,7 @@ import {
   SliderThumb,
   SliderTrack,
 } from '@redpanda-data/ui';
+
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backendApi';
 import { SingleSelect } from '../../../misc/Select';

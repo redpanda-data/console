@@ -13,6 +13,7 @@ import { Badge, Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Tex
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
+
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backendApi';
 import { type BreadcrumbEntry, uiState } from '../../state/uiState';

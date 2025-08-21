@@ -10,16 +10,17 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import type { z } from 'zod';
-import {
-  type CreatedUser,
-  CreateUserWithSecretPasswordModal,
-} from '../../../../users/create-user-with-secret-password-modal';
+
 import {
   type CreateAgentHttpFormValues,
   createAgentHttpFormOpts,
   KAFKA_PASSWORD_DESCRIPTION,
   passwordSchema,
 } from './create-agent-http-schema';
+import {
+  type CreatedUser,
+  CreateUserWithSecretPasswordModal,
+} from '../../../../users/create-user-with-secret-password-modal';
 
 export const SASL_MECHANISM_OPTIONS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 

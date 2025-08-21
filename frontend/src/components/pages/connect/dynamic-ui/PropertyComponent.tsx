@@ -11,12 +11,13 @@
 
 import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import type { Property } from '../../../../state/connect/state';
-import { PropertyWidth } from '../../../../state/restInterfaces';
-import { SingleSelect } from '../../../misc/Select';
+
 import { ErrorWrapper } from './forms/ErrorWrapper';
 import { SecretInput } from './forms/SecretInput';
 import { CommaSeparatedStringList } from './List';
+import type { Property } from '../../../../state/connect/state';
+import { PropertyWidth } from '../../../../state/restInterfaces';
+import { SingleSelect } from '../../../misc/Select';
 
 export const PropertyComponent = observer((props: { property: Property }) => {
   const p = props.property;

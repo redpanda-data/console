@@ -1,14 +1,15 @@
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
 import { Route, Routes } from 'react-router-dom';
+
+import HistorySetter from './misc/HistorySetter';
+import LoginPage from './misc/login';
+import LoginCompletePage from './misc/login-complete';
 import { config as appConfig } from '../config';
 import { api } from '../state/backendApi';
 import { featureErrors } from '../state/supportedFeatures';
 import { uiState } from '../state/uiState';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
-import HistorySetter from './misc/HistorySetter';
-import LoginPage from './misc/login';
-import LoginCompletePage from './misc/login-complete';
 
 @observer
 export default class RequireAuth extends Component<{ children: ReactNode }> {

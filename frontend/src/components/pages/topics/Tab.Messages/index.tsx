@@ -22,6 +22,7 @@ import {
 } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, type FC, type ReactNode, useState } from 'react';
+
 import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backendApi';
 import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
@@ -94,6 +95,9 @@ import {
   MdOutlineTimer,
 } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import JavascriptFilterModal from './JavascriptFilterModal';
+import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import { isServerless } from '../../../../config';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -125,8 +129,6 @@ import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import RemovableFilter from '../../../misc/RemovableFilter';
 import { SingleSelect, type SingleSelectProps } from '../../../misc/Select';
-import JavascriptFilterModal from './JavascriptFilterModal';
-import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },

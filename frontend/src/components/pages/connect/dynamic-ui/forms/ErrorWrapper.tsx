@@ -1,6 +1,7 @@
 import { FormField } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { PropsWithoutRef } from 'react';
+
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';
 

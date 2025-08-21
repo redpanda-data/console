@@ -23,6 +23,7 @@ import { type FC, useEffect, useState } from 'react';
 import { Controller, type SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
 import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
@@ -241,7 +242,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       }
       const kafkaHeader = create(KafkaRecordHeaderSchema);
       kafkaHeader.key = h.key;
-      // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+      // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       kafkaHeader.value = new TextEncoder().encode(h.value);
       req.headers.push(kafkaHeader);
     }
@@ -261,14 +262,14 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     if (data.key.encoding !== PayloadEncoding.NULL) {
       req.key = create(PublishMessagePayloadOptionsSchema);
       try {
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.key.data = encodeData(data.key.data, data.key.encoding);
       } catch (err) {
         // TODO: Handle error
         console.error(err);
         return;
       }
-      // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+      // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       req.key.data = encodeData(data.key.data, data.key.encoding);
       req.key.encoding = data.key.encoding;
       req.key.schemaId = data.key.schemaId;
@@ -279,7 +280,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     if (data.value.encoding !== PayloadEncoding.NULL) {
       req.value = create(PublishMessagePayloadOptionsSchema);
       try {
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.value.data = encodeData(data.value.data, data.value.encoding);
       } catch (err) {
         // TODO: Handle error

@@ -37,6 +37,9 @@ import {
   MdOutlineQuiz,
   MdOutlineWarningAmber,
 } from 'react-icons/md';
+
+import type { GroupDeletingMode } from './Modals';
+import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/restInterfaces';
@@ -49,8 +52,6 @@ import { ShortNum } from '../../misc/ShortNum';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
 import AclList from '../topics/Tab.Acl/AclList';
-import type { GroupDeletingMode } from './Modals';
-import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './Modals';
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {

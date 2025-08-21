@@ -19,6 +19,7 @@ import { type Pipeline, PipelineSchema } from 'protogen/redpanda/api/dataplane/v
 import { type Agent, useDeleteAgentPipelinesMutation } from 'react-query/api/agent';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 
 const deleteAgentSchema = (agentName: string) =>
@@ -94,7 +95,6 @@ export const DeleteAgentModal = ({ agent, isOpen, onClose }: DeleteAgentModalPro
                     label="Delete"
                     variant="delete"
                     data-testid="delete-agent-button"
-                    id="delete-modal-btn"
                     loadingText="Deleting"
                   />
                   <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>

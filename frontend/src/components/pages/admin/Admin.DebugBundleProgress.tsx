@@ -10,15 +10,17 @@
  */
 
 import { observer } from 'mobx-react';
+
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { Box, Button, Flex, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import DebugBundleOverview from './DebugBundleOverview';
 import { appGlobal } from '../../../state/appGlobal';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { PageComponent, type PageInitHelper } from '../Page';
-import DebugBundleOverview from './DebugBundleOverview';
 
 @observer
 export default class AdminPageDebugBundleProgress extends PageComponent<{}> {

@@ -13,6 +13,8 @@ import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
+
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 import { isEmbedded } from '../../../config';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -23,7 +25,6 @@ import PageContent from '../../misc/PageContent';
 import SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 
 @observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {

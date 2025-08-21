@@ -17,6 +17,7 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { useState } from 'react';
+
 import {
   CreateSecretRequestSchema,
   Scope,
@@ -55,7 +56,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
         .create(
           create(CreateSecretRequestSchema, {
             id: id,
-            // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(secret)),
             scopes: [Scope.REDPANDA_CONNECT],
           }),
@@ -85,11 +86,13 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
         return;
       }
       setIsCreating(false);
-      onAdd(`\$\{secrets.${id}}`);
+      // biome-ignore lint/suspicious/noUselessEscapeInString: leave this alone
+      onAdd(`$\{secrets.${id}}`);
       closeModal();
       return;
     }
-    onAdd(`\$\{secrets.${id}}`);
+    // biome-ignore lint/suspicious/noUselessEscapeInString: leave this alone
+    onAdd(`$\{secrets.${id}}`);
   };
 
   const closeModal = () => {
@@ -144,7 +147,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                     if (meta.action === 'create-option') {
                       console.log({ value: val, meta });
                       enableNewSecret();
-                      // @ts-ignore when creating a new secret, the value is a string
+                      // @ts-expect-error when creating a new secret, the value is a string
                       setId(meta.option.value);
                       return;
                     }

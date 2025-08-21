@@ -10,6 +10,7 @@
  */
 
 import { createRoot } from 'react-dom/client';
+
 import EmbeddedApp, { type EmbeddedProps } from './EmbeddedApp';
 
 const injector = async (parentElementId: string, props: EmbeddedProps) => {

@@ -15,6 +15,7 @@ import {
   StopPipelineRequestSchema as StopPipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { fireEvent, render, screen, waitFor } from 'test-utils';
+
 import { TogglePipelineStateButton } from './toggle-pipeline-state-button';
 
 describe('TogglePipelineStateButton', () => {

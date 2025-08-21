@@ -26,6 +26,7 @@ import type { ReactNode } from 'react';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import type { z } from 'zod';
+
 import { secretSchema } from './form/secret-schema';
 
 interface CreateSecretModalProps {
@@ -39,7 +40,11 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending, error: createSecretError } = useCreateSecretMutation();
+  const {
+    mutateAsync: createSecret,
+    isPending: isCreateSecretPending,
+    error: createSecretError,
+  } = useCreateSecretMutation();
 
   const finalSchema = secretSchema(customSecretSchema);
 
@@ -78,7 +83,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
 
       const request = create(CreateSecretRequestSchema, {
         id: value.id,
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
         scopes: value.scopes || [],
         labels: labelsMap,

@@ -11,11 +11,13 @@
 
 import { observer } from 'mobx-react';
 import type { FC } from 'react';
+
 import type { Topic, TopicConsumer } from '../../../state/restInterfaces';
 
 import '../../../utils/arrayExtensions';
 
 import { DataTable } from '@redpanda-data/ui';
+
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';

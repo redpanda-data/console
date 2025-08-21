@@ -13,6 +13,7 @@ import { SkipIcon } from '@primer/octicons-react';
 import { Alert, AlertIcon, Button, DataTable, Result } from '@redpanda-data/ui';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { type QuotaResponseSetting, QuotaType } from '../../../state/restInterfaces';

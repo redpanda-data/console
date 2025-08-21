@@ -1,5 +1,6 @@
 import { ConnectError } from '@connectrpc/connect';
 import { Text } from '@redpanda-data/ui';
+
 import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 
 export function formatPipelineError(err: any): any {

@@ -25,6 +25,7 @@ import {
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type CSSProperties, type ReactElement, type ReactNode } from 'react';
+
 import { toJson } from './jsonUtils';
 
 export type AutoModalProps = {

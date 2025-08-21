@@ -14,6 +14,8 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+
+import { KnowledgeBaseEditTabs } from './KnowledgeBase.EditTabs';
 import type {
   KnowledgeBase,
   KnowledgeBaseUpdate,
@@ -27,7 +29,6 @@ import PageContent from '../../misc/PageContent';
 import { ShortNum } from '../../misc/ShortNum';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExplicitConfirmModal } from '../rp-connect/modals';
-import { KnowledgeBaseEditTabs } from './KnowledgeBase.EditTabs';
 
 const { ToastContainer, toast } = createStandaloneToast();
 

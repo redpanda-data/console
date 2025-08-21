@@ -2,6 +2,7 @@ import { Box } from '@chakra-ui/react';
 import { CopyButton } from '@redpanda-data/ui';
 import { Prism as SyntaxHighlighter, type SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import prism from 'react-syntax-highlighter/dist/cjs/styles/prism/prism';
+
 import { nightOwlDarkThemeBackground, nightOwlTheme } from './night-owl-theme';
 
 export interface ChatCodeBlockProps extends Omit<SyntaxHighlighterProps, 'children'> {

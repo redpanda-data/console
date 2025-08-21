@@ -32,6 +32,8 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
@@ -44,7 +46,6 @@ import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { SmallStat } from '../../misc/SmallStat';
 import { PageComponent } from '../Page';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -297,14 +298,18 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
     subject.latestActiveVersion === -1 ? subject.schemas.last()?.version : subject.latestActiveVersion;
 
   // Check if requested version exists in available schemas
-  const requestedVersionExists = queryVersion !== undefined && queryVersion !== 'latest' 
-    ? subject.schemas.some(s => s.version === queryVersion)
-    : true;
+  const requestedVersionExists =
+    queryVersion !== undefined && queryVersion !== 'latest'
+      ? subject.schemas.some((s) => s.version === queryVersion)
+      : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
-  const defaultVersion = queryVersion !== undefined 
-    ? (queryVersion === 'latest' || !requestedVersionExists ? fallbackVersion : queryVersion)
-    : fallbackVersion;
+  const defaultVersion =
+    queryVersion !== undefined
+      ? queryVersion === 'latest' || !requestedVersionExists
+        ? fallbackVersion
+        : queryVersion
+      : fallbackVersion;
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
   // Show notification and update URL if requested version doesn't exist

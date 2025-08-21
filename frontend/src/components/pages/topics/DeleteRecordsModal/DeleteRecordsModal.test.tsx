@@ -10,8 +10,9 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import type { Topic } from '../../../../state/restInterfaces';
+
 import DeleteRecordsModal from './DeleteRecordsModal';
+import type { Topic } from '../../../../state/restInterfaces';
 
 const testTopic: Topic = {
   allowedActions: ['all'],

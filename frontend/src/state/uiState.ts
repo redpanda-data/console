@@ -10,9 +10,10 @@
  */
 
 import { computed, makeObservable, observable } from 'mobx';
-import type { PageDefinition } from '../components/routes';
+
 import { api } from './backendApi';
 import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
+import type { PageDefinition } from '../components/routes';
 
 export interface BreadcrumbOptions {
   canBeTruncated?: boolean;

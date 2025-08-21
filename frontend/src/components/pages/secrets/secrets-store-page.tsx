@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { uiState } from 'state/uiState';
+
 import { CreateSecretModal } from './create-secret-modal';
 import { DeleteSecretModal } from './delete-secret-modal';
 import { UpdateSecretModal } from './update-secret-modal';

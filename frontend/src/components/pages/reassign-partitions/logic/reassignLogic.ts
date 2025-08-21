@@ -10,6 +10,7 @@
  */
 
 import { untracked } from 'mobx';
+
 import type { Broker, BrokerConfig, Partition, Topic } from '../../../../state/restInterfaces';
 import { toJson } from '../../../../utils/jsonUtils';
 
@@ -612,7 +613,7 @@ function calcRange<T>(
  * if not useful simply delete them
  * */
 
-// @ts-ignore perhaps this is needed later on?
+// @ts-expect-error perhaps this is needed later on?
 function _dumpBrokerInfo(title: string, brokers: ExBroker[]) {
   console.log(title);
   console.table(

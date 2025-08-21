@@ -10,6 +10,7 @@
  */
 
 import type { Location, NavigateFunction } from 'react-router-dom';
+
 import { api } from './backendApi';
 import { uiState } from './uiState';
 

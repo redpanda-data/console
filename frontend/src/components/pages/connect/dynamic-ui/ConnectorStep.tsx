@@ -11,10 +11,11 @@
 
 import { Box, Heading, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import type { PropertyGroup } from '../../../../state/connect/state';
-import type { ConnectorStep } from '../../../../state/restInterfaces';
+
 import type { ConfigPageProps } from './components';
 import { PropertyGroupComponent } from './PropertyGroup';
+import type { PropertyGroup } from '../../../../state/connect/state';
+import type { ConnectorStep } from '../../../../state/restInterfaces';
 
 export const ConnectorStepComponent = observer(
   (props: {

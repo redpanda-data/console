@@ -15,6 +15,10 @@ import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+
+import { openDeleteModal } from './modals';
+import { PipelineStatus } from './Pipelines.List';
+import { cpuToTasks } from './tasks';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -42,9 +46,6 @@ import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { openDeleteModal } from './modals';
-import { PipelineStatus } from './Pipelines.List';
-import { cpuToTasks } from './tasks';
 
 const { ToastContainer, toast } = createStandaloneToast();
 

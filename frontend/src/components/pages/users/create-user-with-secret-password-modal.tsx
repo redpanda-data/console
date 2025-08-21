@@ -22,9 +22,10 @@ import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/se
 import { getSASLMechanism, useCreateUserMutation, useLegacyListUsersQuery } from 'react-query/api/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
+
+import { CreateUserConfirmationModal } from './create-user-confirmation-modal';
 import { passwordSchema, usernameSchema } from '../agents/create/templates/http/create-agent-http-schema';
 import { SASL_MECHANISM_OPTIONS } from '../agents/create/templates/http/redpanda-user-and-permissions-form';
-import { CreateUserConfirmationModal } from './create-user-confirmation-modal';
 
 export const createUserWithSecretPasswordSchema = z.object({
   USERNAME: usernameSchema,
@@ -74,7 +75,7 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
     onSubmit: async ({ value }) => {
       const createSecretRequest = create(CreateSecretRequestSchema, {
         id: value.SECRET_ID,
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.PASSWORD)),
         scopes: [Scope.REDPANDA_CONNECT],
       });

@@ -1,8 +1,6 @@
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  SignupService,
-} from 'protogen/redpanda/api/console/v1alpha1/signup_pb';
+import { SignupService } from 'protogen/redpanda/api/console/v1alpha1/signup_pb';
 import { licenseSignup } from 'protogen/redpanda/api/console/v1alpha1/signup-SignupService_connectquery';
 
 export const useLicenseSignupMutation = () => {
@@ -25,4 +23,4 @@ export const useLicenseSignupMutation = () => {
       return error;
     },
   });
-}; 
+};

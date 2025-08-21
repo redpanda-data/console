@@ -1,6 +1,7 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
 import { MdDeleteOutline } from 'react-icons/md';
+
 import { config } from '../../config';
 import type {
   DebugBundleStatus,

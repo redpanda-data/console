@@ -34,7 +34,7 @@ export function openModal<P extends object>(
 
 export const ModalContainer = observer(() => {
   return (
-    <Box id="modalContainer">
+    <Box>
       {modals.map((e) => (
         <React.Fragment key={e.id}>{e.element}</React.Fragment>
       ))}
