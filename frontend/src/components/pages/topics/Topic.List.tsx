@@ -38,7 +38,7 @@ import React, { type FC, useRef, useState, useMemo, useCallback, useEffect } fro
 import { observable } from 'mobx';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { api } from '../../../state/backendApi';
@@ -60,18 +60,19 @@ import {
 } from './CreateTopicModal/CreateTopicModal';
 import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import { useQueryStateWithCallback } from 'hooks/useQueryStateWithCallback';
 
 const TopicList: FC = () => {
   const [localSearchValue, setLocalSearchValue] = useQueryState("q", parseAsString.withDefault(''));
   
-  const [showInternalTopics, setShowInternalTopics] = useQueryState<boolean>("showInternal", parseAsBoolean.withDefault(false));
-
-  // set internal topics
-  useEffect(() => {
-    if(showInternalTopics === null) {
-      setShowInternalTopics(uiSettings.topicList.hideInternalTopics);
+  const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>({
+    onUpdate: (val) => {
+      uiSettings.topicList.hideInternalTopics = val;
+    },
+    getDefaultValue: () => {
+      return uiSettings.topicList.hideInternalTopics;
     }
-  }, []);
+  }, "showInternal", parseAsBoolean);
 
   const { data, isLoading, isError } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
@@ -164,7 +165,6 @@ const TopicList: FC = () => {
             data-testid="show-internal-topics-checkbox"
             isChecked={showInternalTopics}
             onChange={(x) => {
-              uiSettings.topicList.hideInternalTopics = x.target.checked;
               setShowInternalTopics(x.target.checked);
             }}
             style={{ marginLeft: 'auto' }}
