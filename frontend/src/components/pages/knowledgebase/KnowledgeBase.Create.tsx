@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
-import { useListUsersQuery } from '../../../react-query/api/user';
 import {
   Box,
   Button,
@@ -46,6 +45,8 @@ import {
   CreateUserRequestSchema,
   SASLMechanism,
 } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
 import type { KnowledgeBaseCreate as KnowledgeBaseCreateType } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_CohereSchema,
@@ -64,8 +65,7 @@ import {
   KnowledgeBaseCreate_VectorDatabaseSchema,
   KnowledgeBaseCreateSchema,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
+import { useListUsersQuery } from '../../../react-query/api/user';
 import { appGlobal } from '../../../state/appGlobal';
 import { knowledgebaseApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { base64ToUInt8Array, encodeBase64 } from '../../../utils/utils';
@@ -162,11 +162,12 @@ const UserDropdown = ({
   helperText?: string;
 }) => {
   const { data: usersData, isLoading } = useListUsersQuery();
-  
-  const userOptions = usersData?.users?.map((user) => ({
-    value: user.name,
-    label: user.name,
-  })) || [];
+
+  const userOptions =
+    usersData?.users?.map((user) => ({
+      value: user.name,
+      label: user.name,
+    })) || [];
 
   return (
     <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>

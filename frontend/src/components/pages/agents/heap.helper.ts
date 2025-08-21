@@ -34,15 +34,13 @@ declare global {
 export const trackHeapUser = (userData: HeapUserData) => {
   if (window.heap && userData.email) {
     window.heap.identify(userData.email);
-    
-    const { email, ...userProperties } = userData;
+
+    const { email: _email, ...userProperties } = userData;
     if (Object.keys(userProperties).length > 0) {
       window.heap.addUserProperties(userProperties);
     }
   }
 };
-
-
 
 /**
  * Track custom events in Heap
@@ -82,4 +80,4 @@ export const resetHeapIdentity = () => {
   if (window.heap) {
     window.heap.resetIdentity();
   }
-}; 
+};
