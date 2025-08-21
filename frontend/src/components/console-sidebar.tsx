@@ -1,7 +1,7 @@
 'use client';
 
 import { observer } from 'mobx-react';
-import { Link, Link as RouterLink } from 'react-router-dom';
+import { Link, Link as RouterLink, useLocation } from 'react-router-dom';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 import { useColorMode } from '@redpanda-data/ui';
@@ -33,10 +33,23 @@ import { APP_ROUTES, createVisibleSidebarItems } from './routes';
 
 const ConsoleSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
+  const location = useLocation();
 
   const APP_ROUTES_WITHOUT_AI_AGENTS = APP_ROUTES.filter((route) => !route.path.startsWith('/agents'));
   const FINAL_APP_ROUTES = isAiAgentsEnabled ? APP_ROUTES : APP_ROUTES_WITHOUT_AI_AGENTS;
   const sidebarItems = createVisibleSidebarItems(FINAL_APP_ROUTES);
+  
+  // Helper function to determine if a sidebar item is active
+  const isItemActive = (itemPath: string) => {
+    // Exact match for overview
+    if (itemPath === '/overview') {
+      return location.pathname === '/overview' || location.pathname === '/';
+    }
+    
+    // For other routes, check if current path starts with the item path
+    // This handles both exact matches and sub-routes
+    return location.pathname.startsWith(itemPath);
+  };
   
   console.log(sidebarItems);
 
@@ -59,6 +72,7 @@ const ConsoleSidebar = observer(() => {
                     <SidebarMenuButton
                       asChild={!item.isDisabled}
                       disabled={item.isDisabled}
+                      isActive={!item.isDisabled && isItemActive(item.to)}
                       tooltip={
                         item.isDisabled && item.disabledText
                           ? item.disabledText
