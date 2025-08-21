@@ -1,5 +1,6 @@
 import { Center, Heading, Image, Stack, Text } from '@redpanda-data/ui';
 import { useNavigate } from 'react-router-dom';
+
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 
 export const NotFoundPage = () => {

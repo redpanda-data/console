@@ -12,6 +12,7 @@
 import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
 import { useParams } from 'react-router-dom';
+
 import { appGlobal } from '../../state/appGlobal';
 import { api } from '../../state/backendApi';
 import type { ApiError, UserData } from '../../state/restInterfaces';

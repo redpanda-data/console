@@ -34,6 +34,10 @@ import {
 import { comparer } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfigPage } from './dynamic-ui/components';
+import { findConnectorMetadata } from './helper';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
@@ -46,9 +50,6 @@ import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { Wizard, type WizardStep } from '../../misc/Wizard';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
-import { ConfigPage } from './dynamic-ui/components';
-import { findConnectorMetadata } from './helper';
 
 const ConnectorType = observer(
   (p: {

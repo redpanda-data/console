@@ -5,6 +5,7 @@ import { CreateSecretModal } from 'components/pages/secrets/create-secret-modal'
 import { type ReactNode, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import type { z } from 'zod';
+
 import {
   type CreateAgentHttpFormValues,
   createAgentHttpFormOpts,

@@ -12,6 +12,8 @@
 import { comparer, observable, transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { useEffect, useState } from 'react';
+
+import { ConfigPage } from './dynamic-ui/components';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../state/backendApi';
 import { ConnectClusterStore } from '../../../state/connect/state';
@@ -25,7 +27,6 @@ import {
 } from '../../../state/restInterfaces';
 import { Code, TimestampDisplay } from '../../../utils/tsxUtils';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ConfigPage } from './dynamic-ui/components';
 import './helper';
 import {
   Alert,
@@ -52,6 +53,9 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
+
+import { getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PartitionOffsetOrigin, uiSettings } from '../../../state/ui';
@@ -61,8 +65,6 @@ import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { getConnectorFriendlyName } from './ConnectorBoxCard';
-import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 

@@ -21,6 +21,7 @@ import {
   Textarea,
   type TextareaProps,
 } from '@redpanda-data/ui';
+
 import { isFieldEditable, isFieldImmutable, isFieldOutputOnly, isFieldRequired } from '../../utils/protobuf-reflection';
 
 interface BaseProtoFormFieldProps {

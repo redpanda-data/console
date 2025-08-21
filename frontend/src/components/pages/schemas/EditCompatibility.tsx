@@ -11,16 +11,18 @@
 
 import { observer } from 'mobx-react';
 import { useState } from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { PageComponent, type PageInitHelper } from '../Page';
 import './Schema.List.scss';
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
+
+import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
-import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 
 function renderNotConfigured() {
   return (

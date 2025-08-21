@@ -38,6 +38,7 @@ import {
   type DropResult,
   type ResponderProvided,
 } from 'react-beautiful-dnd';
+
 import globExampleImg from '../../../../assets/globExample.png';
 import type { MessageSearch } from '../../../../state/backendApi';
 import type { PreviewTagV2 } from '../../../../state/ui';
@@ -189,7 +190,7 @@ export class PreviewSettings extends Component<{
   messageSearch: MessageSearch;
 }> {
   @computed.struct get allCurrentKeys() {
-    // @ts-ignore perhaps we still need this due to MobX behavior?
+    // @ts-expect-error perhaps we still need this due to MobX behavior?
     const _unused = this.props.messageSearch.messages.length;
     return getAllMessageKeys(this.props.messageSearch.messages)
       .map((p) => p.propertyName)

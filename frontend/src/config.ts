@@ -34,6 +34,7 @@ import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { appGlobal } from './state/appGlobal';
@@ -68,12 +69,12 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
     if (error instanceof ConnectError) {
       if (error.code === Code.FailedPrecondition) {
         for (const detail of error.details) {
-          // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+          // @ts-expect-error - TODO fix type checks for IncomingDetail, BE should provide types for debug field
           if (detail?.type && detail?.debug) {
             if (
-              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+              // @ts-expect-error - TODO fix type checks for IncomingDetail, BE should provide types for debug field
               detail.type === 'google.rpc.ErrorInfo' &&
-              // @ts-ignore - TODO fix type checks for IncomingDetail, BE should provide types for debug field
+              // @ts-expect-error - TODO fix type checks for IncomingDetail, BE should provide types for debug field
               detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
             ) {
               appGlobal.historyReplace('/trial-expired');

@@ -11,6 +11,7 @@
 
 import { Popover } from '@redpanda-data/ui';
 import type { FunctionComponent, ReactElement } from 'react';
+
 import { isClipboardAvailable } from '../../utils/featureDetection';
 
 const popoverContent = (

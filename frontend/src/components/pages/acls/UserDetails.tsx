@@ -13,6 +13,11 @@ import { Box, Button, Link as ChakraLink, DataTable, Flex, Heading, Text } from 
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
+import { type AclPrincipalGroup, principalGroupsView } from './Models';
+import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
+import { UserRoleTags } from './UserPermissionAssignments';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
@@ -20,10 +25,6 @@ import { Features } from '../../../state/supportedFeatures';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
-import { type AclPrincipalGroup, principalGroupsView } from './Models';
-import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
-import { UserRoleTags } from './UserPermissionAssignments';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {

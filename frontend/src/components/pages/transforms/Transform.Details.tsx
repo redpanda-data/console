@@ -14,6 +14,9 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Fragment, useState } from 'react';
+
+import { openDeleteModal } from './modals';
+import { PartitionStatus } from './Transforms.List';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -40,8 +43,6 @@ import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { openDeleteModal } from './modals';
-import { PartitionStatus } from './Transforms.List';
 
 const { ToastContainer, toast } = createStandaloneToast();
 

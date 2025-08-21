@@ -27,9 +27,7 @@ import {
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { appGlobal } from '../../../state/appGlobal';
-import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
-import type { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
+
 import {
   type AclPrincipalGroup,
   type ClusterACLs,
@@ -44,6 +42,9 @@ import {
   unpackPrincipalGroup,
 } from './Models';
 import { ResourceACLsEditor } from './PrincipalGroupEditor';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, type RolePrincipal, rolesApi } from '../../../state/backendApi';
+import type { AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 
 type CreateRoleFormState = {
   roleName: string;

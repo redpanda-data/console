@@ -34,6 +34,8 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import styles from './DeleteRecordsModal.module.scss';
 import { api } from '../../../../state/backendApi';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
@@ -41,7 +43,6 @@ import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlTimePicker } from '../../../misc/KowlTimePicker';
 import { SingleSelect } from '../../../misc/Select';
-import styles from './DeleteRecordsModal.module.scss';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';

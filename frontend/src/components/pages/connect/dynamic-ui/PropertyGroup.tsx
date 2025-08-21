@@ -11,10 +11,11 @@
 
 import { Accordion, Box, Divider, Flex, Heading, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import type { PropertyGroup } from '../../../../state/connect/state';
+
 import type { ConfigPageProps } from './components';
 import { TopicInput } from './forms/TopicInput';
 import { PropertyComponent } from './PropertyComponent';
+import type { PropertyGroup } from '../../../../state/connect/state';
 
 const topicsFields = ['topics', 'topics.regex'];
 

@@ -3,6 +3,7 @@ import type { ChatMessage } from 'database/chat-db';
 import ReactMarkdown from 'react-markdown';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
+
 import { ChatCodeBlock } from './chat-code-block';
 
 interface ChatMarkdownProps {

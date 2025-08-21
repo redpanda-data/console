@@ -15,11 +15,12 @@ import { observer } from 'mobx-react';
 import React, { type CSSProperties, type FC } from 'react';
 import { MdClose, MdOutlineCopyAll } from 'react-icons/md';
 import StackTrace from 'stacktrace-js';
+
+import { NoClipboardPopover } from './NoClipboardPopover';
 import { envVarDebugAr } from '../../utils/env';
 import { isClipboardAvailable } from '../../utils/featureDetection';
 import { toJson } from '../../utils/jsonUtils';
 import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsxUtils';
-import { NoClipboardPopover } from './NoClipboardPopover';
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)

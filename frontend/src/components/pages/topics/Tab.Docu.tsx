@@ -10,6 +10,7 @@
  */
 
 import { Component } from 'react';
+
 import type { Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Button, Empty, VStack } from '@redpanda-data/ui';
@@ -20,6 +21,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
+
 import { api } from '../../../state/backendApi';
 import { animProps } from '../../../utils/animationProps';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';

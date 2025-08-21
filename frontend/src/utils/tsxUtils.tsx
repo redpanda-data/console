@@ -31,11 +31,12 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, type CSSProperties, type ReactNode, useState } from 'react';
 import { MdContentCopy, MdHelpOutline, MdOutlineDownload } from 'react-icons/md';
-import colors from '../colors';
-import type { TimestampDisplayFormat } from '../state/ui';
+
 import { animProps } from './animationProps';
 import { toJson } from './jsonUtils';
 import { DebugTimerStore, prettyMilliseconds, simpleUniqueId } from './utils';
+import colors from '../colors';
+import type { TimestampDisplayFormat } from '../state/ui';
 
 const defaultLocale = 'en';
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
@@ -357,11 +358,11 @@ export class RadioOptionGroup<T extends string | null = string> extends Componen
         direction="column"
         // TODO - we need to make the API more TS safe and make name optional
         name=""
-        // @ts-ignore
+        // @ts-expect-error
         value={p.value}
-        // @ts-ignore
+        // @ts-expect-error
         onChange={p.onChange}
-        // @ts-ignore
+        // @ts-expect-error
         options={p.options.map((kv) => ({
           value: kv.value,
           disabled: p.disabled,

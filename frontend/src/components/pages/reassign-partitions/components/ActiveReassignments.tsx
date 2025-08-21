@@ -45,6 +45,8 @@ import {
 import { computed, makeObservable, observable } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { Component, type FC, useRef } from 'react';
+
+import { BandwidthSlider } from './BandwidthSlider';
 import { api } from '../../../../state/backendApi';
 import type { ConfigEntry } from '../../../../state/restInterfaces';
 import { QuickTable } from '../../../../utils/tsxUtils';
@@ -52,7 +54,6 @@ import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { BrokerList } from '../../../misc/BrokerList';
 import type { ReassignmentState } from '../logic/reassignmentTracker';
 import { reassignmentTracker } from '../ReassignPartitions';
-import { BandwidthSlider } from './BandwidthSlider';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({

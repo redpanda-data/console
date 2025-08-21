@@ -7,7 +7,7 @@ import { useCreateAgentPipelinesMutation } from 'react-query/api/agent';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
+
 import { AgentDetailsForm } from './agent-details-form';
 import { createAgentHttpFormOpts, createAgentHttpSchema } from './create-agent-http-schema';
 import { ExternalDependenciesForm } from './external-dependencies-form';
@@ -18,6 +18,7 @@ import gitPipeline from './rag-git.yaml';
 import gitPrivatePipeline from './rag-git-private.yaml';
 import ragIndexingPipeline from './rag-indexing.yaml';
 import { RedpandaUserAndPermissionsForm } from './redpanda-user-and-permissions-form';
+import agentIllustration from '../../../../../../assets/agent-illustration-http.png';
 
 export const getPipelineName = (pipelineKey: string) => {
   switch (pipelineKey) {

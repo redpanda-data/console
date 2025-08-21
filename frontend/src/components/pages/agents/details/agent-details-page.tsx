@@ -9,10 +9,11 @@ import { useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { capitalizeFirst } from 'utils/utils';
 import { isUuid } from 'utils/uuid.utils';
-import { DeleteAgentModal } from '../delete-agent-modal';
+
 import { AgentPipelineTab } from './agent-pipeline-tab';
 import { AgentStateDisplayValue } from './agent-state-display-value';
 import { AgentChatTab } from './chat/agent-chat-tab';
+import { DeleteAgentModal } from '../delete-agent-modal';
 
 // Hack for MobX to ensure we don't need to use observables
 export const updatePageTitle = ({ agent }: { agent: Agent }) => {

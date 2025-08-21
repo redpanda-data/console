@@ -14,11 +14,12 @@ import type { Row } from '@tanstack/react-table';
 import { transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
+import { SelectionInfoBar } from './components/StatisticsBar';
+import type { PartitionSelection } from './ReassignPartitions';
 import { api } from '../../../state/backendApi';
 import type { Broker } from '../../../state/restInterfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
-import { SelectionInfoBar } from './components/StatisticsBar';
-import type { PartitionSelection } from './ReassignPartitions';
 
 @observer
 export class StepSelectBrokers extends Component<{

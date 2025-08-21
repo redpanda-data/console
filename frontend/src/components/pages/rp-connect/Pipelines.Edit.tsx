@@ -14,25 +14,26 @@ import {
   Box,
   Button,
   Link as ChLink,
+  type CreateToastFnReturn,
   Flex,
   FormField,
   Input,
   NumberInput,
   useToast,
-  CreateToastFnReturn,
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { PipelineUpdateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Link } from 'react-router-dom';
+
+import { formatPipelineError } from './errors';
+import { PipelineEditor } from './Pipelines.Create';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { formatPipelineError } from './errors';
-import { PipelineEditor } from './Pipelines.Create';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 
 @observer
 class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
@@ -100,8 +101,8 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
         >
           Update
         </Button>
-      )
-    }
+      );
+    };
 
     return (
       <PageContent>

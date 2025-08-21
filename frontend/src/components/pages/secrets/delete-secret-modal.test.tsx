@@ -12,6 +12,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { DeleteSecretRequestSchema as DeleteSecretRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { fireEvent, render, screen, waitFor, within } from 'test-utils';
+
 import { DeleteSecretModal } from './delete-secret-modal';
 
 describe('DeleteSecretModal', () => {

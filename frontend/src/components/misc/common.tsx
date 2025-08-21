@@ -13,6 +13,7 @@ import { AlertIcon } from '@primer/octicons-react';
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import React, { type PropsWithChildren, useState } from 'react';
+
 import type { TopicLogDirSummary } from '../../state/restInterfaces';
 import { uiState } from '../../state/uiState';
 import env, { IsDev } from '../../utils/env';

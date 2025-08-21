@@ -11,6 +11,7 @@ import {
 } from '@redpanda-data/ui';
 
 import './hubspot-modal.scss';
+
 import { AI_AGENTS_SUMMARY } from './agent-list-page';
 
 interface HubspotModalProps {
@@ -31,6 +32,7 @@ const HubspotModal = ({ isOpen, isSubmitted, onClose }: HubspotModalProps) => {
               Try Redpanda AI Agents for free
             </ModalHeader>
             {!isSubmitted && <Text>{AI_AGENTS_SUMMARY}</Text>}
+            {/** biome-ignore lint/correctness/useUniqueElementIds: needs to be a fixed id to ensure hubspot can be rendered */}
             <Box id="hubspot-modal" />
           </Stack>
         </ModalBody>

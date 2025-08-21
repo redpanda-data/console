@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+
 import styles from './BoxCard.module.scss';
 
 export interface BoxCardProps {

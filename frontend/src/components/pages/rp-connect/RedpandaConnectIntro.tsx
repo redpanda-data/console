@@ -17,6 +17,7 @@ import {
 } from '@redpanda-data/ui';
 import { useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
 import RedpandaConnectLogo from '../../../assets/redpanda/rp-connect.svg';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import { SingleSelect } from '../../misc/Select';

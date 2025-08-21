@@ -10,6 +10,7 @@
  */
 
 import type { ConnectError } from '@connectrpc/connect';
+
 import type { AuthenticationMethod } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import type {
   GetConsoleInfoResponse,

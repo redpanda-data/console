@@ -11,6 +11,7 @@
 
 import { Button } from '@redpanda-data/ui';
 import React from 'react';
+
 import styles from './Wizard.module.scss';
 
 export function Wizard<State extends WizardState>({ state }: { state: State }) {

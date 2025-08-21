@@ -11,8 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery } from '@connectrpc/connect-query';
-import { SASLMechanism } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { useListUsersQuery } from '../../../react-query/api/user';
 import {
   Badge,
   Box,
@@ -53,7 +51,11 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { useState } from 'react';
 import { AiOutlineDelete, AiOutlinePlus } from 'react-icons/ai';
+
 import { config } from '../../../config';
+import { SASLMechanism } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
 import {
   type KnowledgeBase,
   KnowledgeBase_VectorDatabase_PostgresSchema,
@@ -75,8 +77,7 @@ import {
   KnowledgeBaseUpdate_VectorDatabaseSchema,
   KnowledgeBaseUpdateSchema,
 } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
+import { useListUsersQuery } from '../../../react-query/api/user';
 import { rpcnSecretManagerApi } from '../../../state/backendApi';
 import { getMessageFieldMetadata } from '../../../utils/protobuf-reflection';
 import { ProtoDisplayField, ProtoInputField, ProtoTextareaField } from '../../misc/ProtoFormField';
@@ -107,10 +108,11 @@ const UserDropdown = ({
 }) => {
   const { data: usersData, isLoading } = useListUsersQuery();
 
-  const userOptions = usersData?.users?.map((user) => ({
-    value: user.name,
-    label: user.name,
-  })) || [];
+  const userOptions =
+    usersData?.users?.map((user) => ({
+      value: user.name,
+      label: user.name,
+    })) || [];
 
   return (
     <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
@@ -350,7 +352,15 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
                 const matchingTopics = getMatchingTopics(topic);
 
                 return (
-                  <Box key={index} mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+                  <Box
+                    key={index}
+                    mb={2}
+                    p={2}
+                    bg="gray.50"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="gray.200"
+                  >
                     <Text fontSize="sm" fontWeight="medium" color="blue.600">
                       {topic}{' '}
                       <Text as="span" fontSize="xs" color="gray.500">
@@ -1222,19 +1232,11 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <Flex gap={4}>
               <FormControl>
                 <FormLabel>Chunk Size</FormLabel>
-                <Input
-                  type="number"
-                  value={indexer?.chunkSize || 512}
-                  isDisabled
-                />
+                <Input type="number" value={indexer?.chunkSize || 512} isDisabled />
               </FormControl>
               <FormControl>
                 <FormLabel>Chunk Overlap</FormLabel>
-                <Input
-                  type="number"
-                  value={indexer?.chunkOverlap || 100}
-                  isDisabled
-                />
+                <Input type="number" value={indexer?.chunkOverlap || 100} isDisabled />
               </FormControl>
             </Flex>
 
@@ -1349,10 +1351,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
           <>
             <FormControl>
               <Flex alignItems="center" gap={2}>
-                <Checkbox
-                  isChecked={reranker?.enabled || false}
-                  isDisabled={true}
-                />
+                <Checkbox isChecked={reranker?.enabled || false} isDisabled={true} />
                 <FormLabel fontWeight="medium" mb={0}>
                   Enable Reranker (Recommended)
                 </FormLabel>

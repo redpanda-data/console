@@ -10,9 +10,10 @@
  */
 
 import { Box, Flex, Link, Tag, TagLabel, Text } from '@redpanda-data/ui';
+
+import { findConnectorMetadata, removeNamespace } from './helper';
 import BoxCard, { type BoxCardProps } from '../../misc/BoxCard';
 import type { HiddenRadioOption } from '../../misc/HiddenRadioList';
-import { findConnectorMetadata, removeNamespace } from './helper';
 
 interface ConnectorBoxCardProps
   extends Omit<BoxCardProps, 'children'>,

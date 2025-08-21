@@ -30,6 +30,7 @@ import { transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FC, useState } from 'react';
 import { FaWrench } from 'react-icons/fa';
+
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 

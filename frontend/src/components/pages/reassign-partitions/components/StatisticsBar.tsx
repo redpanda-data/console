@@ -12,6 +12,7 @@
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
 import { api } from '../../../../state/backendApi';
 import type { Broker, Partition } from '../../../../state/restInterfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';

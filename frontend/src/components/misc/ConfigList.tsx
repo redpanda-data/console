@@ -12,12 +12,13 @@
 import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { MdInfoOutline, MdOutlineVisibilityOff } from 'react-icons/md';
+
+import styles from './ConfigList.module.scss';
 import colors from '../../colors';
 import type { ConfigEntry } from '../../state/restInterfaces';
 import type { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { equalsIgnoreCase } from '../../utils/utils';
-import styles from './ConfigList.module.scss';
 
 export function ConfigList({
   configEntries,
@@ -130,7 +131,7 @@ export function ConfigList({
         return (
           <Box py={6} px={10}>
             <DataTable<ConfigEntry>
-              // @ts-ignore TODO - we need to fix types here and find a shared interface
+              // @ts-expect-error TODO - we need to fix types here and find a shared interface
               data={row.original.synonyms.filter((x) => x.source !== row.original.source)}
               columns={tableColumns}
             />

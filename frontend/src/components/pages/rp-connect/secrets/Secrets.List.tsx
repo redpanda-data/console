@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noAssignInExpressions: we use MobX */
 import { create } from '@bufbuild/protobuf';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
@@ -18,6 +19,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
 import SittingPanda from '../../../../assets/redpanda/SittingPanda.svg';
 import { DeleteSecretRequestSchema, type Secret } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
@@ -137,11 +139,15 @@ class RpConnectSecretsList extends PageComponent {
                   cell: ({ row: { original } }) => (
                     <Box>
                       <Code>
-                        <Text wordBreak="break-word" whiteSpace="break-spaces">{`$\{secrets.${original.id}}`}</Text>
+                        <Text wordBreak="break-word" whiteSpace="break-spaces">
+                          {/* biome-ignore lint/suspicious/noUselessEscapeInString: leave this alone */}
+                          {`\$\{secrets.${original.id}}`}
+                        </Text>
                       </Code>
                       <Tooltip label="Copy" hasArrow>
                         <CopyButton
-                          content={`$\{secrets.${original.id}}`}
+                          // biome-ignore lint/suspicious/noUselessEscapeInString: leave this alone
+                          content={`\$\{secrets.${original.id}}`}
                           variant="ghost"
                           colorScheme="gray"
                           size="sm"

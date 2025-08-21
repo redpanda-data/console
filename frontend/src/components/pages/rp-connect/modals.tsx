@@ -12,6 +12,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
+
 import { openModal } from '../../../utils/ModalContainer';
 
 export const ExplicitConfirmModal = observer(

@@ -12,6 +12,8 @@
 import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
+
+import { ConnectorStepComponent } from './ConnectorStep';
 import { isEmbedded } from '../../../../config';
 import { api } from '../../../../state/backendApi';
 // import { IsDev } from '../../../../utils/env';
@@ -20,7 +22,6 @@ import type { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/
 import type { ConnectorStep } from '../../../../state/restInterfaces';
 import { clone } from '../../../../utils/jsonUtils';
 import KowlEditor from '../../../misc/KowlEditor';
-import { ConnectorStepComponent } from './ConnectorStep';
 
 export interface ConfigPageProps {
   connectorStore: ConnectorPropertiesStore;

@@ -13,6 +13,8 @@ import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui
 import { autorun, type IReactionDisposer } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
+
+import { GroupState } from './Group.Details';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { GroupDescription } from '../../../state/restInterfaces';
@@ -25,7 +27,6 @@ import Section from '../../misc/Section';
 import { ShortNum } from '../../misc/ShortNum';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { GroupState } from './Group.Details';
 
 @observer
 class GroupList extends PageComponent {

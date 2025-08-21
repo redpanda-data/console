@@ -2,6 +2,7 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, List, ListItem, Spinner, Stack, Text } from '@redpanda-data/ui';
 import React, { type FC, useEffect } from 'react';
 import { MdCheckCircle, MdError } from 'react-icons/md';
+
 import colors from '../../../colors';
 import {
   DebugBundleStatus_Status,

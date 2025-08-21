@@ -11,12 +11,14 @@
 
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
+
 import { api } from '../../../state/backendApi';
 import type { Permission, Role, RoleBinding } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Box, DataTable } from '@redpanda-data/ui';
-import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
+
 import { RoleBindingComponent } from './Admin.RoleBindings';
+import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 
 @observer
 export class AdminRoles extends Component<{}> {

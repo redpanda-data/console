@@ -20,6 +20,7 @@ import {
   observable,
   reaction,
 } from 'mobx';
+
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
 import { api } from '../backendApi';

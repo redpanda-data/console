@@ -19,8 +19,9 @@ import {
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
-import type { FilterEntry } from '../../../../state/ui';
+
 import FilterEditor from './Editor';
+import type { FilterEntry } from '../../../../state/ui';
 
 const JavascriptFilterModal: FC<{
   currentFilter: FilterEntry;

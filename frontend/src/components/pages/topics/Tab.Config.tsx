@@ -11,16 +11,18 @@
 
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
 import type { ConfigEntryExtended, KafkaError, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import '../../../utils/arrayExtensions';
 import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-data/ui';
 import { computed, makeObservable } from 'mobx';
+
+import TopicConfigurationEditor from './TopicConfiguration';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import TopicConfigurationEditor from './TopicConfiguration';
 
 // todo: can we assume that config values for time and bytes will always be provided in the smallest units?
 // or is it possible we'll get something like 'segment.hours' instead of 'segment.ms'?

@@ -10,9 +10,11 @@
  */
 
 import { Component } from 'react';
+
 import type { RoleBinding, Subject } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Accordion } from '@redpanda-data/ui';
+
 import { ObjToKv, QuickTable } from '../../../utils/tsxUtils';
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {

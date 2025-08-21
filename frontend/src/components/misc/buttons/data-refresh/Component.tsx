@@ -12,6 +12,7 @@ import { observer } from 'mobx-react';
  * by the Apache License, Version 2.0
  */
 import { MdOutlineCached, MdPause, MdPlayCircleOutline } from 'react-icons/md';
+
 import { appGlobal } from '../../../../state/appGlobal';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';

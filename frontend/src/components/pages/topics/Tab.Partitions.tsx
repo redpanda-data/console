@@ -11,11 +11,13 @@
 
 import { observer } from 'mobx-react';
 import type { FC } from 'react';
+
 import { api } from '../../../state/backendApi';
 import type { Partition, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Alert, AlertIcon, Badge, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { uiState } from '../../../state/uiState';
 import { onPaginationChange } from '../../../utils/pagination';
@@ -65,7 +67,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
           });
         })}
         sorting
-        // @ts-ignore - we need to get rid of this enum in DataTable
+        // @ts-expect-error - we need to get rid of this enum in DataTable
         defaultPageSize={uiState.topicSettings.partitionPageSize}
         data={partitions}
         columns={[

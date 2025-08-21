@@ -28,7 +28,6 @@ import './globals.css';
 
 /* end tailwind styles */
 
-import queryClient from 'queryClient';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
@@ -36,6 +35,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
+
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
@@ -47,6 +47,7 @@ import {
   setup,
 } from './config';
 import { appGlobal } from './state/appGlobal';
+import queryClient from 'queryClient';
 
 export interface EmbeddedProps extends SetConfigArguments {
   /**

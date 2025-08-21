@@ -15,6 +15,7 @@ import {
 import { makeObservable, observable } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
+
 import type { SetLicenseRequest, SetLicenseResponse } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';

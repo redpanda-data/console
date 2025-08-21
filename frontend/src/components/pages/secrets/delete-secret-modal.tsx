@@ -18,8 +18,9 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
-import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
+
 import { deleteSecretSchema } from './form/delete-secret-schema';
+import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 
 export interface DeleteSecretModalProps {
   secretId: string;
@@ -28,8 +29,14 @@ export interface DeleteSecretModalProps {
 }
 
 export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretModalProps) => {
-  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
-  const { mutateAsync: deleteSecret, isPending: isDeleteSecretPending, error: deleteSecretError } = useDeleteSecretMutation();
+  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({
+    secretId,
+  });
+  const {
+    mutateAsync: deleteSecret,
+    isPending: isDeleteSecretPending,
+    error: deleteSecretError,
+  } = useDeleteSecretMutation();
 
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
@@ -94,7 +101,6 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
                     label="Delete"
                     variant="delete"
                     data-testid="delete-secret-button"
-                    id="delete-modal-btn"
                     loadingText="Deleting"
                   />
                   <Button variant="ghost" data-testid="cancel-button" onClick={handleClose}>

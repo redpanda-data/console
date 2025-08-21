@@ -13,6 +13,7 @@ import { SearchField } from '@redpanda-data/ui';
 import { type IReactionDisposer, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
+
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 

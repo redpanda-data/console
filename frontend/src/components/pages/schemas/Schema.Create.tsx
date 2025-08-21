@@ -26,6 +26,8 @@ import {
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { type SchemaRegistryValidateSchemaResponse, SchemaType } from '../../../state/restInterfaces';
@@ -35,7 +37,6 @@ import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
 
 @observer
 export class SchemaCreatePage extends PageComponent<{}> {

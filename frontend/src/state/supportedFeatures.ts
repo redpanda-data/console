@@ -17,6 +17,7 @@
 //
 
 import { computed, observable } from 'mobx';
+
 import { api } from './backendApi';
 
 export interface FeatureEntry {

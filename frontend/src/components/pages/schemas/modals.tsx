@@ -18,6 +18,7 @@ import {
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type ReactNode, useState } from 'react';
+
 import { openModal } from '../../../utils/ModalContainer';
 
 const GenericModal = observer(

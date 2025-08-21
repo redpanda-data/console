@@ -13,9 +13,10 @@ import { WarningIcon } from '@chakra-ui/icons';
 import { Box, Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { FC, ReactElement } from 'react';
+
+import ErrorResult from './ErrorResult';
 import { api } from '../../state/backendApi';
 import type { WrappedApiError } from '../../state/restInterfaces';
-import ErrorResult from './ErrorResult';
 
 function isWrappedApiError(error: any): error is WrappedApiError {
   return error && typeof error === 'object' && 'statusCode' in error;

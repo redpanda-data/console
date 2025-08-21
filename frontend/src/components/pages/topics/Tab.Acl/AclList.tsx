@@ -11,6 +11,7 @@
 
 import { Alert, AlertIcon, DataTable } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+
 import type {
   AclRule,
   AclStrOperation,

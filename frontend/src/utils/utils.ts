@@ -13,6 +13,7 @@ import { Base64, fromUint8Array } from 'js-base64';
 import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
+
 import type { TopicMessage } from '../state/restInterfaces';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
@@ -582,7 +583,7 @@ export function prettyNumber(num: number) {
 
 export function fromDecimalSeparated(str: string): number {
   if (!str || str === '') return 0;
-  return Number.parseInt(str.replace(',', ''));
+  return Number.parseInt(str.replace(',', ''), 10);
 }
 
 export function toDecimalSeparated(num: number): string {
@@ -640,7 +641,7 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
   if (!target) return;
 
   const rect = target.getBoundingClientRect();
-  // @ts-ignore perhaps it affects the target for some reason?
+  // @ts-expect-error perhaps it affects the target for some reason?
   let _top = 0;
   switch (anchor) {
     case 'start':

@@ -15,6 +15,17 @@ import ErrorResult from 'components/misc/ErrorResult';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
+
+import {
+  ConnectorClass,
+  ConnectorsColumn,
+  errIcon,
+  mr05,
+  NotConfigured,
+  OverviewStatisticsCard,
+  TaskState,
+  TasksColumn,
+} from './helper';
 import { isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -30,16 +41,6 @@ import Tabs, { type Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
-import {
-  ConnectorClass,
-  ConnectorsColumn,
-  errIcon,
-  mr05,
-  NotConfigured,
-  OverviewStatisticsCard,
-  TaskState,
-  TasksColumn,
-} from './helper';
 
 enum ConnectView {
   KafkaConnect = 'kafka-connect',

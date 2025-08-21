@@ -1,4 +1,5 @@
 import type { ChatMessage } from 'database/chat-db';
+
 import { ChatMarkdown } from './chat-markdown';
 
 interface ChatMessageViewProps {

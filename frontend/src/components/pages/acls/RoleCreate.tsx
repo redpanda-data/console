@@ -11,12 +11,13 @@
 
 import { Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+
+import { RoleForm } from './RoleForm';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { RoleForm } from './RoleForm';
 
 @observer
 class RoleCreatePage extends PageComponent {
