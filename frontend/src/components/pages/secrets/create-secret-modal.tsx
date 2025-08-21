@@ -83,7 +83,6 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
 
       const request = create(CreateSecretRequestSchema, {
         id: value.id,
-        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
         scopes: value.scopes || [],
         labels: labelsMap,
@@ -150,8 +149,14 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                           }
                         }}
                         options={[
-                          { label: 'Redpanda Connect', value: Scope.REDPANDA_CONNECT },
-                          { label: 'Redpanda Cluster', value: Scope.REDPANDA_CLUSTER },
+                          {
+                            label: 'Redpanda Connect',
+                            value: Scope.REDPANDA_CONNECT,
+                          },
+                          {
+                            label: 'Redpanda Cluster',
+                            value: Scope.REDPANDA_CLUSTER,
+                          },
                         ]}
                         isMulti
                         onBlur={handleBlur}

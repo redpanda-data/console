@@ -203,7 +203,10 @@ export default AclList;
 
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = observer(() => {
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
+    name: u,
+    type: 'SERVICE_ACCOUNT',
+  }));
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
   for (const g of principalGroupsView.principalGroups)
@@ -294,7 +297,10 @@ const PermissionsListTab = observer(() => {
 });
 
 const UsersTab = observer(() => {
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
+    name: u,
+    type: 'SERVICE_ACCOUNT',
+  }));
 
   const usersFiltered = users.filter((u) => {
     const filter = uiSettings.aclList.usersTab.quickSearch;
@@ -641,7 +647,6 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
       <Section>
         {edittingPrincipalGroup && (
           <AclPrincipalGroupEditor
-            // @ts-expect-error
             principalGroup={edittingPrincipalGroup}
             type={editorType}
             onClose={() => {
@@ -818,7 +823,10 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
   );
 });
 
-const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null; onClose: () => void }> = ({ aclFailed, onClose }) => {
+const AlertDeleteFailed: FC<{
+  aclFailed: { err: unknown } | null;
+  onClose: () => void;
+}> = ({ aclFailed, onClose }) => {
   const ref = useRef(null);
 
   if (!aclFailed) return null;

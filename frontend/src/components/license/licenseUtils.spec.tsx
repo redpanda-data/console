@@ -1,14 +1,4 @@
 import {
-  coreHasEnterpriseFeatures,
-  getPrettyTimeToExpiration,
-  licenseIsExpired,
-  licenseSoonToExpire,
-  licensesToSimplifiedPreview,
-  prettyExpirationDate,
-  prettyLicenseType,
-  resolveEnterpriseCTALink,
-} from './licenseUtils';
-import {
   License_Source,
   License_Type,
   LicenseSchema,
@@ -18,21 +8,6 @@ import {
 import '../../utils/arrayExtensions';
 import { create } from '@bufbuild/protobuf';
 import { vi } from 'vitest';
-
-import { LicenseNotification } from './LicenseNotification';
-import { api } from '../../state/backendApi';
-import { renderWithRouter } from '../../test-utils';
-
-/**
- * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
- * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
- *
- * @param daysOffset - The number of days to offset (default is 0).
- * @returns Unix timestamp in seconds.
- */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
-  return Math.floor(Date.now() / 1000) + daysOffset * 86400;
-};
 
 vi.mock('../../state/backendApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../state/backendApi')>();
@@ -73,6 +48,31 @@ vi.mock('../../state/backendApi', async (importOriginal) => {
     },
   };
 });
+
+import { LicenseNotification } from './LicenseNotification';
+import {
+  coreHasEnterpriseFeatures,
+  getPrettyTimeToExpiration,
+  licenseIsExpired,
+  licenseSoonToExpire,
+  licensesToSimplifiedPreview,
+  prettyExpirationDate,
+  prettyLicenseType,
+  resolveEnterpriseCTALink,
+} from './licenseUtils';
+import { api } from '../../state/backendApi';
+import { renderWithRouter } from '../../test-utils';
+
+/**
+ * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
+ * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
+ *
+ * @param daysOffset - The number of days to offset (default is 0).
+ * @returns Unix timestamp in seconds.
+ */
+const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
+  return Math.floor(Date.now() / 1000) + daysOffset * 86400;
+};
 
 describe('licenseUtils', () => {
   const origDate = Date.prototype.toLocaleDateString;
@@ -125,18 +125,34 @@ describe('licenseUtils', () => {
   describe('coreHasEnterpriseFeatures', () => {
     test('should return true when at least one feature is enabled', () => {
       const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'rbac',
+          enabled: true,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'datalake_iceberg',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'audit_logging',
+        }),
       ];
       expect(coreHasEnterpriseFeatures(features)).toBe(true);
     });
 
     test('should return false when no features are enabled', () => {
       const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'rbac',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'datalake_iceberg',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'audit_logging',
+        }),
       ];
       expect(coreHasEnterpriseFeatures(features)).toBe(false);
     });
@@ -249,7 +265,11 @@ describe('licenseUtils', () => {
       const result = licensesToSimplifiedPreview(licenses);
       expect(result).toEqual([
         { name: 'Console Community', expiresAt: '', isExpired: false },
-        { name: 'Redpanda Enterprise', expiresAt: '7/15/2122', isExpired: false }, // Based on the expiration timestamp
+        {
+          name: 'Redpanda Enterprise',
+          expiresAt: '7/15/2122',
+          isExpired: false,
+        }, // Based on the expiration timestamp
       ]);
     });
   });
@@ -271,8 +291,10 @@ describe('licenseUtils', () => {
     });
 
     test('should throw an error for an invalid EnterpriseLinkType', () => {
-      // @ts-expect-error Testing invalid input
-      expect(() => resolveEnterpriseCTALink('invalidType', '12345-uuid', true)).toThrow();
+      expect(() =>
+        // @ts-expect-error Testing invalid input
+        resolveEnterpriseCTALink('invalidType', '12345-uuid', true),
+      ).toThrow();
     });
 
     test('should handle redpanda platform correctly', () => {
@@ -311,20 +333,50 @@ describe('licenseUtils', () => {
       api.licenseViolation = false;
       api.licensesLoaded = 'loaded';
       api.enterpriseFeaturesUsed = [
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'core_balancing_continuous', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'schema_id_validation', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'cloud_storage', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'gssapi', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'leadership_pinning', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'rbac',
+          enabled: true,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'datalake_iceberg',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'audit_logging',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'core_balancing_continuous',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'schema_id_validation',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'cloud_storage',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'gssapi',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'leadership_pinning',
+          enabled: false,
+        }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, {
           name: 'partition_auto_balancing_continuous',
           enabled: false,
         }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'oidc', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'fips', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'oidc',
+          enabled: false,
+        }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'fips',
+          enabled: false,
+        }),
       ];
       api.licenses = [
         create(LicenseSchema, {

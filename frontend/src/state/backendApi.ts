@@ -8,6 +8,8 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/suspicious/noAssignInExpressions: leave it as is for now due to MobX */
+/** biome-ignore-all lint/style/noNonNullAssertion: leave as is for now due to MobX */
 
 /*eslint block-scoped-var: "error"*/
 
@@ -733,11 +735,17 @@ const apiStore = {
 
             let partitionHasError = false;
             if (p.partitionError) {
-              partitionErrors.push({ partitionId: p.id, error: p.partitionError });
+              partitionErrors.push({
+                partitionId: p.id,
+                error: p.partitionError,
+              });
               partitionHasError = true;
             }
             if (p.waterMarksError) {
-              waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
+              waterMarkErrors.push({
+                partitionId: p.id,
+                error: p.waterMarksError,
+              });
               partitionHasError = true;
             }
             if (partitionHasError) {
@@ -784,8 +792,16 @@ const apiStore = {
           // topicName
           p.topicName = topicName;
 
-          if (p.partitionError) partitionErrors.push({ id: p.id, partitionError: p.partitionError });
-          if (p.waterMarksError) waterMarksErrors.push({ id: p.id, waterMarksError: p.waterMarksError });
+          if (p.partitionError)
+            partitionErrors.push({
+              id: p.id,
+              partitionError: p.partitionError,
+            });
+          if (p.waterMarksError)
+            waterMarksErrors.push({
+              id: p.id,
+              waterMarksError: p.waterMarksError,
+            });
           if (partitionErrors.length || waterMarksErrors.length) continue;
 
           // replicaSize
@@ -1121,14 +1137,12 @@ const apiStore = {
 
       // resolve role of each binding
       for (const binding of info.roleBindings) {
-        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
         if (binding.resolvedRole == null) console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
       }
 
       // resolve bindings, and roles of each user
       for (const user of info.users) {
-        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
         if (user.bindings.any((b) => b == null))
           console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
@@ -1136,10 +1150,8 @@ const apiStore = {
         user.grantedRoles = [];
         for (const roleName in user.audits)
           user.grantedRoles.push({
-            // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
             role: info.roles.first((r) => r.name === roleName)!,
             grantedBy: user.audits[roleName].map(
-              // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
               (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!,
             ),
           });
@@ -1261,7 +1273,6 @@ const apiStore = {
 
         let subjectVersions = this.schemaReferencedBy.get(subjectName);
         if (!subjectVersions) {
-          // @ts-expect-error MobX does not play nice with TypeScript 5: Type 'ObservableMap<number, SchemaReferencedByEntry[]>' is not assignable to type 'Map<number, SchemaReferencedByEntry[]>'.
           subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
           if (subjectVersions) {
             this.schemaReferencedBy.set(subjectName, subjectVersions);
@@ -1307,7 +1318,9 @@ const apiStore = {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
       method: 'PUT',
       headers: [['Content-Type', 'application/json']],
-      body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+      body: JSON.stringify({
+        compatibility: mode,
+      } as SchemaRegistrySetCompatibilityModeRequest),
     });
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
@@ -1330,7 +1343,9 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-        body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+        body: JSON.stringify({
+          compatibility: mode,
+        } as SchemaRegistrySetCompatibilityModeRequest),
       },
     );
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
@@ -1423,7 +1438,11 @@ const apiStore = {
         resourceType: ConfigResourceType.Broker,
         resourceName: String(b),
         configs: [
-          { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+          {
+            name: 'leader.replication.throttled.rate',
+            op: AlterConfigOperation.Set,
+            value: String(maxBytesPerSecond),
+          },
           {
             name: 'follower.replication.throttled.rate',
             op: AlterConfigOperation.Set,
@@ -1482,8 +1501,14 @@ const apiStore = {
         resourceType: ConfigResourceType.Topic,
         resourceName: t,
         configs: [
-          { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
-          { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+          {
+            name: 'leader.replication.throttled.replicas',
+            op: AlterConfigOperation.Delete,
+          },
+          {
+            name: 'follower.replication.throttled.replicas',
+            op: AlterConfigOperation.Delete,
+          },
         ],
       });
     }
@@ -1513,8 +1538,14 @@ const apiStore = {
         resourceType: ConfigResourceType.Broker,
         resourceName: String(b),
         configs: [
-          { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-          { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+          {
+            name: 'leader.replication.throttled.rate',
+            op: AlterConfigOperation.Delete,
+          },
+          {
+            name: 'follower.replication.throttled.rate',
+            op: AlterConfigOperation.Delete,
+          },
         ],
       });
     }
@@ -1790,7 +1821,6 @@ const apiStore = {
 
   // New version of "publishRecords"
   async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.consoleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1911,7 +1941,6 @@ const apiStore = {
   },
 
   async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1923,7 +1952,6 @@ const apiStore = {
   },
 
   async listLicenses(): Promise<void> {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1953,7 +1981,6 @@ const apiStore = {
   },
 
   async refreshClusterHealth() {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -1966,7 +1993,6 @@ const apiStore = {
   },
 
   async refreshDebugBundleStatuses() {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -2034,7 +2060,6 @@ const apiStore = {
   },
 
   async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -2047,7 +2072,6 @@ const apiStore = {
   },
 
   async cancelDebugBundleProcess({ jobId }: { jobId: string }) {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -2064,7 +2088,6 @@ const apiStore = {
   },
 
   async deleteDebugBundleFile() {
-    // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
       // this shouldn't happen but better to explicitly throw
@@ -2144,14 +2167,20 @@ export const rolesApi = observable({
         .map((x) => {
           const principalParts = x.principal.split(':');
           if (principalParts.length !== 2) {
-            console.error('failed to split principal of role', { roleName, principal: x.principal });
+            console.error('failed to split principal of role', {
+              roleName,
+              principal: x.principal,
+            });
             return null;
           }
           const principalType = principalParts[0];
           const name = principalParts[1];
 
           if (principalType !== 'User') {
-            console.error('unexpected principal type in refreshRoleMembers', { roleName, principal: x.principal });
+            console.error('unexpected principal type in refreshRoleMembers', {
+              roleName,
+              principal: x.principal,
+            });
           }
 
           return { principalType, name } as RolePrincipal;
@@ -2390,7 +2419,9 @@ export const rpcnSecretManagerApi = observable({
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    const res = await client.listSecretScopes({ request: listSecretScopesRequest });
+    const res = await client.listSecretScopes({
+      request: listSecretScopesRequest,
+    });
 
     if (!res.response) {
       this.isEnable = false;
@@ -2429,7 +2460,9 @@ export const transformsApi = observable({
     while (true) {
       let res: ListTransformsResponse;
       try {
-        res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+        res = await client.listTransforms({
+          request: { pageSize: 500, pageToken: nextPageToken },
+        });
       } catch (_err) {
         break;
       }
@@ -2546,7 +2579,10 @@ export function createMessageSearch() {
       }
 
       try {
-        for await (const res of client.listMessages(req, { signal: messageSearchAbortController.signal, timeoutMs })) {
+        for await (const res of client.listMessages(req, {
+          signal: messageSearchAbortController.signal,
+          timeoutMs,
+        })) {
           if (messageSearchAbortController.signal.aborted) break;
 
           try {

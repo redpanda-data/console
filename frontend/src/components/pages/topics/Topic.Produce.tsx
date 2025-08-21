@@ -51,9 +51,21 @@ type EncodingOption = {
   tooltip: string; // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-  { value: PayloadEncoding.NULL, label: 'Null', tooltip: 'Message value will be null' },
-  { value: PayloadEncoding.TEXT, label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
-  { value: PayloadEncoding.JSON, label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as text' },
+  {
+    value: PayloadEncoding.NULL,
+    label: 'Null',
+    tooltip: 'Message value will be null',
+  },
+  {
+    value: PayloadEncoding.TEXT,
+    label: 'Text',
+    tooltip: 'Text in the editor will be encoded to UTF-8 bytes',
+  },
+  {
+    value: PayloadEncoding.JSON,
+    label: 'JSON',
+    tooltip: 'Syntax higlighting for JSON, otherwise the same as text',
+  },
 
   {
     value: PayloadEncoding.AVRO,
@@ -182,7 +194,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   const compressionTypes = CompressionTypeSchema.values
     .filter((value) => value.number !== CompressionType.UNSPECIFIED)
-    .map((value) => ({ label: value.localName, value: value.number as CompressionType }));
+    .map((value) => ({
+      label: value.localName,
+      value: value.number as CompressionType,
+    }));
 
   const availablePartitions = computed(() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
@@ -242,7 +257,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       }
       const kafkaHeader = create(KafkaRecordHeaderSchema);
       kafkaHeader.key = h.key;
-      // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       kafkaHeader.value = new TextEncoder().encode(h.value);
       req.headers.push(kafkaHeader);
     }
@@ -262,14 +276,12 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     if (data.key.encoding !== PayloadEncoding.NULL) {
       req.key = create(PublishMessagePayloadOptionsSchema);
       try {
-        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.key.data = encodeData(data.key.data, data.key.encoding);
       } catch (err) {
         // TODO: Handle error
         console.error(err);
         return;
       }
-      // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
       req.key.data = encodeData(data.key.data, data.key.encoding);
       req.key.encoding = data.key.encoding;
       req.key.schemaId = data.key.schemaId;
@@ -280,7 +292,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     if (data.value.encoding !== PayloadEncoding.NULL) {
       req.value = create(PublishMessagePayloadOptionsSchema);
       try {
-        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         req.value.data = encodeData(data.value.data, data.value.encoding);
       } catch (err) {
         // TODO: Handle error
@@ -400,7 +411,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.schemaName"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<string | undefined>
-                        options={availableValues.map((value) => ({ key: value.name, value: value.name }))}
+                        options={availableValues.map((value) => ({
+                          key: value.name,
+                          value: value.name,
+                        }))}
                         value={value}
                         onChange={(newVal) => {
                           onChange(newVal);
@@ -426,7 +440,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                           .filter((value) => value.name === keySchemaName)
                           .flatMap((value) => value.versions)
                           .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                          .map(({ version }) => ({ label: version, value: version }))}
+                          .map(({ version }) => ({
+                            label: version,
+                            value: version,
+                          }))}
                         value={value}
                         onChange={onChange}
                       />
@@ -506,7 +523,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       name="value.schemaName"
                       render={({ field: { onChange, value } }) => (
                         <SingleSelect<string | undefined>
-                          options={availableValues.map((value) => ({ key: value.name, value: value.name }))}
+                          options={availableValues.map((value) => ({
+                            key: value.name,
+                            value: value.name,
+                          }))}
                           value={value}
                           onChange={(newVal) => {
                             onChange(newVal);
@@ -532,7 +552,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                             .filter((value) => value.name === valueSchemaName)
                             .flatMap((value) => value.versions)
                             .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                            .map(({ version }) => ({ label: version, value: version }))}
+                            .map(({ version }) => ({
+                              label: version,
+                              value: version,
+                            }))}
                           value={value}
                           onChange={onChange}
                         />

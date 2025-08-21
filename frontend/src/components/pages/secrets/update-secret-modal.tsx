@@ -43,7 +43,9 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
   const matchingSecret = secretList?.secrets?.find((secret) => secret?.id === secretId);
 
   // Get pipelines using this secret
-  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });
+  const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({
+    secretId,
+  });
   const matchingPipelines = pipelinesForSecret?.response?.pipelinesForSecret?.pipelines ?? [];
 
   const handleClose = () => {
@@ -78,7 +80,6 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
 
       const request = create(UpdateSecretRequestSchema, {
         id: value.id,
-        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
         scopes: value.scopes || [],
         labels: labelsMap,

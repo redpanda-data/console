@@ -75,7 +75,6 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
     onSubmit: async ({ value }) => {
       const createSecretRequest = create(CreateSecretRequestSchema, {
         id: value.SECRET_ID,
-        // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.PASSWORD)),
         scopes: [Scope.REDPANDA_CONNECT],
       });
@@ -146,7 +145,10 @@ export const CreateUserWithSecretPasswordModal = ({ isOpen, onClose }: CreateUse
                   validators={{
                     onChange: ({ value }: { value: string }) =>
                       userList?.users?.some((user) => user?.name === value)
-                        ? { message: 'Username is already in use', path: 'USERNAME' }
+                        ? {
+                            message: 'Username is already in use',
+                            path: 'USERNAME',
+                          }
                         : undefined,
                   }}
                 >

@@ -56,7 +56,6 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
         .create(
           create(CreateSecretRequestSchema, {
             id: id,
-            // @ts-expect-error js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
             secretData: base64ToUInt8Array(encodeBase64(secret)),
             scopes: [Scope.REDPANDA_CONNECT],
           }),
