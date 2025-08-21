@@ -297,14 +297,18 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
     subject.latestActiveVersion === -1 ? subject.schemas.last()?.version : subject.latestActiveVersion;
 
   // Check if requested version exists in available schemas
-  const requestedVersionExists = queryVersion !== undefined && queryVersion !== 'latest' 
-    ? subject.schemas.some(s => s.version === queryVersion)
-    : true;
+  const requestedVersionExists =
+    queryVersion !== undefined && queryVersion !== 'latest'
+      ? subject.schemas.some((s) => s.version === queryVersion)
+      : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
-  const defaultVersion = queryVersion !== undefined 
-    ? (queryVersion === 'latest' || !requestedVersionExists ? fallbackVersion : queryVersion)
-    : fallbackVersion;
+  const defaultVersion =
+    queryVersion !== undefined
+      ? queryVersion === 'latest' || !requestedVersionExists
+        ? fallbackVersion
+        : queryVersion
+      : fallbackVersion;
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
   // Show notification and update URL if requested version doesn't exist

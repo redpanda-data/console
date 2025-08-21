@@ -8,7 +8,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/protogen", "!**/redpanda-ui/**/*.tsx", "!**/redpanda-ui/**/*.ts"]
+    "includes": ["**", "!**/protogen", "!**/redpanda-ui/**/*.tsx", "!**/redpanda-ui/**/*.ts", "!**/redpanda-ui/style/globals.css"]
   },
   "formatter": {
     "enabled": true,
