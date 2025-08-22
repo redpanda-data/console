@@ -30,6 +30,19 @@ import {
 import { cn } from './redpanda-ui/lib/utils';
 import { APP_ROUTES, createVisibleSidebarItems } from './routes';
 
+interface ImageProps {
+  darkModeSrc: string;
+  lightModeSrc: string;
+  alt: string;
+  className?: string;
+  colorMode: 'light' | 'dark';
+}
+
+// TODO: Move to Redpanda UI registry
+const Image = ({ darkModeSrc, lightModeSrc, alt, className, colorMode }: ImageProps) => {
+  return <img src={colorMode === 'dark' ? darkModeSrc : lightModeSrc} alt={alt} className={className} />;
+};
+
 const ConsoleSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
   const location = useLocation();
@@ -105,27 +118,20 @@ const ConsoleSidebar = observer(() => {
 });
 
 const ConsoleSidebarHeader = () => {
-  const { colorMode } = useColorMode(); // Chakra UI color mode
+  const { colorMode } = useColorMode();
   const { state } = useSidebar();
 
   return (
     <SidebarHeader>
       <div className={`flex mt-[0.875rem] items-center ${state === 'expanded' ? 'px-2' : 'justify-center'}`}>
         <RouterLink to="/" className="flex items-center">
-          {colorMode === 'light' && (
-            <img
-              src={state === 'collapsed' ? redpandaIconColor : redpandaTextColor}
-              alt="Redpanda"
-              className={state === 'collapsed' ? 'h-6 w-6' : 'h-6'}
-            />
-          )}
-          {colorMode === 'dark' && (
-            <img
-              src={state === 'collapsed' ? redpandaIconWhite : redpandaTextWhite}
-              alt="Redpanda"
-              className={state === 'collapsed' ? 'h-6 w-6' : 'h-6'}
-            />
-          )}
+          <Image
+            lightModeSrc={state === 'collapsed' ? redpandaIconColor : redpandaTextColor}
+            darkModeSrc={state === 'collapsed' ? redpandaIconWhite : redpandaTextWhite}
+            alt="Redpanda"
+            className={state === 'collapsed' ? 'h-6 w-6' : 'h-6'}
+            colorMode={colorMode}
+          />
         </RouterLink>
       </div>
     </SidebarHeader>
