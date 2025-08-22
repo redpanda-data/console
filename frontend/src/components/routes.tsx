@@ -9,22 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import {
-  BookOpen,
-  Bot,
-  Combine,
-  FlaskConical,
-  Funnel,
-  Key,
-  LayoutDashboard,
-  Library,
-  Link,
-  Puzzle,
-  Scale,
-  ShieldCheck,
-} from 'lucide-react';
+  BeakerIcon,
+  BookOpenIcon,
+  CollectionIcon,
+  CubeTransparentIcon,
+  FilterIcon,
+  HomeIcon,
+  LinkIcon,
+  ScaleIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/outline';
+import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
+import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
+import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
@@ -90,7 +89,7 @@ export interface PageDefinition<TRouteParams = {}> {
   path: string;
   pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
   routeJsx: JSX.Element;
-  icon?: React.ComponentType<React.ComponentProps<'svg'>>;
+  icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
   menuItemKey?: string; // set by 'CreateRouteMenuItems'
   visibilityCheck?: () => MenuItemState;
 }
@@ -250,7 +249,7 @@ function MakeRoute<TRouteParams>(
   path: string,
   page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
   title: string,
-  icon?: React.ComponentType<React.ComponentProps<'svg'>>,
+  icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
   exact = true,
   showCallback?: () => MenuItemState,
 ): PageDefinition<TRouteParams> {
@@ -331,14 +330,14 @@ function routeVisibility(
 // If a route has one or more parameters it will not be shown in the main menu (obviously, since the parameter would have to be known!)
 //
 export const APP_ROUTES: IRouteEntry[] = [
-  MakeRoute<{}>('/overview', Overview, 'Overview', LayoutDashboard),
+  MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
   MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
 
-  MakeRoute<{}>('/topics', TopicList, 'Topics', Library),
+  MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
   MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
   MakeRoute<{ topicName: string }>('/topics/:topicName/produce-record', TopicProducePage, 'Produce Record'),
 
-  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', Combine),
+  MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
   MakeRoute<{}>('/schema-registry/create', SchemaCreatePage, 'Create schema'),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/add-version',
@@ -361,7 +360,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/groups',
     GroupList,
     'Consumer Groups',
-    Funnel,
+    FilterIcon,
     undefined,
     routeVisibility(true, [Feature.ConsumerGroups]),
   ),
@@ -371,7 +370,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/secrets',
     SecretsStorePage,
     'Secrets Store',
-    Key,
+    MdKey,
     true,
     routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
@@ -380,7 +379,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/agents',
     AgentListPage,
     'AI Agents',
-    Puzzle,
+    HiOutlinePuzzlePiece,
     true,
     routeVisibility(
       // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
@@ -398,7 +397,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/knowledgebases',
     KnowledgeBaseList,
     'Knowledge Bases',
-    BookOpen,
+    BookOpenIcon,
     true,
     routeVisibility(
       // Do not display knowledge bases if feature flag is disabled
@@ -415,7 +414,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Knowledge Base Details',
   ),
 
-  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheck, true),
+  MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
@@ -429,12 +428,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/quotas',
     QuotasList,
     'Quotas',
-    Scale,
+    ScaleIcon,
     true,
     routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
   ),
 
-  MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', Link, true, () => {
+  MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
     if (isServerless()) {
       console.log('Connect clusters inside serverless checks.');
       // We are in serverless, there is no kafka connect, so we can ignore it.
@@ -479,7 +478,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/transforms',
     TransformsList,
     'Transforms',
-    Bot,
+    MdOutlineSmartToy,
     true,
     routeVisibility(true, [Feature.TransformsService]),
   ),
@@ -496,7 +495,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/reassign-partitions',
     ReassignPartitions,
     'Reassign Partitions',
-    FlaskConical,
+    BeakerIcon,
     false,
     routeVisibility(
       true,

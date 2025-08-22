@@ -9,11 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge, Box, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
-import { Home } from 'lucide-react';
+import { Badge, Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
-import React from 'react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
 import { isEmbedded } from '../../config';
 import { api } from '../../state/backendApi';
@@ -21,29 +19,6 @@ import { type BreadcrumbEntry, uiState } from '../../state/uiState';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
 import { UserPreferencesButton } from '../misc/UserPreferences';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '../redpanda-ui/components/breadcrumb';
-import { Separator } from '../redpanda-ui/components/separator';
-import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
-
-interface BreadcrumbHeaderProps {
-  children: React.ReactNode;
-}
-
-// TODO: Move to Redpanda UI registry
-const BreadcrumbHeader: React.FC<BreadcrumbHeaderProps> = ({ children }) => {
-  return (
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-      {children}
-    </header>
-  );
-};
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
@@ -67,39 +42,19 @@ const AppPageHeader = observer(() => {
 
   return (
     <Box>
-      <BreadcrumbHeader>
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          {!isEmbedded() && (
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">
-                    <div className="flex items-center gap-2">
-                      <Home className="size-4" />
-                      <span>Console</span>
-                    </div>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                {breadcrumbItems.length > 0 && <BreadcrumbSeparator className="hidden md:block" />}
-                {breadcrumbItems.map((item, index) => (
-                  <React.Fragment key={`breadcrumb-${item.title}-${index}`}>
-                    <BreadcrumbItem>
-                      {item.linkTo ? (
-                        <BreadcrumbLink href={item.linkTo}>{item.title}</BreadcrumbLink>
-                      ) : (
-                        <BreadcrumbPage>{item.title}</BreadcrumbPage>
-                      )}
-                    </BreadcrumbItem>
-                    {index < breadcrumbItems.length - 1 && <BreadcrumbSeparator />}
-                  </React.Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
-          )}
-        </div>
-      </BreadcrumbHeader>
+      {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
+      <Flex mb={5} alignItems="center" justifyContent="space-between">
+        {!isEmbedded() && (
+          <Breadcrumbs
+            showHomeIcon={false}
+            items={breadcrumbItems.map((x) => ({
+              name: x.title,
+              heading: x.heading,
+              to: x.linkTo,
+            }))}
+          />
+        )}
+      </Flex>
 
       <Flex pb={2} alignItems="center" justifyContent="space-between">
         <Flex alignItems="center">
