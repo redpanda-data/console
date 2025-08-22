@@ -43,7 +43,7 @@ const Image = ({ darkModeSrc, lightModeSrc, alt, className, colorMode }: ImagePr
   return <img src={colorMode === 'dark' ? darkModeSrc : lightModeSrc} alt={alt} className={className} />;
 };
 
-const ConsoleSidebar = observer(() => {
+export const ConsoleSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
   const location = useLocation();
 
@@ -159,5 +159,3 @@ const ConsoleSidebarFooter = () => {
     </SidebarFooter>
   );
 };
-
-export default ConsoleSidebar;

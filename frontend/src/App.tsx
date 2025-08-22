@@ -38,7 +38,7 @@ import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
-import ConsoleSidebar from './components/console-sidebar';
+import { ConsoleSidebar } from './components/console-sidebar';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';

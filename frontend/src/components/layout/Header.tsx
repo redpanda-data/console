@@ -68,10 +68,10 @@ const AppPageHeader = observer(() => {
   return (
     <Box>
       <BreadcrumbHeader>
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
           {!isEmbedded() && (
+                    <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
@@ -97,8 +97,8 @@ const AppPageHeader = observer(() => {
                 ))}
               </BreadcrumbList>
             </Breadcrumb>
+            </div>
           )}
-        </div>
       </BreadcrumbHeader>
 
       <Flex pb={2} alignItems="center" justifyContent="space-between">
