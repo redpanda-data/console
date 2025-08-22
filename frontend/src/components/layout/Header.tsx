@@ -32,6 +32,19 @@ import {
 import { Separator } from '../redpanda-ui/components/separator';
 import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
 
+interface BreadcrumbHeaderProps {
+  children: React.ReactNode;
+}
+
+// TODO: Move to Redpanda UI registry
+const BreadcrumbHeader: React.FC<BreadcrumbHeaderProps> = ({ children }) => {
+  return (
+    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+      {children}
+    </header>
+  );
+};
+
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
   const showBetaBadge = useShouldShowBetaBadge();
@@ -54,7 +67,7 @@ const AppPageHeader = observer(() => {
 
   return (
     <Box>
-      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+      <BreadcrumbHeader>
         <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
@@ -86,7 +99,7 @@ const AppPageHeader = observer(() => {
             </Breadcrumb>
           )}
         </div>
-      </header>
+      </BreadcrumbHeader>
 
       <Flex pb={2} alignItems="center" justifyContent="space-between">
         <Flex alignItems="center">
