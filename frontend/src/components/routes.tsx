@@ -11,8 +11,8 @@
 
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import {
+  BookOpen,
   Bot,
-  Brain,
   Combine,
   FlaskConical,
   Funnel,
@@ -20,9 +20,9 @@ import {
   LayoutDashboard,
   Library,
   Link,
+  Puzzle,
   Scale,
   ShieldCheck,
-  Workflow,
 } from 'lucide-react';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
@@ -380,7 +380,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/agents',
     AgentListPage,
     'AI Agents',
-    Workflow,
+    Puzzle,
     true,
     routeVisibility(
       // Do not display agents if feature flag is disabled, or in self-hosted mode or when using Serverless console
@@ -398,7 +398,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     '/knowledgebases',
     KnowledgeBaseList,
     'Knowledge Bases',
-    Brain,
+    BookOpen,
     true,
     routeVisibility(
       // Do not display knowledge bases if feature flag is disabled

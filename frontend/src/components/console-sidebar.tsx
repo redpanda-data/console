@@ -50,8 +50,6 @@ const ConsoleSidebar = observer(() => {
     return location.pathname.startsWith(itemPath);
   };
 
-  console.log(sidebarItems);
-
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
