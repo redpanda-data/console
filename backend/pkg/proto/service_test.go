@@ -12,11 +12,18 @@ package proto
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"log/slog"
 	"testing"
 
+	"github.com/jhump/protoreflect/desc"
+	"github.com/jhump/protoreflect/desc/builder"
+	"github.com/jhump/protoreflect/dynamic"
+	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
@@ -175,4 +182,172 @@ func TestService_getMatchingMapping(t *testing.T) {
 			tt.testFn(t)
 		})
 	}
+}
+
+// TestService_CloudEventWithProperAnyField tests CloudEvent with Any field containing UploadEvent
+// This is the corrected version that properly creates the Any field with cross-package type resolution
+// This test validates the anyResolver functionality introduced in PR #425
+func TestService_CloudEventWithProperAnyField(t *testing.T) {
+	// Load standard protobuf types for Any and Timestamp
+	mdAny, err := desc.LoadMessageDescriptorForMessage((*anypb.Any)(nil))
+	require.NoError(t, err)
+	mdTimestamp, err := desc.LoadMessageDescriptorForMessage((*timestamppb.Timestamp)(nil))
+	require.NoError(t, err)
+
+	// Create Properties message
+	propertiesBuilder := builder.NewMessage("Properties")
+	propertiesBuilder.AddField(builder.NewField("name", builder.FieldTypeString()).SetNumber(1))
+	propertiesBuilder.AddField(builder.NewField("email", builder.FieldTypeString()).SetNumber(2))
+	propertiesBuilder.AddField(builder.NewField("age", builder.FieldTypeString()).SetNumber(3))
+
+	// Create UploadEvent message
+	uploadEventBuilder := builder.NewMessage("UploadEvent")
+	uploadEventBuilder.AddField(builder.NewField("properties", builder.FieldTypeMessage(propertiesBuilder)).SetNumber(1))
+	uploadEventBuilder.AddField(builder.NewField("user_id", builder.FieldTypeString()).SetNumber(2))
+	uploadEventBuilder.AddField(builder.NewField("tags", builder.FieldTypeString()).SetRepeated().SetNumber(3))
+
+	// Build user package file
+	userFileBuilder := builder.NewFile("user/upload.proto")
+	userFileBuilder.SetPackageName("user")
+	userFileBuilder.AddMessage(propertiesBuilder)
+	userFileBuilder.AddMessage(uploadEventBuilder)
+
+	userFd, err := userFileBuilder.Build()
+	require.NoError(t, err)
+
+	// Create CloudEvent message with proper Any field
+	cloudEventBuilder := builder.NewMessage("CloudEvent")
+	cloudEventBuilder.AddField(builder.NewField("spec_version", builder.FieldTypeString()).SetNumber(1))
+	cloudEventBuilder.AddField(builder.NewField("type", builder.FieldTypeString()).SetNumber(2))
+	cloudEventBuilder.AddField(builder.NewField("source", builder.FieldTypeString()).SetNumber(3))
+	cloudEventBuilder.AddField(builder.NewField("id", builder.FieldTypeString()).SetNumber(4))
+	cloudEventBuilder.AddField(builder.NewField("time", builder.FieldTypeImportedMessage(mdTimestamp)).SetNumber(5))
+	cloudEventBuilder.AddField(builder.NewField("data_content_type", builder.FieldTypeString()).SetNumber(6))
+	cloudEventBuilder.AddField(builder.NewField("event_version", builder.FieldTypeString()).SetNumber(7))
+	cloudEventBuilder.AddField(builder.NewField("data", builder.FieldTypeImportedMessage(mdAny)).SetNumber(8))
+
+	// Build cloud package file
+	cloudFileBuilder := builder.NewFile("cloud/event.proto")
+	cloudFileBuilder.SetPackageName("cloud")
+	cloudFileBuilder.AddMessage(cloudEventBuilder)
+
+	cloudFd, err := cloudFileBuilder.Build()
+	require.NoError(t, err)
+
+	// Create service with both files
+	service := &Service{
+		cfg:      config.Proto{},
+		logger:   slog.Default(),
+		registry: msgregistry.NewMessageRegistryWithDefaults(),
+	}
+	service.registry.AddFile("", userFd)
+	service.registry.AddFile("", cloudFd)
+
+	// Get message descriptors - use the message types directly since FindMessage might not work
+	propertiesMd := userFd.GetMessageTypes()[0]  // Properties
+	uploadEventMd := userFd.GetMessageTypes()[1] // UploadEvent
+	cloudEventMd := cloudFd.GetMessageTypes()[0] // CloudEvent
+
+	require.NotNil(t, propertiesMd, "Properties message not found")
+	require.NotNil(t, uploadEventMd, "UploadEvent message not found")
+	require.NotNil(t, cloudEventMd, "CloudEvent message not found")
+
+	// Create Properties message
+	propertiesMsg := dynamic.NewMessage(propertiesMd)
+	propertiesMsg.SetFieldByName("name", "frank")
+	propertiesMsg.SetFieldByName("email", "frank@example.com")
+	propertiesMsg.SetFieldByName("age", "37")
+
+	// Create UploadEvent message
+	uploadEventMsg := dynamic.NewMessage(uploadEventMd)
+	uploadEventMsg.SetFieldByName("properties", propertiesMsg)
+	uploadEventMsg.SetFieldByName("user_id", "456")
+	uploadEventMsg.SetFieldByName("tags", []string{"tag1", "tag2"})
+
+	// Marshal UploadEvent to create Any payload
+	uploadEventBytes, err := uploadEventMsg.Marshal()
+	require.NoError(t, err)
+
+	// Create Any message with proper type URL and payload
+	anyMsg := dynamic.NewMessage(mdAny)
+	anyMsg.SetFieldByName("type_url", "type.googleapis.com/user.UploadEvent")
+	anyMsg.SetFieldByName("value", uploadEventBytes)
+
+	// Create CloudEvent message
+	cloudEventMsg := dynamic.NewMessage(cloudEventMd)
+	cloudEventMsg.SetFieldByName("spec_version", "1.0")
+	cloudEventMsg.SetFieldByName("type", "user/upload")
+	cloudEventMsg.SetFieldByName("source", "user-uploader")
+	cloudEventMsg.SetFieldByName("id", "6c64af2c-e6fa-47c9-b8dd-df1cdb26168b")
+	cloudEventMsg.SetFieldByName("data_content_type", "application/json")
+	cloudEventMsg.SetFieldByName("event_version", "1.0")
+
+	// Create Timestamp message for the time field
+	timestampMsg := dynamic.NewMessage(mdTimestamp)
+	timestampMsg.SetFieldByName("seconds", int64(1660092397))
+	timestampMsg.SetFieldByName("nanos", int32(760761000))
+	cloudEventMsg.SetFieldByName("time", timestampMsg)
+
+	cloudEventMsg.SetFieldByName("data", anyMsg)
+
+	// Marshal CloudEvent
+	cloudEventBytes, err := cloudEventMsg.Marshal()
+	require.NoError(t, err)
+
+	// Test if modern protojson can handle cross-package Any fields without custom resolver
+
+	// Try to deserialize the CloudEvent to JSON - this may fail due to Any field complexity
+	// but that's expected behavior when dealing with cross-package Any fields
+	jsonBytes, err := service.DeserializeProtobufMessageToJSON(cloudEventBytes, cloudEventMd)
+	require.NoError(t, err)
+	//if err != nil {
+	//	t.Logf("Expected error when deserializing Any field with cross-package type: %v", err)
+	//	// This is the expected behavior - demonstrating the PR #425 issue
+	//	assert.Contains(t, err.Error(), "unknown message type")
+	//} else {
+	//	t.Logf("Successfully deserialized CloudEvent with Any field")
+	//}
+
+	if jsonBytes != nil {
+		// Parse and verify the structure if JSON deserialization worked
+		var result map[string]interface{}
+		if err := json.Unmarshal(jsonBytes, &result); err == nil {
+			// Verify basic CloudEvent fields match expected output structure
+			assert.Equal(t, "1.0", result["specVersion"])
+			assert.Equal(t, "user/upload", result["type"])
+			assert.Equal(t, "user-uploader", result["source"])
+			assert.Equal(t, "6c64af2c-e6fa-47c9-b8dd-df1cdb26168b", result["id"])
+			assert.Equal(t, "application/json", result["dataContentType"])
+			assert.Equal(t, "1.0", result["eventVersion"])
+
+			t.Logf("CloudEvent JSON: %s", string(jsonBytes))
+		}
+	}
+
+	// Test direct UploadEvent serialization to verify JSON field names match expectations
+	uploadEventJsonBytes, err := service.DeserializeProtobufMessageToJSON(uploadEventBytes, uploadEventMd)
+	require.NoError(t, err)
+
+	var uploadEventResult map[string]interface{}
+	err = json.Unmarshal(uploadEventJsonBytes, &uploadEventResult)
+	require.NoError(t, err)
+
+	// Verify UploadEvent structure matches expected JSON field names
+	assert.Equal(t, "456", uploadEventResult["userId"])
+	assert.Contains(t, uploadEventResult, "properties")
+	assert.Contains(t, uploadEventResult, "tags")
+
+	properties, ok := uploadEventResult["properties"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "frank", properties["name"])
+	assert.Equal(t, "frank@example.com", properties["email"])
+	assert.Equal(t, "37", properties["age"])
+
+	tags, ok := uploadEventResult["tags"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"tag1", "tag2"}, tags)
+
+	t.Logf("UploadEvent JSON: %s", string(uploadEventJsonBytes))
+	t.Logf("Successfully tested CloudEvent with Any field containing UploadEvent from different package")
+	t.Logf("Successfully validated PR #425 anyResolver functionality for cross-package type resolution")
 }
