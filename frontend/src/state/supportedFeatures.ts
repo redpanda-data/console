@@ -63,6 +63,10 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.SecretService',
     method: 'POST',
   };
+  static readonly SchemaRegistryACLService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1.ACLService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -133,6 +137,9 @@ class SupportedFeatures {
   }
   @computed get rpcnSecretsApi(): boolean {
     return isSupported(Feature.SecretService);
+  }
+  @computed get schemaRegistryACLService(): boolean {
+    return isSupported(Feature.SchemaRegistryACLService);
   }
 }
 
