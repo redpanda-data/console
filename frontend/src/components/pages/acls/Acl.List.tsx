@@ -18,12 +18,12 @@ import {
   Badge,
   Box,
   Button,
-  Link as ChakraLink,
   CloseButton,
   createStandaloneToast,
   DataTable,
   Flex,
   Icon,
+  Link as ChakraLink,
   Menu,
   MenuButton,
   MenuItem,
@@ -39,7 +39,9 @@ import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs'
 import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { type FC, useEffect, useRef, useState } from 'react';
+import { type FC, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import ErrorResult from '../../../components/misc/ErrorResult';
@@ -64,6 +66,16 @@ import {
   createEmptyTransactionalIdAcl,
   principalGroupsView,
 } from './Models';
+import {
+  ACL_Operation,
+  ACL_PermissionType,
+  ACL_ResourcePatternType,
+  ACL_ResourceType,
+  ACLService,
+  DeleteACLsRequest,
+  ListACLsRequest,
+} from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { deleteACLs, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
@@ -537,6 +549,7 @@ const RolesTab = observer(() => {
                       as={ReactRouterLink}
                       to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
                       textDecoration="none"
+                      data-testid={`role-list-item-${entry.name}`}
                     >
                       {entry.name}
                     </ChakraLink>
@@ -592,10 +605,37 @@ const RolesTab = observer(() => {
   );
 });
 
-const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
-  useEffect(() => {
-    void api.refreshAcls(AclRequestDefault, true);
-  }, []);
+interface SimpleAcl {
+  host: string;
+  principal: string;
+  principalType: string;
+  principalName: string;
+  hasAcl: boolean;
+}
+
+const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
+  const { data: principalGroups, isLoading } = useQuery(listACLs, {} as ListACLsRequest, {
+    select: (response) => {
+      const groupsAcl = response.resources.reduce((acc, r) => {
+        r.acls.forEach((a) => {
+          if (!acc.has(`${a.principal}:${a.host}`)) {
+            acc.set(`${a.principal}:${a.host}`, {
+              host: a.host,
+              principal: a.principal,
+              principalType: a.principal.split(':')[0] || '',
+              principalName: a.principal.split(':')[1] || '',
+              hasAcl: true,
+            });
+          }
+        });
+        return acc;
+      }, new Map<string, SimpleAcl>());
+      return groupsAcl.values().toArray();
+    },
+  });
+
+  const { mutateAsync: deleteACLMutation } = useMutation(deleteACLs);
+  const queryClient = useQueryClient();
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
@@ -603,15 +643,50 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
 
   const nav = useNavigate();
 
-  let groups = p.principalGroups.filter((g) => g.principalType === 'User');
+  const deleteACLsForPrincipal = async (principal: string, host: string) => {
+    const deleteRequest: DeleteACLsRequest = {
+      filter: {
+        principal: principal,
+        resourceType: ACL_ResourceType.ANY,
+        resourceName: undefined,
+        host: host,
+        operation: ACL_Operation.ANY,
+        permissionType: ACL_PermissionType.ANY,
+        resourcePatternType: ACL_ResourcePatternType.ANY,
+        $typeName: 'redpanda.api.dataplane.v1.DeleteACLsRequest.Filter',
+      },
+      $typeName: 'redpanda.api.dataplane.v1.DeleteACLsRequest',
+    };
+    await deleteACLMutation(deleteRequest);
+
+    // Invalidate the listACLs query cache to force fresh data on next request
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: ACLService,
+        cardinality: 'finite',
+      }),
+    });
+
+    toast({
+      status: 'success',
+      description: (
+        <Text as="span">
+          Deleted ACLs for <CodeEl>{principal}</CodeEl>
+        </Text>
+      ),
+    });
+  };
+
+  let groups = principalGroups?.filter((g) => g.principalType === 'User') || [];
+
   try {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
-    groups = groups.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
+    groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
   } catch (_e) {
     console.warn('Invalid expression');
   }
 
-  if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+  if (isLoading || !principalGroups) return DefaultSkeleton;
 
   return (
     <Flex flexDirection="column" gap="4">
@@ -678,8 +753,8 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
         </Button>
 
         <Box py={4}>
-          <DataTable<AclPrincipalGroup>
-            data={groups}
+          <DataTable<{ principal: string; host: string; principalType: string; principalName: string }>
+            data={groups || []}
             pagination
             sorting
             columns={[
@@ -701,7 +776,12 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                     >
                       <Flex>
                         {/* <Badge variant="subtle" mr="2">{principalType}</Badge> */}
-                        <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">
+                        <Text
+                          as="span"
+                          wordBreak="break-word"
+                          whiteSpace="break-spaces"
+                          data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+                        >
                           {record.principalName}
                         </Text>
                       </Flex>
@@ -724,28 +804,11 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                 header: '',
                 cell: ({ row: { original: record } }) => {
                   const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                  const hasAcls = record.sourceEntries.length > 0;
 
                   const onDelete = async (user: boolean, acls: boolean) => {
                     if (acls) {
                       try {
-                        await api.deleteACLs({
-                          resourceType: 'Any',
-                          resourceName: undefined,
-                          resourcePatternType: 'Any',
-                          principal: `${record.principalType}:${record.principalName}`,
-                          host: record.host,
-                          operation: 'Any',
-                          permissionType: 'Any',
-                        });
-                        toast({
-                          status: 'success',
-                          description: (
-                            <Text as="span">
-                              Deleted ACLs for <CodeEl>{record.principalName}</CodeEl>
-                            </Text>
-                          ),
-                        });
+                        await deleteACLsForPrincipal(record.principal, record.host);
                       } catch (err: unknown) {
                         console.error('failed to delete acls', { error: err });
                         setAclFailed({ err });
@@ -779,7 +842,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                       </MenuButton>
                       <MenuList>
                         <MenuItem
-                          isDisabled={!userExists || !Features.deleteUser || !hasAcls}
+                          isDisabled={!userExists || !Features.deleteUser}
                           onClick={(e) => {
                             void onDelete(true, true);
                             e.stopPropagation();
@@ -797,7 +860,6 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                           Delete (User only)
                         </MenuItem>
                         <MenuItem
-                          isDisabled={!hasAcls}
                           onClick={(e) => {
                             void onDelete(false, true);
                             e.stopPropagation();
