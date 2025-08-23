@@ -151,6 +151,18 @@ function useShouldShowRefresh() {
     end: false,
   });
 
+  // matches acls
+  const aclCreateMatch = useMatch('/security/acls/create');
+  const aclUpdateMatch = useMatch('/security/acls/:id/update');
+  const aclDetailMatch = useMatch('/security/acls/:id/details');
+  const isACLRelated = aclCreateMatch || aclUpdateMatch || aclDetailMatch;
+
+  // matches roles
+  const roleCreateMatch = useMatch('/security/roles/create');
+  const roleUpdateMatch = useMatch('/security/roles/:id/update');
+  const roleDetailMatch = useMatch('/security/roles/:id/details');
+  const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
+
   if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
   if (schemaCreateMatch) return false;
   if (topicProduceRecordMatch) return false;
@@ -158,6 +170,12 @@ function useShouldShowRefresh() {
   if (agentsMatch) return false;
   if (agentDetailsMatch) return false;
   if (createAgentMatch) return false;
+  if (isACLRelated) {
+    return false;
+  }
+  if (isRoleRelated) {
+    return false;
+  }
 
   return true;
 }
