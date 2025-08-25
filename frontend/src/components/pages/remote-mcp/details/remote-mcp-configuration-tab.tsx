@@ -470,7 +470,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardHeader>
           <CardContent className="space-y-3">
             {displayData.tags.map((tag, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={`${tag.key}-${tag.value}`} className="flex items-center gap-2">
                 <Input
                   placeholder="Key"
                   value={tag.key}

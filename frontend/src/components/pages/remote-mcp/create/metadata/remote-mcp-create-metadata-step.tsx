@@ -1,6 +1,4 @@
-import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
-import { Badge } from '../../../../redpanda-ui/components/badge';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../../redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
 import { Input } from '../../../../redpanda-ui/components/input';
@@ -35,19 +33,17 @@ export const RemoteMCPCreateMetadataStep = ({
   resources,
   setResources,
 }: MetadataStepProps) => {
-  const [newTagKey, setNewTagKey] = useState('');
-  const [newTagValue, setNewTagValue] = useState('');
-
   const addTag = () => {
-    if (newTagKey && newTagValue) {
-      setTags([...tags, { key: newTagKey, value: newTagValue }]);
-      setNewTagKey('');
-      setNewTagValue('');
-    }
+    setTags([...tags, { key: '', value: '' }]);
   };
 
   const removeTag = (index: number) => {
     setTags(tags.filter((_, i) => i !== index));
+  };
+
+  const updateTag = (index: number, field: 'key' | 'value', value: string) => {
+    const updatedTags = tags.map((tag, i) => (i === index ? { ...tag, [field]: value } : tag));
+    setTags(updatedTags);
   };
 
   return (
@@ -81,30 +77,31 @@ export const RemoteMCPCreateMetadataStep = ({
 
         <div className="space-y-2">
           <Label>Tags</Label>
-          <div className="flex gap-2 mb-2">
-            <Input
-              placeholder="Key"
-              value={newTagKey}
-              onChange={(e) => setNewTagKey(e.target.value)}
-              className="flex-1"
-            />
-            <Input
-              placeholder="Value"
-              value={newTagValue}
-              onChange={(e) => setNewTagValue(e.target.value)}
-              className="flex-1"
-            />
-            <Button onClick={addTag} size="sm">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground pb-2">Key-value pairs for organizing and categorizing</p>
             {tags.map((tag, index) => (
-              <Badge key={`${tag.key}-${tag.value}-${index}`} variant="secondary" className="gap-1">
-                {tag.key}: {tag.value}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(index)} />
-              </Badge>
+              <div key={`${tag.key}-${tag.value}`} className="flex items-center gap-2">
+                <Input
+                  placeholder="Key"
+                  value={tag.key}
+                  className="flex-1"
+                  onChange={(e) => updateTag(index, 'key', e.target.value)}
+                />
+                <Input
+                  placeholder="Value"
+                  value={tag.value}
+                  className="flex-1"
+                  onChange={(e) => updateTag(index, 'value', e.target.value)}
+                />
+                <Button variant="outline" size="sm" onClick={() => removeTag(index)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             ))}
+            <Button variant="outline" size="sm" onClick={addTag}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Tag
+            </Button>
           </div>
         </div>
 
