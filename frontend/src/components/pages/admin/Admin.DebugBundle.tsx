@@ -48,6 +48,28 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { SingleSelect } from '../../misc/Select';
 
+// Unit mappings for consistent dropdown handling
+const SIZE_UNITS = [
+  { value: 1, label: 'Bytes' },
+  { value: 1024, label: 'KB' },
+  { value: 1024 * 1024, label: 'MB' },
+  { value: 1024 * 1024 * 1024, label: 'GB' },
+];
+
+const TIME_UNITS = [
+  { value: 1, label: 'Seconds' },
+  { value: 60, label: 'Minutes' },
+];
+
+// Helper functions to get labels from unit values
+const getSizeUnitLabel = (unitValue: number): string => {
+  return SIZE_UNITS.find((unit) => unit.value === unitValue)?.label || "";
+};
+
+const getTimeUnitLabel = (unitValue: number): string => {
+  return TIME_UNITS.find((unit) => unit.value === unitValue)?.label || "";
+};
+
 const Header = () => (
   <Text>
     Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine
@@ -185,18 +207,18 @@ const NewDebugBundleForm: FC<{
     brokerIds: [] as number[],
     tlsEnabled: false,
     tlsInsecureSkipVerify: false,
-    controllerLogsSizeLimitBytes: 0 as number,
+    controllerLogsSizeLimitBytes: 132 as number, // Default 132MB
     controllerLogsSizeLimitUnit: 1024 * 1024, // Default to MB
-    cpuProfilerWaitSeconds: undefined as number | undefined,
+    cpuProfilerWaitSeconds: 30 as number | undefined, // Default 30s
     cpuProfilerWaitUnit: 1, // Default to seconds
-    logsSince: undefined as number | undefined,
-    logsSizeLimitBytes: 0 as number,
-    logsSizeLimitUnit: 1,
+    logsSince: new Date().setDate(new Date().getDate() - 1) as number | undefined, // Default yesterday
+    logsSizeLimitBytes: 100 as number, // Default 100MB
+    logsSizeLimitUnit: 1024 * 1024, // Default to MB
     logsUntil: undefined as number | undefined,
-    metricsIntervalSeconds: 0 as number,
+    metricsIntervalSeconds: 10 as number, // Default 10s
     metricsIntervalUnit: 1, // Default to seconds
-    metricsSamples: '' as string,
-    namespace: '' as string,
+    metricsSamples: '2' as string, // Default 2 samples
+    namespace: 'redpanda' as string, // Default "redpanda"
     partitions: [] as string[],
     labelSelectors: [] as Array<{ key: string; value: string }>,
 
@@ -287,9 +309,9 @@ const NewDebugBundleForm: FC<{
             cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds
               ? formState.cpuProfilerWaitSeconds * formState.cpuProfilerWaitUnit
               : undefined,
-            logsSince: formState.logsSince ? timestampFromDate(new Date(formState.logsSince)) : undefined,
+            logsSince: formState.logsSince ? Timestamp.fromDate(new Date(formState.logsSince)) : undefined,
             logsSizeLimitBytes: formState.logsSizeLimitBytes * formState.logsSizeLimitUnit,
-            logsUntil: formState.logsUntil ? timestampFromDate(new Date(formState.logsUntil)) : undefined,
+            logsUntil: formState.logsUntil ? Timestamp.fromDate(new Date(formState.logsUntil)) : undefined,
             metricsIntervalSeconds: formState.metricsIntervalSeconds * formState.metricsIntervalUnit,
             tlsEnabled: formState.tlsEnabled,
             tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
@@ -401,34 +423,10 @@ const NewDebugBundleForm: FC<{
                     minWidth: 150,
                   }),
                 }}
-                options={[
-                  {
-                    value: 1,
-                    label: 'Bytes',
-                  },
-                  {
-                    value: 1024,
-                    label: 'KB',
-                  },
-                  {
-                    value: 1024 * 1024,
-                    label: 'MB',
-                  },
-                  {
-                    value: 1024 * 1024 * 1024,
-                    label: 'GB',
-                  },
-                ]}
+                options={SIZE_UNITS}
                 value={{
                   value: formState.controllerLogsSizeLimitUnit,
-                  label:
-                    formState.controllerLogsSizeLimitUnit === 1
-                      ? 'Bytes'
-                      : formState.controllerLogsSizeLimitUnit === 1024
-                        ? 'KB'
-                        : formState.controllerLogsSizeLimitUnit === 1024 * 1024
-                          ? 'MB'
-                          : 'GB',
+                  label: getSizeUnitLabel(formState.controllerLogsSizeLimitUnit),
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
@@ -458,19 +456,10 @@ const NewDebugBundleForm: FC<{
                     minWidth: 150,
                   }),
                 }}
-                options={[
-                  {
-                    value: 1,
-                    label: 'Seconds',
-                  },
-                  {
-                    value: 60,
-                    label: 'Minutes',
-                  },
-                ]}
+                options={TIME_UNITS}
                 value={{
                   value: formState.cpuProfilerWaitUnit,
-                  label: formState.cpuProfilerWaitUnit === 1 ? 'Seconds' : 'Minutes',
+                  label: getTimeUnitLabel(formState.cpuProfilerWaitUnit),
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
@@ -516,24 +505,11 @@ const NewDebugBundleForm: FC<{
                     minWidth: 150,
                   }),
                 }}
-                options={[
-                  {
-                    value: 1,
-                    label: 'Bytes',
-                  },
-                  {
-                    value: 1024,
-                    label: 'KB',
-                  },
-                  {
-                    value: 1024 * 1024,
-                    label: 'MB',
-                  },
-                  {
-                    value: 1024 * 1024 * 1024,
-                    label: 'GB',
-                  },
-                ]}
+                options={SIZE_UNITS}
+                value={{
+                  value: formState.logsSizeLimitUnit,
+                  label: getSizeUnitLabel(formState.logsSizeLimitUnit),
+                }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
                     formState.setLogsSizeLimitUnit(value.value);
@@ -562,19 +538,10 @@ const NewDebugBundleForm: FC<{
                     minWidth: 150,
                   }),
                 }}
-                options={[
-                  {
-                    value: 1,
-                    label: 'Seconds',
-                  },
-                  {
-                    value: 60,
-                    label: 'Minutes',
-                  },
-                ]}
+                options={TIME_UNITS}
                 value={{
                   value: formState.metricsIntervalUnit,
-                  label: formState.metricsIntervalUnit === 1 ? 'Seconds' : 'Minutes',
+                  label: getTimeUnitLabel(formState.metricsIntervalUnit),
                 }}
                 onChange={(value) => {
                   if (value && isSingleValue(value)) {
