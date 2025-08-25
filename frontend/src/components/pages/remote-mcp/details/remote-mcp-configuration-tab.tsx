@@ -11,7 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
-import { Copy, Plus, Save, Trash2 } from 'lucide-react';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { Plus, Save, Trash2 } from 'lucide-react';
 import { UpdateMCPServerRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -391,19 +392,16 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
             <CardDescription>Core server configuration and metadata</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="id">Server ID</Label>
-                <Input id="id" value={displayData.id} disabled className="font-mono text-sm" />
+            <div className="space-y-2">
+              <Label htmlFor="id">Server ID</Label>
+              <div className="w-full">
+                <DynamicCodeBlock lang="text" code={displayData.id} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="serverUrl">Server URL</Label>
-                <div className="flex gap-2">
-                  <Input id="serverUrl" value={displayData.url} disabled className="font-mono text-sm" />
-                  <Button variant="outline" size="sm">
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="serverUrl">Server URL</Label>
+              <div className="w-full">
+                <DynamicCodeBlock lang="text" code={displayData.url} />
               </div>
             </div>
 
