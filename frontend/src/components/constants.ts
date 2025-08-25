@@ -7,4 +7,5 @@ export const FEATURE_FLAGS = {
   enableAiAgentsInConsoleUiPreview: false,
   enableKnowledgeBaseInConsoleUi: false,
   enableRemoteMcpInConsole: false,
+  enableRemoteMcpInspectorInConsole: false,
 };
