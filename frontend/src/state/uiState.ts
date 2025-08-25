@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import type { SortingState } from '@tanstack/react-table';
 import { computed, makeObservable, observable } from 'mobx';
+import React from 'react';
 import type { PageDefinition } from '../components/routes';
 import { api } from './backendApi';
 import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
@@ -31,13 +33,17 @@ class UIState {
     makeObservable(this);
   }
 
-  @observable private _pageTitle = ' ';
+  @observable private _pageTitle: string | React.ReactElement = ' ';
   @computed get pageTitle() {
     return this._pageTitle;
   }
-  set pageTitle(title: string) {
+  set pageTitle(title: string | React.ReactElement) {
     this._pageTitle = title;
-    document.title = `${title} - Redpanda Console`;
+    if (typeof title === 'string') {
+      document.title = `${title} - Redpanda Console`;
+    } else {
+      document.title = 'Redpanda Console';
+    }
   }
 
   @observable pageBreadcrumbs: BreadcrumbEntry[] = [];
@@ -96,6 +102,11 @@ class UIState {
   // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').
   // If the user declines, updatePromtHiddenUntil is set to prevent the promt from showing up for some time.
   @observable serverBuildTimestamp: number | undefined = undefined;
+
+  @observable remoteMcpDetails = {
+    logsQuickSearch: '',
+    sorting: [] as SortingState,
+  };
 }
 
 export interface ServerVersionInfo {
