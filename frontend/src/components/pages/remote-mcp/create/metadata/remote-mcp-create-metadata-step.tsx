@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react';
+import { useCheckMCPServerNameUniqueness } from '../../../../../react-query/api/remote-mcp';
 import { Button } from '../../../../redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
 import { Input } from '../../../../redpanda-ui/components/input';
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from '../../../../redpanda-ui/components/select';
 import { Textarea } from '../../../../redpanda-ui/components/textarea';
-import { useCheckMCPServerNameUniqueness } from '../../../../../react-query/api/remote-mcp';
 
 interface MetadataStepProps {
   displayName: string;
@@ -35,7 +35,7 @@ export const RemoteMCPCreateMetadataStep = ({
   setResources,
 }: MetadataStepProps) => {
   const { checkNameUniqueness, isLoading: isCheckingUniqueness } = useCheckMCPServerNameUniqueness();
-  
+
   const isNameDuplicate = displayName.trim() !== '' && !isCheckingUniqueness && !checkNameUniqueness(displayName);
 
   const addTag = () => {
@@ -66,7 +66,7 @@ export const RemoteMCPCreateMetadataStep = ({
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="My MCP Server"
             required
-            className={isNameDuplicate ? "border-destructive focus:border-destructive" : ""}
+            className={isNameDuplicate ? 'border-destructive focus:border-destructive' : ''}
           />
           {isNameDuplicate && (
             <p className="text-sm text-destructive">
@@ -91,7 +91,7 @@ export const RemoteMCPCreateMetadataStep = ({
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground pb-2">Key-value pairs for organizing and categorizing</p>
             {tags.map((tag, index) => (
-              <div key={`${tag.key}-${tag.value}`} className="flex items-center gap-2">
+              <div key={index} className="flex items-center gap-2">
                 <Input
                   placeholder="Key"
                   value={tag.key}
