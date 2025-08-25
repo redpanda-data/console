@@ -63,6 +63,10 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.SecretService',
     method: 'POST',
   };
+  static readonly RemoteMcpService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1alpha3.MCPServerService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
@@ -133,6 +137,9 @@ class SupportedFeatures {
   }
   @computed get rpcnSecretsApi(): boolean {
     return isSupported(Feature.SecretService);
+  }
+  @computed get remoteMcpApi(): boolean {
+    return isSupported(Feature.RemoteMcpService);
   }
 }
 
