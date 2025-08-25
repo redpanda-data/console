@@ -94,7 +94,7 @@ export const RemoteMCPInspectorParameters = ({
   onParameterChange,
 }: RemoteMCPInspectorParametersProps) => {
   return (
-    <Card>
+    <Card className="max-w-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Parameters</CardTitle>
       </CardHeader>
