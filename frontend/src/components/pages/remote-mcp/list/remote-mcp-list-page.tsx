@@ -444,8 +444,7 @@ export const RemoteMCPListPage = () => {
             Create new MCP Server
           </Button>
         </div>
-        <div className="rounded-md border">
-          <Table>
+        <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -500,7 +499,6 @@ export const RemoteMCPListPage = () => {
               )}
             </TableBody>
           </Table>
-        </div>
         <DataTablePagination table={table} />
       </div>
     </TooltipProvider>
