@@ -2,6 +2,7 @@ import { AlertTriangle, Code2, ExternalLink, Maximize2, Plus, Upload, X } from '
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { YamlEditor } from '../../../../misc/yaml-editor';
 import { Button } from '../../../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../redpanda-ui/components/dialog';
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../../redpanda-ui/components/select';
-import { Textarea } from '../../../../redpanda-ui/components/textarea';
 import type { Tool } from '../remote-mcp-create-page';
 
 const yamlTemplates = {
@@ -457,15 +457,15 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                       </Button>
                     </div>
                   </div>
-                  <Textarea
-                    value={tool.configYaml}
-                    onChange={(e) => updateTool(tool.id, 'configYaml', e.target.value)}
-                    placeholder="Enter YAML configuration..."
-                    rows={8}
-                    className={`font-mono text-sm border-0 rounded-t-none resize-none ${
-                      tool.validationError?.includes('YAML') ? 'border-red-300' : ''
-                    }`}
-                  />
+                  <div className="h-48 border-0 rounded-t-none overflow-hidden">
+                    <YamlEditor
+                      value={tool.configYaml}
+                      onChange={(value) => updateTool(tool.id, 'configYaml', value || '')}
+                      options={{
+                        theme: 'vs',
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {tool.validationError && (
@@ -510,12 +510,15 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                   Import File
                 </Button>
               </div>
-              <Textarea
-                value={tools.find((t) => t.id === expandedEditor)?.configYaml || ''}
-                onChange={(e) => updateTool(expandedEditor, 'configYaml', e.target.value)}
-                className="font-mono text-sm min-h-[400px]"
-                placeholder="Enter YAML configuration..."
-              />
+              <div className="border rounded-md overflow-hidden" style={{ height: '500px' }}>
+                <YamlEditor
+                  value={tools.find((t) => t.id === expandedEditor)?.configYaml || ''}
+                  onChange={(value) => updateTool(expandedEditor, 'configYaml', value || '')}
+                  options={{
+                    theme: 'vs',
+                  }}
+                />
+              </div>
             </div>
           )}
         </DialogContent>

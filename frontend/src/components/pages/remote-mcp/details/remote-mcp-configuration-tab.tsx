@@ -16,6 +16,7 @@ import { UpdateMCPServerRequestSchema } from 'protogen/redpanda/api/dataplane/v1
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGetMCPServerQuery, useUpdateMCPServerMutation } from '../../../../react-query/api/remote-mcp';
+import { YamlEditor } from '../../../misc/yaml-editor';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Input } from '../../../redpanda-ui/components/input';
@@ -599,14 +600,16 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                 </div>
                 <div className="space-y-2 flex-1 flex flex-col">
                   <Label>Tool Configuration (YAML)</Label>
-                  <Textarea
-                    value={tool.config}
-                    onChange={(e) => handleUpdateTool(tool.name, 'config', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Enter YAML configuration..."
-                    rows={12}
-                    className="font-mono text-sm resize-none"
-                  />
+                  <div className="border rounded-md overflow-hidden" style={{ height: '400px' }}>
+                    <YamlEditor
+                      value={tool.config}
+                      onChange={(value) => handleUpdateTool(tool.name, 'config', value || '')}
+                      options={{
+                        readOnly: !isEditing,
+                        theme: 'vs',
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
