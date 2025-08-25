@@ -413,11 +413,47 @@ export const useCallMCPServerToolMutation = () => {
   return useTanstackMutation({
     mutationFn: async ({ serverUrl, toolName, parameters }: CallMCPToolParams): Promise<unknown> => {
       const token = config.jwt;
+      
+      // Step 1: Initialize MCP session
+      const initResponse = await fetch(`${serverUrl}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {
+              // TODO: Decide if it should be removed
+              elicitation: {},
+            },
+            clientInfo: { name: 'test-client', version: '1.0.0' }, // redpanda-console as client name?
+          },
+        }),
+      });
+
+      // Account for different header names
+      const mcpSessionId = (initResponse.headers.get('mcp-session-id') ?? initResponse.headers.get('Mcp-Session-Id')) as string
+      
+      if (!initResponse.ok) {
+        throw new Error(`Failed to initialize MCP session: ${initResponse.status} ${initResponse.statusText}`);
+      }
+
+      const initData = await initResponse.json();
+      if (initData.error) {
+        throw new Error(`MCP Initialize Error: ${initData.error.message || 'Unknown error'}`);
+      }
+      
       const response = await fetch(`${serverUrl}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'Mcp-Session-Id': mcpSessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
