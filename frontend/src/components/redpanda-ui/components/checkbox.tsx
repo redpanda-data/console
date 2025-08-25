@@ -33,7 +33,7 @@ const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root
           data-slot="checkbox"
           data-testid={testId}
           className={cn(
-            'peer size-5 flex items-center justify-center shrink-0 rounded-sm bg-background border-2 border-input transition-colors duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-foreground data-[state=checked]:text-background data-[state=checked]:border-foreground',
+            'peer size-5 flex items-center justify-center shrink-0 rounded-sm border-2 border-input transition-colors duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:text-white data-[state=checked]:border-foreground',
             className,
           )}
           whileTap={{ scale: 0.95 }}
