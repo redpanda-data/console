@@ -62,6 +62,7 @@ import Overview from './pages/overview/Overview';
 import type { PageComponentType, PageProps } from './pages/Page';
 import QuotasList from './pages/quotas/Quotas.List';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
+import { RemoteMCPDetailsPage } from './pages/remote-mcp/details/remote-mcp-details-page';
 import { RemoteMCPListPage } from './pages/remote-mcp/list/remote-mcp-list-page';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
@@ -543,4 +544,5 @@ export const APP_ROUTES: IRouteEntry[] = [
     true,
     routeVisibility(() => isEmbedded() && !isServerless()), // show only in embedded mode and only for BYOC/Dedicated
   ),
+  MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
 ].filterNull();
