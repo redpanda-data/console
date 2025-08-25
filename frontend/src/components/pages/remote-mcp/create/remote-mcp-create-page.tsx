@@ -162,7 +162,7 @@ export const RemoteMCPCreatePage = () => {
 
       // Navigate to the created server details page if it is already available to view.
       if (response.mcpServer?.id) {
-        navigate(`/remote-mcp/details/${response.mcpServer.id}`);
+        navigate(`/remote-mcp/${response.mcpServer.id}`);
       } else {
         // Worst case, just go to the details page.
         navigate('/remote-mcp');
