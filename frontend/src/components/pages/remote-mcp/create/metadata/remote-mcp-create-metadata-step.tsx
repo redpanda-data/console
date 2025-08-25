@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '../../../../redpanda-ui/components/select';
 import { Textarea } from '../../../../redpanda-ui/components/textarea';
+import { useCheckMCPServerNameUniqueness } from '../../../../../react-query/api/remote-mcp';
 
 interface MetadataStepProps {
   displayName: string;
@@ -33,6 +34,10 @@ export const RemoteMCPCreateMetadataStep = ({
   resources,
   setResources,
 }: MetadataStepProps) => {
+  const { checkNameUniqueness, isLoading: isCheckingUniqueness } = useCheckMCPServerNameUniqueness();
+  
+  const isNameDuplicate = displayName.trim() !== '' && !isCheckingUniqueness && !checkNameUniqueness(displayName);
+
   const addTag = () => {
     setTags([...tags, { key: '', value: '' }]);
   };
@@ -61,7 +66,13 @@ export const RemoteMCPCreateMetadataStep = ({
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="My MCP Server"
             required
+            className={isNameDuplicate ? "border-destructive focus:border-destructive" : ""}
           />
+          {isNameDuplicate && (
+            <p className="text-sm text-destructive">
+              A server with this name already exists. Please choose a different name.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">

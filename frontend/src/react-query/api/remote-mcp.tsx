@@ -59,6 +59,20 @@ export const useGetMCPServerQuery = (input?: MessageInit<GetMCPServerRequest>, o
   });
 };
 
+export const useCheckMCPServerNameUniqueness = () => {
+  const { data: servers, isLoading } = useListMCPServersQuery();
+  
+  const checkNameUniqueness = (displayName: string, excludeId?: string): boolean => {
+    if (!servers?.mcpServers || isLoading) return true;
+    
+    return !servers.mcpServers.some(server => 
+      server.displayName.toLowerCase() === displayName.toLowerCase() && server.id !== excludeId
+    );
+  };
+  
+  return { checkNameUniqueness, isLoading };
+};
+
 export const useCreateMCPServerMutation = () => {
   const queryClient = useQueryClient();
 
