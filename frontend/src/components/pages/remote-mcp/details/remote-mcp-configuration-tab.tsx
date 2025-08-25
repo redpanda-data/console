@@ -386,7 +386,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       </div>
 
       <div className="space-y-6 w-full">
-        <Card className="w-full max-w-none">
+        <Card className="w-full max-w-none px-8 py-6">
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
             <CardDescription>Core server configuration and metadata</CardDescription>
@@ -463,7 +463,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardContent>
         </Card>
 
-        <Card className="w-full max-w-none">
+        <Card className="w-full max-w-none px-8 py-6">
           <CardHeader>
             <CardTitle>Tags</CardTitle>
             <CardDescription>Key-value pairs for organizing and categorizing</CardDescription>
@@ -501,7 +501,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardContent>
         </Card>
 
-        <Card className="w-full max-w-none">
+        <Card className="w-full max-w-none px-8 py-6">
           <CardHeader>
             <CardTitle>Pipeline Resources</CardTitle>
             <CardDescription>Resource tier allocation for the server</CardDescription>

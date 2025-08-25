@@ -319,7 +319,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
         </div>
 
         {tools.map((tool, index) => (
-          <Card key={tool.id} className="max-w-full">
+          <Card key={tool.id} className="max-w-full px-8 py-6">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Tool {index + 1}</CardTitle>

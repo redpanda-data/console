@@ -47,7 +47,7 @@ export const RemoteMCPCreateMetadataStep = ({
   };
 
   return (
-    <Card className="max-w-full">
+    <Card className="max-w-full px-8 py-6">
       <CardHeader>
         <CardTitle>Server Metadata</CardTitle>
         <CardDescription>Configure the basic information and resources for your MCP server.</CardDescription>
