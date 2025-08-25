@@ -233,6 +233,7 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
   const isKnowledgeBaseFeatureEnabled = isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi');
+  const isRemoteMcpFeatureEnabled = isFeatureFlagEnabled('enableRemoteMcpInConsole');
   const location = useLocation();
 
   useEffect(() => {
@@ -244,7 +245,11 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-  }, [isAgentFeatureEnabled, isKnowledgeBaseFeatureEnabled, path, location.pathname]);
+    if (!isRemoteMcpFeatureEnabled && path.includes('/remote-mcp') && location.pathname !== '/overview') {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
+  }, [isAgentFeatureEnabled, isKnowledgeBaseFeatureEnabled, isRemoteMcpFeatureEnabled, path, location.pathname]);
 
   return children;
 };
@@ -543,7 +548,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Remote MCP',
     MCPIcon,
     true,
-    routeVisibility(() => isEmbedded() && !isServerless()), // show only in embedded mode and only for BYOC/Dedicated
+    routeVisibility(() => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode and only for BYOC/Dedicated with feature flag
   ),
   MakeRoute<{}>('/remote-mcp/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect } from 'react';
@@ -33,6 +34,8 @@ export const updatePageTitle = (serverName?: string) => {
 };
 
 export const RemoteMCPDetailsPage = () => {
+  const isRemoteMcpInspectorFeatureEnabled = isFeatureFlagEnabled('enableRemoteMcpInspectorInConsole');
+
   const { id } = useParams<{ id: string }>();
 
   const { data: mcpServerData, isLoading, error } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -78,14 +81,14 @@ export const RemoteMCPDetailsPage = () => {
           <TabsTrigger value="configuration">Configuration</TabsTrigger>
           <TabsTrigger value="connection">Connection</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
-          <TabsTrigger value="inspector">MCP Inspector</TabsTrigger>
+          {isRemoteMcpInspectorFeatureEnabled && <TabsTrigger value="inspector">MCP Inspector</TabsTrigger>}
         </TabsList>
 
         <TabsContentWrapper variant="contained">
           <RemoteMCPConfigurationTab value="configuration" />
           <RemoteMCPConnectionTab value="connection" />
           <RemoteMCPLogsTab value="logs" />
-          <RemoteMCPInspectorTab value="inspector" />
+          {isRemoteMcpInspectorFeatureEnabled && <RemoteMCPInspectorTab value="inspector" />}
         </TabsContentWrapper>
       </Tabs>
     </div>
