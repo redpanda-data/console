@@ -62,6 +62,9 @@ import Overview from './pages/overview/Overview';
 import type { PageComponentType, PageProps } from './pages/Page';
 import QuotasList from './pages/quotas/Quotas.List';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
+import { RemoteMCPCreatePage } from './pages/remote-mcp/create/remote-mcp-create-page';
+import { RemoteMCPDetailsPage } from './pages/remote-mcp/details/remote-mcp-details-page';
+import { RemoteMCPListPage } from './pages/remote-mcp/list/remote-mcp-list-page';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
@@ -78,6 +81,7 @@ import { TopicProducePage } from './pages/topics/Topic.Produce';
 import TransformDetails from './pages/transforms/Transform.Details';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import { MCPIcon } from './redpanda-ui/components/icons';
 
 //
 //	Route Types
@@ -532,4 +536,15 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
 
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
+
+  MakeRoute<Record<string, never>>(
+    '/remote-mcp',
+    RemoteMCPListPage,
+    'Remote MCP',
+    MCPIcon,
+    true,
+    routeVisibility(() => isEmbedded() && !isServerless()), // show only in embedded mode and only for BYOC/Dedicated
+  ),
+  MakeRoute<{}>('/remote-mcp/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
+  MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
 ].filterNull();
