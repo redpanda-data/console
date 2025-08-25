@@ -201,12 +201,15 @@ const NewDebugBundleForm: FC<{
     tlsEnabled: false,
     tlsInsecureSkipVerify: false,
     controllerLogsSizeLimitBytes: 0 as number,
+    controllerLogsSizeLimitUnit: 1024 * 1024, // Default to MB
     cpuProfilerWaitSeconds: undefined as number | undefined,
+    cpuProfilerWaitUnit: 1, // Default to seconds
     logsSince: undefined as number | undefined,
     logsSizeLimitBytes: 0 as number,
     logsSizeLimitUnit: 1,
     logsUntil: undefined as number | undefined,
     metricsIntervalSeconds: 0 as number,
+    metricsIntervalUnit: 1, // Default to seconds
     metricsSamples: '' as string,
     namespace: '' as string,
     partitions: [] as string[],
@@ -225,8 +228,14 @@ const NewDebugBundleForm: FC<{
     setControllerLogsSizeLimitBytes(size: number) {
       this.controllerLogsSizeLimitBytes = size;
     },
+    setControllerLogsSizeLimitUnit(unit: number) {
+      this.controllerLogsSizeLimitUnit = unit;
+    },
     setCpuProfilerWaitSeconds(seconds: number) {
       this.cpuProfilerWaitSeconds = seconds;
+    },
+    setCpuProfilerWaitUnit(unit: number) {
+      this.cpuProfilerWaitUnit = unit;
     },
     setLogsSince(date: number) {
       this.logsSince = date;
@@ -242,6 +251,9 @@ const NewDebugBundleForm: FC<{
     },
     setMetricsIntervalSeconds(seconds: number) {
       this.metricsIntervalSeconds = seconds;
+    },
+    setMetricsIntervalUnit(unit: number) {
+      this.metricsIntervalUnit = unit;
     },
     setMetricsSamples(samples: string) {
       this.metricsSamples = samples;
@@ -285,12 +297,15 @@ const NewDebugBundleForm: FC<{
                   }
                 : undefined,
             brokerIds: formState.brokerIds,
-            controllerLogsSizeLimitBytes: formState.controllerLogsSizeLimitBytes,
-            cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds,
+            controllerLogsSizeLimitBytes:
+              formState.controllerLogsSizeLimitBytes * formState.controllerLogsSizeLimitUnit,
+            cpuProfilerWaitSeconds: formState.cpuProfilerWaitSeconds
+              ? formState.cpuProfilerWaitSeconds * formState.cpuProfilerWaitUnit
+              : undefined,
             logsSince: formState.logsSince ? timestampFromDate(new Date(formState.logsSince)) : undefined,
             logsSizeLimitBytes: formState.logsSizeLimitBytes * formState.logsSizeLimitUnit,
             logsUntil: formState.logsUntil ? timestampFromDate(new Date(formState.logsUntil)) : undefined,
-            metricsIntervalSeconds: formState.metricsIntervalSeconds,
+            metricsIntervalSeconds: formState.metricsIntervalSeconds * formState.metricsIntervalUnit,
             tlsEnabled: formState.tlsEnabled,
             tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
             namespace: formState.namespace,
@@ -383,31 +398,102 @@ const NewDebugBundleForm: FC<{
           </FormField>
           <FormField
             label="Controller log size limit"
-            description={
-              'The size limit of the controller logs that can be stored in the bundle (e.g. 3MB, 1GiB) (default "132MB")'
-            }
+            description='The size limit of the controller logs that can be stored in the bundle (default "132MB")'
             errorText={fieldViolationsMap?.controllerLogsSizeLimitBytes}
             isInvalid={!!fieldViolationsMap?.controllerLogsSizeLimitBytes}
           >
-            <Input
-              type="number"
-              data-testid="controller-log-size-input"
-              value={formState.controllerLogsSizeLimitBytes}
-              onChange={(e) => formState.setControllerLogsSizeLimitBytes(e.target.valueAsNumber)}
-            />
+            <Flex gap={2}>
+              <Input
+                type="number"
+                data-testid="controller-log-size-input"
+                value={formState.controllerLogsSizeLimitBytes}
+                onChange={(e) => formState.setControllerLogsSizeLimitBytes(e.target.valueAsNumber)}
+              />
+              <Select
+                chakraStyles={{
+                  container: (provided) => ({
+                    ...provided,
+                    minWidth: 150,
+                  }),
+                }}
+                options={[
+                  {
+                    value: 1,
+                    label: 'Bytes',
+                  },
+                  {
+                    value: 1024,
+                    label: 'KB',
+                  },
+                  {
+                    value: 1024 * 1024,
+                    label: 'MB',
+                  },
+                  {
+                    value: 1024 * 1024 * 1024,
+                    label: 'GB',
+                  },
+                ]}
+                value={{
+                  value: formState.controllerLogsSizeLimitUnit,
+                  label:
+                    formState.controllerLogsSizeLimitUnit === 1
+                      ? 'Bytes'
+                      : formState.controllerLogsSizeLimitUnit === 1024
+                        ? 'KB'
+                        : formState.controllerLogsSizeLimitUnit === 1024 * 1024
+                          ? 'MB'
+                          : 'GB',
+                }}
+                onChange={(value) => {
+                  if (value && isSingleValue(value)) {
+                    formState.setControllerLogsSizeLimitUnit(value.value);
+                  }
+                }}
+              />
+            </Flex>
           </FormField>
           <FormField
             label="CPU profiler wait"
-            description="How long in seconds to collect samples for the CPU profiler. Must be higher than 15s (default 30s)"
+            description="How long to collect samples for the CPU profiler. Must be higher than 15s (default 30s)"
             errorText={fieldViolationsMap?.cpuProfilerWaitSeconds}
             isInvalid={!!fieldViolationsMap?.cpuProfilerWaitSeconds}
           >
-            <Input
-              data-testid="cpu-profiler-input"
-              value={formState.cpuProfilerWaitSeconds}
-              type="number"
-              onChange={(e) => formState.setCpuProfilerWaitSeconds(e.target.valueAsNumber)}
-            />
+            <Flex gap={2}>
+              <Input
+                data-testid="cpu-profiler-input"
+                value={formState.cpuProfilerWaitSeconds}
+                type="number"
+                onChange={(e) => formState.setCpuProfilerWaitSeconds(e.target.valueAsNumber)}
+              />
+              <Select
+                chakraStyles={{
+                  container: (provided) => ({
+                    ...provided,
+                    minWidth: 150,
+                  }),
+                }}
+                options={[
+                  {
+                    value: 1,
+                    label: 'Seconds',
+                  },
+                  {
+                    value: 60,
+                    label: 'Minutes',
+                  },
+                ]}
+                value={{
+                  value: formState.cpuProfilerWaitUnit,
+                  label: formState.cpuProfilerWaitUnit === 1 ? 'Seconds' : 'Minutes',
+                }}
+                onChange={(value) => {
+                  if (value && isSingleValue(value)) {
+                    formState.setCpuProfilerWaitUnit(value.value);
+                  }
+                }}
+              />
+            </Flex>
           </FormField>
           <FormField
             label="Logs since"
@@ -473,16 +559,45 @@ const NewDebugBundleForm: FC<{
           </FormField>
           <FormField
             label="Metrics interval duration"
-            description="Interval between metrics snapshots (e.g. 30s, 1.5m) (default 10s)"
+            description="Interval between metrics snapshots (default 10s)"
             errorText={fieldViolationsMap?.metricsIntervalSeconds}
             isInvalid={!!fieldViolationsMap?.metricsIntervalSeconds}
           >
-            <Input
-              type="number"
-              data-testid="metrics-interval-duration-input"
-              value={formState.metricsIntervalSeconds}
-              onChange={(e) => formState.setMetricsIntervalSeconds(e.target.valueAsNumber)}
-            />
+            <Flex gap={2}>
+              <Input
+                type="number"
+                data-testid="metrics-interval-duration-input"
+                value={formState.metricsIntervalSeconds}
+                onChange={(e) => formState.setMetricsIntervalSeconds(e.target.valueAsNumber)}
+              />
+              <Select
+                chakraStyles={{
+                  container: (provided) => ({
+                    ...provided,
+                    minWidth: 150,
+                  }),
+                }}
+                options={[
+                  {
+                    value: 1,
+                    label: 'Seconds',
+                  },
+                  {
+                    value: 60,
+                    label: 'Minutes',
+                  },
+                ]}
+                value={{
+                  value: formState.metricsIntervalUnit,
+                  label: formState.metricsIntervalUnit === 1 ? 'Seconds' : 'Minutes',
+                }}
+                onChange={(value) => {
+                  if (value && isSingleValue(value)) {
+                    formState.setMetricsIntervalUnit(value.value);
+                  }
+                }}
+              />
+            </Flex>
           </FormField>
           <FormField
             label="Metrics samples"
@@ -510,7 +625,7 @@ const NewDebugBundleForm: FC<{
           </FormField>
           <FormField
             label="Partition(s)"
-            description="Partition IDs."
+            description="Partition ID. If set, the bundle will include extra information about the requested partitions."
             errorText={fieldViolationsMap?.partitions}
             isInvalid={!!fieldViolationsMap?.partitions}
           >
