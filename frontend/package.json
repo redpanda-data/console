@@ -34,6 +34,7 @@
     "elliptic": "^6.6.0"
   },
   "dependencies": {
+    "@autoform/react": "^4.0.0",
     "@bufbuild/protobuf": "^2.5.2",
     "@bufbuild/protoc-gen-es": "^2.5.2",
     "@chakra-ui/icons": "^2.1",
@@ -65,6 +66,8 @@
     "dexie-react-hooks": "^1.1.7",
     "es-cookie": "^1.5.0",
     "framer-motion": "^7.10.3",
+    "hast": "^1.0.0",
+    "hast-util-to-jsx-runtime": "^2.3.6",
     "js-base64": "^3.7.7",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.515.0",
