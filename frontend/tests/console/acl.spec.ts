@@ -32,82 +32,87 @@ function generatePrincipalName(): string {
   return `e2e-acl-${dateStr}-${randomStr}`;
 }
 
+const aclPages = [{ type: 'Acl', createPage: (page: Page) => new ACLPage(page) }];
+if (process.env.TEST_ENTERPRISE) {
+  aclPages.push({ type: 'Role', createPage: (page: Page) => new RolePage(page) });
+}
+
 test.describe('ACL Creation', () => {
   [
-    // {
-    //   testName: 'should set operations and it should be present in resume component',
-    //   principal: generatePrincipalName(),
-    //   host: '*',
-    //   operation: [
-    //     {
-    //       id: 0,
-    //       resourceType: ResourceTypeCluster,
-    //       mode: ModeCustom,
-    //       selectorType: ResourcePatternTypeLiteral,
-    //       selectorValue: 'kafka-cluster',
-    //       operations: {
-    //         DESCRIBE: OperationTypeAllow,
-    //         CREATE: OperationTypeAllow,
-    //         ALTER: OperationTypeDeny,
-    //       },
-    //     } as Rule,
-    //     {
-    //       id: 1,
-    //       resourceType: ResourceTypeTopic,
-    //       mode: ModeCustom,
-    //       selectorType: ResourcePatternTypeLiteral,
-    //       selectorValue: '*',
-    //       operations: {
-    //         DESCRIBE: OperationTypeAllow,
-    //         CREATE: OperationTypeAllow,
-    //         ALTER: OperationTypeAllow,
-    //       },
-    //     } as Rule,
-    //     {
-    //       id: 2,
-    //       resourceType: ResourceTypeConsumerGroup,
-    //       mode: ModeCustom,
-    //       selectorType: ResourcePatternTypeLiteral,
-    //       selectorValue: '*',
-    //       operations: {
-    //         DESCRIBE: OperationTypeAllow,
-    //         READ: OperationTypeAllow,
-    //       },
-    //     } as Rule,
-    //     {
-    //       id: 3,
-    //       resourceType: ResourceTypeTransactionalId,
-    //       mode: ModeCustom,
-    //       selectorType: ResourcePatternTypeLiteral,
-    //       selectorValue: '*',
-    //       operations: {
-    //         DESCRIBE: OperationTypeAllow,
-    //       },
-    //     } as Rule,
-    //     {
-    //       id: 4,
-    //       resourceType: ResourceTypeSubject,
-    //       mode: ModeCustom,
-    //       selectorType: ResourcePatternTypeLiteral,
-    //       selectorValue: '*',
-    //       operations: {
-    //         READ: OperationTypeAllow,
-    //         WRITE: OperationTypeAllow,
-    //       },
-    //     } as Rule,
-    //     {
-    //       id: 5,
-    //       resourceType: ResourceTypeSchemaRegistry,
-    //       mode: ModeCustom,
-    //       selectorType: ResourcePatternTypeLiteral,
-    //       selectorValue: '*',
-    //       operations: {
-    //         DESCRIBE: OperationTypeAllow,
-    //         READ: OperationTypeAllow,
-    //       },
-    //     } as Rule,
-    //   ],
-    // },
+    {
+      testName: 'should set operations and it should be present in resume component',
+      principal: generatePrincipalName(),
+      host: '*',
+      operation: [
+        {
+          id: 0,
+          resourceType: ResourceTypeCluster,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypeLiteral,
+          selectorValue: 'kafka-cluster',
+          operations: {
+            DESCRIBE: OperationTypeAllow,
+            CREATE: OperationTypeAllow,
+            ALTER: OperationTypeDeny,
+          },
+        } as Rule,
+        {
+          id: 1,
+          resourceType: ResourceTypeTopic,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypeLiteral,
+          selectorValue: '*',
+          operations: {
+            DESCRIBE: OperationTypeAllow,
+            CREATE: OperationTypeAllow,
+            ALTER: OperationTypeAllow,
+          },
+        } as Rule,
+        {
+          id: 2,
+          resourceType: ResourceTypeConsumerGroup,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypeLiteral,
+          selectorValue: '*',
+          operations: {
+            DESCRIBE: OperationTypeAllow,
+            READ: OperationTypeAllow,
+          },
+        } as Rule,
+        {
+          id: 3,
+          resourceType: ResourceTypeTransactionalId,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypeLiteral,
+          selectorValue: '*',
+          operations: {
+            DESCRIBE: OperationTypeAllow,
+          },
+        } as Rule,
+        {
+          id: 4,
+          resourceType: ResourceTypeSubject,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypeLiteral,
+          selectorValue: '*',
+          operations: {
+            READ: OperationTypeAllow,
+            WRITE: OperationTypeAllow,
+          },
+        } as Rule,
+        {
+          id: 5,
+          resourceType: ResourceTypeSchemaRegistry,
+          mode: ModeCustom,
+          selectorType: ResourcePatternTypeLiteral,
+          selectorValue: '*',
+          operations: {
+            DESCRIBE: OperationTypeAllow,
+            READ: OperationTypeAllow,
+          },
+        } as Rule,
+      ],
+    },
     {
       testName: 'should set operations for schema',
       principal: generatePrincipalName(),
@@ -140,10 +145,7 @@ test.describe('ACL Creation', () => {
       ],
     },
   ].map(({ testName, principal, host, operation }) => {
-    [
-      { type: 'Role', createPage: (page: Page) => new RolePage(page) },
-      { type: 'Acl', createPage: (page: Page) => new ACLPage(page) },
-    ].map(({ createPage, type }) => {
+    aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {
         const aclPage = createPage(page);
         await aclPage.goto();
@@ -843,10 +845,7 @@ test.describe('ACL Update', () => {
       ],
     },
   ].map(({ testName, principal, host, initialRules, updatedRules, expectedRules, removedRules = [] }) => {
-    [
-      { type: 'Role', createPage: (page: Page) => new RolePage(page) },
-      { type: 'Acl', createPage: (page: Page) => new ACLPage(page) },
-    ].map(({ createPage, type }) => {
+    aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {
         const aclPage = createPage(page);
         await aclPage.goto();
@@ -1017,6 +1016,9 @@ test.describe('ACL Disable Rules Validation', () => {
 });
 
 test.describe('Role membership', () => {
+  if (!process.env.TEST_ENTERPRISE) {
+    return;
+  }
   [
     {
       testName: 'should set operations and it should be present in resume component',
@@ -1140,7 +1142,7 @@ test.describe('Role membership', () => {
         }
       });
 
-      await test.step('Delete membership from the role', async () => {
+      await test.step('Remove membership from the role page', async () => {
         if (deleteMembership && deleteMembership.length > 0) {
           await aclPage.deleteMembership(deleteMembership);
         }
@@ -1225,10 +1227,7 @@ test.describe('Allow all operations', () => {
       } as Rule;
     });
 
-    [
-      { type: 'Role', createPage: (page: Page) => new RolePage(page) },
-      { type: 'Acl', createPage: (page: Page) => new ACLPage(page) },
-    ].map(({ createPage, type }) => {
+    aclPages.map(({ createPage, type }) => {
       test(`${testName} - ${type}`, async ({ page }) => {
         const aclPage = createPage(page);
         await aclPage.goto();
