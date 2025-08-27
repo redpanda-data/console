@@ -300,17 +300,10 @@ func TestService_CloudEventWithProperAnyField(t *testing.T) {
 	// but that's expected behavior when dealing with cross-package Any fields
 	jsonBytes, err := service.DeserializeProtobufMessageToJSON(cloudEventBytes, cloudEventMd)
 	require.NoError(t, err)
-	//if err != nil {
-	//	t.Logf("Expected error when deserializing Any field with cross-package type: %v", err)
-	//	// This is the expected behavior - demonstrating the PR #425 issue
-	//	assert.Contains(t, err.Error(), "unknown message type")
-	//} else {
-	//	t.Logf("Successfully deserialized CloudEvent with Any field")
-	//}
 
 	if jsonBytes != nil {
 		// Parse and verify the structure if JSON deserialization worked
-		var result map[string]interface{}
+		var result map[string]any
 		if err := json.Unmarshal(jsonBytes, &result); err == nil {
 			// Verify basic CloudEvent fields match expected output structure
 			assert.Equal(t, "1.0", result["specVersion"])
@@ -328,7 +321,7 @@ func TestService_CloudEventWithProperAnyField(t *testing.T) {
 	uploadEventJsonBytes, err := service.DeserializeProtobufMessageToJSON(uploadEventBytes, uploadEventMd)
 	require.NoError(t, err)
 
-	var uploadEventResult map[string]interface{}
+	var uploadEventResult map[string]any
 	err = json.Unmarshal(uploadEventJsonBytes, &uploadEventResult)
 	require.NoError(t, err)
 
@@ -337,17 +330,17 @@ func TestService_CloudEventWithProperAnyField(t *testing.T) {
 	assert.Contains(t, uploadEventResult, "properties")
 	assert.Contains(t, uploadEventResult, "tags")
 
-	properties, ok := uploadEventResult["properties"].(map[string]interface{})
+	properties, ok := uploadEventResult["properties"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "frank", properties["name"])
 	assert.Equal(t, "frank@example.com", properties["email"])
 	assert.Equal(t, "37", properties["age"])
 
-	tags, ok := uploadEventResult["tags"].([]interface{})
+	tags, ok := uploadEventResult["tags"].([]any)
 	require.True(t, ok)
-	assert.Equal(t, []interface{}{"tag1", "tag2"}, tags)
+	assert.Equal(t, []any{"tag1", "tag2"}, tags)
 
 	t.Logf("UploadEvent JSON: %s", string(uploadEventJsonBytes))
-	t.Logf("Successfully tested CloudEvent with Any field containing UploadEvent from different package")
-	t.Logf("Successfully validated PR #425 anyResolver functionality for cross-package type resolution")
+	t.Log("Successfully tested CloudEvent with Any field containing UploadEvent from different package")
+	t.Log("Successfully validated PR #425 anyResolver functionality for cross-package type resolution")
 }

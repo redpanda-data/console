@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 
-	//nolint:staticcheck // intentional import of old module
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"google.golang.org/protobuf/proto"

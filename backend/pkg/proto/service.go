@@ -619,13 +619,13 @@ func (r *anyResolver) FindMessageByURL(url string) (protoreflect.MessageType, er
 }
 
 // FindExtensionByName implements protoreflect.ExtensionTypeResolver
-func (r *anyResolver) FindExtensionByName(_ protoreflect.FullName) (protoreflect.ExtensionType, error) {
-	return nil, fmt.Errorf("extension resolution not supported")
+func (*anyResolver) FindExtensionByName(_ protoreflect.FullName) (protoreflect.ExtensionType, error) {
+	return nil, errors.New("extension resolution not supported")
 }
 
 // FindExtensionByNumber implements protoreflect.ExtensionTypeResolver
-func (r *anyResolver) FindExtensionByNumber(_ protoreflect.FullName, _ protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
-	return nil, fmt.Errorf("extension resolution not supported")
+func (*anyResolver) FindExtensionByNumber(_ protoreflect.FullName, _ protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
+	return nil, errors.New("extension resolution not supported")
 }
 
 // convertDescToProtoReflect converts a jhump MessageDescriptor to a protoreflect.MessageDescriptor
