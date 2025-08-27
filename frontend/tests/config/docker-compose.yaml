@@ -7,7 +7,7 @@ volumes:
   redpanda: null
 services:
   redpanda:
-    image: redpandadata/redpanda:v24.2.8
+    image: redpandadata/redpanda:v25.2.1
     container_name: redpanda
     command:
       - redpanda start
