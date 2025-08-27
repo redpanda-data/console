@@ -39,7 +39,11 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   const { data: secretList } = useListSecretsQuery();
 
   // Secret creation mutation
-  const { mutateAsync: createSecret, isPending: isCreateSecretPending, error: createSecretError } = useCreateSecretMutation();
+  const {
+    mutateAsync: createSecret,
+    isPending: isCreateSecretPending,
+    error: createSecretError,
+  } = useCreateSecretMutation();
 
   const finalSchema = secretSchema(customSecretSchema);
 

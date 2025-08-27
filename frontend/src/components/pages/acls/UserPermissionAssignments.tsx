@@ -9,18 +9,51 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Link as ChakraLink, Flex, Tag, Text } from '@redpanda-data/ui';
+import { useQuery } from '@connectrpc/connect-query';
+import { TagsValue } from 'components/redpanda-ui/components/tags';
 import { observer } from 'mobx-react';
-import React from 'react';
-import { Link as ReactRouterLink } from 'react-router-dom';
-import { api, rolesApi } from '../../../state/backendApi';
+import { useNavigate } from 'react-router-dom';
+import type { ListACLsRequest } from '../../../protogen/redpanda/api/dataplane/v1/acl_pb';
+import { listACLs } from '../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { rolesApi } from '../../../state/backendApi';
 import { Features } from '../../../state/supportedFeatures';
 
 export const UserRoleTags = observer(
-  ({ userName, showMaxItems = Number.POSITIVE_INFINITY }: { userName: string; showMaxItems?: number }) => {
+  ({
+    userName,
+    showMaxItems = Number.POSITIVE_INFINITY,
+    verticalView = true,
+  }: {
+    userName: string;
+    showMaxItems?: number;
+    verticalView?: boolean;
+  }) => {
     const elements: JSX.Element[] = [];
     let numberOfVisibleElements = 0;
     let numberOfHiddenElements = 0;
+
+    const navigate = useNavigate();
+
+    const { data: hasAcls } = useQuery(
+      listACLs,
+      {
+        filter: {
+          principal: `User:${userName}`,
+        },
+      } as ListACLsRequest,
+      {
+        enabled: !!userName,
+        select: (response) => {
+          return response.resources.length > 0;
+        },
+      },
+    );
+
+    if (hasAcls) {
+      elements.push(
+        <TagsValue onClick={() => navigate(`/security/acls/${userName}/details`)}>{`User:${userName}`}</TagsValue>,
+      );
+    }
 
     if (Features.rolesApi) {
       // Get all roles, and ACL sets that apply to this user
@@ -38,31 +71,19 @@ export const UserRoleTags = observer(
       for (let i = 0; i < numberOfVisibleElements; i++) {
         const r = roles[i];
         elements.push(
-          <React.Fragment key={r}>
-            <ChakraLink as={ReactRouterLink} to={`/security/roles/${r}/details`} textDecoration="none">
-              <Tag>{r}</Tag>
-            </ChakraLink>
-          </React.Fragment>,
+          <div>
+            <TagsValue
+              key={r}
+              onClick={() => navigate(`/security/roles/${r}/details`)}
+            >{`RedpandaRole:${r}`}</TagsValue>
+          </div>,
         );
-
-        if (i < numberOfVisibleElements - 1)
-          elements.push(
-            <Box whiteSpace="pre" userSelect="none">
-              {', '}
-            </Box>,
-          );
       }
 
-      if (elements.length === 0) elements.push(<Flex>No roles</Flex>);
-      if (numberOfHiddenElements > 0) elements.push(<Text pl={1}>{`+${numberOfHiddenElements} more`}</Text>);
+      if (elements.length === 0) elements.push(<p>No roles</p>);
+      if (numberOfHiddenElements > 0) elements.push(<p>{`+${numberOfHiddenElements} more`}</p>);
     }
 
-    const hasAcls = api.ACLs?.aclResources.any((r) => r.acls.any((a) => a.principal === `User:${userName}`));
-    if (hasAcls) {
-      if (elements.length > 0) elements.push(<Flex>, </Flex>);
-      elements.push(<Flex>has ACLs</Flex>);
-    }
-
-    return <Flex>{elements}</Flex>;
+    return <div className={!verticalView ? '' : 'flex'}>{elements}</div>;
   },
 );

@@ -31,6 +31,9 @@ const (
 
 	// redpandaFeatureDebugBundle represents debug bundle Admin API feature.
 	redpandaFeatureDebugBundle redpandaFeature = "redpanda_feature_debug_bundle"
+
+	// redpandaFeatureSchemaRegistryACL represents Schema Registry ACL feature.
+	redpandaFeatureSchemaRegistryACL redpandaFeature = "redpanda_feature_schema_registry_acl"
 )
 
 // checkRedpandaFeature checks whether redpanda has the specified feature in the specified state.

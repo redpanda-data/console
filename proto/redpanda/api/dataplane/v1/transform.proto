@@ -180,13 +180,13 @@ message DeleteTransformResponse {}
 
 service TransformService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "WASM Transforms"
+    name: "Wasm Transforms"
     description: "Manage Wasm transforms in Redpanda."
   };
   rpc ListTransforms(ListTransformsRequest) returns (ListTransformsResponse) {
     option (google.api.http) = {get: "/v1/transforms"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Transforms"
+      summary: "List transforms"
       description: "Retrieve a list of Wasm transforms. Optional: filter based on transform name."
       responses: {
         key: "200"
@@ -207,7 +207,7 @@ service TransformService {
   rpc GetTransform(GetTransformRequest) returns (GetTransformResponse) {
     option (google.api.http) = {get: "/v1/transforms/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Transform"
+      summary: "Get transform"
       description: "Get a specific Wasm transform."
       responses: {
         key: "200"
@@ -237,7 +237,7 @@ service TransformService {
   rpc DeleteTransform(DeleteTransformRequest) returns (DeleteTransformResponse) {
     option (google.api.http) = {delete: "/v1/transforms/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete Transform"
+      summary: "Delete transform"
       description: "Delete a Wasm transform with the requested name."
       responses: {
         key: "204"

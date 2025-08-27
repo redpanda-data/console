@@ -18,6 +18,8 @@ import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@red
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
+import { trackHeapUser } from '../components/pages/agents/heap.helper';
+import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
 import { config as appConfig, isEmbedded } from '../config';
 import {
   AuthenticationMethod,
@@ -77,8 +79,6 @@ import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
-import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
-import { trackHeapUser } from '../components/pages/agents/heap.helper';
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -490,7 +490,7 @@ const apiStore = {
           canViewDebugBundle: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_DEBUG_BUNDLE),
           canViewConsoleUsers: r.permissions?.redpanda.includes(RedpandaCapability.MANAGE_RBAC),
         } as UserData;
-        
+
         // Track user in analytics after successful authentication
         if (r.displayName) {
           const userData = {
@@ -501,7 +501,7 @@ const apiStore = {
           trackHubspotUser(userData);
           trackHeapUser(userData);
         }
-        
+
         // if (r.status === 401) {
         //   // unauthorized / not logged in
         //   api.userData = null;

@@ -1124,7 +1124,7 @@ components:
       description: Defines the pipeline resource.
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           title: |-
             The pipeline configuration in YAML.
             See https://docs.redpanda.com/redpanda-connect/configuration/about/
@@ -1177,7 +1177,7 @@ components:
       description: PipelineCreate contains the details for the pipeline creation request.
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.
@@ -1194,7 +1194,7 @@ components:
     PipelineUpdate:
       properties:
         config_yaml:
-          description: The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
           type: string
         description:
           description: Pipeline description.

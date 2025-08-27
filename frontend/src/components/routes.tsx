@@ -35,9 +35,9 @@ import { AnimatePresence } from '../utils/animationProps';
 import { type AppFeature, AppFeatures } from '../utils/env';
 import { Section } from './misc/common';
 import AclList, { type AclListTab } from './pages/acls/Acl.List';
-import RoleCreatePage from './pages/acls/RoleCreate';
-import RoleDetailsPage from './pages/acls/RoleDetails';
-import RoleEditPage from './pages/acls/RoleEditPage';
+import AclCreatePage from './pages/acls/new-acl/AclCreatePage';
+import AclDetailPage from './pages/acls/new-acl/AclDetailPage';
+import AclUpdatePage from './pages/acls/new-acl/AclUpdatePage';
 import UserCreatePage from './pages/acls/UserCreate';
 import UserDetailsPage from './pages/acls/UserDetails';
 import { AdminDebugBundle } from './pages/admin/Admin.DebugBundle';
@@ -62,6 +62,12 @@ import Overview from './pages/overview/Overview';
 import type { PageComponentType, PageProps } from './pages/Page';
 import QuotasList from './pages/quotas/Quotas.List';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
+import { RemoteMCPCreatePage } from './pages/remote-mcp/create/remote-mcp-create-page';
+import { RemoteMCPDetailsPage } from './pages/remote-mcp/details/remote-mcp-details-page';
+import { RemoteMCPListPage } from './pages/remote-mcp/list/remote-mcp-list-page';
+import RoleCreatePage from './pages/roles/RoleCreatePage';
+import RoleDetailPage from './pages/roles/RoleDetailPage';
+import RoleUpdatePage from './pages/roles/RoleUpdatePage';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
@@ -78,6 +84,7 @@ import { TopicProducePage } from './pages/topics/Topic.Produce';
 import TransformDetails from './pages/transforms/Transform.Details';
 import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
+import { MCPIcon } from './redpanda-ui/components/icons';
 
 //
 //	Route Types
@@ -229,6 +236,7 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ rout
 const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const isAgentFeatureEnabled = isFeatureFlagEnabled('enableAiAgentsInConsoleUi');
   const isKnowledgeBaseFeatureEnabled = isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi');
+  const isRemoteMcpFeatureEnabled = isFeatureFlagEnabled('enableRemoteMcpInConsole');
   const location = useLocation();
 
   useEffect(() => {
@@ -240,7 +248,11 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-  }, [isAgentFeatureEnabled, isKnowledgeBaseFeatureEnabled, path, location.pathname]);
+    if (!isRemoteMcpFeatureEnabled && path.includes('/remote-mcp') && location.pathname !== '/overview') {
+      appGlobal.historyPush('/overview');
+      window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
+    }
+  }, [isAgentFeatureEnabled, isKnowledgeBaseFeatureEnabled, isRemoteMcpFeatureEnabled, path, location.pathname]);
 
   return children;
 };
@@ -417,12 +429,16 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
   MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
+  MakeRoute<{}>('/security/acls/create', AclCreatePage, 'Create ACL'),
+  MakeRoute<{}>('/security/acls/:aclName/update', AclUpdatePage, 'Update ACL'),
+  MakeRoute<{}>('/security/acls/:aclName/details', AclDetailPage, 'ACL details'),
+
   MakeRoute<{}>('/security/users/create', UserCreatePage, 'Security'),
   MakeRoute<{ userName: string }>('/security/users/:userName/details', UserDetailsPage, 'Security'),
 
   MakeRoute<{}>('/security/roles/create', RoleCreatePage, 'Security'),
-  MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailsPage, 'Security'),
-  MakeRoute<{ roleName: string }>('/security/roles/:roleName/edit', RoleEditPage, 'Security'),
+  MakeRoute<{ roleName: string }>('/security/roles/:roleName/details', RoleDetailPage, 'Security'),
+  MakeRoute<{ roleName: string }>('/security/roles/:roleName/update', RoleUpdatePage, 'Security'),
 
   MakeRoute<{}>(
     '/quotas',
@@ -532,4 +548,15 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
 
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
+
+  MakeRoute<Record<string, never>>(
+    '/remote-mcp',
+    RemoteMCPListPage,
+    'Remote MCP',
+    MCPIcon,
+    true,
+    routeVisibility(() => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode and only for BYOC/Dedicated with feature flag
+  ),
+  MakeRoute<{}>('/remote-mcp/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
+  MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
 ].filterNull();
