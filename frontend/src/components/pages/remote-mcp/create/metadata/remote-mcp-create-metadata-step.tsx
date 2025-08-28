@@ -51,6 +51,17 @@ export const RemoteMCPCreateMetadataStep = ({
     setTags(updatedTags);
   };
 
+  const hasDuplicateKeys = () => {
+    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    return keys.length !== new Set(keys).size;
+  };
+
+  const getDuplicateKeys = () => {
+    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
+    return new Set(duplicates);
+  };
+
   return (
     <Card className="max-w-full px-8 py-6">
       <CardHeader>
@@ -90,25 +101,43 @@ export const RemoteMCPCreateMetadataStep = ({
           <Label>Tags</Label>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground pb-2">Key-value pairs for organizing and categorizing</p>
-            {tags.map((tag, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Input
-                  placeholder="Key"
-                  value={tag.key}
-                  className="flex-1"
-                  onChange={(e) => updateTag(index, 'key', e.target.value)}
-                />
-                <Input
-                  placeholder="Value"
-                  value={tag.value}
-                  className="flex-1"
-                  onChange={(e) => updateTag(index, 'value', e.target.value)}
-                />
-                <Button variant="outline" size="sm" onClick={() => removeTag(index)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+            {hasDuplicateKeys() && (
+              <p className="text-sm text-destructive">Tags must have unique keys</p>
+            )}
+            {tags.map((tag, index) => {
+              const duplicateKeys = getDuplicateKeys();
+              const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
+              return (
+                <div key={index} className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Key"
+                      value={tag.key}
+                      className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                      onChange={(e) => updateTag(index, 'key', e.target.value)}
+                    />
+                    <div className="h-5 mt-1">
+                      {isDuplicateKey && (
+                        <p className="text-xs text-destructive">Duplicate key</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Value"
+                      value={tag.value}
+                      onChange={(e) => updateTag(index, 'value', e.target.value)}
+                    />
+                    <div className="h-5 mt-1"></div>
+                  </div>
+                  <div className="flex items-center h-10">
+                    <Button variant="outline" size="sm" onClick={() => removeTag(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
             <Button variant="outline" size="sm" onClick={addTag}>
               <Plus className="h-4 w-4 mr-2" />
               Add Tag

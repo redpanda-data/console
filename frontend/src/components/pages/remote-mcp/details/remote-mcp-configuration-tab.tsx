@@ -341,6 +341,17 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
     });
   };
 
+  const hasDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
+    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    return keys.length !== new Set(keys).size;
+  };
+
+  const getDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
+    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
+    return new Set(duplicates);
+  };
+
   const displayData =
     editedServerData ||
     (mcpServerData?.mcpServer
@@ -469,29 +480,41 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
             <CardDescription>Key-value pairs for organizing and categorizing</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {displayData.tags.map((tag, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Input
-                  placeholder="Key"
-                  value={tag.key}
-                  disabled={!isEditing}
-                  className="flex-1"
-                  onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                />
-                <Input
-                  placeholder="Value"
-                  value={tag.value}
-                  disabled={!isEditing}
-                  className="flex-1"
-                  onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                />
-                {isEditing && (
-                  <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+            {isEditing && hasDuplicateKeys(displayData.tags) && (
+              <p className="text-sm text-destructive">Tags must have unique keys</p>
+            )}
+            {displayData.tags.map((tag, index) => {
+              const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
+              const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Key"
+                      value={tag.key}
+                      disabled={!isEditing}
+                      className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                      onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                    />
+                    {isDuplicateKey && (
+                      <p className="text-xs text-destructive mt-1">Duplicate key</p>
+                    )}
+                  </div>
+                  <Input
+                    placeholder="Value"
+                    value={tag.value}
+                    disabled={!isEditing}
+                    className="flex-1"
+                    onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                  />
+                  {isEditing && (
+                    <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
             {isEditing && (
               <Button variant="outline" size="sm" onClick={handleAddTag}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -523,7 +546,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardContent>
         </Card>
 
-        <Card className="w-full max-w-none">
+        <Card className="w-full max-w-none px-8 py-6">
           <CardHeader>
             <CardTitle>Tools Configuration</CardTitle>
             <CardDescription>Configure the tools available in this MCP server</CardDescription>
