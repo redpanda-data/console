@@ -160,7 +160,7 @@ func IncrementClientCount() {
 	}
 }
 
-// DecrementClientCount decrements the active client count metric  
+// DecrementClientCount decrements the active client count metric
 func DecrementClientCount() {
 	if promActiveClients != nil {
 		promActiveClients.Dec()
