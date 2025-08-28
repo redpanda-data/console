@@ -13,10 +13,11 @@ import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Plus, Save, Trash2 } from 'lucide-react';
-import { UpdateMCPServerRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_Tool_ComponentType, UpdateMCPServerRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGetMCPServerQuery, useUpdateMCPServerMutation } from '../../../../react-query/api/remote-mcp';
+import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 import { YamlEditor } from '../../../misc/yaml-editor';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
@@ -555,73 +556,76 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
             {displayData.tools.map((tool) => (
               <div key={tool.name} className="space-y-4 p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-start gap-4">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-sm font-medium">Tool Name</Label>
-                    <Input
-                      value={tool.name}
-                      disabled={!isEditing}
-                      placeholder="e.g., search-posts (must be filename-compatible)"
-                      onChange={(e) => handleUpdateTool(tool.name, 'name', e.target.value)}
-                    />
-                    {isEditing && (
-                      <p className="text-xs text-muted-foreground">
-                        Lowercase letters, numbers, and dashes. Used in the file name and API.
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-sm font-medium">Component Type</Label>
-                    {isEditing ? (
-                      <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 h-10">
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateTool(tool.name, 'componentType', 'Processor')}
-                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                            tool.componentType === 'Processor'
-                              ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Processor
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateTool(tool.name, 'componentType', 'Cache')}
-                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                            tool.componentType === 'Cache'
-                              ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          Cache
-                        </button>
+                  {isEditing ? (
+                    <>
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-sm font-medium">Tool Name</Label>
+                        <Input
+                          value={tool.name}
+                          placeholder="e.g., search-posts (must be filename-compatible)"
+                          onChange={(e) => handleUpdateTool(tool.name, 'name', e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Lowercase letters, numbers, and dashes. Used in the file name and API.
+                        </p>
                       </div>
-                    ) : (
-                      <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center text-sm">
-                        {tool.componentType}
-                      </div>
-                    )}
-                    {isEditing && (
-                      <p className="text-xs text-muted-foreground">
-                        {tool.componentType === 'Processor'
-                          ? 'Transform and manipulate content, make API calls, process data.'
-                          : 'Store and retrieve data, manage cached content and state.'}{' '}
-                        {/* TODO: Add a link to the MCP documentation */}
-                        {/* <a href="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-sm font-medium">Component Type</Label>
+                        <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 h-10">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTool(tool.name, 'componentType', 'Processor')}
+                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                              tool.componentType === 'Processor'
+                                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                                : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            Processor
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTool(tool.name, 'componentType', 'Cache')}
+                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                              tool.componentType === 'Cache'
+                                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                                : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            Cache
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {tool.componentType === 'Processor'
+                            ? 'Transform and manipulate content, make API calls, process data.'
+                            : 'Store and retrieve data, manage cached content and state.'}{' '}
+                          {/* TODO: Add a link to the MCP documentation */}
+                          {/* <a href="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
                               Learn more <ExternalLink className="h-3 w-3" />
                             </a> */}
-                      </p>
-                    )}
-                  </div>
-                  {isEditing && (
-                    <Button variant="outline" size="sm" onClick={() => handleRemoveTool(tool.name)} className="mt-6">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => handleRemoveTool(tool.name)} className="mt-6">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-sm font-medium">Tool Name</Label>
+                      <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center gap-3">
+                        <RemoteMCPToolTypeBadge 
+                          componentType={tool.componentType === 'Processor' 
+                            ? MCPServer_Tool_ComponentType.PROCESSOR 
+                            : MCPServer_Tool_ComponentType.CACHE} 
+                        />
+                        <code className="text-sm font-mono">{tool.name}</code>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div className="space-y-2 flex-1 flex flex-col">
                   <Label>Tool Configuration (YAML)</Label>
-                  <div className="border rounded-md overflow-hidden" style={{ height: '400px' }}>
+                  <div className="overflow-hidden" style={{ height: '400px' }}>
                     <YamlEditor
                       value={tool.config}
                       onChange={(value) => handleUpdateTool(tool.name, 'config', value || '')}

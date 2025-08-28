@@ -510,7 +510,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                   Import File
                 </Button>
               </div>
-              <div className="border rounded-md overflow-hidden" style={{ height: '500px' }}>
+              <div className="overflow-hidden" style={{ height: '500px' }}>
                 <YamlEditor
                   value={tools.find((t) => t.id === expandedEditor)?.configYaml || ''}
                   onChange={(value) => updateTool(expandedEditor, 'configYaml', value || '')}
