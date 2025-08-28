@@ -32,23 +32,57 @@ const getConnectionCodeSnippets = (displayData: MCPServer) => ({
       }
     }
   }`,
-  'cURL (List Tools)': `# List available tools
-  curl -X POST "${displayData.url}" \\
+  'cURL (Initialize + List Tools)': `# Step 1: Initialize MCP session
+  INIT_RESPONSE=$(curl -s -D /tmp/headers -X POST "${displayData.url}" \\
     -H "Content-Type: application/json" \\
     -H "Authorization: Bearer YOUR_M2M_TOKEN" \\
     -d '{
       "jsonrpc": "2.0",
       "id": 1,
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": { "elicitation": {} },
+        "clientInfo": { "name": "test-client", "version": "1.0.0" }
+      }
+    }')
+
+  # Step 2: Extract session ID and list tools
+  SESSION_ID=$(grep -i "mcp-session-id" /tmp/headers | cut -d' ' -f2 | tr -d '\\r')
+  curl -X POST "${displayData.url}" \\
+    -H "Content-Type: application/json" \\
+    -H "Authorization: Bearer YOUR_M2M_TOKEN" \\
+    -H "Mcp-Session-Id: $SESSION_ID" \\
+    -d '{
+      "jsonrpc": "2.0",
+      "id": 2,
       "method": "tools/list",
       "params": {}
     }'`,
-  'cURL (Call Tool)': `# Call a tool
-  curl -X POST "${displayData.url}" \\
+  'cURL (Initialize + Call Tool)': `# Step 1: Initialize MCP session
+  INIT_RESPONSE=$(curl -s -D /tmp/headers -X POST "${displayData.url}" \\
     -H "Content-Type: application/json" \\
     -H "Authorization: Bearer YOUR_M2M_TOKEN" \\
     -d '{
       "jsonrpc": "2.0",
-      "id": 2,
+      "id": 1,
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": { "elicitation": {} },
+        "clientInfo": { "name": "test-client", "version": "1.0.0" }
+      }
+    }')
+
+  # Step 2: Extract session ID and call tool
+  SESSION_ID=$(grep -i "mcp-session-id" /tmp/headers | cut -d' ' -f2 | tr -d '\\r')
+  curl -X POST "${displayData.url}" \\
+    -H "Content-Type: application/json" \\
+    -H "Authorization: Bearer YOUR_M2M_TOKEN" \\
+    -H "Mcp-Session-Id: $SESSION_ID" \\
+    -d '{
+      "jsonrpc": "2.0",
+      "id": 3,
       "method": "tools/call",
       "params": {
         "name": "search-posts",
@@ -58,16 +92,14 @@ const getConnectionCodeSnippets = (displayData: MCPServer) => ({
         }
       }
     }'`,
-  Python: `# Python client
+  Python: `# Python client with session initialization
   import asyncio
   import httpx
-  from mcp import ClientSession, StdioServerParameters
-  from mcp.client.stdio import stdio_client
   
   async def connect_to_mcp():
-      # Using HTTP transport
       async with httpx.AsyncClient() as client:
-          response = await client.post(
+          # Step 1: Initialize MCP session
+          init_response = await client.post(
               "${displayData.url}",
               headers={
                   "Content-Type": "application/json",
@@ -76,19 +108,48 @@ const getConnectionCodeSnippets = (displayData: MCPServer) => ({
               json={
                   "jsonrpc": "2.0",
                   "id": 1,
+                  "method": "initialize",
+                  "params": {
+                      "protocolVersion": "2025-06-18",
+                      "capabilities": {"elicitation": {}},
+                      "clientInfo": {"name": "test-client", "version": "1.0.0"}
+                  }
+              }
+          )
+          
+          # Extract session ID from headers
+          session_id = (init_response.headers.get('mcp-session-id') or 
+                       init_response.headers.get('Mcp-Session-Id'))
+          
+          if not session_id:
+              raise Exception("No MCP session ID received")
+          
+          # Step 2: List tools with session ID
+          tools_response = await client.post(
+              "${displayData.url}",
+              headers={
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer YOUR_M2M_TOKEN",
+                  "Mcp-Session-Id": session_id
+              },
+              json={
+                  "jsonrpc": "2.0",
+                  "id": 2,
                   "method": "tools/list",
                   "params": {}
               }
           )
-          tools = response.json()
+          
+          tools = tools_response.json()
           print(f"Available tools: {tools}")
   
   # Run the client
   asyncio.run(connect_to_mcp())`,
-  JavaScript: `// Using fetch API
+  JavaScript: `// Using fetch API with session initialization
   async function connectToMCP() {
     try {
-      const response = await fetch('${displayData.url}', {
+      // Step 1: Initialize MCP session
+      const initResponse = await fetch('${displayData.url}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,12 +158,40 @@ const getConnectionCodeSnippets = (displayData: MCPServer) => ({
         body: JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: { elicitation: {} },
+            clientInfo: { name: 'test-client', version: '1.0.0' }
+          }
+        })
+      });
+      
+      // Extract session ID from headers
+      const sessionId = initResponse.headers.get('mcp-session-id') || 
+                       initResponse.headers.get('Mcp-Session-Id');
+      
+      if (!sessionId) {
+        throw new Error('No MCP session ID received');
+      }
+      
+      // Step 2: List tools with session ID
+      const toolsResponse = await fetch('${displayData.url}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer YOUR_M2M_TOKEN',
+          'Mcp-Session-Id': sessionId
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
           method: 'tools/list',
           params: {}
         })
       });
       
-      const tools = await response.json();
+      const tools = await toolsResponse.json();
       console.log('Available tools:', tools);
     } catch (error) {
       console.error('Connection failed:', error);

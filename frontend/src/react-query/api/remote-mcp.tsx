@@ -442,10 +442,9 @@ export const useCallMCPServerToolMutation = () => {
           params: {
             protocolVersion: '2025-06-18',
             capabilities: {
-              // TODO: Decide if it should be removed
               elicitation: {},
             },
-            clientInfo: { name: 'test-client', version: '1.0.0' }, // redpanda-console as client name?
+            clientInfo: { name: 'test-client', version: '1.0.0' },
           },
         }),
       });
