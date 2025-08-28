@@ -109,7 +109,15 @@ func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 		)
 	}
 
-	return kgo.NewClient(kgoOpts...)
+	client, err := kgo.NewClient(kgoOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Increment client count metric
+	IncrementClientCount()
+
+	return client, nil
 }
 
 // NewKgoConfig creates a new Config for the Kafka Client as exposed by the franz-go library.
