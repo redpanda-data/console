@@ -23,7 +23,7 @@ import {
 } from '../../../../../react-query/api/remote-mcp';
 import { Badge } from '../../../../redpanda-ui/components/badge';
 import { Button } from '../../../../redpanda-ui/components/button';
-import { DynamicCodeBlock } from '../../../../redpanda-ui/components/code-block-dynamic';
+import { CodeTabs } from '../../../../redpanda-ui/components/code-tabs';
 import { Label } from '../../../../redpanda-ui/components/label';
 import { TabsContent, type TabsContentProps } from '../../../../redpanda-ui/components/tabs';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
@@ -51,7 +51,6 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
   const [toolParameters, setToolParameters] = useState<Record<string, unknown>>({});
   const [toolResponse, setToolResponse] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
-  const [responseMode, setResponseMode] = useState<'raw' | 'formatted'>('raw');
 
   const {
     data: mcpServerData,
@@ -102,24 +101,33 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
     }));
   };
 
-  const getFormattedResponse = () => {
-    if (responseMode === 'raw') {
-      return toolResponse;
-    }
-
+  const getResponseCodes = () => {
+    const rawResponse = toolResponse;
+    
     try {
       const parsed = JSON.parse(toolResponse);
       if (parsed?.content?.[0]?.text) {
         try {
           const formattedContent = JSON.parse(parsed.content[0].text);
-          return JSON.stringify(formattedContent, null, 2);
+          const formattedResponse = JSON.stringify(formattedContent, null, 2);
+          return {
+            raw: rawResponse,
+            formatted: formattedResponse,
+          };
         } catch {
-          return parsed.content[0].text;
+          return {
+            raw: rawResponse,
+            formatted: parsed.content[0].text,
+          };
         }
       }
-      return toolResponse;
+      return {
+        raw: rawResponse,
+      };
     } catch {
-      return toolResponse;
+      return {
+        raw: rawResponse,
+      };
     }
   };
 
@@ -238,28 +246,8 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
 
             {toolResponse && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Response</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={responseMode === 'raw' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setResponseMode('raw')}
-                    >
-                      Raw
-                    </Button>
-                    <Button
-                      variant={responseMode === 'formatted' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setResponseMode('formatted')}
-                    >
-                      Formatted
-                    </Button>
-                  </div>
-                </div>
-                <div className="w-full">
-                  <DynamicCodeBlock lang="json" code={getFormattedResponse()} />
-                </div>
+                <Label className="text-sm font-medium">Response</Label>
+                <CodeTabs codes={getResponseCodes()} lang="json" defaultValue="raw" />
               </div>
             )}
           </div>
