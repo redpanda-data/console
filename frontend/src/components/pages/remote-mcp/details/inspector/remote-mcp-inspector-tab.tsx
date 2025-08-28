@@ -51,6 +51,7 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
   const [toolParameters, setToolParameters] = useState<Record<string, unknown>>({});
   const [toolResponse, setToolResponse] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
+  const [responseMode, setResponseMode] = useState<'raw' | 'formatted'>('raw');
 
   const {
     data: mcpServerData,
@@ -99,6 +100,27 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
       ...prev,
       [paramName]: value,
     }));
+  };
+
+  const getFormattedResponse = () => {
+    if (responseMode === 'raw') {
+      return toolResponse;
+    }
+
+    try {
+      const parsed = JSON.parse(toolResponse);
+      if (parsed?.content?.[0]?.text) {
+        try {
+          const formattedContent = JSON.parse(parsed.content[0].text);
+          return JSON.stringify(formattedContent, null, 2);
+        } catch {
+          return parsed.content[0].text;
+        }
+      }
+      return toolResponse;
+    } catch {
+      return toolResponse;
+    }
   };
 
   return (
@@ -216,9 +238,27 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
 
             {toolResponse && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Response</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Response</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={responseMode === 'raw' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setResponseMode('raw')}
+                    >
+                      Raw
+                    </Button>
+                    <Button
+                      variant={responseMode === 'formatted' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setResponseMode('formatted')}
+                    >
+                      Formatted
+                    </Button>
+                  </div>
+                </div>
                 <div className="w-full">
-                  <DynamicCodeBlock lang="json" code={toolResponse} />
+                  <DynamicCodeBlock lang="json" code={getFormattedResponse()} />
                 </div>
               </div>
             )}
