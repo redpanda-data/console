@@ -23,7 +23,7 @@ import {
 } from '../../../../../react-query/api/remote-mcp';
 import { Badge } from '../../../../redpanda-ui/components/badge';
 import { Button } from '../../../../redpanda-ui/components/button';
-import { DynamicCodeBlock } from '../../../../redpanda-ui/components/code-block-dynamic';
+import { CodeTabs } from '../../../../redpanda-ui/components/code-tabs';
 import { Label } from '../../../../redpanda-ui/components/label';
 import { TabsContent, type TabsContentProps } from '../../../../redpanda-ui/components/tabs';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
@@ -100,6 +100,38 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
       [paramName]: value,
     }));
   };
+
+  const getResponseCodes = () => {
+    const rawResponse = toolResponse;
+
+    try {
+      const parsed = JSON.parse(toolResponse);
+      if (parsed?.content?.[0]?.text) {
+        try {
+          const formattedContent = JSON.parse(parsed.content[0].text);
+          const formattedResponse = JSON.stringify(formattedContent, null, 2);
+          return {
+            raw: rawResponse,
+            formatted: formattedResponse,
+          };
+        } catch {
+          return {
+            raw: rawResponse,
+            formatted: parsed.content[0].text,
+          };
+        }
+      }
+      return {
+        raw: rawResponse,
+      };
+    } catch {
+      return {
+        raw: rawResponse,
+      };
+    }
+  };
+
+  const codes = getResponseCodes();
 
   return (
     <TabsContent {...props} className="space-y-6">
@@ -214,12 +246,10 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
               onParameterChange={handleParameterChange}
             />
 
-            {toolResponse && (
+            {toolResponse && codes && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Response</Label>
-                <div className="w-full">
-                  <DynamicCodeBlock lang="json" code={toolResponse} />
-                </div>
+                <CodeTabs codes={codes as Record<string, string>} lang="json" defaultValue="raw" />
               </div>
             )}
           </div>
