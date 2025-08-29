@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kerr"
@@ -786,7 +787,7 @@ func createNewTestService(t *testing.T, log *slog.Logger,
 		cfg.SchemaRegistry.URLs = []string{registryAddr}
 	}
 
-	kafkaFactory := kafkafactory.NewCachedClientProvider(&cfg, log)
+	kafkaFactory := kafkafactory.NewCachedClientProvider(&cfg, log, prometheus.NewRegistry())
 	schemaFactory, _ := schema.NewSingleClientProvider(&cfg)
 	cacheFn := func(ctx context.Context) (string, error) { return "single/", nil }
 
