@@ -1,11 +1,4 @@
 {
-  "aliases": {
-    "uiDir": "./components/ui",
-    "componentsDir": "./components",
-    "blockDir": "./components",
-    "cssDir": "./styles",
-    "libDir": "./lib"
-  },
-  "baseDir": "src",
-  "commands": {}
+	"baseDir": "./src/components/redpanda-ui",
+	"commands": {}
 }

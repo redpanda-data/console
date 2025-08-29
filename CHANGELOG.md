@@ -2,6 +2,12 @@
 
 ## Master / Unreleased
 
+## v3.2.1 / 2025-08-27
+
+- [IMPROVEMENT] Add support for Schema Registry ACLs
+- [IMPROVEMENT] New revamped ACL page with improved usability
+- [IMPROVEMENT] Improved field selection options for custom debug bundle form
+
 ## v3.2.0 / 2025-08-19
 
 - [IMPROVEMENT] Add Redpanda news integration to keep users informed of updates

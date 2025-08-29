@@ -206,7 +206,7 @@ service SecurityService {
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Roles"
+      summary: "List roles"
       description: "List roles. Optional: filter based on role name and principal."
       responses: {
         key: "200"
@@ -230,7 +230,7 @@ service SecurityService {
       body: "role"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Create Role"
+      summary: "Create role"
       description: "Create a role."
       responses: {
         key: "201"
@@ -252,7 +252,7 @@ service SecurityService {
   rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {
     option (google.api.http) = {get: "/v1/roles/{role_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Role"
+      summary: "Get role"
       description: "Get a role."
       responses: {
         key: "200"
@@ -283,8 +283,8 @@ service SecurityService {
   rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {
     option (google.api.http) = {delete: "/v1/roles/{role_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Delete Role"
-      description: "Delete a Role."
+      summary: "Delete role"
+      description: "Delete a role."
       responses: {
         key: "204"
         value: {
@@ -312,7 +312,7 @@ service SecurityService {
   rpc ListRoleMembers(ListRoleMembersRequest) returns (ListRoleMembersResponse) {
     option (google.api.http) = {get: "/v1/roles/{role_name}/members"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Role Members"
+      summary: "List role members"
       description: "List members assigned to a role."
       responses: {
         key: "200"
@@ -341,7 +341,7 @@ service SecurityService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Update Role"
+      summary: "Update role"
       description: "Update a role."
       responses: {
         key: "200"

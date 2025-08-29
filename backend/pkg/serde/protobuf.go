@@ -16,7 +16,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // intentional import of old module
+	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // deprecated, still needed, we will migrate away from it soon.
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	v2proto "google.golang.org/protobuf/proto"

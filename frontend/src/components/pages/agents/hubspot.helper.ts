@@ -98,5 +98,3 @@ export const trackHubspotPage = (path: string) => {
   window._hsq = window._hsq || [];
   window._hsq.push(['setPath', { path }]);
 };
-
-

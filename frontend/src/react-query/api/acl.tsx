@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
-import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
+import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
 import {
   useQueryClient,
   useMutation as useTanstackMutation,
@@ -15,13 +15,15 @@ import {
   ACL_ResourceType,
   ACLService,
   type CreateACLRequest,
+  DeleteACLsRequestSchema,
+  type DeleteACLsResponseSchema,
   type ListACLsRequest,
   ListACLsRequestSchema,
   type ListACLsResponse,
   ListACLsResponse_PolicySchema,
   ListACLsResponse_ResourceSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { createACL, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { createACL, deleteACLs, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import type {
   AclStrOperation,
@@ -30,6 +32,15 @@ import type {
   GetAclOverviewResponse,
 } from 'state/restInterfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import {
+  type AclDetail,
+  calculateACLDifference,
+  convertRulesToCreateACLRequests,
+  getAclFromAclListResponse,
+  getIdFromCreateACLRequest,
+  type Rule,
+  type SharedConfig,
+} from '../../components/pages/acls/new-acl/ACL.model';
 
 /**
  * TODO: Remove once Console v3 is released.
@@ -373,4 +384,150 @@ export const useCreateACLMutation = () => {
       });
     },
   });
+};
+
+// New ACL implementation
+
+// this method is used from AclTab frontend/src/components/pages/acls/Acl.List.tsx, removed this when that page is migrated.
+interface SimpleAcl {
+  host: string;
+  principal: string;
+  principalType: string;
+  principalName: string;
+  hasAcl: boolean;
+}
+// this method is used from AclTab frontend/src/components/pages/acls/Acl.List.tsx, removed this when that page is migrated.
+export const useListACLAsPrincipalGroups = () => {
+  return useQuery(listACLs, {} as ListACLsRequest, {
+    select: (response) => {
+      const groupsAcl = response.resources.reduce((acc, r) => {
+        r.acls.forEach((a) => {
+          if (!acc.has(`${a.principal}:${a.host}`)) {
+            const [principalType, principalName] = (a.principal ?? '').split(':');
+            acc.set(`${a.principal}:${a.host}`, {
+              host: a.host,
+              principal: a.principal,
+              principalType,
+              principalName: principalName || '',
+              hasAcl: true,
+            });
+          }
+        });
+        return acc;
+      }, new Map<string, SimpleAcl>());
+      return groupsAcl.values().toArray();
+    },
+  });
+};
+
+// New ACL implementation
+
+interface ACLWithId extends CreateACLRequest {
+  id: string;
+}
+
+const useInvalidateAclsList = () => {
+  const queryClient = useQueryClient();
+
+  const invalid = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: createConnectQueryKey({
+        schema: ACLService,
+        cardinality: 'finite',
+      }),
+    });
+  };
+
+  return {
+    invalid,
+  };
+};
+
+export const useDeleteAclMutation = (
+  transportOptions?: UseMutationOptions<typeof DeleteACLsRequestSchema, typeof DeleteACLsResponseSchema>,
+) => {
+  const { invalid } = useInvalidateAclsList();
+  return useMutation(deleteACLs, {
+    onSettled: async (_, error) => {
+      if (!error) {
+        await invalid();
+      }
+    },
+    ...transportOptions,
+  });
+};
+
+export const useUpdateAclMutation = () => {
+  const { mutateAsync: createACLMutation } = useMutation(createACL);
+  const { mutateAsync: deleteACLMutation } = useMutation(deleteACLs);
+  const { invalid } = useInvalidateAclsList();
+
+  const applyUpdates = async (actualRules: Rule[], sharedConfig: SharedConfig, rules: Rule[]) => {
+    const currentRules: ACLWithId[] = convertRulesToCreateACLRequests(
+      actualRules,
+      sharedConfig.principal,
+      sharedConfig.host,
+    ).map((r) => ({
+      ...r,
+      id: getIdFromCreateACLRequest(r),
+    }));
+    const newRules: ACLWithId[] = convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map(
+      (r) => ({
+        ...r,
+        id: getIdFromCreateACLRequest(r),
+      }),
+    );
+
+    const { toCreate, toDelete } = calculateACLDifference(currentRules, newRules);
+
+    const createResults = toCreate.map((r) => createACLMutation(r));
+    const deleteResults = toDelete.map((r) =>
+      deleteACLMutation(
+        create(DeleteACLsRequestSchema, {
+          filter: {
+            principal: r.principal,
+            resourceType: r.resourceType,
+            resourceName: r.resourceName,
+            host: r.host,
+            operation: r.operation,
+            permissionType: r.permissionType,
+            resourcePatternType: r.resourcePatternType,
+          },
+        }),
+      ),
+    );
+
+    await Promise.all([...createResults, ...deleteResults]);
+    await invalid();
+  };
+
+  return { applyUpdates };
+};
+
+export const useGetAclsByPrincipal = <T = AclDetail>(
+  principal: string,
+  transformFn?: (aclList: ListACLsResponse) => T,
+) => {
+  return useQuery(
+    listACLs,
+    {
+      filter: {
+        principal,
+      },
+    } as ListACLsRequest,
+    {
+      select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
+    },
+  );
+};
+
+export const useCreateAcls = () => {
+  const { mutateAsync: createACLMutation } = useMutation(createACL);
+  const { invalid } = useInvalidateAclsList();
+
+  const createAcls = async (acls: CreateACLRequest[]) => {
+    await Promise.all(acls.map((r) => createACLMutation(r)));
+    await invalid();
+  };
+  return { createAcls };
 };

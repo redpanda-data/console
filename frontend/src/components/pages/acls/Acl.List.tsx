@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
@@ -39,16 +40,24 @@ import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs'
 import { isServerless } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { type FC, useEffect, useRef, useState } from 'react';
+import {
+  ACL_Operation,
+  ACL_PermissionType,
+  ACL_ResourcePatternType,
+  ACL_ResourceType,
+  type DeleteACLsRequest,
+  DeleteACLsRequestSchema,
+} from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { type FC, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import ErrorResult from '../../../components/misc/ErrorResult';
+import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
-import { clone } from '../../../utils/jsonUtils';
 import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
@@ -538,6 +547,7 @@ const RolesTab = observer(() => {
                       as={ReactRouterLink}
                       to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
                       textDecoration="none"
+                      data-testid={`role-list-item-${entry.name}`}
                     >
                       {entry.name}
                     </ChakraLink>
@@ -593,24 +603,49 @@ const RolesTab = observer(() => {
   );
 });
 
-const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
-  useEffect(() => {
-    void api.refreshAcls(AclRequestDefault, true);
-  }, []);
+const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
+  const { data: principalGroups, isLoading } = useListACLAsPrincipalGroups();
+  const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const [editorType, setEditorType] = useState<'create' | 'edit'>('create');
   const [edittingPrincipalGroup, setEdittingPrincipalGroup] = useState<AclPrincipalGroup | null>(null);
 
-  let groups = p.principalGroups.filter((g) => g.principalType === 'User');
+  const navigate = useNavigate();
+
+  const deleteACLsForPrincipal = async (principal: string, host: string) => {
+    const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
+      filter: {
+        principal: principal,
+        resourceType: ACL_ResourceType.ANY,
+        resourceName: undefined,
+        host: host,
+        operation: ACL_Operation.ANY,
+        permissionType: ACL_PermissionType.ANY,
+        resourcePatternType: ACL_ResourcePatternType.ANY,
+      },
+    });
+    await deleteACLMutation(deleteRequest);
+    toast({
+      status: 'success',
+      description: (
+        <Text as="span">
+          Deleted ACLs for <CodeEl>{principal}</CodeEl>
+        </Text>
+      ),
+    });
+  };
+
+  let groups = principalGroups?.filter((g) => g.principalType === 'User') || [];
+
   try {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
-    groups = groups.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
+    groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
   } catch (_e) {
     console.warn('Invalid expression');
   }
 
-  if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
+  if (isLoading || !principalGroups) return DefaultSkeleton;
 
   return (
     <Flex flexDirection="column" gap="4">
@@ -621,7 +656,6 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
         without considering any permissions that may be derived from assigned roles. For a complete view of all
         effective permissions, including those granted through roles, refer to the Permissions List tab.
       </Box>
-
       {Features.rolesApi && (
         <Alert status="info">
           <AlertIcon />
@@ -629,14 +663,12 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
           hierarchies or large numbers of users.
         </Alert>
       )}
-
       <SearchField
         width="300px"
         searchText={uiSettings.aclList.configTable.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.configTable.quickSearch = x)}
         placeholderText="Filter by name"
       />
-
       <Section>
         {edittingPrincipalGroup && (
           <AclPrincipalGroupEditor
@@ -657,6 +689,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
           data-testid="create-acls"
           variant="outline"
           onClick={() => {
+            navigate('create');
             setEditorType('create');
             setEdittingPrincipalGroup(
               observable({
@@ -676,8 +709,8 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
         </Button>
 
         <Box py={4}>
-          <DataTable<AclPrincipalGroup>
-            data={groups}
+          <DataTable<{ principal: string; host: string; principalType: string; principalName: string }>
+            data={groups || []}
             pagination
             sorting
             columns={[
@@ -694,13 +727,17 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                       type="button"
                       className="hoverLink"
                       onClick={() => {
-                        setEditorType('edit');
-                        setEdittingPrincipalGroup(observable(clone(record)));
+                        navigate(`/security/acls/${record.principalName}/details`);
                       }}
                     >
                       <Flex>
                         {/* <Badge variant="subtle" mr="2">{principalType}</Badge> */}
-                        <Text as="span" wordBreak="break-word" whiteSpace="break-spaces">
+                        <Text
+                          as="span"
+                          wordBreak="break-word"
+                          whiteSpace="break-spaces"
+                          data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+                        >
                           {record.principalName}
                         </Text>
                       </Flex>
@@ -723,28 +760,11 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                 header: '',
                 cell: ({ row: { original: record } }) => {
                   const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                  const hasAcls = record.sourceEntries.length > 0;
 
                   const onDelete = async (user: boolean, acls: boolean) => {
                     if (acls) {
                       try {
-                        await api.deleteACLs({
-                          resourceType: 'Any',
-                          resourceName: undefined,
-                          resourcePatternType: 'Any',
-                          principal: `${record.principalType}:${record.principalName}`,
-                          host: record.host,
-                          operation: 'Any',
-                          permissionType: 'Any',
-                        });
-                        toast({
-                          status: 'success',
-                          description: (
-                            <Text as="span">
-                              Deleted ACLs for <CodeEl>{record.principalName}</CodeEl>
-                            </Text>
-                          ),
-                        });
+                        await deleteACLsForPrincipal(record.principal, record.host);
                       } catch (err: unknown) {
                         console.error('failed to delete acls', { error: err });
                         setAclFailed({ err });
@@ -778,7 +798,7 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                       </MenuButton>
                       <MenuList>
                         <MenuItem
-                          isDisabled={!userExists || !Features.deleteUser || !hasAcls}
+                          isDisabled={!userExists || !Features.deleteUser}
                           onClick={(e) => {
                             void onDelete(true, true);
                             e.stopPropagation();
@@ -796,7 +816,6 @@ const AclsTab = observer((p: { principalGroups: AclPrincipalGroup[] }) => {
                           Delete (User only)
                         </MenuItem>
                         <MenuItem
-                          isDisabled={!hasAcls}
                           onClick={(e) => {
                             void onDelete(false, true);
                             e.stopPropagation();

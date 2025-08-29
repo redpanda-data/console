@@ -139,7 +139,7 @@ message ListConnectorsRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -173,7 +173,7 @@ message RestartConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -199,7 +199,7 @@ message DeleteConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -222,7 +222,7 @@ message PauseConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -246,7 +246,7 @@ message ResumeConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -270,7 +270,7 @@ message StopConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -294,7 +294,7 @@ message GetConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -317,7 +317,7 @@ message CreateConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -354,7 +354,7 @@ message GetConnectClusterRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -379,7 +379,7 @@ message UpsertConnectorRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -413,7 +413,7 @@ message GetConnectorConfigRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -441,7 +441,7 @@ message GetConnectorStatusRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -469,7 +469,7 @@ message ListConnectorTopicsRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -498,7 +498,7 @@ message ResetConnectorTopicsRequest {
     (buf.validate.field).string.max_len = 128,
     (buf.validate.field).string.pattern = "^[a-zA-Z0-9-_]+$",
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-      description: "Unique name of target connect cluster. For Redpanda Cloud, use `redpanda`."
+      description: "Unique name of target Connect cluster. For Redpanda Cloud, use `redpanda`."
       example: "\"redpanda\""
       field_configuration: {path_param_name: "cluster_name"}
     }
@@ -530,8 +530,8 @@ service KafkaConnectService {
   rpc ListConnectClusters(ListConnectClustersRequest) returns (ListConnectClustersResponse) {
     option (google.api.http) = {get: "/v1/kafka-connect/clusters"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List connect clusters"
-      description: "List connect clusters available for being consumed by the console's kafka-connect service."
+      summary: "List Connect clusters"
+      description: "List Connect clusters available in Console."
       responses: {
         key: "200"
         value: {
@@ -553,7 +553,7 @@ service KafkaConnectService {
   rpc GetConnectCluster(GetConnectClusterRequest) returns (GetConnectClusterResponse) {
     option (google.api.http) = {get: "/v1/kafka-connect/clusters/{cluster_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get connect cluster"
+      summary: "Get Connect cluster"
       description: "Get information about an available Kafka Connect cluster."
       responses: {
         key: "200"

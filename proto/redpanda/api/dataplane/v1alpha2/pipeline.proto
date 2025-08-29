@@ -37,7 +37,7 @@ message Pipeline {
   string config_yaml = 4 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details."}
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details."}
   ];
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
@@ -403,7 +403,7 @@ message PipelineCreate {
   // Pipeline description.
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
-  // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+  // The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
   string config_yaml = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
@@ -488,7 +488,7 @@ message PipelineUpdate {
     (buf.validate.field).string.max_len = 256
   ];
 
-  // The Repanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+  // The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
   string config_yaml = 3 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true

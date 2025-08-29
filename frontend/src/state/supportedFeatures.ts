@@ -63,11 +63,21 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.SecretService',
     method: 'POST',
   };
+  static readonly RemoteMcpService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1alpha3.MCPServerService',
+    method: 'POST',
+  };
+  static readonly SchemaRegistryACLApi: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1.ACLService',
+    method: 'POST',
+  };
 }
 
 export function isSupported(f: FeatureEntry): boolean {
   const c = api.endpointCompatibility;
-  if (!c) return true; // not yet checked, allow it by default...
+  if (!c) {
+    return Feature.SchemaRegistryACLApi.endpoint !== f.endpoint; // not yet checked, allow it by default... except for schema registry ACLs
+  }
 
   for (const e of c.endpoints) if (e.method === f.method) if (e.endpoint === f.endpoint) return e.isSupported;
 
@@ -133,6 +143,12 @@ class SupportedFeatures {
   }
   @computed get rpcnSecretsApi(): boolean {
     return isSupported(Feature.SecretService);
+  }
+  @computed get remoteMcpApi(): boolean {
+    return isSupported(Feature.RemoteMcpService);
+  }
+  @computed get schemaRegistryACLApi(): boolean {
+    return isSupported(Feature.SchemaRegistryACLApi);
   }
 }
 

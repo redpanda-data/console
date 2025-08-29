@@ -14,9 +14,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/redpanda-data/common-go/rpsr"
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
@@ -293,7 +295,7 @@ type SchemaRegistrySubjectDetailsVersion struct {
 // This will submit two versions requests where one includes softDeletedVersions.
 // This is done to retrieve a list with all versions including a flag whether it's
 // a soft-deleted or active version.
-func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *sr.Client, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
+func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *rpsr.Client, subjectName string) ([]SchemaRegistrySubjectDetailsVersion, error) {
 	type chResponse struct {
 		Res             []int
 		WithSoftDeleted bool
@@ -373,7 +375,7 @@ func (*Service) getSchemaRegistrySchemaVersions(ctx context.Context, srClient *s
 
 // getSubjectCompatibilityLevel retrieves the compatibility level for a subject,
 // handling the case where no specific compatibility is configured.
-func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *sr.Client, subjectName string) string {
+func (s *Service) getSubjectCompatibilityLevel(ctx context.Context, srClient *rpsr.Client, subjectName string) string {
 	compatibilityRes := srClient.Compatibility(ctx, subjectName)
 	compatibility := compatibilityRes[0]
 	if err := compatibility.Err; err != nil {
@@ -678,4 +680,65 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int) ([]Sche
 	}
 
 	return schemaVersions, nil
+}
+
+// CheckSchemaRegistryACLSupport checks if the Schema Registry supports ACL
+// operations by making a test call to the ACL endpoint.
+func (s *Service) CheckSchemaRegistryACLSupport(ctx context.Context) bool {
+	if !s.cfg.SchemaRegistry.Enabled {
+		return false
+	}
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return false
+	}
+
+	faultyACL := []rpsr.ACL{{
+		ResourceType: "NOT_A_RESOURCE_TYPE",
+		PatternType:  "_CONSOLE_TEST",
+	}}
+	err = srClient.CreateACLs(ctx, faultyACL)
+	if err != nil {
+		var se *sr.ResponseError
+		if errors.As(err, &se) {
+			switch se.StatusCode {
+			case http.StatusNotFound:
+				return false
+			case http.StatusForbidden:
+				if strings.Contains(err.Error(), "license") {
+					return false
+				}
+			}
+		}
+		// Other errors (e.g., permissions) mean the endpoint exists
+		return true
+	}
+	return true
+}
+
+// ListSRACLs lists Schema Registry ACLs based on the provided filter
+func (s *Service) ListSRACLs(ctx context.Context, filter []rpsr.ACL) ([]rpsr.ACL, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return srClient.ListACLsBatch(ctx, filter)
+}
+
+// CreateSRACLs creates Schema Registry ACLs based on the provided ACL.
+func (s *Service) CreateSRACLs(ctx context.Context, acls []rpsr.ACL) error {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return err
+	}
+	return srClient.CreateACLs(ctx, acls)
+}
+
+// DeleteSRACLs deletes Schema Registry ACLs based on the provided ACL.
+func (s *Service) DeleteSRACLs(ctx context.Context, acls []rpsr.ACL) error {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return err
+	}
+	return srClient.DeleteACLs(ctx, acls)
 }

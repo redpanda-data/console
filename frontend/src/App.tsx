@@ -22,7 +22,6 @@ import './assets/fonts/inter.css';
 
 /* start tailwind styles */
 import './globals.css';
-
 /* end tailwind styles */
 
 import queryClient from 'queryClient';

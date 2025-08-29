@@ -34,4 +34,7 @@ enum Reason {
 
   // Invalid MCP tool configuration.
   REASON_CONNECT_INVALID_MCP_TOOL_CONFIGURATION = 10;
+
+  // Redpanda Schema Registry returned and error.
+  REASON_REDPANDA_SCHEMA_REGISTRY_ERROR = 11;
 }
