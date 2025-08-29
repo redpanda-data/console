@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { getBuildDate } from "utils/env";
+import { api } from "../../../state/backendApi";
+
 // Heap Analytics Configuration Constants
 export const HEAP_APP_ID = '328327039';
 
@@ -67,7 +70,7 @@ export const setHeapUserProperties = (properties: Record<string, any>) => {
  * Add event properties in Heap
  * @param properties - Event properties to set
  */
-export const setHeapEventProperties = (properties: Record<string, any>) => {
+export const addHeapEventProperties = (properties: Record<string, any>) => {
   if (window.heap) {
     window.heap.addEventProperties(properties);
   }
