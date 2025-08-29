@@ -13,6 +13,7 @@ interface NewsItem {
     slug: string;
     segment: string;
     'cta-button-text': string;
+    'cta-button-variant': 'primary' | 'ghost' 
   };
 }
 
