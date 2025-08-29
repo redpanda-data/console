@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// --------------------------------------------------------------------------
+// Service
+// --------------------------------------------------------------------------
+
+// PipelineService is the service for Redpanda Connect AI-powered pipeline generation.
+// It exposes a bidirectional streaming API for interactive pipeline generation tasks.
+service PipelineService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Redpanda Connect AI Pipeline"
+    description: "Interactive AI-powered [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipeline generation."
+  };
+
+  // ExecutePipelineTask generates a pipeline using AI with real-time streaming updates.
+  // Supports multi-turn conversations and interactive pipeline refinement.
+  rpc ExecutePipelineTask(stream ExecutePipelineTaskRequest) returns (stream ExecutePipelineTaskResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_CONNECT
+    };
+  }
+}
+
+// --------------------------------------------------------------------------
+// Resource Messages
+// --------------------------------------------------------------------------
+
+// TaskStatus represents the current state of the generation.
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_THINKING = 1; // Agent is reasoning/thinking
+  TASK_STATUS_GENERATING = 2; // Agent is generating pipeline
+  TASK_STATUS_COMPLETED = 3; // Generation completed successfully
+  TASK_STATUS_FAILED = 4; // Generation failed with error
+  TASK_STATUS_STARTED = 5; // We started a conversation with the LLM, this is first expected status.
+}
+
+// ContentType represents the type of streaming content.
+enum ContentType {
+  CONTENT_TYPE_UNSPECIFIED = 0;
+  CONTENT_TYPE_STATUS = 1; // Status update
+  CONTENT_TYPE_REASONING = 2; // Agent reasoning/thinking
+  CONTENT_TYPE_TEXT = 3; // Response text
+  CONTENT_TYPE_ERROR = 4; // Error occurred
+}
+
+// CompletionType represents what level of completion occurred.
+enum CompletionType {
+  COMPLETION_TYPE_UNSPECIFIED = 0; // Default/unknown
+  COMPLETION_TYPE_NONE = 1; // No completion, just a delta
+  COMPLETION_TYPE_TEXT_DONE = 2; // Text stream within part finished
+  COMPLETION_TYPE_PART_DONE = 3; // Entire reasoning/content part finished
+  COMPLETION_TYPE_PHASE_DONE = 4; // Entire thinking/generating phase finished
+  COMPLETION_TYPE_TASK_DONE = 5; // Entire task finished
+}
+
+// TokenUsageStatistics tracks token usage for the task.
+message TokenUsageStatistics {
+  int32 input_tokens = 1;
+  int32 output_tokens = 2;
+  int32 total_tokens = 3;
+}
+
+// --------------------------------------------------------------------------
+// RPC request/response messages
+// --------------------------------------------------------------------------
+
+// ExecutePipelineTaskRequest supports both initial requests and follow-up messages.
+message ExecutePipelineTaskRequest {
+  string user_request = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 2048
+  ];
+}
+
+// ExecutePipelineTaskResponse is streamed back with updates and the final result.
+message ExecutePipelineTaskResponse {
+  oneof event {
+    ConversationUpdate conversation_update = 1; // Status, reasoning, or text updates
+    PipelineUpdate pipeline_update = 2; // Pipeline updates (just YAML deltas)
+    TokenUsageStatistics usage = 3; // Token usage stats
+    StreamError error = 4; // Error information
+    PipelineContent content = 5; // Streaming pipeline content updates
+  }
+}
+
+// ConversationUpdat represents any kind of streaming update.
+message ConversationUpdate {
+  ContentType type = 1; // What kind of content this is
+  TaskStatus status = 2; // Current overall status
+  string text = 3; // Text content (always delta)
+  CompletionType completion = 4; // What just completed (if anything)
+}
+
+// PipelineResult contains the final generated pipeline configuration.
+message PipelineUpdate {
+  string text = 1; // Generated pipeline YAML (always a delta)
+  bool is_done = 2; // Is done is set true when it was the last delta.
+}
+
+// StreamError represents any error during generation.
+message StreamError {
+  string message = 1; // Error description
+  TaskStatus status = 2; // Final status (TASK_STATUS_FAILED)
+}
+
+// PipelineContent contains streaming pipeline content updates during generation.
+// This message is used to stream intermediate pipeline YAML updates to the code editor
+// while keeping conversational content separate in StreamUpdate messages.
+message PipelineContent {
+  string pipeline_yaml = 1; // Current pipeline YAML snapshot
+  int32 revision = 2; // Revision number, strictly increasing per session
+  bool is_final = 3; // True exactly once, signals completion before final PipelineResult
+  string checksum = 4; // Optional SHA-256 hash of pipeline_yaml for integrity validation
+}

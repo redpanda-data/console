@@ -34,6 +34,7 @@ import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { PipelineService as PipelineServiceV1Alpha3 } from 'protogen/redpanda/api/dataplane/v1alpha3/pipeline_pb';
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
 import { appGlobal } from './state/appGlobal';
@@ -129,6 +130,7 @@ interface Config {
   clusterStatusClient?: Client<typeof ClusterStatusService>;
   knowledgebaseClient?: Client<typeof KnowledgeBaseService>;
   userClient?: Client<typeof UserService>;
+  pipelineV1Alpha3Client?: Client<typeof PipelineServiceV1Alpha3>;
   fetch: WindowOrWorkerGlobalScope['fetch'];
   assetsPath: string;
   jwt?: string;
@@ -165,6 +167,8 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
     jsonOptions: {
       registry: protobufRegistry,
     },
+    // Enable binary format for better streaming support
+    useBinaryFormat: true,
   });
 
   const licenseGrpcClient = createClient(LicenseService, transport);
@@ -178,6 +182,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
   const clusterStatusGrpcClient = createClient(ClusterStatusService, transport);
   const knowledgebaseGrpcClient = createClient(KnowledgeBaseService, transport);
   const userGrpcClient = createClient(UserService, transport);
+  const pipelineV1Alpha3GrpcClient = createClient(PipelineServiceV1Alpha3, transport);
   Object.assign(config, {
     jwt,
     isServerless,
@@ -196,6 +201,7 @@ const setConfig = ({ fetch, urlOverride, jwt, isServerless, featureFlags, ...arg
     clusterStatusClient: clusterStatusGrpcClient,
     knowledgebaseClient: knowledgebaseGrpcClient,
     userClient: userGrpcClient,
+    pipelineV1Alpha3Client: pipelineV1Alpha3GrpcClient,
     featureFlags, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });

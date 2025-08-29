@@ -6,6 +6,22 @@ components:
         '@type':
           type: string
       type: object
+    CompletionType:
+      description: |-
+        CompletionType represents what level of completion occurred.
+
+         - COMPLETION_TYPE_NONE: No completion, just a delta
+         - COMPLETION_TYPE_TEXT_DONE: Text stream within part finished
+         - COMPLETION_TYPE_PART_DONE: Entire reasoning/content part finished
+         - COMPLETION_TYPE_PHASE_DONE: Entire thinking/generating phase finished
+         - COMPLETION_TYPE_TASK_DONE: Entire task finished
+      enum:
+        - COMPLETION_TYPE_NONE
+        - COMPLETION_TYPE_TEXT_DONE
+        - COMPLETION_TYPE_PART_DONE
+        - COMPLETION_TYPE_PHASE_DONE
+        - COMPLETION_TYPE_TASK_DONE
+      type: string
     ComponentType:
       description: Component type for this tool.
       enum:
@@ -22,6 +38,33 @@ components:
           description: JSON schema of the configuration components that are allowed for MCP Servers.
           type: string
       type: object
+    ContentType:
+      description: |-
+        ContentType represents the type of streaming content.
+
+         - CONTENT_TYPE_STATUS: Status update
+         - CONTENT_TYPE_REASONING: Agent reasoning/thinking
+         - CONTENT_TYPE_TEXT: Response text
+         - CONTENT_TYPE_ERROR: Error occurred
+      enum:
+        - CONTENT_TYPE_STATUS
+        - CONTENT_TYPE_REASONING
+        - CONTENT_TYPE_TEXT
+        - CONTENT_TYPE_ERROR
+      type: string
+    ConversationUpdate:
+      description: ConversationUpdat represents any kind of streaming update.
+      properties:
+        completion:
+          $ref: '#/components/schemas/CompletionType'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        text:
+          title: Text content (always delta)
+          type: string
+        type:
+          $ref: '#/components/schemas/ContentType'
+      type: object
     CreateKnowledgeBaseResponse:
       properties:
         knowledge_base:
@@ -35,6 +78,20 @@ components:
     DeleteKnowledgeBaseResponse:
       type: object
     DeleteMCPServerResponse:
+      type: object
+    ExecutePipelineTaskResponse:
+      description: ExecutePipelineTaskResponse is streamed back with updates and the final result.
+      properties:
+        content:
+          $ref: '#/components/schemas/PipelineContent'
+        conversation_update:
+          $ref: '#/components/schemas/ConversationUpdate'
+        error:
+          $ref: '#/components/schemas/StreamError'
+        pipeline_update:
+          $ref: '#/components/schemas/v1alpha3.PipelineUpdate'
+        usage:
+          $ref: '#/components/schemas/TokenUsageStatistics'
       type: object
     GetKnowledgeBaseResponse:
       properties:
@@ -667,6 +724,26 @@ components:
           description: The Redpanda Connect MCP server configuration.
           type: object
       type: object
+    PipelineContent:
+      description: |-
+        PipelineContent contains streaming pipeline content updates during generation.
+        This message is used to stream intermediate pipeline YAML updates to the code editor
+        while keeping conversational content separate in StreamUpdate messages.
+      properties:
+        checksum:
+          title: Optional SHA-256 hash of pipeline_yaml for integrity validation
+          type: string
+        is_final:
+          title: True exactly once, signals completion before final PipelineResult
+          type: boolean
+        pipeline_yaml:
+          title: Current pipeline YAML snapshot
+          type: string
+        revision:
+          format: int32
+          title: Revision number, strictly increasing per session
+          type: integer
+      type: object
     Resources:
       properties:
         cpu_shares:
@@ -713,6 +790,44 @@ components:
         mcp_server:
           $ref: '#/components/schemas/MCPServer'
       type: object
+    StreamError:
+      description: StreamError represents any error during generation.
+      properties:
+        message:
+          title: Error description
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+      type: object
+    TaskStatus:
+      description: |-
+        TaskStatus represents the current state of the generation.
+
+         - TASK_STATUS_THINKING: Agent is reasoning/thinking
+         - TASK_STATUS_GENERATING: Agent is generating pipeline
+         - TASK_STATUS_COMPLETED: Generation completed successfully
+         - TASK_STATUS_FAILED: Generation failed with error
+         - TASK_STATUS_STARTED: We started a conversation with the LLM, this is first expected status.
+      enum:
+        - TASK_STATUS_THINKING
+        - TASK_STATUS_GENERATING
+        - TASK_STATUS_COMPLETED
+        - TASK_STATUS_FAILED
+        - TASK_STATUS_STARTED
+      type: string
+    TokenUsageStatistics:
+      description: TokenUsageStatistics tracks token usage for the task.
+      properties:
+        input_tokens:
+          format: int32
+          type: integer
+        output_tokens:
+          format: int32
+          type: integer
+        total_tokens:
+          format: int32
+          type: integer
+      type: object
     Tool:
       description: A configuration tool for the MCP server.
       properties:
@@ -744,6 +859,16 @@ components:
             $ref: '#/components/schemas/Any'
           type: array
         message:
+          type: string
+      type: object
+    v1alpha3.PipelineUpdate:
+      description: PipelineResult contains the final generated pipeline configuration.
+      properties:
+        is_done:
+          description: Is done is set true when it was the last delta.
+          type: boolean
+        text:
+          title: Generated pipeline YAML (always a delta)
           type: string
       type: object
   securitySchemes:
@@ -1183,3 +1308,5 @@ tags:
     name: Redpanda AI KnowledgeBase
   - description: Create and manage Redpanda Connect MCP servers and their configurations.
     name: Redpanda Connect MCP servers
+  - description: Interactive AI-powered [Redpanda Connect](https://docs.redpanda.com/redpanda-cloud/develop/connect/about) pipeline generation.
+    name: Redpanda Connect AI Pipeline

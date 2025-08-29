@@ -14,6 +14,7 @@ import type { Monaco } from '@monaco-editor/react';
 import {
   Alert,
   AlertIcon,
+  Badge,
   Box,
   Button,
   Link as ChLink,
@@ -40,6 +41,8 @@ import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
+import { AIPipelineAssistantWrapper } from './AIPipelineAssistant';
+import { EnhancedPipelineEditor } from './EnhancedPipelineEditor';
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { MAX_TASKS, MIN_TASKS, tasksToCPU, cpuToTasks } from './tasks';
@@ -55,6 +58,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
+  @observable mode: 'manual' | 'ai' = 'manual';
   // TODO: Actually show this within the pipeline create page
   @observable tags = {} as Record<string, string>;
 
@@ -103,6 +107,34 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       )
     }
 
+    const renderEditor = () => {
+      if (this.mode === 'ai') {
+        return (
+          <AIPipelineAssistantWrapper
+            yamlContent={this.editorContent}
+            onYamlChange={(content) => (this.editorContent = content)}
+          >
+            <EnhancedPipelineEditor
+              yaml={this.editorContent}
+              onChange={(content) => (this.editorContent = content)}
+              secrets={this.secrets}
+              quickActions={QuickActions}
+              isDisabled={this.isCreating}
+            />
+          </AIPipelineAssistantWrapper>
+        );
+      }
+
+      return (
+        <PipelineEditor 
+          yaml={this.editorContent} 
+          onChange={(x) => (this.editorContent = x)} 
+          secrets={this.secrets}
+          isDisabled={this.isCreating}
+        />
+      );
+    };
+
     return (
       <PageContent>
         <Box my="2">
@@ -119,6 +151,43 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             connector catalog
           </ChLink>
           .
+        </Box>
+
+        {/* Mode Toggle */}
+        <Box my="4">
+          <Text fontSize="sm" fontWeight="medium" mb="2">
+            Creation Mode
+          </Text>
+          <Flex gap={2}>
+            <Badge
+              colorScheme={this.mode === 'manual' ? 'blue' : 'gray'}
+              variant={this.mode === 'manual' ? 'solid' : 'outline'}
+              cursor="pointer"
+              onClick={() => (this.mode = 'manual')}
+              _hover={{ opacity: 0.8 }}
+              px={3}
+              py={1}
+            >
+              Manual Configuration
+            </Badge>
+            <Badge
+              colorScheme={this.mode === 'ai' ? 'purple' : 'gray'}
+              variant={this.mode === 'ai' ? 'solid' : 'outline'}
+              cursor="pointer"
+              onClick={() => (this.mode = 'ai')}
+              _hover={{ opacity: 0.8 }}
+              px={3}
+              py={1}
+            >
+              AI Assistant
+            </Badge>
+          </Flex>
+          <Text fontSize="xs" color="gray.600" mt={1}>
+            {this.mode === 'manual' 
+              ? 'Create your pipeline configuration manually using the YAML editor'
+              : 'Get help from our AI assistant to build your pipeline step by step'
+            }
+          </Text>
         </Box>
 
         <Flex flexDirection="column" gap={3}>
@@ -159,7 +228,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         </Flex>
 
         <Box mt="4">
-          <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
+          {renderEditor()}
         </Box>
 
         <Flex alignItems="center" gap="4">

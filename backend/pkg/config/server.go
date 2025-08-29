@@ -51,6 +51,7 @@ func (s *Server) SetDefaults() {
 	// 1. https://github.com/connectrpc/connect-go/issues/604
 	// 2. https://github.com/connectrpc/connect-go/issues/356
 	s.HTTPServerWriteTimeout = 32 * time.Minute
+	s.HTTPServerReadTimeout = 32 * time.Minute
 	s.AllowedOrigins = nil
 	// Debug is enabled by default for backward compatibility.
 	s.Debug.Enabled = true
