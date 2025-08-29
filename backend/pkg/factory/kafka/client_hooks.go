@@ -38,7 +38,7 @@ type clientHooks struct {
 	requestsReceivedCount prometheus.Counter
 	bytesReceived         prometheus.Counter
 
-	openConnections prometheus.Gauge
+	openConnections *prometheus.GaugeVec
 }
 
 var (
@@ -52,7 +52,7 @@ var (
 	promBytesSent        prometheus.Counter
 	promRequestsReceived prometheus.Counter
 	promBytesReceived    prometheus.Counter
-	promOpenConnections  prometheus.Gauge
+	promOpenConnections  *prometheus.GaugeVec
 	promActiveClients    prometheus.Gauge
 )
 
@@ -80,12 +80,12 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
 			Name:      "received_bytes",
 		})
 
-		promOpenConnections = promauto.NewGauge(prometheus.GaugeOpts{
+		promOpenConnections = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: metricsNamespace,
 			Subsystem: "kafka",
 			Name:      "open_connections",
 			Help:      "Number of open connections to Kafka brokers",
-		})
+		}, []string{"broker_id"})
 
 		promActiveClients = promauto.NewGauge(prometheus.GaugeOpts{
 			Namespace: metricsNamespace,
@@ -115,7 +115,7 @@ func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Durat
 		c.logger.Debug("kafka connection failed", slog.String("broker_host", meta.Host), slog.Any("error", err))
 		return
 	}
-	c.openConnections.Inc()
+	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Inc()
 	c.logger.Debug("kafka connection succeeded",
 		slog.String("host", meta.Host),
 		slog.Duration("dial_duration", dialDur))
@@ -124,7 +124,7 @@ func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Durat
 // OnBrokerDisconnect is called when the client disconnects from any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
-	c.openConnections.Dec()
+	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Dec()
 	c.logger.Debug("kafka broker disconnected",
 		slog.String("host", meta.Host))
 }
@@ -151,18 +151,4 @@ func (c clientHooks) OnBrokerRead(_ kgo.BrokerMetadata, _ int16, bytesRead int, 
 func (c clientHooks) OnBrokerWrite(_ kgo.BrokerMetadata, _ int16, bytesWritten int, _, _ time.Duration, _ error) {
 	c.requestSentCount.Inc()
 	c.bytesSent.Add(float64(bytesWritten))
-}
-
-// IncrementClientCount increments the active client count metric
-func IncrementClientCount() {
-	if promActiveClients != nil {
-		promActiveClients.Inc()
-	}
-}
-
-// DecrementClientCount decrements the active client count metric
-func DecrementClientCount() {
-	if promActiveClients != nil {
-		promActiveClients.Dec()
-	}
 }

@@ -115,7 +115,7 @@ func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 	}
 
 	// Increment client count metric
-	IncrementClientCount()
+	promActiveClients.Inc()
 
 	return client, nil
 }
