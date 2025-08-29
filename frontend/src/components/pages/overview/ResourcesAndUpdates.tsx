@@ -1,4 +1,4 @@
-import { Box, Flex, Link, Skeleton, Text } from '@redpanda-data/ui';
+import { Box, Button, Flex, Link, Skeleton, Text } from '@redpanda-data/ui';
 import React from 'react';
 import { useNewsFeed } from '../../../hooks/useNewsFeed';
 import { api } from '../../../state/backendApi';
@@ -29,20 +29,25 @@ export const ResourcesAndUpdates: React.FC = () => {
         <Flex direction="column" gap={4}>
           {news?.length === 0 && <Text>No updates available</Text>}
           {news?.map((item) => (
-            <Link
-              key={item.id}
-              href={item.fieldData['link-url']}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="!no-underline"
-            >
-              <Box _hover={{ bg: 'gray.50', cursor: 'pointer' }} py={2}>
+            <Box _hover={{ bg: 'gray.50', cursor: 'pointer' }} p={2} display="flex" justifyContent="space-between" gap={10}>
+              <Link
+                key={item.id}
+                href={item.fieldData['link-url']}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="!no-underline"
+              >
                 <Text fontWeight="medium">{item.fieldData.message}</Text>
                 <Text mt={1} display="inline-block" fontWeight="normal" className="text-gray-700">
                   {item.fieldData['link-text']}
                 </Text>
-              </Box>
-            </Link>
+              </Link>
+              <Button alignSelf="center" variant="outline" size="sm" as={Link} href={item.fieldData['link-url']} style={{
+                textDecoration: 'none',
+              }} target="_blank" rel="noopener noreferrer">
+                <span className="mx-2">{item.fieldData['cta-button-text']}</span>
+              </Button>
+            </Box>
           ))}
         </Flex>
       )}

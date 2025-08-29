@@ -12,6 +12,7 @@ interface NewsItem {
     'link-url': string;
     slug: string;
     segment: string;
+    'cta-button-text': string;
   };
 }
 
