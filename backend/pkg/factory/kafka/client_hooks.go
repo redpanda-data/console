@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
@@ -44,67 +43,83 @@ type clientHooks struct {
 var (
 	// We may need to initialize client hooks with different
 	// loggers multiple times, but we can only register the same
-	// Prometheus metrics in the default registry once. Therefore,
-	// we store these metrics at the package level and initialize
-	// them only once.
-	promInitOnce         sync.Once
-	promRequestSent      prometheus.Counter
-	promBytesSent        prometheus.Counter
-	promRequestsReceived prometheus.Counter
-	promBytesReceived    prometheus.Counter
-	promOpenConnections  *prometheus.GaugeVec
-	promActiveClients    prometheus.Gauge
+	// Prometheus metrics in the same registry once. Therefore,
+	// we store these metrics at the package level per registry and initialize
+	// them only once per registry.
+	registryMetrics = make(map[prometheus.Registerer]*kafkaMetrics)
+	metricsInitMu   sync.RWMutex
 )
 
-func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
-	promInitOnce.Do(func() {
-		promRequestSent = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "requests_sent_total",
-		})
-		promBytesSent = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "sent_bytes",
-		})
+type kafkaMetrics struct {
+	requestSent      prometheus.Counter
+	bytesSent        prometheus.Counter
+	requestsReceived prometheus.Counter
+	bytesReceived    prometheus.Counter
+	openConnections  *prometheus.GaugeVec
+	activeClients    prometheus.Gauge
+}
 
-		promRequestsReceived = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "requests_received_total",
-		})
-		promBytesReceived = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "received_bytes",
-		})
+func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prometheus.Registerer) *clientHooks {
+	metricsInitMu.Lock()
+	defer metricsInitMu.Unlock()
 
-		promOpenConnections = promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "open_connections",
-			Help:      "Number of open connections to Kafka brokers",
-		}, []string{"broker_id"})
+	metrics, exists := registryMetrics[registry]
+	if !exists {
+		metrics = &kafkaMetrics{
+			requestSent: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "requests_sent_total",
+			}),
+			bytesSent: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "sent_bytes",
+			}),
+			requestsReceived: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "requests_received_total",
+			}),
+			bytesReceived: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "received_bytes",
+			}),
+			openConnections: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "open_connections",
+				Help:      "Number of open connections to Kafka brokers",
+			}, []string{"broker_id"}),
+			activeClients: prometheus.NewGauge(prometheus.GaugeOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "active_clients",
+				Help:      "Number of active Kafka clients",
+			}),
+		}
 
-		promActiveClients = promauto.NewGauge(prometheus.GaugeOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "active_clients",
-			Help:      "Number of active Kafka clients",
-		})
-	})
+		registry.MustRegister(
+			metrics.requestSent,
+			metrics.bytesSent,
+			metrics.requestsReceived,
+			metrics.bytesReceived,
+			metrics.openConnections,
+			metrics.activeClients,
+		)
+
+		registryMetrics[registry] = metrics
+	}
 
 	return &clientHooks{
 		logger: logger,
 
-		requestSentCount: promRequestSent,
-		bytesSent:        promBytesSent,
-
-		requestsReceivedCount: promRequestsReceived,
-		bytesReceived:         promBytesReceived,
-
-		openConnections: promOpenConnections,
+		requestSentCount:      metrics.requestSent,
+		bytesSent:             metrics.bytesSent,
+		requestsReceivedCount: metrics.requestsReceived,
+		bytesReceived:         metrics.bytesReceived,
+		openConnections:       metrics.openConnections,
 	}
 }
 
