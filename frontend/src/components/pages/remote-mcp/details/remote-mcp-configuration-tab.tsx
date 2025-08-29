@@ -13,11 +13,14 @@ import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Plus, Save, Trash2 } from 'lucide-react';
-import { MCPServer_Tool_ComponentType, UpdateMCPServerRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import {
+  MCPServer_Tool_ComponentType,
+  UpdateMCPServerRequestSchema,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGetMCPServerQuery, useUpdateMCPServerMutation } from '../../../../react-query/api/remote-mcp';
-import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
+import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from '../../../../utils/resource-tiers';
 import { YamlEditor } from '../../../misc/yaml-editor';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
@@ -26,6 +29,7 @@ import { Label } from '../../../redpanda-ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { TabsContent, type TabsContentProps } from '../../../redpanda-ui/components/tabs';
 import { Textarea } from '../../../redpanda-ui/components/textarea';
+import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 
 interface LocalTool {
   name: string;
@@ -150,9 +154,13 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
             description: currentData.description,
             tools: toolsMap,
             tags: tagsMap,
+            resources: {
+              memoryShares: getResourceTierByName(currentData.resources.tier)?.memory || '512MiB',
+              cpuShares: getResourceTierByName(currentData.resources.tier)?.cpu || '200m',
+            },
           },
           updateMask: create(FieldMaskSchema, {
-            paths: ['display_name', 'description', 'tools', 'tags'],
+            paths: ['display_name', 'description', 'tools', 'tags', 'resources'],
           }),
         }),
       );
@@ -171,7 +179,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       displayName: mcpServerData.mcpServer.displayName,
       description: mcpServerData.mcpServer.description,
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: 'Small' },
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -216,7 +224,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       displayName: mcpServerData.mcpServer.displayName,
       description: mcpServerData.mcpServer.description,
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: 'Small' },
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -242,7 +250,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       displayName: mcpServerData.mcpServer.displayName,
       description: mcpServerData.mcpServer.description,
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: 'Small' },
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -272,7 +280,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       displayName: mcpServerData.mcpServer.displayName,
       description: mcpServerData.mcpServer.description,
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: 'Small' },
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -297,7 +305,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       displayName: mcpServerData.mcpServer.displayName,
       description: mcpServerData.mcpServer.description,
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: 'Small' },
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -323,7 +331,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       displayName: mcpServerData.mcpServer.displayName,
       description: mcpServerData.mcpServer.description,
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: 'Small' },
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -343,14 +351,28 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
   };
 
   const hasDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
-    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
     return keys.length !== new Set(keys).size;
   };
 
   const getDuplicateKeys = (tags: Array<{ key: string; value: string }>) => {
-    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
     const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
     return new Set(duplicates);
+  };
+
+  // Convert server resource data to tier name
+  const getResourceTierFromServer = (resources?: any) => {
+    if (!resources) return 'Small';
+
+    // Find matching tier based on CPU and memory values
+    const matchingTier = RESOURCE_TIERS.find((tier) => {
+      const serverCpu = resources.cpuShares || '';
+      const serverMemory = resources.memoryShares || '';
+      return tier.cpu === serverCpu && tier.memory === serverMemory;
+    });
+
+    return matchingTier?.name || 'Small';
   };
 
   const displayData =
@@ -361,7 +383,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           displayName: mcpServerData.mcpServer.displayName,
           description: mcpServerData.mcpServer.description,
           tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-          resources: { tier: 'Small' },
+          resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
           tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
             name,
             componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -430,7 +452,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                     displayName: mcpServerData.mcpServer.displayName,
                     description: mcpServerData.mcpServer.description,
                     tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-                    resources: { tier: 'Small' },
+                    resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
                       name,
                       componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -458,7 +480,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                     displayName: mcpServerData.mcpServer.displayName,
                     description: mcpServerData.mcpServer.description,
                     tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-                    resources: { tier: 'Small' },
+                    resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
                       name,
                       componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
@@ -497,9 +519,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                       className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
                       onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
                     />
-                    {isDuplicateKey && (
-                      <p className="text-xs text-destructive mt-1">Duplicate key</p>
-                    )}
+                    {isDuplicateKey && <p className="text-xs text-destructive mt-1">Duplicate key</p>}
                   </div>
                   <Input
                     placeholder="Value"
@@ -532,18 +552,45 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardHeader>
           <CardContent className="space-y-2">
             <Label htmlFor="tier">Resource Tier</Label>
-            <Select disabled={!isEditing}>
-              <SelectTrigger>
-                <SelectValue placeholder={displayData.resources.tier || 'Select tier'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="XSmall">XSmall (100m CPU, 256MiB RAM)</SelectItem>
-                <SelectItem value="Small">Small (200m CPU, 512MiB RAM)</SelectItem>
-                <SelectItem value="Medium">Medium (500m CPU, 1GiB RAM)</SelectItem>
-                <SelectItem value="Large">Large (1000m CPU, 2GiB RAM)</SelectItem>
-                <SelectItem value="XLarge">XLarge (2000m CPU, 4GiB RAM)</SelectItem>
-              </SelectContent>
-            </Select>
+            {isEditing ? (
+              <Select
+                value={displayData.resources.tier}
+                onValueChange={(value) => {
+                  if (!mcpServerData?.mcpServer) return;
+                  const currentData = editedServerData || {
+                    id: mcpServerData.mcpServer.id,
+                    displayName: mcpServerData.mcpServer.displayName,
+                    description: mcpServerData.mcpServer.description,
+                    tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
+                    resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
+                    tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+                      name,
+                      componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+                      config: tool.configYaml,
+                    })),
+                    state: mcpServerData.mcpServer.state,
+                    status: mcpServerData.mcpServer.status?.error || '',
+                    url: mcpServerData.mcpServer.url,
+                  };
+                  setEditedServerData({ ...currentData, resources: { tier: value } });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESOURCE_TIERS.map((tier) => (
+                    <SelectItem key={tier.id} value={tier.id}>
+                      {tier.fullSpec}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
+                <code className="text-sm font-mono">{getResourceTierFullSpec(displayData.resources.tier)}</code>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -613,10 +660,12 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                     <div className="flex-1 space-y-1">
                       <Label className="text-sm font-medium">Tool Name</Label>
                       <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center gap-3">
-                        <RemoteMCPToolTypeBadge 
-                          componentType={tool.componentType === 'Processor' 
-                            ? MCPServer_Tool_ComponentType.PROCESSOR 
-                            : MCPServer_Tool_ComponentType.CACHE} 
+                        <RemoteMCPToolTypeBadge
+                          componentType={
+                            tool.componentType === 'Processor'
+                              ? MCPServer_Tool_ComponentType.PROCESSOR
+                              : MCPServer_Tool_ComponentType.CACHE
+                          }
                         />
                         <code className="text-sm font-mono">{tool.name}</code>
                       </div>

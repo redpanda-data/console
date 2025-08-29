@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useCheckMCPServerNameUniqueness } from '../../../../../react-query/api/remote-mcp';
+import { RESOURCE_TIERS } from '../../../../../utils/resource-tiers';
 import { Button } from '../../../../redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
 import { Input } from '../../../../redpanda-ui/components/input';
@@ -52,12 +53,12 @@ export const RemoteMCPCreateMetadataStep = ({
   };
 
   const hasDuplicateKeys = () => {
-    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
     return keys.length !== new Set(keys).size;
   };
 
   const getDuplicateKeys = () => {
-    const keys = tags.map(tag => tag.key.trim()).filter(key => key !== '');
+    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
     const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
     return new Set(duplicates);
   };
@@ -101,9 +102,7 @@ export const RemoteMCPCreateMetadataStep = ({
           <Label>Tags</Label>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground pb-2">Key-value pairs for organizing and categorizing</p>
-            {hasDuplicateKeys() && (
-              <p className="text-sm text-destructive">Tags must have unique keys</p>
-            )}
+            {hasDuplicateKeys() && <p className="text-sm text-destructive">Tags must have unique keys</p>}
             {tags.map((tag, index) => {
               const duplicateKeys = getDuplicateKeys();
               const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
@@ -117,9 +116,7 @@ export const RemoteMCPCreateMetadataStep = ({
                       onChange={(e) => updateTag(index, 'key', e.target.value)}
                     />
                     <div className="h-5 mt-1">
-                      {isDuplicateKey && (
-                        <p className="text-xs text-destructive">Duplicate key</p>
-                      )}
+                      {isDuplicateKey && <p className="text-xs text-destructive">Duplicate key</p>}
                     </div>
                   </div>
                   <div className="flex-1">
@@ -128,7 +125,7 @@ export const RemoteMCPCreateMetadataStep = ({
                       value={tag.value}
                       onChange={(e) => updateTag(index, 'value', e.target.value)}
                     />
-                    <div className="h-5 mt-1"></div>
+                    <div className="h-5 mt-1" />
                   </div>
                   <div className="flex items-center h-10">
                     <Button variant="outline" size="sm" onClick={() => removeTag(index)}>
@@ -152,9 +149,11 @@ export const RemoteMCPCreateMetadataStep = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="small">Small (0.5 CPU, 1GB RAM)</SelectItem>
-              <SelectItem value="medium">Medium (1 CPU, 2GB RAM)</SelectItem>
-              <SelectItem value="large">Large (2 CPU, 4GB RAM)</SelectItem>
+              {RESOURCE_TIERS.map((tier) => (
+                <SelectItem key={tier.id} value={tier.id}>
+                  {tier.fullSpec}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

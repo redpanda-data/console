@@ -34,7 +34,7 @@ export const updatePageTitle = () => {
 export interface Tool {
   id: string;
   name: string;
-  componentType: MCPServer_Tool_ComponentType;
+  componentType?: MCPServer_Tool_ComponentType;
   configYaml: string;
   validationError?: string;
 }

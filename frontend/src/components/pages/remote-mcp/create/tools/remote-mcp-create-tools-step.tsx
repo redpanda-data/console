@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../../redpanda-ui/components/select';
+import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import type { Tool } from '../remote-mcp-create-page';
 
 const yamlTemplates = {
@@ -183,7 +184,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
       {
         id: Date.now().toString(),
         name: '',
-        componentType: MCPServer_Tool_ComponentType.PROCESSOR,
+        componentType: undefined,
         configYaml: '',
         validationError: undefined,
       },
@@ -206,7 +207,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
         if (tool.id === id) {
           const updatedTool = { ...tool, [field]: value };
 
-          if (field === 'componentType' && value !== tool.componentType) {
+          if (field === 'componentType' && value !== tool.componentType && typeof value === 'number') {
             const templateKey = value === MCPServer_Tool_ComponentType.PROCESSOR ? 'processor' : 'cache';
             const templates = yamlTemplates[templateKey];
             const firstTemplate = Object.values(templates)[0];
@@ -223,7 +224,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
 
   const insertTemplate = (toolId: string, template: string) => {
     const tool = tools.find((t) => t.id === toolId);
-    if (tool) {
+    if (tool && tool.componentType !== undefined) {
       const templateKey = tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR ? 'processor' : 'cache';
       const templates = yamlTemplates[templateKey];
       updateTool(toolId, 'configYaml', templates[template as keyof typeof templates]);
@@ -283,6 +284,10 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
     const filenameRegex = /^[a-zA-Z0-9_-]+$/;
     if (!filenameRegex.test(tool.name)) {
       return 'Tool name must be filename-compatible (letters, numbers, hyphens, underscores only)';
+    }
+
+    if (tool.componentType === undefined) {
+      return 'Component type is required';
     }
 
     if (!tool.configYaml.trim()) {
@@ -352,34 +357,32 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
 
                 <div className="flex-1 space-y-2">
                   <Label>Component Type</Label>
-                  <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 h-10">
-                    <button
-                      type="button"
-                      onClick={() => updateTool(tool.id, 'componentType', MCPServer_Tool_ComponentType.PROCESSOR)}
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                        tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR
-                          ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Processor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateTool(tool.id, 'componentType', MCPServer_Tool_ComponentType.CACHE)}
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                        tool.componentType === MCPServer_Tool_ComponentType.CACHE
-                          ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      Cache
-                    </button>
-                  </div>
+                  <Select
+                    value={tool.componentType?.toString() ?? ''}
+                    onValueChange={(value) =>
+                      updateTool(tool.id, 'componentType', Number.parseInt(value) as MCPServer_Tool_ComponentType)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select component type">
+                        {tool.componentType && <RemoteMCPToolTypeBadge componentType={tool.componentType} />}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={MCPServer_Tool_ComponentType.PROCESSOR.toString()}>
+                        <RemoteMCPToolTypeBadge componentType={MCPServer_Tool_ComponentType.PROCESSOR} />
+                      </SelectItem>
+                      <SelectItem value={MCPServer_Tool_ComponentType.CACHE.toString()}>
+                        <RemoteMCPToolTypeBadge componentType={MCPServer_Tool_ComponentType.CACHE} />
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-gray-500">
                     {tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR
                       ? 'Transform and manipulate content, make API calls, process data.'
-                      : 'Store and retrieve data, manage cached content and state.'}{' '}
+                      : tool.componentType === MCPServer_Tool_ComponentType.CACHE
+                        ? 'Store and retrieve data, manage cached content and state.'
+                        : 'Choose the type of component this tool will use.'}{' '}
                     <Link to="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
                       Learn more <ExternalLink className="h-3 w-3" />
                     </Link>
@@ -391,9 +394,16 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                 <div className="flex items-center justify-between">
                   <Label>YAML Configuration</Label>
                   <div className="flex gap-2">
-                    <Select onValueChange={(value) => insertTemplate(tool.id, value)}>
+                    <Select
+                      onValueChange={(value) => insertTemplate(tool.id, value)}
+                      disabled={tool.componentType === undefined}
+                    >
                       <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Insert template" />
+                        <SelectValue
+                          placeholder={
+                            tool.componentType === undefined ? 'Select component type first' : 'Insert template'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR ? (
@@ -402,13 +412,13 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                             <SelectItem value="api-tool">API Tool</SelectItem>
                             <SelectItem value="data-tool">Data Tool</SelectItem>
                           </>
-                        ) : (
+                        ) : tool.componentType === MCPServer_Tool_ComponentType.CACHE ? (
                           <>
                             <SelectItem value="get-item">Get Item</SelectItem>
                             <SelectItem value="set-item">Set Item</SelectItem>
                             <SelectItem value="list-items">List Items</SelectItem>
                           </>
-                        )}
+                        ) : null}
                       </SelectContent>
                     </Select>
                   </div>

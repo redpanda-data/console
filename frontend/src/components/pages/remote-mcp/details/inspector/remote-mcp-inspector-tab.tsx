@@ -103,7 +103,7 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
 
   const getResponseCodes = () => {
     const rawResponse = toolResponse;
-    
+
     try {
       const parsed = JSON.parse(toolResponse);
       if (parsed?.content?.[0]?.text) {
@@ -130,6 +130,8 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
       };
     }
   };
+
+  const codes = getResponseCodes();
 
   return (
     <TabsContent {...props} className="space-y-6">
@@ -244,10 +246,10 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
               onParameterChange={handleParameterChange}
             />
 
-            {toolResponse && (
+            {toolResponse && codes && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Response</Label>
-                <CodeTabs codes={getResponseCodes()} lang="json" defaultValue="raw" />
+                <CodeTabs codes={codes as Record<string, string>} lang="json" defaultValue="raw" />
               </div>
             )}
           </div>
