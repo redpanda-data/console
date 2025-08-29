@@ -37,6 +37,8 @@ type clientHooks struct {
 
 	requestsReceivedCount prometheus.Counter
 	bytesReceived         prometheus.Counter
+
+	openConnections *prometheus.GaugeVec
 }
 
 var (
@@ -50,6 +52,8 @@ var (
 	promBytesSent        prometheus.Counter
 	promRequestsReceived prometheus.Counter
 	promBytesReceived    prometheus.Counter
+	promOpenConnections  *prometheus.GaugeVec
+	promActiveClients    prometheus.Gauge
 )
 
 func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
@@ -75,6 +79,20 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
 			Subsystem: "kafka",
 			Name:      "received_bytes",
 		})
+
+		promOpenConnections = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Subsystem: "kafka",
+			Name:      "open_connections",
+			Help:      "Number of open connections to Kafka brokers",
+		}, []string{"broker_id"})
+
+		promActiveClients = promauto.NewGauge(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Subsystem: "kafka",
+			Name:      "active_clients",
+			Help:      "Number of active Kafka clients",
+		})
 	})
 
 	return &clientHooks{
@@ -85,6 +103,8 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
 
 		requestsReceivedCount: promRequestsReceived,
 		bytesReceived:         promBytesReceived,
+
+		openConnections: promOpenConnections,
 	}
 }
 
@@ -95,6 +115,7 @@ func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Durat
 		c.logger.Debug("kafka connection failed", slog.String("broker_host", meta.Host), slog.Any("error", err))
 		return
 	}
+	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Inc()
 	c.logger.Debug("kafka connection succeeded",
 		slog.String("host", meta.Host),
 		slog.Duration("dial_duration", dialDur))
@@ -103,6 +124,7 @@ func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Durat
 // OnBrokerDisconnect is called when the client disconnects from any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
+	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Dec()
 	c.logger.Debug("kafka broker disconnected",
 		slog.String("host", meta.Host))
 }
