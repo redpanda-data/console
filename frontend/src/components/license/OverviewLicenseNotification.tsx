@@ -8,6 +8,7 @@ import {
   DISABLE_SSO_DOCS_LINK,
   ENTERPRISE_FEATURES_DOCS_LINK,
   getEnterpriseCTALink,
+  getLatestExpiringLicense,
   getMillisecondsToExpiration,
   getPrettyTimeToExpiration,
   isBakedInTrial,
@@ -33,11 +34,11 @@ const getLicenseAlertContent = (
   const bakedInTrial = licenses.every((license) => isBakedInTrial(license));
 
   // Choose the license with the latest expiration time
-  const license = licenses.reduce((latest, current) => {
-    const latestExpiration = Number(latest.expiresAt);
-    const currentExpiration = Number(current.expiresAt);
-    return currentExpiration > latestExpiration ? current : latest;
-  });
+  const license = getLatestExpiringLicense(licenses);
+
+  if (!license) {
+    return null;
+  }
 
   const msToExpiration = getMillisecondsToExpiration(license);
 

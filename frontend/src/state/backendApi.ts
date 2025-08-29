@@ -171,7 +171,7 @@ import {
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './uiState';
-import { consoleHasEnterpriseFeature, isBakedInTrial } from 'components/license/licenseUtils';
+import { consoleHasEnterpriseFeature, getExpirationDate, getLatestExpiringLicense, getMillisecondsToExpiration, getPrettyExpirationDate, isBakedInTrial, prettyLicenseType } from 'components/license/licenseUtils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -1960,9 +1960,14 @@ const apiStore = {
     ]);
   
     if(this.licenses.length > 0) {
-      addHeapEventProperties({
-        'BakedInTrial': isBakedInTrial(this.licenses[0]),
-      }); 
+      const license = getLatestExpiringLicense(this.licenses);
+      if(license !== undefined) {
+        addHeapEventProperties({
+          BakedInTrial: isBakedInTrial(license),
+          LicenseType: prettyLicenseType(license),
+          MillisecondsToExpiration: getMillisecondsToExpiration(license),
+        });
+      }
     }
     addHeapEventProperties({
         'SSOEnabled': consoleHasEnterpriseFeature('SINGLE_SIGN_ON'),

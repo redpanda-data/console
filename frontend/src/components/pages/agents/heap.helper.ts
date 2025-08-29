@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { getBuildDate } from "utils/env";
-import { api } from "../../../state/backendApi";
-
 // Heap Analytics Configuration Constants
 export const HEAP_APP_ID = '328327039';
 
