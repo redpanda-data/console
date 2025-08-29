@@ -23,6 +23,7 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commoninterceptor "github.com/redpanda-data/common-go/api/interceptor"
 	"github.com/redpanda-data/common-go/api/metrics"
@@ -546,7 +547,7 @@ func (api *API) routes() *chi.Mux {
 		// Private routes - these should only be accessible from within Kubernetes or a protected ingress
 		router.Group(func(r chi.Router) {
 			api.Hooks.Route.ConfigInternalRouter(r)
-			r.Handle("/admin/metrics", promhttp.Handler())
+			r.Handle("/admin/metrics", promhttp.HandlerFor(api.PrometheusRegistry.(*prometheus.Registry), promhttp.HandlerOpts{}))
 			r.Handle("/admin/health", api.handleLivenessProbe())
 			r.Handle("/admin/startup", api.handleStartupProbe())
 		})
