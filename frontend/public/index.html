@@ -50,7 +50,7 @@
         // Function to load analytics scripts
         window.loadAnalyticsScripts = function() {
             const enabledFeatures = window.ENABLED_FEATURES ? window.ENABLED_FEATURES.split(',') : [];
-            const isAnalyticsEnabled = enabledFeatures.includes('analytics_enabled');
+            const isAnalyticsEnabled = enabledFeatures.includes('ANALYTICS');
             if (isAnalyticsEnabled) {
                 // Load Hubspot script
                 const script = document.createElement('script');
@@ -76,11 +76,11 @@
                     heap.load("<%= HEAP_APP_ID %>");
                 `;
                 document.head.appendChild(heapScript);
-            }
+            }   
         };
         
-        // Load analytics scripts immediately since we have the config
-        window.loadAnalyticsScripts();
+        // Load analytics scripts after the page is fully loaded
+        window.addEventListener('load', window.loadAnalyticsScripts);
     </script>
 </head>
 

@@ -17,5 +17,5 @@
  */
 export function isAnalyticsEnabled(): boolean {
   const enabledFeatures = (window as any).ENABLED_FEATURES ? (window as any).ENABLED_FEATURES.split(',') : [];
-  return enabledFeatures.includes('analytics_enabled');
+  return enabledFeatures.includes('ANALYTICS');
 }

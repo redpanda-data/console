@@ -67,7 +67,7 @@ export const setHeapUserProperties = (properties: Record<string, any>) => {
  * Add event properties in Heap
  * @param properties - Event properties to set
  */
-export const setHeapEventProperties = (properties: Record<string, any>) => {
+export const addHeapEventProperties = (properties: Record<string, any>) => {
   if (window.heap) {
     window.heap.addEventProperties(properties);
   }
