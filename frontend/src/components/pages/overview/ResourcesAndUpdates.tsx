@@ -42,7 +42,12 @@ export const ResourcesAndUpdates: React.FC = () => {
                   {item.fieldData['link-text']}
                 </Text>
               </Link>
-              {Boolean(item.fieldData['cta-button-text']) ? <Button alignSelf="center" variant={item.fieldData['cta-button-variant']} size="sm" as={Link} href={item.fieldData['link-url']} style={{
+              {Boolean(item.fieldData['cta-button-text']) ? <Button 
+                alignSelf="center"
+                variant={item.fieldData['cta-button-variant']}
+                size="sm"
+                as="a"
+                href={item.fieldData['link-url']} style={{
                 textDecoration: 'none',
               }} target="_blank" rel="noopener noreferrer">
                 <span className="mx-2">{item.fieldData['cta-button-text']}</span>
