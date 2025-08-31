@@ -51,6 +51,7 @@ import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
 import { ResourcesAndUpdates } from './ResourcesAndUpdates';
+import NurturePanel from './NurturePanel';
 
 @observer
 class Overview extends PageComponent {
@@ -216,6 +217,10 @@ class Overview extends PageComponent {
                       : []),
                   ]}
                 />
+              </Section>
+
+              <Section>
+                <NurturePanel />
               </Section>
 
               <Section>

@@ -52,6 +52,7 @@ import {
 } from './config';
 import { uiSettings } from './state/ui';
 import { getBasePath } from './utils/env';
+import NotificationBar from 'components/NotificationBar';
 
 const AppSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
@@ -92,6 +93,7 @@ const App = () => {
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
                 <RequireAuth>
+                  <NotificationBar />
                   {isEmbedded() ? (
                     <AppContent />
                   ) : (
