@@ -390,6 +390,10 @@ message MCPServerCreate {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).map.min_pairs = 1,
+    (buf.validate.field).map.keys.string = {
+      pattern: "^[A-Za-z0-9_-]+$"
+      max_len: 64
+    },
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}
   ];
 
@@ -500,7 +504,13 @@ message MCPServerUpdate {
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
   // All the configuration tools for the MCP server.
-  map<string, MCPServer.Tool> tools = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}];
+  map<string, MCPServer.Tool> tools = 3 [
+    (buf.validate.field).map.keys.string = {
+      pattern: "^[A-Za-z0-9_-]+$"
+      max_len: 64
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect MCP server configuration."}
+  ];
 
   // The number of resources that are guaranteed to be assigned to the MCP server.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 4;
