@@ -380,9 +380,20 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		assert.Equal(t, expectData, actualData)
 	})
 
-	t.Run("dynamic", func(t *testing.T) {
-		// Simplifying this test as it requires complex dynamic message building
-		t.Skip("Dynamic protobuf test requires rewrite for native APIs")
+	t.Run("dynamicpb", func(t *testing.T) {
+		// Create a dynamicpb message using the generated proto
+		msg := &shopv1.Order{Id: "222"}
+
+		// Test serialization with the modern proto.Message interface
+		expectData, err := proto.Marshal(msg)
+		require.NoError(t, err)
+
+		serde := ProtobufSchemaSerde{}
+
+		actualData, err := serde.SerializeObject(t.Context(), msg, PayloadTypeValue)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectData, actualData)
 	})
 
 	t.Run("map type", func(t *testing.T) {

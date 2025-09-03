@@ -302,16 +302,11 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 	s.registryMutex.RLock()
 	defer s.registryMutex.RUnlock()
 
-	// Extract message name from URL (remove any type.googleapis.com/ prefix)
-	messageName := protoTypeURL
-	if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
-		messageName = messageName[idx+1:]
-	}
-
-	messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
+	messageType, err := s.registry.FindMessageByURL(protoTypeURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: %w", protoTypeURL, err)
 	}
+
 	if messageType == nil {
 		// If this happens the user should already know that because we check the existence of all mapped types
 		// when we create the proto registry. A log message is printed if a mapping can't be find in the registry.
