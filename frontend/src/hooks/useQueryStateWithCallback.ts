@@ -1,11 +1,11 @@
-import { useQueryState, UseQueryStateReturn } from 'nuqs';
-import { useSearchParams } from 'react-router-dom';
+import { type UseQueryStateReturn, useQueryState } from 'nuqs';
 import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 export function useQueryStateWithCallback<T, U = null>(
   params: {
-   onUpdate: (val: T) => void;
-   getDefaultValue: () => T;
+    onUpdate: (val: T) => void;
+    getDefaultValue: () => T;
   },
   ...options: Parameters<typeof useQueryState<T>>
 ): UseQueryStateReturn<T, U> {
@@ -16,14 +16,22 @@ export function useQueryStateWithCallback<T, U = null>(
   useEffect(() => {
     if (searchParams.has(key)) {
       setValue(value);
-    } else if(params.getDefaultValue) {
-      setValue(params.getDefaultValue() as Parameters<typeof setValue>[0]);
+    } else if (params.getDefaultValue) {
+      const defaultValue = params.getDefaultValue();
+      // The setValue function can accept T or a function that returns T
+      setValue(defaultValue as T & {});
     }
-  }, []);
+  }, [
+    searchParams,
+    key,
+    value,
+    params, // The setValue function can accept T or a function that returns T
+    setValue,
+  ]);
 
-  const setValueFinal = (value: Parameters<typeof setValue>[0]) => {
-    params.onUpdate(value as T);
-    setValue(value);
+  const setValueFinal = (value: T & {}) => {
+    params.onUpdate(value);
+    setValue(value as T & {});
   };
 
   return [value, setValueFinal] as UseQueryStateReturn<T, U>;

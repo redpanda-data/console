@@ -26,7 +26,6 @@ import {
   DataTable,
   Flex,
   Grid,
-  HStack,
   Icon,
   Popover,
   SearchField,
@@ -35,11 +34,14 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { type FC, useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import { useQueryStateWithCallback } from 'hooks/useQueryStateWithCallback';
 import { observable } from 'mobx';
+import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import React, { type FC, useCallback, useMemo, useRef, useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { Link } from 'react-router-dom';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { api } from '../../../state/backendApi';
@@ -49,37 +51,38 @@ import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
+import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
-import { renderLogDirSummary } from '../../misc/common';
 import {
   CreateTopicModalContent,
   type CreateTopicModalState,
   type RetentionSizeUnit,
   type RetentionTimeUnit,
 } from './CreateTopicModal/CreateTopicModal';
-import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
-import { useQueryStateWithCallback } from 'hooks/useQueryStateWithCallback';
 
 const TopicList: FC = () => {
-  const [localSearchValue, setLocalSearchValue] = useQueryState("q", parseAsString.withDefault(''));
-  
-  const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>({
-    onUpdate: (val) => {
-      uiSettings.topicList.hideInternalTopics = val;
+  const [localSearchValue, setLocalSearchValue] = useQueryState('q', parseAsString.withDefault(''));
+
+  const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>(
+    {
+      onUpdate: (val) => {
+        uiSettings.topicList.hideInternalTopics = val;
+      },
+      getDefaultValue: () => {
+        return uiSettings.topicList.hideInternalTopics;
+      },
     },
-    getDefaultValue: () => {
-      return uiSettings.topicList.hideInternalTopics;
-    }
-  }, "showInternal", parseAsBoolean);
+    'showInternal',
+    parseAsBoolean,
+  );
 
   const { data, isLoading, isError } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
   const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(() => makeCreateTopicModal(), []);
 
-  const refreshData = useCallback((force: boolean) => {
+  const refreshData = useCallback(() => {
     api.refreshClusterOverview();
     void api.refreshClusterHealth();
   }, []);
@@ -108,17 +111,17 @@ const TopicList: FC = () => {
   const statistics = useMemo(() => {
     const partitionCount = topics.sum((x) => x.partitionCount);
     const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
-    
+
     return {
       partitionCount,
       replicaCount,
-      topicCount: topics.length
+      topicCount: topics.length,
     };
   }, [topics]);
 
   if (isLoading) return DefaultSkeleton;
 
-  if(isError) return <div>Error</div>
+  if (isError) return <div>Error</div>;
 
   return (
     <PageContent>
@@ -132,31 +135,31 @@ const TopicList: FC = () => {
 
       <Box pt={6}>
         <Flex gap={2}>
-        <SearchField
-          width="350px"
-          placeholderText="Enter search term/regex"
-          searchText={localSearchValue}
-          setSearchText={setLocalSearchValue}
-        />
-        <AnimatePresence>
-          {localSearchValue && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              style={{ display: 'flex', alignItems: 'center' }}
-            >
-              <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
-                <Text fontWeight="bold" display="inline">
-                  {topics.length}
-                </Text>{' '}
-                {topics.length === 1 ? 'result' : 'results'}
-              </Text>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Flex>
+          <SearchField
+            width="350px"
+            placeholderText="Enter search term/regex"
+            searchText={localSearchValue}
+            setSearchText={setLocalSearchValue}
+          />
+          <AnimatePresence>
+            {localSearchValue && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12 }}
+                style={{ display: 'flex', alignItems: 'center' }}
+              >
+                <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
+                  <Text fontWeight="bold" display="inline">
+                    {topics.length}
+                  </Text>{' '}
+                  {topics.length === 1 ? 'result' : 'results'}
+                </Text>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Flex>
       </Box>
       <Section>
         <div className="flex items-center justify-between gap-4">
@@ -197,7 +200,7 @@ const TopicList: FC = () => {
         onCancel={() => setTopicToDelete(null)}
         onFinish={() => {
           setTopicToDelete(null);
-          refreshData(true);
+          refreshData();
         }}
       />
     </PageContent>
@@ -624,7 +627,7 @@ function makeCreateTopicModal() {
           name: state.topicName,
           partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
           replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-          configs: config.filter((x) => x.name.length > 0).map(x => ({ name: x.name, value: x.value })),
+          configs: config.filter((x) => x.name.length > 0).map((x) => ({ name: x.name, value: x.value })),
         },
         validateOnly: false,
       });
@@ -661,4 +664,4 @@ function makeCreateTopicModal() {
   });
 }
 
-export default TopicList
+export default TopicList;

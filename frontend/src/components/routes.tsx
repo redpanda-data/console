@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { NuqsAdapter } from 'nuqs/adapters/react-router/v6'
 import {
   BeakerIcon,
   BookOpenIcon,
@@ -22,6 +21,7 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { HiOutlinePuzzlePiece } from 'react-icons/hi2';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
