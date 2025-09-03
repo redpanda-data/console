@@ -11,23 +11,23 @@ package proto
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/jhump/protoreflect/dynamic"
-	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"github.com/bufbuild/protocompile"
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -60,11 +60,11 @@ type Service struct {
 
 	// fileDescriptorsBySchemaID are used to find the right schema type for messages at deserialization time. The type
 	// index is encoded as part of the serialized message.
-	fileDescriptorsBySchemaID      map[int]*desc.FileDescriptor
+	fileDescriptorsBySchemaID      map[int]protoreflect.FileDescriptor
 	fileDescriptorsBySchemaIDMutex sync.RWMutex
 
 	registryMutex sync.RWMutex
-	registry      *msgregistry.MessageRegistry
+	registry      *protoregistry.Types
 
 	sfGroup singleflight.Group
 }
@@ -159,25 +159,21 @@ func (s *Service) Start() error {
 }
 
 // DeserializeProtobufMessageToJSON deserializes the protobuf message to JSON.
-func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
-	msg := dynamic.NewMessage(md)
-	err := msg.Unmarshal(payload)
+func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md protoreflect.MessageDescriptor) ([]byte, error) {
+	// Create dynamicpb message
+	msg := dynamicpb.NewMessage(md)
+
+	// Unmarshal the payload into the message
+	err := proto.Unmarshal(payload, msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
 
-	modernDesc := convertDescToProtoReflect(md)
-	modernMsg := dynamicpb.NewMessage(modernDesc)
-
-	err = proto.Unmarshal(payload, modernMsg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal payload into modern protobuf message: %w", err)
-	}
-
+	// Use protojson with custom resolver
 	jsonBytes, err := protojson.MarshalOptions{
 		EmitDefaultValues: true,
-		Resolver:          &anyResolver{mr: s.registry},
-	}.Marshal(modernMsg)
+		Resolver:          &anyResolver{registry: s.registry},
+	}.Marshal(msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal protobuf message to JSON: %w", err)
 	}
@@ -186,40 +182,39 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 }
 
 // SerializeJSONToProtobufMessage serializes the JSON data to Protobuf message.
-func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDescriptor) ([]byte, error) {
-	// Convert to modern dynamicpb message
-	modernDesc := convertDescToProtoReflect(md)
-	modernMsg := dynamicpb.NewMessage(modernDesc)
+func (s *Service) SerializeJSONToProtobufMessage(json []byte, md protoreflect.MessageDescriptor) ([]byte, error) {
+	// Create dynamicpb message
+	msg := dynamicpb.NewMessage(md)
 
-	// Use modern protojson to unmarshal
+	// Use protojson to unmarshal
 	err := protojson.UnmarshalOptions{
-		Resolver:       &anyResolver{mr: s.registry},
+		Resolver:       &anyResolver{registry: s.registry},
 		DiscardUnknown: true,
-	}.Unmarshal(json, modernMsg)
+	}.Unmarshal(json, msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON into protobuf message: %w", err)
 	}
 
 	// Marshal back to binary format
-	return proto.Marshal(modernMsg)
+	return proto.Marshal(msg)
 }
 
 // GetMessageDescriptorForSchema gets the Protobuf message descriptor for the schema ID and message index.
 // TODO consolidate this with getMessageDescriptorFromConfluentMessage
-func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*desc.MessageDescriptor, error) {
+func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (protoreflect.MessageDescriptor, error) {
 	fd, exists := s.GetFileDescriptorBySchemaID(schemaID)
 	if !exists {
 		return nil, fmt.Errorf("schema ID %+v not found", schemaID)
 	}
 
-	messageTypes := fd.GetMessageTypes()
-	var messageDescriptor *desc.MessageDescriptor
+	messageTypes := fd.Messages()
+	var messageDescriptor protoreflect.MessageDescriptor
 	for _, idx := range index {
-		if idx > len(messageTypes) {
+		if idx >= messageTypes.Len() {
 			return nil, errors.New("message index is larger than the message types array length")
 		}
-		messageDescriptor = messageTypes[idx]
-		messageTypes = messageDescriptor.GetNestedMessageTypes()
+		messageDescriptor = messageTypes.Get(idx)
+		messageTypes = messageDescriptor.Messages()
 	}
 
 	if messageDescriptor == nil {
@@ -241,15 +236,14 @@ func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID 
 		return nil, err
 	}
 
-	// Convert to modern dynamicpb message
-	modernDesc := convertDescToProtoReflect(messageDescriptor)
-	modernMsg := dynamicpb.NewMessage(modernDesc)
+	// Create dynamicpb message
+	msg := dynamicpb.NewMessage(messageDescriptor)
 
-	// Use modern protojson to unmarshal
+	// Use protojson to unmarshal
 	err = protojson.UnmarshalOptions{
-		Resolver:       &anyResolver{mr: s.registry},
+		Resolver:       &anyResolver{registry: s.registry},
 		DiscardUnknown: true,
-	}.Unmarshal(json, modernMsg)
+	}.Unmarshal(json, msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON into protobuf message: %w", err)
 	}
@@ -257,14 +251,14 @@ func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID 
 	var srSerde sr.Serde
 	srSerde.Register(
 		schemaID,
-		modernMsg,
+		msg,
 		sr.EncodeFn(func(v any) ([]byte, error) {
 			return proto.Marshal(v.(proto.Message))
 		}),
 		sr.Index(index...),
 	)
 
-	return srSerde.Encode(modernMsg)
+	return srSerde.Encode(msg)
 }
 
 // UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
@@ -284,8 +278,8 @@ func (s *Service) UnmarshalPayload(payload []byte, topicName string, property Re
 	return jsonBytes, 0, nil
 }
 
-// GetMessageDescriptor tries to find the apr
-func (s *Service) GetMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
+// GetMessageDescriptor tries to find the appropriate message descriptor
+func (s *Service) GetMessageDescriptor(topicName string, property RecordPropertyType) (protoreflect.MessageDescriptor, error) {
 	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
 	mapping, err := s.getMatchingMapping(topicName)
 	if err != nil {
@@ -307,17 +301,24 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 
 	s.registryMutex.RLock()
 	defer s.registryMutex.RUnlock()
-	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeURL)
+
+	// Extract message name from URL (remove any type.googleapis.com/ prefix)
+	messageName := protoTypeURL
+	if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
+		messageName = messageName[idx+1:]
+	}
+
+	messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: %w", protoTypeURL, err)
 	}
-	if messageDescriptor == nil {
+	if messageType == nil {
 		// If this happens the user should already know that because we check the existence of all mapped types
 		// when we create the proto registry. A log message is printed if a mapping can't be find in the registry.
 		return nil, fmt.Errorf("failed to find the proto type %s in the proto registry: message descriptor is nil", protoTypeURL)
 	}
 
-	return messageDescriptor, nil
+	return messageType.Descriptor(), nil
 }
 
 type confluentEnvelope struct {
@@ -439,9 +440,18 @@ func (s *Service) createProtoRegistry() error {
 	}
 
 	// Create registry and add types from file descriptors
-	registry := msgregistry.NewMessageRegistryWithDefaults()
+	registry := &protoregistry.Types{}
 	for _, descriptor := range fileDescriptors {
-		registry.AddFile("", descriptor)
+		messages := descriptor.Messages()
+		for i := 0; i < messages.Len(); i++ {
+			msgDesc := messages.Get(i)
+			msgType := dynamicpb.NewMessageType(msgDesc)
+			if err := registry.RegisterMessage(msgType); err != nil {
+				s.logger.Warn("failed to register message type",
+					slog.String("message_name", string(msgDesc.FullName())),
+					slog.Any("error", err))
+			}
+		}
 	}
 	s.logger.Info("registered proto types in Console's local proto registry", slog.Int("registered_types", len(fileDescriptors)))
 
@@ -454,11 +464,14 @@ func (s *Service) createProtoRegistry() error {
 	missingTypes := 0
 	for _, mapping := range s.cfg.Mappings {
 		if mapping.ValueProtoType != "" {
-			messageDesc, err := s.registry.FindMessageTypeByUrl(mapping.ValueProtoType)
-			if err != nil {
-				return fmt.Errorf("failed to get proto type from registry: %w", err)
+			// Extract message name from URL
+			messageName := mapping.ValueProtoType
+			if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
+				messageName = messageName[idx+1:]
 			}
-			if messageDesc == nil {
+
+			messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
+			if err != nil || messageType == nil {
 				s.logger.Warn("protobuf type from configured topic mapping does not exist",
 					slog.String("topic_name", mapping.TopicName.String()),
 					slog.String("value_proto_type", mapping.ValueProtoType))
@@ -468,11 +481,14 @@ func (s *Service) createProtoRegistry() error {
 			}
 		}
 		if mapping.KeyProtoType != "" {
-			messageDesc, err := s.registry.FindMessageTypeByUrl(mapping.KeyProtoType)
-			if err != nil {
-				return fmt.Errorf("failed to get proto type from registry: %w", err)
+			// Extract message name from URL
+			messageName := mapping.KeyProtoType
+			if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
+				messageName = messageName[idx+1:]
 			}
-			if messageDesc == nil {
+
+			messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
+			if err != nil || messageType == nil {
 				s.logger.Info("protobuf type from configured topic mapping does not exist",
 					slog.String("topic_name", mapping.TopicName.String()),
 					slog.String("key_proto_type", mapping.KeyProtoType))
@@ -494,10 +510,9 @@ func (s *Service) createProtoRegistry() error {
 	return nil
 }
 
-// protoFileToDescriptorWithBinary parses a .proto file and compiles it to a descriptor using the protoc binary. Protoc must
-// be available as command or this will fail.
+// protoFileToDescriptor parses a .proto file and compiles it to a descriptor using protocompile.
 // Imported dependencies (such as Protobuf timestamp) are included so that the descriptors are self-contained.
-func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*desc.FileDescriptor, error) {
+func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]protoreflect.FileDescriptor, error) {
 	filesStr := make(map[string]string, len(files))
 	filePaths := make([]string, 0, len(filesStr))
 	for _, file := range files {
@@ -538,33 +553,37 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		}
 	}
 
-	errorReporter := func(err protoparse.ErrorWithPos) error {
-		position := err.GetPosition()
-		s.logger.Warn("failed to parse proto file to descriptor",
-			slog.String("file", position.Filename),
-			slog.Int("line", position.Line),
-			slog.Any("error", err))
-		return nil
+	// Create compiler with file system accessor
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor: func(filename string) (io.ReadCloser, error) {
+				content, ok := filesStr[filename]
+				if !ok {
+					return nil, fmt.Errorf("file not found: %s", filename)
+				}
+				return io.NopCloser(strings.NewReader(content)), nil
+			},
+		}),
 	}
 
-	parser := protoparse.Parser{
-		Accessor:              protoparse.FileContentsFromMap(filesStr),
-		ImportPaths:           []string{"."},
-		InferImportPaths:      true,
-		ValidateUnlinkedFiles: true,
-		IncludeSourceCodeInfo: false,
-		ErrorReporter:         errorReporter,
-	}
-	descriptors, err := parser.ParseFiles(filePaths...)
+	// Compile the proto files
+	ctx := context.Background()
+	result, err := compiler.Compile(ctx, filePaths...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse proto files to descriptors: %w", err)
+		return nil, fmt.Errorf("failed to compile proto files to descriptors: %w", err)
+	}
+
+	// Extract file descriptors
+	var descriptors []protoreflect.FileDescriptor
+	for _, fd := range result {
+		descriptors = append(descriptors, fd)
 	}
 
 	return descriptors, nil
 }
 
 // GetFileDescriptorBySchemaID gets the file descriptor by schema ID.
-func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (*desc.FileDescriptor, bool) {
+func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (protoreflect.FileDescriptor, bool) {
 	s.fileDescriptorsBySchemaIDMutex.Lock()
 	defer s.fileDescriptorsBySchemaIDMutex.Unlock()
 
@@ -584,25 +603,12 @@ func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (*desc.FileDescripto
 // deserialization issue with the any types:
 // https://github.com/redpanda-data/console/pull/425
 type anyResolver struct {
-	mr *msgregistry.MessageRegistry
+	registry *protoregistry.Types
 }
 
 // FindMessageByName implements protoreflect.MessageTypeResolver
 func (r *anyResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
-	// Convert to string and resolve using the existing registry
-	msg, err := r.mr.Resolve(string(message))
-	if err != nil {
-		return nil, err
-	}
-	// Convert dynamic message to modern API
-	if dynMsg, ok := msg.(*dynamic.Message); ok {
-		// Get the descriptor and convert to modern format
-		msgDesc := dynMsg.GetMessageDescriptor()
-		// Convert jhump descriptor to modern protoreflect descriptor
-		modernDesc := msgDesc.UnwrapMessage()
-		return dynamicpb.NewMessageType(modernDesc), nil
-	}
-	return nil, fmt.Errorf("message type %s not found", message)
+	return r.registry.FindMessageByName(message)
 }
 
 // FindMessageByURL implements protoreflect.MessageTypeResolver
@@ -616,17 +622,11 @@ func (r *anyResolver) FindMessageByURL(url string) (protoreflect.MessageType, er
 }
 
 // FindExtensionByName implements protoreflect.ExtensionTypeResolver
-func (*anyResolver) FindExtensionByName(_ protoreflect.FullName) (protoreflect.ExtensionType, error) {
-	return nil, errors.New("extension resolution not supported")
+func (r *anyResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
+	return r.registry.FindExtensionByName(field)
 }
 
 // FindExtensionByNumber implements protoreflect.ExtensionTypeResolver
-func (*anyResolver) FindExtensionByNumber(_ protoreflect.FullName, _ protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
-	return nil, errors.New("extension resolution not supported")
-}
-
-// convertDescToProtoReflect converts a jhump MessageDescriptor to a protoreflect.MessageDescriptor
-func convertDescToProtoReflect(md *desc.MessageDescriptor) protoreflect.MessageDescriptor {
-	// Use the Unwrap method to get the modern descriptor
-	return md.UnwrapMessage()
+func (r *anyResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
+	return r.registry.FindExtensionByNumber(message, field)
 }

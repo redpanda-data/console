@@ -11,17 +11,19 @@ package proto
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"log/slog"
 	"testing"
 
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/desc/builder"
-	"github.com/jhump/protoreflect/dynamic"
-	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"github.com/bufbuild/protocompile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -185,113 +187,129 @@ func TestService_getMatchingMapping(t *testing.T) {
 }
 
 // TestService_CloudEventWithProperAnyField tests CloudEvent with Any field containing UploadEvent
-// This is the corrected version that properly creates the Any field with cross-package type resolution
-// This test validates the anyResolver functionality introduced in PR #425
+// This uses native protobuf APIs with protocompile to compile proto files
 func TestService_CloudEventWithProperAnyField(t *testing.T) {
-	// Load standard protobuf types for Any and Timestamp
-	mdAny, err := desc.LoadMessageDescriptorForMessage((*anypb.Any)(nil))
-	require.NoError(t, err)
-	mdTimestamp, err := desc.LoadMessageDescriptorForMessage((*timestamppb.Timestamp)(nil))
-	require.NoError(t, err)
+	// Use protocompile to compile the proto files
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor: protocompile.SourceAccessorFromMap(map[string]string{
+				"user/upload.proto": `syntax = "proto3";
+package user;
 
-	// Create Properties message
-	propertiesBuilder := builder.NewMessage("Properties")
-	propertiesBuilder.AddField(builder.NewField("name", builder.FieldTypeString()).SetNumber(1))
-	propertiesBuilder.AddField(builder.NewField("email", builder.FieldTypeString()).SetNumber(2))
-	propertiesBuilder.AddField(builder.NewField("age", builder.FieldTypeString()).SetNumber(3))
+message Properties {
+  string name = 1;
+  string email = 2;
+  string age = 3;
+}
 
-	// Create UploadEvent message
-	uploadEventBuilder := builder.NewMessage("UploadEvent")
-	uploadEventBuilder.AddField(builder.NewField("properties", builder.FieldTypeMessage(propertiesBuilder)).SetNumber(1))
-	uploadEventBuilder.AddField(builder.NewField("user_id", builder.FieldTypeString()).SetNumber(2))
-	uploadEventBuilder.AddField(builder.NewField("tags", builder.FieldTypeString()).SetRepeated().SetNumber(3))
+message UploadEvent {
+  Properties properties = 1;
+  string user_id = 2;
+  repeated string tags = 3;
+}`,
+				"cloud/event.proto": `syntax = "proto3";
+package cloud;
 
-	// Build user package file
-	userFileBuilder := builder.NewFile("user/upload.proto")
-	userFileBuilder.SetPackageName("user")
-	userFileBuilder.AddMessage(propertiesBuilder)
-	userFileBuilder.AddMessage(uploadEventBuilder)
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 
-	userFd, err := userFileBuilder.Build()
-	require.NoError(t, err)
+message CloudEvent {
+  string spec_version = 1;
+  string type = 2;
+  string source = 3;
+  string id = 4;
+  google.protobuf.Timestamp time = 5;
+  string data_content_type = 6;
+  string event_version = 7;
+  google.protobuf.Any data = 8;
+}`,
+			}),
+		}),
+	}
 
-	// Create CloudEvent message with proper Any field
-	cloudEventBuilder := builder.NewMessage("CloudEvent")
-	cloudEventBuilder.AddField(builder.NewField("spec_version", builder.FieldTypeString()).SetNumber(1))
-	cloudEventBuilder.AddField(builder.NewField("type", builder.FieldTypeString()).SetNumber(2))
-	cloudEventBuilder.AddField(builder.NewField("source", builder.FieldTypeString()).SetNumber(3))
-	cloudEventBuilder.AddField(builder.NewField("id", builder.FieldTypeString()).SetNumber(4))
-	cloudEventBuilder.AddField(builder.NewField("time", builder.FieldTypeImportedMessage(mdTimestamp)).SetNumber(5))
-	cloudEventBuilder.AddField(builder.NewField("data_content_type", builder.FieldTypeString()).SetNumber(6))
-	cloudEventBuilder.AddField(builder.NewField("event_version", builder.FieldTypeString()).SetNumber(7))
-	cloudEventBuilder.AddField(builder.NewField("data", builder.FieldTypeImportedMessage(mdAny)).SetNumber(8))
-
-	// Build cloud package file
-	cloudFileBuilder := builder.NewFile("cloud/event.proto")
-	cloudFileBuilder.SetPackageName("cloud")
-	cloudFileBuilder.AddMessage(cloudEventBuilder)
-
-	cloudFd, err := cloudFileBuilder.Build()
+	// Compile the files
+	linker, err := compiler.Compile(context.Background(), "user/upload.proto", "cloud/event.proto")
 	require.NoError(t, err)
 
-	// Create service with both files
+	userFd := linker.FindFileByPath("user/upload.proto")
+	require.NotNil(t, userFd, "user/upload.proto file descriptor not found")
+	cloudFd := linker.FindFileByPath("cloud/event.proto")
+	require.NotNil(t, cloudFd, "cloud/event.proto file descriptor not found")
+
+	// Create service with registry
 	service := &Service{
 		cfg:      config.Proto{},
 		logger:   slog.Default(),
-		registry: msgregistry.NewMessageRegistryWithDefaults(),
+		registry: &protoregistry.Types{},
 	}
-	service.registry.AddFile("", userFd)
-	service.registry.AddFile("", cloudFd)
 
-	// Get message descriptors - use the message types directly since FindMessage might not work
-	propertiesMd := userFd.GetMessageTypes()[0]  // Properties
-	uploadEventMd := userFd.GetMessageTypes()[1] // UploadEvent
-	cloudEventMd := cloudFd.GetMessageTypes()[0] // CloudEvent
+	// Register message types from both file descriptors
+	for _, fd := range []protoreflect.FileDescriptor{userFd, cloudFd} {
+		messages := fd.Messages()
+		for i := 0; i < messages.Len(); i++ {
+			msgDesc := messages.Get(i)
+			msgType := dynamicpb.NewMessageType(msgDesc)
+			if err = service.registry.RegisterMessage(msgType); err != nil {
+				t.Fatalf("Failed to register message type %s: %v", string(msgDesc.FullName()), err)
+			}
+		}
+	}
+
+	// Get message descriptors
+	propertiesMd := userFd.Messages().ByName("Properties")
+	uploadEventMd := userFd.Messages().ByName("UploadEvent")
+	cloudEventMd := cloudFd.Messages().ByName("CloudEvent")
 
 	require.NotNil(t, propertiesMd, "Properties message not found")
 	require.NotNil(t, uploadEventMd, "UploadEvent message not found")
 	require.NotNil(t, cloudEventMd, "CloudEvent message not found")
 
 	// Create Properties message
-	propertiesMsg := dynamic.NewMessage(propertiesMd)
-	propertiesMsg.SetFieldByName("name", "frank")
-	propertiesMsg.SetFieldByName("email", "frank@example.com")
-	propertiesMsg.SetFieldByName("age", "37")
+	propertiesMsg := dynamicpb.NewMessage(propertiesMd)
+	propertiesMsg.Set(propertiesMd.Fields().ByName("name"), protoreflect.ValueOfString("frank"))
+	propertiesMsg.Set(propertiesMd.Fields().ByName("email"), protoreflect.ValueOfString("frank@example.com"))
+	propertiesMsg.Set(propertiesMd.Fields().ByName("age"), protoreflect.ValueOfString("37"))
 
 	// Create UploadEvent message
-	uploadEventMsg := dynamic.NewMessage(uploadEventMd)
-	uploadEventMsg.SetFieldByName("properties", propertiesMsg)
-	uploadEventMsg.SetFieldByName("user_id", "456")
-	uploadEventMsg.SetFieldByName("tags", []string{"tag1", "tag2"})
+	uploadEventMsg := dynamicpb.NewMessage(uploadEventMd)
+	uploadEventMsg.Set(uploadEventMd.Fields().ByName("properties"), protoreflect.ValueOfMessage(propertiesMsg))
+	uploadEventMsg.Set(uploadEventMd.Fields().ByName("user_id"), protoreflect.ValueOfString("456"))
+
+	// Create tags list
+	tagsList := uploadEventMsg.NewField(uploadEventMd.Fields().ByName("tags")).List()
+	tagsList.Append(protoreflect.ValueOfString("tag1"))
+	tagsList.Append(protoreflect.ValueOfString("tag2"))
+	uploadEventMsg.Set(uploadEventMd.Fields().ByName("tags"), protoreflect.ValueOfList(tagsList))
 
 	// Marshal UploadEvent to create Any payload
-	uploadEventBytes, err := uploadEventMsg.Marshal()
+	uploadEventBytes, err := proto.Marshal(uploadEventMsg)
 	require.NoError(t, err)
 
 	// Create Any message with proper type URL and payload
-	anyMsg := dynamic.NewMessage(mdAny)
-	anyMsg.SetFieldByName("type_url", "type.googleapis.com/user.UploadEvent")
-	anyMsg.SetFieldByName("value", uploadEventBytes)
-
-	// Create CloudEvent message
-	cloudEventMsg := dynamic.NewMessage(cloudEventMd)
-	cloudEventMsg.SetFieldByName("spec_version", "1.0")
-	cloudEventMsg.SetFieldByName("type", "user/upload")
-	cloudEventMsg.SetFieldByName("source", "user-uploader")
-	cloudEventMsg.SetFieldByName("id", "6c64af2c-e6fa-47c9-b8dd-df1cdb26168b")
-	cloudEventMsg.SetFieldByName("data_content_type", "application/json")
-	cloudEventMsg.SetFieldByName("event_version", "1.0")
+	anyMsg := &anypb.Any{
+		TypeUrl: "type.googleapis.com/user.UploadEvent",
+		Value:   uploadEventBytes,
+	}
 
 	// Create Timestamp message for the time field
-	timestampMsg := dynamic.NewMessage(mdTimestamp)
-	timestampMsg.SetFieldByName("seconds", int64(1660092397))
-	timestampMsg.SetFieldByName("nanos", int32(760761000))
-	cloudEventMsg.SetFieldByName("time", timestampMsg)
+	timestampMsg := &timestamppb.Timestamp{
+		Seconds: 1660092397,
+		Nanos:   760761000,
+	}
 
-	cloudEventMsg.SetFieldByName("data", anyMsg)
+	// Create CloudEvent message
+	cloudEventMsg := dynamicpb.NewMessage(cloudEventMd)
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("spec_version"), protoreflect.ValueOfString("1.0"))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("type"), protoreflect.ValueOfString("user/upload"))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("source"), protoreflect.ValueOfString("user-uploader"))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("id"), protoreflect.ValueOfString("6c64af2c-e6fa-47c9-b8dd-df1cdb26168b"))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("data_content_type"), protoreflect.ValueOfString("application/json"))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("event_version"), protoreflect.ValueOfString("1.0"))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("time"), protoreflect.ValueOfMessage(timestampMsg.ProtoReflect()))
+	cloudEventMsg.Set(cloudEventMd.Fields().ByName("data"), protoreflect.ValueOfMessage(anyMsg.ProtoReflect()))
 
 	// Marshal CloudEvent
-	cloudEventBytes, err := cloudEventMsg.Marshal()
+	cloudEventBytes, err := proto.Marshal(cloudEventMsg)
 	require.NoError(t, err)
 
 	// Test if modern protojson can handle cross-package Any fields without custom resolver
