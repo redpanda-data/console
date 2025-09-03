@@ -29,7 +29,14 @@ export const ResourcesAndUpdates: React.FC = () => {
         <Flex direction="column" gap={4}>
           {news?.length === 0 && <Text>No updates available</Text>}
           {news?.map((item) => (
-            <Box _hover={{ bg: 'gray.50', cursor: 'pointer' }} p={2} display="flex" justifyContent="space-between" gap={10}>
+            <Box
+              key={item.id}
+              _hover={{ bg: 'gray.50', cursor: 'pointer' }}
+              p={2}
+              display="flex"
+              justifyContent="space-between"
+              gap={10}
+            >
               <Link
                 key={item.id}
                 href={item.fieldData['link-url']}
@@ -42,16 +49,22 @@ export const ResourcesAndUpdates: React.FC = () => {
                   {item.fieldData['link-text']}
                 </Text>
               </Link>
-              {Boolean(item.fieldData['cta-button-text']) ? <Button 
-                alignSelf="center"
-                variant={item.fieldData['cta-button-variant']}
-                size="sm"
-                as="a"
-                href={item.fieldData['link-url']} style={{
-                textDecoration: 'none',
-              }} target="_blank" rel="noopener noreferrer">
-                <span className="mx-2">{item.fieldData['cta-button-text']}</span>
-              </Button> : null}
+              {item.fieldData['cta-button-text'] ? (
+                <Button
+                  alignSelf="center"
+                  variant={item.fieldData['cta-button-variant']}
+                  size="sm"
+                  as="a"
+                  href={item.fieldData['link-url']}
+                  style={{
+                    textDecoration: 'none',
+                  }}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="mx-2">{item.fieldData['cta-button-text']}</span>
+                </Button>
+              ) : null}
             </Box>
           ))}
         </Flex>

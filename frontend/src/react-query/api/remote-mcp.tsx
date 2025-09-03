@@ -413,7 +413,7 @@ export const useCallMCPServerToolMutation = () => {
   return useTanstackMutation({
     mutationFn: async ({ serverUrl, toolName, parameters }: CallMCPToolParams): Promise<unknown> => {
       const token = config.jwt;
-      
+
       // Step 1: Initialize MCP session
       const initResponse = await fetch(`${serverUrl}`, {
         method: 'POST',
@@ -437,8 +437,9 @@ export const useCallMCPServerToolMutation = () => {
       });
 
       // Account for different header names
-      const mcpSessionId = (initResponse.headers.get('mcp-session-id') ?? initResponse.headers.get('Mcp-Session-Id')) as string
-      
+      const mcpSessionId = (initResponse.headers.get('mcp-session-id') ??
+        initResponse.headers.get('Mcp-Session-Id')) as string;
+
       if (!initResponse.ok) {
         throw new Error(`Failed to initialize MCP session: ${initResponse.status} ${initResponse.statusText}`);
       }
@@ -447,7 +448,7 @@ export const useCallMCPServerToolMutation = () => {
       if (initData.error) {
         throw new Error(`MCP Initialize Error: ${initData.error.message || 'Unknown error'}`);
       }
-      
+
       const response = await fetch(`${serverUrl}`, {
         method: 'POST',
         headers: {
