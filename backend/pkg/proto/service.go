@@ -166,17 +166,14 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
 
-	// Convert to modern dynamicpb message
 	modernDesc := convertDescToProtoReflect(md)
 	modernMsg := dynamicpb.NewMessage(modernDesc)
 
-	// Unmarshal the payload into the modern message
 	err = proto.Unmarshal(payload, modernMsg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal payload into modern protobuf message: %w", err)
 	}
 
-	// Use modern protojson with custom resolver
 	jsonBytes, err := protojson.MarshalOptions{
 		EmitDefaultValues: true,
 		Resolver:          &anyResolver{mr: s.registry},
