@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -142,12 +141,6 @@ func (d ProtobufSchemaSerde) SerializeObject(ctx context.Context, obj any, _ Pay
 	}
 
 	switch v := obj.(type) {
-	case *dynamic.Message:
-		b, err := v.Marshal()
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
-		}
-		return b, nil
 	case proto.Message:
 		b, err := proto.Marshal(v)
 		if err != nil {
