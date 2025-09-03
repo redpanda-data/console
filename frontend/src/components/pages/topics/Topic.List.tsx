@@ -26,6 +26,7 @@ import {
   DataTable,
   Flex,
   Grid,
+  HStack,
   Icon,
   Popover,
   SearchField,
@@ -104,20 +105,28 @@ const TopicList: FC = () => {
     return topics;
   }, [data.topics, showInternalTopics, localSearchValue]);
 
+  const statistics = useMemo(() => {
+    const partitionCount = topics.sum((x) => x.partitionCount);
+    const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
+    
+    return {
+      partitionCount,
+      replicaCount,
+      topicCount: topics.length
+    };
+  }, [topics]);
+
   if (isLoading) return DefaultSkeleton;
 
   if(isError) return <div>Error</div>
-
-  const partitionCount = topics.sum((x) => x.partitionCount);
-  const replicaCount = topics.sum((x) => x.partitionCount * x.replicationFactor);
 
   return (
     <PageContent>
       <Section>
         <Flex>
-          <Statistic title="Total topics" value={topics.length} />
-          <Statistic title="Total partitions" value={partitionCount} />
-          <Statistic title="Total replicas" value={replicaCount} />
+          <Statistic title="Total topics" value={statistics.topicCount} />
+          <Statistic title="Total partitions" value={statistics.partitionCount} />
+          <Statistic title="Total replicas" value={statistics.replicaCount} />
         </Flex>
       </Section>
 
@@ -150,12 +159,12 @@ const TopicList: FC = () => {
       </Flex>
       </Box>
       <Section>
-        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+        <div className="flex items-center justify-between gap-4">
           <Button
             variant="solid"
             colorScheme="brand"
             onClick={() => showCreateTopicModal()}
-            style={{ minWidth: '160px', marginBottom: '12px' }}
+            className="min-w-[160px]"
             data-testid="create-topic-button"
           >
             Create topic
@@ -167,7 +176,6 @@ const TopicList: FC = () => {
             onChange={(x) => {
               setShowInternalTopics(x.target.checked);
             }}
-            style={{ marginLeft: 'auto' }}
           >
             Show internal topics
           </Checkbox>
