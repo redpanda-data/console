@@ -417,6 +417,20 @@ func (s *Service) tryCreateProtoRegistry() {
 func (s *Service) createProtoRegistry() error {
 	startTime := time.Now()
 
+	files := s.collectProtoFiles()
+	fileDescriptors, err := s.protoFileToDescriptor(files)
+	if err != nil {
+		return fmt.Errorf("failed to compile proto files to descriptors: %w", err)
+	}
+
+	registry := s.buildMessageRegistry(fileDescriptors)
+	s.updateRegistry(registry)
+	s.validateMappings(startTime, len(fileDescriptors))
+
+	return nil
+}
+
+func (s *Service) collectProtoFiles() map[string]filesystem.File {
 	files := make(map[string]filesystem.File)
 
 	if s.gitSvc != nil {
@@ -434,12 +448,10 @@ func (s *Service) createProtoRegistry() error {
 			slog.Int("fetched_proto_files", len(files)))
 	}
 
-	fileDescriptors, err := s.protoFileToDescriptor(files)
-	if err != nil {
-		return fmt.Errorf("failed to compile proto files to descriptors: %w", err)
-	}
+	return files
+}
 
-	// Create registry and add types from file descriptors
+func (s *Service) buildMessageRegistry(fileDescriptors []protoreflect.FileDescriptor) *protoregistry.Types {
 	registry := &protoregistry.Types{}
 	for _, descriptor := range fileDescriptors {
 		messages := descriptor.Messages()
@@ -454,60 +466,65 @@ func (s *Service) createProtoRegistry() error {
 		}
 	}
 	s.logger.Info("registered proto types in Console's local proto registry", slog.Int("registered_types", len(fileDescriptors)))
+	return registry
+}
 
+func (s *Service) updateRegistry(registry *protoregistry.Types) {
 	s.registryMutex.Lock()
 	defer s.registryMutex.Unlock()
 	s.registry = registry
+}
 
-	// Let's compare the registry items against the mapping and let the user know if there are missing/mismatched proto types
-	foundTypes := 0
-	missingTypes := 0
-	for _, mapping := range s.cfg.Mappings {
-		if mapping.ValueProtoType != "" {
-			// Extract message name from URL
-			messageName := mapping.ValueProtoType
-			if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
-				messageName = messageName[idx+1:]
-			}
-
-			messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
-			if err != nil || messageType == nil {
-				s.logger.Warn("protobuf type from configured topic mapping does not exist",
-					slog.String("topic_name", mapping.TopicName.String()),
-					slog.String("value_proto_type", mapping.ValueProtoType))
-				missingTypes++
-			} else {
-				foundTypes++
-			}
-		}
-		if mapping.KeyProtoType != "" {
-			// Extract message name from URL
-			messageName := mapping.KeyProtoType
-			if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
-				messageName = messageName[idx+1:]
-			}
-
-			messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
-			if err != nil || messageType == nil {
-				s.logger.Info("protobuf type from configured topic mapping does not exist",
-					slog.String("topic_name", mapping.TopicName.String()),
-					slog.String("key_proto_type", mapping.KeyProtoType))
-				missingTypes++
-			} else {
-				foundTypes++
-			}
-		}
-	}
+func (s *Service) validateMappings(startTime time.Time, registeredTypes int) {
+	foundTypes, missingTypes := s.checkMappingTypes()
 
 	totalDuration := time.Since(startTime)
-
 	s.logger.Info("checked whether all mapped proto types also exist in the local registry",
 		slog.Int("types_found", foundTypes),
 		slog.Int("types_missing", missingTypes),
-		slog.Int("registered_types", len(fileDescriptors)),
+		slog.Int("registered_types", registeredTypes),
 		slog.Duration("operation_duration", totalDuration))
+}
 
-	return nil
+func (s *Service) checkMappingTypes() (found, missing int) {
+	for _, mapping := range s.cfg.Mappings {
+		if mapping.ValueProtoType != "" {
+			if s.checkProtoType(mapping.ValueProtoType, mapping.TopicName.String(), "value_proto_type") {
+				found++
+			} else {
+				missing++
+			}
+		}
+		if mapping.KeyProtoType != "" {
+			if s.checkProtoType(mapping.KeyProtoType, mapping.TopicName.String(), "key_proto_type") {
+				found++
+			} else {
+				missing++
+			}
+		}
+	}
+	return found, missing
+}
+
+func (s *Service) checkProtoType(protoType, topicName, fieldName string) bool {
+	// Extract message name from URL
+	messageName := protoType
+	if idx := strings.LastIndex(messageName, "/"); idx >= 0 {
+		messageName = messageName[idx+1:]
+	}
+
+	messageType, err := s.registry.FindMessageByName(protoreflect.FullName(messageName))
+	if err != nil || messageType == nil {
+		logLevel := s.logger.Warn
+		if fieldName == "key_proto_type" {
+			logLevel = s.logger.Info
+		}
+		logLevel("protobuf type from configured topic mapping does not exist",
+			slog.String("topic_name", topicName),
+			slog.String(fieldName, protoType))
+		return false
+	}
+	return true
 }
 
 // protoFileToDescriptor parses a .proto file and compiles it to a descriptor using protocompile.

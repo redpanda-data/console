@@ -246,7 +246,6 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
-//nolint:gocognit,cyclop // complexity in a test
 func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 	require.NoError(t, err)
