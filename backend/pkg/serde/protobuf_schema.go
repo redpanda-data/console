@@ -132,8 +132,6 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.
-//
-//nolint:cyclop // complex logic
 func (d ProtobufSchemaSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, opts ...SerdeOpt) ([]byte, error) {
 	so := serdeCfg{}
 	for _, o := range opts {

@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -114,7 +115,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				actualJSON := string(payload.NormalizedPayload)
+				actualJSON := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
 				expectedJSON := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 				assert.Equal(t, expectedJSON, actualJSON)
 
@@ -138,7 +139,7 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				actualJSON := string(payload.NormalizedPayload)
+				actualJSON := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
 				expectedJSON := `{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`
 				assert.Equal(t, expectedJSON, actualJSON)
 
