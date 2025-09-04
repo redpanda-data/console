@@ -599,7 +599,7 @@ func (s *Service) ListLogDirs(ctx context.Context, req *connect.Request[v1.ListL
 }
 
 // ListTopicDocumentations lists documentation for multiple topics with their availability status and content.
-func (s *Service) ListTopicDocumentations(ctx context.Context, req *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error) {
+func (s *Service) ListTopicDocumentations(_ context.Context, req *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error) {
 	documentations := make([]*v1.ListTopicDocumentationsResponse_TopicDocumentation, 0, len(req.Msg.TopicNames))
 
 	for _, topicName := range req.Msg.TopicNames {
