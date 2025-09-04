@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1alpha3/pipeline.proto.
  */
 export const file_redpanda_api_dataplane_v1alpha3_pipeline: GenFile = /*@__PURE__*/
-  fileDesc("Ci5yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL3BpcGVsaW5lLnByb3RvEh9yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzIlkKFFRva2VuVXNhZ2VTdGF0aXN0aWNzEhQKDGlucHV0X3Rva2VucxgBIAEoBRIVCg1vdXRwdXRfdG9rZW5zGAIgASgFEhQKDHRvdGFsX3Rva2VucxgDIAEoBSJEChpFeGVjdXRlUGlwZWxpbmVUYXNrUmVxdWVzdBImCgx1c2VyX3JlcXVlc3QYASABKAlCEOBBArpICsgBAXIFEAEYgBAikgMKG0V4ZWN1dGVQaXBlbGluZVRhc2tSZXNwb25zZRJSChNjb252ZXJzYXRpb25fdXBkYXRlGAEgASgLMjMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Db252ZXJzYXRpb25VcGRhdGVIABJKCg9waXBlbGluZV91cGRhdGUYAiABKAsyLy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlBpcGVsaW5lVXBkYXRlSAASRgoFdXNhZ2UYAyABKAsyNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRva2VuVXNhZ2VTdGF0aXN0aWNzSAASPQoFZXJyb3IYBCABKAsyLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlN0cmVhbUVycm9ySAASQwoHY29udGVudBgFIAEoCzIwLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUGlwZWxpbmVDb250ZW50SABCBwoFZXZlbnQi4AEKEkNvbnZlcnNhdGlvblVwZGF0ZRI6CgR0eXBlGAEgASgOMiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Db250ZW50VHlwZRI7CgZzdGF0dXMYAiABKA4yKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRhc2tTdGF0dXMSDAoEdGV4dBgDIAEoCRJDCgpjb21wbGV0aW9uGAQgASgOMi8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Db21wbGV0aW9uVHlwZSIvCg5QaXBlbGluZVVwZGF0ZRIMCgR0ZXh0GAEgASgJEg8KB2lzX2RvbmUYAiABKAgiWwoLU3RyZWFtRXJyb3ISDwoHbWVzc2FnZRgBIAEoCRI7CgZzdGF0dXMYAiABKA4yKy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlRhc2tTdGF0dXMiXgoPUGlwZWxpbmVDb250ZW50EhUKDXBpcGVsaW5lX3lhbWwYASABKAkSEAoIcmV2aXNpb24YAiABKAUSEAoIaXNfZmluYWwYAyABKAgSEAoIY2hlY2tzdW0YBCABKAkqqwEKClRhc2tTdGF0dXMSGwoXVEFTS19TVEFUVVNfVU5TUEVDSUZJRUQQABIYChRUQVNLX1NUQVRVU19USElOS0lORxABEhoKFlRBU0tfU1RBVFVTX0dFTkVSQVRJTkcQAhIZChVUQVNLX1NUQVRVU19DT01QTEVURUQQAxIWChJUQVNLX1NUQVRVU19GQUlMRUQQBBIXChNUQVNLX1NUQVRVU19TVEFSVEVEEAUqjwEKC0NvbnRlbnRUeXBlEhwKGENPTlRFTlRfVFlQRV9VTlNQRUNJRklFRBAAEhcKE0NPTlRFTlRfVFlQRV9TVEFUVVMQARIaChZDT05URU5UX1RZUEVfUkVBU09OSU5HEAISFQoRQ09OVEVOVF9UWVBFX1RFWFQQAxIWChJDT05URU5UX1RZUEVfRVJST1IQBCrIAQoOQ29tcGxldGlvblR5cGUSHwobQ09NUExFVElPTl9UWVBFX1VOU1BFQ0lGSUVEEAASGAoUQ09NUExFVElPTl9UWVBFX05PTkUQARIdChlDT01QTEVUSU9OX1RZUEVfVEVYVF9ET05FEAISHQoZQ09NUExFVElPTl9UWVBFX1BBUlRfRE9ORRADEh4KGkNPTVBMRVRJT05fVFlQRV9QSEFTRV9ET05FEAQSHQoZQ09NUExFVElPTl9UWVBFX1RBU0tfRE9ORRAFMtcCCg9QaXBlbGluZVNlcnZpY2USngEKE0V4ZWN1dGVQaXBlbGluZVRhc2sSOy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkV4ZWN1dGVQaXBlbGluZVRhc2tSZXF1ZXN0GjwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUGlwZWxpbmVUYXNrUmVzcG9uc2UiCIqmHQQIAhAEKAEwARqiAZJBngEKHFJlZHBhbmRhIENvbm5lY3QgQUkgUGlwZWxpbmUSfkludGVyYWN0aXZlIEFJLXBvd2VyZWQgW1JlZHBhbmRhIENvbm5lY3RdKGh0dHBzOi8vZG9jcy5yZWRwYW5kYS5jb20vcmVkcGFuZGEtY2xvdWQvZGV2ZWxvcC9jb25uZWN0L2Fib3V0KSBwaXBlbGluZSBnZW5lcmF0aW9uLkK8AgojY29tLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTNCDVBpcGVsaW5lUHJvdG9QAVpnZ2l0aHViLmNvbS9yZWRwYW5kYS1kYXRhL2NvbnNvbGUvYmFja2VuZC9wa2cvcHJvdG9nZW4vcmVkcGFuZGEvYXBpL2RhdGFwbGFuZS92MWFscGhhMztkYXRhcGxhbmV2MWFscGhhM6ICA1JBRKoCH1JlZHBhbmRhLkFwaS5EYXRhcGxhbmUuVjFhbHBoYTPKAh9SZWRwYW5kYVxBcGlcRGF0YXBsYW5lXFYxYWxwaGEz4gIrUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMWFscGhhM1xHUEJNZXRhZGF0YeoCIlJlZHBhbmRhOjpBcGk6OkRhdGFwbGFuZTo6VjFhbHBoYTNiBnByb3RvMw", [file_buf_validate_validate, file_google_api_field_behavior, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
+  fileDesc("Ci5yZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL3BpcGVsaW5lLnByb3RvEh9yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzIlkKFFRva2VuVXNhZ2VTdGF0aXN0aWNzEhQKDGlucHV0X3Rva2VucxgBIAEoBRIVCg1vdXRwdXRfdG9rZW5zGAIgASgFEhQKDHRvdGFsX3Rva2VucxgDIAEoBSI0ChNDb252ZXJzYXRpb25NZXNzYWdlEgwKBHJvbGUYASABKAkSDwoHY29udGVudBgCIAEoCSKYAQoaRXhlY3V0ZVBpcGVsaW5lVGFza1JlcXVlc3QSJgoMdXNlcl9yZXF1ZXN0GAEgASgJQhDgQQK6SArIAQFyBRABGIAQElIKFGNvbnZlcnNhdGlvbl9oaXN0b3J5GAIgAygLMjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Db252ZXJzYXRpb25NZXNzYWdlIpIDChtFeGVjdXRlUGlwZWxpbmVUYXNrUmVzcG9uc2USUgoTY29udmVyc2F0aW9uX3VwZGF0ZRgBIAEoCzIzLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ29udmVyc2F0aW9uVXBkYXRlSAASSgoPcGlwZWxpbmVfdXBkYXRlGAIgASgLMi8ucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5QaXBlbGluZVVwZGF0ZUgAEkYKBXVzYWdlGAMgASgLMjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Ub2tlblVzYWdlU3RhdGlzdGljc0gAEj0KBWVycm9yGAQgASgLMiwucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5TdHJlYW1FcnJvckgAEkMKB2NvbnRlbnQYBSABKAsyMC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlBpcGVsaW5lQ29udGVudEgAQgcKBWV2ZW50IuABChJDb252ZXJzYXRpb25VcGRhdGUSOgoEdHlwZRgBIAEoDjIsLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ29udGVudFR5cGUSOwoGc3RhdHVzGAIgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UYXNrU3RhdHVzEgwKBHRleHQYAyABKAkSQwoKY29tcGxldGlvbhgEIAEoDjIvLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ29tcGxldGlvblR5cGUiLwoOUGlwZWxpbmVVcGRhdGUSDAoEdGV4dBgBIAEoCRIPCgdpc19kb25lGAIgASgIIlsKC1N0cmVhbUVycm9yEg8KB21lc3NhZ2UYASABKAkSOwoGc3RhdHVzGAIgASgOMisucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UYXNrU3RhdHVzIl4KD1BpcGVsaW5lQ29udGVudBIVCg1waXBlbGluZV95YW1sGAEgASgJEhAKCHJldmlzaW9uGAIgASgFEhAKCGlzX2ZpbmFsGAMgASgIEhAKCGNoZWNrc3VtGAQgASgJKqsBCgpUYXNrU3RhdHVzEhsKF1RBU0tfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGAoUVEFTS19TVEFUVVNfVEhJTktJTkcQARIaChZUQVNLX1NUQVRVU19HRU5FUkFUSU5HEAISGQoVVEFTS19TVEFUVVNfQ09NUExFVEVEEAMSFgoSVEFTS19TVEFUVVNfRkFJTEVEEAQSFwoTVEFTS19TVEFUVVNfU1RBUlRFRBAFKo8BCgtDb250ZW50VHlwZRIcChhDT05URU5UX1RZUEVfVU5TUEVDSUZJRUQQABIXChNDT05URU5UX1RZUEVfU1RBVFVTEAESGgoWQ09OVEVOVF9UWVBFX1JFQVNPTklORxACEhUKEUNPTlRFTlRfVFlQRV9URVhUEAMSFgoSQ09OVEVOVF9UWVBFX0VSUk9SEAQqyAEKDkNvbXBsZXRpb25UeXBlEh8KG0NPTVBMRVRJT05fVFlQRV9VTlNQRUNJRklFRBAAEhgKFENPTVBMRVRJT05fVFlQRV9OT05FEAESHQoZQ09NUExFVElPTl9UWVBFX1RFWFRfRE9ORRACEh0KGUNPTVBMRVRJT05fVFlQRV9QQVJUX0RPTkUQAxIeChpDT01QTEVUSU9OX1RZUEVfUEhBU0VfRE9ORRAEEh0KGUNPTVBMRVRJT05fVFlQRV9UQVNLX0RPTkUQBTLXAgoPUGlwZWxpbmVTZXJ2aWNlEp4BChNFeGVjdXRlUGlwZWxpbmVUYXNrEjsucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUGlwZWxpbmVUYXNrUmVxdWVzdBo8LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRXhlY3V0ZVBpcGVsaW5lVGFza1Jlc3BvbnNlIgiKph0ECAIQBCgBMAEaogGSQZ4BChxSZWRwYW5kYSBDb25uZWN0IEFJIFBpcGVsaW5lEn5JbnRlcmFjdGl2ZSBBSS1wb3dlcmVkIFtSZWRwYW5kYSBDb25uZWN0XShodHRwczovL2RvY3MucmVkcGFuZGEuY29tL3JlZHBhbmRhLWNsb3VkL2RldmVsb3AvY29ubmVjdC9hYm91dCkgcGlwZWxpbmUgZ2VuZXJhdGlvbi5CvAIKI2NvbS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzQg1QaXBlbGluZVByb3RvUAFaZ2dpdGh1Yi5jb20vcmVkcGFuZGEtZGF0YS9jb25zb2xlL2JhY2tlbmQvcGtnL3Byb3RvZ2VuL3JlZHBhbmRhL2FwaS9kYXRhcGxhbmUvdjFhbHBoYTM7ZGF0YXBsYW5ldjFhbHBoYTOiAgNSQUSqAh9SZWRwYW5kYS5BcGkuRGF0YXBsYW5lLlYxYWxwaGEzygIfUmVkcGFuZGFcQXBpXERhdGFwbGFuZVxWMWFscGhhM+ICK1JlZHBhbmRhXEFwaVxEYXRhcGxhbmVcVjFhbHBoYTNcR1BCTWV0YWRhdGHqAiJSZWRwYW5kYTo6QXBpOjpEYXRhcGxhbmU6OlYxYWxwaGEzYgZwcm90bzM", [file_buf_validate_validate, file_google_api_field_behavior, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
 
 /**
  * TokenUsageStatistics tracks token usage for the task.
@@ -46,6 +46,34 @@ export const TokenUsageStatisticsSchema: GenMessage<TokenUsageStatistics> = /*@_
   messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 0);
 
 /**
+ * ConversationMessage represents a single message in the conversation history.
+ *
+ * @generated from message redpanda.api.dataplane.v1alpha3.ConversationMessage
+ */
+export type ConversationMessage = Message<"redpanda.api.dataplane.v1alpha3.ConversationMessage"> & {
+  /**
+   * Message role: "user", "assistant", "system"
+   *
+   * @generated from field: string role = 1;
+   */
+  role: string;
+
+  /**
+   * Message content
+   *
+   * @generated from field: string content = 2;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message redpanda.api.dataplane.v1alpha3.ConversationMessage.
+ * Use `create(ConversationMessageSchema)` to create a new message.
+ */
+export const ConversationMessageSchema: GenMessage<ConversationMessage> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 1);
+
+/**
  * ExecutePipelineTaskRequest supports both initial requests and follow-up messages.
  *
  * @generated from message redpanda.api.dataplane.v1alpha3.ExecutePipelineTaskRequest
@@ -55,6 +83,13 @@ export type ExecutePipelineTaskRequest = Message<"redpanda.api.dataplane.v1alpha
    * @generated from field: string user_request = 1;
    */
   userRequest: string;
+
+  /**
+   * Conversation history for multi-turn context (optional for first request)
+   *
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha3.ConversationMessage conversation_history = 2;
+   */
+  conversationHistory: ConversationMessage[];
 };
 
 /**
@@ -62,7 +97,7 @@ export type ExecutePipelineTaskRequest = Message<"redpanda.api.dataplane.v1alpha
  * Use `create(ExecutePipelineTaskRequestSchema)` to create a new message.
  */
 export const ExecutePipelineTaskRequestSchema: GenMessage<ExecutePipelineTaskRequest> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 1);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 2);
 
 /**
  * ExecutePipelineTaskResponse is streamed back with updates and the final result.
@@ -121,7 +156,7 @@ export type ExecutePipelineTaskResponse = Message<"redpanda.api.dataplane.v1alph
  * Use `create(ExecutePipelineTaskResponseSchema)` to create a new message.
  */
 export const ExecutePipelineTaskResponseSchema: GenMessage<ExecutePipelineTaskResponse> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 2);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 3);
 
 /**
  * ConversationUpdat represents any kind of streaming update.
@@ -151,7 +186,7 @@ export type ConversationUpdate = Message<"redpanda.api.dataplane.v1alpha3.Conver
   text: string;
 
   /**
-   * What just completed (if anything)
+   * What just completed - this is specific to the task status (e.g. thinking is done/completed)
    *
    * @generated from field: redpanda.api.dataplane.v1alpha3.CompletionType completion = 4;
    */
@@ -163,7 +198,7 @@ export type ConversationUpdate = Message<"redpanda.api.dataplane.v1alpha3.Conver
  * Use `create(ConversationUpdateSchema)` to create a new message.
  */
 export const ConversationUpdateSchema: GenMessage<ConversationUpdate> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 3);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 4);
 
 /**
  * PipelineResult contains the final generated pipeline configuration.
@@ -191,7 +226,7 @@ export type PipelineUpdate = Message<"redpanda.api.dataplane.v1alpha3.PipelineUp
  * Use `create(PipelineUpdateSchema)` to create a new message.
  */
 export const PipelineUpdateSchema: GenMessage<PipelineUpdate> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 4);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 5);
 
 /**
  * StreamError represents any error during generation.
@@ -219,7 +254,7 @@ export type StreamError = Message<"redpanda.api.dataplane.v1alpha3.StreamError">
  * Use `create(StreamErrorSchema)` to create a new message.
  */
 export const StreamErrorSchema: GenMessage<StreamError> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 5);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 6);
 
 /**
  * PipelineContent contains streaming pipeline content updates during generation.
@@ -263,7 +298,7 @@ export type PipelineContent = Message<"redpanda.api.dataplane.v1alpha3.PipelineC
  * Use `create(PipelineContentSchema)` to create a new message.
  */
 export const PipelineContentSchema: GenMessage<PipelineContent> = /*@__PURE__*/
-  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 6);
+  messageDesc(file_redpanda_api_dataplane_v1alpha3_pipeline, 7);
 
 /**
  * TaskStatus represents the current state of the generation.

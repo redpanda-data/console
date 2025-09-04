@@ -52,6 +52,16 @@ components:
         - CONTENT_TYPE_TEXT
         - CONTENT_TYPE_ERROR
       type: string
+    ConversationMessage:
+      description: ConversationMessage represents a single message in the conversation history.
+      properties:
+        content:
+          title: Message content
+          type: string
+        role:
+          title: 'Message role: "user", "assistant", "system"'
+          type: string
+      type: object
     ConversationUpdate:
       description: ConversationUpdat represents any kind of streaming update.
       properties:

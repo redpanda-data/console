@@ -73,6 +73,12 @@ message TokenUsageStatistics {
 // RPC request/response messages
 // --------------------------------------------------------------------------
 
+// ConversationMessage represents a single message in the conversation history.
+message ConversationMessage {
+  string role = 1; // Message role: "user", "assistant", "system"
+  string content = 2; // Message content
+}
+
 // ExecutePipelineTaskRequest supports both initial requests and follow-up messages.
 message ExecutePipelineTaskRequest {
   string user_request = 1 [
@@ -81,6 +87,9 @@ message ExecutePipelineTaskRequest {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 2048
   ];
+
+  // Conversation history for multi-turn context (optional for first request)
+  repeated ConversationMessage conversation_history = 2;
 }
 
 // ExecutePipelineTaskResponse is streamed back with updates and the final result.
@@ -99,7 +108,7 @@ message ConversationUpdate {
   ContentType type = 1; // What kind of content this is
   TaskStatus status = 2; // Current overall status
   string text = 3; // Text content (always delta)
-  CompletionType completion = 4; // What just completed (if anything)
+  CompletionType completion = 4; // What just completed - this is specific to the task status (e.g. thinking is done/completed)
 }
 
 // PipelineResult contains the final generated pipeline configuration.
