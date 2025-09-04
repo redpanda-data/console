@@ -23,6 +23,9 @@ const (
 	TopicService_CreateTopic_FullMethodName               = "/redpanda.api.dataplane.v1.TopicService/CreateTopic"
 	TopicService_ListTopics_FullMethodName                = "/redpanda.api.dataplane.v1.TopicService/ListTopics"
 	TopicService_DeleteTopic_FullMethodName               = "/redpanda.api.dataplane.v1.TopicService/DeleteTopic"
+	TopicService_ListTopicsConfigurations_FullMethodName  = "/redpanda.api.dataplane.v1.TopicService/ListTopicsConfigurations"
+	TopicService_ListLogDirs_FullMethodName               = "/redpanda.api.dataplane.v1.TopicService/ListLogDirs"
+	TopicService_ListTopicDocumentations_FullMethodName   = "/redpanda.api.dataplane.v1.TopicService/ListTopicDocumentations"
 	TopicService_GetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/GetTopicConfigurations"
 	TopicService_UpdateTopicConfigurations_FullMethodName = "/redpanda.api.dataplane.v1.TopicService/UpdateTopicConfigurations"
 	TopicService_SetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/SetTopicConfigurations"
@@ -39,6 +42,9 @@ type TopicServiceClient interface {
 	CreateTopic(ctx context.Context, in *CreateTopicRequest, opts ...grpc.CallOption) (*CreateTopicResponse, error)
 	ListTopics(ctx context.Context, in *ListTopicsRequest, opts ...grpc.CallOption) (*ListTopicsResponse, error)
 	DeleteTopic(ctx context.Context, in *DeleteTopicRequest, opts ...grpc.CallOption) (*DeleteTopicResponse, error)
+	ListTopicsConfigurations(ctx context.Context, in *ListTopicsConfigurationsRequest, opts ...grpc.CallOption) (*ListTopicsConfigurationsResponse, error)
+	ListLogDirs(ctx context.Context, in *ListLogDirsRequest, opts ...grpc.CallOption) (*ListLogDirsResponse, error)
+	ListTopicDocumentations(ctx context.Context, in *ListTopicDocumentationsRequest, opts ...grpc.CallOption) (*ListTopicDocumentationsResponse, error)
 	GetTopicConfigurations(ctx context.Context, in *GetTopicConfigurationsRequest, opts ...grpc.CallOption) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(ctx context.Context, in *UpdateTopicConfigurationsRequest, opts ...grpc.CallOption) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(ctx context.Context, in *SetTopicConfigurationsRequest, opts ...grpc.CallOption) (*SetTopicConfigurationsResponse, error)
@@ -80,6 +86,36 @@ func (c *topicServiceClient) DeleteTopic(ctx context.Context, in *DeleteTopicReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteTopicResponse)
 	err := c.cc.Invoke(ctx, TopicService_DeleteTopic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) ListTopicsConfigurations(ctx context.Context, in *ListTopicsConfigurationsRequest, opts ...grpc.CallOption) (*ListTopicsConfigurationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopicsConfigurationsResponse)
+	err := c.cc.Invoke(ctx, TopicService_ListTopicsConfigurations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) ListLogDirs(ctx context.Context, in *ListLogDirsRequest, opts ...grpc.CallOption) (*ListLogDirsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLogDirsResponse)
+	err := c.cc.Invoke(ctx, TopicService_ListLogDirs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) ListTopicDocumentations(ctx context.Context, in *ListTopicDocumentationsRequest, opts ...grpc.CallOption) (*ListTopicDocumentationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopicDocumentationsResponse)
+	err := c.cc.Invoke(ctx, TopicService_ListTopicDocumentations_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +199,9 @@ type TopicServiceServer interface {
 	CreateTopic(context.Context, *CreateTopicRequest) (*CreateTopicResponse, error)
 	ListTopics(context.Context, *ListTopicsRequest) (*ListTopicsResponse, error)
 	DeleteTopic(context.Context, *DeleteTopicRequest) (*DeleteTopicResponse, error)
+	ListTopicsConfigurations(context.Context, *ListTopicsConfigurationsRequest) (*ListTopicsConfigurationsResponse, error)
+	ListLogDirs(context.Context, *ListLogDirsRequest) (*ListLogDirsResponse, error)
+	ListTopicDocumentations(context.Context, *ListTopicDocumentationsRequest) (*ListTopicDocumentationsResponse, error)
 	GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(context.Context, *UpdateTopicConfigurationsRequest) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error)
@@ -188,6 +227,15 @@ func (UnimplementedTopicServiceServer) ListTopics(context.Context, *ListTopicsRe
 }
 func (UnimplementedTopicServiceServer) DeleteTopic(context.Context, *DeleteTopicRequest) (*DeleteTopicResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTopic not implemented")
+}
+func (UnimplementedTopicServiceServer) ListTopicsConfigurations(context.Context, *ListTopicsConfigurationsRequest) (*ListTopicsConfigurationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopicsConfigurations not implemented")
+}
+func (UnimplementedTopicServiceServer) ListLogDirs(context.Context, *ListLogDirsRequest) (*ListLogDirsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListLogDirs not implemented")
+}
+func (UnimplementedTopicServiceServer) ListTopicDocumentations(context.Context, *ListTopicDocumentationsRequest) (*ListTopicDocumentationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopicDocumentations not implemented")
 }
 func (UnimplementedTopicServiceServer) GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopicConfigurations not implemented")
@@ -281,6 +329,60 @@ func _TopicService_DeleteTopic_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TopicServiceServer).DeleteTopic(ctx, req.(*DeleteTopicRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_ListTopicsConfigurations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicsConfigurationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).ListTopicsConfigurations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_ListTopicsConfigurations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).ListTopicsConfigurations(ctx, req.(*ListTopicsConfigurationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_ListLogDirs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLogDirsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).ListLogDirs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_ListLogDirs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).ListLogDirs(ctx, req.(*ListLogDirsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_ListTopicDocumentations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicDocumentationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).ListTopicDocumentations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_ListTopicDocumentations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).ListTopicDocumentations(ctx, req.(*ListTopicDocumentationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -429,6 +531,18 @@ var TopicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTopic",
 			Handler:    _TopicService_DeleteTopic_Handler,
+		},
+		{
+			MethodName: "ListTopicsConfigurations",
+			Handler:    _TopicService_ListTopicsConfigurations_Handler,
+		},
+		{
+			MethodName: "ListLogDirs",
+			Handler:    _TopicService_ListLogDirs_Handler,
+		},
+		{
+			MethodName: "ListTopicDocumentations",
+			Handler:    _TopicService_ListTopicDocumentations_Handler,
 		},
 		{
 			MethodName: "GetTopicConfigurations",

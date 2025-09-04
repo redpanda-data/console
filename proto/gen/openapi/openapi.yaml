@@ -1022,6 +1022,13 @@ components:
             $ref: '#/components/schemas/Secret'
           type: array
       type: object
+    ListLogDirsResponse:
+      properties:
+        log_dirs:
+          items:
+            $ref: '#/components/schemas/LogDir'
+          type: array
+      type: object
     ListMountTasksResponse:
       properties:
         tasks:
@@ -1161,6 +1168,20 @@ components:
             $ref: '#/components/schemas/Secret'
           type: array
       type: object
+    ListTopicDocumentationsResponse:
+      properties:
+        documentations:
+          items:
+            $ref: '#/components/schemas/TopicDocumentation'
+          type: array
+      type: object
+    ListTopicsConfigurationsResponse:
+      properties:
+        topics:
+          items:
+            $ref: '#/components/schemas/TopicWithConfigurations'
+          type: array
+      type: object
     ListTopicsRequest.Filter:
       properties:
         name_contains:
@@ -1249,6 +1270,58 @@ components:
           type: string
         message:
           description: The localized error message in the above locale.
+          type: string
+      type: object
+    LogDir:
+      properties:
+        error:
+          description: Error details if the log directory has an error.
+          nullable: true
+          type: string
+        path:
+          description: The log directory path.
+          type: string
+        topics:
+          description: Topics in this log directory.
+          items:
+            $ref: '#/components/schemas/LogDirTopic'
+          type: array
+      type: object
+    LogDirPartition:
+      properties:
+        is_future:
+          description: Whether this partition is the future log.
+          type: boolean
+        offset_lag:
+          description: The offset of the first message in the partition's log.
+          format: int64
+          type: string
+        partition_id:
+          description: Partition ID.
+          format: int32
+          type: integer
+        size:
+          description: Size in bytes that this partition takes up in the log directory.
+          format: int64
+          type: string
+      type: object
+    LogDirTopic:
+      properties:
+        error:
+          description: Error details if the topic has an error.
+          nullable: true
+          type: string
+        name:
+          description: Topic name.
+          type: string
+        partitions:
+          description: Partitions in this topic within this log directory.
+          items:
+            $ref: '#/components/schemas/LogDirPartition'
+          type: array
+        total_size:
+          description: Total size in bytes of all partitions for this topic in this log directory.
+          format: int64
           type: string
       type: object
     MatchingACL:
@@ -1916,6 +1989,26 @@ components:
           description: ID of worker that the task is assigned to.
           type: string
       type: object
+    TopicDocumentation:
+      properties:
+        markdown:
+          description: The documentation content in markdown format (only present when state is AVAILABLE).
+          format: byte
+          nullable: true
+          type: string
+        state:
+          $ref: '#/components/schemas/TopicDocumentationState'
+        topic_name:
+          description: Topic name.
+          type: string
+      type: object
+    TopicDocumentationState:
+      description: Documentation state for a topic.
+      enum:
+        - TOPIC_DOCUMENTATION_STATE_NOT_CONFIGURED
+        - TOPIC_DOCUMENTATION_STATE_NOT_EXISTENT
+        - TOPIC_DOCUMENTATION_STATE_AVAILABLE
+      type: string
     TopicLocation:
       properties:
         topic_location:
@@ -1948,6 +2041,17 @@ components:
           type: string
       required:
         - source_topic_reference
+      type: object
+    TopicWithConfigurations:
+      properties:
+        configurations:
+          description: Topic configurations.
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+        name:
+          description: Topic name.
+          type: string
       type: object
     TransformMetadata:
       properties:
@@ -5210,6 +5314,126 @@ paths:
       summary: Set topic partitions
       tags:
         - Topics
+  /v1/topics/configurations:
+    get:
+      description: 'List topics with their configurations, partition count and replication factor. Optional: filter based on topic name.'
+      operationId: TopicService_ListTopicsConfigurations
+      parameters:
+        - description: Specific topic names to get configurations for. At least one topic name is required.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTopicsConfigurationsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List topics with configurations
+      tags:
+        - Topics
+  /v1/topics/documentations:
+    get:
+      description: List documentation for multiple topics with their availability status and content.
+      operationId: TopicService_ListTopicDocumentations
+      parameters:
+        - description: Specific topic names to get documentation for. At least one topic name is required.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTopicDocumentationsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List topic documentations
+      tags:
+        - Topics
+  /v1/topics/logdirs:
+    get:
+      description: List log directories with size information for topics.
+      operationId: TopicService_ListLogDirs
+      parameters:
+        - description: Specific topic names to get log directory info for. At least one topic name is required.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListLogDirsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List log directories
+      tags:
+        - Topics
   /v1/topics/{topic_name}:
     delete:
       description: Delete the Kafka topic with the requested name.
@@ -5591,7 +5815,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
