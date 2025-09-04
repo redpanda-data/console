@@ -640,6 +640,13 @@ components:
         - input_topic_name
         - output_topic_names
       type: object
+    DocumentationState:
+      description: Documentation state for a topic.
+      enum:
+        - DOCUMENTATION_STATE_NOT_CONFIGURED
+        - DOCUMENTATION_STATE_NOT_EXISTENT
+        - DOCUMENTATION_STATE_AVAILABLE
+      type: string
     Entity:
       properties:
         entity_name:
@@ -1178,9 +1185,17 @@ components:
       type: object
     ListTopicsResponse.Topic:
       properties:
+        cleanup_policy:
+          description: Topic cleanup policy (e.g. "delete", "compact", "compact,delete").
+          nullable: true
+          type: string
+        documentation:
+          $ref: '#/components/schemas/DocumentationState'
         internal:
           description: Whether topic is internal only.
           type: boolean
+        log_dir_summary:
+          $ref: '#/components/schemas/LogDirSummary'
         name:
           description: Topic name.
           type: string
@@ -1249,6 +1264,13 @@ components:
           type: string
         message:
           description: The localized error message in the above locale.
+          type: string
+      type: object
+    LogDirSummary:
+      properties:
+        total_size_bytes:
+          description: Total size in bytes that this topic takes up (files in its log dir).
+          format: int64
           type: string
       type: object
     MatchingACL:
