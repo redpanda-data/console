@@ -145,7 +145,7 @@ func (s *Service) enhanceTopicsWithCleanupPolicy(ctx context.Context, topics []*
 	// Make the request
 	configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
 	if err != nil {
-		s.logger.Warn("failed to describe topic configs", "error", err)
+		s.logger.WarnContext(ctx, "failed to describe topic configs", "error", err)
 		return
 	}
 
