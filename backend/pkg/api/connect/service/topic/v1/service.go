@@ -67,15 +67,15 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 		kafkaRes.Topics = filteredTopics
 	}
 
-	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
+	topicsResponse := s.mapper.kafkaMetadataToProto(kafkaRes)
 
-	// Add pagination
+	// Apply pagination first to reduce the topics we need to enhance
 	var nextPageToken string
 	if req.Msg.GetPageSize() > 0 {
-		sort.SliceStable(topics, func(i, j int) bool {
-			return topics[i].Name < topics[j].Name
+		sort.SliceStable(topicsResponse, func(i, j int) bool {
+			return topicsResponse[i].Name < topicsResponse[j].Name
 		})
-		page, token, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListTopicsResponse_Topic) string {
+		page, token, err := pagination.SliceToPaginatedWithToken(topicsResponse, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListTopicsResponse_Topic) string {
 			return x.GetName()
 		})
 		if err != nil {
@@ -85,11 +85,11 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
 			)
 		}
-		topics = page
+		topicsResponse = page
 		nextPageToken = token
 	}
 
-	return connect.NewResponse(&v1.ListTopicsResponse{Topics: topics, NextPageToken: nextPageToken}), nil
+	return connect.NewResponse(&v1.ListTopicsResponse{Topics: topicsResponse, NextPageToken: nextPageToken}), nil
 }
 
 // DeleteTopic deletes a Kafka topic.
@@ -510,4 +510,105 @@ func (s *Service) SetPartitionsToTopics(ctx context.Context, req *connect.Reques
 	}
 
 	return connect.NewResponse(resMsg), nil
+}
+
+// ListTopicsConfigurations lists topics with their configurations.
+func (s *Service) ListTopicsConfigurations(ctx context.Context, req *connect.Request[v1.ListTopicsConfigurationsRequest]) (*connect.Response[v1.ListTopicsConfigurationsResponse], error) {
+	configuredTopics := make([]*v1.ListTopicsConfigurationsResponse_TopicWithConfigurations, 0, len(req.Msg.TopicNames))
+
+	for _, topicName := range req.Msg.TopicNames {
+		// Build describe configs request for this topic
+		configReq := kmsg.NewDescribeConfigsRequest()
+		configReq.IncludeDocumentation = false
+		configReq.IncludeSynonyms = false
+
+		resource := kmsg.NewDescribeConfigsRequestResource()
+		resource.ResourceType = kmsg.ConfigResourceTypeTopic
+		resource.ResourceName = topicName
+		configReq.Resources = append(configReq.Resources, resource)
+
+		// Make the request
+		configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
+		if err != nil {
+			s.logger.WarnContext(ctx, "failed to describe topic configs", slog.Any("error", err))
+			// Continue without configurations
+			configuredTopics = append(configuredTopics, &v1.ListTopicsConfigurationsResponse_TopicWithConfigurations{
+				Name:           topicName,
+				Configurations: []*v1.Topic_Configuration{},
+			})
+			continue
+		}
+
+		// Convert configurations
+		var configurations []*v1.Topic_Configuration
+		if len(configResp.Resources) > 0 {
+			configs, err := s.mapper.describeTopicConfigsToProto(configResp.Resources[0].Configs)
+			if err != nil {
+				s.logger.WarnContext(ctx, "failed to convert topic configs", slog.Any("error", err))
+			} else {
+				configurations = configs
+			}
+		}
+
+		configuredTopics = append(configuredTopics, &v1.ListTopicsConfigurationsResponse_TopicWithConfigurations{
+			Name:           topicName,
+			Configurations: configurations,
+		})
+	}
+
+	return connect.NewResponse(&v1.ListTopicsConfigurationsResponse{
+		Topics: configuredTopics,
+	}), nil
+}
+
+// ListLogDirs lists log directories with size information for topics.
+func (s *Service) ListLogDirs(ctx context.Context, req *connect.Request[v1.ListLogDirsRequest]) (*connect.Response[v1.ListLogDirsResponse], error) {
+	// Build describe log dirs request for specific topics
+	logDirReq := kmsg.NewDescribeLogDirsRequest()
+	for _, topicName := range req.Msg.TopicNames {
+		requestTopic := kmsg.NewDescribeLogDirsRequestTopic()
+		requestTopic.Topic = topicName
+		logDirReq.Topics = append(logDirReq.Topics, requestTopic)
+	}
+
+	// Make the request
+	logDirResp, err := s.consoleSvc.DescribeLogDirs(ctx, &logDirReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	// Check for high-level errors that should fail the entire request
+	if logDirResp.ErrorCode != 0 {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			fmt.Errorf("describe log dirs failed with error code: %d", logDirResp.ErrorCode),
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String()),
+		)
+	}
+
+	// Convert response using mapper
+	logDirs := s.mapper.logDirsResponseToProto(logDirResp, req.Msg.TopicNames)
+
+	return connect.NewResponse(&v1.ListLogDirsResponse{
+		LogDirs: logDirs,
+	}), nil
+}
+
+// ListTopicDocumentations lists documentation for multiple topics with their availability status and content.
+func (s *Service) ListTopicDocumentations(ctx context.Context, req *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error) {
+	documentations := make([]*v1.ListTopicDocumentationsResponse_TopicDocumentation, 0, len(req.Msg.TopicNames))
+
+	for _, topicName := range req.Msg.TopicNames {
+		docs := s.consoleSvc.GetTopicDocumentation(topicName)
+		protoDoc := s.mapper.topicDocumentationToProto(topicName, docs)
+		documentations = append(documentations, protoDoc)
+	}
+
+	return connect.NewResponse(&v1.ListTopicDocumentationsResponse{
+		Documentations: documentations,
+	}), nil
 }
