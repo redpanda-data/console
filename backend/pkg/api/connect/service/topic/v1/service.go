@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
@@ -67,15 +68,15 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 		kafkaRes.Topics = filteredTopics
 	}
 
-	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
+	topicsResponse := s.mapper.kafkaMetadataToProto(kafkaRes)
 
-	// Add pagination
+	// Apply pagination first to reduce the topics we need to enhance
 	var nextPageToken string
 	if req.Msg.GetPageSize() > 0 {
-		sort.SliceStable(topics, func(i, j int) bool {
-			return topics[i].Name < topics[j].Name
+		sort.SliceStable(topicsResponse, func(i, j int) bool {
+			return topicsResponse[i].Name < topicsResponse[j].Name
 		})
-		page, token, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListTopicsResponse_Topic) string {
+		page, token, err := pagination.SliceToPaginatedWithToken(topicsResponse, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListTopicsResponse_Topic) string {
 			return x.GetName()
 		})
 		if err != nil {
@@ -85,11 +86,154 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
 			)
 		}
-		topics = page
+		topicsResponse = page
 		nextPageToken = token
 	}
 
-	return connect.NewResponse(&v1.ListTopicsResponse{Topics: topics, NextPageToken: nextPageToken}), nil
+	s.enhanceTopicsWithAdditionalData(ctx, topicsResponse, kafkaRes)
+
+	return connect.NewResponse(&v1.ListTopicsResponse{Topics: topicsResponse, NextPageToken: nextPageToken}), nil
+}
+
+// enhanceTopicsWithAdditionalData adds cleanup policy, documentation, and log dir summary to topics
+func (s *Service) enhanceTopicsWithAdditionalData(ctx context.Context, topicsRes []*v1.ListTopicsResponse_Topic, metadata *kmsg.MetadataResponse) {
+	if len(topicsRes) == 0 {
+		return
+	}
+
+	// Enhance with additional information concurrently
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		s.enhanceTopicsWithCleanupPolicy(ctx, topicsRes)
+	}()
+
+	go func() {
+		defer wg.Done()
+		s.enhanceTopicsWithLogDirs(ctx, topicsRes, metadata)
+	}()
+
+	go func() {
+		defer wg.Done()
+		s.enhanceTopicsWithDocumentation(topicsRes)
+	}()
+
+	wg.Wait()
+}
+
+// enhanceTopicsWithCleanupPolicy fetches topic configurations (like cleanup.policy) using raw Kafka API
+func (s *Service) enhanceTopicsWithCleanupPolicy(ctx context.Context, topics []*v1.ListTopicsResponse_Topic) {
+	// Build describe configs request for all topics
+	configReq := kmsg.NewDescribeConfigsRequest()
+	configReq.IncludeDocumentation = false
+	configReq.IncludeSynonyms = false
+
+	// Create topic name to index map for efficient lookups
+	topicIndexMap := make(map[string]int, len(topics))
+	for i, topic := range topics {
+		topicIndexMap[topic.Name] = i
+
+		resource := kmsg.NewDescribeConfigsRequestResource()
+		resource.ResourceType = kmsg.ConfigResourceTypeTopic
+		resource.ResourceName = topic.Name
+		resource.ConfigNames = []string{"cleanup.policy"}
+		configReq.Resources = append(configReq.Resources, resource)
+	}
+
+	// Make the request
+	configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
+	if err != nil {
+		s.logger.Warn("failed to describe topic configs", "error", err)
+		return
+	}
+
+	// Apply configs directly to topics by index
+	for _, resource := range configResp.Resources {
+		topicIndex, exists := topicIndexMap[resource.ResourceName]
+		if !exists {
+			continue
+		}
+
+		for _, cfg := range resource.Configs {
+			if cfg.Name == "cleanup.policy" && cfg.Value != nil {
+				topics[topicIndex].CleanupPolicy = cfg.Value
+				break
+			}
+		}
+	}
+}
+
+// enhanceTopicsWithLogDirs fetches log directory sizes using raw Kafka API
+func (s *Service) enhanceTopicsWithLogDirs(ctx context.Context, topics []*v1.ListTopicsResponse_Topic, metadata *kmsg.MetadataResponse) {
+	// Build describe log dirs request for all topic partitions
+	logDirReq := kmsg.NewDescribeLogDirsRequest()
+
+	// Create map of topics for quick lookup
+	topicsByName := make(map[string]*v1.ListTopicsResponse_Topic)
+	for _, topic := range topics {
+		topicsByName[topic.Name] = topic
+	}
+
+	for _, topicMetadata := range metadata.Topics {
+		topicName := *topicMetadata.Topic
+		if _, exists := topicsByName[topicName]; !exists {
+			continue
+		}
+
+		// Add all partitions for this topic
+		requestTopic := kmsg.NewDescribeLogDirsRequestTopic()
+		requestTopic.Topic = topicName
+
+		for _, partition := range topicMetadata.Partitions {
+			requestTopic.Partitions = append(requestTopic.Partitions, partition.Partition)
+		}
+
+		logDirReq.Topics = append(logDirReq.Topics, requestTopic)
+	}
+
+	// Make the request
+	logDirResp, err := s.consoleSvc.DescribeLogDirs(ctx, &logDirReq)
+	if err != nil {
+		return // Silently fail, enhanced info is optional
+	}
+
+	// Calculate total size per topic
+	topicSizes := make(map[string]int64)
+	for _, logDir := range logDirResp.Dirs {
+		for _, topicLogDir := range logDir.Topics {
+			for _, partition := range topicLogDir.Partitions {
+				topicSizes[topicLogDir.Topic] += partition.Size
+			}
+		}
+	}
+
+	// Apply log dir summaries to topics
+	for _, topic := range topics {
+		if totalSize, exists := topicSizes[topic.Name]; exists && totalSize > 0 {
+			topic.LogDirSummary = &v1.ListTopicsResponse_Topic_LogDirSummary{
+				TotalSizeBytes: totalSize,
+			}
+		}
+	}
+}
+
+// enhanceTopicsWithDocumentation fetches topic documentation state
+func (s *Service) enhanceTopicsWithDocumentation(topics []*v1.ListTopicsResponse_Topic) {
+	for _, topic := range topics {
+		docs := s.consoleSvc.GetTopicDocumentation(topic.Name)
+		var docState v1.DocumentationState
+		switch {
+		case !docs.IsEnabled:
+			docState = v1.DocumentationState_DOCUMENTATION_STATE_NOT_CONFIGURED
+		case docs.Markdown == nil:
+			docState = v1.DocumentationState_DOCUMENTATION_STATE_NOT_EXISTENT
+		default:
+			docState = v1.DocumentationState_DOCUMENTATION_STATE_AVAILABLE
+		}
+		topic.Documentation = &docState
+	}
 }
 
 // DeleteTopic deletes a Kafka topic.
