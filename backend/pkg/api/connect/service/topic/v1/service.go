@@ -145,7 +145,7 @@ func (s *Service) enhanceTopicsWithCleanupPolicy(ctx context.Context, topics []*
 	// Make the request
 	configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
 	if err != nil {
-		s.logger.WarnContext(ctx, "failed to describe topic configs", "error", err)
+		s.logger.WarnContext(ctx, "failed to describe topic configs", slog.Any("error", err))
 		return
 	}
 
@@ -196,7 +196,8 @@ func (s *Service) enhanceTopicsWithLogDirs(ctx context.Context, topics []*v1.Lis
 	// Make the request
 	logDirResp, err := s.consoleSvc.DescribeLogDirs(ctx, &logDirReq)
 	if err != nil {
-		return // Silently fail, enhanced info is optional
+		s.logger.WarnContext(ctx, "failed to describe log dirs", slog.Any("error", err))
+		return
 	}
 
 	// Calculate total size per topic
