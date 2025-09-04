@@ -865,23 +865,21 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 
 		objTime := time.Date(2023, time.September, 12, 10, 0, 0, 0, time.UTC)
 
-		expectedData, err := proto.Marshal(&things.Item{
+		expectedObj := &things.Item{
 			Id:        "321",
 			Name:      "item_0",
 			Version:   1,
 			CreatedAt: timestamppb.New(objTime),
-		})
-		require.NoError(err)
-
-		assert.Equal(expectedData, record.Value)
+		}
 
 		obj2 := things.Item{}
 		err = proto.Unmarshal(record.Value, &obj2)
 
 		require.NoError(err)
-		assert.Equal("321", obj2.Id)
-		assert.Equal("item_0", obj2.Name)
-		assert.Equal(timestamppb.New(objTime), obj2.CreatedAt)
+		assert.Equal(expectedObj.Id, obj2.Id)
+		assert.Equal(expectedObj.Name, obj2.Name)
+		assert.Equal(expectedObj.Version, obj2.Version)
+		assert.True(expectedObj.CreatedAt.AsTime().Equal(obj2.CreatedAt.AsTime()))
 	})
 
 	t.Run("protobuf message - fail", func(t *testing.T) {
