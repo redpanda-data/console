@@ -907,7 +907,7 @@ func (s *APIIntegrationTestSuite) TestPublishMessages() {
 		assert.Nil(res)
 
 		require.Error(err)
-		assert.Contains(err.Error(), "invalid_argument: failed to serialize json protobuf payload: failed to unmarshal protobuf message from JSON: bad Timestamp: parsing time")
+		assert.Contains(err.Error(), "failed to serialize json protobuf payload: failed to unmarshal JSON into protobuf message: proto:")
 		var connectErr *connect.Error
 		require.True(errors.As(err, &connectErr))
 		details := connectErr.Details()
