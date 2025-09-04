@@ -14,7 +14,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 
-	common "github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
+	"github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
+	"github.com/redpanda-data/console/backend/pkg/console"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
@@ -218,4 +219,84 @@ func (*mapper) setTopicConfigurationsResourceToKafka(req *v1.SetTopicConfigurati
 	kafkaReq.Value = req.Value
 
 	return kafkaReq
+}
+
+func (*mapper) logDirsResponseToProto(logDirResp *kmsg.DescribeLogDirsResponse, requestedTopicNames []string) []*v1.ListLogDirsResponse_LogDir {
+	// Track which topics were found to detect missing topics
+	requestedTopics := make(map[string]bool)
+	for _, topicName := range requestedTopicNames {
+		requestedTopics[topicName] = false
+	}
+
+	// Convert response
+	logDirs := make([]*v1.ListLogDirsResponse_LogDir, 0, len(logDirResp.Dirs))
+	for _, dir := range logDirResp.Dirs {
+		logDir := &v1.ListLogDirsResponse_LogDir{
+			Path:   dir.Dir,
+			Topics: make([]*v1.ListLogDirsResponse_LogDirTopic, 0, len(dir.Topics)),
+		}
+
+		if dir.ErrorCode != 0 {
+			errorMessage := fmt.Sprintf("Error code: %d", dir.ErrorCode)
+			logDir.Error = &errorMessage
+		}
+
+		for _, topic := range dir.Topics {
+			// Mark topic as found
+			if _, exists := requestedTopics[topic.Topic]; exists {
+				requestedTopics[topic.Topic] = true
+			}
+
+			logDirTopic := &v1.ListLogDirsResponse_LogDirTopic{
+				Name:       topic.Topic,
+				Partitions: make([]*v1.ListLogDirsResponse_LogDirPartition, 0, len(topic.Partitions)),
+			}
+
+			// Check for potential topic-level issues
+			if len(topic.Partitions) == 0 {
+				errorMessage := "Topic has no partitions in this log directory"
+				logDirTopic.Error = &errorMessage
+			}
+
+			// Calculate total size for this topic
+			var totalSize int64
+			for _, partition := range topic.Partitions {
+				totalSize += partition.Size
+				logDirTopic.Partitions = append(logDirTopic.Partitions, &v1.ListLogDirsResponse_LogDirPartition{
+					PartitionId: partition.Partition,
+					Size:        partition.Size,
+					OffsetLag:   partition.OffsetLag,
+					IsFuture:    partition.IsFuture,
+				})
+			}
+			logDirTopic.TotalSize = totalSize
+
+			logDir.Topics = append(logDir.Topics, logDirTopic)
+		}
+
+		logDirs = append(logDirs, logDir)
+	}
+
+	return logDirs
+}
+
+func (*mapper) topicDocumentationToProto(topicName string, docs *console.TopicDocumentation) *v1.ListTopicDocumentationsResponse_TopicDocumentation {
+	result := &v1.ListTopicDocumentationsResponse_TopicDocumentation{
+		TopicName: topicName,
+	}
+
+	if !docs.IsEnabled {
+		result.State = v1.TopicDocumentationState_TOPIC_DOCUMENTATION_STATE_NOT_CONFIGURED
+		return result
+	}
+
+	if len(docs.Markdown) == 0 {
+		result.State = v1.TopicDocumentationState_TOPIC_DOCUMENTATION_STATE_NOT_EXISTENT
+		return result
+	}
+
+	result.State = v1.TopicDocumentationState_TOPIC_DOCUMENTATION_STATE_AVAILABLE
+	result.Markdown = docs.Markdown
+
+	return result
 }
