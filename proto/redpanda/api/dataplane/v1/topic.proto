@@ -133,8 +133,21 @@ message ListTopicsRequest {
   string page_token = 3;
 }
 
+// Documentation state for a topic.
+enum DocumentationState {
+  DOCUMENTATION_STATE_UNSPECIFIED = 0;
+  DOCUMENTATION_STATE_NOT_CONFIGURED = 1;
+  DOCUMENTATION_STATE_NOT_EXISTENT = 2;
+  DOCUMENTATION_STATE_AVAILABLE = 3;
+}
+
 message ListTopicsResponse {
   message Topic {
+    message LogDirSummary {
+      // Total size in bytes that this topic takes up (files in its log dir).
+      int64 total_size_bytes = 1;
+    }
+
     // Topic name.
     string name = 1;
     // Whether topic is internal only.
@@ -143,6 +156,12 @@ message ListTopicsResponse {
     int32 partition_count = 3;
     // Topic replication factor.
     int32 replication_factor = 4;
+    // Topic cleanup policy (e.g. "delete", "compact", "compact,delete").
+    optional string cleanup_policy = 5;
+    // Documentation availability status.
+    optional DocumentationState documentation = 6;
+    // Log directory summary with size information.
+    optional LogDirSummary log_dir_summary = 7;
   }
   repeated ListTopicsResponse.Topic topics = 1;
   string next_page_token = 2;
