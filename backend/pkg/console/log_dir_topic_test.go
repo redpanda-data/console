@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
@@ -212,7 +213,7 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, fakeCluster.MoveTopicPartition(topicName, 2, 2))
 
 		consoleSvc := Service{
-			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1}))),
+			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})), prometheus.NewRegistry()),
 			logger:             slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})),
 		}
 
@@ -288,7 +289,7 @@ func TestLogDirsByTopic(t *testing.T) {
 		require.NoError(t, fakeCluster.MoveTopicPartition(topicName, 2, 2))
 
 		consoleSvc := Service{
-			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1}))),
+			kafkaClientFactory: kafkafactory.NewCachedClientProvider(&kafkaCfg, slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})), prometheus.NewRegistry()),
 			logger:             slog.New(slog.NewTextHandler(nil, &slog.HandlerOptions{Level: slog.LevelError + 1})),
 		}
 
