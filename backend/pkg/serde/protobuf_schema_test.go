@@ -384,7 +384,7 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		// Create a dynamicpb message using the generated proto
 		msg := &shopv1.Order{Id: "222"}
 
-		// Test serialization with the modern proto.Message interface
+		// Test serialization with the proto.Message interface
 		expectData, err := proto.Marshal(msg)
 		require.NoError(t, err)
 

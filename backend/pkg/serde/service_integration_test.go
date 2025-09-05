@@ -621,7 +621,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("111", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
-		// Remove whitespace from result because modern protobuf APIs may produce different JSON spacing
+		// Remove whitespace from result because protobuf APIs may produce different JSON spacing
 		actualJSON := strings.ReplaceAll(string(dr.Value.NormalizedPayload), " ", "")
 		expectedJSON := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 		assert.Equal(expectedJSON, actualJSON)
