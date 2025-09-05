@@ -39,7 +39,7 @@ export const RemoteMCPDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabFromUrl = searchParams.get('tab') || 'configuration';
+  const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(tabFromUrl);
 
   const { data: mcpServerData, isLoading, error } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -53,12 +53,11 @@ export const RemoteMCPDetailsPage = () => {
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     if (!tabFromUrl) {
-      setSearchParams({ tab: 'configuration' });
       setActiveTab('configuration');
     } else {
       setActiveTab(tabFromUrl);
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
