@@ -15,7 +15,7 @@ import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Mes
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { TabsContent, type TabsContentProps } from 'components/redpanda-ui/components/tabs';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { RefreshCcw } from 'lucide-react';
 import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
@@ -92,7 +92,7 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, re
  * The existing implementation is tightly coupled with how state is managed in Console UI today.
  * In the future, this should be refactored to use useStream, ideally with a custom hook for react-query.
  */
-export const RemoteMCPLogsTab = observer((props: TabsContentProps) => {
+export const RemoteMCPLogsTab = observer(() => {
   const { id } = useParams<{ id: string }>();
 
   // Initialize default sorting if not set
@@ -152,11 +152,15 @@ export const RemoteMCPLogsTab = observer((props: TabsContentProps) => {
   });
 
   return (
-    <TabsContent {...props} transition={undefined}>
+    <div className="space-y-4">
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-semibold mb-2">Server Logs</h3>
-          <p className="text-sm text-muted-foreground mb-4">Real-time logs from the MCP server.</p>
+          <Heading level={3} className="mb-2">
+            Server Logs
+          </Heading>
+          <Text variant="small" className="text-muted-foreground mb-4">
+            Real-time logs from the MCP server.
+          </Text>
         </div>
 
         <div className="flex items-center gap-4 mb-6">
@@ -180,7 +184,7 @@ export const RemoteMCPLogsTab = observer((props: TabsContentProps) => {
 
         <div>
           {state.error ? (
-            <p className="text-destructive">Error loading logs: {state.error}</p>
+            <Text className="text-destructive">Error loading logs: {state.error}</Text>
           ) : !state.isComplete && state.messages.length === 0 ? (
             <div className="flex flex-col space-y-3">
               <Skeleton className="h-[125px] w-full rounded-xl" />
@@ -216,6 +220,6 @@ export const RemoteMCPLogsTab = observer((props: TabsContentProps) => {
           )}
         </div>
       </div>
-    </TabsContent>
+    </div>
   );
 });

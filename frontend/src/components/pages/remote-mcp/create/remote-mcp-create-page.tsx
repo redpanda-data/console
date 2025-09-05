@@ -1,22 +1,23 @@
 'use client';
 
 import { create } from '@bufbuild/protobuf';
+import { Button } from 'components/redpanda-ui/components/button';
+import { defineStepper } from 'components/redpanda-ui/components/stepper';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ArrowLeft, ArrowRight, FileText, Wrench } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Pipeline_ResourcesSchema } from '../../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { Pipeline_ResourcesSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   CreateMCPServerRequestSchema,
   type MCPServer_Tool,
   MCPServer_Tool_ComponentType,
   MCPServer_ToolSchema,
   MCPServerCreateSchema,
-} from '../../../../protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useCreateMCPServerMutation } from '../../../../react-query/api/remote-mcp';
-import { uiState } from '../../../../state/uiState';
-import { Button } from '../../../redpanda-ui/components/button';
-import { defineStepper } from '../../../redpanda-ui/components/stepper';
+} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { useEffect, useState } from 'react';
+import { useCreateMCPServerMutation } from 'react-query/api/remote-mcp';
+import { Link, useNavigate } from 'react-router-dom';
+import { uiState } from 'state/uiState';
 import { RemoteMCPCreateMetadataStep } from './metadata/remote-mcp-create-metadata-step';
 import { RemoteMCPCreateToolsStep } from './tools/remote-mcp-create-tools-step';
 
@@ -61,7 +62,7 @@ export const RemoteMCPCreatePage = () => {
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<Array<{ key: string; value: string }>>([]);
-  const [resources, setResources] = useState('small');
+  const [resources, setResources] = useState('XSmall');
   const [tools, setTools] = useState<Tool[]>([
     {
       id: '1',
@@ -186,8 +187,10 @@ export const RemoteMCPCreatePage = () => {
             </Button>
           </Link>
         </div>
-        <h1 className="text-3xl font-semibold text-gray-900 mb-2">Create MCP Server</h1>
-        <p className="text-gray-600">Set up a new managed MCP server with custom tools and configurations.</p>
+        <Heading level={1} className="text-gray-900 mb-2">
+          Create MCP Server
+        </Heading>
+        <Text className="text-gray-600">Set up a new managed MCP server with custom tools and configurations.</Text>
       </div>
 
       <Stepper.Provider className="space-y-8" variant="horizontal">

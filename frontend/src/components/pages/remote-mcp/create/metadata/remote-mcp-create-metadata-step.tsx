@@ -1,18 +1,19 @@
-import { Plus, Trash2 } from 'lucide-react';
-import { useCheckMCPServerNameUniqueness } from '../../../../../react-query/api/remote-mcp';
-import { RESOURCE_TIERS } from '../../../../../utils/resource-tiers';
-import { Button } from '../../../../redpanda-ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
-import { Input } from '../../../../redpanda-ui/components/input';
-import { Label } from '../../../../redpanda-ui/components/label';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../redpanda-ui/components/select';
-import { Textarea } from '../../../../redpanda-ui/components/textarea';
+} from 'components/redpanda-ui/components/select';
+import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { Plus, Trash2 } from 'lucide-react';
+import { useCheckMCPServerNameUniqueness } from 'react-query/api/remote-mcp';
+import { RESOURCE_TIERS } from 'utils/resource-tiers';
 
 interface MetadataStepProps {
   displayName: string;
@@ -81,9 +82,9 @@ export const RemoteMCPCreateMetadataStep = ({
             className={isNameDuplicate ? 'border-destructive focus:border-destructive' : ''}
           />
           {isNameDuplicate && (
-            <p className="text-sm text-destructive">
+            <Text variant="small" className="text-destructive">
               A server with this name already exists. Please choose a different name.
-            </p>
+            </Text>
           )}
         </div>
 
@@ -101,8 +102,16 @@ export const RemoteMCPCreateMetadataStep = ({
         <div className="space-y-2">
           <Label>Tags</Label>
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground pb-2">Key-value pairs for organizing and categorizing</p>
-            {hasDuplicateKeys() && <p className="text-sm text-destructive">Tags must have unique keys</p>}
+            <div className="space-y-1">
+              <Text variant="small" className="text-muted-foreground">
+                Key-value pairs for organizing and categorizing
+              </Text>
+              {hasDuplicateKeys() && (
+                <Text variant="small" className="text-destructive">
+                  Tags must have unique keys
+                </Text>
+              )}
+            </div>
             {tags.map((tag, index) => {
               const duplicateKeys = getDuplicateKeys();
               const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
@@ -115,9 +124,6 @@ export const RemoteMCPCreateMetadataStep = ({
                       className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
                       onChange={(e) => updateTag(index, 'key', e.target.value)}
                     />
-                    <div className="h-5 mt-1">
-                      {isDuplicateKey && <p className="text-xs text-destructive">Duplicate key</p>}
-                    </div>
                   </div>
                   <div className="flex-1">
                     <Input
@@ -125,9 +131,8 @@ export const RemoteMCPCreateMetadataStep = ({
                       value={tag.value}
                       onChange={(e) => updateTag(index, 'value', e.target.value)}
                     />
-                    <div className="h-5 mt-1" />
                   </div>
-                  <div className="flex items-center h-10">
+                  <div className="flex items-end h-9">
                     <Button variant="outline" size="sm" onClick={() => removeTag(index)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>

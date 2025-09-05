@@ -2,7 +2,11 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
-import { useQueryClient, useMutation as useTanstackMutation } from '@tanstack/react-query';
+import {
+  useQueryClient,
+  useMutation as useTanstackMutation,
+  useQuery as useTanstackQuery,
+} from '@tanstack/react-query';
 import { config } from 'config';
 import {
   type GetMCPServerRequest,
@@ -11,6 +15,8 @@ import {
   ListMCPServersRequest_FilterSchema,
   ListMCPServersRequestSchema,
   type ListMCPServersResponse,
+  type MCPServer,
+  MCPServer_State,
   MCPServerService,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import {
@@ -239,182 +245,58 @@ export const useLintMCPConfigMutation = () => {
   });
 };
 
-export interface MCPTool {
-  name: string;
-  description: string;
-  parameters: Array<{
-    name: string;
-    type: string;
-    description: string;
-    required: boolean;
-  }>;
-}
+// Shared function to create MCP client with session management
+export const createMCPClientWithSession = async (
+  serverUrl: string,
+  clientName: string,
+): Promise<{
+  client: InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>;
+  transport: InstanceType<
+    typeof import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransport
+  >;
+}> => {
+  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
+  const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
 
-export interface MCPToolsListResponse {
-  tools: MCPTool[];
-}
-
-// TODO: Remove this once the API provides more details about the MCP tools, so that the YAML parsing is not needed.
-export const parseMCPToolsFromConfig = (tools: { [key: string]: { configYaml: string } }): MCPTool[] => {
-  const mcpTools: MCPTool[] = [];
-
-  for (const [toolName, toolConfig] of Object.entries(tools)) {
-    try {
-      const lines = toolConfig.configYaml.split('\n');
-      let inMeta = false;
-      let inMcp = false;
-      let description = '';
-      let currentProperty: {
-        name: string;
-        type: string;
-        description: string;
-        required?: boolean;
-      } | null = null;
-      const properties: Array<{
-        name: string;
-        type: string;
-        description: string;
-        required?: boolean;
-      }> = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmed = line.trim();
-
-        // Look for the meta section
-        if (trimmed === 'meta:') {
-          inMeta = true;
-          continue;
-        }
-
-        // Look for the mcp subsection within meta
-        if (inMeta && trimmed === 'mcp:') {
-          inMcp = true;
-          continue;
-        }
-
-        // Parse MCP section content
-        if (inMeta && inMcp) {
-          if (trimmed.startsWith('enabled:')) {
-            continue; // Skip enabled flag
-          }
-          if (trimmed.startsWith('description:')) {
-            // Extract description, handling quoted strings
-            const descMatch = trimmed.match(/description:\s*["']?([^"']*)["']?/);
-            if (descMatch) {
-              description = descMatch[1];
-            }
-          } else if (trimmed === 'properties:') {
-            continue; // Start of properties section
-          } else if (trimmed.startsWith('- name:')) {
-            // Save previous property if exists
-            if (currentProperty) {
-              properties.push(currentProperty);
-            }
-            // Start new property
-            const name = trimmed.replace('- name:', '').trim();
-            currentProperty = {
-              name,
-              type: 'string',
-              description: '',
-              required: false,
-            };
-          } else if (trimmed.startsWith('type:') && currentProperty) {
-            currentProperty.type = trimmed.replace('type:', '').trim();
-            // biome-ignore lint/suspicious/noDuplicateElseIf: ignore for now
-          } else if (trimmed.startsWith('description:') && currentProperty) {
-            // Extract description, handling quoted strings
-            const descMatch = trimmed.match(/description:\s*["']?([^"']*)["']?/);
-            if (descMatch) {
-              currentProperty.description = descMatch[1];
-            }
-          } else if (trimmed.startsWith('required:') && currentProperty) {
-            currentProperty.required = trimmed.replace('required:', '').trim() === 'true';
-          }
-        }
-
-        // Check if we're leaving the meta section
-        if (trimmed && !line.startsWith(' ') && !line.startsWith('\t') && inMeta && trimmed !== 'meta:') {
-          // Save last property if exists
-          if (currentProperty) {
-            properties.push(currentProperty);
-            currentProperty = null;
-          }
-          inMeta = false;
-          inMcp = false;
-        }
-      }
-
-      // Don't forget the last property if we ended while in MCP section
-      if (currentProperty && inMcp) {
-        properties.push(currentProperty);
-      }
-
-      // Only add tool if we found MCP metadata
-      if (inMcp || description || properties.length > 0) {
-        mcpTools.push({
-          name: toolName,
-          description: description || `${toolName} tool`,
-          parameters: properties.map((property) => ({
-            name: property.name,
-            type: property.type,
-            description: property.description,
-            required: property.required || false,
-          })),
-        });
-      }
-    } catch (error) {
-      console.warn(`Failed to parse MCP config for tool ${toolName}:`, error);
-      // Fallback: create a basic tool entry
-      mcpTools.push({
-        name: toolName,
-        description: `${toolName} tool`,
-        parameters: [],
-      });
-    }
-  }
-
-  return mcpTools;
-};
-
-export const fetchMCPServerTools = async (serverUrl: string): Promise<MCPToolsListResponse> => {
-  const response = await fetch(`${serverUrl}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  // Create MCP client
+  const client = new Client(
+    {
+      name: clientName,
+      version: '1.0.0',
     },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'tools/list',
-      params: {},
-    }),
+    {
+      capabilities: {
+        tools: {},
+      },
+    },
+  );
+
+  // Create StreamableHTTP transport for HTTP endpoints
+  const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
+    fetch: async (input, init) => {
+      const response = await fetch(input, {
+        ...init,
+        headers: {
+          ...init?.headers,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.jwt}`,
+          'Mcp-Session-Id': client?.transport?.sessionId ?? '',
+        },
+      });
+      return response;
+    },
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch tools: ${response.status} ${response.statusText}`);
-  }
+  // Connect the client to the transport
+  await client.connect(transport);
 
-  const data = await response.json();
+  return { client, transport };
+};
 
-  if (data.error) {
-    throw new Error(`MCP Error: ${data.error.message || 'Unknown error'}`);
-  }
+export const listMCPServerTools = async (serverUrl: string) => {
+  const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-  return {
-    tools: (data.result?.tools || []).map((tool: Record<string, unknown>) => ({
-      name: String(tool.name || ''),
-      description: String(tool.description || ''),
-      parameters: Object.entries((tool.inputSchema as Record<string, unknown>)?.properties || {}).map(
-        ([name, schema]: [string, Record<string, unknown>]) => ({
-          name,
-          type: String(schema.type || 'string'),
-          description: String(schema.description || ''),
-          required: (((tool.inputSchema as Record<string, unknown>)?.required as string[]) || []).includes(name),
-        }),
-      ),
-    })),
-  };
+  return client.listTools();
 };
 
 export interface CallMCPToolParams {
@@ -425,72 +307,13 @@ export interface CallMCPToolParams {
 
 export const useCallMCPServerToolMutation = () => {
   return useTanstackMutation({
-    mutationFn: async ({ serverUrl, toolName, parameters }: CallMCPToolParams): Promise<unknown> => {
-      const token = config.jwt;
+    mutationFn: async ({ serverUrl, toolName, parameters }: CallMCPToolParams) => {
+      const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      // Step 1: Initialize MCP session
-      const initResponse = await fetch(`${serverUrl}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'initialize',
-          params: {
-            protocolVersion: '2025-06-18',
-            capabilities: {
-              elicitation: {},
-            },
-            clientInfo: { name: 'test-client', version: '1.0.0' },
-          },
-        }),
+      return client.callTool({
+        name: toolName,
+        arguments: parameters,
       });
-
-      // Account for different header names
-      const mcpSessionId = (initResponse.headers.get('mcp-session-id') ??
-        initResponse.headers.get('Mcp-Session-Id')) as string;
-
-      if (!initResponse.ok) {
-        throw new Error(`Failed to initialize MCP session: ${initResponse.status} ${initResponse.statusText}`);
-      }
-
-      const initData = await initResponse.json();
-      if (initData.error) {
-        throw new Error(`MCP Initialize Error: ${initData.error.message || 'Unknown error'}`);
-      }
-
-      const response = await fetch(`${serverUrl}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-          'Mcp-Session-Id': mcpSessionId,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'tools/call',
-          params: {
-            name: toolName,
-            arguments: parameters,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to call tool: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(`MCP Error: ${data.error.message || 'Unknown error'}`);
-      }
-
-      return data.result;
     },
     onError: (error) => {
       const connectError = ConnectError.from(error);
@@ -501,5 +324,48 @@ export const useCallMCPServerToolMutation = () => {
         entity: 'MCP tool',
       });
     },
+  });
+};
+
+export const GITHUB_CODE_SNIPPETS_API_BASE_URL =
+  'https://raw.githubusercontent.com/redpanda-data/how-to-connect-code-snippets';
+
+interface CodeSnippetRequest {
+  language?: string;
+}
+
+const fetchCodeSnippet = async (language?: string): Promise<string> => {
+  if (!language) {
+    return '';
+  }
+
+  const response = await fetch(`${GITHUB_CODE_SNIPPETS_API_BASE_URL}/main/${language}/readme.md`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch code snippet: ${response.status} ${response.statusText}`);
+  }
+
+  const content = await response.text();
+
+  return content;
+};
+
+export const useGetCodeSnippetQuery = (input: CodeSnippetRequest) => {
+  return useTanstackQuery({
+    queryKey: ['code-snippet', input.language],
+    queryFn: () => fetchCodeSnippet(input.language),
+    enabled: input.language !== '',
+  });
+};
+
+export interface UseListMCPServerToolsParams {
+  mcpServer?: MCPServer;
+}
+
+export const useListMCPServerTools = ({ mcpServer }: UseListMCPServerToolsParams) => {
+  return useTanstackQuery({
+    queryKey: ['mcp-server-tools', mcpServer?.url],
+    queryFn: () => listMCPServerTools(mcpServer?.url || ''),
+    enabled: !!mcpServer?.url && mcpServer?.state === MCPServer_State.RUNNING,
   });
 };

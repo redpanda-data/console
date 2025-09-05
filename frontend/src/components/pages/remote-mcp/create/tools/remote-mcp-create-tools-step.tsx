@@ -1,20 +1,21 @@
-import { AlertTriangle, Code2, ExternalLink, Maximize2, Plus, Upload, X } from 'lucide-react';
-import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { YamlEditor } from '../../../../misc/yaml-editor';
-import { Button } from '../../../../redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../redpanda-ui/components/dialog';
-import { Input } from '../../../../redpanda-ui/components/input';
-import { Label } from '../../../../redpanda-ui/components/label';
+import { YamlEditor } from 'components/misc/yaml-editor';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../redpanda-ui/components/select';
+} from 'components/redpanda-ui/components/select';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { AlertTriangle, Code2, ExternalLink, Maximize2, Plus, Upload, X } from 'lucide-react';
+import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import type { Tool } from '../remote-mcp-create-page';
 
@@ -316,11 +317,13 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
 
       <div className="space-y-6">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Tools Configuration</h2>
-          <p className="text-gray-600 mb-4">
+          <Heading level={2} className="text-gray-900 mb-2">
+            Tools Configuration
+          </Heading>
+          <Text className="text-gray-600 mb-4">
             Define the tools that your MCP server will provide. Each tool requires a name, component type, and YAML
             configuration.
-          </p>
+          </Text>
         </div>
 
         {tools.map((tool, index) => (
@@ -350,9 +353,9 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                     placeholder="search-posts"
                     className={tool.validationError?.includes('name') ? 'border-red-300' : ''}
                   />
-                  <p className="text-xs text-gray-500">
+                  <Text variant="small" className="text-gray-500">
                     Lowercase letters, numbers, and dashes. Used in the file name and API.
-                  </p>
+                  </Text>
                 </div>
 
                 <div className="flex-1 space-y-2">
@@ -377,7 +380,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">
+                  <Text variant="small" className="text-gray-500">
                     {tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR
                       ? 'Transform and manipulate content, make API calls, process data.'
                       : tool.componentType === MCPServer_Tool_ComponentType.CACHE
@@ -386,7 +389,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                     <Link to="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
                       Learn more <ExternalLink className="h-3 w-3" />
                     </Link>
-                  </p>
+                  </Text>
                 </div>
               </div>
 
@@ -485,7 +488,9 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                   </div>
                 )}
 
-                <p className="text-xs text-gray-500">Required: non-empty YAML with meta.mcp.enabled=true</p>
+                <Text variant="small" className="text-gray-500">
+                  Required: non-empty YAML with meta.mcp.enabled=true
+                </Text>
               </div>
             </CardContent>
           </Card>
@@ -504,10 +509,10 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
           </DialogHeader>
           {expandedEditor && (
             <div className="space-y-4">
-              <p id="yaml-editor-description" className="text-sm text-gray-600">
+              <Text id="yaml-editor-description" variant="small" className="text-gray-600">
                 Edit your YAML configuration in this expanded editor. Use the buttons below to validate, format, or
                 import from a file.
-              </p>
+              </Text>
               <div className="flex gap-2">
                 {/* <Button variant="outline" size="sm" onClick={() => validateYaml(expandedEditor)}>
                   Validate

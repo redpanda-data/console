@@ -11,27 +11,34 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
+import { YamlEditor } from 'components/misc/yaml-editor';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, Save, Trash2 } from 'lucide-react';
 import {
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
+import { useGetMCPServerQuery, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
-import { useGetMCPServerQuery, useUpdateMCPServerMutation } from '../../../../react-query/api/remote-mcp';
-import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from '../../../../utils/resource-tiers';
-import { YamlEditor } from '../../../misc/yaml-editor';
-import { Button } from '../../../redpanda-ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
-import { Input } from '../../../redpanda-ui/components/input';
-import { Label } from '../../../redpanda-ui/components/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
-import { TabsContent, type TabsContentProps } from '../../../redpanda-ui/components/tabs';
-import { Textarea } from '../../../redpanda-ui/components/textarea';
+import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from 'utils/resource-tiers';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 
 interface LocalTool {
+  id: string;
   name: string;
   componentType: string;
   config: string;
@@ -112,7 +119,7 @@ spec:
   },
 };
 
-export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
+export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateMCPServer, isPending: isUpdating } = useUpdateMCPServerMutation();
@@ -181,6 +188,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
       resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
         config: tool.configYaml,
@@ -191,13 +199,16 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
     };
 
     const template = selectedTemplate ? toolTemplates[selectedTemplate as keyof typeof toolTemplates] : null;
+    const newToolId = `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const newTool = template
       ? {
+          id: newToolId,
           name: template.name,
           componentType: 'Processor' as const,
           config: template.config,
         }
       : {
+          id: newToolId,
           name: '',
           componentType: 'Processor' as const,
           config: `name: 
@@ -216,7 +227,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
     setSelectedTemplate('');
   };
 
-  const handleRemoveTool = (name: string) => {
+  const handleRemoveTool = (toolId: string) => {
     if (!mcpServerData?.mcpServer) return;
 
     const currentData = editedServerData || {
@@ -226,6 +237,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
       resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
         config: tool.configYaml,
@@ -235,14 +247,14 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       url: mcpServerData.mcpServer.url,
     };
 
-    const updatedTools = currentData.tools.filter((tool) => tool.name !== name);
+    const updatedTools = currentData.tools.filter((tool) => tool.id !== toolId);
     setEditedServerData({
       ...currentData,
       tools: updatedTools,
     });
   };
 
-  const handleUpdateTool = (name: string, field: string, value: string) => {
+  const handleUpdateTool = (toolId: string, field: string, value: string) => {
     if (!mcpServerData?.mcpServer) return;
 
     const currentData = editedServerData || {
@@ -252,6 +264,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
       resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
         config: tool.configYaml,
@@ -262,7 +275,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
     };
 
     const updatedTools = [...currentData.tools];
-    const toolIndex = updatedTools.findIndex((tool) => tool.name === name);
+    const toolIndex = updatedTools.findIndex((tool) => tool.id === toolId);
     if (toolIndex !== -1) {
       updatedTools[toolIndex] = { ...updatedTools[toolIndex], [field]: value };
     }
@@ -282,6 +295,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
       resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
         config: tool.configYaml,
@@ -307,6 +321,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
       resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
         config: tool.configYaml,
@@ -333,6 +348,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
       tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
       resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
         name,
         componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
         config: tool.configYaml,
@@ -385,6 +401,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
           resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
           tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+            id: name,
             name,
             componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
             config: tool.configYaml,
@@ -400,7 +417,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
   }
 
   return (
-    <TabsContent {...props} className="space-y-8">
+    <div className="space-y-8">
       <div className="flex justify-end">
         {isEditing ? (
           <div className="flex gap-2">
@@ -454,6 +471,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                     tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
                     resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+                      id: name,
                       name,
                       componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
                       config: tool.configYaml,
@@ -482,6 +500,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                     tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
                     resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+                      id: name,
                       name,
                       componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
                       config: tool.configYaml,
@@ -502,9 +521,11 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
             <CardTitle>Tags</CardTitle>
             <CardDescription>Key-value pairs for organizing and categorizing</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             {isEditing && hasDuplicateKeys(displayData.tags) && (
-              <p className="text-sm text-destructive">Tags must have unique keys</p>
+              <Text variant="small" className="text-destructive">
+                Tags must have unique keys
+              </Text>
             )}
             {displayData.tags.map((tag, index) => {
               const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
@@ -519,19 +540,21 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                       className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
                       onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
                     />
-                    {isDuplicateKey && <p className="text-xs text-destructive mt-1">Duplicate key</p>}
                   </div>
-                  <Input
-                    placeholder="Value"
-                    value={tag.value}
-                    disabled={!isEditing}
-                    className="flex-1"
-                    onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                  />
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Value"
+                      value={tag.value}
+                      disabled={!isEditing}
+                      onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                    />
+                  </div>
                   {isEditing && (
-                    <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-end h-9">
+                      <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               );
@@ -564,6 +587,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                     tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
                     resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+                      id: name,
                       name,
                       componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
                       config: tool.configYaml,
@@ -601,7 +625,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardHeader>
           <CardContent className="space-y-6">
             {displayData.tools.map((tool) => (
-              <div key={tool.name} className="space-y-4 p-4 bg-muted/30 rounded-lg">
+              <div key={tool.id} className="space-y-4 p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-start gap-4">
                   {isEditing ? (
                     <>
@@ -610,18 +634,18 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                         <Input
                           value={tool.name}
                           placeholder="e.g., search-posts (must be filename-compatible)"
-                          onChange={(e) => handleUpdateTool(tool.name, 'name', e.target.value)}
+                          onChange={(e) => handleUpdateTool(tool.id, 'name', e.target.value)}
                         />
-                        <p className="text-xs text-muted-foreground">
+                        <Text variant="small" className="text-muted-foreground">
                           Lowercase letters, numbers, and dashes. Used in the file name and API.
-                        </p>
+                        </Text>
                       </div>
                       <div className="flex-1 space-y-1">
                         <Label className="text-sm font-medium">Component Type</Label>
                         <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 h-10">
                           <button
                             type="button"
-                            onClick={() => handleUpdateTool(tool.name, 'componentType', 'Processor')}
+                            onClick={() => handleUpdateTool(tool.id, 'componentType', 'Processor')}
                             className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                               tool.componentType === 'Processor'
                                 ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
@@ -632,7 +656,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleUpdateTool(tool.name, 'componentType', 'Cache')}
+                            onClick={() => handleUpdateTool(tool.id, 'componentType', 'Cache')}
                             className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                               tool.componentType === 'Cache'
                                 ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
@@ -642,7 +666,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                             Cache
                           </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <Text variant="small" className="text-muted-foreground">
                           {tool.componentType === 'Processor'
                             ? 'Transform and manipulate content, make API calls, process data.'
                             : 'Store and retrieve data, manage cached content and state.'}{' '}
@@ -650,9 +674,9 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                           {/* <a href="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
                               Learn more <ExternalLink className="h-3 w-3" />
                             </a> */}
-                        </p>
+                        </Text>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => handleRemoveTool(tool.name)} className="mt-6">
+                      <Button variant="outline" size="sm" onClick={() => handleRemoveTool(tool.id)} className="mt-6">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </>
@@ -677,7 +701,7 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
                   <div className="overflow-hidden" style={{ height: '400px' }}>
                     <YamlEditor
                       value={tool.config}
-                      onChange={(value) => handleUpdateTool(tool.name, 'config', value || '')}
+                      onChange={(value) => handleUpdateTool(tool.id, 'config', value || '')}
                       options={{
                         readOnly: !isEditing,
                         theme: 'vs',
@@ -714,6 +738,6 @@ export const RemoteMCPConfigurationTab = ({ ...props }: TabsContentProps) => {
           </CardContent>
         </Card>
       </div>
-    </TabsContent>
+    </div>
   );
 };

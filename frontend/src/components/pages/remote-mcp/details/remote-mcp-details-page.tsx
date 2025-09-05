@@ -9,14 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
+import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useGetMCPServerQuery } from '../../../../react-query/api/remote-mcp';
-import { uiState } from '../../../../state/uiState';
-import { Tabs, TabsContentWrapper, TabsList, TabsTrigger } from '../../../redpanda-ui/components/tabs';
+import { uiState } from 'state/uiState';
 import { RemoteMCPInspectorTab } from './inspector/remote-mcp-inspector-tab';
 import { RemoteMCPConfigurationTab } from './remote-mcp-configuration-tab';
 import { RemoteMCPConnectionTab } from './remote-mcp-connection-tab';
@@ -95,20 +95,28 @@ export const RemoteMCPDetailsPage = () => {
     <div className="flex flex-col gap-4">
       <RemoteMCPDetailsHeader />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} size="md" variant="contained">
-        <TabsList layout="full" columns={4}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList>
           <TabsTrigger value="configuration">Configuration</TabsTrigger>
           <TabsTrigger value="connection">Connection</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
           {isRemoteMcpInspectorFeatureEnabled && <TabsTrigger value="inspector">MCP Inspector</TabsTrigger>}
         </TabsList>
 
-        <TabsContentWrapper variant="contained">
-          <RemoteMCPConfigurationTab value="configuration" />
-          <RemoteMCPConnectionTab value="connection" />
-          <RemoteMCPLogsTab value="logs" />
-          {isRemoteMcpInspectorFeatureEnabled && <RemoteMCPInspectorTab value="inspector" />}
-        </TabsContentWrapper>
+        <TabsContent value="configuration">
+          <RemoteMCPConfigurationTab />
+        </TabsContent>
+        <TabsContent value="connection">
+          <RemoteMCPConnectionTab />
+        </TabsContent>
+        <TabsContent value="logs">
+          <RemoteMCPLogsTab />
+        </TabsContent>
+        {isRemoteMcpInspectorFeatureEnabled && (
+          <TabsContent value="inspector">
+            <RemoteMCPInspectorTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
