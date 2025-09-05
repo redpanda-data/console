@@ -334,12 +334,11 @@ interface CodeSnippetRequest {
   language?: string;
 }
 
-const fetchCodeSnippet = async (language?: string): Promise<string> => {
+const fetchMCPCodeSnippet = async (language?: string): Promise<string> => {
   if (!language) {
     return '';
   }
-
-  const response = await fetch(`${GITHUB_CODE_SNIPPETS_API_BASE_URL}/main/${language}/readme.md`);
+  const response = await fetch(`${GITHUB_CODE_SNIPPETS_API_BASE_URL}/refs/heads/main/mcp/${language}/README.md`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch code snippet: ${response.status} ${response.statusText}`);
@@ -350,10 +349,10 @@ const fetchCodeSnippet = async (language?: string): Promise<string> => {
   return content;
 };
 
-export const useGetCodeSnippetQuery = (input: CodeSnippetRequest) => {
+export const useGetMCPCodeSnippetQuery = (input: CodeSnippetRequest) => {
   return useTanstackQuery({
-    queryKey: ['code-snippet', input.language],
-    queryFn: () => fetchCodeSnippet(input.language),
+    queryKey: ['mcp-code-snippet', input.language],
+    queryFn: () => fetchMCPCodeSnippet(input.language),
     enabled: input.language !== '',
   });
 };

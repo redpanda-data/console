@@ -19,7 +19,7 @@ import { config } from 'config';
 import { AlertCircle } from 'lucide-react';
 import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
-import { useGetCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
+import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import GoLogo from '../../../../assets/go.svg';
 import JavaLogo from '../../../../assets/java.svg';
@@ -41,9 +41,21 @@ const getLanguageIcon = (language: string) => {
   }
 };
 
+const getCloudEnvironment = () => {
+  console.log('window.location.hostname: ', window.location.hostname);
+  if (window.location.hostname.includes('main')) {
+    return 'integration';
+  } else if (window.location.hostname.includes('preprod')) {
+    return 'preprod';
+  } else if (window.location.hostname.includes('cloud.redpanda.com')) {
+    return 'production';
+  }
+
+  return 'integration';
+};
+
 const getRpkCommand = ({ clusterId, mcpServerId }: { clusterId?: string; mcpServerId?: MCPServer['id'] }) => {
-  return `rpk -X cloud_environment=integration
---config /home/<username>/.config/rpk/rpk.yaml cloud mcp proxy
+  return `rpk -X cloud_environment=${getCloudEnvironment()} cloud mcp proxy
 --cluster-id ${clusterId || 'YOUR_CLUSTER_ID'}
 --mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'}`;
 };
@@ -52,9 +64,9 @@ export const RemoteMCPConnectionTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
-  const availableLanguages = ['python', 'javascript', 'java', 'go'];
+  const availableLanguages = ['python', 'javascript'];
   const [selectedLanguage, setSelectedLanguage] = useState<string>('python');
-  const { data: codeSnippetData, isLoading: isLoadingCodeSnippet } = useGetCodeSnippetQuery({
+  const { data: codeSnippetData, isLoading: isLoadingMCPCodeSnippet } = useGetMCPCodeSnippetQuery({
     language: selectedLanguage,
   });
 
@@ -124,7 +136,7 @@ export const RemoteMCPConnectionTab = () => {
                       <SheetTitle>{language.charAt(0).toUpperCase() + language.slice(1)} Connection Code</SheetTitle>
                     </SheetHeader>
                     <div className="mt-6">
-                      {isLoadingCodeSnippet ? (
+                      {isLoadingMCPCodeSnippet ? (
                         <div className="flex items-center justify-center p-8">
                           <div className="text-muted-foreground">Loading code snippet...</div>
                         </div>
