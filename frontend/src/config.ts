@@ -275,11 +275,11 @@ const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
     return APP_ROUTES.map((route) => {
-      if (route.path === '/knowledgebases') {
+      if (route.path === '/knowledgebases' || route.path === '/remote-mcp') {
         return {
           ...route,
           // Needed because we cannot use JSX in this file
-          title: getSidebarItemTitleWithBetaBadge({ route }),
+          title: getSidebarItemTitleWithBetaBadge({ route }), // This will automatically add the beta badge
         };
       }
       return route;
