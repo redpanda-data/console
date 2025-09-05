@@ -40,7 +40,7 @@ export const RemoteMCPDetailsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabFromUrl = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'configuration');
 
   const { data: mcpServerData, isLoading, error } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
