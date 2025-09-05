@@ -16,8 +16,9 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useState } from 'react';
 import { useCreateMCPServerMutation } from 'react-query/api/remote-mcp';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { uiState } from 'state/uiState';
+import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 import { RemoteMCPCreateMetadataStep } from './metadata/remote-mcp-create-metadata-step';
 import { RemoteMCPCreateToolsStep } from './tools/remote-mcp-create-tools-step';
 
@@ -180,12 +181,7 @@ export const RemoteMCPCreatePage = () => {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          <Link to="/remote-mcp">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to MCP Servers
-            </Button>
-          </Link>
+          <RemoteMCPBackButton />
         </div>
         <Heading level={1} className="text-gray-900 mb-2">
           Create MCP Server
