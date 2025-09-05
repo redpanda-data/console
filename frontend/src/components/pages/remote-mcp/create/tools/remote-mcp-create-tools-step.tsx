@@ -1,4 +1,6 @@
+import { create } from '@bufbuild/protobuf';
 import { YamlEditor } from 'components/misc/yaml-editor';
+import { formatPipelineError } from 'components/pages/rp-connect/errors';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
@@ -12,13 +14,19 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertTriangle, Code2, ExternalLink, Maximize2, Plus, Upload, X } from 'lucide-react';
-import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { AlertTriangle, Code2, ExternalLink, Maximize2, PencilRuler, Plus, X } from 'lucide-react';
+import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
+import {
+  LintMCPConfigRequestSchema,
+  MCPServer_Tool_ComponentType,
+  MCPServer_ToolSchema,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useRef } from 'react';
+import { useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import type { Tool } from '../remote-mcp-create-page';
-
 
 interface ToolsStepProps {
   tools: Tool[];
@@ -29,6 +37,7 @@ interface ToolsStepProps {
 
 export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setExpandedEditor }: ToolsStepProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { mutateAsync: lintMCPConfig, isPending: isLinting } = useLintMCPConfigMutation();
 
   const addTool = () => {
     setTools([
@@ -59,8 +68,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
         if (tool.id === id) {
           const updatedTool = { ...tool, [field]: value };
 
-
-          updatedTool.validationError = validateTool(updatedTool);
+          updatedTool.validationError = validateToolBasic(updatedTool);
           return updatedTool;
         }
         return tool;
@@ -68,53 +76,50 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
     );
   };
 
+  const validateYaml = async (tool: Tool) => {
+    if (!tool) return;
 
-  const validateYaml = (toolId: string) => {
-    const tool = tools.find((t) => t.id === toolId);
-    if (tool) {
-      const error = validateTool(tool);
-      setTools(tools.map((t) => (t.id === toolId ? { ...t, validationError: error } : t)));
+    // Basic client-side validation first
+    const basicError = validateToolBasic(tool);
+    if (basicError) {
+      setTools(tools.map((t) => (t.id === tool.id ? { ...t, validationError: basicError } : t)));
+      return;
+    }
+
+    try {
+      const request = create(LintMCPConfigRequestSchema, {
+        tools: {
+          [tool.name]: create(MCPServer_ToolSchema, {
+            componentType: tool.componentType,
+            configYaml: tool.configYaml,
+          }),
+        },
+      });
+
+      const response = await lintMCPConfig(request);
+
+      // Check if there are any lint hints for this tool
+      const toolLintHints = response.lintHints[tool.name];
+      if (toolLintHints) {
+        const lintHint = toolLintHints as LintHint;
+        setTools(tools.map((t) => (t.id === tool.id ? { ...t, validationError: lintHint.hint } : t)));
+      } else {
+        // No lint errors - clear any existing error
+        setTools(tools.map((t) => (t.id === tool.id ? { ...t, validationError: undefined } : t)));
+      }
+    } catch (error) {
+      // On API error, use formatPipelineError to show detailed error information
+      const formattedError = formatPipelineError(error);
+
+      // Show error as toast notification
+      toast.error(formattedError);
+
+      // Also set the error inline for the specific tool
+      setTools(tools.map((t) => (t.id === tool.id ? { ...t, validationError: formattedError } : t)));
     }
   };
 
-  const formatYaml = (toolId: string) => {
-    const tool = tools.find((t) => t.id === toolId);
-    if (tool?.configYaml) {
-      const lines = tool.configYaml.split('\n');
-      const formatted = lines
-        .map((line) => {
-          const trimmed = line.trim();
-          if (trimmed.includes(':') && !trimmed.startsWith('-')) {
-            const [key, ...rest] = trimmed.split(':');
-            const value = rest.join(':').trim();
-            const indent = line.length - line.trimStart().length;
-            return `${' '.repeat(indent)}${key}: ${value}`;
-          }
-          return line;
-        })
-        .join('\n');
-      updateTool(toolId, 'configYaml', formatted);
-    }
-  };
-
-  const importFromFile = (toolId: string) => {
-    fileInputRef.current?.click();
-    if (fileInputRef.current) {
-      fileInputRef.current.onchange = (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const content = e.target?.result as string;
-            updateTool(toolId, 'configYaml', content);
-          };
-          reader.readAsText(file);
-        }
-      };
-    }
-  };
-
-  const validateTool = (tool: Tool): string | undefined => {
+  const validateToolBasic = (tool: Tool): string | undefined => {
     if (!tool.name.trim()) {
       return 'Tool name is required';
     }
@@ -132,20 +137,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
       return 'YAML configuration is required';
     }
 
-    try {
-      if (!tool.configYaml.includes('meta:')) {
-        return "YAML must include 'meta:' section";
-      }
-      if (!tool.configYaml.includes('mcp:')) {
-        return "YAML must include 'mcp:' section under meta";
-      }
-      if (!tool.configYaml.includes('enabled: true')) {
-        return "YAML must have 'enabled: true' under meta.mcp";
-      }
-      return undefined;
-    } catch {
-      return 'Invalid YAML format';
-    }
+    return undefined;
   };
 
   return (
@@ -188,7 +180,11 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                     value={tool.name}
                     onChange={(e) => updateTool(tool.id, 'name', e.target.value)}
                     placeholder="search-posts"
-                    className={tool.validationError?.includes('name') ? 'border-red-300' : ''}
+                    className={
+                      typeof tool.validationError === 'string' && tool.validationError.includes('name')
+                        ? 'border-red-300'
+                        : ''
+                    }
                   />
                   <Text variant="small" className="text-gray-500">
                     Lowercase letters, numbers, and dashes. Used in the file name and API.
@@ -231,10 +227,6 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>YAML Configuration</Label>
-                </div>
-
                 <div className="relative border rounded-lg">
                   <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t-lg">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -245,27 +237,11 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => validateYaml(tool.id)}
-                        className="h-7 px-2 text-xs"
-                      >
-                        Validate
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => formatYaml(tool.id)}
-                        className="h-7 px-2 text-xs"
-                      >
-                        Format
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => importFromFile(tool.id)}
+                        onClick={() => validateYaml(tool)}
                         className="h-7 px-2 text-xs gap-1"
                       >
-                        <Upload className="h-3 w-3" />
-                        Import
+                        <PencilRuler className="h-3 w-3" />
+                        {isLinting ? 'Linting...' : 'Lint'}
                       </Button>
                       <Button
                         variant="ghost"
@@ -290,15 +266,11 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                 </div>
 
                 {tool.validationError && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                    <AlertTriangle className="h-4 w-4" />
-                    {tool.validationError}
+                  <div className="flex items-start gap-2 text-red-600 text-sm">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <div>{tool.validationError}</div>
                   </div>
                 )}
-
-                <Text variant="small" className="text-gray-500">
-                  Required: non-empty YAML with meta.mcp.enabled=true
-                </Text>
               </div>
             </CardContent>
           </Card>
@@ -317,22 +289,6 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
           </DialogHeader>
           {expandedEditor && (
             <div className="space-y-4">
-              <Text id="yaml-editor-description" variant="small" className="text-gray-600">
-                Edit your YAML configuration in this expanded editor. Use the buttons below to validate, format, or
-                import from a file.
-              </Text>
-              <div className="flex gap-2">
-                {/* <Button variant="outline" size="sm" onClick={() => validateYaml(expandedEditor)}>
-                  Validate
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => formatYaml(expandedEditor)}>
-                  Format
-                </Button> */}
-                <Button variant="outline" size="sm" onClick={() => importFromFile(expandedEditor)} className="gap-1">
-                  <Upload className="h-3 w-3" />
-                  Import File
-                </Button>
-              </div>
               <div className="overflow-hidden" style={{ height: '500px' }}>
                 <YamlEditor
                   value={tools.find((t) => t.id === expandedEditor)?.configYaml || ''}
