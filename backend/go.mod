@@ -31,7 +31,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.0
 	github.com/hamba/avro/v2 v2.29.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
-	github.com/jhump/protoreflect v1.17.0
 	github.com/knadh/koanf/parsers/yaml v1.0.0
 	github.com/knadh/koanf/providers/confmap v1.0.0
 	github.com/knadh/koanf/providers/env v1.1.0
@@ -133,7 +132,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/cel-go v0.25.0 // indirect
 	github.com/google/pprof v0.0.0-20250607225305-033d6d78b36a // indirect
