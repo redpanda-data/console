@@ -19,155 +19,6 @@ import { Link } from 'react-router-dom';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import type { Tool } from '../remote-mcp-create-page';
 
-const yamlTemplates = {
-  processor: {
-    'search-tool': `name: search-posts
-description: Search through blog posts and articles
-meta:
-  mcp:
-    enabled: true
-
-pipeline:
-  processors:
-    - mapping: |
-        root.query = this.query
-        root.limit = this.limit.or(10)
-        
-spec:
-  description: "Search through posts and articles"
-  parameters:
-    query:
-      type: string
-      description: Search query
-      required: true
-    limit:
-      type: integer
-      description: Maximum number of results
-      default: 10`,
-    'api-tool': `name: api-call
-description: Make API calls to external services
-meta:
-  mcp:
-    enabled: true
-
-pipeline:
-  processors:
-    - http:
-        url: \${! this.endpoint }
-        verb: \${! this.method.or("GET") }
-        
-spec:
-  description: "Make API calls to external services"
-  parameters:
-    endpoint:
-      type: string
-      description: API endpoint URL
-      required: true
-    method:
-      type: string
-      description: HTTP method
-      default: GET`,
-    'data-tool': `name: data-processor
-description: Process and transform data
-meta:
-  mcp:
-    enabled: true
-
-pipeline:
-  processors:
-    - mapping: |
-        root = this.input
-        
-spec:
-  description: "Process and transform data"
-  parameters:
-    input:
-      type: object
-      description: Input data to process
-      required: true`,
-  },
-  cache: {
-    'get-item': `name: get-content
-description: Retrieve cached content by key
-meta:
-  mcp:
-    enabled: true
-
-cache_resources:
-  - label: "content_cache"
-    memory:
-      default_ttl: "5m"
-
-pipeline:
-  processors:
-    - cache:
-        resource: "content_cache"
-        operator: "get"
-        key: \${! this.key }
-        
-spec:
-  description: "Retrieve cached content"
-  parameters:
-    key:
-      type: string
-      description: Cache key
-      required: true`,
-    'set-item': `name: set-content
-description: Store content in cache
-meta:
-  mcp:
-    enabled: true
-
-cache_resources:
-  - label: "content_cache"
-    memory:
-      default_ttl: "5m"
-
-pipeline:
-  processors:
-    - cache:
-        resource: "content_cache"
-        operator: "set"
-        key: \${! this.key }
-        value: \${! this.value }
-        
-spec:
-  description: "Store content in cache"
-  parameters:
-    key:
-      type: string
-      description: Cache key
-      required: true
-    value:
-      type: string
-      description: Content to cache
-      required: true`,
-    'list-items': `name: list-cached
-description: List all cached items
-meta:
-  mcp:
-    enabled: true
-
-cache_resources:
-  - label: "content_cache"
-    memory:
-      default_ttl: "5m"
-
-pipeline:
-  processors:
-    - mapping: |
-        root.items = []
-        # List operation would need custom logic
-        
-spec:
-  description: "List all cached items"
-  parameters:
-    prefix:
-      type: string
-      description: Key prefix filter
-      required: false`,
-  },
-};
 
 interface ToolsStepProps {
   tools: Tool[];
@@ -208,12 +59,6 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
         if (tool.id === id) {
           const updatedTool = { ...tool, [field]: value };
 
-          if (field === 'componentType' && value !== tool.componentType && typeof value === 'number') {
-            const templateKey = value === MCPServer_Tool_ComponentType.PROCESSOR ? 'processor' : 'cache';
-            const templates = yamlTemplates[templateKey];
-            const firstTemplate = Object.values(templates)[0];
-            updatedTool.configYaml = firstTemplate;
-          }
 
           updatedTool.validationError = validateTool(updatedTool);
           return updatedTool;
@@ -223,14 +68,6 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
     );
   };
 
-  const insertTemplate = (toolId: string, template: string) => {
-    const tool = tools.find((t) => t.id === toolId);
-    if (tool && tool.componentType !== undefined) {
-      const templateKey = tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR ? 'processor' : 'cache';
-      const templates = yamlTemplates[templateKey];
-      updateTool(toolId, 'configYaml', templates[template as keyof typeof templates]);
-    }
-  };
 
   const validateYaml = (toolId: string) => {
     const tool = tools.find((t) => t.id === toolId);
@@ -396,35 +233,6 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>YAML Configuration</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      onValueChange={(value) => insertTemplate(tool.id, value)}
-                      disabled={tool.componentType === undefined}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue
-                          placeholder={
-                            tool.componentType === undefined ? 'Select component type first' : 'Insert template'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR ? (
-                          <>
-                            <SelectItem value="search-tool">Search Tool</SelectItem>
-                            <SelectItem value="api-tool">API Tool</SelectItem>
-                            <SelectItem value="data-tool">Data Tool</SelectItem>
-                          </>
-                        ) : tool.componentType === MCPServer_Tool_ComponentType.CACHE ? (
-                          <>
-                            <SelectItem value="get-item">Get Item</SelectItem>
-                            <SelectItem value="set-item">Set Item</SelectItem>
-                            <SelectItem value="list-items">List Items</SelectItem>
-                          </>
-                        ) : null}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
 
                 <div className="relative border rounded-lg">
