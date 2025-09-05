@@ -233,7 +233,7 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 		messageDescriptor, err := testProtoSvc.GetMessageDescriptor("protobuf_serde_test_orders", protopkg.RecordValue)
 		require.NoError(t, err)
 
-		// Create a dynamic message using the modern protobuf APIs
+		// Create a dynamic message using the protobuf APIs
 		msg := dynamicpb.NewMessage(messageDescriptor)
 
 		// Unmarshal JSON into the dynamic message

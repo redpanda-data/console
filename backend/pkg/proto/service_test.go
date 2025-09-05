@@ -312,8 +312,6 @@ message CloudEvent {
 	cloudEventBytes, err := proto.Marshal(cloudEventMsg)
 	require.NoError(t, err)
 
-	// Test if modern protojson can handle cross-package Any fields without custom resolver
-
 	// Try to deserialize the CloudEvent to JSON - this may fail due to Any field complexity
 	// but that's expected behavior when dealing with cross-package Any fields
 	jsonBytes, err := service.DeserializeProtobufMessageToJSON(cloudEventBytes, cloudEventMd)
