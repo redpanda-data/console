@@ -10,6 +10,7 @@
  */
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
+import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 import { RemoteMCPStatusBadge } from './remote-mcp-status-badge';
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
 
@@ -20,13 +21,18 @@ export const RemoteMCPDetailsHeader = () => {
   if (!mcpServerData?.mcpServer) return null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
-        <h1 className="text-3xl font-semibold">{mcpServerData.mcpServer.displayName}</h1>
-        <RemoteMCPStatusBadge />
-        <RemoteMCPToggleButton />
+        <RemoteMCPBackButton />
       </div>
-      <p className="text-muted-foreground">{mcpServerData.mcpServer.description}</p>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-semibold">{mcpServerData.mcpServer.displayName}</h1>
+          <RemoteMCPStatusBadge />
+          <RemoteMCPToggleButton />
+        </div>
+        <p className="text-muted-foreground">{mcpServerData.mcpServer.description}</p>
+      </div>
     </div>
   );
 };

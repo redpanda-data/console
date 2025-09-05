@@ -50,11 +50,11 @@ export const AI_AGENTS_SUMMARY = `AI Agents are autonomous, general-purpose assi
 take action. You can enrich them with your own proprietary data, connect them to tools, and let them reason
 through complex problems — iterating toward the best solution.`;
 
-interface AgentSidebarItemTitleProps {
+interface SidebarItemTitleProps {
   route: IRouteEntry;
 }
 
-export const getAgentSidebarItemTitle = ({ route }: AgentSidebarItemTitleProps) => (
+export const getSidebarItemTitle = ({ route }: SidebarItemTitleProps) => (
   <HStack spacing="12px" key={`${route.path}-title`}>
     <Text>{route.title}</Text>
     <SidebarItemBadge>beta</SidebarItemBadge>

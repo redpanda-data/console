@@ -246,7 +246,7 @@ export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
 
 /**
  * Gets the license with the latest expiration time from a list of licenses.
- * 
+ *
  * @param licenses - An array of License objects to evaluate.
  * @returns The license with the latest expiration time, or undefined if the array is empty.
  */
@@ -254,7 +254,7 @@ export const getLatestExpiringLicense = (licenses: License[]): License | undefin
   if (licenses.length === 0) {
     return undefined;
   }
-  
+
   return licenses.reduce((latest, current) => {
     const latestExpiration = Number(latest.expiresAt);
     const currentExpiration = Number(current.expiresAt);

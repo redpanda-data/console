@@ -26,47 +26,38 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, Trash2, X } from 'lucide-react';
-import { runInAction } from 'mobx';
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { MCPServer as APIMCPServer } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { MCPServer_State } from '../../../../protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import {
-  useDeleteMCPServerMutation,
-  useListMCPServersQuery,
-  useStartMCPServerMutation,
-  useStopMCPServerMutation,
-} from '../../../../react-query/api/remote-mcp';
-import { uiState } from '../../../../state/uiState';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../../../redpanda-ui/components/alert-dialog';
-import { Button } from '../../../redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTablePagination,
   DataTableViewOptions,
-} from '../../../redpanda-ui/components/data-table';
+} from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../../redpanda-ui/components/dropdown-menu';
-import { Input } from '../../../redpanda-ui/components/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+} from 'components/redpanda-ui/components/dropdown-menu';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
+import { runInAction } from 'mobx';
+import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import React, { useEffect } from 'react';
+import {
+  useDeleteMCPServerMutation,
+  useListMCPServersQuery,
+  useStartMCPServerMutation,
+  useStopMCPServerMutation,
+} from 'react-query/api/remote-mcp';
+import { useNavigate } from 'react-router-dom';
+import { uiState } from 'state/uiState';
+import { RemoteMCPDeleteAlertDialog } from '../delete-alert-dialog';
 
 const statusOptions = [
   { value: String(MCPServer_State.RUNNING), label: 'Running', icon: Check },
@@ -195,7 +186,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
             <div className="font-mono text-sm text-gray-600 cursor-help">{truncatedUrl}</div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{url}</p>
+            <Text>{url}</Text>
           </TooltipContent>
         </Tooltip>
       );
@@ -211,14 +202,8 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
 
       const server = row.original;
 
-      const [confirmationText, setConfirmationText] = React.useState('');
-      const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
-
-      const handleDelete = () => {
-        if (isDeleteConfirmed) {
-          deleteMCPServer({ id: server.id });
-          setConfirmationText('');
-        }
+      const handleDelete = (id: string) => {
+        deleteMCPServer({ id });
       };
 
       const handleCopy = () => {
@@ -281,50 +266,14 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                 </DropdownMenuItem>
               )}
               {(canStart || canStop) && <DropdownMenuSeparator />}
-              <AlertDialog onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600">
-                    {isDeleting ? (
-                      <div className="flex items-center gap-4">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Deleting
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-4">
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </div>
-                    )}
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader className="text-left">
-                    <AlertDialogTitle>Delete Remote MCP Server</AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-4">
-                      <p>
-                        You are about to delete <strong>{server.name}</strong>
-                      </p>
-                      <p>
-                        This action will cause data loss. To confirm, type "delete" into the confirmation box below.
-                      </p>
-                      <Input
-                        placeholder='Type "delete" to confirm'
-                        className="mt-4"
-                        value={confirmationText}
-                        onChange={(e) => setConfirmationText(e.target.value)}
-                      />
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setConfirmationText('')}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      disabled={!isDeleteConfirmed}
-                      className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <RemoteMCPDeleteAlertDialog
+                resourceId={server.id}
+                resourceName={server.name}
+                resourceType="Remote MCP Server"
+                onDelete={handleDelete}
+                isDeleting={isDeleting}
+                onOpenChange={setIsDeleteDialogOpen}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -343,7 +292,9 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
         <Input
           placeholder="Filter servers..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            table.getColumn('name')?.setFilterValue(event.target.value)
+          }
           className="h-8 w-[125px]"
         />
         {table.getColumn('state') && (
@@ -434,7 +385,7 @@ export const RemoteMCPListPage = () => {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <div>
-          <p className="text-muted-foreground">Manage your Model Context Protocol (MCP) servers.</p>
+          <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
         </div>
         <MCPDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
