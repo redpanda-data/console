@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from '@bufbuild/protobuf';
+import { formatPipelineError } from 'components/pages/rp-connect/errors';
 import { Button } from 'components/redpanda-ui/components/button';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
@@ -9,14 +10,16 @@ import { runInAction } from 'mobx';
 import { Pipeline_ResourcesSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
   CreateMCPServerRequestSchema,
+  LintMCPConfigRequestSchema,
   type MCPServer_Tool,
   MCPServer_Tool_ComponentType,
   MCPServer_ToolSchema,
   MCPServerCreateSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useState } from 'react';
-import { useCreateMCPServerMutation } from 'react-query/api/remote-mcp';
+import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { uiState } from 'state/uiState';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 import { RemoteMCPCreateMetadataStep } from './metadata/remote-mcp-create-metadata-step';
@@ -59,6 +62,7 @@ const { Stepper } = defineStepper(
 export const RemoteMCPCreatePage = () => {
   const navigate = useNavigate();
   const { mutateAsync: createMCPServer, isPending } = useCreateMCPServerMutation();
+  const { mutateAsync: lintMCPConfig } = useLintMCPConfigMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
@@ -79,49 +83,15 @@ export const RemoteMCPCreatePage = () => {
     updatePageTitle();
   }, []);
 
-  const validateTool = (tool: Tool): string | undefined => {
-    if (!tool.name.trim()) {
-      return 'Tool name is required';
-    }
-
-    const filenameRegex = /^[a-zA-Z0-9_-]+$/;
-    if (!filenameRegex.test(tool.name)) {
-      return 'Tool name must be filename-compatible (letters, numbers, hyphens, underscores only)';
-    }
-
-    if (!tool.configYaml.trim()) {
-      return 'YAML configuration is required';
-    }
-
-    try {
-      if (!tool.configYaml.includes('meta:')) {
-        return "YAML must include 'meta:' section";
-      }
-      if (!tool.configYaml.includes('mcp:')) {
-        return "YAML must include 'mcp:' section under meta";
-      }
-      if (!tool.configYaml.includes('enabled: true')) {
-        return "YAML must have 'enabled: true' under meta.mcp";
-      }
-      return undefined;
-    } catch {
-      return 'Invalid YAML format';
-    }
-  };
-
   const validateMetadata = () => {
     return displayName.trim() !== '';
   };
 
   const validateTools = () => {
-    return tools.every((tool) => validateTool(tool) === undefined);
+    return tools.every((tool) => tool.validationError === undefined);
   };
 
   const handleSubmit = async () => {
-    if (!validateMetadata() || !validateTools()) {
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -133,6 +103,32 @@ export const RemoteMCPCreatePage = () => {
           componentType: tool.componentType,
           configYaml: tool.configYaml,
         });
+      }
+
+      // Run lint validation first
+      try {
+        const lintRequest = create(LintMCPConfigRequestSchema, {
+          tools: toolsMap,
+        });
+
+        const lintResponse = await lintMCPConfig(lintRequest);
+
+        // Check if there are any lint errors
+        const hasErrors = Object.keys(lintResponse.lintHints).length > 0;
+        if (hasErrors) {
+          // Show toast error with the first lint error found
+          const firstToolWithError = Object.keys(lintResponse.lintHints)[0];
+          const firstError = lintResponse.lintHints[firstToolWithError];
+          toast.error(`Configuration error in tool "${firstToolWithError}": ${firstError.hint}`);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (lintError) {
+        // Show formatted error for lint API failure
+        const formattedError = formatPipelineError(lintError);
+        toast.error(formattedError);
+        setIsSubmitting(false);
+        return;
       }
 
       const tagsMap: { [key: string]: string } = {};
