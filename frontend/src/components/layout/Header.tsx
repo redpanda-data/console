@@ -23,6 +23,7 @@ import { UserPreferencesButton } from '../misc/UserPreferences';
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
   const showBetaBadge = useShouldShowBetaBadge();
+  const shouldHideHeader = useShouldHideHeader();
 
   const breadcrumbItems = computed(() => {
     const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
@@ -39,6 +40,8 @@ const AppPageHeader = observer(() => {
   }).get();
 
   const lastBreadcrumb = breadcrumbItems.pop();
+
+  if (shouldHideHeader) return null;
 
   return (
     <Box>
@@ -187,4 +190,13 @@ function useShouldShowBetaBadge() {
   });
 
   return agentsMatch !== null;
+}
+
+function useShouldHideHeader() {
+  const remoteMcpDetailsMatch = useMatch({
+    path: '/remote-mcp/:id',
+    end: false,
+  });
+
+  return remoteMcpDetailsMatch !== null;
 }
