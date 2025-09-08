@@ -56,7 +56,6 @@ type kafkaMetrics struct {
 	requestsReceived prometheus.Counter
 	bytesReceived    prometheus.Counter
 	openConnections  *prometheus.GaugeVec
-	activeClients    prometheus.Gauge
 }
 
 func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prometheus.Registerer) *clientHooks {
@@ -92,12 +91,6 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 				Name:      "open_connections",
 				Help:      "Number of open connections to Kafka brokers",
 			}, []string{"broker_id"}),
-			activeClients: prometheus.NewGauge(prometheus.GaugeOpts{
-				Namespace: metricsNamespace,
-				Subsystem: "kafka",
-				Name:      "active_clients",
-				Help:      "Number of active Kafka clients",
-			}),
 		}
 
 		registry.MustRegister(
@@ -106,7 +99,6 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 			metrics.requestsReceived,
 			metrics.bytesReceived,
 			metrics.openConnections,
-			metrics.activeClients,
 		)
 
 		registryMetrics[registry] = metrics
