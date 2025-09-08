@@ -28,11 +28,12 @@ var (
 )
 
 // NewFactoryMetrics creates and registers factory metrics for client tracking
-func NewFactoryMetrics(metricsNamespace string, clientType string, registry prometheus.Registerer) *FactoryMetrics {
+// The provided factoryType is added a const label to all emitted metrics.
+func NewFactoryMetrics(metricsNamespace string, factoryType string, registry prometheus.Registerer) *FactoryMetrics {
 	factoryMetricsMu.Lock()
 	defer factoryMetricsMu.Unlock()
 
-	if metrics, exists := factoryMetricsRegistry[clientType]; exists {
+	if metrics, exists := factoryMetricsRegistry[factoryType]; exists {
 		return metrics
 	}
 
@@ -43,7 +44,7 @@ func NewFactoryMetrics(metricsNamespace string, clientType string, registry prom
 			Name:      "active_total",
 			Help:      "Number of active Kafka clients in factory",
 			ConstLabels: prometheus.Labels{
-				"client_type": clientType,
+				"client_type": factoryType,
 			},
 		}),
 		ClientsCreatedCounter: prometheus.NewCounter(prometheus.CounterOpts{
@@ -52,7 +53,7 @@ func NewFactoryMetrics(metricsNamespace string, clientType string, registry prom
 			Name:      "created_total",
 			Help:      "Total number of Kafka clients created in factory",
 			ConstLabels: prometheus.Labels{
-				"client_type": clientType,
+				"client_type": factoryType,
 			},
 		}),
 		ClientsClosedCounter: prometheus.NewCounter(prometheus.CounterOpts{
@@ -61,7 +62,7 @@ func NewFactoryMetrics(metricsNamespace string, clientType string, registry prom
 			Name:      "closed_total",
 			Help:      "Total number of Kafka clients closed in factory",
 			ConstLabels: prometheus.Labels{
-				"client_type": clientType,
+				"client_type": factoryType,
 			},
 		}),
 	}
@@ -72,7 +73,7 @@ func NewFactoryMetrics(metricsNamespace string, clientType string, registry prom
 		metrics.ClientsClosedCounter,
 	)
 
-	factoryMetricsRegistry[clientType] = metrics
+	factoryMetricsRegistry[factoryType] = metrics
 	return metrics
 }
 
