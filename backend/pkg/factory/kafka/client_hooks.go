@@ -12,6 +12,8 @@ package kafka
 import (
 	"log/slog"
 	"net"
+	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,7 +39,8 @@ type clientHooks struct {
 	requestsReceivedCount prometheus.Counter
 	bytesReceived         prometheus.Counter
 
-	openConnections *prometheus.GaugeVec
+	openConnections    *prometheus.GaugeVec
+	connectionAttempts prometheus.Counter
 }
 
 var (
@@ -51,11 +54,12 @@ var (
 )
 
 type kafkaMetrics struct {
-	requestSent      prometheus.Counter
-	bytesSent        prometheus.Counter
-	requestsReceived prometheus.Counter
-	bytesReceived    prometheus.Counter
-	openConnections  *prometheus.GaugeVec
+	requestSent        prometheus.Counter
+	bytesSent          prometheus.Counter
+	requestsReceived   prometheus.Counter
+	bytesReceived      prometheus.Counter
+	openConnections    *prometheus.GaugeVec
+	connectionAttempts prometheus.Counter
 }
 
 func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prometheus.Registerer) *clientHooks {
@@ -91,6 +95,12 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 				Name:      "open_connections",
 				Help:      "Number of open connections to Kafka brokers",
 			}, []string{"broker_id"}),
+			connectionAttempts: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "connection_attempts_total",
+				Help:      "Total number of connection attempts to Kafka brokers",
+			}),
 		}
 
 		registry.MustRegister(
@@ -99,6 +109,7 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 			metrics.requestsReceived,
 			metrics.bytesReceived,
 			metrics.openConnections,
+			metrics.connectionAttempts,
 		)
 
 		registryMetrics[registry] = metrics
@@ -112,20 +123,29 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 		requestsReceivedCount: metrics.requestsReceived,
 		bytesReceived:         metrics.bytesReceived,
 		openConnections:       metrics.openConnections,
+		connectionAttempts:    metrics.connectionAttempts,
 	}
 }
 
 // OnBrokerConnect is called when the client connects to any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Duration, _ net.Conn, err error) {
+	// Track all connection attempts (successful and failed)
+	c.connectionAttempts.Inc()
+
 	if err != nil {
-		c.logger.Debug("kafka connection failed", slog.String("broker_host", meta.Host), slog.Any("error", err))
+		c.logger.Debug("kafka connection failed",
+			slog.String("broker_host", meta.Host),
+			slog.Any("error", err),
+			slog.String("caller_trace", getCallerTrace()))
 		return
 	}
 	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Inc()
-	c.logger.Debug("kafka connection succeeded",
+	c.logger.Info("kafka connection succeeded",
 		slog.String("host", meta.Host),
-		slog.Duration("dial_duration", dialDur))
+		slog.Duration("dial_duration", dialDur),
+		slog.Int("node_id", int(meta.NodeID)),
+		slog.String("caller_trace", getCallerTrace()))
 }
 
 // OnBrokerDisconnect is called when the client disconnects from any node of the target
@@ -158,4 +178,27 @@ func (c clientHooks) OnBrokerRead(_ kgo.BrokerMetadata, _ int16, bytesRead int, 
 func (c clientHooks) OnBrokerWrite(_ kgo.BrokerMetadata, _ int16, bytesWritten int, _, _ time.Duration, _ error) {
 	c.requestSentCount.Inc()
 	c.bytesSent.Add(float64(bytesWritten))
+}
+
+// getCallerTrace returns a string representation of the call stack to help identify
+// where the connection requests are coming from
+func getCallerTrace() string {
+	var callers []string
+	// Skip the first 4 frames: runtime.Callers, getCallerTrace, OnBrokerConnect, and the franz-go internal frame
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(4, pc)
+	frames := runtime.CallersFrames(pc[:n])
+
+	for i := 0; i < 3 && i < n; i++ {
+		frame, more := frames.Next()
+		if !more {
+			break
+		}
+		// Extract just the function name for brevity
+		funcParts := strings.Split(frame.Function, "/")
+		shortFunc := funcParts[len(funcParts)-1]
+		callers = append(callers, shortFunc)
+	}
+
+	return strings.Join(callers, " -> ")
 }
