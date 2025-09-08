@@ -63,25 +63,30 @@ var _ ClientFactory = (*CachedClientProvider)(nil)
 // configuring Kafka clients with various options such as TLS, SASL, and other
 // Kafka-specific settings.
 type CachedClientProvider struct {
-	cfg         *config.Config
-	logger      *slog.Logger
-	clientCache *cache.Cache[string, *kgo.Client]
-	registry    prometheus.Registerer
+	cfg            *config.Config
+	logger         *slog.Logger
+	clientCache    *cache.Cache[string, *kgo.Client]
+	registry       prometheus.Registerer
+	factoryMetrics *FactoryMetrics
 }
 
 // NewCachedClientProvider creates a new CachedClientProvider with the specified
 // configuration and logger, initializing the client cache with defined settings.
 func NewCachedClientProvider(cfg *config.Config, logger *slog.Logger, registry prometheus.Registerer) *CachedClientProvider {
+	// Initialize factory metrics
+	factoryMetrics := NewFactoryMetrics(cfg.MetricsNamespace, "cached_client_provider", registry)
+
 	cacheSettings := []cache.Opt{
 		cache.MaxAge(30 * time.Second),
 		cache.MaxErrorAge(time.Second),
 	}
 
 	return &CachedClientProvider{
-		cfg:         cfg,
-		logger:      logger,
-		clientCache: cache.New[string, *kgo.Client](cacheSettings...),
-		registry:    registry,
+		cfg:            cfg,
+		logger:         logger,
+		clientCache:    cache.New[string, *kgo.Client](cacheSettings...),
+		registry:       registry,
+		factoryMetrics: factoryMetrics,
 	}
 }
 
@@ -117,12 +122,8 @@ func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 		return nil, err
 	}
 
-	// Increment active clients metric
-	metricsInitMu.RLock()
-	if metrics, exists := registryMetrics[f.registry]; exists {
-		metrics.activeClients.Inc()
-	}
-	metricsInitMu.RUnlock()
+	// Track client creation with factory metrics
+	f.factoryMetrics.IncrementActiveClients()
 
 	return kgoClient, nil
 }
