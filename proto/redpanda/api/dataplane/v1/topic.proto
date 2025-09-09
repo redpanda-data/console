@@ -499,10 +499,10 @@ service TopicService {
     };
   }
   rpc ListTopicsConfigurations(ListTopicsConfigurationsRequest) returns (ListTopicsConfigurationsResponse) {
-    option (google.api.http) = {get: "/v1/topics/configurations"};
+    option (google.api.http) = {get: "/v1/topics:batchGetConfigurations"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List topics with configurations"
-      description: "List topics with their configurations, partition count and replication factor. Optional: filter based on topic name."
+      description: "List topic configurations for requested topics."
       responses: {
         key: "200"
         value: {

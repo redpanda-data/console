@@ -22,6 +22,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -512,47 +513,44 @@ func (s *Service) SetPartitionsToTopics(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(resMsg), nil
 }
 
-// ListTopicsConfigurations lists topics with their configurations.
+// ListTopicsConfigurations lists configurations for requested topics.
 func (s *Service) ListTopicsConfigurations(ctx context.Context, req *connect.Request[v1.ListTopicsConfigurationsRequest]) (*connect.Response[v1.ListTopicsConfigurationsResponse], error) {
 	configuredTopics := make([]*v1.ListTopicsConfigurationsResponse_TopicWithConfigurations, 0, len(req.Msg.TopicNames))
 
-	for _, topicName := range req.Msg.TopicNames {
-		// Build describe configs request for this topic
-		configReq := kmsg.NewDescribeConfigsRequest()
-		configReq.IncludeDocumentation = false
-		configReq.IncludeSynonyms = false
+	// Build single describe configs request for all topics
+	configReq := s.mapper.listTopicsConfigsToKafka(req.Msg.TopicNames)
 
-		resource := kmsg.NewDescribeConfigsRequestResource()
-		resource.ResourceType = kmsg.ConfigResourceTypeTopic
-		resource.ResourceName = topicName
-		configReq.Resources = append(configReq.Resources, resource)
+	// Make single request for all topics
+	configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
 
-		// Make the request
-		configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
-		if err != nil {
-			s.logger.WarnContext(ctx, "failed to describe topic configs", slog.Any("error", err))
-			// Continue without configurations
-			configuredTopics = append(configuredTopics, &v1.ListTopicsConfigurationsResponse_TopicWithConfigurations{
-				Name:           topicName,
-				Configurations: []*v1.Topic_Configuration{},
-			})
-			continue
+	// Process each resource in the response (1:1 with requested topics)
+	for _, resource := range configResp.Resources {
+		// Check for inner Kafka error
+		if err = kerr.ErrorForCode(resource.ErrorCode); err != nil {
+			return nil, apierrors.NewConnectErrorFromKafkaErrorCode(resource.ErrorCode, resource.ErrorMessage)
 		}
 
-		// Convert configurations
-		var configurations []*v1.Topic_Configuration
-		if len(configResp.Resources) > 0 {
-			configs, err := s.mapper.describeTopicConfigsToProto(configResp.Resources[0].Configs)
-			if err != nil {
-				s.logger.WarnContext(ctx, "failed to convert topic configs", slog.Any("error", err))
-			} else {
-				configurations = configs
-			}
+		configs, err := s.mapper.describeTopicConfigsToProto(resource.Configs)
+		if err != nil {
+			s.logger.WarnContext(ctx, "failed to convert topic configs",
+				slog.String("topic", resource.ResourceName), slog.Any("error", err))
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				err,
+				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
+			)
 		}
 
 		configuredTopics = append(configuredTopics, &v1.ListTopicsConfigurationsResponse_TopicWithConfigurations{
-			Name:           topicName,
-			Configurations: configurations,
+			Name:           resource.ResourceName,
+			Configurations: configs,
 		})
 	}
 

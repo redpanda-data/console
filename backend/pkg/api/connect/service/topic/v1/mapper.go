@@ -140,6 +140,23 @@ func (*mapper) deleteTopicToKmsg(req *v1.DeleteTopicRequest) kmsg.DeleteTopicsRe
 	return kafkaReq
 }
 
+// listTopicsConfigsToKafka maps topic names to a bulk describe configs request.
+func (*mapper) listTopicsConfigsToKafka(topicNames []string) kmsg.DescribeConfigsRequest {
+	configReq := kmsg.NewDescribeConfigsRequest()
+	configReq.IncludeDocumentation = false
+	configReq.IncludeSynonyms = false
+
+	// Add all topics as resources in one request
+	for _, topicName := range topicNames {
+		resource := kmsg.NewDescribeConfigsRequestResource()
+		resource.ResourceType = kmsg.ConfigResourceTypeTopic
+		resource.ResourceName = topicName
+		configReq.Resources = append(configReq.Resources, resource)
+	}
+
+	return configReq
+}
+
 func (k *mapper) updateTopicConfigsToKafka(req *v1.UpdateTopicConfigurationsRequest) (*kmsg.IncrementalAlterConfigsRequest, error) {
 	// We only have one resource (a single topic) whose configs we want to update incrementally
 	// The API allows to add many, independent resources of different types. Because we always only

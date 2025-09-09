@@ -5314,46 +5314,6 @@ paths:
       summary: Set topic partitions
       tags:
         - Topics
-  /v1/topics/configurations:
-    get:
-      description: 'List topics with their configurations, partition count and replication factor. Optional: filter based on topic name.'
-      operationId: TopicService_ListTopicsConfigurations
-      parameters:
-        - description: Specific topic names to get configurations for. At least one topic name is required.
-          in: query
-          name: topic_names
-          schema:
-            items:
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListTopicsConfigurationsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: List topics with configurations
-      tags:
-        - Topics
   /v1/topics/documentations:
     get:
       description: List documentation for multiple topics with their availability status and content.
@@ -5730,6 +5690,46 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Set topic partitions
+      tags:
+        - Topics
+  /v1/topics:batchGetConfigurations:
+    get:
+      description: List topic configurations for requested topics.
+      operationId: TopicService_ListTopicsConfigurations
+      parameters:
+        - description: Specific topic names to get configurations for. At least one topic name is required.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTopicsConfigurationsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List topics with configurations
       tags:
         - Topics
   /v1/transforms:
