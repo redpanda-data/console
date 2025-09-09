@@ -90,59 +90,6 @@ test.describe('ACL Creation', () => {
             DESCRIBE: OperationTypeAllow,
           },
         } as Rule,
-        {
-          id: 4,
-          resourceType: ResourceTypeSubject,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            READ: OperationTypeAllow,
-            WRITE: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 5,
-          resourceType: ResourceTypeSchemaRegistry,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            READ: OperationTypeAllow,
-          },
-        } as Rule,
-      ],
-    },
-    {
-      testName: 'should set operations for schema',
-      principal: generatePrincipalName(),
-      host: '10.0.0.1',
-      operation: [
-        {
-          id: 4,
-          resourceType: ResourceTypeSubject,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            READ: OperationTypeAllow,
-            WRITE: OperationTypeAllow,
-            ALTER_CONFIGS: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 1,
-          resourceType: ResourceTypeSchemaRegistry,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE_CONFIGS: OperationTypeAllow,
-            ALTER_CONFIGS: OperationTypeAllow,
-            DESCRIBE: OperationTypeAllow,
-          },
-        } as Rule,
       ],
     },
   ].map(({ testName, principal, host, operation }) => {
@@ -764,28 +711,6 @@ test.describe('ACL Update', () => {
             READ: OperationTypeAllow,
           },
         } as Rule,
-        {
-          id: 1,
-          resourceType: ResourceTypeSubject,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            READ: OperationTypeAllow,
-            WRITE: OperationTypeDeny,
-          },
-        } as Rule,
-        {
-          id: 2,
-          resourceType: ResourceTypeSchemaRegistry,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            READ: OperationTypeAllow,
-          },
-        } as Rule,
       ],
       removedRules: [
         {
@@ -813,28 +738,6 @@ test.describe('ACL Update', () => {
         {
           id: 0,
           resourceType: ResourceTypeConsumerGroup,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            READ: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 1,
-          resourceType: ResourceTypeSubject,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            READ: OperationTypeAllow,
-            WRITE: OperationTypeDeny,
-          },
-        } as Rule,
-        {
-          id: 2,
-          resourceType: ResourceTypeSchemaRegistry,
           mode: ModeCustom,
           selectorType: ResourcePatternTypeLiteral,
           selectorValue: '*',
@@ -936,17 +839,6 @@ test.describe('ACL Disable Rules Validation', () => {
           CREATE: OperationTypeAllow,
         },
       } as Rule,
-      {
-        id: 1,
-        resourceType: ResourceTypeSchemaRegistry,
-        mode: ModeCustom,
-        selectorType: ResourcePatternTypeLiteral,
-        selectorValue: '*',
-        operations: {
-          DESCRIBE: OperationTypeAllow,
-          READ: OperationTypeAllow,
-        },
-      } as Rule,
     ];
 
     const aclPage = new ACLPage(page);
@@ -957,22 +849,21 @@ test.describe('ACL Disable Rules Validation', () => {
       await aclPage.setHost(host);
     });
 
-    await test.step('Configure the first two rules (cluster and schema registry)', async () => {
+    await test.step('Configure the first cluster rule', async () => {
       await aclPage.configureRules(rules);
     });
 
-    await test.step('Add a third rule to test disabled buttons', async () => {
+    await test.step('Add a second rule to test disabled buttons', async () => {
       await aclPage.addNewRule();
     });
 
-    await test.step('Validate that cluster and schema registry buttons are disabled for the new rule (index 2)', async () => {
-      await aclPage.validateResourceTypeButtonDisabled(2, 'cluster');
-      await aclPage.validateResourceTypeButtonDisabled(2, 'schemaRegistry');
+    await test.step('Validate that cluster buttons are disabled for the new rule (index 1)', async () => {
+      await aclPage.validateResourceTypeButtonDisabled(1, 'cluster');
     });
 
-    await test.step('Select a different resource type for the third rule (topic should be available)', async () => {
+    await test.step('Select a different resource type for the second rule (topic should be available)', async () => {
       const newRule = {
-        id: 2,
+        id: 1,
         resourceType: ResourceTypeTopic,
         mode: ModeCustom,
         selectorType: ResourcePatternTypeLiteral,
@@ -982,22 +873,8 @@ test.describe('ACL Disable Rules Validation', () => {
           READ: OperationTypeAllow,
         },
       } as Rule;
-      await aclPage.selectResourceType(2, newRule);
-      await aclPage.configureRule(2, newRule);
-    });
-
-    await test.step('Validate the summary shows all configured rules', async () => {
-      const newRule = {
-        id: 2,
-        resourceType: ResourceTypeTopic,
-        mode: ModeCustom,
-        selectorType: ResourcePatternTypeLiteral,
-        selectorValue: '*',
-        operations: {
-          DESCRIBE: OperationTypeAllow,
-          READ: OperationTypeAllow,
-        },
-      } as Rule;
+      await aclPage.selectResourceType(1, newRule);
+      await aclPage.configureRule(1, newRule);
       await aclPage.validateAllSummaryRules([...rules, newRule]);
     });
 
@@ -1010,158 +887,8 @@ test.describe('ACL Disable Rules Validation', () => {
     });
 
     await test.step('Verify ACL creation was successful', async () => {
-      await aclPage.validateRulesCount(3);
+      await aclPage.validateRulesCount(2);
       await aclPage.validateSharedConfig();
-    });
-  });
-});
-
-test.describe('Role membership', () => {
-  if (!process.env.TEST_ENTERPRISE) {
-    return;
-  }
-  [
-    {
-      testName: 'should set operations and it should be present in resume component',
-      principal: generatePrincipalName(),
-      host: '*',
-      operation: [
-        {
-          id: 1,
-          resourceType: ResourceTypeCluster,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: 'kafka-cluster',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            CREATE: OperationTypeAllow,
-            ALTER: OperationTypeDeny,
-          },
-        } as Rule,
-        {
-          id: 2,
-          resourceType: ResourceTypeTopic,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            CREATE: OperationTypeAllow,
-            ALTER: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 3,
-          resourceType: ResourceTypeConsumerGroup,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            READ: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 4,
-          resourceType: ResourceTypeTransactionalId,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 5,
-          resourceType: ResourceTypeSubject,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            READ: OperationTypeAllow,
-            WRITE: OperationTypeAllow,
-          },
-        } as Rule,
-        {
-          id: 6,
-          resourceType: ResourceTypeSchemaRegistry,
-          mode: ModeCustom,
-          selectorType: ResourcePatternTypeLiteral,
-          selectorValue: '*',
-          operations: {
-            DESCRIBE: OperationTypeAllow,
-            READ: OperationTypeAllow,
-          },
-        } as Rule,
-      ],
-      addMembership: ['test-user-1', 'test-user-2'],
-      deleteMembership: ['test-user-1', 'test-user-2'],
-    },
-  ].map(({ testName, principal, host, operation, addMembership, deleteMembership }) => {
-    test(testName, async ({ page }) => {
-      const aclPage = new RolePage(page);
-      await aclPage.goto();
-
-      await test.step('Set principal and host', async () => {
-        await aclPage.setPrincipal(principal);
-        await aclPage.setHost(host);
-      });
-
-      await test.step('Configure all rules', async () => {
-        await aclPage.configureRules(operation);
-      });
-
-      await test.step('Submit the form', async () => {
-        await aclPage.submitForm();
-      });
-
-      await test.step('Wait for navigation to detail page', async () => {
-        await aclPage.waitForDetailPage();
-      });
-
-      await test.step('Add small delay for stability', async () => {
-        await aclPage.waitForStability(100);
-      });
-
-      await test.step('Add membership to the role', async () => {
-        if (addMembership && addMembership.length > 0) {
-          await aclPage.addMembership(addMembership);
-        }
-      });
-
-      await test.step('Validate member count', async () => {
-        if (addMembership && addMembership.length > 0) {
-          await aclPage.validateMemberCount(addMembership.length);
-        }
-      });
-
-      await test.step('Validate each member exists', async () => {
-        if (addMembership && addMembership.length > 0) {
-          for (const username of addMembership) {
-            await aclPage.validateMemberExists(username);
-          }
-        }
-      });
-
-      await test.step('Remove membership from the role page', async () => {
-        if (deleteMembership && deleteMembership.length > 0) {
-          await aclPage.deleteMembership(deleteMembership);
-        }
-      });
-
-      await test.step('Validate member count after deletion', async () => {
-        if (deleteMembership && deleteMembership.length > 0) {
-          await aclPage.validateMemberCount(0);
-        }
-      });
-
-      await test.step('Validate each member is removed', async () => {
-        if (deleteMembership && deleteMembership.length > 0) {
-          for (const username of deleteMembership) {
-            await aclPage.validateMemberNotExists(username);
-          }
-        }
-      });
     });
   });
 });

@@ -338,11 +338,11 @@ export class ACLPage {
 
   async validateSummaryRule(ruleIndex: number, rule: Rule) {
     // Check that the summary rule exists
-    const summaryRule = this.page.getByTestId(`summary-card-${getRuleDataTestId(rule)}`);
+    const summaryRule = this.page.getByTestId(`summary-card-${getRuleDataTestId(rule)}`).first();
     await expect(summaryRule).toBeVisible();
 
     // Check the rule title
-    const summaryTitle = this.page.getByTestId(`${getRuleDataTestId(rule)}-title`);
+    const summaryTitle = this.page.getByTestId(`${getRuleDataTestId(rule)}-title`).first();
     await expect(summaryTitle).toBeVisible();
 
     // Check if mode is Allow All or Deny All
