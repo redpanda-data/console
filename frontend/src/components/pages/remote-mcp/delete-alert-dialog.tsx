@@ -22,28 +22,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';
 
-export interface RemoteMCPDeleteAlertDialogProps {
+export interface DeleteAlertDialogProps {
   resourceId: string;
   resourceName: string;
   resourceType: string;
   onDelete: (id: string) => void;
-  isDeleting?: boolean;
   onOpenChange?: (open: boolean) => void;
+  children: React.ReactNode;
 }
 
-export const RemoteMCPDeleteAlertDialog: React.FC<RemoteMCPDeleteAlertDialogProps> = ({
+export const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
   resourceId,
   resourceName,
   resourceType,
   onDelete,
-  isDeleting = false,
   onOpenChange,
+  children,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
@@ -57,19 +55,7 @@ export const RemoteMCPDeleteAlertDialog: React.FC<RemoteMCPDeleteAlertDialogProp
 
   return (
     <AlertDialog onOpenChange={onOpenChange}>
-      <AlertDialogTrigger asChild>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600">
-          {isDeleting ? (
-            <div className="flex items-center gap-4">
-              <Loader2 className="h-4 w-4 animate-spin" /> Deleting
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <Trash2 className="h-4 w-4" /> Delete
-            </div>
-          )}
-        </DropdownMenuItem>
-      </AlertDialogTrigger>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>

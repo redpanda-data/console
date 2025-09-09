@@ -79,12 +79,10 @@ const ParameterList = ({ parameters, toolParameters, onParameterChange }: Parame
       {parameters.map((param) => (
         <div key={param.name} className="space-y-2">
           <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">{param.name}</Label>
-            {param.required && (
-              <Badge variant="destructive" className="text-xs px-1 py-0">
-                required
-              </Badge>
-            )}
+            <Label className="text-sm font-medium">
+              {param.name}
+              {param.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
             <Badge variant="outline" className="text-xs px-1 py-0">
               {param.type}
             </Badge>
