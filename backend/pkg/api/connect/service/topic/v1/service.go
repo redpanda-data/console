@@ -590,17 +590,20 @@ func (s *Service) ListLogDirs(ctx context.Context, req *connect.Request[v1.ListL
 	return connect.NewResponse(response), nil
 }
 
-// ListTopicDocumentations lists documentation for multiple topics with their availability status and content.
-func (s *Service) ListTopicDocumentations(_ context.Context, req *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error) {
-	documentations := make([]*v1.ListTopicDocumentationsResponse_TopicDocumentation, 0, len(req.Msg.TopicNames))
+// GetTopicDocumentation gets documentation for a single topic with its availability status and content.
+func (s *Service) GetTopicDocumentation(_ context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	docs := s.consoleSvc.GetTopicDocumentation(req.Msg.TopicName)
 
-	for _, topicName := range req.Msg.TopicNames {
-		docs := s.consoleSvc.GetTopicDocumentation(topicName)
-		protoDoc := s.mapper.topicDocumentationToProto(topicName, docs)
-		documentations = append(documentations, protoDoc)
+	// If GetTopicDocumentation implementation changes and a nil is returned this will catch and return an error
+	if docs == nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeNotFound,
+			fmt.Errorf("topic %q not found", req.Msg.TopicName),
+			apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
+		)
 	}
 
-	return connect.NewResponse(&v1.ListTopicDocumentationsResponse{
-		Documentations: documentations,
-	}), nil
+	protoDoc := s.mapper.topicDocumentationToProto(req.Msg.TopicName, docs)
+
+	return connect.NewResponse(protoDoc), nil
 }

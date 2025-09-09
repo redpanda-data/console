@@ -310,8 +310,8 @@ func (*mapper) updateTopicSummary(topicSummaries map[string]*v1.ListLogDirsRespo
 	summary.TotalPartitions += partitionCount
 }
 
-func (*mapper) topicDocumentationToProto(topicName string, docs *console.TopicDocumentation) *v1.ListTopicDocumentationsResponse_TopicDocumentation {
-	result := &v1.ListTopicDocumentationsResponse_TopicDocumentation{
+func (*mapper) topicDocumentationToProto(topicName string, docs *console.TopicDocumentation) *v1.GetTopicDocumentationResponse {
+	result := &v1.GetTopicDocumentationResponse{
 		TopicName: topicName,
 	}
 
