@@ -405,27 +405,21 @@ enum TopicDocumentationState {
   TOPIC_DOCUMENTATION_STATE_AVAILABLE = 3;
 }
 
-message ListTopicDocumentationsRequest {
-  // Specific topic names to get documentation for. At least one topic name is required.
-  repeated string topic_names = 1 [
+message GetTopicDocumentationRequest {
+  // Topic name to get documentation for.
+  string topic_name = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).repeated.min_items = 1,
-    (buf.validate.field).repeated.items.string.min_len = 1,
-    (buf.validate.field).repeated.items.string.max_len = 249,
-    (buf.validate.field).repeated.items.string.pattern = "^[a-zA-Z0-9._\\-]*$"
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
   ];
 }
 
-message ListTopicDocumentationsResponse {
-  message TopicDocumentation {
-    // Topic name.
-    string topic_name = 1;
-    // Documentation state for this topic.
-    TopicDocumentationState state = 2;
-    // The documentation content in markdown format (only present when state is AVAILABLE).
-    optional bytes markdown = 3;
-  }
-  repeated TopicDocumentation documentations = 1;
+message GetTopicDocumentationResponse {
+  // Documentation state for this topic.
+  TopicDocumentationState state = 1;
+  // The documentation content in markdown format (only present when state is AVAILABLE).
+  optional bytes markdown = 2;
 }
 
 service TopicService {
@@ -548,17 +542,26 @@ service TopicService {
     };
   }
 
-  rpc ListTopicDocumentations(ListTopicDocumentationsRequest) returns (ListTopicDocumentationsResponse) {
-    option (google.api.http) = {get: "/v1/topics/documentations"};
+  rpc GetTopicDocumentation(GetTopicDocumentationRequest) returns (GetTopicDocumentationResponse) {
+    option (google.api.http) = {get: "/v1/topics/{topic_name}/documentation"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List topic documentations"
-      description: "List documentation for multiple topics with their availability status and content."
+      summary: "Get topic documentation"
+      description: "Get documentation for a topic with its availability and content."
       responses: {
         key: "200"
         value: {
           description: "OK"
           schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListTopicDocumentationsResponse"}
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTopicDocumentationResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
           }
         }
       }
