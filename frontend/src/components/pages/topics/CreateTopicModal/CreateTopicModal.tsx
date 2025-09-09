@@ -1,7 +1,7 @@
 import { PlusIcon, XIcon } from '@primer/octicons-react';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Component, useEffect, useState } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import type { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
@@ -9,19 +9,16 @@ import './CreateTopicModal.scss';
 import {
   Box,
   Button,
-  Flex,
   Input,
   InputGroup,
   InputLeftAddon,
   InputRightAddon,
   isSingleValue,
-  NumberInput,
   Select,
-  Slider,
-  SliderFilledTrack,
-  SliderThumb,
-  SliderTrack,
 } from '@redpanda-data/ui';
+import { Slider as UISlider } from '../../../redpanda-ui/components/slider';
+import { Input as UIInput } from '../../../redpanda-ui/components/input';
+import { Label as UILabel } from '../../../redpanda-ui/components/label';
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backendApi';
 import { SingleSelect } from '../../../misc/Select';
@@ -647,26 +644,59 @@ export function DurationSelect(p: {
 }
 
 export function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
+  const percentageValue = Math.round(p.value * 100);
+
+  const handleSliderChange = (values: number[]) => {
+    p.onChange(values[0] / 100);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    if (inputValue === '') {
+      return;
+    }
+    const numericValue = Number(inputValue);
+    if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 100) {
+      p.onChange(numericValue / 100);
+    }
+  };
+
   return (
-    <Flex alignItems="center" gap={2}>
-      <Slider min={0} max={100} step={1} onChange={(x) => p.onChange(x / 100)} value={Math.round(p.value * 100)}>
-        <SliderTrack>
-          <SliderFilledTrack />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
-      <NumberInput
-        min={0}
-        max={100}
-        value={`${Math.round(p.value * 100)}%`}
-        onChange={(x) => {
-          if (x === null) {
-            return;
-          }
-          p.onChange(Number(x) / 100);
-        }}
-        size="small"
-      />
-    </Flex>
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <UILabel className="text-sm font-medium text-muted-foreground">
+          Percentage ({percentageValue}%)
+        </UILabel>
+        <UISlider
+          min={0}
+          max={100}
+          step={1}
+          value={[percentageValue]}
+          onValueChange={handleSliderChange}
+          className="w-full"
+          aria-label="Percentage slider"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <UILabel htmlFor="ratio-input" className="text-sm font-medium whitespace-nowrap">
+          Precise value:
+        </UILabel>
+        <div className="relative flex-shrink-0">
+          <UIInput
+            id="ratio-input"
+            type="number"
+            min={0}
+            max={100}
+            value={percentageValue}
+            onChange={handleInputChange}
+            className="w-20 pr-6 text-right"
+            aria-label="Percentage input"
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+            %
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }

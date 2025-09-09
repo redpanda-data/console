@@ -449,7 +449,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
       return <PasswordInput value={value ?? ''} onChange={(x) => onChange(x.target.value as T)} />;
 
     case 'RATIO':
-      return <RatioInput value={Number(value)} onChange={(x) => onChange(x as T)} />;
+      return <RatioInput value={Number(value || entry.value)} onChange={(x) => onChange(x as T)} />;
 
     case 'INTEGER':
       return <NumInput value={Number(value)} onChange={(e) => onChange(Math.round(e ?? 0) as T)} />;
