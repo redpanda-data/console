@@ -412,8 +412,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     BookOpenIcon,
     true,
     routeVisibility(
-      // Do not display knowledge bases if feature flag is disabled
-      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'), // Needed to pass flags to current routing solution
+      // Do not display knowledge bases if feature flag is disabled or in serverless mode
+      () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi') && !isServerless(), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
       [],
