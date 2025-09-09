@@ -37,7 +37,8 @@ type clientHooks struct {
 	requestsReceivedCount prometheus.Counter
 	bytesReceived         prometheus.Counter
 
-	openConnections *prometheus.GaugeVec
+	openConnections    *prometheus.GaugeVec
+	connectionAttempts prometheus.Counter
 }
 
 var (
@@ -51,11 +52,12 @@ var (
 )
 
 type kafkaMetrics struct {
-	requestSent      prometheus.Counter
-	bytesSent        prometheus.Counter
-	requestsReceived prometheus.Counter
-	bytesReceived    prometheus.Counter
-	openConnections  *prometheus.GaugeVec
+	requestSent        prometheus.Counter
+	bytesSent          prometheus.Counter
+	requestsReceived   prometheus.Counter
+	bytesReceived      prometheus.Counter
+	openConnections    *prometheus.GaugeVec
+	connectionAttempts prometheus.Counter
 }
 
 func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prometheus.Registerer) *clientHooks {
@@ -91,6 +93,12 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 				Name:      "open_connections",
 				Help:      "Number of open connections to Kafka brokers",
 			}, []string{"broker_id"}),
+			connectionAttempts: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "connection_attempts_total",
+				Help:      "Total number of connection attempts to Kafka brokers",
+			}),
 		}
 
 		registry.MustRegister(
@@ -99,6 +107,7 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 			metrics.requestsReceived,
 			metrics.bytesReceived,
 			metrics.openConnections,
+			metrics.connectionAttempts,
 		)
 
 		registryMetrics[registry] = metrics
@@ -112,20 +121,27 @@ func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prome
 		requestsReceivedCount: metrics.requestsReceived,
 		bytesReceived:         metrics.bytesReceived,
 		openConnections:       metrics.openConnections,
+		connectionAttempts:    metrics.connectionAttempts,
 	}
 }
 
 // OnBrokerConnect is called when the client connects to any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Duration, _ net.Conn, err error) {
+	// Track all connection attempts (successful and failed)
+	c.connectionAttempts.Inc()
+
 	if err != nil {
-		c.logger.Debug("kafka connection failed", slog.String("broker_host", meta.Host), slog.Any("error", err))
+		c.logger.Debug("kafka connection failed",
+			slog.String("broker_host", meta.Host),
+			slog.Any("error", err))
 		return
 	}
 	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Inc()
-	c.logger.Debug("kafka connection succeeded",
+	c.logger.Info("kafka connection succeeded",
 		slog.String("host", meta.Host),
-		slog.Duration("dial_duration", dialDur))
+		slog.Duration("dial_duration", dialDur),
+		slog.Int("node_id", int(meta.NodeID)))
 }
 
 // OnBrokerDisconnect is called when the client disconnects from any node of the target
