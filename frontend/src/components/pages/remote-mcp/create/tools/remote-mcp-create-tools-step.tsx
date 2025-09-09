@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { AlertTriangle, Code2, ExternalLink, Maximize2, PencilRuler, Plus, X } from 'lucide-react';
+import { AlertTriangle, Code2, Maximize2, PencilRuler, Plus, X } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import {
   LintMCPConfigRequestSchema,
@@ -23,8 +23,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useRef } from 'react';
 import { useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
-import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { RemoteMCPComponentTypeDescription } from '../../remote-mcp-component-type-description';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import type { Tool } from '../remote-mcp-create-page';
 
@@ -213,16 +213,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <Text variant="small" className="text-gray-500">
-                    {tool.componentType === MCPServer_Tool_ComponentType.PROCESSOR
-                      ? 'Transform and manipulate content, make API calls, process data.'
-                      : tool.componentType === MCPServer_Tool_ComponentType.CACHE
-                        ? 'Store and retrieve data, manage cached content and state.'
-                        : 'Choose the type of component this tool will use.'}{' '}
-                    <Link to="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
-                      Learn more <ExternalLink className="h-3 w-3" />
-                    </Link>
-                  </Text>
+                  <RemoteMCPComponentTypeDescription componentType={tool.componentType} className="text-gray-500" />
                 </div>
               </div>
 

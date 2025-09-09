@@ -35,12 +35,13 @@ import { useState } from 'react';
 import { useGetMCPServerQuery, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from 'utils/resource-tiers';
+import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 
 interface LocalTool {
   id: string;
   name: string;
-  componentType: string;
+  componentType: MCPServer_Tool_ComponentType;
   config: string;
 }
 
@@ -58,67 +59,6 @@ interface LocalMCPServer {
   url: string;
 }
 
-const toolTemplates = {
-  search: {
-    name: 'search-content',
-    config: `name: search-content
-meta:
-  mcp:
-    enabled: true
-spec:
-  description: "Search through content and documents"
-  parameters: {
-    query:
-      type: string
-      required: true
-    limit:
-      type: integer
-      default: 10`,
-  },
-  get: {
-    name: 'get-item',
-    config: `name: get-item
-meta:
-  mcp:
-    enabled: true
-spec:
-  description: "Retrieve item by ID"
-  parameters: {
-    id:
-      type: string
-      required: true`,
-  },
-  create: {
-    name: 'create-item',
-    config: `name: create-item
-meta:
-  mcp:
-    enabled: true
-spec:
-  description: "Create a new item"
-  parameters: {
-    data:
-      type: object
-      required: true`,
-  },
-  update: {
-    name: 'update-item',
-    config: `name: update-item
-meta:
-  mcp:
-    enabled: true
-spec:
-  description: "Update an existing item"
-  parameters: {
-    id:
-      type: string
-      required: true
-    data:
-      type: object
-      required: true`,
-  },
-};
-
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -127,7 +67,6 @@ export const RemoteMCPConfigurationTab = () => {
   // Local state for configuration editing
   const [isEditing, setIsEditing] = useState(false);
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState('');
 
   const handleSave = async () => {
     if (!mcpServerData?.mcpServer || !id) return;
@@ -140,7 +79,7 @@ export const RemoteMCPConfigurationTab = () => {
       const toolsMap: { [key: string]: { componentType: number; configYaml: string } } = {};
       currentData.tools.forEach((tool) => {
         toolsMap[tool.name] = {
-          componentType: tool.componentType === 'Processor' ? 1 : 2, // PROCESSOR = 1, CACHE = 2
+          componentType: tool.componentType,
           configYaml: tool.config,
         };
       });
@@ -190,7 +129,7 @@ export const RemoteMCPConfigurationTab = () => {
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         id: name,
         name,
-        componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+        componentType: tool.componentType,
         config: tool.configYaml,
       })),
       state: mcpServerData.mcpServer.state,
@@ -198,33 +137,24 @@ export const RemoteMCPConfigurationTab = () => {
       url: mcpServerData.mcpServer.url,
     };
 
-    const template = selectedTemplate ? toolTemplates[selectedTemplate as keyof typeof toolTemplates] : null;
-    const newToolId = `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const newTool = template
-      ? {
-          id: newToolId,
-          name: template.name,
-          componentType: 'Processor' as const,
-          config: template.config,
-        }
-      : {
-          id: newToolId,
-          name: '',
-          componentType: 'Processor' as const,
-          config: `name: 
-    meta:
-      mcp:
-        enabled: true
-    spec:
-      description: ""
-      parameters: {}`,
-        };
+    const newToolId = `tool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const newTool = {
+      id: newToolId,
+      name: '',
+      componentType: MCPServer_Tool_ComponentType.PROCESSOR,
+      config: `name: 
+meta:
+  mcp:
+    enabled: true
+spec:
+  description: ""
+  parameters: {}`,
+    };
 
     setEditedServerData({
       ...currentData,
       tools: [...currentData.tools, newTool],
     });
-    setSelectedTemplate('');
   };
 
   const handleRemoveTool = (toolId: string) => {
@@ -239,7 +169,7 @@ export const RemoteMCPConfigurationTab = () => {
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         id: name,
         name,
-        componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+        componentType: tool.componentType,
         config: tool.configYaml,
       })),
       state: mcpServerData.mcpServer.state,
@@ -254,7 +184,7 @@ export const RemoteMCPConfigurationTab = () => {
     });
   };
 
-  const handleUpdateTool = (toolId: string, field: string, value: string) => {
+  const handleUpdateTool = (toolId: string, updates: Partial<LocalTool>) => {
     if (!mcpServerData?.mcpServer) return;
 
     const currentData = editedServerData || {
@@ -266,7 +196,7 @@ export const RemoteMCPConfigurationTab = () => {
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         id: name,
         name,
-        componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+        componentType: tool.componentType,
         config: tool.configYaml,
       })),
       state: mcpServerData.mcpServer.state,
@@ -277,7 +207,7 @@ export const RemoteMCPConfigurationTab = () => {
     const updatedTools = [...currentData.tools];
     const toolIndex = updatedTools.findIndex((tool) => tool.id === toolId);
     if (toolIndex !== -1) {
-      updatedTools[toolIndex] = { ...updatedTools[toolIndex], [field]: value };
+      updatedTools[toolIndex] = { ...updatedTools[toolIndex], ...updates };
     }
     setEditedServerData({
       ...currentData,
@@ -297,7 +227,7 @@ export const RemoteMCPConfigurationTab = () => {
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         id: name,
         name,
-        componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+        componentType: tool.componentType,
         config: tool.configYaml,
       })),
       state: mcpServerData.mcpServer.state,
@@ -323,7 +253,7 @@ export const RemoteMCPConfigurationTab = () => {
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         id: name,
         name,
-        componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+        componentType: tool.componentType,
         config: tool.configYaml,
       })),
       state: mcpServerData.mcpServer.state,
@@ -350,7 +280,7 @@ export const RemoteMCPConfigurationTab = () => {
       tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
         id: name,
         name,
-        componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+        componentType: tool.componentType,
         config: tool.configYaml,
       })),
       state: mcpServerData.mcpServer.state,
@@ -403,7 +333,7 @@ export const RemoteMCPConfigurationTab = () => {
           tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
             id: name,
             name,
-            componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+            componentType: tool.componentType,
             config: tool.configYaml,
           })),
           state: mcpServerData.mcpServer.state,
@@ -425,7 +355,13 @@ export const RemoteMCPConfigurationTab = () => {
               <Save className="h-4 w-4 mr-2" />
               {isUpdating ? 'Saving...' : 'Save Changes'}
             </Button>
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditing(false);
+                setEditedServerData(null);
+              }}
+            >
               Cancel
             </Button>
           </div>
@@ -473,7 +409,7 @@ export const RemoteMCPConfigurationTab = () => {
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
                       id: name,
                       name,
-                      componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+                      componentType: tool.componentType,
                       config: tool.configYaml,
                     })),
                     state: mcpServerData.mcpServer.state,
@@ -502,7 +438,7 @@ export const RemoteMCPConfigurationTab = () => {
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
                       id: name,
                       name,
-                      componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+                      componentType: tool.componentType,
                       config: tool.configYaml,
                     })),
                     state: mcpServerData.mcpServer.state,
@@ -589,7 +525,7 @@ export const RemoteMCPConfigurationTab = () => {
                     tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
                       id: name,
                       name,
-                      componentType: tool.componentType === 1 ? 'Processor' : 'Cache',
+                      componentType: tool.componentType,
                       config: tool.configYaml,
                     })),
                     state: mcpServerData.mcpServer.state,
@@ -634,7 +570,7 @@ export const RemoteMCPConfigurationTab = () => {
                         <Input
                           value={tool.name}
                           placeholder="e.g., search-posts (must be filename-compatible)"
-                          onChange={(e) => handleUpdateTool(tool.id, 'name', e.target.value)}
+                          onChange={(e) => handleUpdateTool(tool.id, { name: e.target.value })}
                         />
                         <Text variant="small" className="text-muted-foreground">
                           Lowercase letters, numbers, and dashes. Used in the file name and API.
@@ -642,39 +578,28 @@ export const RemoteMCPConfigurationTab = () => {
                       </div>
                       <div className="flex-1 space-y-1">
                         <Label className="text-sm font-medium">Component Type</Label>
-                        <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 h-10">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTool(tool.id, 'componentType', 'Processor')}
-                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                              tool.componentType === 'Processor'
-                                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                                : 'text-gray-600 hover:text-gray-900'
-                            }`}
-                          >
-                            Processor
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateTool(tool.id, 'componentType', 'Cache')}
-                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                              tool.componentType === 'Cache'
-                                ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                                : 'text-gray-600 hover:text-gray-900'
-                            }`}
-                          >
-                            Cache
-                          </button>
-                        </div>
-                        <Text variant="small" className="text-muted-foreground">
-                          {tool.componentType === 'Processor'
-                            ? 'Transform and manipulate content, make API calls, process data.'
-                            : 'Store and retrieve data, manage cached content and state.'}{' '}
-                          {/* TODO: Add a link to the MCP documentation */}
-                          {/* <a href="#" className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
-                              Learn more <ExternalLink className="h-3 w-3" />
-                            </a> */}
-                        </Text>
+                        <Select
+                          value={tool.componentType.toString()}
+                          onValueChange={(value) => {
+                            const componentType = Number.parseInt(value) as MCPServer_Tool_ComponentType;
+                            handleUpdateTool(tool.id, { componentType });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select component type">
+                              <RemoteMCPToolTypeBadge componentType={tool.componentType} />
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={MCPServer_Tool_ComponentType.PROCESSOR.toString()}>
+                              <RemoteMCPToolTypeBadge componentType={MCPServer_Tool_ComponentType.PROCESSOR} />
+                            </SelectItem>
+                            <SelectItem value={MCPServer_Tool_ComponentType.CACHE.toString()}>
+                              <RemoteMCPToolTypeBadge componentType={MCPServer_Tool_ComponentType.CACHE} />
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <RemoteMCPComponentTypeDescription componentType={tool.componentType} />
                       </div>
                       <Button variant="outline" size="sm" onClick={() => handleRemoveTool(tool.id)} className="mt-6">
                         <Trash2 className="h-4 w-4" />
@@ -684,13 +609,7 @@ export const RemoteMCPConfigurationTab = () => {
                     <div className="flex-1 space-y-1">
                       <Label className="text-sm font-medium">Tool Name</Label>
                       <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center gap-3">
-                        <RemoteMCPToolTypeBadge
-                          componentType={
-                            tool.componentType === 'Processor'
-                              ? MCPServer_Tool_ComponentType.PROCESSOR
-                              : MCPServer_Tool_ComponentType.CACHE
-                          }
-                        />
+                        <RemoteMCPToolTypeBadge componentType={tool.componentType} />
                         <code className="text-sm font-mono">{tool.name}</code>
                       </div>
                     </div>
@@ -701,7 +620,7 @@ export const RemoteMCPConfigurationTab = () => {
                   <div className="overflow-hidden" style={{ height: '400px' }}>
                     <YamlEditor
                       value={tool.config}
-                      onChange={(value) => handleUpdateTool(tool.id, 'config', value || '')}
+                      onChange={(value) => handleUpdateTool(tool.id, { config: value || '' })}
                       options={{
                         readOnly: !isEditing,
                         theme: 'vs',
@@ -713,26 +632,10 @@ export const RemoteMCPConfigurationTab = () => {
             ))}
             {isEditing && (
               <div className="space-y-4">
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Label className="text-sm font-medium">Start from template (optional)</Label>
-                    <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a template or start blank" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="search">Search Tool</SelectItem>
-                        <SelectItem value="get">Get Item Tool</SelectItem>
-                        <SelectItem value="create">Create Item Tool</SelectItem>
-                        <SelectItem value="update">Update Item Tool</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button variant="outline" onClick={handleAddTool} className="mb-1 bg-transparent">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Tool
-                  </Button>
-                </div>
+                <Button variant="outline" onClick={handleAddTool} className="bg-transparent">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tool
+                </Button>
               </div>
             )}
           </CardContent>

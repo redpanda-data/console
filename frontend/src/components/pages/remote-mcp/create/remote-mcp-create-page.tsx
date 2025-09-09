@@ -174,7 +174,7 @@ export const RemoteMCPCreatePage = () => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-full mx-auto">
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <RemoteMCPBackButton />

@@ -7,9 +7,9 @@ interface RemoteMCPComponentTypeDescriptionProps {
   className?: string;
 }
 
-export const RemoteMCPComponentTypeDescription = ({ 
-  componentType, 
-  className = "text-muted-foreground" 
+export const RemoteMCPComponentTypeDescription = ({
+  componentType,
+  className = 'text-muted-foreground',
 }: RemoteMCPComponentTypeDescriptionProps) => {
   return (
     <Text variant="small" className={className}>
@@ -19,10 +19,11 @@ export const RemoteMCPComponentTypeDescription = ({
           ? 'Key/value stores used for data deduplication, joins, and temporary storage.'
           : 'Choose the type of component this tool will use.'}{' '}
       {componentType !== undefined && (
-        <a 
-          href={componentType === MCPServer_Tool_ComponentType.PROCESSOR 
-            ? 'https://docs.redpanda.com/redpanda-connect/components/processors/about/'
-            : 'https://docs.redpanda.com/redpanda-connect/components/caches/about/'
+        <a
+          href={
+            componentType === MCPServer_Tool_ComponentType.PROCESSOR
+              ? 'https://docs.redpanda.com/redpanda-connect/components/processors/about/'
+              : 'https://docs.redpanda.com/redpanda-connect/components/caches/about/'
           }
           target="_blank"
           rel="noopener noreferrer"

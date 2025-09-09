@@ -12,14 +12,14 @@
 import { Markdown } from '@redpanda-data/ui';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { CodeTabs } from 'components/redpanda-ui/components/code-tabs';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { AlertCircle } from 'lucide-react';
-import type { MCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
-import { useGetCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
+import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import GoLogo from '../../../../assets/go.svg';
 import JavaLogo from '../../../../assets/java.svg';
@@ -41,22 +41,53 @@ const getLanguageIcon = (language: string) => {
   }
 };
 
-const getRpkCommand = ({ clusterId, mcpServerId }: { clusterId?: string; mcpServerId?: MCPServer['id'] }) => {
-  return `rpk -X cloud_environment=integration
---config /home/<username>/.config/rpk/rpk.yaml cloud mcp proxy
---cluster-id ${clusterId || 'YOUR_CLUSTER_ID'}
---mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'}`;
+const getRpkCloudEnvironment = () => {
+  if (window.location.hostname.includes('main')) {
+    return 'integration';
+  }
+  if (window.location.hostname.includes('preprod')) {
+    return 'preprod';
+  }
+  if (window.location.hostname.includes('cloud.redpanda.com')) {
+    return 'production';
+  }
+
+  return 'integration';
+};
+
+const getRpkCommand = ({
+  clusterId,
+  mcpServerId,
+  clientType,
+}: {
+  clusterId?: string;
+  mcpServerId?: string;
+  clientType?: string;
+}) => {
+  return `rpk -X cloud_environment=${getRpkCloudEnvironment()} cloud mcp proxy \\
+--cluster-id ${clusterId || 'YOUR_CLUSTER_ID'} \\
+--mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'} \\
+--install --client ${clientType || 'YOUR_CLIENT_TYPE'}`;
 };
 
 export const RemoteMCPConnectionTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
-  const availableLanguages = ['python', 'javascript', 'java', 'go'];
+  const availableLanguages = ['python', 'javascript'];
   const [selectedLanguage, setSelectedLanguage] = useState<string>('python');
-  const { data: codeSnippetData, isLoading: isLoadingCodeSnippet } = useGetCodeSnippetQuery({
+  const { data: codeSnippetData, isLoading: isLoadingMCPCodeSnippet } = useGetMCPCodeSnippetQuery({
     language: selectedLanguage,
   });
+
+  const getClientRpkCommands = () => {
+    return {
+      'Claude Desktop': `# Add to your Claude Desktop configuration
+${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpServer?.id, clientType: 'claude' })}`,
+      'Claude Code': `# Run this command in your terminal
+${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpServer?.id, clientType: 'claude-code' })}`,
+    };
+  };
 
   if (!mcpServerData?.mcpServer) return null;
 
@@ -94,12 +125,9 @@ export const RemoteMCPConnectionTab = () => {
           </div>
 
           <div className="pt-6">
-            <Label className="text-sm font-medium">RPK Command</Label>
+            <Label className="text-sm font-medium">RPK Commands by Client</Label>
             <div className="w-full mt-2">
-              <DynamicCodeBlock
-                lang="bash"
-                code={getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpServer?.id })}
-              />
+              <CodeTabs lang="bash" codes={getClientRpkCommands()} />
             </div>
           </div>
 
@@ -124,14 +152,17 @@ export const RemoteMCPConnectionTab = () => {
                       <SheetTitle>{language.charAt(0).toUpperCase() + language.slice(1)} Connection Code</SheetTitle>
                     </SheetHeader>
                     <div className="mt-6">
-                      {isLoadingCodeSnippet ? (
+                      {isLoadingMCPCodeSnippet ? (
                         <div className="flex items-center justify-center p-8">
                           <div className="text-muted-foreground">Loading code snippet...</div>
                         </div>
                       ) : (
                         <Markdown>
                           {selectedLanguage === language && codeSnippetData
-                            ? codeSnippetData
+                            ? codeSnippetData.replaceAll(
+                                '<mcp-server-url>',
+                                mcpServerData?.mcpServer?.url || '<mcp-server-url>',
+                              )
                             : `# ${language.charAt(0).toUpperCase() + language.slice(1)} connection code\n# Please select this language to load the snippet...`}
                         </Markdown>
                       )}
