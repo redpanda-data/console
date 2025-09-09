@@ -76,12 +76,6 @@ func NewCachedClientProvider(cfg *config.Config, logger *slog.Logger, registry p
 	// Initialize factory metrics
 	factoryMetrics := NewFactoryMetrics(cfg.MetricsNamespace, "cached_client_provider", registry)
 
-	//temporarily disable cache to troubleshoot issues
-	//cacheSettings := []cache.Opt{
-	//	cache.MaxAge(30 * time.Second),
-	//	cache.MaxErrorAge(time.Second),
-	//}
-
 	return &CachedClientProvider{
 		cfg:            cfg,
 		logger:         logger,
