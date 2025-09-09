@@ -189,7 +189,7 @@ func getCallerTrace() string {
 	n := runtime.Callers(4, pc)
 	frames := runtime.CallersFrames(pc[:n])
 
-	for i := 0; i < 3 && i < n; i++ {
+	for {
 		frame, more := frames.Next()
 		if !more {
 			break
