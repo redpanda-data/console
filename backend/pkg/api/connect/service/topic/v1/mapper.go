@@ -238,63 +238,76 @@ func (*mapper) setTopicConfigurationsResourceToKafka(req *v1.SetTopicConfigurati
 	return kafkaReq
 }
 
-func (*mapper) logDirsResponseToProto(logDirResp *kmsg.DescribeLogDirsResponse, requestedTopicNames []string) []*v1.ListLogDirsResponse_LogDir {
-	// Track which topics were found to detect missing topics
-	requestedTopics := make(map[string]bool)
-	for _, topicName := range requestedTopicNames {
-		requestedTopics[topicName] = false
-	}
-
-	// Convert response
+func (k *mapper) logDirsResponseToProto(logDirResp *kmsg.DescribeLogDirsResponse) *v1.ListLogDirsResponse {
+	topicSummaries := make(map[string]*v1.ListLogDirsResponse_TopicSummary)
 	logDirs := make([]*v1.ListLogDirsResponse_LogDir, 0, len(logDirResp.Dirs))
+	summaries := make([]*v1.ListLogDirsResponse_TopicSummary, 0, len(topicSummaries))
+
 	for _, dir := range logDirResp.Dirs {
-		logDir := &v1.ListLogDirsResponse_LogDir{
-			Path:   dir.Dir,
-			Topics: make([]*v1.ListLogDirsResponse_LogDirTopic, 0, len(dir.Topics)),
-		}
-
-		if dir.ErrorCode != 0 {
-			errorMessage := fmt.Sprintf("Error code: %d", dir.ErrorCode)
-			logDir.Error = &errorMessage
-		}
-
-		for _, topic := range dir.Topics {
-			// Mark topic as found
-			if _, exists := requestedTopics[topic.Topic]; exists {
-				requestedTopics[topic.Topic] = true
-			}
-
-			logDirTopic := &v1.ListLogDirsResponse_LogDirTopic{
-				Name:       topic.Topic,
-				Partitions: make([]*v1.ListLogDirsResponse_LogDirPartition, 0, len(topic.Partitions)),
-			}
-
-			// Check for potential topic-level issues
-			if len(topic.Partitions) == 0 {
-				errorMessage := "Topic has no partitions in this log directory"
-				logDirTopic.Error = &errorMessage
-			}
-
-			// Calculate total size for this topic
-			var totalSize int64
-			for _, partition := range topic.Partitions {
-				totalSize += partition.Size
-				logDirTopic.Partitions = append(logDirTopic.Partitions, &v1.ListLogDirsResponse_LogDirPartition{
-					PartitionId: partition.Partition,
-					Size:        partition.Size,
-					OffsetLag:   partition.OffsetLag,
-					IsFuture:    partition.IsFuture,
-				})
-			}
-			logDirTopic.TotalSize = totalSize
-
-			logDir.Topics = append(logDir.Topics, logDirTopic)
-		}
-
-		logDirs = append(logDirs, logDir)
+		logDirs = append(logDirs, k.mapLogDir(dir, topicSummaries))
 	}
 
-	return logDirs
+	for _, summary := range topicSummaries {
+		summaries = append(summaries, summary)
+	}
+
+	return &v1.ListLogDirsResponse{
+		LogDirs:        logDirs,
+		TopicSummaries: summaries,
+	}
+}
+
+func (k *mapper) mapLogDir(dir kmsg.DescribeLogDirsResponseDir, topicSummaries map[string]*v1.ListLogDirsResponse_TopicSummary) *v1.ListLogDirsResponse_LogDir {
+	logDir := &v1.ListLogDirsResponse_LogDir{
+		Path:   dir.Dir,
+		Topics: make([]*v1.ListLogDirsResponse_LogDirTopic, 0, len(dir.Topics)),
+	}
+
+	if dir.ErrorCode != 0 {
+		errorMsg := fmt.Sprintf("Error code: %d", dir.ErrorCode)
+		logDir.Error = &errorMsg
+	}
+
+	for _, topic := range dir.Topics {
+		logDirTopic := k.mapLogDirTopic(topic, topicSummaries)
+		logDir.Topics = append(logDir.Topics, logDirTopic)
+	}
+
+	return logDir
+}
+
+func (k *mapper) mapLogDirTopic(topic kmsg.DescribeLogDirsResponseDirTopic, topicSummaries map[string]*v1.ListLogDirsResponse_TopicSummary) *v1.ListLogDirsResponse_LogDirTopic {
+	logDirTopic := &v1.ListLogDirsResponse_LogDirTopic{
+		Name:       topic.Topic,
+		Partitions: make([]*v1.ListLogDirsResponse_LogDirPartition, 0, len(topic.Partitions)),
+	}
+
+	var totalSize int64
+	for _, partition := range topic.Partitions {
+		totalSize += partition.Size
+		logDirTopic.Partitions = append(logDirTopic.Partitions, &v1.ListLogDirsResponse_LogDirPartition{
+			PartitionId: partition.Partition,
+			Size:        partition.Size,
+			OffsetLag:   partition.OffsetLag,
+			IsFuture:    partition.IsFuture,
+		})
+	}
+
+	k.updateTopicSummary(topicSummaries, topic.Topic, totalSize, int64(len(topic.Partitions)))
+	return logDirTopic
+}
+
+func (*mapper) updateTopicSummary(topicSummaries map[string]*v1.ListLogDirsResponse_TopicSummary, topicName string, totalSize, partitionCount int64) {
+	summary, exists := topicSummaries[topicName]
+	if !exists {
+		summary = &v1.ListLogDirsResponse_TopicSummary{
+			Name: topicName,
+		}
+		topicSummaries[topicName] = summary
+	}
+
+	summary.TotalSize += totalSize
+	summary.TotalPartitions += partitionCount
 }
 
 func (*mapper) topicDocumentationToProto(topicName string, docs *console.TopicDocumentation) *v1.ListTopicDocumentationsResponse_TopicDocumentation {
