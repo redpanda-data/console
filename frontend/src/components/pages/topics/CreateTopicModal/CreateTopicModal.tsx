@@ -16,12 +16,12 @@ import {
   isSingleValue,
   Select,
 } from '@redpanda-data/ui';
-import { Slider as UISlider } from '../../../redpanda-ui/components/slider';
-import { Input as UIInput } from '../../../redpanda-ui/components/input';
-import { Label as UILabel } from '../../../redpanda-ui/components/label';
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backendApi';
 import { SingleSelect } from '../../../misc/Select';
+import { Input as UIInput } from '../../../redpanda-ui/components/input';
+import { Label as UILabel } from '../../../redpanda-ui/components/label';
+import { Slider as UISlider } from '../../../redpanda-ui/components/slider';
 import type { CleanupPolicyType } from '../types';
 
 type CreateTopicModalState = {
@@ -656,7 +656,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
       return;
     }
     const numericValue = Number(inputValue);
-    if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 100) {
+    if (!Number.isNaN(numericValue) && numericValue >= 0 && numericValue <= 100) {
       p.onChange(numericValue / 100);
     }
   };
@@ -664,9 +664,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <UILabel className="text-sm font-medium text-muted-foreground">
-          Percentage ({percentageValue}%)
-        </UILabel>
+        <UILabel className="text-sm font-medium text-muted-foreground">Percentage ({percentageValue}%)</UILabel>
         <UISlider
           min={0}
           max={100}
