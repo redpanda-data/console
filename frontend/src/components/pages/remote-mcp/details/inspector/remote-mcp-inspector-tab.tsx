@@ -110,6 +110,23 @@ export const RemoteMCPInspectorTab = () => {
           </Text>
         </div>
 
+        {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Available Tools</Label>
+              <Badge variant="outline" className="text-xs">
+                <Clock className="h-3 w-3 mr-1 animate-spin" />
+                Server starting...
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-[80px] rounded-lg w-full" />
+              <Skeleton className="h-[80px] rounded-lg w-full" />
+              <Skeleton className="h-[80px] rounded-lg w-full" />
+            </div>
+          </div>
+        )}
+
         {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -138,7 +155,13 @@ export const RemoteMCPInspectorTab = () => {
                     }`}
                     onClick={() => {
                       setSelectedTool(tool.name);
-                      setToolParameters({});
+                      // Initialize all parameters as empty strings
+                      const initialParams: Record<string, string> = {};
+                      const properties = tool.inputSchema?.properties ?? {};
+                      Object.keys(properties).forEach((paramName) => {
+                        initialParams[paramName] = '';
+                      });
+                      setToolParameters(initialParams);
                     }}
                   >
                     <div className="flex items-start justify-between">
