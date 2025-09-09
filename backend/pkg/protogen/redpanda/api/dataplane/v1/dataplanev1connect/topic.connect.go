@@ -49,9 +49,9 @@ const (
 	// TopicServiceListLogDirsProcedure is the fully-qualified name of the TopicService's ListLogDirs
 	// RPC.
 	TopicServiceListLogDirsProcedure = "/redpanda.api.dataplane.v1.TopicService/ListLogDirs"
-	// TopicServiceListTopicDocumentationsProcedure is the fully-qualified name of the TopicService's
-	// ListTopicDocumentations RPC.
-	TopicServiceListTopicDocumentationsProcedure = "/redpanda.api.dataplane.v1.TopicService/ListTopicDocumentations"
+	// TopicServiceGetTopicDocumentationProcedure is the fully-qualified name of the TopicService's
+	// GetTopicDocumentation RPC.
+	TopicServiceGetTopicDocumentationProcedure = "/redpanda.api.dataplane.v1.TopicService/GetTopicDocumentation"
 	// TopicServiceGetTopicConfigurationsProcedure is the fully-qualified name of the TopicService's
 	// GetTopicConfigurations RPC.
 	TopicServiceGetTopicConfigurationsProcedure = "/redpanda.api.dataplane.v1.TopicService/GetTopicConfigurations"
@@ -83,7 +83,7 @@ var (
 	topicServiceDeleteTopicMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("DeleteTopic")
 	topicServiceListTopicsConfigurationsMethodDescriptor  = topicServiceServiceDescriptor.Methods().ByName("ListTopicsConfigurations")
 	topicServiceListLogDirsMethodDescriptor               = topicServiceServiceDescriptor.Methods().ByName("ListLogDirs")
-	topicServiceListTopicDocumentationsMethodDescriptor   = topicServiceServiceDescriptor.Methods().ByName("ListTopicDocumentations")
+	topicServiceGetTopicDocumentationMethodDescriptor     = topicServiceServiceDescriptor.Methods().ByName("GetTopicDocumentation")
 	topicServiceGetTopicConfigurationsMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("GetTopicConfigurations")
 	topicServiceUpdateTopicConfigurationsMethodDescriptor = topicServiceServiceDescriptor.Methods().ByName("UpdateTopicConfigurations")
 	topicServiceSetTopicConfigurationsMethodDescriptor    = topicServiceServiceDescriptor.Methods().ByName("SetTopicConfigurations")
@@ -100,7 +100,7 @@ type TopicServiceClient interface {
 	DeleteTopic(context.Context, *connect.Request[v1.DeleteTopicRequest]) (*connect.Response[v1.DeleteTopicResponse], error)
 	ListTopicsConfigurations(context.Context, *connect.Request[v1.ListTopicsConfigurationsRequest]) (*connect.Response[v1.ListTopicsConfigurationsResponse], error)
 	ListLogDirs(context.Context, *connect.Request[v1.ListLogDirsRequest]) (*connect.Response[v1.ListLogDirsResponse], error)
-	ListTopicDocumentations(context.Context, *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error)
+	GetTopicDocumentation(context.Context, *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error)
 	GetTopicConfigurations(context.Context, *connect.Request[v1.GetTopicConfigurationsRequest]) (*connect.Response[v1.GetTopicConfigurationsResponse], error)
 	UpdateTopicConfigurations(context.Context, *connect.Request[v1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1.UpdateTopicConfigurationsResponse], error)
 	SetTopicConfigurations(context.Context, *connect.Request[v1.SetTopicConfigurationsRequest]) (*connect.Response[v1.SetTopicConfigurationsResponse], error)
@@ -150,10 +150,10 @@ func NewTopicServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(topicServiceListLogDirsMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		listTopicDocumentations: connect.NewClient[v1.ListTopicDocumentationsRequest, v1.ListTopicDocumentationsResponse](
+		getTopicDocumentation: connect.NewClient[v1.GetTopicDocumentationRequest, v1.GetTopicDocumentationResponse](
 			httpClient,
-			baseURL+TopicServiceListTopicDocumentationsProcedure,
-			connect.WithSchema(topicServiceListTopicDocumentationsMethodDescriptor),
+			baseURL+TopicServiceGetTopicDocumentationProcedure,
+			connect.WithSchema(topicServiceGetTopicDocumentationMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		getTopicConfigurations: connect.NewClient[v1.GetTopicConfigurationsRequest, v1.GetTopicConfigurationsResponse](
@@ -208,7 +208,7 @@ type topicServiceClient struct {
 	deleteTopic               *connect.Client[v1.DeleteTopicRequest, v1.DeleteTopicResponse]
 	listTopicsConfigurations  *connect.Client[v1.ListTopicsConfigurationsRequest, v1.ListTopicsConfigurationsResponse]
 	listLogDirs               *connect.Client[v1.ListLogDirsRequest, v1.ListLogDirsResponse]
-	listTopicDocumentations   *connect.Client[v1.ListTopicDocumentationsRequest, v1.ListTopicDocumentationsResponse]
+	getTopicDocumentation     *connect.Client[v1.GetTopicDocumentationRequest, v1.GetTopicDocumentationResponse]
 	getTopicConfigurations    *connect.Client[v1.GetTopicConfigurationsRequest, v1.GetTopicConfigurationsResponse]
 	updateTopicConfigurations *connect.Client[v1.UpdateTopicConfigurationsRequest, v1.UpdateTopicConfigurationsResponse]
 	setTopicConfigurations    *connect.Client[v1.SetTopicConfigurationsRequest, v1.SetTopicConfigurationsResponse]
@@ -243,9 +243,9 @@ func (c *topicServiceClient) ListLogDirs(ctx context.Context, req *connect.Reque
 	return c.listLogDirs.CallUnary(ctx, req)
 }
 
-// ListTopicDocumentations calls redpanda.api.dataplane.v1.TopicService.ListTopicDocumentations.
-func (c *topicServiceClient) ListTopicDocumentations(ctx context.Context, req *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error) {
-	return c.listTopicDocumentations.CallUnary(ctx, req)
+// GetTopicDocumentation calls redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation.
+func (c *topicServiceClient) GetTopicDocumentation(ctx context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	return c.getTopicDocumentation.CallUnary(ctx, req)
 }
 
 // GetTopicConfigurations calls redpanda.api.dataplane.v1.TopicService.GetTopicConfigurations.
@@ -290,7 +290,7 @@ type TopicServiceHandler interface {
 	DeleteTopic(context.Context, *connect.Request[v1.DeleteTopicRequest]) (*connect.Response[v1.DeleteTopicResponse], error)
 	ListTopicsConfigurations(context.Context, *connect.Request[v1.ListTopicsConfigurationsRequest]) (*connect.Response[v1.ListTopicsConfigurationsResponse], error)
 	ListLogDirs(context.Context, *connect.Request[v1.ListLogDirsRequest]) (*connect.Response[v1.ListLogDirsResponse], error)
-	ListTopicDocumentations(context.Context, *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error)
+	GetTopicDocumentation(context.Context, *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error)
 	GetTopicConfigurations(context.Context, *connect.Request[v1.GetTopicConfigurationsRequest]) (*connect.Response[v1.GetTopicConfigurationsResponse], error)
 	UpdateTopicConfigurations(context.Context, *connect.Request[v1.UpdateTopicConfigurationsRequest]) (*connect.Response[v1.UpdateTopicConfigurationsResponse], error)
 	SetTopicConfigurations(context.Context, *connect.Request[v1.SetTopicConfigurationsRequest]) (*connect.Response[v1.SetTopicConfigurationsResponse], error)
@@ -336,10 +336,10 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(topicServiceListLogDirsMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	topicServiceListTopicDocumentationsHandler := connect.NewUnaryHandler(
-		TopicServiceListTopicDocumentationsProcedure,
-		svc.ListTopicDocumentations,
-		connect.WithSchema(topicServiceListTopicDocumentationsMethodDescriptor),
+	topicServiceGetTopicDocumentationHandler := connect.NewUnaryHandler(
+		TopicServiceGetTopicDocumentationProcedure,
+		svc.GetTopicDocumentation,
+		connect.WithSchema(topicServiceGetTopicDocumentationMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	topicServiceGetTopicConfigurationsHandler := connect.NewUnaryHandler(
@@ -396,8 +396,8 @@ func NewTopicServiceHandler(svc TopicServiceHandler, opts ...connect.HandlerOpti
 			topicServiceListTopicsConfigurationsHandler.ServeHTTP(w, r)
 		case TopicServiceListLogDirsProcedure:
 			topicServiceListLogDirsHandler.ServeHTTP(w, r)
-		case TopicServiceListTopicDocumentationsProcedure:
-			topicServiceListTopicDocumentationsHandler.ServeHTTP(w, r)
+		case TopicServiceGetTopicDocumentationProcedure:
+			topicServiceGetTopicDocumentationHandler.ServeHTTP(w, r)
 		case TopicServiceGetTopicConfigurationsProcedure:
 			topicServiceGetTopicConfigurationsHandler.ServeHTTP(w, r)
 		case TopicServiceUpdateTopicConfigurationsProcedure:
@@ -441,8 +441,8 @@ func (UnimplementedTopicServiceHandler) ListLogDirs(context.Context, *connect.Re
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.ListLogDirs is not implemented"))
 }
 
-func (UnimplementedTopicServiceHandler) ListTopicDocumentations(context.Context, *connect.Request[v1.ListTopicDocumentationsRequest]) (*connect.Response[v1.ListTopicDocumentationsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.ListTopicDocumentations is not implemented"))
+func (UnimplementedTopicServiceHandler) GetTopicDocumentation(context.Context, *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation is not implemented"))
 }
 
 func (UnimplementedTopicServiceHandler) GetTopicConfigurations(context.Context, *connect.Request[v1.GetTopicConfigurationsRequest]) (*connect.Response[v1.GetTopicConfigurationsResponse], error) {

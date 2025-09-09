@@ -22,7 +22,7 @@ type TopicServiceGatewayServer struct {
 	deleteTopic               connect_gateway.UnaryHandler[v1.DeleteTopicRequest, v1.DeleteTopicResponse]
 	listTopicsConfigurations  connect_gateway.UnaryHandler[v1.ListTopicsConfigurationsRequest, v1.ListTopicsConfigurationsResponse]
 	listLogDirs               connect_gateway.UnaryHandler[v1.ListLogDirsRequest, v1.ListLogDirsResponse]
-	listTopicDocumentations   connect_gateway.UnaryHandler[v1.ListTopicDocumentationsRequest, v1.ListTopicDocumentationsResponse]
+	getTopicDocumentation     connect_gateway.UnaryHandler[v1.GetTopicDocumentationRequest, v1.GetTopicDocumentationResponse]
 	getTopicConfigurations    connect_gateway.UnaryHandler[v1.GetTopicConfigurationsRequest, v1.GetTopicConfigurationsResponse]
 	updateTopicConfigurations connect_gateway.UnaryHandler[v1.UpdateTopicConfigurationsRequest, v1.UpdateTopicConfigurationsResponse]
 	setTopicConfigurations    connect_gateway.UnaryHandler[v1.SetTopicConfigurationsRequest, v1.SetTopicConfigurationsResponse]
@@ -41,7 +41,7 @@ func NewTopicServiceGatewayServer(svc TopicServiceHandler, opts ...connect_gatew
 		deleteTopic:               connect_gateway.NewUnaryHandler(TopicServiceDeleteTopicProcedure, svc.DeleteTopic, opts...),
 		listTopicsConfigurations:  connect_gateway.NewUnaryHandler(TopicServiceListTopicsConfigurationsProcedure, svc.ListTopicsConfigurations, opts...),
 		listLogDirs:               connect_gateway.NewUnaryHandler(TopicServiceListLogDirsProcedure, svc.ListLogDirs, opts...),
-		listTopicDocumentations:   connect_gateway.NewUnaryHandler(TopicServiceListTopicDocumentationsProcedure, svc.ListTopicDocumentations, opts...),
+		getTopicDocumentation:     connect_gateway.NewUnaryHandler(TopicServiceGetTopicDocumentationProcedure, svc.GetTopicDocumentation, opts...),
 		getTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceGetTopicConfigurationsProcedure, svc.GetTopicConfigurations, opts...),
 		updateTopicConfigurations: connect_gateway.NewUnaryHandler(TopicServiceUpdateTopicConfigurationsProcedure, svc.UpdateTopicConfigurations, opts...),
 		setTopicConfigurations:    connect_gateway.NewUnaryHandler(TopicServiceSetTopicConfigurationsProcedure, svc.SetTopicConfigurations, opts...),
@@ -72,8 +72,8 @@ func (s *TopicServiceGatewayServer) ListLogDirs(ctx context.Context, req *v1.Lis
 	return s.listLogDirs(ctx, req)
 }
 
-func (s *TopicServiceGatewayServer) ListTopicDocumentations(ctx context.Context, req *v1.ListTopicDocumentationsRequest) (*v1.ListTopicDocumentationsResponse, error) {
-	return s.listTopicDocumentations(ctx, req)
+func (s *TopicServiceGatewayServer) GetTopicDocumentation(ctx context.Context, req *v1.GetTopicDocumentationRequest) (*v1.GetTopicDocumentationResponse, error) {
+	return s.getTopicDocumentation(ctx, req)
 }
 
 func (s *TopicServiceGatewayServer) GetTopicConfigurations(ctx context.Context, req *v1.GetTopicConfigurationsRequest) (*v1.GetTopicConfigurationsResponse, error) {
