@@ -580,20 +580,14 @@ func (s *Service) ListLogDirs(ctx context.Context, req *connect.Request[v1.ListL
 	}
 
 	// Check for high-level errors that should fail the entire request
-	if logDirResp.ErrorCode != 0 {
-		return nil, apierrors.NewConnectError(
-			connect.CodeInternal,
-			fmt.Errorf("describe log dirs failed with error code: %d", logDirResp.ErrorCode),
-			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String()),
-		)
+	if err = kerr.ErrorForCode(logDirResp.ErrorCode); err != nil {
+		return nil, apierrors.NewConnectErrorFromKafkaErrorCode(logDirResp.ErrorCode, nil)
 	}
 
 	// Convert response using mapper
-	logDirs := s.mapper.logDirsResponseToProto(logDirResp, req.Msg.TopicNames)
+	response := s.mapper.logDirsResponseToProto(logDirResp)
 
-	return connect.NewResponse(&v1.ListLogDirsResponse{
-		LogDirs: logDirs,
-	}), nil
+	return connect.NewResponse(response), nil
 }
 
 // ListTopicDocumentations lists documentation for multiple topics with their availability status and content.
