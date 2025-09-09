@@ -756,7 +756,7 @@ export default function CreateACL({
     // Determine the default resource type for new rules
     let defaultResourceType = ResourceTypeCluster;
     if (hasClusterRule()) {
-      defaultResourceType = hasSubjectRule() ? ResourceTypeTopic : ResourceTypeSubject;
+      defaultResourceType = ResourceTypeTopic;
     }
 
     const newRule = {
@@ -776,9 +776,11 @@ export default function CreateACL({
       ResourceTypeTopic,
       ResourceTypeConsumerGroup,
       ResourceTypeTransactionalId,
-      ResourceTypeSubject,
-      ResourceTypeSchemaRegistry,
     ];
+
+    if (schemaRegistryEnabled) {
+      resourceTypes.push(ResourceTypeSubject, ResourceTypeSchemaRegistry);
+    }
 
     const newRules: Rule[] = [];
 

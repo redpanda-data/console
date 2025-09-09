@@ -1,5 +1,6 @@
-import { type Page, test } from '@playwright/test';
+import { type Page, test, expect } from '@playwright/test';
 import {
+  getRuleDataTestId,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
