@@ -883,6 +883,19 @@ components:
             $ref: '#/components/schemas/Configuration'
           type: array
       type: object
+    GetTopicDocumentationResponse:
+      properties:
+        markdown:
+          description: The documentation content in markdown format (only present when state is AVAILABLE).
+          format: byte
+          nullable: true
+          type: string
+        state:
+          $ref: '#/components/schemas/TopicDocumentationState'
+        topic_name:
+          description: Topic name.
+          type: string
+      type: object
     GetTransformResponse:
       properties:
         transform:
@@ -1170,13 +1183,6 @@ components:
           description: Secrets retrieved.
           items:
             $ref: '#/components/schemas/Secret'
-          type: array
-      type: object
-    ListTopicDocumentationsResponse:
-      properties:
-        documentations:
-          items:
-            $ref: '#/components/schemas/TopicDocumentation'
           type: array
       type: object
     ListTopicsConfigurationsResponse:
@@ -1987,19 +1993,6 @@ components:
           type: string
         worker_id:
           description: ID of worker that the task is assigned to.
-          type: string
-      type: object
-    TopicDocumentation:
-      properties:
-        markdown:
-          description: The documentation content in markdown format (only present when state is AVAILABLE).
-          format: byte
-          nullable: true
-          type: string
-        state:
-          $ref: '#/components/schemas/TopicDocumentationState'
-        topic_name:
-          description: Topic name.
           type: string
       type: object
     TopicDocumentationState:
@@ -5328,46 +5321,6 @@ paths:
       summary: Set topic partitions
       tags:
         - Topics
-  /v1/topics/documentations:
-    get:
-      description: List documentation for multiple topics with their availability status and content.
-      operationId: TopicService_ListTopicDocumentations
-      parameters:
-        - description: Specific topic names to get documentation for. At least one topic name is required.
-          in: query
-          name: topic_names
-          schema:
-            items:
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListTopicDocumentationsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: List topic documentations
-      tags:
-        - Topics
   /v1/topics/{topic_name}:
     delete:
       description: Delete the Kafka topic with the requested name.
@@ -5561,6 +5514,51 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Set topic configurations
+      tags:
+        - Topics
+  /v1/topics/{topic_name}/documentation:
+    get:
+      description: Get documentation for a topic with its availability status and content.
+      operationId: TopicService_GetTopicDocumentation
+      parameters:
+        - description: Topic name to get documentation for.
+          in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicDocumentationResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get topic documentation
       tags:
         - Topics
   /v1/topics/{topic_name}/partitions:
