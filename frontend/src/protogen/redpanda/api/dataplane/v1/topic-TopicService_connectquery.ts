@@ -30,9 +30,9 @@ export const listTopicsConfigurations = TopicService.method.listTopicsConfigurat
 export const listLogDirs = TopicService.method.listLogDirs;
 
 /**
- * @generated from rpc redpanda.api.dataplane.v1.TopicService.ListTopicDocumentations
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation
  */
-export const listTopicDocumentations = TopicService.method.listTopicDocumentations;
+export const getTopicDocumentation = TopicService.method.getTopicDocumentation;
 
 /**
  * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicConfigurations
