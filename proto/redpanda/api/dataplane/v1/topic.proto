@@ -371,8 +371,6 @@ message ListLogDirsResponse {
     repeated LogDirPartition partitions = 2;
     // Error details if the topic has an error.
     optional string error = 3;
-    // Total size in bytes of all partitions for this topic in this log directory.
-    int64 total_size = 4;
   }
 
   message LogDirPartition {
@@ -386,7 +384,17 @@ message ListLogDirsResponse {
     bool is_future = 4;
   }
 
+  message TopicSummary {
+    // Topic name.
+    string name = 1;
+    // Total size in bytes that this topic takes up across all log directories.
+    int64 total_size = 2;
+    // Total number of partitions for this topic across all log directories.
+    int64 total_partitions = 3;
+  }
+
   repeated LogDir log_dirs = 1;
+  repeated TopicSummary topic_summaries = 2;
 }
 
 // Documentation state for a topic.
@@ -520,7 +528,7 @@ service TopicService {
   }
 
   rpc ListLogDirs(ListLogDirsRequest) returns (ListLogDirsResponse) {
-    option (google.api.http) = {get: "/v1/topics/logdirs"};
+    option (google.api.http) = {get: "/v1/topics:batchGetLogDirs"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "List log directories"
       description: "List log directories with size information for topics."

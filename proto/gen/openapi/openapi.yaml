@@ -1028,6 +1028,10 @@ components:
           items:
             $ref: '#/components/schemas/LogDir'
           type: array
+        topic_summaries:
+          items:
+            $ref: '#/components/schemas/TopicSummary'
+          type: array
       type: object
     ListMountTasksResponse:
       properties:
@@ -1319,10 +1323,6 @@ components:
           items:
             $ref: '#/components/schemas/LogDirPartition'
           type: array
-        total_size:
-          description: Total size in bytes of all partitions for this topic in this log directory.
-          format: int64
-          type: string
       type: object
     MatchingACL:
       properties:
@@ -2041,6 +2041,20 @@ components:
           type: string
       required:
         - source_topic_reference
+      type: object
+    TopicSummary:
+      properties:
+        name:
+          description: Topic name.
+          type: string
+        total_partitions:
+          description: Total number of partitions for this topic across all log directories.
+          format: int64
+          type: string
+        total_size:
+          description: Total size in bytes that this topic takes up across all log directories.
+          format: int64
+          type: string
       type: object
     TopicWithConfigurations:
       properties:
@@ -5354,46 +5368,6 @@ paths:
       summary: List topic documentations
       tags:
         - Topics
-  /v1/topics/logdirs:
-    get:
-      description: List log directories with size information for topics.
-      operationId: TopicService_ListLogDirs
-      parameters:
-        - description: Specific topic names to get log directory info for. At least one topic name is required.
-          in: query
-          name: topic_names
-          schema:
-            items:
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListLogDirsResponse'
-          description: OK
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Unauthenticated.
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: Internal Server Error. Reach out to support.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: List log directories
-      tags:
-        - Topics
   /v1/topics/{topic_name}:
     delete:
       description: Delete the Kafka topic with the requested name.
@@ -5732,6 +5706,46 @@ paths:
       summary: List topics with configurations
       tags:
         - Topics
+  /v1/topics:batchGetLogDirs:
+    get:
+      description: List log directories with size information for topics.
+      operationId: TopicService_ListLogDirs
+      parameters:
+        - description: Specific topic names to get log directory info for. At least one topic name is required.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListLogDirsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List log directories
+      tags:
+        - Topics
   /v1/transforms:
     get:
       description: 'Retrieve a list of Wasm transforms. Optional: filter based on transform name.'
@@ -5815,7 +5829,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

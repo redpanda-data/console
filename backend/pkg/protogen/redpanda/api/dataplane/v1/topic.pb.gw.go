@@ -785,7 +785,7 @@ func RegisterTopicServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/ListLogDirs", runtime.WithHTTPPathPattern("/v1/topics/logdirs"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/ListLogDirs", runtime.WithHTTPPathPattern("/v1/topics:batchGetLogDirs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1137,7 +1137,7 @@ func RegisterTopicServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/ListLogDirs", runtime.WithHTTPPathPattern("/v1/topics/logdirs"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1.TopicService/ListLogDirs", runtime.WithHTTPPathPattern("/v1/topics:batchGetLogDirs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1341,7 +1341,7 @@ var (
 
 	pattern_TopicService_ListTopicsConfigurations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "topics"}, "batchGetConfigurations"))
 
-	pattern_TopicService_ListLogDirs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "topics", "logdirs"}, ""))
+	pattern_TopicService_ListLogDirs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "topics"}, "batchGetLogDirs"))
 
 	pattern_TopicService_ListTopicDocumentations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "topics", "documentations"}, ""))
 
