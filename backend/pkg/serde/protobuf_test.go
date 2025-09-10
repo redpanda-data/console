@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -113,7 +114,11 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(payload.NormalizedPayload))
+				// Remove whitespaces from result because of randomization in protojson output, see:
+				// https://github.com/golang/protobuf/issues/1082
+				resultWithoutWhitespace := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
+
+				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, resultWithoutWhitespace)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -135,7 +140,11 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`, string(payload.NormalizedPayload))
+				// Remove whitespaces from result because of randomization in protojson output, see:
+				// https://github.com/golang/protobuf/issues/1082
+				resultWithoutWhitespace := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
+
+				assert.Equal(t, `{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`, resultWithoutWhitespace)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")

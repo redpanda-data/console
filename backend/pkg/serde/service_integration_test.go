@@ -621,7 +621,10 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("111", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
-		assert.Equal(`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(dr.Value.NormalizedPayload))
+		// Remove whitespaces from result because of randomization in protojson output, see:
+		// https://github.com/golang/protobuf/issues/1082
+		resultWithoutWhitespace := strings.ReplaceAll(string(dr.Value.NormalizedPayload), " ", "")
+		assert.Equal(`{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, resultWithoutWhitespace)
 
 		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
