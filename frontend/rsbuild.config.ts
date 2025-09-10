@@ -10,8 +10,8 @@ import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 
 import moduleFederationConfig from "./module-federation";
-import { HUBSPOT_PORTAL_ID } from './src/components/pages/agents/hubspot.helper';
-import { HEAP_APP_ID } from './src/components/pages/agents/heap.helper';
+import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
+import { HEAP_APP_ID } from './src/heap/heap.helper';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ["REACT_APP_"] });
 

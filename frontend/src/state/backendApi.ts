@@ -15,12 +15,19 @@ import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import {
+  consoleHasEnterpriseFeature,
+  getLatestExpiringLicense,
+  getMillisecondsToExpiration,
+  isBakedInTrial,
+  prettyLicenseType,
+} from 'components/license/licenseUtils';
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
-import { addHeapEventProperties, trackHeapUser } from '../components/pages/agents/heap.helper';
-import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
 import { config as appConfig, isEmbedded } from '../config';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
+import { trackHubspotUser } from '../hubspot/hubspot.helper';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -171,7 +178,6 @@ import {
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './uiState';
-import { consoleHasEnterpriseFeature, getExpirationDate, getLatestExpiringLicense, getMillisecondsToExpiration, getPrettyExpirationDate, isBakedInTrial, prettyLicenseType } from 'components/license/licenseUtils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -574,13 +580,14 @@ const apiStore = {
         } else {
           appGlobal.historyPush('/login');
         }
-      }).finally(() => {
+      })
+      .finally(() => {
         addHeapEventProperties({
-          "Product Name": "Console",
-          Platform: api.isRedpanda ? "Redpanda" : "Kafka",
-          "Cluster Version": api.clusterOverview?.kafka?.version,
+          'Product Name': 'Console',
+          Platform: api.isRedpanda ? 'Redpanda' : 'Kafka',
+          'Cluster Version': api.clusterOverview?.kafka?.version,
           Version: process.env.REACT_APP_CONSOLE_PLATFORM_VERSION,
-          "Build Date": getBuildDate(),
+          'Build Date': getBuildDate(),
         });
       });
   },
@@ -1958,10 +1965,10 @@ const apiStore = {
           return err;
         }),
     ]);
-  
-    if(this.licenses.length > 0) {
+
+    if (this.licenses.length > 0) {
       const license = getLatestExpiringLicense(this.licenses);
-      if(license !== undefined) {
+      if (license !== undefined) {
         addHeapEventProperties({
           BakedInTrial: isBakedInTrial(license),
           LicenseType: prettyLicenseType(license),
@@ -1970,8 +1977,8 @@ const apiStore = {
       }
     }
     addHeapEventProperties({
-        'SSOEnabled': consoleHasEnterpriseFeature('SINGLE_SIGN_ON'),
-    })
+      SSOEnabled: consoleHasEnterpriseFeature('SINGLE_SIGN_ON'),
+    });
   },
 
   async refreshClusterHealth() {
