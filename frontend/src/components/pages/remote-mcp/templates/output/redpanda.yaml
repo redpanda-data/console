@@ -1,0 +1,33 @@
+redpanda:
+  seed_brokers: ["${REDPANDA_BROKERS}"]
+  topic: "${! this.topic_name.string().catch(\"default-topic\") }"
+  timeout: "30s"
+  tls:
+    enabled: true
+  # Create Redpanda SASL credentials + store in secret store
+  sasl:
+    - mechanism: "SCRAM-SHA-256"
+      username: "${secrets.MCP_REDPANDA_CREDENTIALS}"
+      password: "${secrets.MCP_REDPANDA_CREDENTIALS}"
+
+meta:
+  mcp:
+    enabled: true
+    description: "Publishes a message to a specified Redpanda topic"
+    properties:
+      - name: message
+        type: string
+        description: "The message content to publish"
+        required: true
+      - name: topic_name
+        type: string
+        description: "The Redpanda topic to publish to"
+        required: true
+
+# Send MCP request as batch (array):
+# [
+#   {
+#     "topic_name": "my-topic",
+#     "message": "hello world!"
+#   }
+# ]
