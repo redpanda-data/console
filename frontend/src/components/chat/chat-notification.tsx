@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-interface AgentChatNotificationProps {
+interface ChatNotificationProps {
   notification: ReactNode;
 }
 
-export const AgentChatNotification = ({ notification }: AgentChatNotificationProps) => {
+export const ChatNotification = ({ notification }: ChatNotificationProps) => {
   return (
     <div className="pointer-events-none">
       <div className="pointer-events-auto mx-auto w-fit">

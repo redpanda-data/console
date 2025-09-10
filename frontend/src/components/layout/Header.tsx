@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge, Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
+import { Box, Breadcrumbs, Button, ColorModeSwitch, CopyButton, Flex, Text } from '@redpanda-data/ui';
 import { computed } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link as ReactRouterLink, useMatch } from 'react-router-dom';
@@ -22,7 +22,6 @@ import { UserPreferencesButton } from '../misc/UserPreferences';
 
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
-  const showBetaBadge = useShouldShowBetaBadge();
 
   const breadcrumbItems = computed(() => {
     const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
@@ -76,7 +75,6 @@ const AppPageHeader = observer(() => {
               {lastBreadcrumb.title}
             </Text>
           )}
-          {showBetaBadge && <Badge ml={2}>beta</Badge>}
           {lastBreadcrumb && (
             <Box>
               {lastBreadcrumb.options?.canBeCopied && <CopyButton content={lastBreadcrumb.title} variant="ghost" />}
@@ -136,21 +134,6 @@ function useShouldShowRefresh() {
     end: true,
   });
 
-  const agentsMatch = useMatch({
-    path: '/agents',
-    end: true,
-  });
-
-  const agentDetailsMatch = useMatch({
-    path: '/agents/:agentId',
-    end: true,
-  });
-
-  const createAgentMatch = useMatch({
-    path: '/agents/create',
-    end: false,
-  });
-
   // matches acls
   const aclCreateMatch = useMatch('/security/acls/create');
   const aclUpdateMatch = useMatch('/security/acls/:id/update');
@@ -167,9 +150,6 @@ function useShouldShowRefresh() {
   if (schemaCreateMatch) return false;
   if (topicProduceRecordMatch) return false;
   if (secretsMatch) return false;
-  if (agentsMatch) return false;
-  if (agentDetailsMatch) return false;
-  if (createAgentMatch) return false;
   if (isACLRelated) {
     return false;
   }
@@ -178,13 +158,4 @@ function useShouldShowRefresh() {
   }
 
   return true;
-}
-
-function useShouldShowBetaBadge() {
-  const agentsMatch = useMatch({
-    path: '/agents',
-    end: false,
-  });
-
-  return agentsMatch !== null;
 }

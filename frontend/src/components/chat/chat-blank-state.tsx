@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 import { FaCode, FaGraduationCap } from 'react-icons/fa';
 import { MdCreate } from 'react-icons/md';
 
-interface AgentChatBlankStateProps {
+interface ChatBlankStateProps {
   onSelectQuestion?: (question: string) => void;
 }
 
@@ -40,7 +40,7 @@ const CODE_EXAMPLE_QUESTIONS = [
   'How do I create a new topic and connect to Redpanda using Node.js?',
 ];
 
-export const AgentChatBlankState = ({ onSelectQuestion }: AgentChatBlankStateProps) => {
+export const ChatBlankState = ({ onSelectQuestion }: ChatBlankStateProps) => {
   const [exampleQuestions, setExampleQuestions] = useState<string[]>(CREATE_EXAMPLE_QUESTIONS);
   const [isAnimating, setIsAnimating] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();

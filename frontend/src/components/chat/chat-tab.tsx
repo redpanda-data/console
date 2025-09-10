@@ -3,15 +3,14 @@ import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
-import { AgentStateDisplayValue } from '../agent-state-display-value';
-import { AgentChatBlankState } from './agent-chat-blank-state';
-import { AgentChatNotification } from './agent-chat-notification';
+import { ChatBlankState } from './chat-blank-state';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
 import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
+import { ChatNotification } from './chat-notification';
 
-interface AgentChatTabProps {
+interface ChatTabProps {
   pipeline?: Pipeline;
 }
 
@@ -21,7 +20,7 @@ interface AgentChatTabProps {
  * Each agent has its own separate chat conversation history.
  * @see https://github.com/dexie/Dexie.js
  */
-export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
+export const ChatTab = ({ pipeline }: ChatTabProps) => {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
@@ -66,12 +65,11 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
 
   if (!id || !pipeline?.url || pipeline?.state === Pipeline_State.STARTING) {
     return (
-      <AgentChatNotification
+      <ChatNotification
         notification={
           <>
             <Spinner size="sm" mr={2} />
-            <span>Chat is not available right now. Pipeline state: </span>
-            <AgentStateDisplayValue state={pipeline?.state} />
+            <span>Chat is not available right now.</span>
           </>
         }
       />
@@ -98,7 +96,7 @@ export const AgentChatTab = ({ pipeline }: AgentChatTabProps) => {
         onInputChange={() => setSelectedQuestion(null)}
         messagesEndRef={messagesEndRef}
       />
-      {messages?.length === 0 && <AgentChatBlankState onSelectQuestion={handleSelectQuestion} />}
+      {messages?.length === 0 && <ChatBlankState onSelectQuestion={handleSelectQuestion} />}
     </div>
   );
 };
