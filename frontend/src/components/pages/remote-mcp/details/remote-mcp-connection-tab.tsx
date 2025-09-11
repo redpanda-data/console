@@ -26,6 +26,8 @@ import JavaLogo from '../../../../assets/java.svg';
 import NodeLogo from '../../../../assets/node.svg';
 import PythonLogo from '../../../../assets/python.svg';
 
+const AVAILABLE_LANGUAGES = ['python', 'javascript', 'java', 'go'];
+
 const getLanguageIcon = (language: string) => {
   switch (language) {
     case 'python':
@@ -74,7 +76,6 @@ export const RemoteMCPConnectionTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
-  const availableLanguages = ['python', 'javascript'];
   const [selectedLanguage, setSelectedLanguage] = useState<string>('python');
   const { data: codeSnippetData, isLoading: isLoadingMCPCodeSnippet } = useGetMCPCodeSnippetQuery({
     language: selectedLanguage,
@@ -136,7 +137,7 @@ ${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpS
               Code Examples
             </Heading>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {availableLanguages.map((language) => (
+              {AVAILABLE_LANGUAGES.map((language) => (
                 <Sheet key={language}>
                   <SheetTrigger asChild>
                     <Button
