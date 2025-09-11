@@ -23,6 +23,8 @@ import { UserPreferencesButton } from '../misc/UserPreferences';
 const AppPageHeader = observer(() => {
   const showRefresh = useShouldShowRefresh();
 
+  const shouldHideHeader = useShouldHideHeader();
+
   const breadcrumbItems = computed(() => {
     const items: BreadcrumbEntry[] = [...uiState.pageBreadcrumbs];
 
@@ -38,6 +40,8 @@ const AppPageHeader = observer(() => {
   }).get();
 
   const lastBreadcrumb = breadcrumbItems.pop();
+
+  if (shouldHideHeader) return null;
 
   return (
     <Box>
@@ -158,4 +162,13 @@ function useShouldShowRefresh() {
   }
 
   return true;
+}
+
+function useShouldHideHeader() {
+  const remoteMcpDetailsMatch = useMatch({
+    path: '/remote-mcp/:id',
+    end: false,
+  });
+
+  return remoteMcpDetailsMatch !== null;
 }
