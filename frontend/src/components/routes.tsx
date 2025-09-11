@@ -528,7 +528,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Remote MCP',
     MCPIcon,
     true,
-    routeVisibility(() => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode and only for BYOC/Dedicated with feature flag
+    routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode with feature flag
   ),
   MakeRoute<{}>('/remote-mcp/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
