@@ -51,8 +51,10 @@ import {
   setup,
 } from './config';
 import { uiSettings } from './state/ui';
-import { getBasePath } from './utils/env';
-import NotificationBar from 'components/NotificationBar';
+import env, { getBasePath } from 'utils/env';
+import { Content } from '@builder.io/sdk-react';
+import { builderCustomComponents } from 'components/builder-io/builderCustomComponents';
+import AnnouncementBar from 'components/builder-io/AnnouncementBar';
 
 const AppSidebar = observer(() => {
   const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
@@ -86,6 +88,10 @@ const App = () => {
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
+      <Content
+        apiKey={env.REACT_APP_BUILDER_API_KEY}
+        customComponents={builderCustomComponents}
+      />
       <BrowserRouter basename={getBasePath()}>
         <HistorySetter />
         <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
@@ -93,16 +99,18 @@ const App = () => {
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>
                 <RequireAuth>
-                  <NotificationBar />
                   {isEmbedded() ? (
                     <AppContent />
                   ) : (
-                    <Grid templateColumns="auto 1fr" minH="100vh">
-                      <AppSidebar />
-                      <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
-                        <AppContent />
-                      </Container>
-                    </Grid>
+                    <>
+                      <AnnouncementBar />
+                      <Grid templateColumns="auto 1fr" minH="100vh">
+                        <AppSidebar />
+                        <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
+                          <AppContent />
+                        </Container>
+                      </Grid>
+                    </>
                   )}
                 </RequireAuth>
               </ErrorBoundary>

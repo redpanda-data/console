@@ -24,6 +24,8 @@ const envNames = [
 
   'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
   'REACT_APP_ENABLED_FEATURES', // for debugging, used to set/override enabled feautures while developing
+
+  'REACT_APP_BUILDER_API_KEY',
 ] as const;
 
 type Environment = { [key in (typeof envNames)[number]]: string };
