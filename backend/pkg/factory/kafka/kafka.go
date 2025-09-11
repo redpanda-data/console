@@ -27,6 +27,7 @@ import (
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
@@ -62,23 +63,25 @@ var _ ClientFactory = (*CachedClientProvider)(nil)
 // configuring Kafka clients with various options such as TLS, SASL, and other
 // Kafka-specific settings.
 type CachedClientProvider struct {
-	cfg         *config.Config
-	logger      *slog.Logger
-	clientCache *cache.Cache[string, *kgo.Client]
+	cfg            *config.Config
+	logger         *slog.Logger
+	clientCache    *cache.Cache[string, *kgo.Client]
+	registry       prometheus.Registerer
+	factoryMetrics *FactoryMetrics
 }
 
 // NewCachedClientProvider creates a new CachedClientProvider with the specified
 // configuration and logger, initializing the client cache with defined settings.
-func NewCachedClientProvider(cfg *config.Config, logger *slog.Logger) *CachedClientProvider {
-	cacheSettings := []cache.Opt{
-		cache.MaxAge(30 * time.Second),
-		cache.MaxErrorAge(time.Second),
-	}
+func NewCachedClientProvider(cfg *config.Config, logger *slog.Logger, registry prometheus.Registerer) *CachedClientProvider {
+	// Initialize factory metrics
+	factoryMetrics := NewFactoryMetrics(cfg.MetricsNamespace, "cached_client_provider", registry)
 
 	return &CachedClientProvider{
-		cfg:         cfg,
-		logger:      logger,
-		clientCache: cache.New[string, *kgo.Client](cacheSettings...),
+		cfg:            cfg,
+		logger:         logger,
+		clientCache:    cache.New[string, *kgo.Client](),
+		registry:       registry,
+		factoryMetrics: factoryMetrics,
 	}
 }
 
@@ -100,7 +103,7 @@ func (f *CachedClientProvider) GetKafkaClient(context.Context) (*kgo.Client, *ka
 
 // createClient creates a Kafka client based on the provided Kafka configuration.
 func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
-	kgoOpts, err := NewKgoConfig(f.cfg.Kafka, f.logger, f.cfg.MetricsNamespace)
+	kgoOpts, err := NewKgoConfig(f.cfg.Kafka, f.logger, f.cfg.MetricsNamespace, f.registry)
 	if err != nil {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInternal,
@@ -109,15 +112,23 @@ func (f *CachedClientProvider) createClient() (*kgo.Client, error) {
 		)
 	}
 
-	return kgo.NewClient(kgoOpts...)
+	kgoClient, err := kgo.NewClient(kgoOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Track client creation with factory metrics
+	f.factoryMetrics.IncrementActiveClients()
+
+	return kgoClient, nil
 }
 
 // NewKgoConfig creates a new Config for the Kafka Client as exposed by the franz-go library.
 // If TLS certificates can't be read an error will be returned.
 //
 //nolint:gocognit,cyclop // This function is lengthy, but it's only plumbing configurations. Seems okay to me.
-func NewKgoConfig(cfg config.Kafka, logger *slog.Logger, metricsNamespace string) ([]kgo.Opt, error) {
-	metricHooks := newClientHooks(loggerpkg.Named(logger, "kafka_client_hooks"), metricsNamespace)
+func NewKgoConfig(cfg config.Kafka, logger *slog.Logger, metricsNamespace string, registry prometheus.Registerer) ([]kgo.Opt, error) {
+	metricHooks := newClientHooks(loggerpkg.Named(logger, "kafka_client_hooks"), metricsNamespace, registry)
 
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),

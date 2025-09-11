@@ -245,6 +245,24 @@ export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
   license.type === License_Type.TRIAL || license.type === License_Type.ENTERPRISE;
 
 /**
+ * Gets the license with the latest expiration time from a list of licenses.
+ *
+ * @param licenses - An array of License objects to evaluate.
+ * @returns The license with the latest expiration time, or undefined if the array is empty.
+ */
+export const getLatestExpiringLicense = (licenses: License[]): License | undefined => {
+  if (licenses.length === 0) {
+    return undefined;
+  }
+
+  return licenses.reduce((latest, current) => {
+    const latestExpiration = Number(latest.expiresAt);
+    const currentExpiration = Number(current.expiresAt);
+    return currentExpiration > latestExpiration ? current : latest;
+  });
+};
+
+/**
  * Simplifies a list of licenses by grouping them based on their type and returning a simplified preview of each type.
  *
  * - If there are multiple licenses of the same type, it displays the type with the expiration date of the license that expires first.

@@ -45,7 +45,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 
 	// Add analytics_enabled feature if analytics is enabled
 	if api.Cfg.Analytics.Enabled {
-		enabledFeatures = append(enabledFeatures, "analytics_enabled")
+		enabledFeatures = append(enabledFeatures, "ANALYTICS")
 	}
 
 	enabledFeaturesStr := strings.Join(enabledFeatures, ",")

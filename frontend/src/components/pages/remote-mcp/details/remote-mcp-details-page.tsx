@@ -9,14 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { runInAction } from 'mobx';
-import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { useGetMCPServerQuery } from '../../../../react-query/api/remote-mcp';
-import { uiState } from '../../../../state/uiState';
-import { Tabs, TabsContentWrapper, TabsList, TabsTrigger } from '../../../redpanda-ui/components/tabs';
+import { useEffect, useState } from 'react';
+import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { uiState } from 'state/uiState';
 import { RemoteMCPInspectorTab } from './inspector/remote-mcp-inspector-tab';
 import { RemoteMCPConfigurationTab } from './remote-mcp-configuration-tab';
 import { RemoteMCPConnectionTab } from './remote-mcp-connection-tab';
@@ -37,6 +37,10 @@ export const RemoteMCPDetailsPage = () => {
   const isRemoteMcpInspectorFeatureEnabled = isFeatureFlagEnabled('enableRemoteMcpInspectorInConsole');
 
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'configuration');
 
   const { data: mcpServerData, isLoading, error } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
@@ -45,6 +49,20 @@ export const RemoteMCPDetailsPage = () => {
       updatePageTitle(mcpServerData.mcpServer.displayName);
     }
   }, [mcpServerData]);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (!tabFromUrl) {
+      setActiveTab('configuration');
+    } else {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
 
   if (isLoading) {
     return (
@@ -76,20 +94,28 @@ export const RemoteMCPDetailsPage = () => {
     <div className="flex flex-col gap-4">
       <RemoteMCPDetailsHeader />
 
-      <Tabs defaultValue="configuration" size="md" variant="contained">
-        <TabsList layout="full" columns={4}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList>
           <TabsTrigger value="configuration">Configuration</TabsTrigger>
           <TabsTrigger value="connection">Connection</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
           {isRemoteMcpInspectorFeatureEnabled && <TabsTrigger value="inspector">MCP Inspector</TabsTrigger>}
         </TabsList>
 
-        <TabsContentWrapper variant="contained">
-          <RemoteMCPConfigurationTab value="configuration" />
-          <RemoteMCPConnectionTab value="connection" />
-          <RemoteMCPLogsTab value="logs" />
-          {isRemoteMcpInspectorFeatureEnabled && <RemoteMCPInspectorTab value="inspector" />}
-        </TabsContentWrapper>
+        <TabsContent value="configuration">
+          <RemoteMCPConfigurationTab />
+        </TabsContent>
+        <TabsContent value="connection">
+          <RemoteMCPConnectionTab />
+        </TabsContent>
+        <TabsContent value="logs">
+          <RemoteMCPLogsTab />
+        </TabsContent>
+        {isRemoteMcpInspectorFeatureEnabled && (
+          <TabsContent value="inspector">
+            <RemoteMCPInspectorTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

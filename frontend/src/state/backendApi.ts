@@ -15,12 +15,19 @@ import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import {
+  consoleHasEnterpriseFeature,
+  getLatestExpiringLicense,
+  getMillisecondsToExpiration,
+  isBakedInTrial,
+  prettyLicenseType,
+} from 'components/license/licenseUtils';
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
-import { trackHeapUser } from '../components/pages/agents/heap.helper';
-import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
 import { config as appConfig, isEmbedded } from '../config';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
+import { trackHubspotUser } from '../hubspot/hubspot.helper';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -73,7 +80,7 @@ import type {
   KnowledgeBaseCreate,
   KnowledgeBaseUpdate,
 } from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { getBasePath } from '../utils/env';
+import { getBasePath, getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
@@ -573,6 +580,15 @@ const apiStore = {
         } else {
           appGlobal.historyPush('/login');
         }
+      })
+      .finally(() => {
+        addHeapEventProperties({
+          'Product Name': 'Console',
+          Platform: api.isRedpanda ? 'Redpanda' : 'Kafka',
+          'Cluster Version': api.clusterOverview?.kafka?.version,
+          Version: process.env.REACT_APP_CONSOLE_PLATFORM_VERSION,
+          'Build Date': getBuildDate(),
+        });
       });
   },
 
@@ -1949,6 +1965,20 @@ const apiStore = {
           return err;
         }),
     ]);
+
+    if (this.licenses.length > 0) {
+      const license = getLatestExpiringLicense(this.licenses);
+      if (license !== undefined) {
+        addHeapEventProperties({
+          BakedInTrial: isBakedInTrial(license),
+          LicenseType: prettyLicenseType(license),
+          MillisecondsToExpiration: getMillisecondsToExpiration(license),
+        });
+      }
+    }
+    addHeapEventProperties({
+      SSOEnabled: consoleHasEnterpriseFeature('SINGLE_SIGN_ON'),
+    });
   },
 
   async refreshClusterHealth() {

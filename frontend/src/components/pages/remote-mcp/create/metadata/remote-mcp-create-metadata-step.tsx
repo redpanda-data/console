@@ -1,18 +1,19 @@
-import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
-import { Badge } from '../../../../redpanda-ui/components/badge';
-import { Button } from '../../../../redpanda-ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../redpanda-ui/components/card';
-import { Input } from '../../../../redpanda-ui/components/input';
-import { Label } from '../../../../redpanda-ui/components/label';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../redpanda-ui/components/select';
-import { Textarea } from '../../../../redpanda-ui/components/textarea';
+} from 'components/redpanda-ui/components/select';
+import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { Plus, Trash2 } from 'lucide-react';
+import { useCheckMCPServerNameUniqueness } from 'react-query/api/remote-mcp';
+import { RESOURCE_TIERS } from 'utils/resource-tiers';
 
 interface MetadataStepProps {
   displayName: string;
@@ -35,23 +36,36 @@ export const RemoteMCPCreateMetadataStep = ({
   resources,
   setResources,
 }: MetadataStepProps) => {
-  const [newTagKey, setNewTagKey] = useState('');
-  const [newTagValue, setNewTagValue] = useState('');
+  const { checkNameUniqueness, isLoading: isCheckingUniqueness } = useCheckMCPServerNameUniqueness();
+
+  const isNameDuplicate = displayName.trim() !== '' && !isCheckingUniqueness && !checkNameUniqueness(displayName);
 
   const addTag = () => {
-    if (newTagKey && newTagValue) {
-      setTags([...tags, { key: newTagKey, value: newTagValue }]);
-      setNewTagKey('');
-      setNewTagValue('');
-    }
+    setTags([...tags, { key: '', value: '' }]);
   };
 
   const removeTag = (index: number) => {
     setTags(tags.filter((_, i) => i !== index));
   };
 
+  const updateTag = (index: number, field: 'key' | 'value', value: string) => {
+    const updatedTags = tags.map((tag, i) => (i === index ? { ...tag, [field]: value } : tag));
+    setTags(updatedTags);
+  };
+
+  const hasDuplicateKeys = () => {
+    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
+    return keys.length !== new Set(keys).size;
+  };
+
+  const getDuplicateKeys = () => {
+    const keys = tags.map((tag) => tag.key.trim()).filter((key) => key !== '');
+    const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
+    return new Set(duplicates);
+  };
+
   return (
-    <Card className="max-w-full">
+    <Card className="max-w-full px-8 py-6">
       <CardHeader>
         <CardTitle>Server Metadata</CardTitle>
         <CardDescription>Configure the basic information and resources for your MCP server.</CardDescription>
@@ -65,7 +79,13 @@ export const RemoteMCPCreateMetadataStep = ({
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="My MCP Server"
             required
+            className={isNameDuplicate ? 'border-destructive focus:border-destructive' : ''}
           />
+          {isNameDuplicate && (
+            <Text variant="small" className="text-destructive">
+              A server with this name already exists. Please choose a different name.
+            </Text>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -81,30 +101,49 @@ export const RemoteMCPCreateMetadataStep = ({
 
         <div className="space-y-2">
           <Label>Tags</Label>
-          <div className="flex gap-2 mb-2">
-            <Input
-              placeholder="Key"
-              value={newTagKey}
-              onChange={(e) => setNewTagKey(e.target.value)}
-              className="flex-1"
-            />
-            <Input
-              placeholder="Value"
-              value={newTagValue}
-              onChange={(e) => setNewTagValue(e.target.value)}
-              className="flex-1"
-            />
-            <Button onClick={addTag} size="sm">
-              <Plus className="h-4 w-4" />
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <Text variant="small" className="text-muted-foreground">
+                Key-value pairs for organizing and categorizing
+              </Text>
+              {hasDuplicateKeys() && (
+                <Text variant="small" className="text-destructive">
+                  Tags must have unique keys
+                </Text>
+              )}
+            </div>
+            {tags.map((tag, index) => {
+              const duplicateKeys = getDuplicateKeys();
+              const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
+              return (
+                <div key={index} className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Key"
+                      value={tag.key}
+                      className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                      onChange={(e) => updateTag(index, 'key', e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Value"
+                      value={tag.value}
+                      onChange={(e) => updateTag(index, 'value', e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end h-9">
+                    <Button variant="outline" size="sm" onClick={() => removeTag(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            <Button variant="outline" size="sm" onClick={addTag}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Tag
             </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag, index) => (
-              <Badge key={`${tag.key}-${tag.value}-${index}`} variant="secondary" className="gap-1">
-                {tag.key}: {tag.value}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(index)} />
-              </Badge>
-            ))}
           </div>
         </div>
 
@@ -115,9 +154,11 @@ export const RemoteMCPCreateMetadataStep = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="small">Small (0.5 CPU, 1GB RAM)</SelectItem>
-              <SelectItem value="medium">Medium (1 CPU, 2GB RAM)</SelectItem>
-              <SelectItem value="large">Large (2 CPU, 4GB RAM)</SelectItem>
+              {RESOURCE_TIERS.map((tier) => (
+                <SelectItem key={tier.id} value={tier.id}>
+                  {tier.fullSpec}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

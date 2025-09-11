@@ -79,9 +79,9 @@ import {
 import { useListUsersQuery } from '../../../react-query/api/user';
 import { rpcnSecretManagerApi } from '../../../state/backendApi';
 import { getMessageFieldMetadata } from '../../../utils/protobuf-reflection';
+import { ChatMarkdown } from '../../chat/chat-markdown';
 import { ProtoDisplayField, ProtoInputField, ProtoTextareaField } from '../../misc/ProtoFormField';
 import { SingleSelect } from '../../misc/Select';
-import { ChatMarkdown } from '../agents/details/chat/chat-markdown';
 import { SecretsQuickAdd } from '../rp-connect/secrets/Secrets.QuickAdd';
 
 const { ToastContainer, toast } = createStandaloneToast();

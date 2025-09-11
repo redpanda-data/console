@@ -19,15 +19,16 @@ import (
 	"sync"
 	"time"
 
-	//nolint:staticcheck // Switching to the google golang protojson comes with a few breaking changes.
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"github.com/twmb/franz-go/pkg/sr"
 	"golang.org/x/sync/singleflight"
-	"google.golang.org/protobuf/runtime/protoiface"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
@@ -165,10 +166,18 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
 
-	jsonBytes, err := msg.MarshalJSONPB(&jsonpb.Marshaler{
-		AnyResolver:  &anyResolver{s.registry},
-		EmitDefaults: true,
-	})
+	modernDesc := convertDescToProtoReflect(md)
+	modernMsg := dynamicpb.NewMessage(modernDesc)
+
+	err = proto.Unmarshal(payload, modernMsg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal payload into modern protobuf message: %w", err)
+	}
+
+	jsonBytes, err := protojson.MarshalOptions{
+		EmitDefaultValues: true,
+		Resolver:          &anyResolver{mr: s.registry},
+	}.Marshal(modernMsg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal protobuf message to JSON: %w", err)
 	}
@@ -178,16 +187,21 @@ func (s *Service) DeserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 
 // SerializeJSONToProtobufMessage serializes the JSON data to Protobuf message.
 func (s *Service) SerializeJSONToProtobufMessage(json []byte, md *desc.MessageDescriptor) ([]byte, error) {
-	msg := dynamic.NewMessage(md)
-	err := msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
-		AnyResolver:        &anyResolver{s.registry},
-		AllowUnknownFields: true,
-	}, json)
+	// Convert to modern dynamicpb message
+	modernDesc := convertDescToProtoReflect(md)
+	modernMsg := dynamicpb.NewMessage(modernDesc)
+
+	// Use modern protojson to unmarshal
+	err := protojson.UnmarshalOptions{
+		Resolver:       &anyResolver{mr: s.registry},
+		DiscardUnknown: true,
+	}.Unmarshal(json, modernMsg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal JSON into protobuf message: %w", err)
 	}
 
-	return msg.Marshal()
+	// Marshal back to binary format
+	return proto.Marshal(modernMsg)
 }
 
 // GetMessageDescriptorForSchema gets the Protobuf message descriptor for the schema ID and message index.
@@ -227,26 +241,30 @@ func (s *Service) SerializeJSONToConfluentProtobufMessage(json []byte, schemaID 
 		return nil, err
 	}
 
-	msg := dynamic.NewMessage(messageDescriptor)
-	err = msg.UnmarshalJSONPB(&jsonpb.Unmarshaler{
-		AnyResolver:        &anyResolver{s.registry},
-		AllowUnknownFields: true,
-	}, json)
+	// Convert to modern dynamicpb message
+	modernDesc := convertDescToProtoReflect(messageDescriptor)
+	modernMsg := dynamicpb.NewMessage(modernDesc)
+
+	// Use modern protojson to unmarshal
+	err = protojson.UnmarshalOptions{
+		Resolver:       &anyResolver{mr: s.registry},
+		DiscardUnknown: true,
+	}.Unmarshal(json, modernMsg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal protobuf message from JSON: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal JSON into protobuf message: %w", err)
 	}
 
 	var srSerde sr.Serde
 	srSerde.Register(
 		schemaID,
-		&dynamic.Message{},
+		modernMsg,
 		sr.EncodeFn(func(v any) ([]byte, error) {
-			return v.(*dynamic.Message).Marshal()
+			return proto.Marshal(v.(proto.Message))
 		}),
 		sr.Index(index...),
 	)
 
-	return srSerde.Encode(msg)
+	return srSerde.Encode(modernMsg)
 }
 
 // UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
@@ -550,11 +568,11 @@ func (s *Service) GetFileDescriptorBySchemaID(schemaID int) (*desc.FileDescripto
 	s.fileDescriptorsBySchemaIDMutex.Lock()
 	defer s.fileDescriptorsBySchemaIDMutex.Unlock()
 
-	desc, exists := s.fileDescriptorsBySchemaID[schemaID]
-	return desc, exists
+	fd, exists := s.fileDescriptorsBySchemaID[schemaID]
+	return fd, exists
 }
 
-// AnyResolver is used to resolve the google.protobuf.Any type.
+// anyResolver is used to resolve the google.protobuf.Any type.
 // It takes a type URL, present in an Any message, and resolves
 // it into an instance of the associated message.
 //
@@ -569,14 +587,46 @@ type anyResolver struct {
 	mr *msgregistry.MessageRegistry
 }
 
-func (r *anyResolver) Resolve(typeURL string) (protoiface.MessageV1, error) {
-	// Protoreflect registers the type by stripping the contents before the last
-	// slash. Therefore we need to mimic this behaviour in order to resolve
-	// the type by it's given type url.
-	mname := typeURL
+// FindMessageByName implements protoreflect.MessageTypeResolver
+func (r *anyResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
+	// Convert to string and resolve using the existing registry
+	msg, err := r.mr.Resolve(string(message))
+	if err != nil {
+		return nil, err
+	}
+	// Convert dynamic message to modern API
+	if dynMsg, ok := msg.(*dynamic.Message); ok {
+		// Get the descriptor and convert to modern format
+		msgDesc := dynMsg.GetMessageDescriptor()
+		// Convert jhump descriptor to modern protoreflect descriptor
+		modernDesc := msgDesc.UnwrapMessage()
+		return dynamicpb.NewMessageType(modernDesc), nil
+	}
+	return nil, fmt.Errorf("message type %s not found", message)
+}
+
+// FindMessageByURL implements protoreflect.MessageTypeResolver
+func (r *anyResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
+	// Strip the URL prefix to get the message name
+	mname := url
 	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
 		mname = mname[slash+1:]
 	}
+	return r.FindMessageByName(protoreflect.FullName(mname))
+}
 
-	return r.mr.Resolve(mname)
+// FindExtensionByName implements protoreflect.ExtensionTypeResolver
+func (*anyResolver) FindExtensionByName(_ protoreflect.FullName) (protoreflect.ExtensionType, error) {
+	return nil, errors.New("extension resolution not supported")
+}
+
+// FindExtensionByNumber implements protoreflect.ExtensionTypeResolver
+func (*anyResolver) FindExtensionByNumber(_ protoreflect.FullName, _ protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
+	return nil, errors.New("extension resolution not supported")
+}
+
+// convertDescToProtoReflect converts a jhump MessageDescriptor to a protoreflect.MessageDescriptor
+func convertDescToProtoReflect(md *desc.MessageDescriptor) protoreflect.MessageDescriptor {
+	// Use the Unwrap method to get the modern descriptor
+	return md.UnwrapMessage()
 }

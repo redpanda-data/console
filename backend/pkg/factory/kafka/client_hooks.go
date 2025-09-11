@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
@@ -37,72 +36,118 @@ type clientHooks struct {
 
 	requestsReceivedCount prometheus.Counter
 	bytesReceived         prometheus.Counter
+
+	openConnections    *prometheus.GaugeVec
+	connectionAttempts prometheus.Counter
 }
 
 var (
 	// We may need to initialize client hooks with different
 	// loggers multiple times, but we can only register the same
-	// Prometheus metrics in the default registry once. Therefore,
-	// we store these metrics at the package level and initialize
-	// them only once.
-	promInitOnce         sync.Once
-	promRequestSent      prometheus.Counter
-	promBytesSent        prometheus.Counter
-	promRequestsReceived prometheus.Counter
-	promBytesReceived    prometheus.Counter
+	// Prometheus metrics in the same registry once. Therefore,
+	// we store these metrics at the package level per registry and initialize
+	// them only once per registry.
+	registryMetrics = make(map[prometheus.Registerer]*kafkaMetrics)
+	metricsInitMu   sync.RWMutex
 )
 
-func newClientHooks(logger *slog.Logger, metricsNamespace string) *clientHooks {
-	promInitOnce.Do(func() {
-		promRequestSent = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "requests_sent_total",
-		})
-		promBytesSent = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "sent_bytes",
-		})
+type kafkaMetrics struct {
+	requestSent        prometheus.Counter
+	bytesSent          prometheus.Counter
+	requestsReceived   prometheus.Counter
+	bytesReceived      prometheus.Counter
+	openConnections    *prometheus.GaugeVec
+	connectionAttempts prometheus.Counter
+}
 
-		promRequestsReceived = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "requests_received_total",
-		})
-		promBytesReceived = promauto.NewCounter(prometheus.CounterOpts{
-			Namespace: metricsNamespace,
-			Subsystem: "kafka",
-			Name:      "received_bytes",
-		})
-	})
+func newClientHooks(logger *slog.Logger, metricsNamespace string, registry prometheus.Registerer) *clientHooks {
+	metricsInitMu.Lock()
+	defer metricsInitMu.Unlock()
+
+	metrics, exists := registryMetrics[registry]
+	if !exists {
+		metrics = &kafkaMetrics{
+			requestSent: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "requests_sent_total",
+			}),
+			bytesSent: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "sent_bytes",
+			}),
+			requestsReceived: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "requests_received_total",
+			}),
+			bytesReceived: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "received_bytes",
+			}),
+			openConnections: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "open_connections",
+				Help:      "Number of open connections to Kafka brokers",
+			}, []string{"broker_id"}),
+			connectionAttempts: prometheus.NewCounter(prometheus.CounterOpts{
+				Namespace: metricsNamespace,
+				Subsystem: "kafka",
+				Name:      "connection_attempts_total",
+				Help:      "Total number of connection attempts to Kafka brokers",
+			}),
+		}
+
+		registry.MustRegister(
+			metrics.requestSent,
+			metrics.bytesSent,
+			metrics.requestsReceived,
+			metrics.bytesReceived,
+			metrics.openConnections,
+			metrics.connectionAttempts,
+		)
+
+		registryMetrics[registry] = metrics
+	}
 
 	return &clientHooks{
 		logger: logger,
 
-		requestSentCount: promRequestSent,
-		bytesSent:        promBytesSent,
-
-		requestsReceivedCount: promRequestsReceived,
-		bytesReceived:         promBytesReceived,
+		requestSentCount:      metrics.requestSent,
+		bytesSent:             metrics.bytesSent,
+		requestsReceivedCount: metrics.requestsReceived,
+		bytesReceived:         metrics.bytesReceived,
+		openConnections:       metrics.openConnections,
+		connectionAttempts:    metrics.connectionAttempts,
 	}
 }
 
 // OnBrokerConnect is called when the client connects to any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerConnect(meta kgo.BrokerMetadata, dialDur time.Duration, _ net.Conn, err error) {
+	// Track all connection attempts (successful and failed)
+	c.connectionAttempts.Inc()
+
 	if err != nil {
-		c.logger.Debug("kafka connection failed", slog.String("broker_host", meta.Host), slog.Any("error", err))
+		c.logger.Debug("kafka connection failed",
+			slog.String("broker_host", meta.Host),
+			slog.Any("error", err))
 		return
 	}
-	c.logger.Debug("kafka connection succeeded",
+	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Inc()
+	c.logger.Info("kafka connection succeeded",
 		slog.String("host", meta.Host),
-		slog.Duration("dial_duration", dialDur))
+		slog.Duration("dial_duration", dialDur),
+		slog.Int("node_id", int(meta.NodeID)))
 }
 
 // OnBrokerDisconnect is called when the client disconnects from any node of the target
 // Kafka cluster.
 func (c clientHooks) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
+	c.openConnections.WithLabelValues(kgo.NodeName(meta.NodeID)).Dec()
 	c.logger.Debug("kafka broker disconnected",
 		slog.String("host", meta.Host))
 }
