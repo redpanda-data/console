@@ -37,26 +37,56 @@ const transformInputSchemaToParameters = (inputSchema?: InputSchema): ToolParame
 
   const properties = inputSchema.properties;
   const required = inputSchema.required || [];
+  const parameters: ToolParameter[] = [];
 
-  return Object.entries(properties).map(([paramName, paramSchema]) => {
-    const schema = paramSchema as {
-      type?: string;
-      description?: string;
-      enum?: unknown[];
-      items?: {
+  const processProperties = (props: Record<string, unknown>, requiredFields: string[] = [], prefix = '') => {
+    Object.entries(props).forEach(([paramName, paramSchema]) => {
+      const schema = paramSchema as {
+        type?: string;
+        description?: string;
         enum?: unknown[];
+        items?: {
+          enum?: unknown[];
+          type?: string;
+          properties?: Record<string, unknown>;
+          required?: string[];
+        };
+        properties?: Record<string, unknown>;
+        required?: string[];
       };
-    };
 
-    return {
-      name: paramName,
-      type: schema.type || 'string',
-      description: schema.description,
-      required: required.includes(paramName),
-      enum: schema.enum,
-      items: schema.items,
-    };
-  });
+      const fullName = prefix ? `${prefix}.${paramName}` : paramName;
+      const isRequired = requiredFields.includes(paramName);
+
+      // Check if this parameter has nested properties
+      const hasNestedProperties =
+        (schema.type === 'array' && schema.items?.properties) || (schema.type === 'object' && schema.properties);
+
+      // Only add the current parameter if it doesn't have nested properties (i.e., it's a leaf parameter)
+      if (!hasNestedProperties) {
+        parameters.push({
+          name: fullName,
+          type: schema.type || 'string',
+          description: schema.description,
+          required: isRequired,
+          enum: schema.enum,
+          items: schema.items,
+        });
+      }
+
+      // Recursively process nested properties
+      if (schema.type === 'array' && schema.items?.properties) {
+        // For arrays with object items, process the nested properties
+        processProperties(schema.items.properties, schema.items.required || [], `${fullName}[]`);
+      } else if (schema.type === 'object' && schema.properties) {
+        // For objects, process the nested properties
+        processProperties(schema.properties, schema.required || [], fullName);
+      }
+    });
+  };
+
+  processProperties(properties, required);
+  return parameters;
 };
 
 interface ParameterListProps {
