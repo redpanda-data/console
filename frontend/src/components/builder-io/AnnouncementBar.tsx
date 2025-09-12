@@ -21,9 +21,6 @@ export default function AnnouncementBar() {
           setContent(content);
         }
       })
-      .catch((error) => {
-        console.error(error);
-      });
   }, []);
 
   const shouldRenderBuilderContent = content || isPreviewing();

@@ -34,8 +34,7 @@ export default function NurturePanel() {
         }
         setHasError(false);
       })
-      .catch((err) => {
-        console.log('Oops: ', err);
+      .catch(() => {
         setHasError(true);
       })
       .finally(() => {
