@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-react';
 import { builderCustomComponents } from 'components/builder-io/builderCustomComponents';
-import env from 'utils/env';
+import { BUILDER_API_KEY } from 'components/constants';
+import { useEffect, useState } from 'react';
 
 const MODEL_NAME = 'console-announcement-bar';
 
@@ -11,7 +11,7 @@ export default function AnnouncementBar() {
   useEffect(() => {
     fetchOneEntry({
       model: MODEL_NAME,
-      apiKey: env.REACT_APP_BUILDER_API_KEY,
+      apiKey: BUILDER_API_KEY,
       userAttributes: {
         urlPath: window.location.pathname,
       },
@@ -22,7 +22,7 @@ export default function AnnouncementBar() {
         }
       })
       .catch((error) => {
-        console.error(error)
+        console.error(error);
       });
   }, []);
 
@@ -33,7 +33,7 @@ export default function AnnouncementBar() {
         <Content
           content={content}
           model={MODEL_NAME}
-          apiKey={env.REACT_APP_BUILDER_API_KEY}
+          apiKey={BUILDER_API_KEY}
           customComponents={builderCustomComponents}
         />
       )

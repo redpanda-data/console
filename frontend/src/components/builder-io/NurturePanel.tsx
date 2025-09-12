@@ -3,18 +3,12 @@
  * https://www.builder.io/c/blueprints/announcement-bar
  * src/components/AnnouncementBar.tsx
  */
-import {
-  Content,
-  fetchOneEntry,
-  isPreviewing,
-  type BuilderContent,
-} from '@builder.io/sdk-react';
+import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-react';
 import { Box, Skeleton, Text } from '@redpanda-data/ui';
 import { builderCustomComponents } from 'components/builder-io/builderCustomComponents';
+import { BUILDER_API_KEY } from 'components/constants';
 import { useEffect, useState } from 'react';
 import { api } from 'state/backendApi';
-import env from 'utils/env';
-
 
 export default function NurturePanel() {
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
@@ -28,12 +22,12 @@ export default function NurturePanel() {
   useEffect(() => {
     fetchOneEntry({
       model: MODEL_NAME,
-      apiKey: env.REACT_APP_BUILDER_API_KEY,
+      apiKey: BUILDER_API_KEY,
       userAttributes: {
         urlPath: window.location.pathname,
         platform,
       },
-    })  
+    })
       .then((content) => {
         if (content) {
           setContent(content);
@@ -47,7 +41,7 @@ export default function NurturePanel() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [platform, MODEL_NAME]);
 
   const shouldRenderBuilderContent = content || isPreviewing();
 
@@ -77,15 +71,16 @@ export default function NurturePanel() {
     );
   }
 
-  return <>
-    {
-      shouldRenderBuilderContent ? (
+  return (
+    <>
+      {shouldRenderBuilderContent ? (
         <Content
           content={content}
           model={MODEL_NAME}
-          apiKey={env.REACT_APP_BUILDER_API_KEY}
+          apiKey={BUILDER_API_KEY}
           customComponents={builderCustomComponents}
         />
       ) : null}
-  </>
+    </>
+  );
 }

@@ -41,6 +41,7 @@ import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import NurturePanel from '../../builder-io/NurturePanel';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
@@ -50,8 +51,6 @@ import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotifi
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
-import { ResourcesAndUpdates } from './ResourcesAndUpdates';
-import NurturePanel from '../../builder-io/NurturePanel';
 
 @observer
 class Overview extends PageComponent {

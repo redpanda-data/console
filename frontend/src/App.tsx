@@ -25,6 +25,7 @@ import './globals.css';
 /* end tailwind styles */
 
 import queryClient from 'queryClient';
+import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, Container, Grid, redpandaTheme, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
@@ -32,11 +33,15 @@ import { StagewiseToolbar, type ToolbarConfig } from '@stagewise/toolbar-react';
 import { ReactPlugin } from '@stagewise-plugins/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import AnnouncementBar from 'components/builder-io/AnnouncementBar';
+import { builderCustomComponents } from 'components/builder-io/builderCustomComponents';
+import { BUILDER_API_KEY } from 'components/constants';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
+import { getBasePath } from 'utils/env';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
@@ -51,10 +56,6 @@ import {
   setup,
 } from './config';
 import { uiSettings } from './state/ui';
-import env, { getBasePath } from 'utils/env';
-import { Content } from '@builder.io/sdk-react';
-import { builderCustomComponents } from 'components/builder-io/builderCustomComponents';
-import AnnouncementBar from 'components/builder-io/AnnouncementBar';
 
 const AppSidebar = observer(() => {
   const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
@@ -83,10 +84,7 @@ const App = () => {
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
-      <Content
-        apiKey={env.REACT_APP_BUILDER_API_KEY}
-        customComponents={builderCustomComponents}
-      />
+      <Content apiKey={BUILDER_API_KEY} customComponents={builderCustomComponents} />
       <BrowserRouter basename={getBasePath()}>
         <HistorySetter />
         <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
