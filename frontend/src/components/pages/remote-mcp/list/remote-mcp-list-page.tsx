@@ -44,7 +44,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
@@ -272,17 +272,8 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                 resourceType="Remote MCP Server"
                 onDelete={handleDelete}
                 onOpenChange={setIsDeleteDialogOpen}
-              >
-                {isDeleting ? (
-                  <div className="flex items-center gap-4">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Deleting
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </div>
-                )}
-              </DeleteAlertDialog>
+                isDeleting={isDeleting}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
