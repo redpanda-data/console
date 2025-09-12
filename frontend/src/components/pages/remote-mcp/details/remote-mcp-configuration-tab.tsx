@@ -572,9 +572,6 @@ spec:
                           placeholder="e.g., search-posts (must be filename-compatible)"
                           onChange={(e) => handleUpdateTool(tool.id, { name: e.target.value })}
                         />
-                        <Text variant="small" className="text-muted-foreground">
-                          Lowercase letters, numbers, and dashes. Used in the file name and API.
-                        </Text>
                       </div>
                       <div className="flex-1 space-y-1">
                         <Label className="text-sm font-medium">Component Type</Label>
