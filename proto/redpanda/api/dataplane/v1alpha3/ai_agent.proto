@@ -1,0 +1,681 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/dataplane/v1/pipeline.proto";
+
+// Defines the AI Agent resource.
+message AIAgent {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1alpha3/AIAgent"
+    singular: "ai_agent"
+    plural: "ai_agents"
+  };
+
+  // AI Agent ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+
+  // User-friendly AI agent name.
+  string name = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // Optional AI agent description.
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+
+  // System Prompt for the AI agent behavior.
+  string system_prompt = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 8192,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
+  ];
+
+  // LLM configuration settings for the AI agent.
+  LLMSettings llm_settings = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Map of MCP servers that this AI agent can use.
+  map<string, MCPServer> mcp_servers = 6 [
+    (buf.validate.field).map.keys.string = {
+      pattern: "^[A-Za-z0-9_-]+$"
+      max_len: 64
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
+  ];
+
+  // Tags are key-value pairs that can be assigned to an AI agent resource.
+  // They help organize AI agents and enable filtering when listing them.
+  map<string, string> tags = 7 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
+  // Response format type.
+  enum ResponseFormat {
+    RESPONSE_FORMAT_UNSPECIFIED = 0;
+    RESPONSE_FORMAT_TEXT = 1;
+    RESPONSE_FORMAT_JSON = 2;
+  }
+
+  // Optional response format specification.
+  optional ResponseFormat response_format = 8 [(buf.validate.field).enum = {defined_only: true}];
+
+  // Optional JSON schema for structured responses.
+  // Only used when response_format is RESPONSE_FORMAT_JSON.
+  optional string response_schema = 9 [
+    (buf.validate.field).string.max_len = 8192,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses when using JSON response format."}
+  ];
+
+  // The current AI agent state.
+  State state = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // URL to connect to the AI agent endpoint.
+  string url = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // LLM configuration settings.
+  message LLMSettings {
+    // Supported LLM providers.
+    enum Provider {
+      PROVIDER_UNSPECIFIED = 0;
+      PROVIDER_OPENAI = 1;
+    }
+
+    // LLM provider.
+    Provider provider = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0]
+      }
+    ];
+
+    // Model name (e.g., "gpt-4", "claude-3-sonnet", "gpt-3.5-turbo").
+    string model_name = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 128
+    ];
+
+    // Reference to the API key secret for authenticating with the LLM provider.
+    string api_key_secret_ref = 3 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.pattern = "^[A-Z${}.][A-Z0-9_${}.]*$",
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Reference to a secret containing the API key for the LLM provider."}
+    ];
+
+    // Optional temperature setting for response randomness (0.0 to 2.0).
+    optional double temperature = 4 [(buf.validate.field).double = {
+      gte: 0.0
+      lte: 2.0
+    }];
+
+    // Optional maximum tokens for responses.
+    optional int32 max_tokens = 5 [(buf.validate.field).int32 = {
+      gte: 1
+      lte: 32768
+    }];
+
+    // Response format type.
+    enum ResponseFormat {
+      RESPONSE_FORMAT_UNSPECIFIED = 0;
+      RESPONSE_FORMAT_TEXT = 1;
+      RESPONSE_FORMAT_JSON = 2;
+      RESPONSE_FORMAT_JSON_OBJECT = 3;
+    }
+  }
+
+  // State of the AI agent.
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    // The AI agent is starting.
+    STATE_STARTING = 1;
+    // The AI agent is running and ready to handle requests.
+    STATE_RUNNING = 2;
+    // The AI agent is in the process of stopping.
+    STATE_STOPPING = 3;
+    // The AI agent is stopped and in paused state.
+    STATE_STOPPED = 4;
+    // The AI agent encountered an error.
+    STATE_ERROR = 5;
+  }
+
+  // MCP transport types.
+  enum MCPTransport {
+    MCP_TRANSPORT_UNSPECIFIED = 0;
+    MCP_TRANSPORT_REDPANDA_MCP_SERVER = 1;
+    MCP_TRANSPORT_STREAMABLE = 2;
+    MCP_TRANSPORT_SSE = 3;
+  }
+
+  // MCP server configuration.
+  message MCPServer {
+    // Transport type for the MCP server.
+    MCPTransport transport = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).enum = {
+        defined_only: true
+        not_in: [0]
+      }
+    ];
+
+    // URL of the MCP server.
+    string server_url = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.min_len = 1,
+      (buf.validate.field).string.max_len = 512,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "URL endpoint for the MCP server."}
+    ];
+
+    // Optional headers to include in requests to the MCP server.
+    map<string, string> headers = 3 [
+      (buf.validate.field).map.keys.string = {
+        pattern: "^[A-Za-z0-9-_]+$"
+        max_len: 64
+      },
+      (buf.validate.field).map.values.string = {max_len: 512},
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "HTTP headers to include when communicating with the MCP server."}
+    ];
+
+    // Optional timeout for requests to the MCP server in seconds.
+    optional int32 timeout = 4 [
+      (buf.validate.field).int32 = {
+        gte: 1
+        lte: 300
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Request timeout in seconds. Defaults to 30 seconds if not specified."}
+    ];
+  }
+}
+
+// AIAgentService is the service for AI Agents.
+// It exposes the API for creating and managing AI agents and their configurations.
+service AIAgentService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "AI Agents"
+    description: "Create and manage AI agents and their configurations."
+  };
+
+  // CreateAIAgent creates an AI Agent in the Redpanda cluster.
+  rpc CreateAIAgent(CreateAIAgentRequest) returns (CreateAIAgentResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha3/ai-agents"
+      body: "ai_agent"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create AI Agent"
+      description: "Create a new AI agent."
+      responses: {
+        key: "201"
+        value: {
+          description: "Created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_CONSOLE
+    };
+  }
+
+  // GetAIAgent gets a specific AI Agent.
+  rpc GetAIAgent(GetAIAgentRequest) returns (GetAIAgentResponse) {
+    option (google.api.http) = {get: "/v1alpha3/ai-agents/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get AI Agent"
+      description: "Get a specific AI agent."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_CONSOLE
+    };
+  }
+
+  // ListAIAgents implements the list AI agents method which lists the AI agents
+  // in the Redpanda cluster.
+  rpc ListAIAgents(ListAIAgentsRequest) returns (ListAIAgentsResponse) {
+    option (google.api.http) = {get: "/v1alpha3/ai-agents"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List AI Agents"
+      description: "List AI agents. Optional: filter based on AI agent name."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListAIAgentsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_CONSOLE
+    };
+  }
+
+  // UpdateAIAgent updates a specific AI agent configuration.
+  rpc UpdateAIAgent(UpdateAIAgentRequest) returns (UpdateAIAgentResponse) {
+    option (google.api.http) = {
+      put: "/v1alpha3/ai-agents/{id}"
+      body: "ai_agent"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update AI Agent"
+      description: "Update the configuration of an AI agent."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_CONSOLE
+    };
+  }
+
+  // DeleteAIAgent deletes a specific AI agent.
+  rpc DeleteAIAgent(DeleteAIAgentRequest) returns (DeleteAIAgentResponse) {
+    option (google.api.http) = {delete: "/v1alpha3/ai-agents/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete AI Agent"
+      description: "Delete an AI agent."
+      responses: {
+        key: "204"
+        value: {
+          description: "Deleted"
+          schema: {}
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_CONSOLE
+    };
+  }
+
+  // StopAIAgent stops a specific AI agent.
+  rpc StopAIAgent(StopAIAgentRequest) returns (StopAIAgentResponse) {
+    option (google.api.http) = {post: "/v1alpha3/ai-agents/{id}:stop"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Stop AI Agent"
+      description: "Stop a running AI agent."
+      responses: {
+        key: "200"
+        value: {
+          description: "Stopped"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_CONSOLE
+    };
+  }
+
+  // StartAIAgent starts a specific AI agent that has been previously stopped.
+  rpc StartAIAgent(StartAIAgentRequest) returns (StartAIAgentResponse) {
+    option (google.api.http) = {post: "/v1alpha3/ai-agents/{id}:start"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Start AI Agent"
+      description: "Start a stopped AI agent."
+      responses: {
+        key: "200"
+        value: {
+          description: "Started"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_CONSOLE
+    };
+  }
+}
+
+// AIAgentCreate contains the details for the AI agent creation request.
+message AIAgentCreate {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1alpha3/AIAgentCreate"
+    singular: "ai_agent"
+    plural: "ai_agents"
+  };
+
+  // User-friendly AI agent name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // AI agent description.
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+
+  // System Prompt for the AI agent behavior.
+  string system_prompt = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 8192,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
+  ];
+
+  // LLM configuration settings for the AI agent.
+  AIAgent.LLMSettings llm_settings = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Map of MCP servers that this AI agent can use.
+  map<string, AIAgent.MCPServer> mcp_servers = 5 [
+    (buf.validate.field).map.keys.string = {
+      pattern: "^[A-Za-z0-9_-]+$"
+      max_len: 64
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
+  ];
+
+  // Optional list of tags to attach to an AI agent.
+  map<string, string> tags = 6 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
+  // Optional response format specification.
+  optional AIAgent.ResponseFormat response_format = 7 [(buf.validate.field).enum = {defined_only: true}];
+
+  // Optional JSON schema for structured responses.
+  // Only used when response_format is RESPONSE_FORMAT_JSON.
+  optional string response_schema = 8 [
+    (buf.validate.field).string.max_len = 8192,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses when using JSON response format."}
+  ];
+
+  // The number of resources that are guaranteed to be assigned to the AI agent.
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
+}
+
+// CreateAIAgentRequest is the request of CreateAIAgent.
+message CreateAIAgentRequest {
+  AIAgentCreate ai_agent = 1;
+}
+
+message CreateAIAgentResponse {
+  AIAgent ai_agent = 1;
+}
+
+message GetAIAgentRequest {
+  // AI Agent ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message GetAIAgentResponse {
+  AIAgent ai_agent = 1;
+}
+
+message ListAIAgentsRequest {
+  // List filter.
+  Filter filter = 1;
+
+  // Limit the paginated response to a number of items.
+  int32 page_size = 2 [
+    (buf.validate.field).int32 = {
+      gte: -1
+      lte: 100
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Limit the paginated response to a number of items. Defaults to 50. Use -1 to disable pagination."
+      minimum: -1
+      maximum: 100
+    }
+  ];
+
+  // Value of the next_page_token field returned by the previous response.
+  // If not provided, the system assumes the first page is requested.
+  string page_token = 3;
+
+  message Filter {
+    // Substring match on AI agent name. Case-sensitive.
+    string name_contains = 1 [
+      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+      (buf.validate.field).string.max_len = 128,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Any AI agents that partially match this name will be returned."}
+    ];
+
+    // Filter AI agents that contain all of these key/value pairs.
+    map<string, string> tags = 2 [
+      (buf.validate.field).map = {
+        max_pairs: 16
+        values: {
+          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+        }
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "AI agents that match all the provided tags will be returned."}
+    ];
+
+    // Filter AI agents by LLM provider.
+    AIAgent.LLMSettings.Provider provider = 3 [
+      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+      (buf.validate.field).enum = {defined_only: true}
+    ];
+  }
+}
+
+message ListAIAgentsResponse {
+  repeated AIAgent ai_agents = 1;
+  string next_page_token = 2;
+}
+
+message AIAgentUpdate {
+  option (google.api.resource) = {
+    type: "redpanda.api.dataplane.v1alpha3/AIAgentUpdate"
+    singular: "ai_agent"
+    plural: "ai_agents"
+  };
+
+  // User-friendly AI agent name.
+  string name = 1 [
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.max_len = 128
+  ];
+
+  // AI agent description.
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+
+  // System Prompt for the AI agent behavior.
+  string system_prompt = 3 [
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
+    (buf.validate.field).string.min_len = 10,
+    (buf.validate.field).string.max_len = 8192,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
+  ];
+
+  // LLM configuration settings for the AI agent.
+  AIAgent.LLMSettings llm_settings = 4;
+
+  // Map of MCP servers that this AI agent can use.
+  map<string, AIAgent.MCPServer> mcp_servers = 5 [
+    (buf.validate.field).map.keys.string = {
+      pattern: "^[A-Za-z0-9_-]+$"
+      max_len: 64
+    },
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
+  ];
+
+  // A map of tags to add, update or delete.
+  // If a tag's value is empty, the server interprets that as a deletion.
+  map<string, string> tags = 6 [(buf.validate.field).map = {
+    max_pairs: 16
+    values: {
+      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
+    }
+  }];
+
+  // Optional response format specification.
+  optional AIAgent.ResponseFormat response_format = 7 [(buf.validate.field).enum = {defined_only: true}];
+
+  // Optional JSON schema for structured responses.
+  // Only used when response_format is RESPONSE_FORMAT_JSON.
+  optional string response_schema = 8 [
+    (buf.validate.field).string.max_len = 8192,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses when using JSON response format."}
+  ];
+
+  // The number of resources that are guaranteed to be assigned to the AI agent.
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
+}
+
+message UpdateAIAgentRequest {
+  // AI Agent ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+
+  AIAgentUpdate ai_agent = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Specifies which fields should be updated. If not provided,
+  // all fields will be updated.
+  google.protobuf.FieldMask update_mask = 3;
+}
+
+message UpdateAIAgentResponse {
+  AIAgent ai_agent = 1;
+}
+
+message DeleteAIAgentRequest {
+  // AI Agent ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message DeleteAIAgentResponse {}
+
+message StopAIAgentRequest {
+  // AI Agent ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message StopAIAgentResponse {
+  AIAgent ai_agent = 1;
+}
+
+message StartAIAgentRequest {
+  // AI Agent ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
+  ];
+}
+
+message StartAIAgentResponse {
+  AIAgent ai_agent = 1;
+}
