@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge, HStack, Text } from '@redpanda-data/ui';
+import { HStack, Text } from '@redpanda-data/ui';
+import { SidebarItemBadge } from './misc/sidebar-item-badge';
 import type { PageDefinition } from './routes';
 
 interface SidebarItemTitleProps {
@@ -19,6 +20,6 @@ interface SidebarItemTitleProps {
 export const getSidebarItemTitleWithBetaBadge = ({ route }: SidebarItemTitleProps) => (
   <HStack spacing="12px" key={`${route.path}-title`}>
     <Text>{route.title}</Text>
-    <Badge>beta</Badge>
+    <SidebarItemBadge>beta</SidebarItemBadge>
   </HStack>
 );
