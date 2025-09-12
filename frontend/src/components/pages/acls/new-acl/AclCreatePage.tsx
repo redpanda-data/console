@@ -15,6 +15,7 @@ import {
   PrincipalTypeUser,
   parsePrincipal,
   type Rule,
+  handleResponses,
 } from 'components/pages/acls/new-acl/ACL.model';
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { useEffect } from 'react';
@@ -39,12 +40,8 @@ const AclCreatePage = () => {
 
   const createAclMutation = async (principal: string, host: string, rules: Rule[]) => {
     const result = convertRulesToCreateACLRequests(rules, principal, host);
-    await createAcls(result);
-
-    toast({
-      status: 'success',
-      description: 'ACLs created successfully',
-    });
+    const applyResult = await createAcls(result);
+    handleResponses(toast, applyResult.errors, applyResult.created);
 
     navigate(`/security/acls/${parsePrincipal(principal).name}/details`);
   };

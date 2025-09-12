@@ -16,6 +16,7 @@ import {
   PrincipalTypeRedpandaRole,
   parsePrincipal,
   type Rule,
+  handleResponses,
 } from 'components/pages/acls/new-acl/ACL.model';
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
@@ -70,12 +71,8 @@ const RoleCreatePage = () => {
 
       // Then create the ACLs for the role
       const result = convertRulesToCreateACLRequests(rules, principal, host);
-      await createAcls(result);
-
-      toast({
-        status: 'success',
-        description: 'Role ACLs created successfully',
-      });
+      const applyResult = await createAcls(result);
+      handleResponses(toast, applyResult.errors, applyResult.created);
 
       navigate(`/security/roles/${roleName}/details`);
     } catch (error) {

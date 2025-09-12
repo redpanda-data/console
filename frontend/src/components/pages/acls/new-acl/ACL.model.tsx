@@ -7,6 +7,8 @@ import {
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { ReactNode } from 'react';
+import type { ConnectError } from '@connectrpc/connect';
+import type { UseToastOptions } from '@redpanda-data/ui';
 
 export type OperationType = 'not-set' | 'allow' | 'deny';
 export const OperationTypeNotSet: OperationType = 'not-set';
@@ -546,3 +548,27 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
     toDelete,
   };
 }
+
+export const handleResponses = (toast: (op: UseToastOptions) => void, errors: ConnectError[], created: boolean) => {
+  if (errors.length > 0 && created) {
+    errors.forEach((er) => {
+      toast({
+        status: 'warning',
+        title: 'Some ACLs were created, but there were errors',
+        description: er.message,
+      });
+    });
+  } else if (errors.length > 0 && !created) {
+    errors.forEach((er) => {
+      toast({
+        status: 'error',
+        description: er.message,
+      });
+    });
+  } else {
+    toast({
+      status: 'success',
+      description: 'ACLs created successfully',
+    });
+  }
+};

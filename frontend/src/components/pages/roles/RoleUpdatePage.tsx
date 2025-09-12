@@ -12,6 +12,7 @@
 import { useToast } from '@redpanda-data/ui';
 import {
   getOperationsForResourceType,
+  handleResponses,
   ModeAllowAll,
   ModeDenyAll,
   OperationTypeAllow,
@@ -48,13 +49,8 @@ const RoleUpdatePage = () => {
 
   const updateRoleAclMutation =
     (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
-      await applyUpdates(actualRules, sharedConfig, rules);
-
-      // TODO: handle partial failures
-      toast({
-        status: 'success',
-        description: 'Role ACLs updated successfully',
-      });
+      const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
+      handleResponses(toast, applyResult.errors, applyResult.created);
 
       navigate(`/security/roles/${roleName}/details`);
     };
