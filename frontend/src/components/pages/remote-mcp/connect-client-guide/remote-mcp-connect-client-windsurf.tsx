@@ -21,6 +21,7 @@ interface RemoteMCPConnectClientWindsurfProps {
 export const RemoteMCPConnectClientWindsurf = ({ mcpServer }: RemoteMCPConnectClientWindsurfProps) => {
   const clusterId = config?.clusterId;
   const mcpServerName = mcpServer?.displayName ?? '';
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   const windsurfConfig = {
     mcpServers: {
@@ -32,7 +33,7 @@ export const RemoteMCPConnectClientWindsurf = ({ mcpServer }: RemoteMCPConnectCl
           'cloud',
           'mcp',
           'proxy',
-          '--cluster-id',
+          clusterFlag,
           `${clusterId}`,
           '--mcp-server-id',
           mcpServer?.id,

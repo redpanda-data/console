@@ -35,11 +35,12 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = mcpServer?.displayName ?? '';
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   const claudeCodeCommand = `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
 '{"type":"stdio","command":"rpk","args":[
 "-X","cloud_environment=${getRpkCloudEnvironment()}","cloud","mcp","proxy",
-"--cluster-id","${clusterId}",
+"${clusterFlag}","${clusterId}",
 "--mcp-server-id","${mcpServerId}"]}'`;
 
   const claudeCodeConfigJson = `{
@@ -53,7 +54,7 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
           "cloud",
           "mcp",
           "proxy",
-          "--cluster-id",
+          "${clusterFlag}",
           "${clusterId}",
           "--mcp-server-id",
           "${mcpServerId}"

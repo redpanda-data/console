@@ -27,8 +27,10 @@ export const RemoteMCPConnectClientClaudeDesktop = ({ mcpServer }: RemoteMCPConn
     clusterId,
     mcpServerId,
     clientType: 'claude',
+    isServerless: config.isServerless,
   });
 
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
   const claudeDesktopConfigJson = `{
   "mcp": {
     "servers": {
@@ -40,7 +42,7 @@ export const RemoteMCPConnectClientClaudeDesktop = ({ mcpServer }: RemoteMCPConn
           "cloud",
           "mcp",
           "proxy",
-          "--cluster-id",
+          "${clusterFlag}",
           "${clusterId}",
           "--mcp-server-id",
           "${mcpServerId}"

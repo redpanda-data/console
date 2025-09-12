@@ -33,13 +33,18 @@ export const getRpkCommand = ({
   clusterId,
   mcpServerId,
   clientType,
+  isServerless = false,
 }: {
   clusterId?: string;
   mcpServerId?: string;
   clientType?: string;
+  isServerless?: boolean;
 }) => {
+  const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
+  const clusterValue = clusterId || (isServerless ? 'YOUR_SERVERLESS_CLUSTER_ID' : 'YOUR_CLUSTER_ID');
+
   return `rpk -X cloud_environment=${getRpkCloudEnvironment()} cloud mcp proxy \\
---cluster-id ${clusterId || 'YOUR_CLUSTER_ID'} \\
+${clusterFlag} ${clusterValue} \\
 --mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'} \\
 --install --client ${clientType || 'YOUR_CLIENT_TYPE'}`;
 };
@@ -48,10 +53,12 @@ export const createMCPConfig = ({
   mcpServerName,
   clusterId,
   mcpServerId,
+  isServerless = false,
 }: {
   mcpServerName: string;
   clusterId?: string;
   mcpServerId?: string;
+  isServerless?: boolean;
 }) => ({
   name: mcpServerName,
   command: 'rpk',
@@ -61,7 +68,7 @@ export const createMCPConfig = ({
     'cloud',
     'mcp',
     'proxy',
-    '--cluster-id',
+    isServerless ? '--serverless-cluster-id' : '--cluster-id',
     clusterId,
     '--mcp-server-id',
     mcpServerId,
