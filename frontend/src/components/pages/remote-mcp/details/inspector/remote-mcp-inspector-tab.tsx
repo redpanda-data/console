@@ -18,13 +18,26 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Heading, InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { Clock, Play } from 'lucide-react';
-import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
 import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import { RemoteMCPInspectorParameters } from './remote-mcp-inspector-parameters';
+
+const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
+  // Convert to lowercase for case-insensitive matching
+  const lowerName = toolName.toLowerCase();
+  
+  // Check for cache patterns
+  if (lowerName.includes('cache') || lowerName.includes('memory') || lowerName.includes('storage') || 
+      lowerName.includes('store') || lowerName.includes('persist')) {
+    return MCPServer_Tool_ComponentType.CACHE;
+  }
+  // Default to unspecified if no patterns match
+  return MCPServer_Tool_ComponentType.UNSPECIFIED;
+};
 
 export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
@@ -167,11 +180,12 @@ export const RemoteMCPInspectorTab = () => {
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          {mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType && (
-                            <RemoteMCPToolTypeBadge
-                              componentType={mcpServerData.mcpServer.tools[tool.name].componentType}
-                            />
-                          )}
+                          <RemoteMCPToolTypeBadge
+                            componentType={
+                              mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
+                              getComponentTypeFromToolName(tool.name)
+                            }
+                          />
                           <Heading level={4} className="text-sm">
                             {tool.name}
                           </Heading>
