@@ -1,3 +1,4 @@
+label: redpanda_output
 redpanda:
   seed_brokers: ["${REDPANDA_BROKERS}"]
   topic: "${! this.topic_name.string().catch(\"default-topic\") }"
