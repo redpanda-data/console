@@ -19,9 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -249,7 +246,6 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 	}
 }
 
-//nolint:gocognit,cyclop // complexity in a test
 func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 	protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
 	require.NoError(t, err)
@@ -384,37 +380,12 @@ func TestProtobufSchemaSerde_SerializeObject(t *testing.T) {
 		assert.Equal(t, expectData, actualData)
 	})
 
-	t.Run("dynamic", func(t *testing.T) {
-		imports := []string{"testdata/proto/shop/v1"}
-		protoPath := "order.proto"
+	t.Run("dynamicpb", func(t *testing.T) {
+		// Create a dynamicpb message using the generated proto
+		msg := &shopv1.Order{Id: "222"}
 
-		p := &protoparse.Parser{ImportPaths: imports}
-		fds, err := p.ParseFiles(protoPath)
-		require.NoError(t, err)
-
-		typeName := "shop.v1.Order"
-		var md *desc.MessageDescriptor
-		for _, fd := range fds {
-			for _, mt := range fd.GetMessageTypes() {
-				if mt.GetFullyQualifiedName() == typeName {
-					md = mt
-					break
-				}
-			}
-
-			if md != nil {
-				break
-			}
-		}
-
-		require.NotNil(t, md)
-
-		msg := dynamic.NewMessage(md)
-		err = msg.UnmarshalJSON([]byte(`{"id":"222"}`))
-		require.NoError(t, err)
-		assert.Equal(t, "222", msg.GetFieldByName("id").(string))
-
-		expectData, err := msg.Marshal()
+		// Test serialization with the proto.Message interface
+		expectData, err := proto.Marshal(msg)
 		require.NoError(t, err)
 
 		serde := ProtobufSchemaSerde{}

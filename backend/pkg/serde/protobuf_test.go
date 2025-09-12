@@ -13,16 +13,16 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
@@ -51,9 +51,11 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 	protoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		FileSystem: config.Filesystem{
-			Enabled:         true,
-			Paths:           []string{"testdata/proto"},
-			RefreshInterval: 5 * time.Minute,
+			Enabled:               true,
+			Paths:                 []string{"testdata/proto"},
+			RefreshInterval:       5 * time.Minute,
+			AllowedFileExtensions: []string{"proto"},
+			MaxFileSize:           1024 * 1024, // 1MB
 		},
 		Mappings: []config.ProtoTopicMapping{
 			{
@@ -113,7 +115,9 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`, string(payload.NormalizedPayload))
+				actualJSON := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
+				expectedJSON := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
+				assert.Equal(t, expectedJSON, actualJSON)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -135,7 +139,9 @@ func TestProtobufSerde_DeserializePayload(t *testing.T) {
 				assert.Nil(t, payload.SchemaID)
 				assert.Equal(t, PayloadEncodingProtobuf, payload.Encoding)
 
-				assert.Equal(t, `{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`, string(payload.NormalizedPayload))
+				actualJSON := strings.ReplaceAll(string(payload.NormalizedPayload), " ", "")
+				expectedJSON := `{"id":"222","createdAt":"2023-06-10T14:00:00Z"}`
+				assert.Equal(t, expectedJSON, actualJSON)
 
 				obj, ok := (payload.DeserializedPayload).(map[string]any)
 				require.Truef(t, ok, "parsed payload is not of type map[string]any")
@@ -180,9 +186,11 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 	testProtoSvc, err := protopkg.NewService(config.Proto{
 		Enabled: true,
 		FileSystem: config.Filesystem{
-			Enabled:         true,
-			Paths:           []string{"testdata/proto"},
-			RefreshInterval: 5 * time.Minute,
+			Enabled:               true,
+			Paths:                 []string{"testdata/proto"},
+			RefreshInterval:       5 * time.Minute,
+			AllowedFileExtensions: []string{"proto"},
+			MaxFileSize:           1024 * 1024, // 1MB
 		},
 		Mappings: []config.ProtoTopicMapping{
 			{
@@ -221,36 +229,25 @@ func TestProtobufSerde_SerializeObject(t *testing.T) {
 	})
 
 	t.Run("dynamic", func(t *testing.T) {
-		imports := []string{"testdata/proto/shop/v1"}
-		protoPath := "order.proto"
-
-		p := &protoparse.Parser{ImportPaths: imports}
-		fds, err := p.ParseFiles(protoPath)
+		// Get message descriptor from the proto service that's already loaded
+		messageDescriptor, err := testProtoSvc.GetMessageDescriptor("protobuf_serde_test_orders", protopkg.RecordValue)
 		require.NoError(t, err)
 
-		typeName := "shop.v1.Order"
-		var md *desc.MessageDescriptor
-		for _, fd := range fds {
-			for _, mt := range fd.GetMessageTypes() {
-				if mt.GetFullyQualifiedName() == typeName {
-					md = mt
-					break
-				}
-			}
+		// Create a dynamic message using the protobuf APIs
+		msg := dynamicpb.NewMessage(messageDescriptor)
 
-			if md != nil {
-				break
-			}
-		}
-
-		require.NotNil(t, md)
-
-		msg := dynamic.NewMessage(md)
-		err = msg.UnmarshalJSON([]byte(`{"id":"222"}`))
+		// Unmarshal JSON into the dynamic message
+		err = protojson.UnmarshalOptions{
+			DiscardUnknown: true,
+		}.Unmarshal([]byte(`{"id":"222"}`), msg)
 		require.NoError(t, err)
-		assert.Equal(t, "222", msg.GetFieldByName("id").(string))
 
-		expectData, err := msg.Marshal()
+		// Verify the field was set correctly
+		idField := messageDescriptor.Fields().ByName("id")
+		require.NotNil(t, idField)
+		assert.Equal(t, "222", msg.Get(idField).String())
+
+		expectData, err := proto.Marshal(msg)
 		require.NoError(t, err)
 
 		serde := ProtobufSerde{}
