@@ -1,3 +1,4 @@
+label: redpanda_cache
 redpanda:
   seed_brokers: ["${REDPANDA_BROKERS}"]
   topic: "mcp-cache-topic"

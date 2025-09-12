@@ -42,6 +42,7 @@ export interface Tool {
   componentType?: MCPServer_Tool_ComponentType;
   configYaml: string;
   validationError?: string;
+  selectedTemplate?: string;
 }
 
 const { Stepper } = defineStepper(

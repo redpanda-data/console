@@ -22,8 +22,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'components/redpanda-ui/components/alert-dialog';
+import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';
 
 export interface DeleteAlertDialogProps {
@@ -32,7 +34,7 @@ export interface DeleteAlertDialogProps {
   resourceType: string;
   onDelete: (id: string) => void;
   onOpenChange?: (open: boolean) => void;
-  children: React.ReactNode;
+  isDeleting?: boolean;
 }
 
 export const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
@@ -41,7 +43,7 @@ export const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
   resourceType,
   onDelete,
   onOpenChange,
-  children,
+  isDeleting,
 }) => {
   const [confirmationText, setConfirmationText] = React.useState('');
   const isDeleteConfirmed = confirmationText.toLowerCase() === 'delete';
@@ -55,7 +57,19 @@ export const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
 
   return (
     <AlertDialog onOpenChange={onOpenChange}>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogTrigger asChild>
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600">
+          {isDeleting ? (
+            <div className="flex items-center gap-4">
+              <Loader2 className="h-4 w-4 animate-spin" /> Deleting
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Trash2 className="h-4 w-4" /> Delete
+            </div>
+          )}
+        </DropdownMenuItem>
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
