@@ -139,7 +139,10 @@ export const useUpdateMCPServerMutation = () => {
   });
 };
 
-export const useDeleteMCPServerMutation = () => {
+export const useDeleteMCPServerMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: ConnectError) => void;
+}) => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteMCPServer, {
@@ -158,13 +161,10 @@ export const useDeleteMCPServerMutation = () => {
         }),
         exact: false,
       });
+      options?.onSuccess?.();
     },
     onError: (error) => {
-      return formatToastErrorMessageGRPC({
-        error,
-        action: 'delete',
-        entity: 'MCP server',
-      });
+      options?.onError?.(error);
     },
   });
 };

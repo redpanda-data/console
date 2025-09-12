@@ -56,6 +56,7 @@ import {
   useStopMCPServerMutation,
 } from 'react-query/api/remote-mcp';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { uiState } from 'state/uiState';
 import { DeleteAlertDialog } from '../delete-alert-dialog';
 
@@ -196,7 +197,11 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
-      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation();
+      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation({
+        onSuccess: () => {
+          toast.success(`MCP server ${row?.original?.name} deleted`);
+        },
+      });
       const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
       const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
 
