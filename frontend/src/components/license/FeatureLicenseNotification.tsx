@@ -11,6 +11,7 @@ import {
   coreHasEnterpriseFeatures,
   ENTERPRISE_FEATURES_DOCS_LINK,
   getEnterpriseCTALink,
+  getLatestExpiringLicense,
   getMillisecondsToExpiration,
   getPrettyExpirationDate,
   getPrettyTimeToExpiration,
@@ -179,11 +180,7 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
       .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
 
     // Choose the license with the latest expiration time
-    const license = licenses.reduce((latest, current) => {
-      const latestExpiration = Number(latest.expiresAt);
-      const currentExpiration = Number(current.expiresAt);
-      return currentExpiration > latestExpiration ? current : latest;
-    });
+    const license = getLatestExpiringLicense(licenses);
 
     // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
     // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,

@@ -65,11 +65,11 @@ const TIME_UNITS = [
 
 // Helper functions to get labels from unit values
 const getSizeUnitLabel = (unitValue: number): string => {
-  return SIZE_UNITS.find((unit) => unit.value === unitValue)?.label || "";
+  return SIZE_UNITS.find((unit) => unit.value === unitValue)?.label || '';
 };
 
 const getTimeUnitLabel = (unitValue: number): string => {
-  return TIME_UNITS.find((unit) => unit.value === unitValue)?.label || "";
+  return TIME_UNITS.find((unit) => unit.value === unitValue)?.label || '';
 };
 
 const Header = () => (

@@ -17,7 +17,7 @@ import {
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { loader, type Monaco } from '@monaco-editor/react';
-import { getAgentSidebarItemTitle } from 'components/pages/agents/agent-list-page';
+import { getSidebarItemTitleWithBetaBadge } from 'components/sidebar-utils';
 import memoizeOne from 'memoize-one';
 import { autorun, configure, observable, when } from 'mobx';
 // biome-ignore lint/performance/noNamespaceImport: part of monaco editor
@@ -275,11 +275,11 @@ const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions
 export const embeddedAvailableRoutesObservable = observable({
   get routes() {
     return APP_ROUTES.map((route) => {
-      if (route.path === '/agents' || route.path === '/knowledgebases') {
+      if (route.path === '/knowledgebases' || route.path === '/remote-mcp') {
         return {
           ...route,
           // Needed because we cannot use JSX in this file
-          title: getAgentSidebarItemTitle({ route }),
+          title: getSidebarItemTitleWithBetaBadge({ route }), // This will automatically add the beta badge
         };
       }
       return route;

@@ -32,7 +32,7 @@ import { StagewiseToolbar, type ToolbarConfig } from '@stagewise/toolbar-react';
 import { ReactPlugin } from '@stagewise-plugins/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { CustomFeatureFlagProvider, useBooleanFlagValue } from 'custom-feature-flag-provider';
+import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
@@ -57,12 +57,7 @@ import { builderCustomComponents } from 'components/builder-io/builderCustomComp
 import AnnouncementBar from 'components/builder-io/AnnouncementBar';
 
 const AppSidebar = observer(() => {
-  const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
-
-  const APP_ROUTES_WITHOUT_AI_AGENTS = APP_ROUTES.filter((route) => !route.path.startsWith('/agents'));
-  const FINAL_APP_ROUTES = isAiAgentsEnabled ? APP_ROUTES : APP_ROUTES_WITHOUT_AI_AGENTS;
-
-  const sidebarItems = createVisibleSidebarItems(FINAL_APP_ROUTES);
+  const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
 
   return (
     <Sidebar items={sidebarItems} isCollapsed={!uiSettings.sideBarOpen}>
