@@ -38,7 +38,7 @@
     "@autoform/zod": "^5.0.0",
     "@bufbuild/protobuf": "^2.5.2",
     "@bufbuild/protoc-gen-es": "^2.5.2",
-    "@builder.io/react": "^8.2.7",
+    "@builder.io/sdk-react": "^4.2.4",
     "@chakra-ui/icons": "^2.1",
     "@chakra-ui/object-utils": "^2.1",
     "@chakra-ui/popper": "^2.1",

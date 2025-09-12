@@ -84,7 +84,7 @@ const App = () => {
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
-      <Content apiKey={BUILDER_API_KEY} customComponents={builderCustomComponents} />
+      <Content apiKey={BUILDER_API_KEY} customComponents={builderCustomComponents} content={null} model={''} />
       <BrowserRouter basename={getBasePath()}>
         <HistorySetter />
         <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
