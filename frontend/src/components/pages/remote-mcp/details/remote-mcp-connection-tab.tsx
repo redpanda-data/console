@@ -12,11 +12,9 @@
 import { Markdown } from '@redpanda-data/ui';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { CodeTabs } from 'components/redpanda-ui/components/code-tabs';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { config } from 'config';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
@@ -25,6 +23,7 @@ import GoLogo from '../../../../assets/go.svg';
 import JavaLogo from '../../../../assets/java.svg';
 import NodeLogo from '../../../../assets/node.svg';
 import PythonLogo from '../../../../assets/python.svg';
+import { RemoteMCPConnectClientGuide } from '../connect-client-guide/remote-mcp-connect-client-guide';
 
 const AVAILABLE_LANGUAGES = ['python', 'javascript', 'java', 'go'];
 
@@ -43,35 +42,6 @@ const getLanguageIcon = (language: string) => {
   }
 };
 
-const getRpkCloudEnvironment = () => {
-  if (window.location.hostname.includes('main')) {
-    return 'integration';
-  }
-  if (window.location.hostname.includes('preprod')) {
-    return 'preprod';
-  }
-  if (window.location.hostname.includes('cloud.redpanda.com')) {
-    return 'production';
-  }
-
-  return 'integration';
-};
-
-const getRpkCommand = ({
-  clusterId,
-  mcpServerId,
-  clientType,
-}: {
-  clusterId?: string;
-  mcpServerId?: string;
-  clientType?: string;
-}) => {
-  return `rpk -X cloud_environment=${getRpkCloudEnvironment()} cloud mcp proxy \\
---cluster-id ${clusterId || 'YOUR_CLUSTER_ID'} \\
---mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'} \\
---install --client ${clientType || 'YOUR_CLIENT_TYPE'}`;
-};
-
 export const RemoteMCPConnectionTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
@@ -80,15 +50,6 @@ export const RemoteMCPConnectionTab = () => {
   const { data: codeSnippetData, isLoading: isLoadingMCPCodeSnippet } = useGetMCPCodeSnippetQuery({
     language: selectedLanguage,
   });
-
-  const getClientRpkCommands = () => {
-    return {
-      'Claude Desktop': `# Add to your Claude Desktop configuration
-${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpServer?.id, clientType: 'claude' })}`,
-      'Claude Code': `# Run this command in your terminal
-${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpServer?.id, clientType: 'claude-code' })}`,
-    };
-  };
 
   if (!mcpServerData?.mcpServer) return null;
 
@@ -104,7 +65,7 @@ ${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpS
             Events (SSE). The client will automatically select the preferred transport method.
           </Text>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Label className="text-sm font-medium">Server URL</Label>
           <div className="w-full">
             <DynamicCodeBlock lang="text" code={mcpServerData?.mcpServer?.url || ''} />
@@ -125,12 +86,7 @@ ${getRpkCommand({ clusterId: config?.clusterId, mcpServerId: mcpServerData?.mcpS
             </div>
           </div>
 
-          <div className="pt-6">
-            <Label className="text-sm font-medium">RPK Commands by Client</Label>
-            <div className="w-full mt-2">
-              <CodeTabs lang="bash" codes={getClientRpkCommands()} />
-            </div>
-          </div>
+          <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
 
           <div className="pt-10">
             <Heading level={4} className="mb-4">
