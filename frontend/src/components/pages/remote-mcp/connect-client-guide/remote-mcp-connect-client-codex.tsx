@@ -23,10 +23,11 @@ export const RemoteMCPConnectClientCodex = ({ mcpServer }: RemoteMCPConnectClien
 
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   const codexConfigToml = `[mcp_servers.${mcpServerName}]
 command = "rpk"
-args = ["-X", "cloud_environment=${getRpkCloudEnvironment()}", "cloud", "mcp", "proxy", "--cluster-id", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`;
+args = ["-X", "cloud_environment=${getRpkCloudEnvironment()}", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`;
 
   return (
     <div className="space-y-4">

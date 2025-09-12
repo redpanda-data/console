@@ -27,7 +27,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   padding: {
     top: 8,
   },
-  showFoldingControls: 'always',
+  showFoldingControls: 'never',
   glyphMargin: false,
   scrollBeyondLastLine: false,
   cursorBlinking: 'phase',
@@ -47,9 +47,12 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
     comments: true,
     strings: true,
   },
+  stickyScroll: {
+    enabled: false,
+  },
 } as const;
 
-const monacoYamlOptions = {
+const monacoYamlOptions: MonacoYamlOptions = {
   enableSchemaRequest: false,
   format: true,
   completion: true,

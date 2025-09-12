@@ -29,6 +29,7 @@ export const RemoteMCPConnectClientVSCode = ({ mcpServer }: RemoteMCPConnectClie
     mcpServerName,
     clusterId,
     mcpServerId,
+    isServerless: config.isServerless,
   });
 
   const vscodeCommand = `code --add-mcp '${JSON.stringify(vscodeConfig)}'`;
@@ -38,6 +39,7 @@ export const RemoteMCPConnectClientVSCode = ({ mcpServer }: RemoteMCPConnectClie
     window.open(vscodeLink, '_blank');
   };
 
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
   const vscodeConfigJson = `{
   "mcp": {
     "servers": {
@@ -49,7 +51,7 @@ export const RemoteMCPConnectClientVSCode = ({ mcpServer }: RemoteMCPConnectClie
           "cloud",
           "mcp",
           "proxy",
-          "--cluster-id",
+          "${clusterFlag}",
           "${clusterId}",
           "--mcp-server-id",
           "${mcpServerId}"

@@ -7,24 +7,47 @@ interface RemoteMCPComponentTypeDescriptionProps {
   className?: string;
 }
 
+const getComponentTypeDescription = (componentType: MCPServer_Tool_ComponentType) => {
+  switch (componentType) {
+    case MCPServer_Tool_ComponentType.PROCESSOR:
+      return 'Processor is a function that transforms, filters, or manipulates messages as they pass through the pipeline.';
+    case MCPServer_Tool_ComponentType.CACHE:
+      return 'Cache is a key/value store used for data deduplication, joins, and temporary storage.';
+    case MCPServer_Tool_ComponentType.INPUT:
+      return 'Input is the source of data piped through an array of optional processors.';
+    case MCPServer_Tool_ComponentType.OUTPUT:
+      return 'Output is a sink where you may wish to send consumed data after applying optional processors.';
+    default:
+      return 'Unspecified';
+  }
+};
+
+const getComponentTypeDocumentationUrl = (componentType: MCPServer_Tool_ComponentType) => {
+  const url = 'https://docs.redpanda.com/redpanda-connect/components/';
+  switch (componentType) {
+    case MCPServer_Tool_ComponentType.PROCESSOR:
+      return `${url}/processors/about/`;
+    case MCPServer_Tool_ComponentType.CACHE:
+      return `${url}/caches/about/`;
+    case MCPServer_Tool_ComponentType.INPUT:
+      return `${url}/inputs/about/`;
+    case MCPServer_Tool_ComponentType.OUTPUT:
+      return `${url}/outputs/about/`;
+    default:
+      return '';
+  }
+};
+
 export const RemoteMCPComponentTypeDescription = ({
   componentType,
   className = 'text-muted-foreground',
 }: RemoteMCPComponentTypeDescriptionProps) => {
   return (
     <Text variant="small" className={className}>
-      {componentType === MCPServer_Tool_ComponentType.PROCESSOR
-        ? 'Functions that transform, filter, or manipulate messages as they pass through the pipeline.'
-        : componentType === MCPServer_Tool_ComponentType.CACHE
-          ? 'Key/value stores used for data deduplication, joins, and temporary storage.'
-          : 'Choose the type of component this tool will use.'}{' '}
+      {getComponentTypeDescription(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}{' '}
       {componentType !== undefined && (
         <a
-          href={
-            componentType === MCPServer_Tool_ComponentType.PROCESSOR
-              ? 'https://docs.redpanda.com/redpanda-connect/components/processors/about/'
-              : 'https://docs.redpanda.com/redpanda-connect/components/caches/about/'
-          }
+          href={getComponentTypeDocumentationUrl(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"

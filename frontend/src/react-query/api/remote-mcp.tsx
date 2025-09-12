@@ -139,7 +139,10 @@ export const useUpdateMCPServerMutation = () => {
   });
 };
 
-export const useDeleteMCPServerMutation = () => {
+export const useDeleteMCPServerMutation = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: ConnectError) => void;
+}) => {
   const queryClient = useQueryClient();
 
   return useMutation(deleteMCPServer, {
@@ -158,13 +161,10 @@ export const useDeleteMCPServerMutation = () => {
         }),
         exact: false,
       });
+      options?.onSuccess?.();
     },
     onError: (error) => {
-      return formatToastErrorMessageGRPC({
-        error,
-        action: 'delete',
-        entity: 'MCP server',
-      });
+      options?.onError?.(error);
     },
   });
 };
@@ -362,9 +362,24 @@ export interface UseListMCPServerToolsParams {
 }
 
 export const useListMCPServerTools = ({ mcpServer }: UseListMCPServerToolsParams) => {
+  const queryClient = useQueryClient();
+
   return useTanstackQuery({
     queryKey: ['mcp-server-tools', mcpServer?.url],
-    queryFn: () => listMCPServerTools(mcpServer?.url || ''),
+    queryFn: async () => {
+      // Refetch getMCPServer data before listing tools
+      if (mcpServer?.id) {
+        await queryClient.refetchQueries({
+          queryKey: createConnectQueryKey({
+            schema: MCPServerService.method.getMCPServer,
+            input: create(GetMCPServerRequestSchema, { id: mcpServer.id }),
+            cardinality: 'finite',
+          }),
+        });
+      }
+
+      return listMCPServerTools(mcpServer?.url || '');
+    },
     enabled: !!mcpServer?.url && mcpServer?.state === MCPServer_State.RUNNING,
   });
 };

@@ -1,3 +1,4 @@
+label: memory_cache
 memory:
   default_ttl: "5m"
   init_values:

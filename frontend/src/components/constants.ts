@@ -11,4 +11,5 @@ export const FEATURE_FLAGS = {
   enableKnowledgeBaseInConsoleUi: false,
   enableRemoteMcpInConsole: false,
   enableRemoteMcpInspectorInConsole: false,
+  enableRemoteMcpConnectClientInConsoleServerless: false,
 };

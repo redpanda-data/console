@@ -44,7 +44,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { MCPServer_State } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
@@ -56,6 +56,7 @@ import {
   useStopMCPServerMutation,
 } from 'react-query/api/remote-mcp';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { uiState } from 'state/uiState';
 import { DeleteAlertDialog } from '../delete-alert-dialog';
 
@@ -196,7 +197,11 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     id: 'actions',
     enableHiding: false,
     cell: ({ row }) => {
-      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation();
+      const { mutate: deleteMCPServer, isPending: isDeleting } = useDeleteMCPServerMutation({
+        onSuccess: () => {
+          toast.success(`MCP server ${row?.original?.name} deleted`);
+        },
+      });
       const { mutate: startMCPServer, isPending: isStarting } = useStartMCPServerMutation();
       const { mutate: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
 
@@ -272,17 +277,8 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                 resourceType="Remote MCP Server"
                 onDelete={handleDelete}
                 onOpenChange={setIsDeleteDialogOpen}
-              >
-                {isDeleting ? (
-                  <div className="flex items-center gap-4">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Deleting
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </div>
-                )}
-              </DeleteAlertDialog>
+                isDeleting={isDeleting}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

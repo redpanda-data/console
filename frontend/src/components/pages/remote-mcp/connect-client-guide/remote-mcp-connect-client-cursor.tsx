@@ -29,6 +29,7 @@ export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClie
     mcpServerName,
     clusterId,
     mcpServerId,
+    isServerless: config.isServerless,
   });
 
   const cursorCommand = `cursor --add-mcp '${JSON.stringify(cursorConfig)}'`;
@@ -38,6 +39,7 @@ export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClie
     window.open(cursorLink, '_blank');
   };
 
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
   const cursorConfigJson = `{
   "mcp": {
     "servers": {
@@ -49,7 +51,7 @@ export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClie
           "cloud",
           "mcp",
           "proxy",
-          "--cluster-id",
+          "${clusterFlag}",
           "${clusterId}",
           "--mcp-server-id",
           "${mcpServerId}"

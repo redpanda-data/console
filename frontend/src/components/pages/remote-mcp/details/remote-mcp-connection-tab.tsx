@@ -15,6 +15,7 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
@@ -86,7 +87,9 @@ export const RemoteMCPConnectionTab = () => {
             </div>
           </div>
 
-          <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
+          {(!isServerless() || isFeatureFlagEnabled('enableRemoteMcpConnectClientInConsoleServerless')) && (
+            <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
+          )}
 
           <div className="pt-10">
             <Heading level={4} className="mb-4">
@@ -114,7 +117,7 @@ export const RemoteMCPConnectionTab = () => {
                           <div className="text-muted-foreground">Loading code snippet...</div>
                         </div>
                       ) : (
-                        <Markdown>
+                        <Markdown showLineNumbers>
                           {selectedLanguage === language && codeSnippetData
                             ? codeSnippetData.replaceAll(
                                 '<mcp-server-url>',

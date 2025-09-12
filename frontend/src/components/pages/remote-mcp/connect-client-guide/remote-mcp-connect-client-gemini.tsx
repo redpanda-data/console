@@ -35,11 +35,12 @@ export const RemoteMCPConnectClientGemini = ({ mcpServer }: RemoteMCPConnectClie
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = mcpServer?.displayName ?? '';
+  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   const geminiCommand = `gemini mcp add ${mcpServerName} \\
 --scope ${selectedScope} \\
 --transport stdio rpk \\
---args "-X" "cloud_environment=${getRpkCloudEnvironment()}" "cloud" "mcp" "proxy" "--cluster-id" "${clusterId}" "--mcp-server-id" "${mcpServerId}"`;
+--args "-X" "cloud_environment=${getRpkCloudEnvironment()}" "cloud" "mcp" "proxy" "${clusterFlag}" "${clusterId}" "--mcp-server-id" "${mcpServerId}"`;
 
   const geminiConfigJson = `{
   "mcpServers": {
@@ -51,7 +52,7 @@ export const RemoteMCPConnectClientGemini = ({ mcpServer }: RemoteMCPConnectClie
         "cloud",
         "mcp",
         "proxy",
-        "--cluster-id",
+        "${clusterFlag}",
         "${clusterId}",
         "--mcp-server-id",
         "${mcpServerId}"
