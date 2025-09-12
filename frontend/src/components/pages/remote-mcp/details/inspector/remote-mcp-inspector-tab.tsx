@@ -30,14 +30,10 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
   // Convert to lowercase for case-insensitive matching
   const lowerName = toolName.toLowerCase();
 
+  const cachePatterns = ['cache', 'memory', 'storage', 'store', 'persist'];
+
   // Check for cache patterns
-  if (
-    lowerName.includes('cache') ||
-    lowerName.includes('memory') ||
-    lowerName.includes('storage') ||
-    lowerName.includes('store') ||
-    lowerName.includes('persist')
-  ) {
+  if (cachePatterns.some((pattern) => lowerName.includes(pattern))) {
     return MCPServer_Tool_ComponentType.CACHE;
   }
   // Default to unspecified if no patterns match
