@@ -29,10 +29,15 @@ import { RemoteMCPInspectorParameters } from './remote-mcp-inspector-parameters'
 const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
   // Convert to lowercase for case-insensitive matching
   const lowerName = toolName.toLowerCase();
-  
+
   // Check for cache patterns
-  if (lowerName.includes('cache') || lowerName.includes('memory') || lowerName.includes('storage') || 
-      lowerName.includes('store') || lowerName.includes('persist')) {
+  if (
+    lowerName.includes('cache') ||
+    lowerName.includes('memory') ||
+    lowerName.includes('storage') ||
+    lowerName.includes('store') ||
+    lowerName.includes('persist')
+  ) {
     return MCPServer_Tool_ComponentType.CACHE;
   }
   // Default to unspecified if no patterns match

@@ -377,7 +377,7 @@ export const useListMCPServerTools = ({ mcpServer }: UseListMCPServerToolsParams
           }),
         });
       }
-      
+
       return listMCPServerTools(mcpServer?.url || '');
     },
     enabled: !!mcpServer?.url && mcpServer?.state === MCPServer_State.RUNNING,
