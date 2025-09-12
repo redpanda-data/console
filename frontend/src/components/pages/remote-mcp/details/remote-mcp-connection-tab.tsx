@@ -114,7 +114,7 @@ export const RemoteMCPConnectionTab = () => {
                           <div className="text-muted-foreground">Loading code snippet...</div>
                         </div>
                       ) : (
-                        <Markdown>
+                        <Markdown showLineNumbers>
                           {selectedLanguage === language && codeSnippetData
                             ? codeSnippetData.replaceAll(
                                 '<mcp-server-url>',
