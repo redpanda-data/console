@@ -47,19 +47,36 @@ export default function NurturePanel() {
 
   if (isLoading) {
     return (
-      <Box>
-        <Skeleton height={4} width="80%" mb={1} />
-        <Skeleton height={3} width="32%" mb={4} />
+      <>
+        <Box display="flex" alignItems="flex-start">
+          {/* Left thumbnail placeholder */}
+          <Skeleton height="80px" width="120px" borderRadius="md" mr={4} />
 
-        <Skeleton height={4} width="70%" mb={1} />
-        <Skeleton height={3} width="28%" mb={4} />
+          {/* Right content */}
+          <Box flex="1">
+            {/* Heading */}
+            <Skeleton height={4} width="60%" mb={2} />
 
-        <Skeleton height={4} width="90%" mb={1} />
-        <Skeleton height={3} width="60%" />
-        <Skeleton height={3} width="40%" mb={4} />
+            {/* Paragraph */}
+            <Skeleton height={3} width="90%" mb={1} />
+            <Skeleton height={3} width="75%" />
+          </Box>
+        </Box>
+        <Box display="flex" alignItems="flex-start">
+          {/* Left thumbnail placeholder */}
+          <Skeleton height="80px" width="120px" borderRadius="md" mr={4} />
 
-        <Box borderBottom="1px" borderColor="gray.200" mt={2} />
-      </Box>
+          {/* Right content */}
+          <Box flex="1">
+            {/* Heading */}
+            <Skeleton height={4} width="60%" mb={2} />
+
+            {/* Paragraph */}
+            <Skeleton height={3} width="90%" mb={1} />
+            <Skeleton height={3} width="75%" />
+          </Box>
+        </Box>
+      </>
     );
   }
 
