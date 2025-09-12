@@ -8,8 +8,8 @@ redpanda:
   # Create Redpanda SASL credentials + store in secret store
   sasl:
     - mechanism: "SCRAM-SHA-256"
-      username: "${secrets.MCP_REDPANDA_CREDENTIALS}"
-      password: "${secrets.MCP_REDPANDA_CREDENTIALS}"
+      username: "${secrets.REDPANDA_USERNAME}"
+      password: "${secrets.REDPANDA_PASSWORD}"
 
 meta:
   mcp:
