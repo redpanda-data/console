@@ -37,14 +37,8 @@ import { useParams } from 'react-router-dom';
 import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from 'utils/resource-tiers';
 import { parse, stringify } from 'yaml';
 import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
+import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
-
-import httpProcessorTemplate from '../templates/processor/http.yaml';
-import bigqueryProcessorTemplate from '../templates/processor/gcp_bigquery_select.yaml';
-import memoryCacheTemplate from '../templates/cache/memory.yaml';
-import redpandaCacheTemplate from '../templates/cache/redpanda.yaml';
-import generateInputTemplate from '../templates/input/generate.yaml';
-import redpandaOutputTemplate from '../templates/output/redpanda.yaml';
 
 interface LocalTool {
   id: string;
@@ -52,13 +46,6 @@ interface LocalTool {
   componentType: MCPServer_Tool_ComponentType;
   config: string;
   selectedTemplate?: string;
-}
-
-interface Template {
-  name: string;
-  componentType: MCPServer_Tool_ComponentType;
-  yaml: Record<string, any>;
-  description: string;
 }
 
 interface LocalMCPServer {
@@ -74,45 +61,6 @@ interface LocalMCPServer {
   status: string;
   url: string;
 }
-
-const templates: Template[] = [
-  {
-    name: 'HTTP Request',
-    componentType: MCPServer_Tool_ComponentType.PROCESSOR,
-    yaml: httpProcessorTemplate,
-    description: 'Fetch data from HTTP endpoints',
-  },
-  {
-    name: 'BigQuery Select',
-    componentType: MCPServer_Tool_ComponentType.PROCESSOR,
-    yaml: bigqueryProcessorTemplate,
-    description: 'Query data from Google BigQuery',
-  },
-  {
-    name: 'Memory Cache',
-    componentType: MCPServer_Tool_ComponentType.CACHE,
-    yaml: memoryCacheTemplate,
-    description: 'In-memory cache for fast data access',
-  },
-  {
-    name: 'Redpanda Cache',
-    componentType: MCPServer_Tool_ComponentType.CACHE,
-    yaml: redpandaCacheTemplate,
-    description: 'Redpanda-based cache',
-  },
-  {
-    name: 'Generate Input',
-    componentType: MCPServer_Tool_ComponentType.INPUT,
-    yaml: generateInputTemplate,
-    description: 'Generate synthetic data',
-  },
-  {
-    name: 'Redpanda Output',
-    componentType: MCPServer_Tool_ComponentType.OUTPUT,
-    yaml: redpandaOutputTemplate,
-    description: 'Send data to Redpanda topics',
-  },
-];
 
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
@@ -137,6 +85,7 @@ export const RemoteMCPConfigurationTab = () => {
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -225,6 +174,7 @@ export const RemoteMCPConfigurationTab = () => {
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -265,6 +215,7 @@ spec:
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -292,6 +243,7 @@ spec:
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -302,22 +254,22 @@ spec:
     const toolIndex = updatedTools.findIndex((tool) => tool.id === toolId);
     if (toolIndex !== -1) {
       const updatedTool = { ...updatedTools[toolIndex], ...updates };
-      
+
       // Clear selected template if user manually edits config YAML
       if (updates.config && updates.config !== updatedTools[toolIndex].config) {
         updatedTool.selectedTemplate = undefined;
-        
+
         // Try to extract label from YAML and update tool name
         try {
           const parsedYaml = parse(updates.config);
-          if (parsedYaml && parsedYaml.label && !updates.name) {
+          if (parsedYaml?.label && !updates.name) {
             updatedTool.name = parsedYaml.label;
           }
-        } catch (error) {
+        } catch (_error) {
           // Ignore YAML parsing errors, keep existing name
         }
       }
-      
+
       updatedTools[toolIndex] = updatedTool;
     }
     setEditedServerData({
@@ -340,6 +292,7 @@ spec:
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -366,6 +319,7 @@ spec:
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -393,6 +347,7 @@ spec:
         name,
         componentType: tool.componentType,
         config: tool.configYaml,
+        selectedTemplate: undefined,
       })),
       state: mcpServerData.mcpServer.state,
       status: mcpServerData.mcpServer.status?.error || '',
@@ -446,6 +401,7 @@ spec:
             name,
             componentType: tool.componentType,
             config: tool.configYaml,
+            selectedTemplate: undefined,
           })),
           state: mcpServerData.mcpServer.state,
           status: mcpServerData.mcpServer.status?.error || '',
@@ -700,10 +656,15 @@ spec:
                           </SelectTrigger>
                           <SelectContent>
                             {Object.values(MCPServer_Tool_ComponentType)
-                              .filter((value) => typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED)
+                              .filter(
+                                (value) =>
+                                  typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED,
+                              )
                               .map((componentType) => (
                                 <SelectItem key={componentType} value={componentType.toString()}>
-                                  <RemoteMCPToolTypeBadge componentType={componentType as MCPServer_Tool_ComponentType} />
+                                  <RemoteMCPToolTypeBadge
+                                    componentType={componentType as MCPServer_Tool_ComponentType}
+                                  />
                                 </SelectItem>
                               ))}
                           </SelectContent>
@@ -713,9 +674,9 @@ spec:
                       <div className="flex-1 space-y-1">
                         <Label className="text-sm font-medium">Template</Label>
                         <Select
-                          value={tool.selectedTemplate || ""}
+                          value={tool.selectedTemplate || ''}
                           onValueChange={(templateName) => {
-                            const template = templates.find(t => t.name === templateName);
+                            const template = templates.find((t) => t.name === templateName);
                             if (template) {
                               applyTemplate(tool.id, template);
                             }
