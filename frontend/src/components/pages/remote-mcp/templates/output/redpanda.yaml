@@ -24,11 +24,3 @@ meta:
         type: string
         description: "The Redpanda topic to publish to"
         required: true
-
-# Send MCP request as batch (array):
-# [
-#   {
-#     "topic_name": "my-topic",
-#     "message": "hello world!"
-#   }
-# ]

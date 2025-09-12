@@ -114,7 +114,23 @@ export const RemoteMCPConfigurationTab = () => {
   const handleSave = async () => {
     if (!mcpServerData?.mcpServer || !id) return;
 
-    const currentData = editedServerData;
+    const currentData = editedServerData || {
+      id: mcpServerData.mcpServer.id,
+      displayName: mcpServerData.mcpServer.displayName,
+      description: mcpServerData.mcpServer.description,
+      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
+      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
+      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+        id: name,
+        name,
+        componentType: tool.componentType,
+        config: tool.configYaml,
+        selectedTemplate: undefined,
+      })),
+      state: mcpServerData.mcpServer.state,
+      status: mcpServerData.mcpServer.status?.error || '',
+      url: mcpServerData.mcpServer.url,
+    };
     if (!currentData) return;
 
     try {
