@@ -64,6 +64,7 @@
     "cmdk": "^1.1.1",
     "dexie": "^4.0.11",
     "dexie-react-hooks": "^1.1.7",
+    "downdoc": "^1.0.2-stable",
     "es-cookie": "^1.5.0",
     "framer-motion": "^7.10.3",
     "hast": "^1.0.0",

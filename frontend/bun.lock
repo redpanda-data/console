@@ -34,6 +34,7 @@
         "cmdk": "^1.1.1",
         "dexie": "^4.0.11",
         "dexie-react-hooks": "^1.1.7",
+        "downdoc": "^1.0.2-stable",
         "es-cookie": "^1.5.0",
         "framer-motion": "^7.10.3",
         "hast": "^1.0.0",
@@ -1357,6 +1358,8 @@
     "dotenv": ["dotenv@8.2.0", "", {}, "sha512-8sJ78ElpbDJBHNeBzUbUVLsqKdccaa/BXF1uPTw3GrvQTBgrQrtObr2mUrE38vzYd8cEv+m/JBfDLioYcfXoaw=="],
 
     "dotenv-expand": ["dotenv-expand@5.1.0", "", {}, "sha512-YXQl1DSa4/PQyRfgrv6aoNjhasp/p4qs9FjJ4q4cQk+8m4r6k4ZSiEyytKG8f8W9gi8WsQtIObNmKd+tMzNTmA=="],
+
+    "downdoc": ["downdoc@1.0.2-stable", "", { "bin": { "downdoc": "bin/downdoc" } }, "sha512-eYTOmnYp3a6ibweDWLO72Y2NxWtw5YVA5rpfS4+vjWh6K1F9bD3TrwxYxfjfudqwBtYeeIYkn7b9UXN22NkZSw=="],
 
     "dunder-proto": ["dunder-proto@1.0.1", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.1", "es-errors": "^1.3.0", "gopd": "^1.2.0" } }, "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A=="],
 

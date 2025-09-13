@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { observer } from 'mobx-react';
 import { ModalContainer } from '../../utils/ModalContainer';
@@ -40,9 +39,6 @@ export const AppContent = observer(() => (
       {/* Currently disabled, read todo comment on UpdatePopup */}
       {/* <UpdatePopup /> */}
       {renderErrorModals()}
-
-      {/* Toaster for notifications */}
-      <Toaster />
     </TooltipProvider>
   </div>
 ));

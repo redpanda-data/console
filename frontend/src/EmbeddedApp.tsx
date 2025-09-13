@@ -32,6 +32,10 @@ import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { ServerlessOnboardingWizard } from 'components/pages/onboarding-wizard/serverless-onboarding-wizard';
+import type { DataType } from 'components/pages/onboarding-wizard/types';
+import type { ConnectionType } from 'components/pages/onboarding-wizard/utils/connect';
+import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
@@ -71,6 +75,10 @@ export interface EmbeddedProps extends SetConfigArguments {
    * LaunchDarkly feature flags to be used in console UI when in embedded mode.
    */
   featureFlags?: Record<string, boolean>;
+  isOnboardingWizardOpen: boolean;
+  onboardingWizardDataType: DataType;
+  onCloseOnboardingWizard?: () => void;
+  additionalOnboardingWizardConnections?: ConnectionType[];
 }
 
 function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
@@ -107,13 +115,21 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
       <BrowserRouter basename={basePath}>
         <HistorySetter />
         <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
-          <TransportProvider transport={transport}>
-            <QueryClientProvider client={queryClient}>
-              <ErrorBoundary>
-                <AppContent />
-              </ErrorBoundary>
-            </QueryClientProvider>
-          </TransportProvider>
+          <TooltipProvider>
+            <TransportProvider transport={transport}>
+              <QueryClientProvider client={queryClient}>
+                <ErrorBoundary>
+                  <AppContent />
+                  <ServerlessOnboardingWizard
+                    isOpen={p.isOnboardingWizardOpen}
+                    dataType={p.onboardingWizardDataType}
+                    onClose={p.onCloseOnboardingWizard}
+                    additionalConnections={p.additionalOnboardingWizardConnections}
+                  />
+                </ErrorBoundary>
+              </QueryClientProvider>
+            </TransportProvider>
+          </TooltipProvider>
         </ChakraProvider>
       </BrowserRouter>
     </CustomFeatureFlagProvider>

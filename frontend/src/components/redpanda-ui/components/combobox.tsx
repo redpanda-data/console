@@ -48,6 +48,13 @@ export function Combobox({
     }
   }, [open]);
 
+  // Sync internal inputValue with external controlledValue
+  useEffect(() => {
+    if (controlledValue !== undefined) {
+      setInputValue(controlledValue);
+    }
+  }, [controlledValue]);
+
   // Find the best matching option for autocomplete
   const bestMatchOption = useMemo(() => {
     if (!inputValue || !autocomplete) return undefined;
