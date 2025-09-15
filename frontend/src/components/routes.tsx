@@ -116,8 +116,11 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
       }
       const isDisabled = !isEnabled;
 
-      // Handle Knowledge Base routes with beta badge
-      const title = entry.path === '/knowledgebases' ? getSidebarItemTitleWithBetaBadge({ route: entry }) : entry.title;
+      // Handle AI Agents and Knowledge Base routes with beta badge
+      const title =
+        entry.path === '/agents' || entry.path === '/knowledgebases' || entry.path === '/remote-mcp'
+          ? getSidebarItemTitleWithBetaBadge({ route: entry })
+          : entry.title;
 
       return {
         title: title as string | JSX.Element,
@@ -525,7 +528,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Remote MCP',
     MCPIcon,
     true,
-    routeVisibility(() => isEmbedded() && !isServerless() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode and only for BYOC/Dedicated with feature flag
+    routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode with feature flag
   ),
   MakeRoute<{}>('/remote-mcp/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),

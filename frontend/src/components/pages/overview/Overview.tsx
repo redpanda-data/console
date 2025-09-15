@@ -41,6 +41,7 @@ import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import NurturePanel from '../../builder-io/NurturePanel';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
@@ -50,7 +51,6 @@ import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotifi
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
 import ClusterHealthOverview from './ClusterHealthOverview';
-import { ResourcesAndUpdates } from './ResourcesAndUpdates';
 
 @observer
 class Overview extends PageComponent {
@@ -218,17 +218,15 @@ class Overview extends PageComponent {
                 />
               </Section>
 
-              <Section>
-                <Flex flexDirection="column">
-                  <Heading as="h3">Resources and updates</Heading>
-                  <div>{api.clusterOverview?.kafka?.distribution && <ResourcesAndUpdates />}</div>
-                  <hr />
-                  <div className="flex flex-row items-center gap-2 text-gray-600 mt-2 font-sm">
-                    <a href="https://docs.redpanda.com/docs/home/">Documentation</a>
-                    <span className="text-gray-300 mx-2">|</span>
-                    <a href="https://docs.redpanda.com/docs/get-started/rpk-install/">CLI tools</a>
-                  </div>
-                </Flex>
+              <Section flexDirection="column">
+                <Heading as="h3">Resources and updates</Heading>
+                {api.clusterOverview?.kafka?.distribution && <NurturePanel />}
+                <hr />
+                <div className="flex flex-row items-center gap-2 text-gray-600 mt-4 font-sm">
+                  <a href="https://docs.redpanda.com/docs/home/">Documentation</a>
+                  <span className="text-gray-300 mx-2">|</span>
+                  <a href="https://docs.redpanda.com/docs/get-started/rpk-install/">CLI tools</a>
+                </div>
               </Section>
             </GridItem>
 

@@ -1,3 +1,4 @@
+label: http_processor
 processors:
 - label: prepare_parameters
   mutation: |

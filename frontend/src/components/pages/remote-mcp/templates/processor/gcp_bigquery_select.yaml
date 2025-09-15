@@ -1,3 +1,4 @@
+label: gcp_bigquery_select_processor
 processors:
   - label: prepare_parameters
     mutation: |
@@ -16,7 +17,6 @@ processors:
         - "total_amount"
         - "status"
       where: customer_id = ? AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-      args_mapping: root = [ @customer_id ]
       suffix: "ORDER BY order_date DESC LIMIT ?"
       args_mapping: root = [ @customer_id, @limit ]
   - label: format_response

@@ -497,8 +497,15 @@ export const useUpdateAclMutation = () => {
       ),
     );
 
-    await Promise.all([...createResults, ...deleteResults]);
+    const allResults = await Promise.allSettled([...createResults, ...deleteResults]);
+    const errs = new Map<number, ConnectError>();
+    const rejected = allResults.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+    rejected.forEach((result) => {
+      const r = result.reason as ConnectError;
+      errs.set(r.code, r);
+    });
     await invalid();
+    return { errors: errs.values().toArray(), created: rejected.length < allResults.length };
   };
 
   return { applyUpdates };
@@ -526,8 +533,15 @@ export const useCreateAcls = () => {
   const { invalid } = useInvalidateAclsList();
 
   const createAcls = async (acls: CreateACLRequest[]) => {
-    await Promise.all(acls.map((r) => createACLMutation(r)));
+    const results = await Promise.allSettled(acls.map((r) => createACLMutation(r)));
+    const errs = new Map<number, ConnectError>();
+    const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+    rejected.forEach((result) => {
+      const r = result.reason as ConnectError;
+      errs.set(r.code, r);
+    });
     await invalid();
+    return { errors: errs.values().toArray(), created: rejected.length < results.length };
   };
   return { createAcls };
 };

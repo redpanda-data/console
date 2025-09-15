@@ -1,3 +1,4 @@
+label: generate_input
 generate:
   mapping: |
     let event_type = ["login", "logout", "purchase", "view_page", "click_button"].index(random_int(max:4))

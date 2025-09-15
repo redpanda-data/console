@@ -11,61 +11,58 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: leave for now */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
-import { AlertCircle, CheckCircle, Clock, Loader2, Play, RefreshCcw } from 'lucide-react';
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { Button } from 'components/redpanda-ui/components/button';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Heading, InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { Clock, Play } from 'lucide-react';
+import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
+import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
-import { MCPServer_State } from '../../../../../protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import {
-  type MCPTool,
-  parseMCPToolsFromConfig,
-  useCallMCPServerToolMutation,
-  useGetMCPServerQuery,
-} from '../../../../../react-query/api/remote-mcp';
-import { Badge } from '../../../../redpanda-ui/components/badge';
-import { Button } from '../../../../redpanda-ui/components/button';
-import { CodeTabs } from '../../../../redpanda-ui/components/code-tabs';
-import { Label } from '../../../../redpanda-ui/components/label';
-import { TabsContent, type TabsContentProps } from '../../../../redpanda-ui/components/tabs';
+import { toast } from 'sonner';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import { RemoteMCPInspectorParameters } from './remote-mcp-inspector-parameters';
 
-const getToolsWithParameters = (tools: Record<string, any> | undefined): MCPTool[] => {
-  if (!tools) return [];
+const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
+  // Convert to lowercase for case-insensitive matching
+  const lowerName = toolName.toLowerCase();
 
-  try {
-    return parseMCPToolsFromConfig(tools);
-  } catch (error) {
-    console.warn('Failed to parse MCP tools:', error);
-    // Fallback: create basic tools from the object keys
-    return Object.entries(tools).map(([toolName, toolConfig]) => ({
-      name: toolName,
-      description: toolConfig?.description || `${toolName} tool`,
-      parameters: [],
-    }));
+  const cachePatterns = ['cache', 'memory', 'storage', 'store', 'persist'];
+
+  // Check for cache patterns
+  if (cachePatterns.some((pattern) => lowerName.includes(pattern))) {
+    return MCPServer_Tool_ComponentType.CACHE;
   }
+  // Default to unspecified if no patterns match
+  return MCPServer_Tool_ComponentType.UNSPECIFIED;
 };
 
-export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
+export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [toolParameters, setToolParameters] = useState<Record<string, unknown>>({});
-  const [toolResponse, setToolResponse] = useState('');
-  const [isExecuting, setIsExecuting] = useState(false);
+
+  const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
+  const {
+    data: serverToolResponse,
+    mutate: callMCPServerTool,
+    isPending: isServerToolPending,
+    error: toolError,
+  } = useCallMCPServerToolMutation();
 
   const {
-    data: mcpServerData,
-    refetch: refetchMCPServer,
-    isRefetching: isRefetchingMCPServer,
-  } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
-  const { mutate: callMCPServerTool } = useCallMCPServerToolMutation();
-
-  const availableTools = getToolsWithParameters(mcpServerData?.mcpServer?.tools);
+    data: mcpServerTools,
+    isLoading: isLoadingTools,
+    error: toolsError,
+  } = useListMCPServerTools({
+    mcpServer: mcpServerData?.mcpServer,
+  });
 
   const executeToolRequest = async () => {
     if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
-
-    setIsExecuting(true);
-    setToolResponse('');
 
     callMCPServerTool(
       {
@@ -74,21 +71,8 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
         parameters: toolParameters,
       },
       {
-        onSuccess: (response) => {
-          setToolResponse(JSON.stringify(response, null, 4));
-          setIsExecuting(false);
-        },
         onError: (error) => {
-          setToolResponse(
-            JSON.stringify(
-              {
-                error: error instanceof Error ? error.message : 'Failed to execute tool request',
-              },
-              null,
-              4,
-            ),
-          );
-          setIsExecuting(false);
+          toast.error(error.message);
         },
       },
     );
@@ -101,120 +85,132 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
     }));
   };
 
-  const getResponseCodes = () => {
-    const rawResponse = toolResponse;
+  const getFormattedToolResponse = () => {
+    if (!serverToolResponse) return null;
 
-    try {
-      const parsed = JSON.parse(toolResponse);
-      if (parsed?.content?.[0]?.text) {
+    // Process content array if it exists and show only the first content item
+    if (
+      serverToolResponse.content &&
+      Array.isArray(serverToolResponse.content) &&
+      serverToolResponse.content.length > 0
+    ) {
+      const firstContentItem = serverToolResponse.content[0];
+      if (firstContentItem.type === 'text' && firstContentItem.text) {
+        // Try to parse text content as JSON for pretty formatting
         try {
-          const formattedContent = JSON.parse(parsed.content[0].text);
-          const formattedResponse = JSON.stringify(formattedContent, null, 2);
-          return {
-            raw: rawResponse,
-            formatted: formattedResponse,
-          };
+          const parsed = JSON.parse(firstContentItem.text);
+          return JSON.stringify(parsed, null, 2);
         } catch {
-          return {
-            raw: rawResponse,
-            formatted: parsed.content[0].text,
-          };
+          // If not JSON, return as plain text
+          return firstContentItem.text;
         }
       }
-      return {
-        raw: rawResponse,
-      };
-    } catch {
-      return {
-        raw: rawResponse,
-      };
     }
+
+    return null;
   };
 
-  const codes = getResponseCodes();
+  const formattedToolResponse = getFormattedToolResponse();
 
   return (
-    <TabsContent {...props} className="space-y-6">
+    <div className="space-y-6">
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-semibold mb-2">MCP Inspector</h3>
-          <p className="text-sm text-muted-foreground mb-4">Test and interact with the deployed MCP server tools</p>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Connection Status</Label>
-            <Button variant="outline" size="sm" onClick={() => refetchMCPServer()}>
-              {isRefetchingMCPServer ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Refreshing
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <RefreshCcw className="h-4 w-4" /> Refresh
-                </div>
-              )}
-            </Button>
-          </div>
-
-          <div className="p-4 border rounded-lg">
-            {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING ? (
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-800">MCP server is running</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-800">MCP server is not running</span>
-              </div>
-            )}
-          </div>
+          <Heading level={3} className="mb-2">
+            MCP Inspector
+          </Heading>
+          <Text variant="small" className="text-muted-foreground mb-4">
+            Test and interact with the deployed MCP server tools
+          </Text>
         </div>
 
-        {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && availableTools.length > 0 && (
+        {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING && (
           <div className="space-y-4">
-            <Label className="text-sm font-medium">Available Tools</Label>
-            <div className="grid gap-3">
-              {availableTools.map((tool) => (
-                <div
-                  key={tool.name}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedTool === tool.name
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                      : 'hover:border-gray-300'
-                  }`}
-                  onClick={() => {
-                    setSelectedTool(tool.name);
-                    setToolParameters({});
-                    setToolResponse('');
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        {mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType && (
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Available Tools</Label>
+              <Badge variant="outline" className="text-xs">
+                <Clock className="h-3 w-3 mr-1 animate-spin" />
+                Server starting...
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-[80px] rounded-lg w-full" />
+              <Skeleton className="h-[80px] rounded-lg w-full" />
+              <Skeleton className="h-[80px] rounded-lg w-full" />
+            </div>
+          </div>
+        )}
+
+        {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Available Tools</Label>
+              {isLoadingTools && (
+                <Badge variant="outline" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1 animate-spin" />
+                  Loading tools...
+                </Badge>
+              )}
+              {toolsError && (
+                <Badge variant="destructive" className="text-xs">
+                  Failed to fetch tools
+                </Badge>
+              )}
+            </div>
+            {mcpServerTools?.tools?.length && mcpServerTools?.tools?.length > 0 ? (
+              <div className="grid gap-3">
+                {mcpServerTools?.tools?.map((tool) => (
+                  <div
+                    key={tool.name}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedTool === tool.name
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                        : 'hover:border-gray-300'
+                    }`}
+                    onClick={() => {
+                      setSelectedTool(tool.name);
+                      // Initialize all parameters as empty strings
+                      const initialParams: Record<string, string> = {};
+                      const properties = tool.inputSchema?.properties ?? {};
+                      Object.keys(properties).forEach((paramName) => {
+                        initialParams[paramName] = '';
+                      });
+                      setToolParameters(initialParams);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
                           <RemoteMCPToolTypeBadge
-                            componentType={mcpServerData.mcpServer.tools[tool.name].componentType}
+                            componentType={
+                              mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
+                              getComponentTypeFromToolName(tool.name)
+                            }
                           />
-                        )}
-                        <h4 className="font-medium text-sm">{tool.name}</h4>
+                          <Heading level={4} className="text-sm">
+                            {tool.name}
+                          </Heading>
+                        </div>
+                        <Text variant="small" className="text-muted-foreground">
+                          {tool.description}
+                        </Text>
                       </div>
-                      <p className="text-sm text-muted-foreground">{tool.description}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {tool.parameters.length} params
+                        {Object.keys(tool.inputSchema?.properties ?? {}).length ?? 0} params
                       </Badge>
-                      {selectedTool === tool.name && (
-                        <Badge variant="default" className="text-xs bg-blue-600">
-                          Testing
-                        </Badge>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              !isLoadingTools && (
+                <Text variant="small" className="text-muted-foreground py-8 text-center">
+                  {toolsError
+                    ? 'Failed to fetch tools from MCP server. Check server connection and try again.'
+                    : 'No tools available on this MCP server.'}
+                </Text>
+              )
+            )}
           </div>
         )}
 
@@ -222,39 +218,54 @@ export const RemoteMCPInspectorTab = (props: TabsContentProps) => {
           <div className="space-y-4 border-t pt-6">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">
-                Test Tool: <code>{selectedTool}</code>
+                Test Tool: <InlineCode>{selectedTool}</InlineCode>
               </Label>
-              <Button variant="secondary" onClick={executeToolRequest} disabled={isExecuting} size="sm">
-                {isExecuting ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Executing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Execute Tool
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={executeToolRequest} disabled={isServerToolPending} size="sm">
+                  {isServerToolPending ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Run Tool
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
             <RemoteMCPInspectorParameters
               selectedTool={selectedTool}
-              availableTools={availableTools}
+              availableTools={mcpServerTools?.tools ?? []}
               toolParameters={toolParameters}
               onParameterChange={handleParameterChange}
             />
 
-            {toolResponse && codes && (
+            {isServerToolPending && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Response</Label>
-                <CodeTabs codes={codes as Record<string, string>} lang="json" defaultValue="raw" />
+                <div className="flex flex-col space-y-3">
+                  <Skeleton className="h-[250px] rounded-xl w-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!isServerToolPending && (toolError || formattedToolResponse) && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Response</Label>
+                <DynamicCodeBlock code={toolError ? toolError?.message : formattedToolResponse} lang="json" />
               </div>
             )}
           </div>
         )}
       </div>
-    </TabsContent>
+    </div>
   );
 };

@@ -61,7 +61,7 @@ const Button = React.forwardRef<
             : attached && position === 'middle'
               ? 'rounded-none border-l-0 border-r-0'
               : 'rounded-md',
-              className,
+        className,
       )}
       {...props}
     />
