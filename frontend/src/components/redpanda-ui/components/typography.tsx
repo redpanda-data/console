@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 import { cn } from '../lib/utils';
 
@@ -54,19 +54,23 @@ interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement>, Variant
   as?: 'h1' | 'h2' | 'h3' | 'h4';
 }
 
-export function Heading({ level = 1, align, className, children, testId, as, ...props }: HeadingProps) {
+export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>(function Heading(
+  { level = 1, align, className, children, testId, as, ...props },
+  ref,
+) {
   const HeadingTag = as ?? (`h${level}` as keyof React.JSX.IntrinsicElements);
 
   return React.createElement(
     HeadingTag,
     {
+      ref,
       className: cn(headingVariants({ level, align }), className),
       'data-testid': testId,
       ...props,
     },
     children,
   );
-}
+});
 
 // Text Component
 interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<typeof textVariants> {

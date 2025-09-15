@@ -1,5 +1,3 @@
-'use client';
-
 import { Circle } from 'lucide-react';
 import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
