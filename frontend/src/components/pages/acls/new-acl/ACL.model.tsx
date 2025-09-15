@@ -1,3 +1,5 @@
+import type { ConnectError } from '@connectrpc/connect';
+import type { UseToastOptions } from '@redpanda-data/ui';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -7,8 +9,6 @@ import {
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { ReactNode } from 'react';
-import type { ConnectError } from '@connectrpc/connect';
-import type { UseToastOptions } from '@redpanda-data/ui';
 
 export type OperationType = 'not-set' | 'allow' | 'deny';
 export const OperationTypeNotSet: OperationType = 'not-set';
