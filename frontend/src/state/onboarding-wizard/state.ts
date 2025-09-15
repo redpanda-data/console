@@ -57,6 +57,7 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
       },
 
       clearAllFormData: () => {
+        // Clear in-memory state
         set({
           addDataFormData: undefined,
           addTopicFormData: undefined,
@@ -108,3 +109,12 @@ export const useAddUserFormData = () =>
 
 // Export the main store for direct access if needed
 export default useOnboardingWizardStore;
+
+// Helper function to completely clear all persisted data
+export const clearAllPersistedData = () => {
+  // Clear the localStorage data using the persist API
+  useOnboardingWizardStore.persist.clearStorage();
+
+  // Clear in-memory state
+  useOnboardingWizardStore.getState().clearAllFormData();
+};

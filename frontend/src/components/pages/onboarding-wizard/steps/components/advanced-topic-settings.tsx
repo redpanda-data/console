@@ -64,6 +64,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
                 type="number"
                 readOnly
                 onChange={createNumberChangeHandler(field.onChange)}
+                disabled={isExistingTopic}
               />
             </FormControl>
             <FormMessage />
@@ -109,18 +110,17 @@ interface RetentionInputGroupProps {
 const RetentionInputGroup = memo<RetentionInputGroupProps>(
   ({ form, isExistingTopic, label, valueField, unitField, units, onChange }) => {
     const unitValue = form.watch(unitField as 'retentionTimeUnit' | 'retentionSizeUnit');
-    const isDisabled = isRetentionUnitDisabled(unitValue);
+    const isRetentionDisabled = isRetentionUnitDisabled(unitValue) || isExistingTopic;
 
     return (
       <div className="space-y-2">
         <FormLabel>{label}</FormLabel>
-        {isExistingTopic && (
-          <p className="text-xs text-gray-500 mb-2">Default values shown (actual retention config may vary)</p>
-        )}
+        {isExistingTopic && <p className="text-xs text-gray-500 mb-2">Existing topic values cannot be modified</p>}
         <Group attached>
           <FormField
             control={form.control}
             name={valueField as 'retentionTimeMs' | 'retentionSize'}
+            disabled={isRetentionDisabled}
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormControl>
@@ -128,7 +128,6 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
                     type="number"
                     min="0"
                     placeholder={field.value?.toString() || '0'}
-                    disabled={isDisabled}
                     {...field}
                     onChange={onChange(field.onChange)}
                   />
@@ -139,10 +138,11 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
           <FormField
             control={form.control}
             name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
+            disabled={isExistingTopic}
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isExistingTopic}>
                     <SelectTrigger className="w-32 bg-gray-200">
                       <SelectValue defaultValue={field.value} />
                     </SelectTrigger>

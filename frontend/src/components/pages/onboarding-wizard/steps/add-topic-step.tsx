@@ -1,376 +1,291 @@
-import { create } from "@bufbuild/protobuf";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { create } from '@bufbuild/protobuf';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import { Heading } from 'components/redpanda-ui/components/typography';
+import { ChevronDown } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import type { Topic } from 'state/restInterfaces';
 import {
-	Alert,
-	AlertDescription,
-	AlertTitle,
-} from "components/redpanda-ui/components/alert";
-import { Button } from "components/redpanda-ui/components/button";
+  CreateTopicRequest_Topic_ConfigSchema,
+  CreateTopicRequest_TopicSchema,
+  CreateTopicRequestSchema,
+} from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "components/redpanda-ui/components/card";
+  useCreateTopicMutation,
+  useTopicConfigQuery,
+  useUpdateTopicConfigMutation,
+} from '../../../../react-query/api/topic';
+import { useAddTopicFormData } from '../../../../state/onboarding-wizard/state';
+import type { StepSubmissionResult } from '../types';
+import { type AddTopicFormData, addTopicFormSchema } from '../types/forms';
 import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "components/redpanda-ui/components/collapsible";
-import {
-	Combobox,
-	type ComboboxOption,
-} from "components/redpanda-ui/components/combobox";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "components/redpanda-ui/components/form";
-import { Heading } from "components/redpanda-ui/components/typography";
-import { ChevronDown, CircleAlert } from "lucide-react";
-import {
-	forwardRef,
-	useEffect,
-	useImperativeHandle,
-	useMemo,
-	useState,
-} from "react";
-import { useForm } from "react-hook-form";
-import type { Topic } from "state/restInterfaces";
-import {
-	CreateTopicRequest_Topic_ConfigSchema,
-	CreateTopicRequest_TopicSchema,
-	CreateTopicRequestSchema,
-} from "../../../../protogen/redpanda/api/dataplane/v1/topic_pb";
-import {
-	useCreateTopicMutation,
-	useTopicConfigQuery,
-	useUpdateTopicConfigMutation,
-} from "../../../../react-query/api/topic";
-import { useAddTopicFormData } from "../../../../state/onboarding-wizard/state";
-import type { StepSubmissionResult } from "../types";
-import { type AddTopicFormData, addTopicFormSchema } from "../types/forms";
-import {
-	convertRetentionSizeToBytes,
-	convertRetentionTimeToMs,
-	FORM_DEFAULTS,
-	isUsingDefaultRetentionSettings,
-	parseTopicConfigFromExisting,
-} from "../utils/topic";
-import { hasValue } from "../utils/wizard";
-import { AdvancedTopicSettings } from "./components/advanced-topic-settings";
+  convertRetentionSizeToBytes,
+  convertRetentionTimeToMs,
+  FORM_DEFAULTS,
+  isUsingDefaultRetentionSettings,
+  parseTopicConfigFromExisting,
+} from '../utils/topic';
+import { hasValue } from '../utils/wizard';
+import { AdvancedTopicSettings } from './components/advanced-topic-settings';
 
 export interface AddTopicStepRef {
-	triggerSubmit: () => Promise<StepSubmissionResult>;
-	isLoading: boolean;
+  triggerSubmit: () => Promise<StepSubmissionResult>;
+  isLoading: boolean;
 }
 
 interface AddTopicStepProps {
-	topicList: Topic[] | undefined;
+  topicList: Topic[] | undefined;
 }
 
-export const AddTopicStep = forwardRef<AddTopicStepRef, AddTopicStepProps>(
-	({ topicList }, ref) => {
-		const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-		const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(
-			topicList?.map((topic) => ({
-				value: topic.topicName,
-				label: topic.topicName,
-			})) ?? [],
-		);
+export const AddTopicStep = forwardRef<AddTopicStepRef, AddTopicStepProps>(({ topicList }, ref) => {
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
-		const createTopicMutation = useCreateTopicMutation();
-		const updateTopicConfigMutation = useUpdateTopicConfigMutation();
+  const initialTopicOptions = useMemo(
+    () =>
+      topicList?.map((topic) => ({
+        value: topic.topicName,
+        label: topic.topicName,
+      })) ?? [],
+    [topicList],
+  );
 
-		// Sync topicOptions when topicList updates
-		useEffect(() => {
-			if (topicList) {
-				setTopicOptions(
-					topicList.map((topic) => ({
-						value: topic.topicName,
-						label: topic.topicName,
-					})),
-				);
-			}
-		}, [topicList]);
+  const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
 
-		// previous form values for topic within this wizard session
-		const { data: persistedTopicData, setData: setTopicFormData } =
-			useAddTopicFormData();
+  const createTopicMutation = useCreateTopicMutation();
+  const updateTopicConfigMutation = useUpdateTopicConfigMutation();
 
-		const defaultValues = {
-			...FORM_DEFAULTS,
-			topicName: persistedTopicData?.topicName || FORM_DEFAULTS.topicName,
-			partitions: persistedTopicData?.partitions || FORM_DEFAULTS.partitions,
-			replicationFactor:
-				persistedTopicData?.replicationFactor ||
-				FORM_DEFAULTS.replicationFactor,
-			retentionTimeMs:
-				persistedTopicData?.retentionTimeMs || FORM_DEFAULTS.retentionTimeMs,
-			retentionTimeUnit:
-				persistedTopicData?.retentionTimeUnit ||
-				FORM_DEFAULTS.retentionTimeUnit,
-			retentionSize:
-				persistedTopicData?.retentionSize || FORM_DEFAULTS.retentionSize,
-			retentionSizeUnit:
-				persistedTopicData?.retentionSizeUnit ||
-				FORM_DEFAULTS.retentionSizeUnit,
-		};
+  // Sync topicOptions when topicList updates
+  useEffect(() => {
+    setTopicOptions(initialTopicOptions);
+  }, [initialTopicOptions]);
 
-		const form = useForm<AddTopicFormData>({
-			resolver: zodResolver(addTopicFormSchema),
-			mode: "onChange",
-			defaultValues,
-		});
+  // previous form values for topic within this wizard session
+  const { data: persistedTopicData, setData: setTopicFormData } = useAddTopicFormData();
 
-		const watchedTopicName = form.watch("topicName");
-		const matchingTopicNameForFormValue = useMemo(
-			() =>
-				topicList?.find((topic) => topic.topicName === watchedTopicName)
-					?.topicName,
-			[topicList, watchedTopicName],
-		);
-		const persistedTopicName = useMemo(
-			() => persistedTopicData?.topicName,
-			[persistedTopicData],
-		);
+  const defaultValues = useMemo(
+    () => ({
+      ...FORM_DEFAULTS,
+      topicName: persistedTopicData?.topicName || FORM_DEFAULTS.topicName,
+      partitions: persistedTopicData?.partitions || FORM_DEFAULTS.partitions,
+      replicationFactor: persistedTopicData?.replicationFactor || FORM_DEFAULTS.replicationFactor,
+      retentionTimeMs: persistedTopicData?.retentionTimeMs || FORM_DEFAULTS.retentionTimeMs,
+      retentionTimeUnit: persistedTopicData?.retentionTimeUnit || FORM_DEFAULTS.retentionTimeUnit,
+      retentionSize: persistedTopicData?.retentionSize || FORM_DEFAULTS.retentionSize,
+      retentionSizeUnit: persistedTopicData?.retentionSizeUnit || FORM_DEFAULTS.retentionSizeUnit,
+    }),
+    [persistedTopicData],
+  );
 
-		// prioritize form value topic, then persisted topic
-		const existingTopicBeingEdited = useMemo(() => {
-			const getTopicName =
-				matchingTopicNameForFormValue ?? persistedTopicName ?? undefined;
-			return topicList?.find((topic) => topic.topicName === getTopicName);
-		}, [persistedTopicName, matchingTopicNameForFormValue, topicList]);
+  const form = useForm<AddTopicFormData>({
+    resolver: zodResolver(addTopicFormSchema),
+    mode: 'onChange',
+    defaultValues,
+  });
 
-		const { data: topicConfig } = useTopicConfigQuery(
-			existingTopicBeingEdited?.topicName || "",
-			hasValue(existingTopicBeingEdited?.topicName),
-		);
+  const watchedTopicName = form.watch('topicName');
+  const matchingTopicNameForFormValue = useMemo(
+    () => topicList?.find((topic) => topic.topicName === watchedTopicName)?.topicName,
+    [topicList, watchedTopicName],
+  );
 
-		useEffect(() => {
-			if (existingTopicBeingEdited) {
-				if (topicConfig && !topicConfig.error) {
-					const allTopicValues = parseTopicConfigFromExisting(
-						existingTopicBeingEdited,
-						topicConfig,
-					);
-					form.reset(allTopicValues);
-				} else {
-					form.setValue("topicName", existingTopicBeingEdited.topicName, {
-						shouldDirty: false,
-					});
-				}
-			}
-		}, [existingTopicBeingEdited, topicConfig, form]);
+  // prioritize form value topic, then persisted topic
+  const existingTopicBeingEdited = useMemo(() => {
+    return topicList?.find((topic) => topic.topicName === matchingTopicNameForFormValue);
+  }, [matchingTopicNameForFormValue, topicList]);
 
-		const handleSubmit = async (
-			data: AddTopicFormData,
-		): Promise<StepSubmissionResult> => {
-			try {
-				// Always persist form data for wizard navigation
-				setTopicFormData(data);
+  const { data: topicConfig } = useTopicConfigQuery(
+    existingTopicBeingEdited?.topicName || '',
+    hasValue(existingTopicBeingEdited?.topicName),
+  );
 
-				if (existingTopicBeingEdited) {
-					// Topic already exists - check if advanced settings were modified
-					const hasRetentionChanges = !isUsingDefaultRetentionSettings(data);
+  useEffect(() => {
+    if (existingTopicBeingEdited) {
+      if (topicConfig && !topicConfig.error) {
+        const allTopicValues = parseTopicConfigFromExisting(existingTopicBeingEdited, topicConfig);
+        form.reset(allTopicValues);
+      } else {
+        form.setValue('topicName', existingTopicBeingEdited.topicName, {
+          shouldDirty: false,
+        });
+      }
+    }
+  }, [existingTopicBeingEdited, topicConfig, form]);
 
-					if (hasRetentionChanges) {
-						// Build configuration updates for React Query mutation
-						const configs = [];
+  const handleSubmit = useCallback(
+    async (data: AddTopicFormData): Promise<StepSubmissionResult> => {
+      try {
+        // Always persist form data for wizard navigation
+        setTopicFormData(data);
 
-						// Convert retention time
-						const retentionMs = convertRetentionTimeToMs(
-							data.retentionTimeMs,
-							data.retentionTimeUnit,
-						);
-						configs.push({
-							key: "retention.ms",
-							op: "SET" as const,
-							value: retentionMs.toString(),
-						});
+        if (existingTopicBeingEdited) {
+          // Topic already exists - check if advanced settings were modified
+          const hasRetentionChanges = !isUsingDefaultRetentionSettings(data);
 
-						// Convert retention size
-						const retentionBytes = convertRetentionSizeToBytes(
-							data.retentionSize,
-							data.retentionSizeUnit,
-						);
-						configs.push({
-							key: "retention.bytes",
-							op: "SET" as const,
-							value: retentionBytes.toString(),
-						});
+          if (hasRetentionChanges) {
+            // Build configuration updates for React Query mutation
+            const configs = [];
 
-						// Use React Query mutation with optimistic updates
-						await updateTopicConfigMutation.mutateAsync({
-							topicName: data.topicName,
-							configs,
-						});
+            // Convert retention time
+            const retentionMs = convertRetentionTimeToMs(data.retentionTimeMs, data.retentionTimeUnit);
+            configs.push({
+              key: 'retention.ms',
+              op: 'SET' as const,
+              value: retentionMs.toString(),
+            });
 
-						return {
-							success: true,
-							message: `Updated topic "${data.topicName}" configuration successfully!`,
-						};
-					} else {
-						return {
-							success: true,
-							message: `Using existing topic "${data.topicName}"`,
-						};
-					}
-				} else {
-					// This is a new topic, create it with React Query optimistic updates
-					const configs = [
-						create(CreateTopicRequest_Topic_ConfigSchema, {
-							name: "cleanup.policy",
-							value: "delete",
-						}),
-					];
+            // Convert retention size
+            const retentionBytes = convertRetentionSizeToBytes(data.retentionSize, data.retentionSizeUnit);
+            configs.push({
+              key: 'retention.bytes',
+              op: 'SET' as const,
+              value: retentionBytes.toString(),
+            });
 
-					// Add retention configs if they differ from defaults
-					if (!isUsingDefaultRetentionSettings(data)) {
-						const retentionMs = convertRetentionTimeToMs(
-							data.retentionTimeMs,
-							data.retentionTimeUnit,
-						);
-						const retentionBytes = convertRetentionSizeToBytes(
-							data.retentionSize,
-							data.retentionSizeUnit,
-						);
+            // Use React Query mutation with optimistic updates
+            await updateTopicConfigMutation.mutateAsync({
+              topicName: data.topicName,
+              configs,
+            });
 
-						configs.push(
-							create(CreateTopicRequest_Topic_ConfigSchema, {
-								name: "retention.ms",
-								value: retentionMs.toString(),
-							}),
-							create(CreateTopicRequest_Topic_ConfigSchema, {
-								name: "retention.bytes",
-								value: retentionBytes.toString(),
-							}),
-						);
-					}
+            return {
+              success: true,
+              message: `Updated topic "${data.topicName}" configuration successfully!`,
+            };
+          }
 
-					const request = create(CreateTopicRequestSchema, {
-						topic: create(CreateTopicRequest_TopicSchema, {
-							name: data.topicName,
-							partitionCount: data.partitions,
-							replicationFactor: data.replicationFactor,
-							configs,
-						}),
-					});
+          return {
+            success: true,
+            message: `Using existing topic "${data.topicName}"`,
+          };
+        }
 
-					// React Query will handle optimistic updates automatically
-					await createTopicMutation.mutateAsync(request);
+        // This is a new topic, create it with React Query optimistic updates
+        const configs = [
+          create(CreateTopicRequest_Topic_ConfigSchema, {
+            name: 'cleanup.policy',
+            value: 'delete',
+          }),
+        ];
 
-					return {
-						success: true,
-						message: `Created topic "${data.topicName}" successfully!`,
-					};
-				}
-			} catch (error) {
-				return {
-					success: false,
-					message: "Failed to save topic configuration",
-					error: error instanceof Error ? error.message : "Unknown error",
-				};
-			}
-		};
+        // Add retention configs if they differ from defaults
+        if (!isUsingDefaultRetentionSettings(data)) {
+          const retentionMs = convertRetentionTimeToMs(data.retentionTimeMs, data.retentionTimeUnit);
+          const retentionBytes = convertRetentionSizeToBytes(data.retentionSize, data.retentionSizeUnit);
 
-		useImperativeHandle(ref, () => ({
-			triggerSubmit: async () => {
-				const isValid = await form.trigger();
-				if (isValid) {
-					const data = form.getValues();
-					return handleSubmit(data);
-				}
-				return {
-					success: false,
-					message: "Please fix the form errors before proceeding",
-					error: "Form validation failed",
-				};
-			},
-			isLoading:
-				createTopicMutation.isPending || updateTopicConfigMutation.isPending,
-		}));
+          configs.push(
+            create(CreateTopicRequest_Topic_ConfigSchema, {
+              name: 'retention.ms',
+              value: retentionMs.toString(),
+            }),
+            create(CreateTopicRequest_Topic_ConfigSchema, {
+              name: 'retention.bytes',
+              value: retentionBytes.toString(),
+            }),
+          );
+        }
 
-		return (
-			<Card size="full">
-				<CardHeader>
-					<CardTitle>
-						<Heading level={2}>Select a topic to send data to</Heading>
-					</CardTitle>
-					<CardDescription>
-						A topic is where data is sent and received in a Kafka-based system.
-						Think of it as a streaming inbox for your data. Producers write data
-						to a topic, and consumers read from it. You need to create a topic
-						to organize and manage your real-time data streams, whether it's
-						logs, events, or messages. Without a topic, there's nowhere for your
-						data to go or be retrieved from.
-					</CardDescription>
-					{existingTopicBeingEdited && (
-						<Alert variant="destructive">
-							<AlertTitle className="flex items-center gap-2">
-								<CircleAlert size={15} />
-								Heads up!
-							</AlertTitle>
-							<AlertDescription>
-								Any changes you make will update the existing topic
-								configuration.
-							</AlertDescription>
-						</Alert>
-					)}
-				</CardHeader>
-				<CardContent>
-					<Form {...form}>
-						<div className="space-y-6">
-							<FormField
-								control={form.control}
-								name="topicName"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Topic Name</FormLabel>
-										<FormControl>
-											<Combobox
-												{...field}
-												options={topicOptions}
-												creatable
-												onCreateOption={(value) => {
-													setTopicOptions((prev) => [
-														...prev,
-														{ value, label: value },
-													]);
-												}}
-												placeholder="Select or create a topic..."
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+        const request = create(CreateTopicRequestSchema, {
+          topic: create(CreateTopicRequest_TopicSchema, {
+            name: data.topicName,
+            partitionCount: data.partitions,
+            replicationFactor: data.replicationFactor,
+            configs,
+          }),
+        });
 
-							<Collapsible
-								open={showAdvancedSettings}
-								onOpenChange={setShowAdvancedSettings}
-							>
-								<CollapsibleTrigger asChild>
-									<Button variant="ghost" size="sm" className="w-fit p-0">
-										<ChevronDown className="h-4 w-4" />
-										Show Advanced Settings
-									</Button>
-								</CollapsibleTrigger>
-								<CollapsibleContent className="space-y-6 mt-4">
-									<AdvancedTopicSettings
-										form={form}
-										isExistingTopic={Boolean(existingTopicBeingEdited)}
-									/>
-								</CollapsibleContent>
-							</Collapsible>
-						</div>
-					</Form>
-				</CardContent>
-			</Card>
-		);
-	},
-);
+        // React Query will handle optimistic updates automatically
+        await createTopicMutation.mutateAsync(request);
+
+        return {
+          success: true,
+          message: `Created topic "${data.topicName}" successfully!`,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: 'Failed to save topic configuration',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    },
+    [existingTopicBeingEdited, setTopicFormData, updateTopicConfigMutation, createTopicMutation],
+  );
+
+  const handleCreateTopicOption = useCallback((value: string) => {
+    setTopicOptions((prev) => [...prev, { value, label: value }]);
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    triggerSubmit: async () => {
+      const isValid = await form.trigger();
+      if (isValid) {
+        const data = form.getValues();
+        return handleSubmit(data);
+      }
+      return {
+        success: false,
+        message: 'Please fix the form errors before proceeding',
+        error: 'Form validation failed',
+      };
+    },
+    isLoading: createTopicMutation.isPending || updateTopicConfigMutation.isPending,
+  }));
+
+  return (
+    <Card size="full">
+      <CardHeader>
+        <CardTitle>
+          <Heading level={2}>Select a topic to send data to</Heading>
+        </CardTitle>
+        <CardDescription>
+          A topic is where data is sent and received in a Kafka-based system. Think of it as a streaming inbox for your
+          data. Producers write data to a topic, and consumers read from it. You need to create a topic to organize and
+          manage your real-time data streams, whether it's logs, events, or messages. Without a topic, there's nowhere
+          for your data to go or be retrieved from.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="topicName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Topic Name</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      {...field}
+                      options={topicOptions}
+                      creatable
+                      onCreateOption={handleCreateTopicOption}
+                      placeholder="Select or create a topic..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Collapsible open={showAdvancedSettings} onOpenChange={setShowAdvancedSettings}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-fit p-0">
+                  <ChevronDown className="h-4 w-4" />
+                  Show Advanced Settings
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-6 mt-4">
+                <AdvancedTopicSettings form={form} isExistingTopic={Boolean(existingTopicBeingEdited)} />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+});

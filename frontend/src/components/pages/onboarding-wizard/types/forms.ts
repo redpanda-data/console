@@ -70,6 +70,9 @@ export const addUserFormSchema = z.object({
     .max(64, { message: 'Password must not exceed 64 characters.' }),
   saslMechanism: z.enum(saslMechanisms),
   superuser: z.boolean().default(true),
+  // Password generation settings
+  specialCharactersEnabled: z.boolean().default(false),
+  passwordLength: z.number().min(4).max(64).default(30),
 });
 
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;

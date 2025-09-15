@@ -10,7 +10,7 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 // import { useNavigate } from "react-router-dom";
-import { useOnboardingWizardStore } from 'state/onboarding-wizard/state';
+import { clearAllPersistedData } from 'state/onboarding-wizard/state';
 import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { AddDataStep, type AddDataStepRef } from './steps/add-data-step';
 import { AddTopicStep, type AddTopicStepRef } from './steps/add-topic-step';
@@ -29,6 +29,15 @@ interface ServerlessOnboardingWizardProps {
   additionalConnections?: ConnectionType[];
 }
 
+const shouldAllowStepNavigation = (targetStepId: WizardStep, currentStepId: WizardStep): boolean => {
+  const stepOrder = [WizardStep.ADD_DATA, WizardStep.ADD_TOPIC, WizardStep.ADD_USER, WizardStep.CONNECT];
+  const targetIndex = stepOrder.indexOf(targetStepId);
+  const currentIndex = stepOrder.indexOf(currentStepId);
+
+  // Allow navigation to current step or previous steps only
+  return targetIndex <= currentIndex;
+};
+
 export const ServerlessOnboardingWizard = memo(
   ({ isOpen, onClose, dataType, additionalConnections }: ServerlessOnboardingWizardProps) => {
     const stepDefinitions = useMemo(() => getStepDefinitions(dataType), [dataType]);
@@ -37,7 +46,6 @@ export const ServerlessOnboardingWizard = memo(
     const addDataStepRef = useRef<AddDataStepRef>(null);
     const addTopicStepRef = useRef<AddTopicStepRef>(null);
     const addUserStepRef = useRef<AddUserStepRef>(null);
-    const { clearAllFormData } = useOnboardingWizardStore();
     // const navigate = useNavigate();
     const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
       hideInternalTopics: true,
@@ -86,11 +94,11 @@ export const ServerlessOnboardingWizard = memo(
     const handleOpenChange = useCallback(
       (open: boolean) => {
         if (!open) {
-          clearAllFormData();
+          clearAllPersistedData();
           onClose?.();
         }
       },
-      [onClose, clearAllFormData],
+      [onClose],
     );
 
     return (
@@ -104,7 +112,12 @@ export const ServerlessOnboardingWizard = memo(
                   <SheetHeader>
                     <Stepper.Navigation>
                       {stepDefinitions.map((step) => (
-                        <Stepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)}>
+                        <Stepper.Step
+                          key={step.id}
+                          of={step.id}
+                          disabled={!shouldAllowStepNavigation(step.id, methods.current.id)}
+                          onClick={() => methods.goTo(step.id)}
+                        >
                           <Stepper.Title>{step.title}</Stepper.Title>
                         </Stepper.Step>
                       ))}
