@@ -203,8 +203,22 @@ message AIAgent {
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "HTTP headers to include when communicating with the MCP server."}
     ];
 
+    // Optional list of headers to pass from the request to the MCP server.
+    repeated string pass_headers = 4 [
+      (buf.validate.field).repeated = {
+        max_items: 20
+        items: {
+          string: {
+            pattern: "^[A-Za-z0-9-_]+$"
+            max_len: 64
+          }
+        }
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "List of header names from the request to pass through to the MCP server (e.g., 'Authorization', 'X-User-ID')."}
+    ];
+
     // Optional timeout for requests to the MCP server in seconds.
-    optional int32 timeout = 4 [
+    optional int32 timeout = 5 [
       (buf.validate.field).int32 = {
         gte: 1
         lte: 300
