@@ -6,6 +6,7 @@ import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from '
 import { Dialog as SheetPrimitive } from 'radix-ui';
 import React from 'react';
 
+import { Heading } from './typography';
 import { cn } from '../lib/utils';
 
 type SheetContextType = {
@@ -73,13 +74,13 @@ function SheetOverlay({ className, ...props }: SheetOverlayProps) {
   return (
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
-      className={cn('fixed inset-0 z-50 bg-black/80', className)}
+      className={cn('fixed inset-0 z-50 bg-black/50', className)}
       {...props}
     />
   );
 }
 
-const sheetVariants = cva('fixed z-50 gap-4 bg-background p-6 shadow-lg', {
+const sheetVariants = cva('fixed z-50 gap-4 bg-background py-8 px-10 shadow-lg', {
   variants: {
     side: {
       top: 'inset-x-0 top-0 border-b',
@@ -155,9 +156,9 @@ function SheetContent({
               {children}
               <SheetPrimitive.Close
                 data-slot="sheet-close"
-                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+                className="absolute right-5 top-5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
               >
-                <X className="h-4 w-4" />
+                <X className="h-7 w-7" />
                 <span className="sr-only">Close</span>
               </SheetPrimitive.Close>
             </motion.div>
@@ -192,15 +193,15 @@ function SheetFooter({ className, ...props }: SheetFooterProps) {
   );
 }
 
-type SheetTitleProps = React.ComponentProps<typeof SheetPrimitive.Title>;
+type SheetTitleProps = React.ComponentProps<typeof SheetPrimitive.Title> & { level?: 1 | 2 | 3 | 4 };
 
-function SheetTitle({ className, ...props }: SheetTitleProps) {
+function SheetTitle({ className, level = 2, ...props }: SheetTitleProps) {
   return (
-    <SheetPrimitive.Title
-      data-slot="sheet-title"
-      className={cn('text-lg font-semibold text-foreground', className)}
-      {...props}
-    />
+    <SheetPrimitive.Title data-slot="sheet-title" asChild {...props}>
+      <Heading level={level} className={className}>
+        {props.children}
+      </Heading>
+    </SheetPrimitive.Title>
   );
 }
 

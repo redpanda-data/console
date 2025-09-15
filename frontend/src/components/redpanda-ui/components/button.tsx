@@ -53,7 +53,6 @@ const Button = React.forwardRef<
       data-slot="button"
       data-testid={testId}
       className={cn(
-        className,
         buttonVariants({ variant, size, className }),
         attached && position === 'first'
           ? 'rounded-r-none rounded-l-md border-r-0'
@@ -61,7 +60,8 @@ const Button = React.forwardRef<
             ? 'rounded-l-none rounded-r-md border-l-0'
             : attached && position === 'middle'
               ? 'rounded-none border-l-0 border-r-0'
-              : 'rounded-md'
+              : 'rounded-md',
+        className,
       )}
       {...props}
     />

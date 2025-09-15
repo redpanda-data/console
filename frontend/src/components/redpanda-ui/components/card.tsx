@@ -1,18 +1,19 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
+import { Heading, Text } from './typography';
 import { cn } from '../lib/utils';
 
 const cardVariants = cva(
-  'rounded-lg min-w-0 border border-solid bg-white border-base-200 flex flex-col shadow-shadow-elevated dark:bg-base-900 dark:border-base-800',
+  'rounded-lg min-w-0 border border-solid bg-white border-base-200 flex flex-col shadow-elevated dark:bg-base-900 dark:border-base-800',
   {
     variants: {
       size: {
-        sm: 'px-12 py-8 gap-4 max-w-sm',
-        md: 'px-16 py-12 gap-5 max-w-md',
-        lg: 'px-20 py-16 gap-6 max-w-lg',
-        xl: 'px-24 py-20 gap-8 max-w-xl',
-        full: 'px-16 py-12 gap-5 w-full',
+        sm: 'px-6 py-4 gap-2 max-w-sm',
+        md: 'px-8 py-6 gap-4 max-w-md',
+        lg: 'px-10 py-8 gap-4 max-w-lg',
+        xl: 'px-12 py-10 gap-6 max-w-xl',
+        full: 'px-8 py-6 gap-4 w-full',
       },
       variant: {
         default: '',
@@ -28,7 +29,7 @@ const cardVariants = cva(
   },
 );
 
-interface CardProps extends React.ComponentProps<'div'>, VariantProps<typeof cardVariants> {
+export interface CardProps extends React.ComponentProps<'div'>, VariantProps<typeof cardVariants> {
   testId?: string;
 }
 
@@ -89,24 +90,21 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
 
 CardHeader.displayName = 'CardHeader';
 
-const CardTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { testId?: string }>(
-  ({ className, testId, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        data-slot="card-title"
-        data-testid={testId}
-        className={cn('leading-none font-semibold', className)}
-        {...props}
-      />
-    );
-  },
-);
+const CardTitle = React.forwardRef<
+  HTMLHeadingElement,
+  React.ComponentProps<'div'> & { testId?: string; level?: 1 | 2 | 3 | 4 }
+>(({ className, level = 4, testId, children, ...props }, ref) => {
+  return (
+    <div ref={ref} data-slot="card-title" data-testid={testId} className={className} {...props}>
+      {typeof children === 'string' ? <Heading level={level}>{children}</Heading> : children}
+    </div>
+  );
+});
 
 CardTitle.displayName = 'CardTitle';
 
 const CardDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & { testId?: string }>(
-  ({ className, testId, ...props }, ref) => {
+  ({ className, testId, children, ...props }, ref) => {
     return (
       <div
         ref={ref}
@@ -114,7 +112,9 @@ const CardDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'d
         data-testid={testId}
         className={cn('text-muted-foreground text-sm', className)}
         {...props}
-      />
+      >
+        {typeof children === 'string' ? <Text>{children}</Text> : children}
+      </div>
     );
   },
 );

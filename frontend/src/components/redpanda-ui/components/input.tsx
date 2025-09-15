@@ -1,13 +1,16 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: this is a complex component */
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Eye, EyeOff, Minus, Plus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 
+import { Button } from './button';
+import { useGroup } from './group';
 import { cn } from '../lib/utils';
 
-const inputVariants = cva(
-  'file:text-foreground placeholder:text-muted-foreground selection:bg-selected selection:text-selected-foreground dark:bg-input/30 border-input flex w-full min-w-0 rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
+export const inputVariants = cva(
+  'file:text-foreground placeholder:text-muted-foreground selection:bg-selection selection:text-selection-foreground dark:bg-input/30 border-input flex w-full min-w-0 border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
   {
     variants: {
       size: {
@@ -27,31 +30,11 @@ const inputVariants = cva(
   },
 );
 
-const controlButtonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive selection:bg-selected selection:text-selected-foreground border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
-  {
-    variants: {
-      size: {
-        sm: 'h-6 w-6',
-        default: 'h-8 w-8',
-        lg: 'h-9 w-9',
-      },
-    },
-    defaultVariants: {
-      size: 'default',
-    },
-  },
-);
-
-const passwordToggleVariants = cva(
-  'absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground transition-colors disabled:pointer-events-none disabled:opacity-50',
-);
-
 const inputContainerVariants = cva('', {
   variants: {
     layout: {
-      default: '',
-      password: 'relative',
+      default: 'flex items-center relative',
+      password: 'flex relative flex-1',
       number: 'flex items-center gap-2',
     },
   },
@@ -63,6 +46,7 @@ const inputContainerVariants = cva('', {
 interface InputProps extends Omit<React.ComponentProps<'input'>, 'size'>, VariantProps<typeof inputVariants> {
   showStepControls?: boolean;
   testId?: string;
+  children?: React.ReactNode;
 }
 
 function useInputState(props: InputProps) {
@@ -112,16 +96,18 @@ function useNumberInputHandlers(
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, showStepControls, size, variant, testId, ...props }, ref) => {
+  ({ className, type, showStepControls, size, variant, testId, children, ...props }, ref) => {
     const { value, setValue, showPassword, setShowPassword } = useInputState(props);
+    const [startWidth, setStartWidth] = useState<number | undefined>();
+    const [endWidth, setEndWidth] = useState<number | undefined>();
 
     const isNumberInput = type === 'number';
     const isPasswordInput = type === 'password';
-    const shouldShowControls = isNumberInput && showStepControls && props.step;
+    const shouldShowControls = isNumberInput && showStepControls;
     const step = props.step ? Number(props.step) : 1;
-
-    const inputLayout = isPasswordInput ? 'password' : shouldShowControls ? 'number' : 'default';
     const inputVariant = isPasswordInput ? 'password' : variant;
+    const { position: groupPosition, attached: groupAttached } = useGroup();
+    const attached = groupAttached || isPasswordInput;
 
     const { increment, decrement, handleInputChange } = useNumberInputHandlers(value, setValue, step, props.onChange);
 
@@ -130,63 +116,129 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {...props}
         ref={ref}
         type={isPasswordInput ? (showPassword ? 'text' : 'password') : type}
+        step={isNumberInput ? step : undefined}
         value={isNumberInput ? value : props.value}
         onChange={isNumberInput ? handleInputChange : props.onChange}
         data-slot="input"
         data-testid={testId}
-        className={cn(inputVariants({ size, variant: inputVariant }), className)}
+        className={cn(
+          inputVariants({ size, variant: inputVariant }),
+          attached && groupPosition === 'first'
+            ? 'rounded-r-none rounded-l-md border-r-0'
+            : attached && groupPosition === 'last'
+              ? 'rounded-l-none rounded-r-md border-l-0'
+              : attached && groupPosition === 'middle'
+                ? 'rounded-none border-l-0 border-r-0'
+                : 'rounded-md',
+          className,
+        )}
+        style={{
+          paddingLeft: startWidth ? startWidth + 16 : undefined,
+          paddingRight: endWidth ? endWidth + 16 : undefined,
+        }}
       />
     );
 
-    // Password input with toggle
-    if (isPasswordInput) {
-      return (
-        <div className={cn(inputContainerVariants({ layout: inputLayout }))}>
+    return (
+      <InputContext.Provider
+        value={{
+          startWidth,
+          setStartWidth,
+          endWidth,
+          setEndWidth,
+        }}
+      >
+        <div
+          className={cn(
+            inputContainerVariants({ layout: shouldShowControls ? 'number' : isPasswordInput ? 'password' : variant }),
+          )}
+        >
           {inputElement}
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            disabled={props.disabled}
-            className={cn(passwordToggleVariants())}
-          >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+          {children}
+          {isPasswordInput && (
+            <InputEnd className="pointer-events-auto">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={props.disabled}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </Button>
+            </InputEnd>
+          )}
+          {shouldShowControls && (
+            <div className="flex flex-row gap-1">
+              <Button type="button" onClick={increment} disabled={props.disabled} size={size} variant="outline">
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button type="button" onClick={decrement} disabled={props.disabled} size={size} variant="outline">
+                <Minus className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
-      );
-    }
-
-    // Number input with step controls
-    if (shouldShowControls) {
-      return (
-        <div className={cn(inputContainerVariants({ layout: inputLayout }))}>
-          <div className="relative flex-1">{inputElement}</div>
-          <div className="flex flex-row gap-1">
-            <button
-              type="button"
-              onClick={increment}
-              disabled={props.disabled}
-              className={cn(controlButtonVariants({ size }))}
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={decrement}
-              disabled={props.disabled}
-              className={cn(controlButtonVariants({ size }))}
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Standard input
-    return inputElement;
+      </InputContext.Provider>
+    );
   },
 );
 
+const inputEndClassNames = 'absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none right-2';
+
+const InputContext = createContext<{
+  setStartWidth: (width: number) => void;
+  setEndWidth: (width: number) => void;
+  startWidth: number | undefined;
+  endWidth: number | undefined;
+}>({
+  setStartWidth: () => {},
+  setEndWidth: () => {},
+  startWidth: undefined,
+  endWidth: undefined,
+});
+
+const useInputContext = () => {
+  const context = React.useContext(InputContext);
+  if (!context) {
+    throw new Error('useInputContext must be used within an InputContextProvider');
+  }
+  return context;
+};
+
+const InputStart = ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => {
+  const { setStartWidth } = useInputContext();
+  const startRef = React.useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    setStartWidth(startRef.current?.offsetWidth ?? 0);
+  }, [setStartWidth]);
+
+  return (
+    <span
+      className={cn('absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none left-2', className)}
+      ref={startRef}
+      {...props}
+    >
+      {children}
+    </span>
+  );
+};
+
+const InputEnd = ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => {
+  const { setEndWidth } = useInputContext();
+  const endRef = React.useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    setEndWidth(endRef.current?.offsetWidth ?? 0);
+  }, [setEndWidth]);
+
+  return (
+    <span className={cn(inputEndClassNames, className)} ref={endRef} {...props}>
+      {children}
+    </span>
+  );
+};
+
 Input.displayName = 'Input';
 
-export { Input };
+export { Input, InputStart, InputEnd };
