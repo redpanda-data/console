@@ -40,5 +40,38 @@
     "documentation": "When a topic is enabled for remote write, retention.ms and retention.bytes specify the retention policy for data in the cloud. Retention.local.target.{ms|bytes} specify the local retention policy in this scenario. If the topic is not enabled for remote write, these options are ignored.",
     "category": "Tiered Storage",
     "frontendFormat": "DURATION"
+  },
+  {
+    "name": "redpanda.iceberg.delete",
+    "type": "BOOLEAN",
+    "documentation": "Whether the corresponding Iceberg table is deleted upon deleting the topic.",
+    "category": "Iceberg"
+  },
+  {
+    "name": "redpanda.iceberg.invalid.record.action",
+    "type": "STRING",
+    "documentation": "Whether to write invalid records to a dead-letter queue (DLQ).",
+    "category": "Iceberg",
+    "enumValues": ["drop", "dlq_table"]
+  },
+  {
+    "name": "redpanda.iceberg.mode",
+    "type": "STRING",
+    "documentation": "Enable the Iceberg integration for the topic. You can choose one of four modes.",
+    "category": "Iceberg",
+    "enumValues": ["key_value", "value_schema_id_prefix", "value_schema_latest", "disabled"]
+  },
+  {
+    "name": "redpanda.iceberg.partition.spec",
+    "type": "INT",
+    "documentation": "The partitioning specification for the Iceberg table.",
+    "category": "Iceberg",
+    "frontendFormat": "DURATION"
+  },
+  {
+    "name": "redpanda.iceberg.target.lag.ms",
+    "type": "INT",
+    "documentation": "Controls how often the data in the Iceberg table is refreshed with new data from the topic. Redpanda attempts to commit all data produced to the topic within the lag target, subject to resource availability.",
+    "category": "Iceberg"
   }
 ]

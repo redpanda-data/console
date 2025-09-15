@@ -57,6 +57,26 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	assert.Equal(topicName, topicConfig.TopicName)
 	assert.NotEmpty(topicConfig.ConfigEntries)
 
+	// Create a map out of the returned config options to spot check compiled values
+	configEntries := make(map[string]*TopicConfigEntry, len(topicConfig.ConfigEntries))
+	for _, entry := range topicConfig.ConfigEntries {
+		configEntries[entry.Name] = entry
+	}
+
+	// redpanda.remote.allowgaps isn't in the docs, but is coming from the server
+	assert.Contains(configEntries, "redpanda.remote.allowgaps")
+	assert.True(*configEntries["redpanda.remote.allowgaps"].Documentation != "")
+
+	// redpanda.iceberg.mode is present in the rp json file, and should be in the Iceberg group
+	assert.Contains(configEntries, "redpanda.iceberg.mode")
+	assert.Equal(configEntries["redpanda.iceberg.mode"].ConfigCategory, "Iceberg")
+
+	// redpanda.iceberg.delete is in the rp json file, but isn't returned by the server
+	assert.NotContains(configEntries, "redpanda.iceberg.delete")
+
+	// compression.type is in the kafka json file
+	assert.Contains(configEntries, "compression.type")
+
 	assert.NotNil(topicConfig.ConfigEntries[0])
 	assert.False(topicConfig.ConfigEntries[0].IsReadOnly)
 }
