@@ -181,10 +181,6 @@ linters:
         path: (.+)/v1alpha1/service.go
         text: 'SA1019: dataplanev1alpha1connect'
       - linters:
-          - staticcheck
-        path: (.+).go
-        text: SA1019.*jhump/protoreflect
-      - linters:
           - noctx
         path: (.+).go
         text: '.*slog.*'

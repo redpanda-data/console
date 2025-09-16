@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/protoadapt"
@@ -55,12 +54,6 @@ func (d ProtobufSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 
 	payload := payloadFromRecord(record, payloadType)
 
-	msg := dynamic.NewMessage(messageDescriptor)
-	err = msg.Unmarshal(payload)
-	if err != nil {
-		return &RecordPayload{}, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
-	}
-
 	jsonBytes, err := d.ProtoSvc.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf to json: %w", err)
@@ -90,12 +83,6 @@ func (d ProtobufSerde) SerializeObject(_ context.Context, obj any, payloadType P
 
 	var binData []byte
 	switch v := obj.(type) {
-	case *dynamic.Message:
-		b, err := v.Marshal()
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
-		}
-		binData = b
 	case protoiface.MessageV1:
 		b, err := proto.Marshal(protoadapt.MessageV2Of(v))
 		if err != nil {
