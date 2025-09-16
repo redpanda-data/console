@@ -47,13 +47,23 @@ message AIAgent {
   ];
 
   // LLM configuration settings for the AI agent.
-  LLMSettings llm_settings = 5 [
+  Provider provider = 5 [
     (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  int32 dimensions = 6 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
+    (buf.validate.field).required = true
+  ];
+  string model = 7 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
     (buf.validate.field).required = true
   ];
 
   // Map of MCP servers that this AI agent can use.
-  map<string, MCPServer> mcp_servers = 6 [
+  map<string, MCPServer> mcp_servers = 8 [
     (buf.validate.field).map.keys.string = {
       pattern: "^[A-Za-z0-9_-]+$"
       max_len: 64
@@ -63,7 +73,7 @@ message AIAgent {
 
   // Tags are key-value pairs that can be assigned to an AI agent resource.
   // They help organize AI agents and enable filtering when listing them.
-  map<string, string> tags = 7 [(buf.validate.field).map = {
+  map<string, string> tags = 9 [(buf.validate.field).map = {
     max_pairs: 16
     values: {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
@@ -71,59 +81,33 @@ message AIAgent {
   }];
 
   // The current AI agent state.
-  State state = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  State state = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // URL to connect to the AI agent endpoint.
-  string url = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string url = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Response configuration.
   oneof response_configuration {
     // Text response configuration.
-    TextResponseConfig text_response = 10;
+    TextResponseConfig text_response = 12;
 
     // JSON response configuration.
-    JsonResponseConfig json_response = 11;
+    JsonResponseConfig json_response = 13;
   }
 
-  // LLM configuration settings.
-  message LLMSettings {
-    // Supported LLM providers.
-    enum Provider {
-      PROVIDER_UNSPECIFIED = 0;
-      PROVIDER_OPENAI = 1;
+  message Provider {
+    message OpenAI {
+      string api_key = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"
+      ];
     }
 
-    // LLM provider.
-    Provider provider = 1 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).enum = {
-        defined_only: true
-        not_in: [0]
-      }
-    ];
-
-    // Model name (e.g., "gpt-4", "claude-3-sonnet", "gpt-3.5-turbo").
-    string model_name = 2 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).string.min_len = 1,
-      (buf.validate.field).string.max_len = 128
-    ];
-
-    // Reference to the API key secret for authenticating with the LLM provider.
-    string api_key_secret_ref = 3 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$",
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Reference to a secret containing the API key for the LLM provider."}
-    ];
-
-    // Optional maximum tokens for responses.
-    optional int32 max_tokens = 4 [(buf.validate.field).int32 = {
-      gte: 1
-      lte: 2097152
-    }];
+    oneof provider {
+      option (buf.validate.oneof).required = true;
+      OpenAI openai = 1;
+    }
   }
 
   // State of the AI agent.
@@ -192,15 +176,6 @@ message AIAgent {
         }
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "List of header names from the request to pass through to the MCP server (e.g., 'Authorization', 'X-User-ID')."}
-    ];
-
-    // Optional timeout for requests to the MCP server in seconds.
-    optional int32 timeout = 5 [
-      (buf.validate.field).int32 = {
-        gte: 1
-        lte: 300
-      },
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Request timeout in seconds. Defaults to 30 seconds if not specified."}
     ];
   }
 
@@ -453,13 +428,23 @@ message AIAgentCreate {
   ];
 
   // LLM configuration settings for the AI agent.
-  AIAgent.LLMSettings llm_settings = 4 [
+  AIAgent.Provider provider = 4 [
     (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  int32 dimensions = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
+    (buf.validate.field).required = true
+  ];
+  string model = 6 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
     (buf.validate.field).required = true
   ];
 
   // Map of MCP servers that this AI agent can use.
-  map<string, AIAgent.MCPServer> mcp_servers = 5 [
+  map<string, AIAgent.MCPServer> mcp_servers = 7 [
     (buf.validate.field).map.keys.string = {
       pattern: "^[A-Za-z0-9_-]+$"
       max_len: 64
@@ -468,7 +453,7 @@ message AIAgentCreate {
   ];
 
   // Optional list of tags to attach to an AI agent.
-  map<string, string> tags = 6 [(buf.validate.field).map = {
+  map<string, string> tags = 8 [(buf.validate.field).map = {
     max_pairs: 16
     values: {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
@@ -476,15 +461,15 @@ message AIAgentCreate {
   }];
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
-  redpanda.api.dataplane.v1.Pipeline.Resources resources = 7;
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
 
   // Response configuration.
   oneof response_configuration {
     // Text response configuration.
-    AIAgent.TextResponseConfig text_response = 8;
+    AIAgent.TextResponseConfig text_response = 10;
 
     // JSON response configuration.
-    AIAgent.JsonResponseConfig json_response = 9;
+    AIAgent.JsonResponseConfig json_response = 11;
   }
 }
 
@@ -550,12 +535,6 @@ message ListAIAgentsRequest {
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "AI agents that match all the provided tags will be returned."}
     ];
-
-    // Filter AI agents by LLM provider.
-    AIAgent.LLMSettings.Provider provider = 3 [
-      (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
-      (buf.validate.field).enum = {defined_only: true}
-    ];
   }
 }
 
@@ -591,10 +570,23 @@ message AIAgentUpdate {
   ];
 
   // LLM configuration settings for the AI agent.
-  AIAgent.LLMSettings llm_settings = 4;
+  AIAgent.Provider provider = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+  int32 dimensions = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
+    (buf.validate.field).required = true
+  ];
+  string model = 6 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
+    (buf.validate.field).required = true
+  ];
 
   // Map of MCP servers that this AI agent can use.
-  map<string, AIAgent.MCPServer> mcp_servers = 5 [
+  map<string, AIAgent.MCPServer> mcp_servers = 7 [
     (buf.validate.field).map.keys.string = {
       pattern: "^[A-Za-z0-9_-]+$"
       max_len: 64
@@ -604,7 +596,7 @@ message AIAgentUpdate {
 
   // A map of tags to add, update or delete.
   // If a tag's value is empty, the server interprets that as a deletion.
-  map<string, string> tags = 6 [(buf.validate.field).map = {
+  map<string, string> tags = 8 [(buf.validate.field).map = {
     max_pairs: 16
     values: {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
@@ -612,15 +604,15 @@ message AIAgentUpdate {
   }];
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
-  redpanda.api.dataplane.v1.Pipeline.Resources resources = 7;
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
 
   // Response configuration.
   oneof response_configuration {
     // Text response configuration.
-    AIAgent.TextResponseConfig text_response = 8;
+    AIAgent.TextResponseConfig text_response = 10;
 
     // JSON response configuration.
-    AIAgent.JsonResponseConfig json_response = 9;
+    AIAgent.JsonResponseConfig json_response = 11;
   }
 }
 
