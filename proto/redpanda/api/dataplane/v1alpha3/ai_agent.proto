@@ -62,14 +62,17 @@ message AIAgent {
     (buf.validate.field).required = true
   ];
 
-  // Map of MCP servers that this AI agent can use.
-  map<string, MCPServer> mcp_servers = 8 [
-    (buf.validate.field).map.keys.string = {
-      pattern: "^[A-Za-z0-9_-]+$"
-      max_len: 64
-    },
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
-  ];
+  // List of Redpanda MCP server IDs that this AI agent can use.
+  repeated string mcp_server_ids = 8;
+
+  //  // Map of MCP servers that this AI agent can use.
+  //  map<string, MCPServer> mcp_servers = 8 [
+  //    (buf.validate.field).map.keys.string = {
+  //      pattern: "^[A-Za-z0-9_-]+$"
+  //      max_len: 64
+  //    },
+  //    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
+  //  ];
 
   // Tags are key-value pairs that can be assigned to an AI agent resource.
   // They help organize AI agents and enable filtering when listing them.
@@ -128,9 +131,8 @@ message AIAgent {
   // MCP transport types.
   enum MCPTransport {
     MCP_TRANSPORT_UNSPECIFIED = 0;
-    MCP_TRANSPORT_REDPANDA_MCP_SERVER = 1;
-    MCP_TRANSPORT_STREAMABLE = 2;
-    MCP_TRANSPORT_SSE = 3;
+    MCP_TRANSPORT_STREAMABLE = 1;
+    MCP_TRANSPORT_SSE = 2;
   }
 
   // MCP server configuration.
@@ -443,14 +445,17 @@ message AIAgentCreate {
     (buf.validate.field).required = true
   ];
 
-  // Map of MCP servers that this AI agent can use.
-  map<string, AIAgent.MCPServer> mcp_servers = 7 [
-    (buf.validate.field).map.keys.string = {
-      pattern: "^[A-Za-z0-9_-]+$"
-      max_len: 64
-    },
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
-  ];
+  // List of Redpanda MCP server IDs that this AI agent can use.
+  repeated string mcp_server_ids = 7;
+
+  //  // Map of MCP servers that this AI agent can use.
+  //  map<string, AIAgent.MCPServer> mcp_servers = 7 [
+  //    (buf.validate.field).map.keys.string = {
+  //      pattern: "^[A-Za-z0-9_-]+$"
+  //      max_len: 64
+  //    },
+  //    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
+  //  ];
 
   // Optional list of tags to attach to an AI agent.
   map<string, string> tags = 8 [(buf.validate.field).map = {
@@ -585,14 +590,17 @@ message AIAgentUpdate {
     (buf.validate.field).required = true
   ];
 
-  // Map of MCP servers that this AI agent can use.
-  map<string, AIAgent.MCPServer> mcp_servers = 7 [
-    (buf.validate.field).map.keys.string = {
-      pattern: "^[A-Za-z0-9_-]+$"
-      max_len: 64
-    },
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
-  ];
+  // List of Redpanda MCP server IDs that this AI agent can use.
+  repeated string mcp_server_ids = 7;
+
+  //  // Map of MCP servers that this AI agent can use.
+  //  map<string, AIAgent.MCPServer> mcp_servers = 7 [
+  //    (buf.validate.field).map.keys.string = {
+  //      pattern: "^[A-Za-z0-9_-]+$"
+  //      max_len: 64
+  //    },
+  //    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
+  //  ];
 
   // A map of tags to add, update or delete.
   // If a tag's value is empty, the server interprets that as a deletion.
