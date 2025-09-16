@@ -21,13 +21,12 @@ message AIAgent {
 
   // AI Agent ID.
   string id = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
+    (google.api.field_behavior) = OUTPUT_ONLY,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_/]+$"
   ];
 
   // User-friendly AI agent name.
-  string name = 2 [
+  string display_name = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
@@ -43,7 +42,7 @@ message AIAgent {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 10,
-    (buf.validate.field).string.max_len = 8192,
+    (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
@@ -71,28 +70,20 @@ message AIAgent {
     }
   }];
 
-  // Response format type.
-  enum ResponseFormat {
-    RESPONSE_FORMAT_UNSPECIFIED = 0;
-    RESPONSE_FORMAT_TEXT = 1;
-    RESPONSE_FORMAT_JSON = 2;
-  }
-
-  // Optional response format specification.
-  optional ResponseFormat response_format = 8 [(buf.validate.field).enum = {defined_only: true}];
-
-  // Optional JSON schema for structured responses.
-  // Only used when response_format is RESPONSE_FORMAT_JSON.
-  optional string response_schema = 9 [
-    (buf.validate.field).string.max_len = 8192,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses when using JSON response format."}
-  ];
-
   // The current AI agent state.
-  State state = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  State state = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // URL to connect to the AI agent endpoint.
-  string url = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string url = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Response configuration.
+  oneof response_configuration {
+    // Text response configuration.
+    TextResponseConfig text_response = 10;
+
+    // JSON response configuration.
+    JsonResponseConfig json_response = 11;
+  }
 
   // LLM configuration settings.
   message LLMSettings {
@@ -124,29 +115,15 @@ message AIAgent {
     string api_key_secret_ref = 3 [
       (google.api.field_behavior) = REQUIRED,
       (buf.validate.field).required = true,
-      (buf.validate.field).string.pattern = "^[A-Z${}.][A-Z0-9_${}.]*$",
+      (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$",
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Reference to a secret containing the API key for the LLM provider."}
     ];
 
-    // Optional temperature setting for response randomness (0.0 to 2.0).
-    optional double temperature = 4 [(buf.validate.field).double = {
-      gte: 0.0
-      lte: 2.0
-    }];
-
     // Optional maximum tokens for responses.
-    optional int32 max_tokens = 5 [(buf.validate.field).int32 = {
+    optional int32 max_tokens = 4 [(buf.validate.field).int32 = {
       gte: 1
-      lte: 32768
+      lte: 2097152
     }];
-
-    // Response format type.
-    enum ResponseFormat {
-      RESPONSE_FORMAT_UNSPECIFIED = 0;
-      RESPONSE_FORMAT_TEXT = 1;
-      RESPONSE_FORMAT_JSON = 2;
-      RESPONSE_FORMAT_JSON_OBJECT = 3;
-    }
   }
 
   // State of the AI agent.
@@ -203,7 +180,7 @@ message AIAgent {
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "HTTP headers to include when communicating with the MCP server."}
     ];
 
-    // Optional list of headers to pass from the request to the MCP server.
+    // Optional list of headers to pass from the Agent request to the MCP server.
     repeated string pass_headers = 4 [
       (buf.validate.field).repeated = {
         max_items: 20
@@ -224,6 +201,20 @@ message AIAgent {
         lte: 300
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Request timeout in seconds. Defaults to 30 seconds if not specified."}
+    ];
+  }
+
+  // Text response configuration.
+  message TextResponseConfig {
+    // No additional configuration needed for text responses.
+  }
+
+  // JSON response configuration.
+  message JsonResponseConfig {
+    // JSON schema for structured responses.
+    optional string schema = 1 [
+      (buf.validate.field).string.max_len = 8192,
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses."}
     ];
   }
 }
@@ -257,7 +248,7 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 
@@ -288,7 +279,7 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 
@@ -311,7 +302,7 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_VIEW
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 
@@ -336,7 +327,7 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 
@@ -365,13 +356,13 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 
   // StopAIAgent stops a specific AI agent.
   rpc StopAIAgent(StopAIAgentRequest) returns (StopAIAgentResponse) {
-    option (google.api.http) = {post: "/v1alpha3/ai-agents/{id}:stop"};
+    option (google.api.http) = {put: "/v1alpha3/ai-agents/{id}:stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Stop AI Agent"
       description: "Stop a running AI agent."
@@ -396,13 +387,13 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 
   // StartAIAgent starts a specific AI agent that has been previously stopped.
   rpc StartAIAgent(StartAIAgentRequest) returns (StartAIAgentResponse) {
-    option (google.api.http) = {post: "/v1alpha3/ai-agents/{id}:start"};
+    option (google.api.http) = {put: "/v1alpha3/ai-agents/{id}:start"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Start AI Agent"
       description: "Start a stopped AI agent."
@@ -427,7 +418,7 @@ service AIAgentService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
-      api: API_CONSOLE
+      api: API_AI_AGENT
     };
   }
 }
@@ -441,7 +432,7 @@ message AIAgentCreate {
   };
 
   // User-friendly AI agent name.
-  string name = 1 [
+  string display_name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
@@ -457,7 +448,7 @@ message AIAgentCreate {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true,
     (buf.validate.field).string.min_len = 10,
-    (buf.validate.field).string.max_len = 8192,
+    (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
@@ -484,18 +475,17 @@ message AIAgentCreate {
     }
   }];
 
-  // Optional response format specification.
-  optional AIAgent.ResponseFormat response_format = 7 [(buf.validate.field).enum = {defined_only: true}];
-
-  // Optional JSON schema for structured responses.
-  // Only used when response_format is RESPONSE_FORMAT_JSON.
-  optional string response_schema = 8 [
-    (buf.validate.field).string.max_len = 8192,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses when using JSON response format."}
-  ];
-
   // The number of resources that are guaranteed to be assigned to the AI agent.
-  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 7;
+
+  // Response configuration.
+  oneof response_configuration {
+    // Text response configuration.
+    AIAgent.TextResponseConfig text_response = 8;
+
+    // JSON response configuration.
+    AIAgent.JsonResponseConfig json_response = 9;
+  }
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -582,7 +572,7 @@ message AIAgentUpdate {
   };
 
   // User-friendly AI agent name.
-  string name = 1 [
+  string display_name = 1 [
     (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
     (buf.validate.field).string.pattern = "^[A-Za-z0-9-_ /]+$",
     (buf.validate.field).string.min_len = 3,
@@ -596,7 +586,7 @@ message AIAgentUpdate {
   string system_prompt = 3 [
     (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED,
     (buf.validate.field).string.min_len = 10,
-    (buf.validate.field).string.max_len = 8192,
+    (buf.validate.field).string.max_len = 16384,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "System instructions that define how the AI agent should behave and respond."}
   ];
 
@@ -621,18 +611,17 @@ message AIAgentUpdate {
     }
   }];
 
-  // Optional response format specification.
-  optional AIAgent.ResponseFormat response_format = 7 [(buf.validate.field).enum = {defined_only: true}];
-
-  // Optional JSON schema for structured responses.
-  // Only used when response_format is RESPONSE_FORMAT_JSON.
-  optional string response_schema = 8 [
-    (buf.validate.field).string.max_len = 8192,
-    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses when using JSON response format."}
-  ];
-
   // The number of resources that are guaranteed to be assigned to the AI agent.
-  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 7;
+
+  // Response configuration.
+  oneof response_configuration {
+    // Text response configuration.
+    AIAgent.TextResponseConfig text_response = 8;
+
+    // JSON response configuration.
+    AIAgent.JsonResponseConfig json_response = 9;
+  }
 }
 
 message UpdateAIAgentRequest {
