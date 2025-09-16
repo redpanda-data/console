@@ -181,5 +181,65 @@
     "documentation": "This configuration controls the size of the index that maps offsets to file positions. We preallocate this index file and shrink it only after log rolls. You generally should not need to change this setting.",
     "category": "Storage Performance",
     "frontendFormat": "BYTE_SIZE"
+  },
+  {
+    "name": "compression.gzip.level",
+    "type": "INT",
+    "documentation": "The compression level to use if compression.type is set to 'gzip'.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "compression.lz4.level",
+    "type": "INT",
+    "documentation": "The compression level to use if compression.type is set to 'lz4'.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "compression.zstd.level",
+    "type": "INT",
+    "documentation": "The compression level to use if compression.type is set to 'zstd'.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "local.retention.bytes",
+    "type": "INT",
+    "documentation": "The maximum size of local log segments that can grow for a partition before it deletes the old segments. Default value is -2, it represents `retention.bytes` value to be used. The effective value should always be less than or equal to `retention.bytes` value.",
+    "category": "Storage"
+  },
+  {
+    "name": "local.retention.ms",
+    "type": "INT",
+    "documentation": "The number of milliseconds to keep the local log segment before it gets deleted. Default value is -2, it represents `retention.ms` value is to be used. The effective value should always be less than or equal to `retention.ms` value.",
+    "category": "Storage"
+  },
+  {
+    "name": "message.timestamp.after.max.ms",
+    "type": "INT",
+    "documentation": "This configuration sets the allowable timestamp difference between the message timestamp and the broker's timestamp. The message timestamp can be later than or equal to the broker's timestamp, with the maximum allowable difference determined by the value set in this configuration.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "message.timestamp.before.max.ms",
+    "type": "INT",
+    "documentation": "This configuration sets the allowable timestamp difference between the broker's timestamp and the message timestamp. The message timestamp can be earlier than or equal to the broker's timestamp, with the maximum allowable difference determined by the value set in this configuration.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "remote.log.copy.disable",
+    "type": "BOOLEAN",
+    "documentation": "Determines whether tiered data for a topic should become read only, and no more data uploading on a topic.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "remote.log.delete.disable",
+    "type": "BOOLEAN",
+    "documentation": "Determines whether tiered data for a topic should be deleted after tiered storage is disabled on a topic. This configuration should be enabled when trying to set `remote.storage.enable` from true to false.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "remote.storage.enable",
+    "type": "BOOLEAN",
+    "documentation": "To enable tiered storage for a topic, set this configuration to true. To disable tiered storage for a topic that has it enabled, set this configuration to false. When disabling, you must also set remote.log.delete.on.disable to true.",
+    "category": "Storage Performance"
   }
 ]
