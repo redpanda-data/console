@@ -925,7 +925,7 @@ export class DeleteOffsetsModal extends Component<{
           <ModalFooter>
             <Button
               colorScheme="red"
-              onConfirm={async (dismiss: (value?: unknown) => void, onError: (msg: string) => void) => {
+              onClick={async (dismiss: (value?: unknown) => void, onError: (msg: string) => void) => {
                 const group = this.props.group;
                 // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                 const offsets = this.props.offsets!;
