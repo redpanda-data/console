@@ -73,5 +73,47 @@
     "type": "INT",
     "documentation": "Controls how often the data in the Iceberg table is refreshed with new data from the topic. Redpanda attempts to commit all data produced to the topic within the lag target, subject to resource availability.",
     "category": "Iceberg"
+  },
+  {
+    "name": "redpanda.remote.readreplica",
+    "type": "STRING",
+    "documentation": "The name of the object storage bucket for a Remote Read Replica topic. Not to be used with redpanda.remote.read or redpanda.remote.write.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "flush.bytes",
+    "type": "INT",
+    "documentation": "The maximum bytes not fsynced per partition. If this configured threshold is reached, the log is automatically fsynced, even though it wasn’t explicitly requested.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "initial.retention.local.target.bytes",
+    "type": "INT",
+    "documentation": "A size-based initial retention limit for Tiered Storage that determines how much data in local storage is transferred to a partition replica when a cluster is resized. If null (default), all locally retained data is transferred.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "initial.retention.local.target.ms",
+    "type": "INT",
+    "documentation": "A time-based initial retention limit for Tiered Storage that determines how much data in local storage is transferred to a partition replica when a cluster is resized. If null (default), all locally retained data is transferred.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "redpanda.leaders.preference",
+    "type": "STRING",
+    "documentation": "The preferred location (rack) for partition leaders of a topic.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "replication.factor",
+    "type": "INT",
+    "documentation": "The number of replicas of a topic to save in different nodes (brokers) of a cluster. If replication.factor is set to a positive value, it overrides the cluster property default_topic_replication for the topic.",
+    "category": "Storage Performance"
+  },
+  {
+    "name": "write.caching",
+    "type": "BOOLEAN",
+    "documentation": "The write caching mode to apply to a topic.",
+    "category": "Storage Performance"
   }
 ]
