@@ -2,6 +2,11 @@
 
 ## Master / Unreleased
 
+## v3.2.2 / 2025-09-15
+- [IMPROVEMENT] Add error message on failures during ACL creation.
+- [IMPROVEMENT] Add Remote MCP support.
+- [BUGFIX] Fix ACL creation for 'allow all operations' when schema registry ACLs are disabled.
+
 ## v3.2.1 / 2025-08-27
 
 - [IMPROVEMENT] Add support for Schema Registry ACLs
