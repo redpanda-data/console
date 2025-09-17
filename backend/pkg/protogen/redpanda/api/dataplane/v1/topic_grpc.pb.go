@@ -23,6 +23,8 @@ const (
 	TopicService_CreateTopic_FullMethodName               = "/redpanda.api.dataplane.v1.TopicService/CreateTopic"
 	TopicService_ListTopics_FullMethodName                = "/redpanda.api.dataplane.v1.TopicService/ListTopics"
 	TopicService_DeleteTopic_FullMethodName               = "/redpanda.api.dataplane.v1.TopicService/DeleteTopic"
+	TopicService_ListTopicsConfigurations_FullMethodName  = "/redpanda.api.dataplane.v1.TopicService/ListTopicsConfigurations"
+	TopicService_GetTopicDocumentation_FullMethodName     = "/redpanda.api.dataplane.v1.TopicService/GetTopicDocumentation"
 	TopicService_GetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/GetTopicConfigurations"
 	TopicService_UpdateTopicConfigurations_FullMethodName = "/redpanda.api.dataplane.v1.TopicService/UpdateTopicConfigurations"
 	TopicService_SetTopicConfigurations_FullMethodName    = "/redpanda.api.dataplane.v1.TopicService/SetTopicConfigurations"
@@ -39,6 +41,8 @@ type TopicServiceClient interface {
 	CreateTopic(ctx context.Context, in *CreateTopicRequest, opts ...grpc.CallOption) (*CreateTopicResponse, error)
 	ListTopics(ctx context.Context, in *ListTopicsRequest, opts ...grpc.CallOption) (*ListTopicsResponse, error)
 	DeleteTopic(ctx context.Context, in *DeleteTopicRequest, opts ...grpc.CallOption) (*DeleteTopicResponse, error)
+	ListTopicsConfigurations(ctx context.Context, in *ListTopicsConfigurationsRequest, opts ...grpc.CallOption) (*ListTopicsConfigurationsResponse, error)
+	GetTopicDocumentation(ctx context.Context, in *GetTopicDocumentationRequest, opts ...grpc.CallOption) (*GetTopicDocumentationResponse, error)
 	GetTopicConfigurations(ctx context.Context, in *GetTopicConfigurationsRequest, opts ...grpc.CallOption) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(ctx context.Context, in *UpdateTopicConfigurationsRequest, opts ...grpc.CallOption) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(ctx context.Context, in *SetTopicConfigurationsRequest, opts ...grpc.CallOption) (*SetTopicConfigurationsResponse, error)
@@ -80,6 +84,26 @@ func (c *topicServiceClient) DeleteTopic(ctx context.Context, in *DeleteTopicReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteTopicResponse)
 	err := c.cc.Invoke(ctx, TopicService_DeleteTopic_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) ListTopicsConfigurations(ctx context.Context, in *ListTopicsConfigurationsRequest, opts ...grpc.CallOption) (*ListTopicsConfigurationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopicsConfigurationsResponse)
+	err := c.cc.Invoke(ctx, TopicService_ListTopicsConfigurations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *topicServiceClient) GetTopicDocumentation(ctx context.Context, in *GetTopicDocumentationRequest, opts ...grpc.CallOption) (*GetTopicDocumentationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopicDocumentationResponse)
+	err := c.cc.Invoke(ctx, TopicService_GetTopicDocumentation_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +187,8 @@ type TopicServiceServer interface {
 	CreateTopic(context.Context, *CreateTopicRequest) (*CreateTopicResponse, error)
 	ListTopics(context.Context, *ListTopicsRequest) (*ListTopicsResponse, error)
 	DeleteTopic(context.Context, *DeleteTopicRequest) (*DeleteTopicResponse, error)
+	ListTopicsConfigurations(context.Context, *ListTopicsConfigurationsRequest) (*ListTopicsConfigurationsResponse, error)
+	GetTopicDocumentation(context.Context, *GetTopicDocumentationRequest) (*GetTopicDocumentationResponse, error)
 	GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error)
 	UpdateTopicConfigurations(context.Context, *UpdateTopicConfigurationsRequest) (*UpdateTopicConfigurationsResponse, error)
 	SetTopicConfigurations(context.Context, *SetTopicConfigurationsRequest) (*SetTopicConfigurationsResponse, error)
@@ -188,6 +214,12 @@ func (UnimplementedTopicServiceServer) ListTopics(context.Context, *ListTopicsRe
 }
 func (UnimplementedTopicServiceServer) DeleteTopic(context.Context, *DeleteTopicRequest) (*DeleteTopicResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTopic not implemented")
+}
+func (UnimplementedTopicServiceServer) ListTopicsConfigurations(context.Context, *ListTopicsConfigurationsRequest) (*ListTopicsConfigurationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTopicsConfigurations not implemented")
+}
+func (UnimplementedTopicServiceServer) GetTopicDocumentation(context.Context, *GetTopicDocumentationRequest) (*GetTopicDocumentationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopicDocumentation not implemented")
 }
 func (UnimplementedTopicServiceServer) GetTopicConfigurations(context.Context, *GetTopicConfigurationsRequest) (*GetTopicConfigurationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTopicConfigurations not implemented")
@@ -281,6 +313,42 @@ func _TopicService_DeleteTopic_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TopicServiceServer).DeleteTopic(ctx, req.(*DeleteTopicRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_ListTopicsConfigurations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopicsConfigurationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).ListTopicsConfigurations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_ListTopicsConfigurations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).ListTopicsConfigurations(ctx, req.(*ListTopicsConfigurationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TopicService_GetTopicDocumentation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopicDocumentationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TopicServiceServer).GetTopicDocumentation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TopicService_GetTopicDocumentation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TopicServiceServer).GetTopicDocumentation(ctx, req.(*GetTopicDocumentationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -429,6 +497,14 @@ var TopicService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTopic",
 			Handler:    _TopicService_DeleteTopic_Handler,
+		},
+		{
+			MethodName: "ListTopicsConfigurations",
+			Handler:    _TopicService_ListTopicsConfigurations_Handler,
+		},
+		{
+			MethodName: "GetTopicDocumentation",
+			Handler:    _TopicService_GetTopicDocumentation_Handler,
 		},
 		{
 			MethodName: "GetTopicConfigurations",
