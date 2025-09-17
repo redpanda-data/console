@@ -248,6 +248,13 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
   const categories = entries.groupInto((x) => x.category);
   for (const e of categories) if (!e.key) e.key = 'Other';
 
+  const displayOrder = [
+    'Retention', 'Compaction', 'Replication', 'Tiered Storage',
+    'Write Caching', 'Iceberg', 'Message Handling', 'Compression', 'Storage Internals'
+  ];
+
+  categories.sort((a, b) => displayOrder.indexOf(a.key) - displayOrder.indexOf(b.key));
+
   return (
     <Box pt={4}>
       {$state.editedEntry !== null && (
@@ -260,7 +267,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
           }}
         />
       )}
-      <div className="configGroupTable">
+      <div className="configGroupTable" data-testid="config-group-table">
         <SearchField
           searchText={$state.filter || ''}
           placeholderText="Filter"
