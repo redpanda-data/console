@@ -62,17 +62,8 @@ message AIAgent {
     (buf.validate.field).required = true
   ];
 
-  // List of Redpanda MCP server IDs that this AI agent can use.
-  repeated string mcp_server_ids = 8;
-
-  //  // Map of MCP servers that this AI agent can use.
-  //  map<string, MCPServer> mcp_servers = 8 [
-  //    (buf.validate.field).map.keys.string = {
-  //      pattern: "^[A-Za-z0-9_-]+$"
-  //      max_len: 64
-  //    },
-  //    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
-  //  ];
+  // Map of MCP servers that this AI agent can use.
+  map<string, MCPServer> mcp_servers = 8;
 
   // Tags are key-value pairs that can be assigned to an AI agent resource.
   // They help organize AI agents and enable filtering when listing them.
@@ -88,15 +79,6 @@ message AIAgent {
 
   // URL to connect to the AI agent endpoint.
   string url = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Response configuration.
-  oneof response_configuration {
-    // Text response configuration.
-    TextResponseConfig text_response = 12;
-
-    // JSON response configuration.
-    JsonResponseConfig json_response = 13;
-  }
 
   message Provider {
     message OpenAI {
@@ -128,71 +110,10 @@ message AIAgent {
     STATE_ERROR = 5;
   }
 
-  // MCP transport types.
-  enum MCPTransport {
-    MCP_TRANSPORT_UNSPECIFIED = 0;
-    MCP_TRANSPORT_STREAMABLE = 1;
-    MCP_TRANSPORT_SSE = 2;
-  }
-
   // MCP server configuration.
   message MCPServer {
-    // Transport type for the MCP server.
-    MCPTransport transport = 1 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).enum = {
-        defined_only: true
-        not_in: [0]
-      }
-    ];
-
-    // URL of the MCP server.
-    string server_url = 2 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).string.min_len = 1,
-      (buf.validate.field).string.max_len = 512,
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "URL endpoint for the MCP server."}
-    ];
-
-    // Optional headers to include in requests to the MCP server.
-    map<string, string> headers = 3 [
-      (buf.validate.field).map.keys.string = {
-        pattern: "^[A-Za-z0-9-_]+$"
-        max_len: 64
-      },
-      (buf.validate.field).map.values.string = {max_len: 512},
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "HTTP headers to include when communicating with the MCP server."}
-    ];
-
-    // Optional list of headers to pass from the Agent request to the MCP server.
-    repeated string pass_headers = 4 [
-      (buf.validate.field).repeated = {
-        max_items: 20
-        items: {
-          string: {
-            pattern: "^[A-Za-z0-9-_]+$"
-            max_len: 64
-          }
-        }
-      },
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "List of header names from the request to pass through to the MCP server (e.g., 'Authorization', 'X-User-ID')."}
-    ];
-  }
-
-  // Text response configuration.
-  message TextResponseConfig {
-    // No additional configuration needed for text responses.
-  }
-
-  // JSON response configuration.
-  message JsonResponseConfig {
-    // JSON schema for structured responses.
-    optional string schema = 1 [
-      (buf.validate.field).string.max_len = 8192,
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "JSON schema defining the structure of expected responses."}
-    ];
+    // ID of the Redpanda MCP server.
+    string id = 1;
   }
 }
 
@@ -445,17 +366,8 @@ message AIAgentCreate {
     (buf.validate.field).required = true
   ];
 
-  // List of Redpanda MCP server IDs that this AI agent can use.
-  repeated string mcp_server_ids = 7;
-
-  //  // Map of MCP servers that this AI agent can use.
-  //  map<string, AIAgent.MCPServer> mcp_servers = 7 [
-  //    (buf.validate.field).map.keys.string = {
-  //      pattern: "^[A-Za-z0-9_-]+$"
-  //      max_len: 64
-  //    },
-  //    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
-  //  ];
+  // Map of MCP servers that this AI agent can use.
+  map<string, AIAgent.MCPServer> mcp_servers = 7;
 
   // Optional list of tags to attach to an AI agent.
   map<string, string> tags = 8 [(buf.validate.field).map = {
@@ -467,15 +379,6 @@ message AIAgentCreate {
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
-
-  // Response configuration.
-  oneof response_configuration {
-    // Text response configuration.
-    AIAgent.TextResponseConfig text_response = 10;
-
-    // JSON response configuration.
-    AIAgent.JsonResponseConfig json_response = 11;
-  }
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -590,17 +493,8 @@ message AIAgentUpdate {
     (buf.validate.field).required = true
   ];
 
-  // List of Redpanda MCP server IDs that this AI agent can use.
-  repeated string mcp_server_ids = 7;
-
-  //  // Map of MCP servers that this AI agent can use.
-  //  map<string, AIAgent.MCPServer> mcp_servers = 7 [
-  //    (buf.validate.field).map.keys.string = {
-  //      pattern: "^[A-Za-z0-9_-]+$"
-  //      max_len: 64
-  //    },
-  //    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Map of MCP server configurations that this AI agent can use for tool execution."}
-  //  ];
+  // Map of MCP servers that this AI agent can use.
+  map<string, AIAgent.MCPServer> mcp_servers = 7;
 
   // A map of tags to add, update or delete.
   // If a tag's value is empty, the server interprets that as a deletion.
@@ -613,15 +507,6 @@ message AIAgentUpdate {
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
-
-  // Response configuration.
-  oneof response_configuration {
-    // Text response configuration.
-    AIAgent.TextResponseConfig text_response = 10;
-
-    // JSON response configuration.
-    AIAgent.JsonResponseConfig json_response = 11;
-  }
 }
 
 message UpdateAIAgentRequest {
