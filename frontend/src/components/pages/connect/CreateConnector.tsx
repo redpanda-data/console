@@ -34,11 +34,9 @@ import {
 import { comparer } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { useOnboardingWizardStore } from '../../../state/onboarding-wizard/state';
 import { type ClusterConnectors, type ConnectorValidationResult, DataType } from '../../../state/restInterfaces';
 import { uiState } from '../../../state/uiState';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
@@ -236,14 +234,7 @@ interface ConnectorWizardProps {
 
 const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorWizardProps) => {
   const toast = useToast();
-  const location = useLocation();
-  const { addDataFormData, clearAllFormData } = useOnboardingWizardStore();
-
-  // Check if we're coming from the onboarding wizard
-  const isFromOnboarding = new URLSearchParams(location.search).get('fromOnboarding') === 'true';
-
-  // Initialize step based on whether we're coming from onboarding
-  const [currentStep, setCurrentStep] = useState(isFromOnboarding ? 0 : 0);
+  const [currentStep, setCurrentStep] = useState(0);
   const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
   const [invalidValidationResult, setInvalidValidationResult] = useState<ConnectorValidationResult | null>(null);
   const [validationFailure, setValidationFailure] = useState<unknown>(null);
@@ -266,29 +257,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
   useEffect(() => {
     setConnectClusterStore(ConnectClusterStore.getInstance(activeCluster));
   }, [activeCluster]);
-
-  // Pre-populate connector selection from onboarding wizard state
-  useEffect(() => {
-    if (isFromOnboarding && addDataFormData?.connection && !selectedPlugin) {
-      const activeClusterInfo = api.connectAdditionalClusterInfo.get(activeCluster);
-      const availablePlugins = activeClusterInfo?.plugins || [];
-
-      // Try to find a connector that matches the selected connection
-      const matchingPlugin = availablePlugins.find(
-        (plugin) =>
-          plugin.class.toLowerCase().includes(addDataFormData.connection.toLowerCase()) ||
-          addDataFormData.connection
-            .toLowerCase()
-            .includes(plugin.class.toLowerCase().split('.').pop()?.toLowerCase() || ''),
-      );
-
-      if (matchingPlugin) {
-        setSelectedPlugin(matchingPlugin);
-        // If we found a matching plugin, go to the properties step
-        setCurrentStep(1);
-      }
-    }
-  }, [isFromOnboarding, addDataFormData, selectedPlugin, activeCluster]);
 
   useEffect(() => {
     try {
@@ -345,6 +313,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       content: (
         <>
           <CreateConnectorHeading plugin={selectedPlugin} />
+
           {selectedPlugin ? (
             <Box maxWidth="800px">
               {/* biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex */}
@@ -484,12 +453,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           closeCreatingModal();
         }
         setLoading(false);
-
-        // Clear onboarding wizard state after successful creation
-        if (isFromOnboarding) {
-          clearAllFormData();
-        }
-
         return { conditionMet: true };
       },
       nextButtonLabel: 'Create',

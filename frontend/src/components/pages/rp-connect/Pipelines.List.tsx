@@ -11,17 +11,18 @@
 
 import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
-import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { useCallback } from 'react';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
-import { Link } from 'react-router-dom';
-import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
+import { Link, useNavigate } from 'react-router-dom';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi } from '../../../state/backendApi';
+import { useConnectConfig } from '../../../state/onboarding-wizard/state';
 import { Features } from '../../../state/supportedFeatures';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -33,6 +34,7 @@ import { openDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
+// TODO: turn into a dropdown button with list of connections
 const CreatePipelineButton = () => {
   return (
     <Box style={{ display: 'flex', marginBottom: '.5em' }}>
@@ -44,7 +46,38 @@ const CreatePipelineButton = () => {
 };
 
 const EmptyPlaceholder = () => {
-  return <AddDataStep />;
+  const navigate = useNavigate();
+  const { setData: setConnectConfig } = useConnectConfig();
+
+  const handleConnectionChange = useCallback(
+    (connectionName: string) => {
+      try {
+        setConnectConfig({
+          connectionName,
+        });
+        // Navigate to create pipeline page with quickstart params
+        navigate('/rp-connect/create?quickstart=true');
+      } catch (error) {
+        toast({
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+          title: 'Failed to select connection',
+          description: error instanceof Error ? error.message : 'Please try again',
+        });
+      }
+    },
+    [navigate, setConnectConfig],
+  );
+
+  return (
+    <Box>
+      <Text fontSize="lg" fontWeight="bold" mb={4}>
+        Get started by selecting a connection method
+      </Text>
+      <AddDataStep onChange={handleConnectionChange} hideHeader />
+    </Box>
+  );
 };
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {

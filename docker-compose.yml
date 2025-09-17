@@ -1,0 +1,163 @@
+version: '3.7'
+name: redpanda-owl-shop
+networks:
+  redpanda_network:
+    driver: bridge
+volumes:
+  redpanda: null
+services:
+  redpanda:
+#    image: docker.redpanda.com/redpandadata/redpanda:v23.2.8
+#    image: redpandadata/redpanda-unstable:v24.2.1-rc2
+#    image: redpandadata/redpanda-nightly:v0.0.0-20240920git9f013b0-arm64
+    image: redpandadata/redpanda-nightly:latest
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      # Address the broker advertises to clients that connect to the Kafka API.
+      # Use the internal addresses to connect to the Redpanda brokers
+      # from inside the same Docker network.
+      # Use the external addresses to connect to the Redpanda brokers
+      # from outside the Docker network.
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      # Address the broker advertises to clients that connect to the HTTP Proxy.
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      # Redpanda brokers use the RPC API to communicate with each other internally.
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+    ports:
+      - 18081:18081
+      - 18082:18082
+      - 19092:19092
+      - 19644:9644
+    volumes:
+      - redpanda:/var/lib/redpanda/data
+    networks:
+      - redpanda_network
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+#   console:
+#     image: docker.redpanda.com/redpandadata/console:v2.6.0
+#     # serveFrontend: true
+#     # image: docker.redpanda.com/redpandadata/console-unstable:frontend-move-to-bun-package-manager-dbe95b9
+#     entrypoint: /bin/sh
+#     command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+#     environment:
+#       CONFIG_FILEPATH: /tmp/config.yml
+#       CONSOLE_CONFIG_FILE: |
+#         kafka:
+#           brokers: ["redpanda:9092"]
+#           schemaRegistry:
+#             enabled: true
+#             urls: ["https://psrc-lgkvv.europe-west3.gcp.confluent.cloud"]
+#             username: BF4I7K4RZVZF6OTN
+#             password: PDidnwMzUNvZiQpOpkT2a8uK/T/ePUivG8+rUz2FDVhdVbjZgb8zSyTdnG478CoU
+#             tls:
+#               enabled: true
+#         redpanda:
+#           adminApi:
+#             enabled: true
+#             urls: ["http://redpanda:9644"]
+#         connect:
+#           enabled: true
+#           clusters:
+#             - name: local-connect-cluster
+#               url: http://connect:8083
+# #            - name: local-connect-cluster2
+# #              url: http://connect:8083
+#     ports:
+#       - 8080:8080
+#     networks:
+#       - redpanda_network
+#     depends_on:
+#       - redpanda
+  owl-shop:
+    image: quay.io/cloudhut/owl-shop:sha-5211ad3
+    networks:
+      - redpanda_network
+    platform: 'linux/amd64'
+    entrypoint: /bin/sh
+    command: -c "echo \"$$OWLSHOP_CONFIG_FILE\" > /tmp/config.yml; /app/owlshop"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      OWLSHOP_CONFIG_FILE: |
+        shop:
+          requestRate: 1
+          interval: 0.1s
+         (to topicReplicationFactor: 3
+          topicPartitionCount: 3
+        kafka:
+          brokers: "redpanda:9092"
+        schemaRegistry:
+          address: "http://redpanda:8081"
+    depends_on:
+      - redpanda
+  connect:
+    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest
+    hostname: connect
+    container_name: connect
+    networks:
+      - redpanda_network
+#    platform: 'linux/amd64'
+    depends_on:
+      - redpanda
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_CONFIGURATION: |
+        key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        group.id=connectors-cluster
+        offset.storage.topic=_internal_connectors_offsets
+        config.storage.topic=_internal_connectors_configs
+        status.storage.topic=_internal_connectors_status
+        config.storage.replication.factor=-1
+        offset.storage.replication.factor=-1
+        status.storage.replication.factor=-1
+        offset.flush.interval.ms=1000
+        producer.linger.ms=50
+        producer.batch.size=131072
+      CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+      CONNECT_GC_LOG_ENABLED: "false"
+      CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
+      CONNECT_LOG_LEVEL: info
+      CONNECT_TOPIC_LOG_ENABLED: "true"
+#  connect2:
+#    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:v1.0.0-670a78a
+#    hostname: connect2
+#    container_name: connect2
+#    networks:
+#      - redpanda_network
+#    #    platform: 'linux/amd64'
+#    depends_on:
+#      - redpanda
+#    ports:
+#      - "8084:8083"
+#    environment:
+#      CONNECT_CONFIGURATION: |
+#        key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+#        value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+#        group.id=connectors-cluster
+#        offset.storage.topic=_internal_connectors_offsets
+#        config.storage.topic=_internal_connectors_configs
+#        status.storage.topic=_internal_connectors_status
+#        config.storage.replication.factor=-1
+#        offset.storage.replication.factor=-1
+#        status.storage.replication.factor=-1
+#        offset.flush.interval.ms=1000
+#        producer.linger.ms=50
+#        producer.batch.size=131072
+#      CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+#      CONNECT_GC_LOG_ENABLED: "false"
+#      CONNECT_HEAP_OPTS: -Xms512M -Xmx512M
+#      CONNECT_LOG_LEVEL: info
+#      CONNECT_TOPIC_LOG_ENABLED: "true"

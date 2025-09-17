@@ -243,6 +243,17 @@ export interface ComponentSpec {
   version?: string;
 }
 
+// ✅ NEW: Extended ComponentSpec for external connections (Phase 2)
+export interface ExtendedComponentSpec extends ComponentSpec {
+  // External documentation
+  externalDocs?: {
+    primaryUrl?: string;
+    secondaryUrl?: string;
+    format?: 'markdown' | 'asciidoc';
+    logoUrl?: string;
+  };
+}
+
 // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
 // Example functions: `batch_index()`, `env("VAR_NAME")`, `uuid_v4()`.
 export interface BloblangFunctionSpec {
@@ -497,19 +508,57 @@ export interface PipelineRoot {
    * (e.g., `local`, `redis`) and their configurations.
    * Note: The key in the source JSON is "rate-limits".
    */
-  ['rate-limits']?: ComponentSpec[];
+  'rate-limits'?: ComponentSpec[];
   /**
    * A list of specifications for all available built-in Bloblang functions.
    * Bloblang is Benthos's powerful data mapping and transformation language. This
    * array details each standard function, its parameters, and usage.
    * Note: The key in the source JSON is "bloblang-functions".
    */
-  ['bloblang-functions']?: BloblangFunctionSpec[];
+  'bloblang-functions'?: BloblangFunctionSpec[];
   /**
    * A list of specifications for all available built-in Bloblang methods.
    * Methods in Bloblang are functions that are called on a context value (e.g., `this.field.uppercase()`).
    * This array details each standard method, its parameters, and usage.
    * Note: The key in the source JSON is "bloblang-methods".
    */
-  ['bloblang-methods']?: BloblangMethodSpec[];
+  'bloblang-methods'?: BloblangMethodSpec[];
 }
+
+export interface NodeCategory {
+  id: string;
+  name: string;
+  components: ComponentSpec[];
+}
+
+export interface SchemaNodeConfig {
+  id: string;
+  name: string;
+  type: string;
+  category: ComponentType;
+  status: ComponentStatus;
+  summary?: string;
+  description?: string;
+  config: ComponentSpec['config'];
+  categories?: string[] | null;
+  version?: string;
+}
+
+// JSON Schema interfaces for parsing the actual schema file
+export interface JsonSchemaProperty {
+  type?: string;
+  properties?: Record<string, JsonSchemaProperty>;
+  items?: JsonSchemaProperty;
+  required?: string[];
+  additionalProperties?: boolean | JsonSchemaProperty;
+  anyOf?: JsonSchemaProperty[];
+  allOf?: JsonSchemaProperty[];
+  $ref?: string;
+}
+
+export interface JsonSchema {
+  definitions?: Record<string, JsonSchemaProperty>;
+  properties?: Record<string, JsonSchemaProperty>;
+}
+
+export type BaseConfig = Record<string, Record<string, unknown>>;

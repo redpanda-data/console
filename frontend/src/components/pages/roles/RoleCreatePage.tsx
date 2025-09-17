@@ -13,10 +13,10 @@ import { create } from '@bufbuild/protobuf';
 import { useToast } from '@redpanda-data/ui';
 import {
   convertRulesToCreateACLRequests,
+  handleResponses,
   PrincipalTypeRedpandaRole,
   parsePrincipal,
   type Rule,
-  handleResponses,
 } from 'components/pages/acls/new-acl/ACL.model';
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';

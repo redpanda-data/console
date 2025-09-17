@@ -11,28 +11,17 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  AddDataFormData,
-  AddTopicFormData,
-  AddUserFormData,
-} from '../../components/pages/onboarding-wizard/types/forms';
-import { generateConnectConfig } from '../../components/pages/onboarding-wizard/utils/connect';
+import type { AddTopicFormData, AddUserFormData } from '../../components/pages/onboarding-wizard/types/forms';
 
 export type ConnectConfig = {
-  yaml: string;
-  type: 'input' | 'output';
+  connectionName: string;
 };
 
-// Main onboarding wizard state interface
 export interface OnboardingWizardState {
-  // Form data for each step
-  addDataFormData: AddDataFormData | undefined;
+  connectConfig: ConnectConfig | undefined;
   addTopicFormData: AddTopicFormData | undefined;
   addUserFormData: AddUserFormData | undefined;
-  connectConfig: ConnectConfig | undefined;
 
-  // Actions to update form data
-  setAddDataFormData: (data: AddDataFormData) => void;
   setAddTopicFormData: (data: AddTopicFormData) => void;
   setAddUserFormData: (data: AddUserFormData) => void;
   setConnectConfig: (data: ConnectConfig) => void;
@@ -40,9 +29,7 @@ export interface OnboardingWizardState {
   // Utility actions
   clearAllFormData: () => void;
   getCompletedSteps: () => string[];
-  getAllFormData: () => Partial<AddDataFormData & AddTopicFormData & AddUserFormData>;
-  getGeneratedConfig: () => { yaml: string };
-  regenerateAndSaveConfig: () => void;
+  getAllFormData: () => Partial<ConnectConfig & AddTopicFormData & AddUserFormData>;
 }
 
 // Create the Zustand store with persistence
@@ -50,14 +37,12 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
   persist(
     (set, get) => ({
       // Initial state
-      addDataFormData: undefined,
       addTopicFormData: undefined,
       addUserFormData: undefined,
       connectConfig: undefined,
 
-      // Actions
-      setAddDataFormData: (data: AddDataFormData) => {
-        set({ addDataFormData: data });
+      setConnectConfig: (data: ConnectConfig) => {
+        set({ connectConfig: data });
       },
 
       setAddTopicFormData: (data: AddTopicFormData) => {
@@ -68,16 +53,12 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
         set({ addUserFormData: data });
       },
 
-      setConnectConfig: (data: ConnectConfig) => {
-        set({ connectConfig: data });
-      },
-
       clearAllFormData: () => {
         // Clear in-memory state
         set({
-          addDataFormData: undefined,
           addTopicFormData: undefined,
           addUserFormData: undefined,
+          connectConfig: undefined,
         });
       },
 
@@ -85,7 +66,7 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
         const state = get();
         const completedSteps: string[] = [];
 
-        if (state.addDataFormData) completedSteps.push('add-data-step');
+        if (state.connectConfig) completedSteps.push('add-data-step');
         if (state.addTopicFormData) completedSteps.push('add-topic-step');
         if (state.addUserFormData) completedSteps.push('add-user-step');
 
@@ -94,66 +75,31 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
       getAllFormData: () => {
         const state = get();
         return {
-          ...state.addDataFormData,
+          ...state.connectConfig,
           ...state.addTopicFormData,
           ...state.addUserFormData,
         };
-      },
-      getGeneratedConfig: () => {
-        const state = get();
-        const formData = {
-          ...state.addDataFormData,
-          ...state.addTopicFormData,
-          ...state.addUserFormData,
-        };
-
-        // Generate config using the current form data and connectConfig
-        if (state.connectConfig) {
-          return generateConnectConfig(formData, state.connectConfig);
-        }
-        return { yaml: '' };
-      },
-      regenerateAndSaveConfig: () => {
-        const state = get();
-        const formData = {
-          ...state.addDataFormData,
-          ...state.addTopicFormData,
-          ...state.addUserFormData,
-        };
-
-        // Generate config and update the store
-        if (state.connectConfig) {
-          const result = generateConnectConfig(formData, state.connectConfig);
-          set({
-            connectConfig: {
-              yaml: result.yaml,
-              type: state.connectConfig.type,
-            },
-          });
-        } else {
-          console.log('No connectConfig found in state');
-        }
       },
     }),
     {
       name: 'onboarding-wizard-storage', // localStorage key
       partialize: (state) => ({
         // Only persist the form data, not the actions
-        addDataFormData: state.addDataFormData,
+        connectConfig: state.connectConfig,
         addTopicFormData: state.addTopicFormData,
         addUserFormData: state.addUserFormData,
-        connectConfig: state.connectConfig,
       }),
     },
   ),
 );
 
-// Convenience hooks for individual form data
-export const useAddDataFormData = () =>
-  useOnboardingWizardStore((state) => ({
-    data: state.addDataFormData,
-    setData: state.setAddDataFormData,
+// Selectors, kind of, but not really
+export const useConnectConfig = () => {
+  return useOnboardingWizardStore((state) => ({
+    data: state.connectConfig,
+    setData: state.setConnectConfig,
   }));
+};
 
 export const useAddTopicFormData = () =>
   useOnboardingWizardStore((state) => ({
@@ -167,12 +113,6 @@ export const useAddUserFormData = () =>
     setData: state.setAddUserFormData,
   }));
 
-export const useConnectConfig = () => {
-  return useOnboardingWizardStore((state) => ({
-    data: state.connectConfig,
-    setData: state.setConnectConfig,
-  }));
-};
+export const useCompletedSteps = () => useOnboardingWizardStore((state) => state.getCompletedSteps());
 
-// Export the main store for direct access if needed
-export default useOnboardingWizardStore;
+export const useClearWizardStateCache = () => useOnboardingWizardStore((state) => state.clearAllFormData);

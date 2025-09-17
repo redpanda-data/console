@@ -10,63 +10,62 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
-import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
-// import { useNavigate } from "react-router-dom";
-import useOnboardingWizardStore, {} from 'state/onboarding-wizard/state';
+import { Link as ReactRouterLink } from 'react-router-dom';
+import { useClearWizardStateCache, useCompletedSteps } from 'state/onboarding-wizard/state';
 import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { AddDataStep, type AddDataStepRef } from './steps/add-data-step';
 import { AddTopicStep, type AddTopicStepRef } from './steps/add-topic-step';
 import { AddUserStep, type AddUserStepRef } from './steps/add-user-step';
 import { ConnectStep } from './steps/connect-step';
-import { type DataType, getStepDefinitions, WizardStep } from './types';
-import { type ConnectionType, generateConnectConfig } from './utils/connect';
-import { handleStepResult } from './utils/wizard';
+import { getStepDefinitions, WizardStep } from './types';
+import type { ComponentType, ExtendedComponentSpec } from './types/connect';
+import { CREATE_RPCN_PARAM, CREATE_RPCN_PATH, handleStepResult, shouldAllowStepNavigation } from './utils/wizard';
 
 //   import { quickstartModalViewedEvent } from 'utils/analytics.utils'; TODO: add analytics
 
 interface ServerlessOnboardingWizardProps {
   isOpen: boolean;
-  dataType: DataType;
+  componentTypeFilter?: ComponentType;
   onClose?: () => void;
-  additionalConnections?: ConnectionType[];
+  additionalComponents?: ExtendedComponentSpec[];
+  initialStep?: WizardStep;
+  shouldRedirectToConnect?: boolean;
 }
 
-const shouldAllowStepNavigation = (
-  targetStepId: WizardStep,
-  currentStepId: WizardStep,
-  completedSteps: string[],
-): boolean => {
-  const stepOrder = [WizardStep.ADD_DATA, WizardStep.ADD_TOPIC, WizardStep.ADD_USER, WizardStep.CONNECT];
-  const targetIndex = stepOrder.indexOf(targetStepId);
-  const currentIndex = stepOrder.indexOf(currentStepId);
-
-  // Allow navigation to current step or previous steps only
-  const isPreviousStep = targetIndex <= currentIndex;
-  const isStepCompleted = completedSteps.includes(targetStepId);
-  const allStepsCompleted = completedSteps.length === 3;
-
-  return isPreviousStep || isStepCompleted || allStepsCompleted;
-};
-
-const CREATE_RPCN_PATH = '/rp-connect/create';
-const CREATE_RPCN_PARAM = 'quickstart=true';
-
 export const ServerlessOnboardingWizard = memo(
-  ({ isOpen, onClose, dataType, additionalConnections }: ServerlessOnboardingWizardProps) => {
-    const stepDefinitions = useMemo(() => getStepDefinitions(dataType), [dataType]);
+  ({
+    isOpen,
+    onClose,
+    componentTypeFilter,
+    additionalComponents,
+    initialStep,
+    shouldRedirectToConnect,
+  }: ServerlessOnboardingWizardProps) => {
+    const stepDefinitions = useMemo(() => getStepDefinitions(componentTypeFilter), [componentTypeFilter]);
     const { Stepper } = useMemo(() => defineStepper(...stepDefinitions), [stepDefinitions]);
-    const { getCompletedSteps, getAllFormData, connectConfig, setConnectConfig } = useOnboardingWizardStore();
-    const populatedConfig = generateConnectConfig(getAllFormData(), connectConfig);
+    const completedSteps = useCompletedSteps();
+    // const clearWizardStateCache = useClearWizardStateCache();
 
     const addDataStepRef = useRef<AddDataStepRef>(null);
     const addTopicStepRef = useRef<AddTopicStepRef>(null);
     const addUserStepRef = useRef<AddUserStepRef>(null);
-    // const navigate = useNavigate();
+
     const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
       hideInternalTopics: true,
     });
     const { data: usersList } = useLegacyListUsersQuery();
-    const { pathname, search } = useLocation();
+
+    const handleOpenChange = useCallback(
+      (open: boolean) => {
+        if (!open) {
+          onClose?.();
+        } else {
+          // reset form whenever the wizard is opened
+          // clearWizardStateCache();
+        }
+      },
+      [onClose],
+    );
 
     const handleNext = async (methods: { current: { id: WizardStep }; next: () => void }) => {
       switch (methods.current.id) {
@@ -82,11 +81,11 @@ export const ServerlessOnboardingWizard = memo(
         }
         case WizardStep.ADD_USER: {
           const result = await addUserStepRef.current?.triggerSubmit();
-          setConnectConfig({ yaml: populatedConfig.yaml, type: connectConfig?.type || 'input' });
           handleStepResult(result, methods.next);
           break;
         }
         case WizardStep.CONNECT: {
+          handleOpenChange(false);
           break;
         }
         default:
@@ -94,25 +93,11 @@ export const ServerlessOnboardingWizard = memo(
       }
     };
 
-    const handleOpenChange = useCallback(
-      (open: boolean) => {
-        if (!open) {
-          useOnboardingWizardStore.getState().clearAllFormData();
-          onClose?.();
-        }
-      },
-      [onClose],
-    );
-
-    const getStepperDefaultValue = useCallback(() => {
-      return pathname.includes(CREATE_RPCN_PATH) && search.includes(CREATE_RPCN_PARAM) ? WizardStep.CONNECT : undefined;
-    }, [pathname, search]);
-
     return (
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <Stepper.Provider className="space-y-4" initialStep={getStepperDefaultValue()}>
+        <Stepper.Provider className="space-y-4" initialStep={initialStep}>
           {({ methods }) => (
-            <SheetContent className="sm:max-w-screen lg:max-w-7xl lg:w-7xl w-full overflow-y-auto">
+            <SheetContent className="sm:max-w-screen lg:max-w-5xl lg:w-5xl w-full overflow-y-auto">
               <Toaster expand />
               <div className="relative flex flex-col h-full">
                 <div className="flex flex-col gap-8 pt-6 h-full">
@@ -122,7 +107,7 @@ export const ServerlessOnboardingWizard = memo(
                         <Stepper.Step
                           key={step.id}
                           of={step.id}
-                          disabled={!shouldAllowStepNavigation(step.id, methods.current.id, getCompletedSteps())}
+                          disabled={!shouldAllowStepNavigation(step.id, methods.current.id, completedSteps)}
                           onClick={() => methods.goTo(step.id)}
                         >
                           <Stepper.Title>{step.title}</Stepper.Title>
@@ -134,13 +119,13 @@ export const ServerlessOnboardingWizard = memo(
                     [WizardStep.ADD_DATA]: () => (
                       <AddDataStep
                         ref={addDataStepRef}
-                        dataType={dataType}
-                        additionalConnections={additionalConnections}
+                        componentTypeFilter={componentTypeFilter}
+                        additionalComponents={additionalComponents}
                       />
                     ),
                     [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
                     [WizardStep.ADD_USER]: () => <AddUserStep ref={addUserStepRef} usersList={usersList?.users} />,
-                    [WizardStep.CONNECT]: () => <ConnectStep additionalConnections={additionalConnections} />,
+                    [WizardStep.CONNECT]: () => <ConnectStep additionalComponents={additionalComponents} />,
                   })}
                 </div>
                 <SheetFooter sticky>
@@ -150,7 +135,7 @@ export const ServerlessOnboardingWizard = memo(
                         Previous
                       </Button>
                     )}
-                    {methods.isLast ? (
+                    {shouldRedirectToConnect && methods.isFirst ? (
                       <Button asChild>
                         <Link
                           as={ReactRouterLink}
@@ -161,8 +146,9 @@ export const ServerlessOnboardingWizard = memo(
                            */
                           reloadDocument
                           to={`${CREATE_RPCN_PATH}?${CREATE_RPCN_PARAM}`}
+                          className="no-underline"
                         >
-                          Finish
+                          Next
                         </Link>
                       </Button>
                     ) : (

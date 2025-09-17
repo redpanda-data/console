@@ -6,16 +6,19 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import downdoc from 'downdoc';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGetConnectContentQuery } from 'react-query/api/connect-docs';
-import useOnboardingWizardStore, { useAddDataFormData } from '../../../../state/onboarding-wizard/state';
-import type { ConnectionType } from '../utils/connect';
+import { useConnectConfig } from '../../../../state/onboarding-wizard/state';
+import { useGenerateConnectConfig } from '../hooks';
+import type { ComponentType, ExtendedComponentSpec } from '../types/connect';
+import { getComponentByName } from '../utils/connect';
 
-export const ConnectStep = ({ additionalConnections }: { additionalConnections?: ConnectionType[] }) => {
-  const { regenerateAndSaveConfig, connectConfig } = useOnboardingWizardStore();
+// Helper function to get component type display label
+const getComponentTypeLabel = (type: ComponentType | undefined): string => {
+  if (!type) return 'Component';
+  return type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
+};
 
-  useEffect(() => {
-    regenerateAndSaveConfig();
-  }, [regenerateAndSaveConfig]);
-
+export const ConnectStep = ({ additionalComponents }: { additionalComponents?: ExtendedComponentSpec[] }) => {
+  const yaml = useGenerateConnectConfig();
   return (
     <div className="flex flex-col gap-8">
       <Card size="full">
@@ -24,50 +27,56 @@ export const ConnectStep = ({ additionalConnections }: { additionalConnections?:
         </CardHeader>
         <CardContent>Click finish to fine tune your RPCN configuration. </CardContent>
         {/* summary of everything we did */}
-        {connectConfig?.yaml ? (
-          <DynamicCodeBlock lang="yaml" code={connectConfig.yaml} />
+        {yaml ? (
+          <DynamicCodeBlock lang="yaml" code={yaml} />
         ) : (
           <Text color="destructive">Something went wrong, start the wizard over again.</Text>
         )}
       </Card>
-      <ConnectDocs additionalConnections={additionalConnections} />
+      <ConnectDocs additionalComponents={additionalComponents} />
     </div>
   );
 };
 
-export const ConnectDocs = ({ additionalConnections }: { additionalConnections?: ConnectionType[] }) => {
-  const { data: { connection: connectionData } = {} } = useAddDataFormData();
+export const ConnectDocs = ({ additionalComponents }: { additionalComponents?: ExtendedComponentSpec[] }) => {
+  const { data: connectConfig } = useConnectConfig();
 
-  // Check if this connection matches one from additionalConnections
-  const additionalConnection = useMemo(
-    () => additionalConnections?.find((conn) => conn.name === connectionData),
-    [additionalConnections, connectionData],
-  );
+  const connectionName = connectConfig?.connectionName;
 
-  if (!connectionData) {
+  // Check if this connection matches one from additionalComponents
+  const additionalComponent = useMemo(() => {
+    if (additionalComponents) {
+      return additionalComponents.find((comp) => comp.name === connectionName);
+    }
+    return undefined;
+  }, [additionalComponents, connectionName]);
+
+  if (!connectionName) {
     return <Text variant="lead">Something went wrong, start the wizard over again.</Text>;
   }
 
-  if (additionalConnection) {
-    return <ConnectByAdditionalConnection connection={additionalConnection} />;
+  if (additionalComponent) {
+    // Handle ExtendedComponentSpec
+    return <ConnectByExtendedComponent component={additionalComponent} />;
   }
 
-  return <ConnectByConnect connection={connectionData} />;
+  return <ConnectByConnect />;
 };
 
-const ConnectByConnect = ({ connection }: { connection: string }) => {
-  const { connectConfig } = useOnboardingWizardStore();
-  const connectionType = connectConfig?.type === 'input' ? 'input' : 'output';
+const ConnectByConnect = () => {
+  const { data: connectConfig } = useConnectConfig();
+  const connectionName = connectConfig?.connectionName;
+  const componentConfig = getComponentByName(connectionName);
   const {
     pageContent,
     partialContent,
     isLoading: isCodeSnippetLoading,
   } = useGetConnectContentQuery({
-    connection,
-    connectionType,
+    connectionName: connectionName ?? '',
+    connectionType: componentConfig?.type as ComponentType,
   });
 
-  const connectionTypeLabel = connectConfig?.type === 'input' ? 'Input' : 'Output';
+  const connectionTypeLabel = getComponentTypeLabel(componentConfig?.type);
 
   // TODO: migrate to asciidoctor or antora
   const formattedPageContent = pageContent ? downdoc(pageContent) : '';
@@ -75,7 +84,7 @@ const ConnectByConnect = ({ connection }: { connection: string }) => {
 
   return (
     <div className="flex flex-col gap-8">
-      <Heading level={2}>{connection} Docs</Heading>
+      <Heading level={2}>{connectionName} Docs</Heading>
 
       {isCodeSnippetLoading ? (
         // TODO fix this
@@ -157,21 +166,21 @@ const useExternalDocumentation = (url?: string, format?: 'markdown' | 'asciidoc'
   return { content: formattedContent, isLoading, error, refetch: fetchContent };
 };
 
-const ConnectByAdditionalConnection = ({ connection }: { connection: ConnectionType }) => {
-  const { connectConfig } = useOnboardingWizardStore();
-  const connectionTypeLabel = connectConfig?.type === 'input' ? 'Input' : 'Output';
+// ✅ NEW: Component for handling ExtendedComponentSpec (Phase 2)
+const ConnectByExtendedComponent = ({ component }: { component: ExtendedComponentSpec }) => {
+  const connectionTypeLabel = getComponentTypeLabel(component.type);
 
   const {
     content: primaryContent,
     isLoading: isPrimaryLoading,
     error: primaryError,
-  } = useExternalDocumentation(connection.docUrl, connection.docFormat);
+  } = useExternalDocumentation(component.externalDocs?.primaryUrl, component.externalDocs?.format);
 
   const {
     content: secondaryContent,
     isLoading: isSecondaryLoading,
     error: secondaryError,
-  } = useExternalDocumentation(connection.docUrl2, connection.docFormat);
+  } = useExternalDocumentation(component.externalDocs?.secondaryUrl, component.externalDocs?.format);
 
   const isLoading = isPrimaryLoading || isSecondaryLoading;
   const hasError = primaryError || secondaryError;
@@ -180,10 +189,10 @@ const ConnectByAdditionalConnection = ({ connection }: { connection: ConnectionT
     <div className="flex flex-col gap-8">
       <div className="flex flex-col">
         <Heading className="gap-2 flex items-center" level={2}>
-          {connection.src && (
+          {component.externalDocs?.logoUrl && (
             <img
-              src={connection.src}
-              alt={`${connection.name} logo`}
+              src={component.externalDocs.logoUrl}
+              alt={`${component.name} logo`}
               className="w-12 h-12 object-contain"
               onError={(e) => {
                 // Hide broken images
@@ -191,8 +200,13 @@ const ConnectByAdditionalConnection = ({ connection }: { connection: ConnectionT
               }}
             />
           )}
-          {connection.name} Docs
+          {component.name} Documentation
         </Heading>
+        {component.summary && (
+          <Text variant="muted" className="mt-2">
+            {component.summary}
+          </Text>
+        )}
       </div>
 
       {isLoading ? (
@@ -203,7 +217,7 @@ const ConnectByAdditionalConnection = ({ connection }: { connection: ConnectionT
       ) : hasError ? (
         <Card size="full">
           <CardContent className="text-center py-8">
-            <Text variant="muted">Unable to load documentation. Please check the connection URLs.</Text>
+            <Text variant="muted">Unable to load documentation. Please check the external documentation URLs.</Text>
             {(primaryError || secondaryError) && (
               <Text variant="muted" className="mt-2 text-sm">
                 Error: {primaryError || secondaryError}
@@ -241,7 +255,7 @@ const ConnectByAdditionalConnection = ({ connection }: { connection: ConnectionT
           {!primaryContent && !secondaryContent && (
             <Card size="full">
               <CardContent className="text-center py-8">
-                <Text variant="muted">No documentation content available for this connection.</Text>
+                <Text variant="muted">No external documentation content available for this connection.</Text>
               </CardContent>
             </Card>
           )}

@@ -33,8 +33,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ServerlessOnboardingWizard } from 'components/pages/onboarding-wizard/serverless-onboarding-wizard';
-import type { DataType } from 'components/pages/onboarding-wizard/types';
-import type { ConnectionType } from 'components/pages/onboarding-wizard/utils/connect';
+import type { ComponentType, ExtendedComponentSpec } from 'components/pages/onboarding-wizard/types/connect';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
@@ -76,9 +75,10 @@ export interface EmbeddedProps extends SetConfigArguments {
    */
   featureFlags?: Record<string, boolean>;
   isOnboardingWizardOpen: boolean;
-  onboardingWizardDataType: DataType;
+  filterOnboardingWizardConnectionsByType?: ComponentType;
   onCloseOnboardingWizard?: () => void;
-  additionalOnboardingWizardConnections?: ConnectionType[];
+  additionalOnboardingWizardConnections?: ExtendedComponentSpec[];
+  shouldWizardRedirectToConnect?: boolean;
 }
 
 function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
@@ -122,9 +122,10 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
                   <AppContent />
                   <ServerlessOnboardingWizard
                     isOpen={p.isOnboardingWizardOpen}
-                    dataType={p.onboardingWizardDataType}
+                    componentTypeFilter={p.filterOnboardingWizardConnectionsByType}
                     onClose={p.onCloseOnboardingWizard}
-                    additionalConnections={p.additionalOnboardingWizardConnections}
+                    additionalComponents={p.additionalOnboardingWizardConnections}
+                    shouldRedirectToConnect={p.shouldWizardRedirectToConnect}
                   />
                 </ErrorBoundary>
               </QueryClientProvider>

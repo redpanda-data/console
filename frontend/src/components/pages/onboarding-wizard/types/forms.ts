@@ -10,7 +10,7 @@ import { z } from 'zod';
 // ============================================================================
 
 export const addDataFormSchema = z.object({
-  connection: z.string().min(1, { message: 'Please select a connection method.' }),
+  connectionName: z.string().min(1, { message: 'Please select a connection method.' }),
 });
 
 export type AddDataFormData = z.infer<typeof addDataFormSchema>;

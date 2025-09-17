@@ -1,5 +1,4 @@
-export const DataTypes = ['source', 'sink'] as const;
-export type DataType = (typeof DataTypes)[number];
+import type { ComponentType } from './connect';
 
 export enum WizardStep {
   ADD_DATA = 'add-data-step',
@@ -22,8 +21,11 @@ export interface BaseStepRef {
 }
 
 // Helper to convert enum to step definitions
-export const getStepDefinitions = (dataType: DataType) => [
-  { id: WizardStep.ADD_DATA, title: `${dataType === 'source' ? 'Source' : 'Sink'} Your Data` },
+export const getStepDefinitions = (componentTypeFilter?: ComponentType) => [
+  {
+    id: WizardStep.ADD_DATA,
+    title: `${componentTypeFilter === 'input' ? 'Source' : componentTypeFilter === 'output' ? 'Sink' : 'Connect'} Your Data`,
+  },
   { id: WizardStep.ADD_TOPIC, title: 'Add a Topic' },
   { id: WizardStep.ADD_USER, title: 'Add a User' },
   { id: WizardStep.CONNECT, title: 'Connect Your Data' },

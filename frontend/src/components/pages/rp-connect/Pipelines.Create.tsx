@@ -27,22 +27,13 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarRail,
-} from 'components/redpanda-ui/components/sidebar';
 import { isServerless } from 'config';
 import { useBooleanFlagValue } from 'custom-feature-flag-provider';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type FunctionComponent, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useConnectConfig } from 'state/onboarding-wizard/state';
 import { appGlobal } from '../../../state/appGlobal';
@@ -51,11 +42,11 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
-import { ConnectOnboardingWizard } from '../onboarding-wizard/connect-onboarding-wizard';
+import { useGenerateConnectConfig } from '../onboarding-wizard/hooks';
+import { ServerlessOnboardingWizard } from '../onboarding-wizard/serverless-onboarding-wizard';
 import { WizardStep } from '../onboarding-wizard/types';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
-import SelectConfigTemplate from './SelectConfigTemplate';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 
@@ -63,9 +54,7 @@ const exampleContent = `
 `;
 
 @observer
-class RpConnectPipelinesCreate extends PageComponent<{
-  hasSidebar: boolean;
-}> {
+class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable fileName = '';
   @observable description = '';
   @observable tasks = MIN_TASKS;
@@ -120,7 +109,7 @@ class RpConnectPipelinesCreate extends PageComponent<{
       );
     };
 
-    const content = (
+    return (
       <PageContent>
         <Box my="2">
           For help creating your pipeline, see our{' '}
@@ -173,14 +162,6 @@ class RpConnectPipelinesCreate extends PageComponent<{
               maxWidth={150}
             />
           </FormField>
-          <SelectConfigTemplate
-            placeholder="Select template..."
-            className="mt-4"
-            onSelect={(yaml) => {
-              // Update the YAML editor with the selected template
-              this.editorContent = yaml;
-            }}
-          />
         </Flex>
 
         <Box mt="4">
@@ -194,22 +175,6 @@ class RpConnectPipelinesCreate extends PageComponent<{
           </Link>
         </Flex>
       </PageContent>
-    );
-
-    return this.props.hasSidebar ? (
-      <SidebarProvider
-        className="!bg-background"
-        style={
-          {
-            '--sidebar-width': '500px',
-          } as React.CSSProperties
-        }
-      >
-        <SidebarInset>{content}</SidebarInset>
-        <ConnectSidebar />
-      </SidebarProvider>
-    ) : (
-      content
     );
   }
 
@@ -266,29 +231,7 @@ class RpConnectPipelinesCreate extends PageComponent<{
   }
 }
 
-const WrapUseSidebar: FunctionComponent<{ matchedPath: string }> = (props) => {
-  const isServerlessOnboardingWizardEnabled = useBooleanFlagValue('enableServerlessOnboardingWizard');
-  return <RpConnectPipelinesCreate hasSidebar={isServerlessOnboardingWizardEnabled} {...props} />;
-};
-
-export default WrapUseSidebar;
-
-const ConnectSidebar = () => {
-  return (
-    <Sidebar
-      variant="inset"
-      collapsible="offcanvas"
-      side="right"
-      className="top-[71px] h-[calc(svh - 71px)] !text-foreground p-0"
-      innerSidebarClassName="!bg-background"
-    >
-      <SidebarContent>
-        <ConnectOnboardingWizard initialStep={WizardStep.ADD_TOPIC} />
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
-  );
-};
+export default RpConnectPipelinesCreate;
 
 interface QuickActions {
   editorInstance: editor.IStandaloneCodeEditor | null;
@@ -306,12 +249,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
     const selection = editorInstance.getSelection();
     if (selection === null) return;
     const id = { major: 1, minor: 1 };
-    const op = {
-      identifier: id,
-      range: selection,
-      text: secretNotation,
-      forceMoveMarkers: true,
-    };
+    const op = { identifier: id, range: selection, text: secretNotation, forceMoveMarkers: true };
     editorInstance.executeEdits('my-source', [op]);
     resetAutocompleteSecrets();
     closeAddSecret();
@@ -371,15 +309,18 @@ export const PipelineEditor = observer(
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
     const enableServerlessOnboardingWizard = useBooleanFlagValue('enableServerlessOnboardingWizard');
-    const { data: connectConfig } = useConnectConfig();
     const [search] = useSearchParams();
+    const yamlFromWizard = useGenerateConnectConfig();
+    const isWizardEnabled = enableServerlessOnboardingWizard && isServerless();
+    // opens the wizard when page is loaded
+    const enableQuickstart = isWizardEnabled && search.get('quickstart') === 'true';
+    const [isWizardOpen, setIsWizardOpen] = useState<boolean>(enableQuickstart);
+
+    console.log(yamlFromWizard);
 
     const yaml = useMemo(
-      () =>
-        enableServerlessOnboardingWizard && isServerless() && search.get('quickstart') === 'true' && connectConfig?.yaml
-          ? connectConfig.yaml
-          : p.yaml,
-      [enableServerlessOnboardingWizard, connectConfig, p.yaml, search],
+      () => (enableQuickstart ? yamlFromWizard : p.yaml),
+      [enableQuickstart, yamlFromWizard, p.yaml],
     );
 
     const resetEditor = async () => {
@@ -425,9 +366,17 @@ export const PipelineEditor = observer(
                     }}
                   />
                   {!p.isDisabled && (
-                    <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                    <div className="flex gap-2">
+                      <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                      <Button onClick={() => setIsWizardOpen(true)}>Open Wizard</Button>
+                    </div>
                   )}
                 </Flex>
+                <ServerlessOnboardingWizard
+                  isOpen={isWizardOpen}
+                  onClose={() => setIsWizardOpen(false)}
+                  initialStep={WizardStep.ADD_TOPIC}
+                />
                 {isKafkaConnectPipeline(p.yaml) && (
                   <Alert status="error" my={2}>
                     <AlertIcon />

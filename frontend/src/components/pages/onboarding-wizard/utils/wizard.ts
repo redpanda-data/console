@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import type { StepSubmissionResult } from '../types';
+import { type StepSubmissionResult, WizardStep } from '../types';
 
 /**
  * Handles step submission results with success feedback only
@@ -53,3 +53,23 @@ export const isEmpty = (value: string | null | undefined): boolean => {
 export const hasValue = (value: string | null | undefined): boolean => {
   return !isEmpty(value);
 };
+
+export const shouldAllowStepNavigation = (
+  targetStepId: WizardStep,
+  currentStepId: WizardStep,
+  completedSteps: string[],
+): boolean => {
+  const stepOrder = [WizardStep.ADD_DATA, WizardStep.ADD_TOPIC, WizardStep.ADD_USER, WizardStep.CONNECT];
+  const targetIndex = stepOrder.indexOf(targetStepId);
+  const currentIndex = stepOrder.indexOf(currentStepId);
+
+  // Allow navigation to current step or previous steps only
+  const isPreviousStep = targetIndex <= currentIndex;
+  const isStepCompleted = completedSteps.includes(targetStepId);
+  const allStepsCompleted = completedSteps.length === 3;
+
+  return isPreviousStep || isStepCompleted || allStepsCompleted;
+};
+
+export const CREATE_RPCN_PATH = '/rp-connect/create';
+export const CREATE_RPCN_PARAM = 'quickstart=true';
