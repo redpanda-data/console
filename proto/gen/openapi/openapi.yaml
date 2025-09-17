@@ -883,6 +883,16 @@ components:
             $ref: '#/components/schemas/Configuration'
           type: array
       type: object
+    GetTopicDocumentationResponse:
+      properties:
+        markdown:
+          description: The documentation content in markdown format (only present when state is AVAILABLE).
+          format: byte
+          nullable: true
+          type: string
+        state:
+          $ref: '#/components/schemas/TopicDocumentationState'
+      type: object
     GetTransformResponse:
       properties:
         transform:
@@ -1159,6 +1169,13 @@ components:
           description: Secrets retrieved.
           items:
             $ref: '#/components/schemas/Secret'
+          type: array
+      type: object
+    ListTopicsConfigurationsResponse:
+      properties:
+        topics:
+          items:
+            $ref: '#/components/schemas/TopicWithConfigurations'
           type: array
       type: object
     ListTopicsRequest.Filter:
@@ -1916,6 +1933,13 @@ components:
           description: ID of worker that the task is assigned to.
           type: string
       type: object
+    TopicDocumentationState:
+      description: Documentation state for a topic.
+      enum:
+        - TOPIC_DOCUMENTATION_STATE_NOT_CONFIGURED
+        - TOPIC_DOCUMENTATION_STATE_NOT_EXISTENT
+        - TOPIC_DOCUMENTATION_STATE_AVAILABLE
+      type: string
     TopicLocation:
       properties:
         topic_location:
@@ -1948,6 +1972,17 @@ components:
           type: string
       required:
         - source_topic_reference
+      type: object
+    TopicWithConfigurations:
+      properties:
+        configurations:
+          description: Topic configurations.
+          items:
+            $ref: '#/components/schemas/Configuration'
+          type: array
+        name:
+          description: Topic name.
+          type: string
       type: object
     TransformMetadata:
       properties:
@@ -5405,6 +5440,51 @@ paths:
       summary: Set topic configurations
       tags:
         - Topics
+  /v1/topics/{topic_name}/documentation:
+    get:
+      description: Get documentation for a specific topic with its availability status and content.
+      operationId: TopicService_GetTopicDocumentation
+      parameters:
+        - description: Topic name to get documentation for.
+          in: path
+          name: topic_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTopicDocumentationResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get topic documentation
+      tags:
+        - Topics
   /v1/topics/{topic_name}/partitions:
     patch:
       description: Add partitions to an existing topic. Depending on the partitioning strategy used, this may impact ordering guarantees.
@@ -5506,6 +5586,46 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Set topic partitions
+      tags:
+        - Topics
+  /v1/topics:batchGetConfigurations:
+    get:
+      description: List topic configurations for requested topics.
+      operationId: TopicService_ListTopicsConfigurations
+      parameters:
+        - description: Specific topic names to get configurations for. At least one topic name is required.
+          in: query
+          name: topic_names
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTopicsConfigurationsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: List topics with configurations
       tags:
         - Topics
   /v1/transforms:

@@ -20,6 +20,16 @@ export const listTopics = TopicService.method.listTopics;
 export const deleteTopic = TopicService.method.deleteTopic;
 
 /**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.ListTopicsConfigurations
+ */
+export const listTopicsConfigurations = TopicService.method.listTopicsConfigurations;
+
+/**
+ * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicDocumentation
+ */
+export const getTopicDocumentation = TopicService.method.getTopicDocumentation;
+
+/**
  * @generated from rpc redpanda.api.dataplane.v1.TopicService.GetTopicConfigurations
  */
 export const getTopicConfigurations = TopicService.method.getTopicConfigurations;

@@ -14,7 +14,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 
-	common "github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
+	"github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
+	"github.com/redpanda-data/console/backend/pkg/console"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
@@ -139,6 +140,23 @@ func (*mapper) deleteTopicToKmsg(req *v1.DeleteTopicRequest) kmsg.DeleteTopicsRe
 	return kafkaReq
 }
 
+// listTopicsConfigsToKafka maps topic names to a bulk describe configs request.
+func (*mapper) listTopicsConfigsToKafka(topicNames []string) kmsg.DescribeConfigsRequest {
+	configReq := kmsg.NewDescribeConfigsRequest()
+	configReq.IncludeDocumentation = false
+	configReq.IncludeSynonyms = false
+
+	// Add all topics as resources in one request
+	for _, topicName := range topicNames {
+		resource := kmsg.NewDescribeConfigsRequestResource()
+		resource.ResourceType = kmsg.ConfigResourceTypeTopic
+		resource.ResourceName = topicName
+		configReq.Resources = append(configReq.Resources, resource)
+	}
+
+	return configReq
+}
+
 func (k *mapper) updateTopicConfigsToKafka(req *v1.UpdateTopicConfigurationsRequest) (*kmsg.IncrementalAlterConfigsRequest, error) {
 	// We only have one resource (a single topic) whose configs we want to update incrementally
 	// The API allows to add many, independent resources of different types. Because we always only
@@ -218,4 +236,23 @@ func (*mapper) setTopicConfigurationsResourceToKafka(req *v1.SetTopicConfigurati
 	kafkaReq.Value = req.Value
 
 	return kafkaReq
+}
+
+func (*mapper) topicDocumentationToProto(_ string, docs *console.TopicDocumentation) *v1.GetTopicDocumentationResponse {
+	result := &v1.GetTopicDocumentationResponse{}
+
+	if !docs.IsEnabled {
+		result.State = v1.TopicDocumentationState_TOPIC_DOCUMENTATION_STATE_NOT_CONFIGURED
+		return result
+	}
+
+	if len(docs.Markdown) == 0 {
+		result.State = v1.TopicDocumentationState_TOPIC_DOCUMENTATION_STATE_NOT_EXISTENT
+		return result
+	}
+
+	result.State = v1.TopicDocumentationState_TOPIC_DOCUMENTATION_STATE_AVAILABLE
+	result.Markdown = docs.Markdown
+
+	return result
 }

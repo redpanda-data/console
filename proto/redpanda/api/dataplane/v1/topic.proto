@@ -322,6 +322,53 @@ message AddPartitionsToTopicsResponse {
   repeated AlterTopicPartitionStatus statuses = 1;
 }
 
+message ListTopicsConfigurationsRequest {
+  // Specific topic names to get configurations for. At least one topic name is required.
+  repeated string topic_names = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated.min_items = 1,
+    (buf.validate.field).repeated.max_items = 100,
+    (buf.validate.field).repeated.items.string.min_len = 1,
+    (buf.validate.field).repeated.items.string.max_len = 249,
+    (buf.validate.field).repeated.items.string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+}
+
+message ListTopicsConfigurationsResponse {
+  message TopicWithConfigurations {
+    // Topic name.
+    string name = 1;
+    // Topic configurations.
+    repeated Topic.Configuration configurations = 2;
+  }
+  repeated TopicWithConfigurations topics = 1;
+}
+
+// Documentation state for a topic.
+enum TopicDocumentationState {
+  TOPIC_DOCUMENTATION_STATE_UNSPECIFIED = 0;
+  TOPIC_DOCUMENTATION_STATE_NOT_CONFIGURED = 1;
+  TOPIC_DOCUMENTATION_STATE_NOT_EXISTENT = 2;
+  TOPIC_DOCUMENTATION_STATE_AVAILABLE = 3;
+}
+
+message GetTopicDocumentationRequest {
+  // Topic name to get documentation for.
+  string topic_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 249,
+    (buf.validate.field).string.pattern = "^[a-zA-Z0-9._\\-]*$"
+  ];
+}
+
+message GetTopicDocumentationResponse {
+  // Documentation state for this topic.
+  TopicDocumentationState state = 1;
+  // The documentation content in markdown format (only present when state is AVAILABLE).
+  optional bytes markdown = 2;
+}
+
 service TopicService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "Topics"
@@ -397,6 +444,56 @@ service TopicService {
     };
     option (redpanda.api.auth.v1.authorization) = {
       required_permission: PERMISSION_EDIT
+      api: API_KAFKA
+    };
+  }
+  rpc ListTopicsConfigurations(ListTopicsConfigurationsRequest) returns (ListTopicsConfigurationsResponse) {
+    option (google.api.http) = {get: "/v1/topics:batchGetConfigurations"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List topics with configurations"
+      description: "List topic configurations for requested topics."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.ListTopicsConfigurationsResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+
+  rpc GetTopicDocumentation(GetTopicDocumentationRequest) returns (GetTopicDocumentationResponse) {
+    option (google.api.http) = {get: "/v1/topics/{topic_name}/documentation"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get topic documentation"
+      description: "Get documentation for a specific topic with its availability status and content."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.dataplane.v1.GetTopicDocumentationResponse"}
+          }
+        }
+      }
+      responses: {
+        key: "404"
+        value: {
+          description: "Not Found"
+          schema: {
+            json_schema: {ref: ".google.rpc.Status"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
       api: API_KAFKA
     };
   }

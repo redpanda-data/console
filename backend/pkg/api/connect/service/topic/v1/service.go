@@ -22,6 +22,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/api/pagination"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -67,15 +68,15 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 		kafkaRes.Topics = filteredTopics
 	}
 
-	topics := s.mapper.kafkaMetadataToProto(kafkaRes)
+	topicsResponse := s.mapper.kafkaMetadataToProto(kafkaRes)
 
-	// Add pagination
+	// Apply pagination first to reduce the topics we need to enhance
 	var nextPageToken string
 	if req.Msg.GetPageSize() > 0 {
-		sort.SliceStable(topics, func(i, j int) bool {
-			return topics[i].Name < topics[j].Name
+		sort.SliceStable(topicsResponse, func(i, j int) bool {
+			return topicsResponse[i].Name < topicsResponse[j].Name
 		})
-		page, token, err := pagination.SliceToPaginatedWithToken(topics, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListTopicsResponse_Topic) string {
+		page, token, err := pagination.SliceToPaginatedWithToken(topicsResponse, int(req.Msg.PageSize), req.Msg.GetPageToken(), "name", func(x *v1.ListTopicsResponse_Topic) string {
 			return x.GetName()
 		})
 		if err != nil {
@@ -85,11 +86,11 @@ func (s *Service) ListTopics(ctx context.Context, req *connect.Request[v1.ListTo
 				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
 			)
 		}
-		topics = page
+		topicsResponse = page
 		nextPageToken = token
 	}
 
-	return connect.NewResponse(&v1.ListTopicsResponse{Topics: topics, NextPageToken: nextPageToken}), nil
+	return connect.NewResponse(&v1.ListTopicsResponse{Topics: topicsResponse, NextPageToken: nextPageToken}), nil
 }
 
 // DeleteTopic deletes a Kafka topic.
@@ -510,4 +511,58 @@ func (s *Service) SetPartitionsToTopics(ctx context.Context, req *connect.Reques
 	}
 
 	return connect.NewResponse(resMsg), nil
+}
+
+// ListTopicsConfigurations lists configurations for requested topics.
+func (s *Service) ListTopicsConfigurations(ctx context.Context, req *connect.Request[v1.ListTopicsConfigurationsRequest]) (*connect.Response[v1.ListTopicsConfigurationsResponse], error) {
+	configuredTopics := make([]*v1.ListTopicsConfigurationsResponse_TopicWithConfigurations, 0, len(req.Msg.TopicNames))
+
+	// Build single describe configs request for all topics
+	configReq := s.mapper.listTopicsConfigsToKafka(req.Msg.TopicNames)
+
+	// Make single request for all topics
+	configResp, err := s.consoleSvc.DescribeConfigs(ctx, &configReq)
+	if err != nil {
+		return nil, apierrors.NewConnectError(
+			connect.CodeInternal,
+			err,
+			apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_API_ERROR.String(), apierrors.KeyValsFromKafkaError(err)...),
+		)
+	}
+
+	// Process each resource in the response (1:1 with requested topics)
+	for _, resource := range configResp.Resources {
+		// Check for inner Kafka error
+		if err = kerr.ErrorForCode(resource.ErrorCode); err != nil {
+			return nil, apierrors.NewConnectErrorFromKafkaErrorCode(resource.ErrorCode, resource.ErrorMessage)
+		}
+
+		configs, err := s.mapper.describeTopicConfigsToProto(resource.Configs)
+		if err != nil {
+			s.logger.WarnContext(ctx, "failed to convert topic configs",
+				slog.String("topic", resource.ResourceName), slog.Any("error", err))
+			return nil, apierrors.NewConnectError(
+				connect.CodeInternal,
+				err,
+				apierrors.NewErrorInfo(v1.Reason_REASON_CONSOLE_ERROR.String()),
+			)
+		}
+
+		configuredTopics = append(configuredTopics, &v1.ListTopicsConfigurationsResponse_TopicWithConfigurations{
+			Name:           resource.ResourceName,
+			Configurations: configs,
+		})
+	}
+
+	return connect.NewResponse(&v1.ListTopicsConfigurationsResponse{
+		Topics: configuredTopics,
+	}), nil
+}
+
+// GetTopicDocumentation gets documentation for a specific topic.
+func (s *Service) GetTopicDocumentation(_ context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
+	docs := s.consoleSvc.GetTopicDocumentation(req.Msg.TopicName)
+	protoDoc := s.mapper.topicDocumentationToProto(req.Msg.TopicName, docs)
+
+	return connect.NewResponse(protoDoc), nil
 }
