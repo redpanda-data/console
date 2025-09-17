@@ -167,7 +167,7 @@ func New(cfg *config.Config, inputOpts ...Option) (*API, error) {
 // Set default client providers if none provided
 func setDefaultClientProviders(cfg *config.Config, logger *slog.Logger, opts *options) error {
 	if opts.kafkaClientProvider == nil {
-		opts.kafkaClientProvider = kafkafactory.NewCachedClientProvider(cfg, logger)
+		opts.kafkaClientProvider = kafkafactory.NewCachedClientProvider(cfg, logger, opts.prometheusRegistry)
 	}
 
 	// We can always create a factory if we don't already have one.

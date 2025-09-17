@@ -16,19 +16,19 @@ import (
 	"errors"
 	"fmt"
 
-	v1proto "github.com/golang/protobuf/proto" //nolint:staticcheck // deprecated, still needed, we will migrate away from it soon.
-	"github.com/jhump/protoreflect/dynamic"
 	"github.com/twmb/franz-go/pkg/kgo"
-	v2proto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
+	"google.golang.org/protobuf/runtime/protoiface"
 
-	"github.com/redpanda-data/console/backend/pkg/proto"
+	protosvc "github.com/redpanda-data/console/backend/pkg/proto"
 )
 
 var _ Serde = (*ProtobufSerde)(nil)
 
 // ProtobufSerde represents the serde for dealing with Protobuf types.
 type ProtobufSerde struct {
-	ProtoSvc *proto.Service
+	ProtoSvc *protosvc.Service
 }
 
 // Name returns the name of the serde payload encoding.
@@ -42,9 +42,9 @@ func (d ProtobufSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 		return &RecordPayload{}, errors.New("no protobuf file registry configured")
 	}
 
-	property := proto.RecordValue
+	property := protosvc.RecordValue
 	if payloadType == PayloadTypeKey {
-		property = proto.RecordKey
+		property = protosvc.RecordKey
 	}
 
 	messageDescriptor, err := d.ProtoSvc.GetMessageDescriptor(record.Topic, property)
@@ -53,12 +53,6 @@ func (d ProtobufSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 	}
 
 	payload := payloadFromRecord(record, payloadType)
-
-	msg := dynamic.NewMessage(messageDescriptor)
-	err = msg.Unmarshal(payload)
-	if err != nil {
-		return &RecordPayload{}, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
-	}
 
 	jsonBytes, err := d.ProtoSvc.DeserializeProtobufMessageToJSON(payload, messageDescriptor)
 	if err != nil {
@@ -89,20 +83,14 @@ func (d ProtobufSerde) SerializeObject(_ context.Context, obj any, payloadType P
 
 	var binData []byte
 	switch v := obj.(type) {
-	case *dynamic.Message:
-		b, err := v.Marshal()
-		if err != nil {
-			return nil, fmt.Errorf("failed to serialize dynamic protobuf payload: %w", err)
-		}
-		binData = b
-	case v1proto.Message:
-		b, err := v1proto.Marshal(v)
+	case protoiface.MessageV1:
+		b, err := proto.Marshal(protoadapt.MessageV2Of(v))
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize v1 protobuf payload: %w", err)
 		}
 		binData = b
-	case v2proto.Message:
-		b, err := v2proto.Marshal(v)
+	case proto.Message:
+		b, err := proto.Marshal(v)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize v2 protobuf payload: %w", err)
 		}
@@ -169,9 +157,9 @@ func (d ProtobufSerde) SerializeObject(_ context.Context, obj any, payloadType P
 }
 
 func (d ProtobufSerde) serializeJSON(jsonBytes []byte, payloadType PayloadType, topic string) ([]byte, error) {
-	property := proto.RecordValue
+	property := protosvc.RecordValue
 	if payloadType == PayloadTypeKey {
-		property = proto.RecordKey
+		property = protosvc.RecordKey
 	}
 
 	messageDescriptor, err := d.ProtoSvc.GetMessageDescriptor(topic, property)

@@ -20,6 +20,7 @@ import {
   parsePrincipal,
   type Rule,
   type SharedConfig,
+  handleResponses,
 } from 'components/pages/acls/new-acl/ACL.model';
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { useEffect } from 'react';
@@ -49,13 +50,8 @@ const AclUpdatePage = () => {
 
   const updateAclMutation =
     (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
-      await applyUpdates(actualRules, sharedConfig, rules);
-
-      // TODO: handle partial failures
-      toast({
-        status: 'success',
-        description: 'ACLs updated successfully',
-      });
+      const applyResult = await applyUpdates(actualRules, sharedConfig, rules);
+      handleResponses(toast, applyResult.errors, applyResult.created);
 
       navigate(`/security/acls/${parsePrincipal(sharedConfig.principal).name}/details`);
     };

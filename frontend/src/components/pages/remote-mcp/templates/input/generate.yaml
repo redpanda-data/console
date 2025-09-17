@@ -1,0 +1,22 @@
+label: generate_input
+generate:
+  mapping: |
+    let event_type = ["login", "logout", "purchase", "view_page", "click_button"].index(random_int(max:4))
+    root = {
+      "id": uuid_v4(),
+      "timestamp": now().ts_format("2006-01-02T15:04:05.000Z"),
+      "user_id": random_int(min:1, max:10000),
+      "event_type": $event_type,
+      "data": {
+        "session_id": ksuid(),
+        "ip_address": "192.168.%v.%v".format(random_int(max:255), random_int(min:1, max:254)),
+        "user_agent": ["Chrome", "Firefox", "Safari", "Edge"].index(random_int(max:3)),
+        "amount": if $event_type == "purchase" { random_int(min:10, max:500) } else { null }
+      }
+    }
+
+meta:
+  mcp:
+    enabled: true
+    description: "Generate 10 example user event messages with realistic data"
+    properties: []

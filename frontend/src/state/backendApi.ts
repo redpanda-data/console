@@ -25,9 +25,9 @@ import {
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
-import { addHeapEventProperties, trackHeapUser } from '../components/pages/agents/heap.helper';
-import { trackHubspotUser } from '../components/pages/agents/hubspot.helper';
 import { config as appConfig, isEmbedded } from '../config';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
+import { trackHubspotUser } from '../hubspot/hubspot.helper';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,

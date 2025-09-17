@@ -156,14 +156,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           <Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
             Edit Group
           </Button>
-          <DeleteOffsetsModal
-            group={group}
-            mode={this.deletingMode}
-            offsets={this.deletingOffsets}
-            onClose={() => (this.deletingOffsets = null)}
-            onInit={() => this.deleteGroup()}
-            disabledReason={cannotDeleteGroupReason(group)}
-          />
+          <Button variant="outline" onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
+            Delete Group
+          </Button>
         </Flex>
         {/* Statistics Card */}
         {uiSettings.consumerGroupDetails.showStatisticsBar && (
@@ -217,6 +212,14 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           onClose={() => (this.edittingOffsets = null)}
           initialTopic={this.editedTopic}
           initialPartition={this.editedPartition}
+        />
+        <DeleteOffsetsModal
+          group={group}
+          mode={this.deletingMode}
+          offsets={this.deletingOffsets}
+          onClose={() => (this.deletingOffsets = null)}
+          onInit={() => this.deleteGroup()}
+          disabledReason={cannotDeleteGroupReason(group)}
         />
       </PageContent>
     );

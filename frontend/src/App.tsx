@@ -25,6 +25,7 @@ import './globals.css';
 /* end tailwind styles */
 
 import queryClient from 'queryClient';
+import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, Container, Grid, redpandaTheme, redpandaToastOptions, Sidebar } from '@redpanda-data/ui';
@@ -32,11 +33,15 @@ import { StagewiseToolbar, type ToolbarConfig } from '@stagewise/toolbar-react';
 import { ReactPlugin } from '@stagewise-plugins/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { CustomFeatureFlagProvider, useBooleanFlagValue } from 'custom-feature-flag-provider';
+import AnnouncementBar from 'components/builder-io/AnnouncementBar';
+import { builderCustomComponents } from 'components/builder-io/builderCustomComponents';
+import { BUILDER_API_KEY } from 'components/constants';
+import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
 import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
+import { getBasePath } from 'utils/env';
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
@@ -51,15 +56,9 @@ import {
   setup,
 } from './config';
 import { uiSettings } from './state/ui';
-import { getBasePath } from './utils/env';
 
 const AppSidebar = observer(() => {
-  const isAiAgentsEnabled = useBooleanFlagValue('enableAiAgentsInConsoleUi');
-
-  const APP_ROUTES_WITHOUT_AI_AGENTS = APP_ROUTES.filter((route) => !route.path.startsWith('/agents'));
-  const FINAL_APP_ROUTES = isAiAgentsEnabled ? APP_ROUTES : APP_ROUTES_WITHOUT_AI_AGENTS;
-
-  const sidebarItems = createVisibleSidebarItems(FINAL_APP_ROUTES);
+  const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
 
   return (
     <Sidebar items={sidebarItems} isCollapsed={!uiSettings.sideBarOpen}>
@@ -85,6 +84,7 @@ const App = () => {
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={{}}>
+      <Content apiKey={BUILDER_API_KEY} customComponents={builderCustomComponents} content={null} model={''} />
       <BrowserRouter basename={getBasePath()}>
         <HistorySetter />
         <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
@@ -95,12 +95,15 @@ const App = () => {
                   {isEmbedded() ? (
                     <AppContent />
                   ) : (
-                    <Grid templateColumns="auto 1fr" minH="100vh">
-                      <AppSidebar />
-                      <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
-                        <AppContent />
-                      </Container>
-                    </Grid>
+                    <>
+                      <AnnouncementBar />
+                      <Grid templateColumns="auto 1fr" minH="100vh">
+                        <AppSidebar />
+                        <Container width="full" maxWidth="1500px" as="main" pt="8" px="12">
+                          <AppContent />
+                        </Container>
+                      </Grid>
+                    </>
                   )}
                 </RequireAuth>
               </ErrorBoundary>

@@ -1,0 +1,14 @@
+label: memory_cache
+memory:
+  default_ttl: "5m"
+  init_values:
+    "user:1001": '{"name": "Alice", "role": "admin"}'
+    "user:1002": '{"name": "Bob", "role": "user"}'
+    "config:theme": "dark"
+    "config:language": "en"
+  shards: 4
+
+meta:
+  mcp:
+    enabled: true
+    description: "In-memory cache for storing user data, configuration, and temporary values"

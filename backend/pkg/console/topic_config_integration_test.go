@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -44,7 +45,7 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	cfg.MetricsNamespace = testutil.MetricNameForTest("get_topic_configs")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
-	kafkaProvider := kafkafactory.NewCachedClientProvider(&cfg, log)
+	kafkaProvider := kafkafactory.NewCachedClientProvider(&cfg, log, prometheus.NewRegistry())
 	svc, err := NewService(&cfg, log, kafkaProvider, nil, nil, nil, nil)
 	require.NoError(err)
 

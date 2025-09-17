@@ -1,0 +1,45 @@
+label: gcp_bigquery_select_processor
+processors:
+  - label: prepare_parameters
+    mutation: |
+      meta customer_id = this.customer_id.string().catch("12345")
+      meta limit = this.limit.number().catch(10)
+  - label: query_bigquery
+    gcp_bigquery_select:
+      project: my-gcp-project
+      credentials_json: |
+        ${secrets.BIGQUERY_CREDENTIALS}
+      table: my_dataset.customer_orders
+      columns:
+        - "order_id"
+        - "customer_id"
+        - "order_date"
+        - "total_amount"
+        - "status"
+      where: customer_id = ? AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+      suffix: "ORDER BY order_date DESC LIMIT ?"
+      args_mapping: root = [ @customer_id, @limit ]
+  - label: format_response
+    mutation: |
+      root = {
+        "orders": this,
+        "metadata": {
+          "source": "BigQuery",
+          "customer_id": @customer_id,
+          "fetched_at": now().ts_format("2006-01-02T15:04:05.000Z")
+        }
+      }
+
+meta:
+  mcp:
+    enabled: true
+    description: "Query customer orders from BigQuery"
+    properties:
+      - name: customer_id
+        type: string
+        description: "Customer ID to filter orders"
+        required: true
+      - name: limit
+        type: number
+        description: "Maximum number of orders to return"
+        required: false

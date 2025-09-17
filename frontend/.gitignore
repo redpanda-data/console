@@ -155,3 +155,6 @@ dist
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Gemini CLI
+.gemini/settings.json

@@ -23,6 +23,7 @@ enum API {
   API_KAFKA_CONNECT = 5;
   API_CONSOLE = 6;
   API_MCP_SERVER = 7;
+  API_AI_AGENT = 8;
 }
 
 // AuthorizationRole defines the primitive pre-defined roles a user can have.

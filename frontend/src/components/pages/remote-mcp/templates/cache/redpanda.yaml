@@ -1,0 +1,15 @@
+label: redpanda_cache
+redpanda:
+  seed_brokers: ["${REDPANDA_BROKERS}"]
+  topic: "mcp-cache-topic"
+  tls:
+    enabled: true
+  sasl:
+    - mechanism: "SCRAM-SHA-512"
+      username: "${secrets.MCP_REDPANDA_CREDENTIALS.username}"
+      password: "${secrets.MCP_REDPANDA_CREDENTIALS.password}"
+
+meta:
+  mcp:
+    enabled: true
+    description: "Redpanda-backed distributed cache using Kafka topics for persistence"

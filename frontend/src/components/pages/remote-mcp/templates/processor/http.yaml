@@ -1,0 +1,37 @@
+label: http_processor
+processors:
+- label: prepare_parameters
+  mutation: |
+    meta city_name = this.city_name
+- label: fetch_weather
+  http:
+    url: 'https://wttr.in/${! @city_name }?format=j1'
+    verb: GET
+    headers:
+      Accept: "application/json"
+      User-Agent: "redpanda-mcp-server/1.0"
+- label: format_response
+  mutation: |
+    root = {
+      "city": @city_name,
+      "temperature": this.current_condition.0.temp_C.number(),
+      "feels_like": this.current_condition.0.FeelsLikeC.number(),
+      "humidity": this.current_condition.0.humidity.number(),
+      "pressure": this.current_condition.0.pressure.number(),
+      "description": this.current_condition.0.weatherDesc.0.value,
+      "wind_speed": this.current_condition.0.windspeedKmph.number(),
+      "metadata": {
+        "source": "wttr.in",
+        "fetched_at": now().ts_format("2006-01-02T15:04:05.000Z")
+      }
+    }
+
+meta:
+  mcp:
+    enabled: true
+    description: "Fetch current weather information for a specified city"
+    properties:
+      - name: city_name
+        type: string
+        description: "Name of the city to get weather information for"
+        required: true
