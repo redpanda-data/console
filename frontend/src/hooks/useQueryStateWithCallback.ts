@@ -1,5 +1,5 @@
 import { type UseQueryStateReturn, useQueryState } from 'nuqs';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 /**
@@ -60,22 +60,21 @@ export function useQueryStateWithCallback<T, U = null>(
   const [key, ...otherOptions] = options;
   const [value, setValue] = useQueryState<T>(key, ...otherOptions);
   const [searchParams] = useSearchParams();
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (searchParams.has(key)) {
-      setValue(value);
-    } else if (params.getDefaultValue) {
-      const defaultValue = params.getDefaultValue();
-      // The setValue function can accept T or a function that returns T
-      setValue(defaultValue as T & {});
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      
+      if (searchParams.has(key)) {
+        setValue(value);
+      } else if (params.getDefaultValue) {
+        const defaultValue = params.getDefaultValue();
+        // The setValue function can accept T or a function that returns T
+        setValue(defaultValue as T & {});
+      }
     }
-  }, [
-    searchParams,
-    key,
-    value,
-    params, // The setValue function can accept T or a function that returns T
-    setValue,
-  ]);
+  }, [searchParams, key, setValue, value, params.getDefaultValue]);
 
   const setValueFinal = (value: T & {}) => {
     params.onUpdate(value);
