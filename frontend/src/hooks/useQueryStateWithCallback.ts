@@ -4,22 +4,22 @@ import { useSearchParams } from 'react-router-dom';
 
 /**
  * A custom hook that extends `useQueryState` with callback functionality for syncing state changes.
- * 
+ *
  * This hook provides the same functionality as `useQueryState` but adds:
  * - Automatic callback execution when the query state changes
  * - Default value handling when the query parameter is not present in the URL
  * - Synchronization between URL state and external state management
- * 
+ *
  * @template T - The type of the query state value
  * @template U - The type for additional options (defaults to null)
- * 
+ *
  * @param params - Configuration object containing callback functions
  * @param params.onUpdate - Callback function called whenever the query state changes
  * @param params.getDefaultValue - Function that returns the default value when the query parameter is not in the URL
  * @param options - Spread parameters passed directly to `useQueryState`
- * 
+ *
  * @returns A tuple containing the current value and a setter function, similar to `useQueryState`
- * 
+ *
  * @example
  * ```tsx
  * const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>({
@@ -32,11 +32,11 @@ import { useSearchParams } from 'react-router-dom';
  *     return uiSettings.topicList.hideInternalTopics;
  *   }
  * }, "showInternal", parseAsBoolean);
- * 
+ *
  * // Usage
  * setShowInternalTopics(true); // This will update both URL and call onUpdate
  * ```
- * 
+ *
  * @example
  * ```tsx
  * const [searchTerm, setSearchTerm] = useQueryStateWithCallback<string>({
@@ -65,7 +65,7 @@ export function useQueryStateWithCallback<T, U = null>(
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      
+
       if (searchParams.has(key)) {
         setValue(value);
       } else if (params.getDefaultValue) {

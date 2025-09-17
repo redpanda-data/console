@@ -78,14 +78,20 @@ const TopicList: FC = () => {
     parseAsBoolean,
   );
 
-  const { data, isLoading, isError } = useLegacyListTopicsQuery();
+  const { data, isLoading, isError, refetch: refetchTopics } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
-  const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(() => makeCreateTopicModal(), []);
+  const { mutateAsync: createTopic } = useCreateTopicMutation();
+  const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(
+    () => makeCreateTopicModal(createTopic),
+    [createTopic],
+  );
 
-  const refreshData = useCallback(() => {
+  const refreshData = useCallback(async () => {
     api.refreshClusterOverview();
     void api.refreshClusterHealth();
-  }, []);
+
+    refetchTopics();
+  }, [refetchTopics]);
 
   const topics = useMemo(() => {
     let topics = data.topics ?? [];
@@ -198,9 +204,9 @@ const TopicList: FC = () => {
       <ConfirmDeletionModal
         topicToDelete={topicToDelete}
         onCancel={() => setTopicToDelete(null)}
-        onFinish={() => {
+        onFinish={async () => {
           setTopicToDelete(null);
-          refreshData();
+          await refreshData();
         }}
       />
     </PageContent>
@@ -499,7 +505,7 @@ function hasDeletePrivilege() {
   return true;
 }
 
-function makeCreateTopicModal() {
+function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutation>['mutateAsync']) {
   api.refreshCluster(); // get brokers (includes configs) to display default values
   const tryGetBrokerConfig = (configName: string): string | undefined => {
     return (
@@ -621,7 +627,6 @@ function makeCreateTopicModal() {
 
       setVal('cleanup.policy', state.cleanupPolicy);
 
-      const { mutateAsync: createTopic } = useCreateTopicMutation();
       const result = await createTopic({
         topic: {
           name: state.topicName,
