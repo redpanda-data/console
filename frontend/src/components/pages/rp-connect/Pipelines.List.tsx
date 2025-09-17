@@ -27,6 +27,7 @@ import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
+import { AddDataStep } from '../onboarding-wizard/steps/add-data-step';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 
@@ -43,13 +44,7 @@ const CreatePipelineButton = () => {
 };
 
 const EmptyPlaceholder = () => {
-  return (
-    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
-      <Image src={EmptyConnectors} />
-      <Box>You have no Redpanda Connect pipelines.</Box>
-      <CreatePipelineButton />
-    </Flex>
-  );
+  return <AddDataStep />;
 };
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {

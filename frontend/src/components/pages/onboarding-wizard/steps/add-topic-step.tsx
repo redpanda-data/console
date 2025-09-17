@@ -265,6 +265,7 @@ export const AddTopicStep = forwardRef<AddTopicStepRef, AddTopicStepProps>(({ to
                       creatable
                       onCreateOption={handleCreateTopicOption}
                       placeholder="Select or create a topic..."
+                      className="max-w-[300px]"
                     />
                   </FormControl>
                   <FormMessage />

@@ -43,7 +43,7 @@ function Sheet({ children, testId, ...props }: SheetProps) {
 
   return (
     <SheetContext.Provider value={{ isOpen }}>
-      <SheetPrimitive.Root data-slot="sheet" data-testid={testId} {...props} onOpenChange={handleOpenChange}>
+      <SheetPrimitive.Root data-slot="sheet" data-testid={testId} {...props} open={isOpen} onOpenChange={handleOpenChange}>
         {children}
       </SheetPrimitive.Root>
     </SheetContext.Provider>
@@ -114,8 +114,8 @@ function SheetContent({
   return (
     <AnimatePresence>
       {isOpen && (
-        <SheetPortal forceMount data-slot="sheet-portal">
-          <SheetOverlay asChild forceMount>
+        <SheetPortal data-slot="sheet-portal">
+          <SheetOverlay asChild>
             <motion.div
               key="sheet-overlay"
               data-slot="sheet-overlay"
@@ -125,7 +125,7 @@ function SheetContent({
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             />
           </SheetOverlay>
-          <SheetPrimitive.Content asChild forceMount {...props}>
+          <SheetPrimitive.Content asChild {...props}>
             <motion.div
               key="sheet-content"
               data-slot="sheet-content"
@@ -181,13 +181,15 @@ function SheetHeader({ className, ...props }: SheetHeaderProps) {
   );
 }
 
-type SheetFooterProps = React.ComponentProps<'div'>;
+type SheetFooterProps = React.ComponentProps<'div'> & {
+  sticky?: boolean;
+};
 
 function SheetFooter({ className, ...props }: SheetFooterProps) {
   return (
     <div
       data-slot="sheet-footer"
-      className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
+      className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', props.sticky && 'sticky bottom-0 bg-background border-t-2 pt-4 w-full border-border', className)}
       {...props}
     />
   );

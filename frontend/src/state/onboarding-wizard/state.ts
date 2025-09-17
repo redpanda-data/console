@@ -16,22 +16,33 @@ import type {
   AddTopicFormData,
   AddUserFormData,
 } from '../../components/pages/onboarding-wizard/types/forms';
+import { generateConnectConfig } from '../../components/pages/onboarding-wizard/utils/connect';
+
+export type ConnectConfig = {
+  yaml: string;
+  type: 'input' | 'output';
+};
 
 // Main onboarding wizard state interface
-interface OnboardingWizardState {
+export interface OnboardingWizardState {
   // Form data for each step
   addDataFormData: AddDataFormData | undefined;
   addTopicFormData: AddTopicFormData | undefined;
   addUserFormData: AddUserFormData | undefined;
+  connectConfig: ConnectConfig | undefined;
 
   // Actions to update form data
   setAddDataFormData: (data: AddDataFormData) => void;
   setAddTopicFormData: (data: AddTopicFormData) => void;
   setAddUserFormData: (data: AddUserFormData) => void;
+  setConnectConfig: (data: ConnectConfig) => void;
 
   // Utility actions
   clearAllFormData: () => void;
   getCompletedSteps: () => string[];
+  getAllFormData: () => Partial<AddDataFormData & AddTopicFormData & AddUserFormData>;
+  getGeneratedConfig: () => { yaml: string };
+  regenerateAndSaveConfig: () => void;
 }
 
 // Create the Zustand store with persistence
@@ -42,6 +53,7 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
       addDataFormData: undefined,
       addTopicFormData: undefined,
       addUserFormData: undefined,
+      connectConfig: undefined,
 
       // Actions
       setAddDataFormData: (data: AddDataFormData) => {
@@ -54,6 +66,10 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
 
       setAddUserFormData: (data: AddUserFormData) => {
         set({ addUserFormData: data });
+      },
+
+      setConnectConfig: (data: ConnectConfig) => {
+        set({ connectConfig: data });
       },
 
       clearAllFormData: () => {
@@ -75,6 +91,49 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
 
         return completedSteps;
       },
+      getAllFormData: () => {
+        const state = get();
+        return {
+          ...state.addDataFormData,
+          ...state.addTopicFormData,
+          ...state.addUserFormData,
+        };
+      },
+      getGeneratedConfig: () => {
+        const state = get();
+        const formData = {
+          ...state.addDataFormData,
+          ...state.addTopicFormData,
+          ...state.addUserFormData,
+        };
+
+        // Generate config using the current form data and connectConfig
+        if (state.connectConfig) {
+          return generateConnectConfig(formData, state.connectConfig);
+        }
+        return { yaml: '' };
+      },
+      regenerateAndSaveConfig: () => {
+        const state = get();
+        const formData = {
+          ...state.addDataFormData,
+          ...state.addTopicFormData,
+          ...state.addUserFormData,
+        };
+
+        // Generate config and update the store
+        if (state.connectConfig) {
+          const result = generateConnectConfig(formData, state.connectConfig);
+          set({
+            connectConfig: {
+              yaml: result.yaml,
+              type: state.connectConfig.type,
+            },
+          });
+        } else {
+          console.log('No connectConfig found in state');
+        }
+      },
     }),
     {
       name: 'onboarding-wizard-storage', // localStorage key
@@ -83,6 +142,7 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
         addDataFormData: state.addDataFormData,
         addTopicFormData: state.addTopicFormData,
         addUserFormData: state.addUserFormData,
+        connectConfig: state.connectConfig,
       }),
     },
   ),
@@ -107,14 +167,12 @@ export const useAddUserFormData = () =>
     setData: state.setAddUserFormData,
   }));
 
+export const useConnectConfig = () => {
+  return useOnboardingWizardStore((state) => ({
+    data: state.connectConfig,
+    setData: state.setConnectConfig,
+  }));
+};
+
 // Export the main store for direct access if needed
 export default useOnboardingWizardStore;
-
-// Helper function to completely clear all persisted data
-export const clearAllPersistedData = () => {
-  // Clear the localStorage data using the persist API
-  useOnboardingWizardStore.persist.clearStorage();
-
-  // Clear in-memory state
-  useOnboardingWizardStore.getState().clearAllFormData();
-};

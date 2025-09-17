@@ -150,10 +150,12 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
 
     return (
       <PageContent>
-        <Text>
-          There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and Kafka
-          Connect.
-        </Text>
+        {!isServerless() && (
+          <Text>
+            There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
+            Kafka Connect.
+          </Text>
+        )}
         {tabs.length === 1 ? (
           typeof tabs[0].content === 'function' ? (
             tabs[0].content()

@@ -30,7 +30,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
   const retentionSizeUnits = useMemo(() => getRetentionSizeUnitOptions(), []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
       <FormField
         control={form.control}
         name="partitions"

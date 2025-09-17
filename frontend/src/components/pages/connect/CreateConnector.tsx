@@ -345,7 +345,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       content: (
         <>
           <CreateConnectorHeading plugin={selectedPlugin} />
-
           {selectedPlugin ? (
             <Box maxWidth="800px">
               {/* biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex */}
