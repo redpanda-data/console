@@ -84,7 +84,7 @@
     "name": "flush.bytes",
     "type": "INT",
     "documentation": "The maximum bytes not fsynced per partition. If this configured threshold is reached, the log is automatically fsynced, even though it wasn’t explicitly requested.",
-    "category": "Storage Performance"
+    "category": "Write Caching"
   },
   {
     "name": "initial.retention.local.target.bytes",
@@ -102,18 +102,18 @@
     "name": "redpanda.leaders.preference",
     "type": "STRING",
     "documentation": "The preferred location (rack) for partition leaders of a topic.",
-    "category": "Storage Performance"
+    "category": "Replication"
   },
   {
     "name": "replication.factor",
     "type": "INT",
     "documentation": "The number of replicas of a topic to save in different nodes (brokers) of a cluster. If replication.factor is set to a positive value, it overrides the cluster property default_topic_replication for the topic.",
-    "category": "Storage Performance"
+    "category": "Replication"
   },
   {
     "name": "write.caching",
     "type": "BOOLEAN",
     "documentation": "The write caching mode to apply to a topic.",
-    "category": "Storage Performance"
+    "category": "Write Caching"
   }
 ]
