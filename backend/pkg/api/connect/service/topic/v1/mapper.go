@@ -238,7 +238,7 @@ func (*mapper) setTopicConfigurationsResourceToKafka(req *v1.SetTopicConfigurati
 	return kafkaReq
 }
 
-func (*mapper) topicDocumentationToProto(_ string, docs *console.TopicDocumentation) *v1.GetTopicDocumentationResponse {
+func (*mapper) topicDocumentationToProto(docs *console.TopicDocumentation) *v1.GetTopicDocumentationResponse {
 	result := &v1.GetTopicDocumentationResponse{}
 
 	if !docs.IsEnabled {

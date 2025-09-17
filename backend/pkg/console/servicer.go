@@ -86,8 +86,6 @@ type Servicer interface {
 	DescribeClientQuotas(ctx context.Context, req *kmsg.DescribeClientQuotasRequest) (*kmsg.DescribeClientQuotasResponse, error)
 	// AlterClientQuotas proxies the request/response for altering client quotas via the Kafka API.
 	AlterClientQuotas(ctx context.Context, req *kmsg.AlterClientQuotasRequest) (*kmsg.AlterClientQuotasResponse, error)
-	// DescribeLogDirs proxies the request/response for describing log directories via the Kafka API.
-	DescribeLogDirs(ctx context.Context, req *kmsg.DescribeLogDirsRequest) (*kmsg.DescribeLogDirsResponse, error)
 }
 
 // SchemaRegistryServicer is the interface for schema registry servicer

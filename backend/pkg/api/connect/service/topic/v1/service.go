@@ -562,7 +562,7 @@ func (s *Service) ListTopicsConfigurations(ctx context.Context, req *connect.Req
 // GetTopicDocumentation gets documentation for a specific topic.
 func (s *Service) GetTopicDocumentation(_ context.Context, req *connect.Request[v1.GetTopicDocumentationRequest]) (*connect.Response[v1.GetTopicDocumentationResponse], error) {
 	docs := s.consoleSvc.GetTopicDocumentation(req.Msg.TopicName)
-	protoDoc := s.mapper.topicDocumentationToProto(req.Msg.TopicName, docs)
+	protoDoc := s.mapper.topicDocumentationToProto(docs)
 
 	return connect.NewResponse(protoDoc), nil
 }
