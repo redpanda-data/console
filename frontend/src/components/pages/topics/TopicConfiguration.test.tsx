@@ -16,6 +16,7 @@ describe('TopicConfiguration', () => {
       '', // unknown options should appear at the end as 'Other'
       'Message Handling',
       'Write Caching',
+      'Schema Registry and Validation'
     ].map((category) => {
       return {
         name: 'test.option',
@@ -44,6 +45,7 @@ describe('TopicConfiguration', () => {
       'Tiered Storage',
       'Write Caching',
       'Iceberg',
+      'Schema Registry and Validation',
       'Message Handling',
       'Compression',
       'Storage Internals',

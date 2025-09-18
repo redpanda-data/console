@@ -75,7 +75,8 @@ test.describe('Topic', () => {
       // This is the full order we currently expect to see things in
       const expected = [
         'Retention', 'Compaction', 'Replication', 'Tiered Storage',
-        'Write Caching', 'Iceberg', 'Message Handling', 'Compression', 'Storage Internals'
+        'Write Caching', 'Iceberg', 'Schema Registry and Validation',
+        'Message Handling', 'Compression', 'Storage Internals'
       ];
 
       // Grab the actual groups on the page, then grab the intersection

@@ -115,5 +115,56 @@
     "type": "BOOLEAN",
     "documentation": "The write caching mode to apply to a topic.",
     "category": "Write Caching"
+  },
+  {
+    "name": "redpanda.key.schema.id.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for keys on a record. When enabled, Redpanda validates that the schema ID encoded in the record's key is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "redpanda.key.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for keys when `redpanda.key.schema.id.validation` is enabled. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "redpanda.value.schema.id.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for values on a record. When enabled, Redpanda validates that the schema ID encoded in the record's value is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "redpanda.value.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for values when `redpanda.value.schema.id.validation` is enabled. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "enumValues": ["TopicNameStrategy", "RecordNameStrategy", "TopicRecordNameStrategy"],
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.key.schema.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for keys on a record. This is a compatibility alias for `redpanda.key.schema.id.validation`. When enabled, Redpanda validates that the schema ID encoded in the record's key is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.key.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for keys when `confluent.key.schema.validation` is enabled. This is a compatibility alias for `redpanda.key.subject.name.strategy`. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "enumValues": ["io.confluent.kafka.serializers.subject.TopicNameStrategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy", "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy"],
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.value.schema.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for values on a record. This is a compatibility alias for `redpanda.value.schema.id.validation`. When enabled, Redpanda validates that the schema ID encoded in the record's value is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.value.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for values when `confluent.value.schema.validation` is enabled. This is a compatibility alias for `redpanda.value.subject.name.strategy`. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "enumValues": ["io.confluent.kafka.serializers.subject.TopicNameStrategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy", "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy"],
+    "category": "Schema Registry and Validation"
   }
 ]
