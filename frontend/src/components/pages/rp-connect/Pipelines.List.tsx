@@ -11,7 +11,9 @@
 
 import { CheckIcon } from '@chakra-ui/icons';
 import { TrashIcon } from '@heroicons/react/outline';
-import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField, Text } from '@redpanda-data/ui';
+import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
+import { isServerless } from 'config';
+import { useBooleanFlagValue } from 'custom-feature-flag-provider';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useCallback } from 'react';
@@ -19,6 +21,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
+import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi } from '../../../state/backendApi';
@@ -48,6 +51,7 @@ const CreatePipelineButton = () => {
 const EmptyPlaceholder = () => {
   const navigate = useNavigate();
   const { setData: setConnectConfig } = useConnectConfig();
+  const enableServerlessOnboardingWizard = useBooleanFlagValue('enableServerlessOnboardingWizard');
 
   const handleConnectionChange = useCallback(
     (connectionName: string) => {
@@ -70,7 +74,7 @@ const EmptyPlaceholder = () => {
     [navigate, setConnectConfig],
   );
 
-  return (
+  const serverlessOnboardingWizardUI = (
     <Box>
       <Text fontSize="lg" fontWeight="bold" mb={4}>
         Get started by selecting a connection method
@@ -78,6 +82,16 @@ const EmptyPlaceholder = () => {
       <AddDataStep onChange={handleConnectionChange} hideHeader />
     </Box>
   );
+
+  const oldUI = (
+    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
+      <Image src={EmptyConnectors} />
+      <Box>You have no Redpanda Connect pipelines.</Box>
+      <CreatePipelineButton />
+    </Flex>
+  );
+
+  return enableServerlessOnboardingWizard && isServerless() ? serverlessOnboardingWizardUI : oldUI;
 };
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {

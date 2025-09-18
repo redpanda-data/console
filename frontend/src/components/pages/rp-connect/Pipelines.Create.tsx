@@ -343,6 +343,9 @@ export const PipelineEditor = observer(
             title: 'Configuration',
             content: () => (
               <Box>
+                <div className="flex justify-end">
+                  {isWizardEnabled && <Button onClick={() => setIsWizardOpen(true)}>Open Wizard</Button>}
+                </div>
                 {/* yaml editor */}
                 <Flex height="400px" gap={7}>
                   <PipelinesYamlEditor
@@ -362,10 +365,10 @@ export const PipelineEditor = observer(
                       await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                     }}
                   />
+
                   {!p.isDisabled && (
                     <div className="flex gap-2">
                       <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
-                      <Button onClick={() => setIsWizardOpen(true)}>Open Wizard</Button>
                     </div>
                   )}
                 </Flex>
