@@ -15,21 +15,22 @@ import {
 import { stringify as yamlStringify } from 'yaml';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
 import type {
-  BaseConfig,
-  ComponentSpec,
-  ComponentStatus,
-  ComponentType,
-  FieldSpec,
-  JsonSchema,
-  JsonSchemaProperty,
-  NodeCategory,
-  SchemaNodeConfig,
+  BaseConnectConfig,
+  ConnectComponentSpec,
+  ConnectComponentStatus,
+  ConnectComponentType,
+  ConnectFieldSpec,
+  ConnectJsonSchema,
+  ConnectJsonSchemaProperty,
+  ConnectNodeCategory,
+  ConnectSchemaNodeConfig,
+  ExtendedConnectComponentSpec,
 } from '../types/connect';
 
 /**
  * Converts a component specification to a config structure with default values
  */
-export const schemaToConfig = (componentSpec?: ComponentSpec) => {
+export const schemaToConfig = (componentSpec?: ConnectComponentSpec) => {
   if (!componentSpec?.config) {
     return undefined;
   }
@@ -47,14 +48,14 @@ export const schemaToConfig = (componentSpec?: ComponentSpec) => {
 /**
  * Adds inline comments to YAML string based on component specification
  */
-const addSchemaComments = (yamlString: string, componentSpec: ComponentSpec): string => {
+const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
   if (!componentSpec.config.children) {
     return yamlString;
   }
 
   // Create a map of field paths to their specs for quick lookup
-  const fieldMap = new Map<string, FieldSpec>();
-  const addFieldsToMap = (fields: FieldSpec[], prefix = '') => {
+  const fieldMap = new Map<string, ConnectFieldSpec>();
+  const addFieldsToMap = (fields: ConnectFieldSpec[], prefix = '') => {
     fields.forEach((field) => {
       const fullName = prefix ? `${prefix}.${field.name}` : field.name;
       fieldMap.set(fullName, field);
@@ -170,7 +171,7 @@ const yamlOptions = {
 /**
  * Converts a config object to formatted YAML with comments
  */
-export const configToYaml = (config: BaseConfig, componentSpec: ComponentSpec): string => {
+export const configToYaml = (config: BaseConnectConfig, componentSpec: ConnectComponentSpec): string => {
   try {
     let yamlString = yamlStringify(config, yamlOptions);
 
@@ -184,7 +185,7 @@ export const configToYaml = (config: BaseConfig, componentSpec: ComponentSpec): 
   }
 };
 
-export function generateDefaultValue(spec: FieldSpec): unknown {
+export function generateDefaultValue(spec: ConnectFieldSpec): unknown {
   // Use the explicit default if it exists
   if (spec.default !== undefined) {
     return spec.default;
@@ -234,7 +235,8 @@ const generateSummary = (componentName: string, type: string): string => {
   return `${formattedName} ${formattedType.toLowerCase()}`;
 };
 
-const displayNames: Record<ComponentType, string> = {
+const displayNames: Record<string, string> = {
+  // Component types
   input: 'Inputs',
   output: 'Outputs',
   processor: 'Processors',
@@ -244,10 +246,23 @@ const displayNames: Record<ComponentType, string> = {
   scanner: 'Scanners',
   metrics: 'Metrics',
   tracer: 'Tracers',
+  // Semantic categories
+  databases: 'Databases',
+  messaging: 'Message Queues',
+  storage: 'File Storage',
+  api: 'API Clients',
+  aws: 'AWS Services',
+  gcp: 'Google Cloud',
+  azure: 'Azure Services',
+  cloud: 'Cloud Services',
+  export: 'Data Export',
+  transformation: 'Data Transformation',
+  monitoring: 'Monitoring & Observability',
+  other: 'Other',
 };
 
 const getCategoryDisplayName = (category: string): string => {
-  return displayNames[category] || category;
+  return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
 };
 
 // Enhanced category system with proper typing
@@ -274,12 +289,17 @@ export const COMPONENT_CATEGORIES = {
 
 export type ComponentCategory = (typeof COMPONENT_CATEGORIES)[keyof typeof COMPONENT_CATEGORIES];
 
+// Internal component spec with isExternal flag
+export interface InternalConnectComponentSpec extends ConnectComponentSpec {
+  isExternal?: boolean;
+}
+
 const convertJsonSchemaToFieldSpec = (
-  jsonSchema: JsonSchemaProperty,
+  jsonSchema: ConnectJsonSchemaProperty,
   name: string,
   parentRequired?: string[],
-): FieldSpec => {
-  const fieldSpec: FieldSpec = {
+): ConnectFieldSpec => {
+  const fieldSpec: ConnectFieldSpec = {
     name,
     type: 'string', // Default fallback
     kind: 'scalar',
@@ -340,14 +360,38 @@ const convertJsonSchemaToFieldSpec = (
   return fieldSpec;
 };
 
-const databaseComponents = ['sql', 'postgres', 'mysql', 'redis', 'mongodb', 'cassandra', 'dynamodb', 'elasticsearch'];
-const cloudComponents = ['aws', 'gcp', 'azure', 's3', 'sqs', 'sns', 'kinesis', 'pubsub'];
-const messagingComponents = ['kafka', 'nats', 'rabbitmq', 'mqtt'];
-const fileComponents = ['file', 'sftp', 'ftp'];
-const httpComponents = ['http', 'webhook', 'api'];
-const exportKeywords = ['json', 'xml', 'csv'];
-const transformationKeywords = ['transform', 'process', 'map'];
-const monitoringKeywords = ['metric', 'log', 'trace'];
+const databaseComponents = [
+  'sql',
+  'postgres',
+  'mysql',
+  'redis',
+  'mongodb',
+  'cassandra',
+  'dynamodb',
+  'elasticsearch',
+  'opensearch',
+  'snowflake',
+  'clickhouse',
+  'influxdb',
+];
+const cloudComponents = ['aws', 'gcp', 'azure', 's3', 'sqs', 'sns', 'kinesis', 'pubsub', 'blob', 'cloud'];
+const messagingComponents = ['kafka', 'nats', 'rabbitmq', 'mqtt', 'amqp', 'jetstream', 'pubsub'];
+const fileComponents = ['file', 'sftp', 'ftp', 'tar', 'zip'];
+const httpComponents = ['http', 'webhook', 'api', 'websocket', 'rest'];
+const exportKeywords = ['json', 'xml', 'csv', 'parquet', 'avro', 'protobuf'];
+const transformationKeywords = [
+  'transform',
+  'process',
+  'map',
+  'bloblang',
+  'jq',
+  'jmespath',
+  'branch',
+  'split',
+  'compress',
+  'decompress',
+];
+const monitoringKeywords = ['metric', 'log', 'trace', 'prometheus', 'jaeger', 'opentelemetry', 'statsd'];
 
 const inferComponentCategory = (componentName: string): string[] => {
   const name = componentName.toLowerCase();
@@ -405,8 +449,11 @@ const inferComponentCategory = (componentName: string): string[] => {
 };
 
 // Extract components from JSON Schema definition
-const extractComponentsFromDefinition = (definition: JsonSchemaProperty, type: string): ComponentSpec[] => {
-  const components: ComponentSpec[] = [];
+const extractComponentsFromDefinition = (
+  definition: ConnectJsonSchemaProperty,
+  type: string,
+): ConnectComponentSpec[] => {
+  const components: ConnectComponentSpec[] = [];
 
   // Navigate the allOf > anyOf structure to find component properties
   if (definition.allOf && definition.allOf.length > 0) {
@@ -417,7 +464,7 @@ const extractComponentsFromDefinition = (definition: JsonSchemaProperty, type: s
           // Each properties object should have one key (the component name)
           for (const [componentName, componentSchema] of Object.entries(anyOfItem.properties)) {
             if (componentSchema.properties || componentSchema.type === 'object') {
-              const componentSpec: ComponentSpec = {
+              const componentSpec: ConnectComponentSpec = {
                 name: componentName,
                 type,
                 status: 'stable', // Default status, could be extracted from schema if available
@@ -439,7 +486,7 @@ const extractComponentsFromDefinition = (definition: JsonSchemaProperty, type: s
 };
 
 const parseSchema = () => {
-  const jsonSchema = benthosSchema as JsonSchema;
+  const jsonSchema = benthosSchema as ConnectJsonSchema;
   if (!jsonSchema.definitions) {
     console.warn('No definitions found in schema');
     return {
@@ -449,9 +496,9 @@ const parseSchema = () => {
     };
   }
 
-  const componentsByType = new Map<string, ComponentSpec[]>();
-  const nodeConfigs = new Map<string, SchemaNodeConfig>();
-  const categories = new Map<string, NodeCategory>();
+  const componentsByType = new Map<string, ConnectComponentSpec[]>();
+  const nodeConfigs = new Map<string, ConnectSchemaNodeConfig>();
+  const categories = new Map<string, ConnectNodeCategory>();
 
   // Parse each component type from the schema definitions
   const componentTypes = [
@@ -464,22 +511,25 @@ const parseSchema = () => {
     { key: 'scanner', category: 'scanner' as const },
   ];
 
+  // First pass: extract components and infer semantic categories
+  const allComponents: ConnectComponentSpec[] = [];
+
   for (const { key, category } of componentTypes) {
     const definition = jsonSchema.definitions[key];
     if (definition) {
       const components = extractComponentsFromDefinition(definition, key);
-      componentsByType.set(key, components);
 
-      const categoryData: NodeCategory = {
-        id: category,
-        name: getCategoryDisplayName(category),
-        components,
-      };
-      categories.set(category, categoryData);
+      // Infer semantic categories for each component
+      for (const component of components) {
+        component.categories = inferComponentCategory(component.name);
+      }
+
+      componentsByType.set(key, components);
+      allComponents.push(...components);
 
       // Create node configs for each component
       for (const component of components) {
-        const nodeConfig: SchemaNodeConfig = {
+        const nodeConfig: ConnectSchemaNodeConfig = {
           id: `${category}-${component.name}`,
           name: component.name,
           type: component.type,
@@ -496,6 +546,33 @@ const parseSchema = () => {
     }
   }
 
+  // Second pass: create semantic category collections
+  const semanticCategoryMap = new Map<string, ConnectComponentSpec[]>();
+
+  for (const component of allComponents) {
+    if (component.categories) {
+      for (const categoryId of component.categories) {
+        if (!semanticCategoryMap.has(categoryId)) {
+          semanticCategoryMap.set(categoryId, []);
+        }
+        const categoryComponents = semanticCategoryMap.get(categoryId);
+        if (categoryComponents) {
+          categoryComponents.push(component);
+        }
+      }
+    }
+  }
+
+  // Convert to NodeCategory format for semantic categories
+  for (const [categoryId, components] of semanticCategoryMap) {
+    const categoryData: ConnectNodeCategory = {
+      id: categoryId,
+      name: getCategoryDisplayName(categoryId),
+      components,
+    };
+    categories.set(categoryId, categoryData);
+  }
+
   return { componentsByType, nodeConfigs, categories };
 };
 
@@ -503,18 +580,89 @@ const parseSchema = () => {
 const { componentsByType, nodeConfigs, categories } = parseSchema();
 
 // Exported utility functions
-export const getCategories = (): NodeCategory[] => Array.from(categories.values());
+export const getNodeCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
+  const allCategories = new Map(categories);
 
-export const getAllNodeConfigs = (): SchemaNodeConfig[] => Array.from(nodeConfigs.values());
+  // Add categories from additional components
+  if (additionalComponents) {
+    for (const component of additionalComponents) {
+      if (component.categories) {
+        for (const categoryId of component.categories) {
+          if (!allCategories.has(categoryId)) {
+            const categoryData: ConnectNodeCategory = {
+              id: categoryId,
+              name: getCategoryDisplayName(categoryId),
+              components: [],
+            };
+            allCategories.set(categoryId, categoryData);
+          }
+        }
+      }
+    }
+  }
 
-export const getNodeConfigsByCategory = (category: string): SchemaNodeConfig[] =>
-  getAllNodeConfigs().filter((config) => config.category === category);
+  return Array.from(allCategories.values());
+};
 
-export const getNodeConfig = (id: string): SchemaNodeConfig | undefined => nodeConfigs.get(id);
+export const getAllNodeConfigs = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectSchemaNodeConfig[] => {
+  const builtInConfigs = Array.from(nodeConfigs.values());
 
-export const searchNodeConfigs = (query: string): SchemaNodeConfig[] => {
+  const externalConfigs: ConnectSchemaNodeConfig[] = (additionalComponents || []).map((component) => ({
+    id: `${component.type}-${component.name}-external`,
+    name: component.name,
+    type: component.type,
+    category: component.type as ConnectComponentType,
+    status: component.status,
+    summary: component.summary,
+    description: component.description,
+    config: component.config,
+    categories: component.categories,
+    version: component.version,
+  }));
+
+  return [...builtInConfigs, ...externalConfigs];
+};
+
+export const getNodeConfigsByCategory = (
+  category: string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): ConnectSchemaNodeConfig[] =>
+  getAllNodeConfigs(additionalComponents).filter((config) => config.category === category);
+
+export const getNodeConfig = (
+  id: string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): ConnectSchemaNodeConfig | undefined => {
+  const builtInConfig = nodeConfigs.get(id);
+  if (builtInConfig) return builtInConfig;
+
+  // Check external components
+  const externalConfig = (additionalComponents || []).find((comp) => id === `${comp.type}-${comp.name}-external`);
+
+  if (externalConfig) {
+    return {
+      id,
+      name: externalConfig.name,
+      type: externalConfig.type,
+      category: externalConfig.type as ConnectComponentType,
+      status: externalConfig.status,
+      summary: externalConfig.summary,
+      description: externalConfig.description,
+      config: externalConfig.config,
+      categories: externalConfig.categories,
+      version: externalConfig.version,
+    };
+  }
+
+  return undefined;
+};
+
+export const searchNodeConfigs = (
+  query: string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): ConnectSchemaNodeConfig[] => {
   const lowerQuery = query.toLowerCase();
-  return getAllNodeConfigs().filter(
+  return getAllNodeConfigs(additionalComponents).filter(
     (config) =>
       config.name.toLowerCase().includes(lowerQuery) ||
       config.summary?.toLowerCase().includes(lowerQuery) ||
@@ -522,76 +670,126 @@ export const searchNodeConfigs = (query: string): SchemaNodeConfig[] => {
   );
 };
 
-export const getNodeConfigsByStatus = (status: string): SchemaNodeConfig[] =>
-  getAllNodeConfigs().filter((config) => config.status === status);
+export const getNodeConfigsByStatus = (
+  status: string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): ConnectSchemaNodeConfig[] => getAllNodeConfigs(additionalComponents).filter((config) => config.status === status);
 
 export const getSchemaVersion = (): string => 'unknown'; // JSON Schema format doesn't include version
 
 // Component type getters (for backward compatibility)
-export const getInputs = (): ComponentSpec[] => componentsByType.get('input') || [];
+export const getInputs = (): ConnectComponentSpec[] => componentsByType.get('input') || [];
 
-export const getOutputs = (): ComponentSpec[] => componentsByType.get('output') || [];
+export const getOutputs = (): ConnectComponentSpec[] => componentsByType.get('output') || [];
 
-export const getProcessors = (): ComponentSpec[] => componentsByType.get('processor') || [];
+export const getProcessors = (): ConnectComponentSpec[] => componentsByType.get('processor') || [];
 
-export const getCaches = (): ComponentSpec[] => componentsByType.get('cache') || [];
+export const getCaches = (): ConnectComponentSpec[] => componentsByType.get('cache') || [];
 
-export const getBuffers = (): ComponentSpec[] => componentsByType.get('buffer') || [];
+export const getBuffers = (): ConnectComponentSpec[] => componentsByType.get('buffer') || [];
 
-export const getRateLimits = (): ComponentSpec[] => componentsByType.get('rate_limit') || [];
+export const getRateLimits = (): ConnectComponentSpec[] => componentsByType.get('rate_limit') || [];
 
-export const getScanners = (): ComponentSpec[] => componentsByType.get('scanner') || [];
+export const getScanners = (): ConnectComponentSpec[] => componentsByType.get('scanner') || [];
 
 // ✅ NEW: Comprehensive helper functions for Phase 1
-export const getComponentsByType = (type: ComponentType): ComponentSpec[] => componentsByType.get(type) || [];
+export const getComponentsByType = (
+  type: ConnectComponentType,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] => {
+  const builtInComponents = componentsByType.get(type) || [];
+  const mappedBuiltIn: InternalConnectComponentSpec[] = builtInComponents.map((comp: ConnectComponentSpec) => ({
+    ...comp,
+    isExternal: false,
+  }));
 
-export const getComponentsByCategory = (category: ComponentCategory | string): ComponentSpec[] =>
-  getAllComponents().filter((comp) => comp.categories?.includes(category));
+  const externalComponentsOfType: InternalConnectComponentSpec[] = (additionalComponents || [])
+    .filter((comp: ExtendedConnectComponentSpec) => comp.type === type)
+    .map((comp: ExtendedConnectComponentSpec) => ({ ...comp, isExternal: true }));
 
-export const getComponentsByStatus = (status: ComponentStatus): ComponentSpec[] =>
-  getAllComponents().filter((comp) => comp.status === status);
+  return [...mappedBuiltIn, ...externalComponentsOfType];
+};
+
+export const getComponentsByCategory = (
+  category: ComponentCategory | string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] =>
+  getAllComponents(additionalComponents).filter((comp) => comp.categories?.includes(category));
+
+export const getComponentsByStatus = (
+  status: ConnectComponentStatus,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] => getAllComponents(additionalComponents).filter((comp) => comp.status === status);
 
 // ✅ NEW: Get component by name
-export const getComponentByName = (name?: string): ComponentSpec | undefined =>
-  name ? getAllComponents().find((comp) => comp.name === name) : undefined;
+export const getComponentByName = (
+  name?: string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec | undefined =>
+  name ? getAllComponents(additionalComponents).find((comp) => comp.name === name) : undefined;
 
 // ✅ NEW: Specialized helpers for common workflows
-export const getDataIngestionComponents = (): ComponentSpec[] => [
-  ...getInputs(),
-  ...getProcessors().filter((p) => p.categories?.includes(COMPONENT_CATEGORIES.TRANSFORMATION)),
-  ...getOutputs(),
-];
+export const getDataIngestionComponents = (
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] => {
+  const allComponents = getAllComponents(additionalComponents);
+  return [
+    ...allComponents.filter((comp) => comp.type === 'input'),
+    ...allComponents.filter(
+      (comp) => comp.type === 'processor' && comp.categories?.includes(COMPONENT_CATEGORIES.TRANSFORMATION),
+    ),
+    ...allComponents.filter((comp) => comp.type === 'output'),
+  ];
+};
 
-export const getKafkaComponents = (): ComponentSpec[] =>
-  getAllComponents().filter(
+export const getKafkaComponents = (
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] =>
+  getAllComponents(additionalComponents).filter(
     (comp) => comp.name.toLowerCase().includes('kafka') || comp.categories?.includes(COMPONENT_CATEGORIES.MESSAGING),
   );
 
-export const getDatabaseComponents = (): ComponentSpec[] =>
-  getAllComponents().filter((comp) => comp.categories?.includes(COMPONENT_CATEGORIES.DATABASES));
+export const getDatabaseComponents = (
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] =>
+  getAllComponents(additionalComponents).filter((comp) => comp.categories?.includes(COMPONENT_CATEGORIES.DATABASES));
 
-export const getCloudComponents = (): ComponentSpec[] =>
-  getAllComponents().filter((comp) => comp.categories?.includes(COMPONENT_CATEGORIES.CLOUD));
+export const getCloudComponents = (
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] =>
+  getAllComponents(additionalComponents).filter((comp) => comp.categories?.includes(COMPONENT_CATEGORIES.CLOUD));
 
-export const getAllComponents = (): ComponentSpec[] => [
-  ...getInputs(),
-  ...getOutputs(),
-  ...getProcessors(),
-  ...getCaches(),
-  ...getBuffers(),
-  ...getRateLimits(),
-  ...getScanners(),
-];
+export const getAllComponents = (
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] => {
+  const builtInComponents: InternalConnectComponentSpec[] = [
+    ...getInputs(),
+    ...getOutputs(),
+    ...getProcessors(),
+    ...getCaches(),
+    ...getBuffers(),
+    ...getRateLimits(),
+    ...getScanners(),
+  ].map((component) => ({ ...component, isExternal: false }));
+
+  const externalComponents: InternalConnectComponentSpec[] = (additionalComponents || []).map((component) => ({
+    ...component,
+    isExternal: true,
+  }));
+
+  return [...externalComponents, ...builtInComponents];
+};
 
 export const searchComponents = (
   query: string,
   filters?: {
-    types?: ComponentType[];
+    types?: ConnectComponentType[];
     categories?: (ComponentCategory | string)[];
-    status?: ComponentStatus[];
+    status?: ConnectComponentStatus[];
   },
-): ComponentSpec[] => {
-  return getAllComponents().filter((component) => {
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] => {
+  return getAllComponents(additionalComponents).filter((component) => {
     // Filter by search text
     if (query.trim()) {
       const searchLower = query.toLowerCase();
@@ -603,7 +801,7 @@ export const searchComponents = (
     }
 
     // Filter by types
-    if (filters?.types?.length && !filters.types.includes(component.type as ComponentType)) {
+    if (filters?.types?.length && !filters.types.includes(component.type as ConnectComponentType)) {
       return false;
     }
 

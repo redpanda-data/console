@@ -1,12 +1,12 @@
 import { useQueries } from '@tanstack/react-query';
-import type { ComponentType } from 'components/pages/onboarding-wizard/types/connect';
+import type { ConnectComponentType } from 'components/pages/onboarding-wizard/types/connect';
 
 export const CONNECT_CODE_SNIPPETS_BASE_URL =
   'https://raw.githubusercontent.com/redpanda-data/rp-connect-docs/refs/heads/main/modules/components';
 
 interface ConnectContentRequest {
   connectionName: string;
-  connectionType: ComponentType;
+  connectionType: ConnectComponentType;
 }
 
 type ContentType = 'pages' | 'partials/fields';
@@ -19,7 +19,7 @@ type ContentType = 'pages' | 'partials/fields';
  */
 const fetchConnectContent = async (
   connectionName: string,
-  connectionType: ComponentType,
+  connectionType: ConnectComponentType,
   contentType: ContentType,
 ): Promise<string> => {
   if (!connectionName || !connectionType) {
@@ -37,10 +37,10 @@ const fetchConnectContent = async (
 };
 
 // Convenience wrappers for specific content types
-const fetchPageContent = (connectionName: string, connectionType: ComponentType) =>
+const fetchPageContent = (connectionName: string, connectionType: ConnectComponentType) =>
   fetchConnectContent(connectionName, connectionType, 'pages');
 
-const fetchCodeSnippet = (connectionName: string, connectionType: ComponentType) =>
+const fetchCodeSnippet = (connectionName: string, connectionType: ConnectComponentType) =>
   fetchConnectContent(connectionName, connectionType, 'partials/fields');
 
 // Query configuration constants
@@ -51,7 +51,7 @@ const STALE_TIME = 15 * 60 * 1000; // 15 minutes
  */
 const createContentQuery = (
   queryKeyPrefix: string,
-  fetchFn: (connectionName: string, connectionType: ComponentType) => Promise<string>,
+  fetchFn: (connectionName: string, connectionType: ConnectComponentType) => Promise<string>,
   input: ConnectContentRequest,
 ) => ({
   queryKey: [queryKeyPrefix, input.connectionName, input.connectionType],

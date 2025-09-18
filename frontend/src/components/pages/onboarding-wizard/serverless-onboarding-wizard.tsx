@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { Sheet, SheetContent, SheetFooter, SheetHeader } from 'components/redpanda-ui/components/sheet';
-import { memo, useCallback, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 // TODO: add internationalization
 // import { FormattedMessage } from 'react-intl';
 
@@ -11,23 +11,23 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { useClearWizardStateCache, useCompletedSteps } from 'state/onboarding-wizard/state';
+import { useAdditionalComponents, useCompletedSteps } from 'state/onboarding-wizard/state';
 import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { AddDataStep, type AddDataStepRef } from './steps/add-data-step';
 import { AddTopicStep, type AddTopicStepRef } from './steps/add-topic-step';
 import { AddUserStep, type AddUserStepRef } from './steps/add-user-step';
 import { ConnectStep } from './steps/connect-step';
 import { getStepDefinitions, WizardStep } from './types';
-import type { ComponentType, ExtendedComponentSpec } from './types/connect';
+import type { ConnectComponentType, ExtendedConnectComponentSpec } from './types/connect';
 import { CREATE_RPCN_PARAM, CREATE_RPCN_PATH, handleStepResult, shouldAllowStepNavigation } from './utils/wizard';
 
 //   import { quickstartModalViewedEvent } from 'utils/analytics.utils'; TODO: add analytics
 
 interface ServerlessOnboardingWizardProps {
   isOpen: boolean;
-  componentTypeFilter?: ComponentType;
+  componentTypeFilter?: ConnectComponentType;
   onClose?: () => void;
-  additionalComponents?: ExtendedComponentSpec[];
+  additionalComponents?: ExtendedConnectComponentSpec[];
   initialStep?: WizardStep;
   shouldRedirectToConnect?: boolean;
 }
@@ -45,10 +45,18 @@ export const ServerlessOnboardingWizard = memo(
     const { Stepper } = useMemo(() => defineStepper(...stepDefinitions), [stepDefinitions]);
     const completedSteps = useCompletedSteps();
     // const clearWizardStateCache = useClearWizardStateCache();
+    const { setData: setAdditionalComponents } = useAdditionalComponents();
 
     const addDataStepRef = useRef<AddDataStepRef>(null);
     const addTopicStepRef = useRef<AddTopicStepRef>(null);
     const addUserStepRef = useRef<AddUserStepRef>(null);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: we only want this to run when the additional components change
+    useEffect(() => {
+      if (additionalComponents) {
+        setAdditionalComponents(additionalComponents);
+      }
+    }, [additionalComponents]);
 
     const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
       hideInternalTopics: true,

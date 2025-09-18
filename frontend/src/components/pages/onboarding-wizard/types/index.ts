@@ -1,4 +1,4 @@
-import type { ComponentType } from './connect';
+import type { ConnectComponentType } from './connect';
 
 export enum WizardStep {
   ADD_DATA = 'add-data-step',
@@ -21,7 +21,7 @@ export interface BaseStepRef {
 }
 
 // Helper to convert enum to step definitions
-export const getStepDefinitions = (componentTypeFilter?: ComponentType) => [
+export const getStepDefinitions = (componentTypeFilter?: ConnectComponentType) => [
   {
     id: WizardStep.ADD_DATA,
     title: `${componentTypeFilter === 'input' ? 'Source' : componentTypeFilter === 'output' ? 'Sink' : 'Connect'} Your Data`,

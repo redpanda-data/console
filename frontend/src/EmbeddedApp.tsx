@@ -33,7 +33,10 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ServerlessOnboardingWizard } from 'components/pages/onboarding-wizard/serverless-onboarding-wizard';
-import type { ComponentType, ExtendedComponentSpec } from 'components/pages/onboarding-wizard/types/connect';
+import type {
+  ConnectComponentType,
+  ExtendedConnectComponentSpec,
+} from 'components/pages/onboarding-wizard/types/connect';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { observer } from 'mobx-react';
@@ -75,9 +78,9 @@ export interface EmbeddedProps extends SetConfigArguments {
    */
   featureFlags?: Record<string, boolean>;
   isOnboardingWizardOpen: boolean;
-  filterOnboardingWizardConnectionsByType?: ComponentType;
+  filterOnboardingWizardConnectionsByType?: ConnectComponentType;
   onCloseOnboardingWizard?: () => void;
-  additionalOnboardingWizardConnections?: ExtendedComponentSpec[];
+  additionalOnboardingWizardConnections?: ExtendedConnectComponentSpec[];
   shouldWizardRedirectToConnect?: boolean;
 }
 

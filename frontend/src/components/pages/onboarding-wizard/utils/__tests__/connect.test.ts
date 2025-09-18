@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import type { ComponentSpec, FieldSpec } from '../../types/connect';
+import type { ConnectComponentSpec, ConnectFieldSpec } from '../../types/connect';
 import { configToYaml, generateDefaultValue } from '../connect';
 
 describe('connect utilities', () => {
   describe('generateDefaultValue', () => {
     test('generates proper nested object structure', () => {
-      const spec: FieldSpec = {
+      const spec: ConnectFieldSpec = {
         name: 'aws_s3',
         type: 'object',
         kind: 'scalar',
@@ -62,7 +62,7 @@ describe('connect utilities', () => {
     });
 
     test('handles arrays correctly', () => {
-      const spec: FieldSpec = {
+      const spec: ConnectFieldSpec = {
         name: 'topics',
         type: 'array',
         kind: 'array',
@@ -75,7 +75,7 @@ describe('connect utilities', () => {
     });
 
     test('handles primitive types with defaults', () => {
-      const boolSpec: FieldSpec = {
+      const boolSpec: ConnectFieldSpec = {
         name: 'enabled',
         type: 'bool',
         kind: 'scalar',
@@ -85,7 +85,7 @@ describe('connect utilities', () => {
 
       expect(generateDefaultValue(boolSpec)).toBe(true);
 
-      const numberSpec: FieldSpec = {
+      const numberSpec: ConnectFieldSpec = {
         name: 'timeout',
         type: 'int',
         kind: 'scalar',
@@ -108,7 +108,7 @@ describe('connect utilities', () => {
         },
       };
 
-      const componentSpec: ComponentSpec = {
+      const componentSpec: ConnectComponentSpec = {
         name: 'aws_s3',
         type: 'input',
         status: 'stable',
@@ -157,7 +157,7 @@ describe('connect utilities', () => {
         },
       };
 
-      const componentSpec: ComponentSpec = {
+      const componentSpec: ConnectComponentSpec = {
         name: 'kafka',
         type: 'input',
         status: 'stable',
@@ -199,7 +199,7 @@ describe('connect utilities', () => {
 
   describe('edge cases', () => {
     test('handles empty objects correctly', () => {
-      const spec: FieldSpec = {
+      const spec: ConnectFieldSpec = {
         name: 'empty',
         type: 'object',
         kind: 'scalar',
@@ -212,7 +212,7 @@ describe('connect utilities', () => {
     });
 
     test('handles deeply nested structures', () => {
-      const spec: FieldSpec = {
+      const spec: ConnectFieldSpec = {
         name: 'deep',
         type: 'object',
         kind: 'scalar',

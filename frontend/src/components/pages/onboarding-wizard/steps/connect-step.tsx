@@ -8,16 +8,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGetConnectContentQuery } from 'react-query/api/connect-docs';
 import { useConnectConfig } from '../../../../state/onboarding-wizard/state';
 import { useGenerateConnectConfig } from '../hooks';
-import type { ComponentType, ExtendedComponentSpec } from '../types/connect';
+import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/connect';
 import { getComponentByName } from '../utils/connect';
 
 // Helper function to get component type display label
-const getComponentTypeLabel = (type: ComponentType | undefined): string => {
+const getComponentTypeLabel = (type: ConnectComponentType | undefined): string => {
   if (!type) return 'Component';
   return type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ');
 };
 
-export const ConnectStep = ({ additionalComponents }: { additionalComponents?: ExtendedComponentSpec[] }) => {
+export const ConnectStep = ({ additionalComponents }: { additionalComponents?: ExtendedConnectComponentSpec[] }) => {
   const yaml = useGenerateConnectConfig();
   return (
     <div className="flex flex-col gap-8">
@@ -38,7 +38,7 @@ export const ConnectStep = ({ additionalComponents }: { additionalComponents?: E
   );
 };
 
-export const ConnectDocs = ({ additionalComponents }: { additionalComponents?: ExtendedComponentSpec[] }) => {
+export const ConnectDocs = ({ additionalComponents }: { additionalComponents?: ExtendedConnectComponentSpec[] }) => {
   const { data: connectConfig } = useConnectConfig();
 
   const connectionName = connectConfig?.connectionName;
@@ -60,20 +60,20 @@ export const ConnectDocs = ({ additionalComponents }: { additionalComponents?: E
     return <ConnectByExtendedComponent component={additionalComponent} />;
   }
 
-  return <ConnectByConnect />;
+  return <ConnectByConnect additionalComponents={additionalComponents} />;
 };
 
-const ConnectByConnect = () => {
+const ConnectByConnect = ({ additionalComponents }: { additionalComponents?: ExtendedConnectComponentSpec[] } = {}) => {
   const { data: connectConfig } = useConnectConfig();
   const connectionName = connectConfig?.connectionName;
-  const componentConfig = getComponentByName(connectionName);
+  const componentConfig = getComponentByName(connectionName, additionalComponents);
   const {
     pageContent,
     partialContent,
     isLoading: isCodeSnippetLoading,
   } = useGetConnectContentQuery({
     connectionName: connectionName ?? '',
-    connectionType: componentConfig?.type as ComponentType,
+    connectionType: componentConfig?.type as ConnectComponentType,
   });
 
   const connectionTypeLabel = getComponentTypeLabel(componentConfig?.type);
@@ -167,7 +167,7 @@ const useExternalDocumentation = (url?: string, format?: 'markdown' | 'asciidoc'
 };
 
 // ✅ NEW: Component for handling ExtendedComponentSpec (Phase 2)
-const ConnectByExtendedComponent = ({ component }: { component: ExtendedComponentSpec }) => {
+const ConnectByExtendedComponent = ({ component }: { component: ExtendedConnectComponentSpec }) => {
   const connectionTypeLabel = getComponentTypeLabel(component.type);
 
   const {

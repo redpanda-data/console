@@ -12,14 +12,13 @@ import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useConnectConfig } from '../../../../state/onboarding-wizard/state';
 import type { StepSubmissionResult } from '../types';
-import type { ComponentType, ExtendedComponentSpec } from '../types/connect';
-import { COMPONENT_TYPE } from '../types/connect';
+import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/connect';
+import { CONNECT_COMPONENT_TYPE } from '../types/connect';
 import { type AddDataFormData, addDataFormSchema } from '../types/forms';
 import {
-  getAllComponents,
-  getCategories,
   getCategoryConfig,
   getComponentTypeConfig,
+  getNodeCategories,
   getStatusConfig,
   searchComponents,
 } from '../utils/connect';
@@ -32,9 +31,9 @@ export interface AddDataStepRef {
 export const AddDataStep = forwardRef<
   AddDataStepRef,
   {
-    additionalComponents?: ExtendedComponentSpec[];
-    componentTypeFilter?: ComponentType;
-    onChange?: (connectionName: string, componentType: ComponentType) => void;
+    additionalComponents?: ExtendedConnectComponentSpec[];
+    componentTypeFilter?: ConnectComponentType;
+    onChange?: (connectionName: string, componentType: ConnectComponentType) => void;
     hideHeader?: boolean;
   }
 >(({ additionalComponents, componentTypeFilter: defaultComponentTypeFilter, onChange, hideHeader }, ref) => {
@@ -42,12 +41,11 @@ export const AddDataStep = forwardRef<
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   // Default to showing all component types if no default provided, otherwise respect the prop
-  const [componentTypeFilter, setComponentTypeFilter] = useState<ComponentType[]>(
+  const [componentTypeFilter, setComponentTypeFilter] = useState<ConnectComponentType[]>(
     defaultComponentTypeFilter ? [defaultComponentTypeFilter] : [],
   );
   const { data: persistedConnectConfig, setData: setConnectConfig } = useConnectConfig();
-  const categories = getCategories();
-  const components = getAllComponents();
+  const categories = getNodeCategories(additionalComponents);
 
   const form = useForm<AddDataFormData>({
     resolver: zodResolver(addDataFormSchema),
@@ -96,11 +94,15 @@ export const AddDataStep = forwardRef<
 
   // Filter components based on search, categories, and component type
   const filteredComponents = useMemo(() => {
-    return searchComponents(filter, {
-      types: componentTypeFilter,
-      categories: selectedCategories,
-    });
-  }, [componentTypeFilter, filter, selectedCategories]);
+    return searchComponents(
+      filter,
+      {
+        types: componentTypeFilter,
+        categories: selectedCategories,
+      },
+      additionalComponents,
+    );
+  }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
 
   return (
     <Card size="full">
@@ -141,7 +143,7 @@ export const AddDataStep = forwardRef<
               <Label>
                 Component Type
                 <SimpleMultiSelect
-                  options={COMPONENT_TYPE.map((type) => ({
+                  options={CONNECT_COMPONENT_TYPE.map((type) => ({
                     value: type,
                     label: getComponentTypeConfig(type).text,
                   }))}
@@ -156,7 +158,7 @@ export const AddDataStep = forwardRef<
               <Label>
                 Categories
                 <SimpleMultiSelect
-                  options={Array.from(categories.values()).map((category) => ({
+                  options={categories.map((category) => ({
                     value: category.id,
                     label: category.name,
                   }))}
@@ -189,7 +191,7 @@ export const AddDataStep = forwardRef<
                             key={uniqueKey}
                             onClick={() => {
                               field.onChange(component.name);
-                              onChange?.(component.name, component.type as ComponentType);
+                              onChange?.(component.name, component.type as ConnectComponentType);
                             }}
                           >
                             <div className="flex flex-col gap-2">

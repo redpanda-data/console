@@ -35,7 +35,6 @@ import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useConnectConfig } from 'state/onboarding-wizard/state';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -315,8 +314,6 @@ export const PipelineEditor = observer(
     // opens the wizard when page is loaded
     const enableQuickstart = isWizardEnabled && search.get('quickstart') === 'true';
     const [isWizardOpen, setIsWizardOpen] = useState<boolean>(enableQuickstart);
-
-    console.log(yamlFromWizard);
 
     const yaml = useMemo(
       () => (enableQuickstart ? yamlFromWizard : p.yaml),

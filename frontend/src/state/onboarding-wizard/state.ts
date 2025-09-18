@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ExtendedConnectComponentSpec } from 'components/pages/onboarding-wizard/types/connect';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AddTopicFormData, AddUserFormData } from '../../components/pages/onboarding-wizard/types/forms';
@@ -21,10 +22,12 @@ export interface OnboardingWizardState {
   connectConfig: ConnectConfig | undefined;
   addTopicFormData: AddTopicFormData | undefined;
   addUserFormData: AddUserFormData | undefined;
+  additionalComponents: ExtendedConnectComponentSpec[] | undefined;
 
   setAddTopicFormData: (data: AddTopicFormData) => void;
   setAddUserFormData: (data: AddUserFormData) => void;
   setConnectConfig: (data: ConnectConfig) => void;
+  setAdditionalComponents: (data: ExtendedConnectComponentSpec[]) => void;
 
   // Utility actions
   clearAllFormData: () => void;
@@ -40,6 +43,7 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
       addTopicFormData: undefined,
       addUserFormData: undefined,
       connectConfig: undefined,
+      additionalComponents: undefined,
 
       setConnectConfig: (data: ConnectConfig) => {
         set({ connectConfig: data });
@@ -51,6 +55,10 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
 
       setAddUserFormData: (data: AddUserFormData) => {
         set({ addUserFormData: data });
+      },
+
+      setAdditionalComponents: (data: ExtendedConnectComponentSpec[]) => {
+        set({ additionalComponents: data });
       },
 
       clearAllFormData: () => {
@@ -88,6 +96,7 @@ export const useOnboardingWizardStore = create<OnboardingWizardState>()(
         connectConfig: state.connectConfig,
         addTopicFormData: state.addTopicFormData,
         addUserFormData: state.addUserFormData,
+        additionalComponents: state.additionalComponents,
       }),
     },
   ),
@@ -111,6 +120,12 @@ export const useAddUserFormData = () =>
   useOnboardingWizardStore((state) => ({
     data: state.addUserFormData,
     setData: state.setAddUserFormData,
+  }));
+
+export const useAdditionalComponents = () =>
+  useOnboardingWizardStore((state) => ({
+    data: state.additionalComponents,
+    setData: state.setAdditionalComponents,
   }));
 
 export const useCompletedSteps = () => useOnboardingWizardStore((state) => state.getCompletedSteps());

@@ -1,11 +1,11 @@
 import { useAddTopicFormData, useAddUserFormData, useConnectConfig } from 'state/onboarding-wizard/state';
-import type { BaseConfig } from '../types/connect';
+import type { BaseConnectConfig } from '../types/connect';
 import { configToYaml, getComponentByName, schemaToConfig } from '../utils/connect';
 
 /**
  * Custom hook that populates a base config with data from wizard form steps
  */
-const usePopulateConfigWithFormData = (baseConfig?: BaseConfig) => {
+const usePopulateConfigWithFormData = (baseConfig?: BaseConnectConfig) => {
   const { data: connectConfig } = useConnectConfig();
   const { data: addTopicFormData } = useAddTopicFormData();
   const { data: addUserFormData } = useAddUserFormData();
@@ -144,11 +144,8 @@ const usePopulateConfigWithFormData = (baseConfig?: BaseConfig) => {
  */
 export const useGenerateConnectConfig = () => {
   const { data: connectConfig } = useConnectConfig();
-  console.log('connectConfig', connectConfig);
   const componentConfig = getComponentByName(connectConfig?.connectionName);
-  console.log('componentConfig', componentConfig);
   const baseConfig = schemaToConfig(componentConfig);
-  console.log('baseConfig', baseConfig);
   const populatedConfig = usePopulateConfigWithFormData(baseConfig);
 
   if (!populatedConfig || !componentConfig) {
