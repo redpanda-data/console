@@ -29,6 +29,19 @@ export const getRpkCloudEnvironment = () => {
   return 'integration';
 };
 
+export const getMCPServerName = (displayName: string) => {
+  // Sanitize the display name to only contain letters, numbers, hyphens and underscores
+  const sanitized = displayName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-_]/g, '') // Remove special characters except spaces, hyphens, underscores
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple consecutive hyphens with single hyphen
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+
+  // Add redpanda prefix if not already present
+  return sanitized.includes('redpanda') ? sanitized : `redpanda-${sanitized}`;
+};
+
 export const getRpkCommand = ({
   clusterId,
   mcpServerId,
@@ -42,8 +55,9 @@ export const getRpkCommand = ({
 }) => {
   const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
   const clusterValue = clusterId || (isServerless ? 'YOUR_SERVERLESS_CLUSTER_ID' : 'YOUR_CLUSTER_ID');
+  const cloudEnvArg = getRpkCloudEnvironment() !== 'production' ? `cloud_environment=${getRpkCloudEnvironment()} ` : '';
 
-  return `rpk -X cloud_environment=${getRpkCloudEnvironment()} cloud mcp proxy \\
+  return `rpk -X ${cloudEnvArg}cloud mcp proxy \\
 ${clusterFlag} ${clusterValue} \\
 --mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'} \\
 --install --client ${clientType || 'YOUR_CLIENT_TYPE'}`;
@@ -59,18 +73,24 @@ export const createMCPConfig = ({
   clusterId?: string;
   mcpServerId?: string;
   isServerless?: boolean;
-}) => ({
-  name: mcpServerName,
-  command: 'rpk',
-  args: [
-    '-X',
-    `cloud_environment=${getRpkCloudEnvironment()}`,
+}) => {
+  const baseArgs = ['-X'];
+  if (getRpkCloudEnvironment() !== 'production') {
+    baseArgs.push(`cloud_environment=${getRpkCloudEnvironment()}`);
+  }
+  baseArgs.push(
     'cloud',
     'mcp',
     'proxy',
     isServerless ? '--serverless-cluster-id' : '--cluster-id',
-    clusterId,
+    clusterId || '',
     '--mcp-server-id',
-    mcpServerId,
-  ],
-});
+    mcpServerId || '',
+  );
+
+  return {
+    name: mcpServerName,
+    command: 'rpk',
+    args: baseArgs,
+  };
+};

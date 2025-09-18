@@ -430,7 +430,7 @@ spec:
   }
 
   return (
-    <div className="space-y-8">
+    <div>
       <div className="flex justify-end">
         {isEditing ? (
           <div className="flex gap-2">
