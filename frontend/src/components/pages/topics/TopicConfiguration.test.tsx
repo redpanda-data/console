@@ -13,6 +13,7 @@ describe('TopicConfiguration', () => {
       'Compaction',
       'Replication',
       'Iceberg',
+      '', // unknown options should appear at the end as 'Other'
       'Message Handling',
       'Write Caching',
     ].map((category) => {
@@ -31,7 +32,7 @@ describe('TopicConfiguration', () => {
       };
     });
 
-    const { container } = render(<ConfigurationEditor entries={entries} targetTopic="" onForceRefresh={() => {}} />);
+    const { container } = render(<ConfigurationEditor entries={entries} targetTopic="" onForceRefresh={() => { }} />);
     expect(screen.getByTestId('config-group-table')).toBeVisible();
 
     const groups = container.querySelectorAll('.configGroupTitle');
@@ -46,6 +47,7 @@ describe('TopicConfiguration', () => {
       'Message Handling',
       'Compression',
       'Storage Internals',
+      'Other',
     ]).toEqual(Array.from(groups).map((g) => g.textContent));
   });
 });

@@ -258,6 +258,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
     'Message Handling',
     'Compression',
     'Storage Internals',
+    'Other',
   ];
 
   categories.sort((a, b) => displayOrder.indexOf(a.key ?? '') - displayOrder.indexOf(b.key ?? ''));
