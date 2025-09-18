@@ -249,11 +249,18 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
   for (const e of categories) if (!e.key) e.key = 'Other';
 
   const displayOrder = [
-    'Retention', 'Compaction', 'Replication', 'Tiered Storage',
-    'Write Caching', 'Iceberg', 'Message Handling', 'Compression', 'Storage Internals'
+    'Retention',
+    'Compaction',
+    'Replication',
+    'Tiered Storage',
+    'Write Caching',
+    'Iceberg',
+    'Message Handling',
+    'Compression',
+    'Storage Internals',
   ];
 
-  categories.sort((a, b) => displayOrder.indexOf(a.key) - displayOrder.indexOf(b.key));
+  categories.sort((a, b) => displayOrder.indexOf(a.key ?? '') - displayOrder.indexOf(b.key ?? ''));
 
   return (
     <Box pt={4}>

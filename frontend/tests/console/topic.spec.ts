@@ -84,8 +84,8 @@ test.describe('Topic', () => {
       const present = expected.filter(t => actual.includes(t));
 
       // Make sure the basic options ('Retention') is present, and the rest are in the right order
-      await expect(filtered).toContain('Retention');
-      await expect(filtered).toEqual(present);
+      expect(filtered).toContain('Retention');
+      expect(filtered).toEqual(present);
     });
 
     await deleteTopic(page, { topicName });
