@@ -27,18 +27,23 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
+import { isServerless } from 'config';
+import { useBooleanFlagValue } from 'custom-feature-flag-provider';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
+import { useGenerateConnectConfig } from '../onboarding-wizard/hooks';
+import { ServerlessOnboardingWizard } from '../onboarding-wizard/serverless-onboarding-wizard';
+import { WizardStep } from '../onboarding-wizard/types';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
@@ -302,6 +307,18 @@ export const PipelineEditor = observer(
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
+    const enableServerlessOnboardingWizard = useBooleanFlagValue('enableServerlessOnboardingWizard');
+    const [search] = useSearchParams();
+    const yamlFromWizard = useGenerateConnectConfig();
+    const isWizardEnabled = enableServerlessOnboardingWizard && isServerless();
+    // opens the wizard when page is loaded
+    const enableQuickstart = isWizardEnabled && search.get('quickstart') === 'true';
+    const [isWizardOpen, setIsWizardOpen] = useState<boolean>(enableQuickstart);
+
+    const yaml = useMemo(
+      () => (enableQuickstart ? yamlFromWizard : p.yaml),
+      [enableQuickstart, yamlFromWizard, p.yaml],
+    );
 
     const resetEditor = async () => {
       if (monaco) {
@@ -326,12 +343,15 @@ export const PipelineEditor = observer(
             title: 'Configuration',
             content: () => (
               <Box>
+                <div className="flex justify-end">
+                  {isWizardEnabled && <Button onClick={() => setIsWizardOpen(true)}>Open Wizard</Button>}
+                </div>
                 {/* yaml editor */}
                 <Flex height="400px" gap={7}>
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
                     path="config.yaml"
-                    value={p.yaml}
+                    value={yaml}
                     onChange={(e) => {
                       if (e) p.onChange?.(e);
                     }}
@@ -345,10 +365,18 @@ export const PipelineEditor = observer(
                       await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                     }}
                   />
+
                   {!p.isDisabled && (
-                    <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                    <div className="flex gap-2">
+                      <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                    </div>
                   )}
                 </Flex>
+                <ServerlessOnboardingWizard
+                  isOpen={isWizardOpen}
+                  onClose={() => setIsWizardOpen(false)}
+                  initialStep={WizardStep.ADD_TOPIC}
+                />
                 {isKafkaConnectPipeline(p.yaml) && (
                   <Alert status="error" my={2}>
                     <AlertIcon />

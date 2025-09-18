@@ -12,10 +12,10 @@
 import { useToast } from '@redpanda-data/ui';
 import {
   convertRulesToCreateACLRequests,
+  handleResponses,
   PrincipalTypeUser,
   parsePrincipal,
   type Rule,
-  handleResponses,
 } from 'components/pages/acls/new-acl/ACL.model';
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { useEffect } from 'react';

@@ -12,6 +12,7 @@
 import { useToast } from '@redpanda-data/ui';
 import {
   getOperationsForResourceType,
+  handleResponses,
   ModeAllowAll,
   ModeDenyAll,
   OperationTypeAllow,
@@ -20,7 +21,6 @@ import {
   parsePrincipal,
   type Rule,
   type SharedConfig,
-  handleResponses,
 } from 'components/pages/acls/new-acl/ACL.model';
 import CreateACL from 'components/pages/acls/new-acl/CreateACL';
 import { useEffect } from 'react';
