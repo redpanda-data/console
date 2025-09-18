@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { Sheet, SheetContent, SheetFooter, SheetHeader } from 'components/redpanda-ui/components/sheet';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // TODO: add internationalization
 // import { FormattedMessage } from 'react-intl';
 
@@ -11,7 +11,7 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { Link as ReactRouterLink } from 'react-router-dom';
-import { useAdditionalComponents, useCompletedSteps } from 'state/onboarding-wizard/state';
+import { useAdditionalComponents, useCompletedSteps, useConnectConfig } from 'state/onboarding-wizard/state';
 import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { AddDataStep, type AddDataStepRef } from './steps/add-data-step';
 import { AddTopicStep, type AddTopicStepRef } from './steps/add-topic-step';
@@ -19,6 +19,7 @@ import { AddUserStep, type AddUserStepRef } from './steps/add-user-step';
 import { ConnectStep } from './steps/connect-step';
 import { getStepDefinitions, WizardStep } from './types';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from './types/connect';
+import { getComponentByName } from './utils/connect';
 import { CREATE_RPCN_PARAM, CREATE_RPCN_PATH, handleStepResult, shouldAllowStepNavigation } from './utils/wizard';
 
 //   import { quickstartModalViewedEvent } from 'utils/analytics.utils'; TODO: add analytics
@@ -46,6 +47,16 @@ export const ServerlessOnboardingWizard = memo(
     const completedSteps = useCompletedSteps();
     // const clearWizardStateCache = useClearWizardStateCache();
     const { setData: setAdditionalComponents } = useAdditionalComponents();
+    const { data: connectConfig } = useConnectConfig();
+
+    // Track current form selection for redirect logic (before submission)
+    const [currentSelection, setCurrentSelection] = useState<
+      | {
+          connectionName: string;
+          componentType: ConnectComponentType;
+        }
+      | undefined
+    >(undefined);
 
     const addDataStepRef = useRef<AddDataStepRef>(null);
     const addTopicStepRef = useRef<AddTopicStepRef>(null);
@@ -67,9 +78,12 @@ export const ServerlessOnboardingWizard = memo(
       (open: boolean) => {
         if (!open) {
           onClose?.();
+          // Clear current selection when closing
+          setCurrentSelection(undefined);
         } else {
           // reset form whenever the wizard is opened
           // clearWizardStateCache();
+          setCurrentSelection(undefined);
         }
       },
       [onClose],
@@ -101,6 +115,13 @@ export const ServerlessOnboardingWizard = memo(
       }
     };
 
+    // Use current form selection for redirect logic, fallback to persisted config
+    const selectedConnectionName = currentSelection?.connectionName || connectConfig?.connectionName;
+    const selectedComponent = selectedConnectionName
+      ? getComponentByName(selectedConnectionName, additionalComponents)
+      : undefined;
+    const isExternalComponent = selectedComponent?.isExternal;
+
     return (
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <Stepper.Provider className="space-y-4" initialStep={initialStep}>
@@ -129,6 +150,9 @@ export const ServerlessOnboardingWizard = memo(
                         ref={addDataStepRef}
                         componentTypeFilter={componentTypeFilter}
                         additionalComponents={additionalComponents}
+                        onChange={(connectionName, componentType) => {
+                          setCurrentSelection({ connectionName, componentType });
+                        }}
                       />
                     ),
                     [WizardStep.ADD_TOPIC]: () => <AddTopicStep ref={addTopicStepRef} topicList={topicList.topics} />,
@@ -143,7 +167,7 @@ export const ServerlessOnboardingWizard = memo(
                         Previous
                       </Button>
                     )}
-                    {shouldRedirectToConnect && methods.isFirst ? (
+                    {shouldRedirectToConnect && methods.isFirst && !isExternalComponent ? (
                       <Button asChild>
                         <Link
                           as={ReactRouterLink}
@@ -155,6 +179,7 @@ export const ServerlessOnboardingWizard = memo(
                           reloadDocument
                           to={`${CREATE_RPCN_PATH}?${CREATE_RPCN_PARAM}`}
                           className="no-underline"
+                          onClick={() => handleNext(methods)}
                         >
                           Next
                         </Link>
