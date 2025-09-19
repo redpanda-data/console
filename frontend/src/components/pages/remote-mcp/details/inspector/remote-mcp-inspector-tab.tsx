@@ -44,6 +44,7 @@ export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [toolParameters, setToolParameters] = useState<Record<string, unknown>>({});
+  const [arrayIndexes, setArrayIndexes] = useState<Record<string, number>>({});
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const {
@@ -61,14 +62,45 @@ export const RemoteMCPInspectorTab = () => {
     mcpServer: mcpServerData?.mcpServer,
   });
 
+  // Transform flat parameter structure back into nested structure for arrays
+  const transformParametersForPayload = (params: Record<string, unknown>) => {
+    const result: Record<string, unknown> = {};
+    
+    for (const [key, value] of Object.entries(params)) {
+      // Check if this is an array parameter (contains [0], [1], etc.)
+      const arrayMatch = key.match(/^(.+)\[(\d+)\]\.(.+)$/);
+      if (arrayMatch) {
+        const [, arrayName, indexStr, propertyName] = arrayMatch;
+        const index = parseInt(indexStr, 10);
+        
+        if (!result[arrayName]) {
+          result[arrayName] = [];
+        }
+        
+        const array = result[arrayName] as unknown[];
+        if (!array[index]) {
+          array[index] = {};
+        }
+        
+        (array[index] as Record<string, unknown>)[propertyName] = value;
+      } else {
+        result[key] = value;
+      }
+    }
+    
+    return result;
+  };
+
   const executeToolRequest = async () => {
     if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
+
+    const transformedParameters = transformParametersForPayload(toolParameters);
 
     callMCPServerTool(
       {
         serverUrl: mcpServerData.mcpServer.url,
         toolName: selectedTool,
-        parameters: toolParameters,
+        parameters: transformedParameters,
       },
       {
         onError: (error) => {
@@ -82,6 +114,47 @@ export const RemoteMCPInspectorTab = () => {
     setToolParameters((prev) => ({
       ...prev,
       [paramName]: value,
+    }));
+  };
+
+  const handleArrayAdd = (arrayName: string) => {
+    setArrayIndexes((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || 1) + 1,
+    }));
+  };
+
+  const handleArrayRemove = (arrayName: string, removeIndex: number) => {
+    const currentCount = arrayIndexes[arrayName] || 1;
+    if (currentCount <= 1) return;
+
+    // Remove parameters for the specific index
+    setToolParameters((prev) => {
+      const newParams = { ...prev };
+      Object.keys(newParams).forEach((key) => {
+        if (key.startsWith(`${arrayName}[${removeIndex}].`)) {
+          delete newParams[key];
+        }
+      });
+      
+      // Reindex remaining parameters
+      for (let i = removeIndex + 1; i < currentCount; i++) {
+        Object.keys(newParams).forEach((key) => {
+          if (key.startsWith(`${arrayName}[${i}].`)) {
+            const newKey = key.replace(`${arrayName}[${i}].`, `${arrayName}[${i - 1}].`);
+            newParams[newKey] = newParams[key];
+            delete newParams[key];
+          }
+        });
+      }
+      
+      return newParams;
+    });
+
+    // Update array count
+    setArrayIndexes((prev) => ({
+      ...prev,
+      [arrayName]: currentCount - 1,
     }));
   };
 
@@ -170,12 +243,17 @@ export const RemoteMCPInspectorTab = () => {
                     onClick={() => {
                       setSelectedTool(tool.name);
                       // Initialize all parameters as empty strings
-                      const initialParams: Record<string, string> = {};
+                      setToolParameters({});
+                      // Initialize array indexes - start with 1 for all arrays
+                      const initialArrayIndexes: Record<string, number> = {};
                       const properties = tool.inputSchema?.properties ?? {};
-                      Object.keys(properties).forEach((paramName) => {
-                        initialParams[paramName] = '';
+                      Object.entries(properties).forEach(([key, schema]) => {
+                        const s = schema as { type?: string; items?: { properties?: Record<string, unknown> } };
+                        if (s.type === 'array' && s.items?.properties) {
+                          initialArrayIndexes[key] = 1;
+                        }
                       });
-                      setToolParameters(initialParams);
+                      setArrayIndexes(initialArrayIndexes);
                     }}
                   >
                     <div className="flex items-start justify-between">
@@ -242,6 +320,9 @@ export const RemoteMCPInspectorTab = () => {
               availableTools={mcpServerTools?.tools ?? []}
               toolParameters={toolParameters}
               onParameterChange={handleParameterChange}
+              arrayIndexes={arrayIndexes}
+              onArrayAdd={handleArrayAdd}
+              onArrayRemove={handleArrayRemove}
             />
 
             {isServerToolPending && (
