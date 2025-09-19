@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { createTopic, deleteTopic, produceMessage } from '../topic.utils';
 
 test.use({
   permissions: ['clipboard-write', 'clipboard-read'],
@@ -12,10 +13,7 @@ test.describe('Topic', () => {
   }) => {
     const topicName = `too-big-message-test-${randomUUID()}`;
 
-    await page.goto('/topics');
-    await page.getByTestId('create-topic-button').click();
-    await page.getByTestId('topic-name').fill(topicName);
-    await page.getByTestId('onOk-button').click();
+    await createTopic(page, { topicName });
     await page.goto(`/topics/${topicName}/produce-record`);
 
     // const DefaultMaxDeserializationPayloadSize = 20_480 // 20 KB
@@ -50,10 +48,7 @@ test.describe('Topic', () => {
       state: 'visible',
     });
 
-    // cleanup, let's delete the topic now
-    await page.goto('/topics');
-    await page.getByTestId(`delete-topic-button-${topicName}`).click();
-    await page.getByTestId('delete-topic-confirm-button').click();
+    await deleteTopic(page, { topicName });
   });
 
   test('should show internal topics if the corresponding checkbox is checked', async ({ page }) => {
@@ -68,28 +63,40 @@ test.describe('Topic', () => {
     await expect(page.getByTestId('data-table-cell').getByText('_schemas')).not.toBeVisible();
   });
 
+  test('should create a topic and properly group the configurations', async ({ page }) => {
+    const topicName = `test-config-topic-${Date.now()}`;
+
+    await createTopic(page, { topicName });
+
+    await test.step('Verify configuration grouping', async () => {
+      await page.goto(`/topics/${topicName}#configuration`)
+      await expect(page.getByTestId("config-group-table")).toBeVisible();
+
+      // This is the full order we currently expect to see things in
+      const expected = [
+        'Retention', 'Compaction', 'Replication', 'Tiered Storage',
+        'Write Caching', 'Iceberg', 'Schema Registry and Validation',
+        'Message Handling', 'Compression', 'Storage Internals'
+      ];
+
+      // Grab the actual groups on the page, then grab the intersection
+      const actual = await page.locator('.configGroupTitle').allTextContents();
+      const filtered = actual.filter(t => expected.includes(t));
+      const present = expected.filter(t => actual.includes(t));
+
+      // Make sure the basic options ('Retention') is present, and the rest are in the right order
+      expect(filtered).toContain('Retention');
+      expect(filtered).toEqual(present);
+    });
+
+    await deleteTopic(page, { topicName });
+  });
+
   test('should create a topic, produce a message, export it as CSV format and delete a topic', async ({ page }) => {
     const topicName = `test-topic-${Date.now()}`;
 
-    await page.goto('/topics');
-
-    await test.step('Create topic', async () => {
-      await page.getByTestId('create-topic-button').click();
-      await page.getByTestId('topic-name').fill(topicName);
-      await page.getByTestId('onOk-button').click();
-      await page.getByRole('button', { name: 'Close' }).click(); // Close success dialog
-      await expect(page.getByRole('link', { name: topicName })).toBeVisible();
-    });
-
-    await test.step('Produce message', async () => {
-      await page.goto(`/topics/${topicName}/produce-record`);
-      const valueMonacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
-      await valueMonacoEditor.click(); // Focus the editor
-      await page.keyboard.insertText('hello world');
-      await page.getByTestId('produce-button').click();
-      const messageValueCell = page.getByRole('cell', { name: /hello world/i }).first();
-      await expect(messageValueCell).toBeVisible();
-    });
+    await createTopic(page, { topicName });
+    await produceMessage(page, { topicName, message: 'hello world' });
 
     await test.step('Export message as CSV', async () => {
       await page.getByLabel('Collapse row').click();
@@ -106,39 +113,15 @@ test.describe('Topic', () => {
       fs.unlinkSync(tempFilePath); // Clean up
     });
 
-    await test.step('Delete topic', async () => {
-      await page.goto('/topics');
-      await expect(page.getByRole('link', { name: topicName })).toBeVisible(); // Re-verify topic before delete
-      await page.getByTestId(`delete-topic-button-${topicName}`).click();
-      await page.getByTestId('delete-topic-confirm-button').click();
-      await expect(page.getByText('Topic Deleted')).toBeVisible();
-      await expect(page.getByRole('link', { name: topicName })).not.toBeVisible();
-    });
+    await deleteTopic(page, { topicName });
   });
 
   test('should create topic, produce message, copy value to clipboard, and delete topic', async ({ page }) => {
     const topicName = `test-topic-clipboard-${Date.now()}`;
     const messageValue = 'hello clipboard test';
 
-    await page.goto('/topics');
-
-    await test.step('Create topic', async () => {
-      await page.getByTestId('create-topic-button').click();
-      await page.getByTestId('topic-name').fill(topicName);
-      await page.getByTestId('onOk-button').click();
-      await page.getByRole('button', { name: 'Close' }).click(); // Close success dialog
-      await expect(page.getByRole('link', { name: topicName })).toBeVisible();
-    });
-
-    await test.step('Produce message', async () => {
-      await page.goto(`/topics/${topicName}/produce-record`);
-      const valueMonacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
-      await valueMonacoEditor.click(); // Focus the editor
-      await page.keyboard.insertText(messageValue);
-      await page.getByTestId('produce-button').click();
-      const messageValueCell = page.getByRole('cell', { name: new RegExp(messageValue, 'i') }).first();
-      await expect(messageValueCell).toBeVisible();
-    });
+    await createTopic(page, { topicName });
+    await produceMessage(page, { topicName, message: messageValue });
 
     await test.step('Copy message value to clipboard', async () => {
       await page.getByLabel('Collapse row').first().click();
@@ -153,13 +136,6 @@ test.describe('Topic', () => {
       await expect(page.getByText('Value copied to clipboard')).toBeVisible({ timeout: 2000 });
     });
 
-    await test.step('Delete topic', async () => {
-      await page.goto('/topics');
-      await expect(page.getByRole('link', { name: topicName })).toBeVisible(); // Re-verify topic before delete
-      await page.getByTestId(`delete-topic-button-${topicName}`).click();
-      await page.getByTestId('delete-topic-confirm-button').click();
-      await expect(page.getByText('Topic Deleted')).toBeVisible();
-      await expect(page.getByRole('link', { name: topicName })).not.toBeVisible();
-    });
+    await deleteTopic(page, { topicName });
   });
 });

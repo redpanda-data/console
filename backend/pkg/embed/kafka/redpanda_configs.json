@@ -40,5 +40,131 @@
     "documentation": "When a topic is enabled for remote write, retention.ms and retention.bytes specify the retention policy for data in the cloud. Retention.local.target.{ms|bytes} specify the local retention policy in this scenario. If the topic is not enabled for remote write, these options are ignored.",
     "category": "Tiered Storage",
     "frontendFormat": "DURATION"
+  },
+  {
+    "name": "redpanda.iceberg.delete",
+    "type": "BOOLEAN",
+    "documentation": "Whether the corresponding Iceberg table is deleted upon deleting the topic.",
+    "category": "Iceberg"
+  },
+  {
+    "name": "redpanda.iceberg.invalid.record.action",
+    "type": "STRING",
+    "documentation": "Whether to write invalid records to a dead-letter queue (DLQ).",
+    "category": "Iceberg",
+    "enumValues": ["drop", "dlq_table"]
+  },
+  {
+    "name": "redpanda.iceberg.mode",
+    "type": "STRING",
+    "documentation": "Enable the Iceberg integration for the topic. You can choose one of four modes.",
+    "category": "Iceberg",
+    "enumValues": ["key_value", "value_schema_id_prefix", "value_schema_latest", "disabled"]
+  },
+  {
+    "name": "redpanda.iceberg.partition.spec",
+    "type": "INT",
+    "documentation": "The partitioning specification for the Iceberg table.",
+    "category": "Iceberg",
+    "frontendFormat": "DURATION"
+  },
+  {
+    "name": "redpanda.iceberg.target.lag.ms",
+    "type": "INT",
+    "documentation": "Controls how often the data in the Iceberg table is refreshed with new data from the topic. Redpanda attempts to commit all data produced to the topic within the lag target, subject to resource availability.",
+    "category": "Iceberg"
+  },
+  {
+    "name": "redpanda.remote.readreplica",
+    "type": "STRING",
+    "documentation": "The name of the object storage bucket for a Remote Read Replica topic. Not to be used with redpanda.remote.read or redpanda.remote.write.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "flush.bytes",
+    "type": "INT",
+    "documentation": "The maximum bytes not fsynced per partition. If this configured threshold is reached, the log is automatically fsynced, even though it wasn’t explicitly requested.",
+    "category": "Write Caching"
+  },
+  {
+    "name": "initial.retention.local.target.bytes",
+    "type": "INT",
+    "documentation": "A size-based initial retention limit for Tiered Storage that determines how much data in local storage is transferred to a partition replica when a cluster is resized. If null (default), all locally retained data is transferred.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "initial.retention.local.target.ms",
+    "type": "INT",
+    "documentation": "A time-based initial retention limit for Tiered Storage that determines how much data in local storage is transferred to a partition replica when a cluster is resized. If null (default), all locally retained data is transferred.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "redpanda.leaders.preference",
+    "type": "STRING",
+    "documentation": "The preferred location (rack) for partition leaders of a topic.",
+    "category": "Replication"
+  },
+  {
+    "name": "replication.factor",
+    "type": "INT",
+    "documentation": "The number of replicas of a topic to save in different nodes (brokers) of a cluster. If replication.factor is set to a positive value, it overrides the cluster property default_topic_replication for the topic.",
+    "category": "Replication"
+  },
+  {
+    "name": "write.caching",
+    "type": "BOOLEAN",
+    "documentation": "The write caching mode to apply to a topic.",
+    "category": "Write Caching"
+  },
+  {
+    "name": "redpanda.key.schema.id.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for keys on a record. When enabled, Redpanda validates that the schema ID encoded in the record's key is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "redpanda.key.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for keys when `redpanda.key.schema.id.validation` is enabled. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "redpanda.value.schema.id.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for values on a record. When enabled, Redpanda validates that the schema ID encoded in the record's value is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "redpanda.value.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for values when `redpanda.value.schema.id.validation` is enabled. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "enumValues": ["TopicNameStrategy", "RecordNameStrategy", "TopicRecordNameStrategy"],
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.key.schema.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for keys on a record. This is a compatibility alias for `redpanda.key.schema.id.validation`. When enabled, Redpanda validates that the schema ID encoded in the record's key is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.key.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for keys when `confluent.key.schema.validation` is enabled. This is a compatibility alias for `redpanda.key.subject.name.strategy`. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "enumValues": ["io.confluent.kafka.serializers.subject.TopicNameStrategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy", "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy"],
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.value.schema.validation",
+    "type": "BOOLEAN",
+    "documentation": "Enable validation of the schema ID for values on a record. This is a compatibility alias for `redpanda.value.schema.id.validation`. When enabled, Redpanda validates that the schema ID encoded in the record's value is registered in the Schema Registry according to the configured subject name strategy.",
+    "category": "Schema Registry and Validation"
+  },
+  {
+    "name": "confluent.value.subject.name.strategy",
+    "type": "STRING",
+    "documentation": "The subject name strategy for values when `confluent.value.schema.validation` is enabled. This is a compatibility alias for `redpanda.value.subject.name.strategy`. This determines how the topic and schema are mapped to a subject name in the Schema Registry.",
+    "enumValues": ["io.confluent.kafka.serializers.subject.TopicNameStrategy", "io.confluent.kafka.serializers.subject.RecordNameStrategy", "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy"],
+    "category": "Schema Registry and Validation"
   }
 ]
