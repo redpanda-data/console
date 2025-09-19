@@ -21,9 +21,13 @@ import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServ
 
 interface RemoteMCPConnectClientVSCodeProps {
   mcpServer: MCPServer;
+  enableMcpDiscovery?: boolean;
 }
 
-export const RemoteMCPConnectClientVSCode = ({ mcpServer }: RemoteMCPConnectClientVSCodeProps) => {
+export const RemoteMCPConnectClientVSCode = ({
+  mcpServer,
+  enableMcpDiscovery = true,
+}: RemoteMCPConnectClientVSCodeProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
@@ -45,6 +49,15 @@ export const RemoteMCPConnectClientVSCode = ({ mcpServer }: RemoteMCPConnectClie
 
   const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
   const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
+
+  const mcpDiscoveryConfig = enableMcpDiscovery
+    ? `"chat.mcp.discovery.enabled": {
+    "windsurf": true,
+    "cursor-global": true,
+    "cursor-workspace": true,
+    "claude-desktop": true
+}`
+    : '';
 
   const vscodeConfigJson = showCloudEnvironmentFlag
     ? `{
@@ -104,6 +117,12 @@ export const RemoteMCPConnectClientVSCode = ({ mcpServer }: RemoteMCPConnectClie
               <img src={VSCodeLogo} alt="VSCode" className="w-4 h-4 mr-2" />
               Add to VSCode
             </Button>
+          </ListItem>
+          <ListItem>
+            <div className="flex items-center gap-2">
+              You can also set up autodiscovery for the MCP server from other IDEs by updating your VSCode settings:
+            </div>
+            <DynamicCodeBlock lang="json" code={mcpDiscoveryConfig} />
           </ListItem>
           <ListItem>
             <div className="flex items-center gap-2">Alternatively, run the following command:</div>
