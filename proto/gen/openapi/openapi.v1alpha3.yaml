@@ -25,6 +25,8 @@ components:
           type: string
         provider:
           $ref: '#/components/schemas/AIAgent.Provider'
+        resources:
+          $ref: '#/components/schemas/Resources'
         state:
           $ref: '#/components/schemas/AIAgent.State'
         system_prompt:

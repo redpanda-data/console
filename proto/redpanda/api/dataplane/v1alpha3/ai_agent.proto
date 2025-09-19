@@ -65,9 +65,12 @@ message AIAgent {
   // Map of MCP servers that this AI agent can use.
   map<string, MCPServer> mcp_servers = 8;
 
+  // The number of resources that are guaranteed to be assigned to the AI Agent.
+  redpanda.api.dataplane.v1.Pipeline.Resources resources = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The requested amount of resources for the AI Agent. Depending on the backend, the resources might be guaranteed, or might be tweaked based on the utilization of the AI Agent."}];
+
   // Tags are key-value pairs that can be assigned to an AI agent resource.
   // They help organize AI agents and enable filtering when listing them.
-  map<string, string> tags = 9 [(buf.validate.field).map = {
+  map<string, string> tags = 10 [(buf.validate.field).map = {
     max_pairs: 16
     values: {
       string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
@@ -75,10 +78,10 @@ message AIAgent {
   }];
 
   // The current AI agent state.
-  State state = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  State state = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // URL to connect to the AI agent endpoint.
-  string url = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string url = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Provider {
     message OpenAI {
