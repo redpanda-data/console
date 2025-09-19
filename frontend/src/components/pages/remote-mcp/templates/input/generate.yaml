@@ -18,5 +18,4 @@ generate:
 meta:
   mcp:
     enabled: true
-    description: "Generate 10 example user event messages with realistic data"
-    properties: []
+    description: "Generate example user event messages with realistic data"
