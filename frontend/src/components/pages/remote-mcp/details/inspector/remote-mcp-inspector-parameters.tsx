@@ -35,8 +35,10 @@ interface InputSchema {
   required?: string[];
 }
 
-const transformInputSchemaToParameters = (inputSchema?: InputSchema, arrayIndexes: Record<string, number> = {}): ToolParameter[] => {
-  console.log('inputSchema', inputSchema);
+const transformInputSchemaToParameters = (
+  inputSchema?: InputSchema,
+  arrayIndexes: Record<string, number> = {},
+): ToolParameter[] => {
   if (!inputSchema?.properties) {
     return [];
   }
@@ -108,7 +110,15 @@ interface ParameterListProps {
   onArrayRemove: (arrayName: string, index: number) => void;
 }
 
-const ParameterList = ({ parameters, toolParameters, onParameterChange, inputSchema, arrayIndexes, onArrayAdd, onArrayRemove }: ParameterListProps) => {
+const ParameterList = ({
+  parameters,
+  toolParameters,
+  onParameterChange,
+  inputSchema,
+  arrayIndexes,
+  onArrayAdd,
+  onArrayRemove,
+}: ParameterListProps) => {
   if (parameters.length === 0) {
     return (
       <Text variant="small" className="text-muted-foreground py-4 text-center">
@@ -125,9 +135,9 @@ const ParameterList = ({ parameters, toolParameters, onParameterChange, inputSch
     const arrayMatch = param.name.match(/^(.+)\[(\d+)\]\.(.+)$/);
     if (arrayMatch) {
       const [, arrayName, indexStr] = arrayMatch;
-      const index = parseInt(indexStr, 10);
+      const index = Number.parseInt(indexStr, 10);
       const groupKey = `${arrayName}[${index}]`;
-      
+
       if (!groupedParams[groupKey]) {
         groupedParams[groupKey] = { arrayName, index, params: [] };
       }
@@ -179,7 +189,7 @@ const ParameterList = ({ parameters, toolParameters, onParameterChange, inputSch
       {Object.entries(arraySchemas).map(([arrayName, schema]) => {
         const arrayCount = arrayIndexes[arrayName] || 1;
         const arrayGroups = Object.entries(groupedParams).filter(([key]) => key.startsWith(`${arrayName}[`));
-        
+
         return (
           <div key={arrayName} className="space-y-4 border rounded-lg p-4 bg-muted/20">
             <div className="flex items-center justify-between">
@@ -194,17 +204,12 @@ const ParameterList = ({ parameters, toolParameters, onParameterChange, inputSch
                   </Text>
                 )}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onArrayAdd(arrayName)}
-                className="h-8"
-              >
+              <Button variant="outline" size="sm" onClick={() => onArrayAdd(arrayName)} className="h-8">
                 <Plus className="h-4 w-4 mr-1" />
                 Add Message
               </Button>
             </div>
-            
+
             {arrayGroups.map(([groupKey, group]) => (
               <div key={groupKey} className="space-y-3 border rounded-lg p-3 bg-background">
                 <div className="flex items-center justify-between">
@@ -222,7 +227,7 @@ const ParameterList = ({ parameters, toolParameters, onParameterChange, inputSch
                     </Button>
                   )}
                 </div>
-                
+
                 {group.params.map((param) => (
                   <div key={param.name} className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -275,9 +280,9 @@ export const RemoteMCPInspectorParameters = ({
         <CardTitle className="text-base">Parameters</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ParameterList 
-          parameters={parameters} 
-          toolParameters={toolParameters} 
+        <ParameterList
+          parameters={parameters}
+          toolParameters={toolParameters}
           onParameterChange={onParameterChange}
           inputSchema={inputSchema}
           arrayIndexes={arrayIndexes}

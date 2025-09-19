@@ -16,8 +16,9 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, InlineCode, Text } from 'components/redpanda-ui/components/typography';
-import { Clock, Play } from 'lucide-react';
+import { Clock, Copy, Play } from 'lucide-react';
 import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useState } from 'react';
 import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
@@ -40,11 +41,16 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
   return MCPServer_Tool_ComponentType.UNSPECIFIED;
 };
 
+type ParameterMode = 'form' | 'json';
+
 export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [toolParameters, setToolParameters] = useState<Record<string, unknown>>({});
   const [arrayIndexes, setArrayIndexes] = useState<Record<string, number>>({});
+  const [parameterMode, setParameterMode] = useState<ParameterMode>('form');
+  const [jsonParameters, setJsonParameters] = useState<string>('{}');
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const {
@@ -65,42 +71,171 @@ export const RemoteMCPInspectorTab = () => {
   // Transform flat parameter structure back into nested structure for arrays
   const transformParametersForPayload = (params: Record<string, unknown>) => {
     const result: Record<string, unknown> = {};
-    
+
     for (const [key, value] of Object.entries(params)) {
       // Check if this is an array parameter (contains [0], [1], etc.)
       const arrayMatch = key.match(/^(.+)\[(\d+)\]\.(.+)$/);
       if (arrayMatch) {
         const [, arrayName, indexStr, propertyName] = arrayMatch;
-        const index = parseInt(indexStr, 10);
-        
+        const index = Number.parseInt(indexStr, 10);
+
         if (!result[arrayName]) {
           result[arrayName] = [];
         }
-        
+
         const array = result[arrayName] as unknown[];
         if (!array[index]) {
           array[index] = {};
         }
-        
+
         (array[index] as Record<string, unknown>)[propertyName] = value;
       } else {
         result[key] = value;
       }
     }
-    
+
     return result;
+  };
+
+  // Convert form parameters to JSON string
+  const convertFormToJson = () => {
+    const transformedParams = transformParametersForPayload(toolParameters);
+    return JSON.stringify(transformedParams, null, 2);
+  };
+
+  // Convert JSON string to form parameters
+  const convertJsonToForm = (jsonString: string) => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      const flattened: Record<string, unknown> = {};
+      const newArrayIndexes: Record<string, number> = {};
+
+      const flattenObject = (obj: unknown, prefix = '') => {
+        if (Array.isArray(obj)) {
+          if (prefix) {
+            newArrayIndexes[prefix] = obj.length;
+          }
+          obj.forEach((item, index) => {
+            flattenObject(item, `${prefix}[${index}]`);
+          });
+        } else if (obj && typeof obj === 'object') {
+          Object.entries(obj).forEach(([key, value]) => {
+            const fullKey = prefix ? `${prefix}.${key}` : key;
+            if (Array.isArray(value) || (value && typeof value === 'object' && !Array.isArray(value))) {
+              flattenObject(value, fullKey);
+            } else {
+              flattened[fullKey] = value;
+            }
+          });
+        } else if (prefix) {
+          flattened[prefix] = obj;
+        }
+      };
+
+      flattenObject(parsed);
+      setToolParameters(flattened);
+      setArrayIndexes(newArrayIndexes);
+      setJsonError(null);
+      return true;
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
+      return false;
+    }
+  };
+
+  // Generate placeholder JSON structure from schema
+  const generatePlaceholderJson = (toolName: string, toolData?: any) => {
+    const selectedToolData = toolData || mcpServerTools?.tools?.find((t) => t.name === toolName);
+    if (!selectedToolData?.inputSchema?.properties) {
+      return '{}';
+    }
+
+    const generateValue = (schema: any, fieldName?: string): any => {
+      if (schema.type === 'string') {
+        // Provide contextual hints based on field names
+        if (fieldName?.toLowerCase().includes('message')) {
+          return '';
+        }
+        if (fieldName?.toLowerCase().includes('topic')) {
+          return '';
+        }
+        if (fieldName?.toLowerCase().includes('name')) {
+          return '';
+        }
+        return '';
+      }
+      if (schema.type === 'number') {
+        return 0;
+      }
+      if (schema.type === 'boolean') {
+        return false;
+      }
+      if (schema.type === 'array' && schema.items) {
+        if (schema.items.properties) {
+          // Array of objects
+          const exampleItem: any = {};
+          Object.entries(schema.items.properties).forEach(([key, itemSchema]) => {
+            exampleItem[key] = generateValue(itemSchema, key);
+          });
+          return [exampleItem];
+        }
+        return [generateValue(schema.items, fieldName)];
+      }
+      if (schema.type === 'object' && schema.properties) {
+        const obj: any = {};
+        Object.entries(schema.properties).forEach(([key, propSchema]) => {
+          obj[key] = generateValue(propSchema, key);
+        });
+        return obj;
+      }
+      return null;
+    };
+
+    const placeholder: any = {};
+    Object.entries(selectedToolData.inputSchema.properties).forEach(([key, schema]) => {
+      placeholder[key] = generateValue(schema, key);
+    });
+
+    return JSON.stringify(placeholder, null, 2);
+  };
+
+  // Handle mode switch
+  const handleModeSwitch = (newMode: ParameterMode) => {
+    if (newMode === 'json' && parameterMode === 'form') {
+      // Convert form to JSON, or use placeholder if form is empty
+      const hasFormData = Object.keys(toolParameters).length > 0;
+      const jsonString = hasFormData ? convertFormToJson() : generatePlaceholderJson(selectedTool);
+      setJsonParameters(jsonString);
+    } else if (newMode === 'form' && parameterMode === 'json') {
+      // Convert JSON to form
+      convertJsonToForm(jsonParameters);
+    }
+    setParameterMode(newMode);
   };
 
   const executeToolRequest = async () => {
     if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
 
-    const transformedParameters = transformParametersForPayload(toolParameters);
+    let parameters: Record<string, unknown>;
+
+    if (parameterMode === 'json') {
+      // Use JSON parameters
+      try {
+        parameters = JSON.parse(jsonParameters);
+      } catch {
+        toast.error('Invalid JSON parameters');
+        return;
+      }
+    } else {
+      // Use form parameters
+      parameters = transformParametersForPayload(toolParameters);
+    }
 
     callMCPServerTool(
       {
         serverUrl: mcpServerData.mcpServer.url,
         toolName: selectedTool,
-        parameters: transformedParameters,
+        parameters,
       },
       {
         onError: (error) => {
@@ -136,7 +271,7 @@ export const RemoteMCPInspectorTab = () => {
           delete newParams[key];
         }
       });
-      
+
       // Reindex remaining parameters
       for (let i = removeIndex + 1; i < currentCount; i++) {
         Object.keys(newParams).forEach((key) => {
@@ -147,7 +282,7 @@ export const RemoteMCPInspectorTab = () => {
           }
         });
       }
-      
+
       return newParams;
     });
 
@@ -254,6 +389,11 @@ export const RemoteMCPInspectorTab = () => {
                         }
                       });
                       setArrayIndexes(initialArrayIndexes);
+                      // Reset JSON mode state with placeholder
+                      const placeholder = generatePlaceholderJson(tool.name, tool);
+                      setJsonParameters(placeholder);
+                      setJsonError(null);
+                      setParameterMode('form');
                     }}
                   >
                     <div className="flex items-start justify-between">
@@ -299,6 +439,13 @@ export const RemoteMCPInspectorTab = () => {
                 Test Tool: <InlineCode>{selectedTool}</InlineCode>
               </Label>
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleModeSwitch(parameterMode === 'form' ? 'json' : 'form')}
+                  size="sm"
+                >
+                  Switch to {parameterMode === 'form' ? 'JSON' : 'Form'}
+                </Button>
                 <Button variant="secondary" onClick={executeToolRequest} disabled={isServerToolPending} size="sm">
                   {isServerToolPending ? (
                     <>
@@ -315,15 +462,91 @@ export const RemoteMCPInspectorTab = () => {
               </div>
             </div>
 
-            <RemoteMCPInspectorParameters
-              selectedTool={selectedTool}
-              availableTools={mcpServerTools?.tools ?? []}
-              toolParameters={toolParameters}
-              onParameterChange={handleParameterChange}
-              arrayIndexes={arrayIndexes}
-              onArrayAdd={handleArrayAdd}
-              onArrayRemove={handleArrayRemove}
-            />
+            {parameterMode === 'form' ? (
+              <RemoteMCPInspectorParameters
+                selectedTool={selectedTool}
+                availableTools={mcpServerTools?.tools ?? []}
+                toolParameters={toolParameters}
+                onParameterChange={handleParameterChange}
+                arrayIndexes={arrayIndexes}
+                onArrayAdd={handleArrayAdd}
+                onArrayRemove={handleArrayRemove}
+              />
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Parameters (JSON)</Label>
+                  <Textarea
+                    value={jsonParameters}
+                    onChange={(e) => {
+                      setJsonParameters(e.target.value);
+                      setJsonError(null);
+                    }}
+                    onBlur={() => {
+                      // Validate JSON on blur
+                      try {
+                        JSON.parse(jsonParameters);
+                        setJsonError(null);
+                      } catch (error) {
+                        setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
+                      }
+                    }}
+                    placeholder='{"key": "value"}'
+                    className="min-h-[200px] font-mono text-sm"
+                    style={{ resize: 'vertical' }}
+                  />
+                  {jsonError && (
+                    <Text variant="small" className="text-destructive">
+                      {jsonError}
+                    </Text>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        const parsed = JSON.parse(jsonParameters);
+                        const formatted = JSON.stringify(parsed, null, 2);
+                        setJsonParameters(formatted);
+                        setJsonError(null);
+                        toast.success('JSON formatted');
+                      } catch {
+                        toast.error('Invalid JSON cannot be formatted');
+                      }
+                    }}
+                  >
+                    Format JSON
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(jsonParameters);
+                      toast.success('JSON copied to clipboard');
+                    }}
+                  >
+                    Copy JSON
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const inputParams =
+                        parameterMode === 'json'
+                          ? jsonParameters
+                          : JSON.stringify(transformParametersForPayload(toolParameters), null, 2);
+                      navigator.clipboard.writeText(inputParams);
+                      toast.success('Input copied to clipboard');
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Input
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {isServerToolPending && (
               <div className="space-y-2">
