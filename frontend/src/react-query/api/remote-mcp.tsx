@@ -303,19 +303,28 @@ export interface CallMCPToolParams {
   serverUrl: string;
   toolName: string;
   parameters: Record<string, unknown>;
+  signal?: AbortSignal;
 }
 
 export const useCallMCPServerToolMutation = () => {
   return useTanstackMutation({
-    mutationFn: async ({ serverUrl, toolName, parameters }: CallMCPToolParams) => {
+    mutationFn: async ({ serverUrl, toolName, parameters, signal }: CallMCPToolParams) => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      return client.callTool({
-        name: toolName,
-        arguments: parameters,
-      });
+      return client.callTool(
+        {
+          name: toolName,
+          arguments: parameters,
+        },
+        undefined,
+        { signal },
+      );
     },
     onError: (error) => {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return;
+      }
+
       const connectError = ConnectError.from(error);
 
       return formatToastErrorMessageGRPC({

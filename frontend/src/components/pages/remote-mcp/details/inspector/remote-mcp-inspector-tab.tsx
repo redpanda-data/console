@@ -11,23 +11,23 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: leave for now */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
+import { create } from '@bufbuild/protobuf';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { Clock, Hammer, Send } from 'lucide-react';
-import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { create } from '@bufbuild/protobuf';
+import { Clock, Hammer, Send, X } from 'lucide-react';
 import {
   CreateTopicRequest_Topic_ConfigSchema,
   CreateTopicRequest_TopicSchema,
   CreateTopicRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { useState, useEffect } from 'react';
+import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { useEffect, useRef, useState } from 'react';
 import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
-import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
+import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DynamicJSONForm } from '../../dynamic-json-form';
@@ -73,6 +73,7 @@ export const RemoteMCPInspectorTab = () => {
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [toolParameters, setToolParameters] = useState<JsonValue>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const {
@@ -91,16 +92,14 @@ export const RemoteMCPInspectorTab = () => {
     mcpServer: mcpServerData?.mcpServer,
   });
 
-  const { data: topicsData, refetch: refetchTopics } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  const { data: topicsData, refetch: refetchTopics } = useLegacyListTopicsQuery(undefined, {
+    hideInternalTopics: true,
+  });
   const { mutateAsync: createTopic } = useCreateTopicMutation();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   useEffect(() => {
-    if (
-      !selectedTool &&
-      mcpServerTools?.tools &&
-      mcpServerTools.tools.length === 1
-    ) {
+    if (!selectedTool && mcpServerTools?.tools && mcpServerTools.tools.length === 1) {
       const singleTool = mcpServerTools.tools[0];
       setSelectedTool(singleTool.name);
       const initialData = initializeFormData(singleTool.inputSchema as JsonSchemaType);
@@ -110,6 +109,14 @@ export const RemoteMCPInspectorTab = () => {
     }
   }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
 
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   useEffect(() => {
     if (
@@ -117,56 +124,54 @@ export const RemoteMCPInspectorTab = () => {
       topicsData?.topics &&
       topicsData.topics.length === 1 &&
       mcpServerData?.mcpServer?.tools?.[selectedTool] &&
-      (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT
+      (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) ===
+        MCPServer_Tool_ComponentType.OUTPUT
     ) {
       const availableTopic = topicsData.topics[0].topicName;
-      // biome-ignore lint/suspicious/noExplicitAny: tool parameters are arbitrary
       const params = toolParameters as any;
-      
+
       // Check if topic_name needs to be set - auto-select for messages without topic_name
       const needsUpdate = (() => {
         // Check top-level topic_name
         if (params?.topic_name === availableTopic) {
           return false;
         }
-        
+
         // Check nested topic_name in messages array - look for messages without topics
         if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
-          // biome-ignore lint/suspicious/noExplicitAny: output type messages are arbitrary
           const messagesNeedingTopics = params.messages.some((message: any) => !message?.topic_name);
           return messagesNeedingTopics;
         }
-        
+
         return true;
       })();
-      
+
       if (needsUpdate) {
         let updatedParams = {
-          ...(typeof toolParameters === 'object' && toolParameters !== null && !Array.isArray(toolParameters) ? toolParameters : {}),
+          ...(typeof toolParameters === 'object' && toolParameters !== null && !Array.isArray(toolParameters)
+            ? toolParameters
+            : {}),
         };
-        
+
         // If there's a messages array, set topic_name in all messages that don't have one
         if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
           updatedParams = {
             ...updatedParams,
-            messages: updatedParams.messages.map((msg: any) => 
-              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg
-            )
+            messages: updatedParams.messages.map((msg: any) =>
+              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg,
+            ),
           };
         } else {
           // Fallback to top-level topic_name
           updatedParams.topic_name = availableTopic;
         }
-        
+
         setToolParameters(updatedParams);
-        
+
         // Also trigger validation
         const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
         if (selectedToolData) {
-          const validation = validateRequiredFields(
-            selectedToolData.inputSchema as JsonSchemaType,
-            updatedParams,
-          );
+          const validation = validateRequiredFields(selectedToolData.inputSchema as JsonSchemaType, updatedParams);
           setValidationErrors(validation.errors);
         }
       }
@@ -176,6 +181,15 @@ export const RemoteMCPInspectorTab = () => {
   const executeToolRequest = async () => {
     if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
 
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     const parameters = (toolParameters as Record<string, unknown>) || {};
 
     callMCPServerTool(
@@ -183,13 +197,29 @@ export const RemoteMCPInspectorTab = () => {
         serverUrl: mcpServerData.mcpServer.url,
         toolName: selectedTool,
         parameters,
+        signal: abortController.signal,
       },
       {
         onError: (error) => {
-          toast.error(error.message);
+          if (error.message !== 'Request was cancelled') {
+            toast.error(error.message);
+          }
+        },
+        onSettled: () => {
+          // Clear the abort controller reference when request completes
+          if (abortControllerRef.current === abortController) {
+            abortControllerRef.current = null;
+          }
         },
       },
     );
+  };
+
+  const cancelToolRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
   };
 
   const validateRequiredFields = (
@@ -230,7 +260,8 @@ export const RemoteMCPInspectorTab = () => {
           if (topicsData?.topics && Array.isArray(topicsData.topics)) {
             const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
             if (!topicExists) {
-              errors[requiredField] = `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+              errors[requiredField] =
+                `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
               continue;
             }
           }
@@ -399,6 +430,11 @@ export const RemoteMCPInspectorTab = () => {
                         selectedTool === tool.name ? 'bg-blue-50 dark:bg-blue-950/30' : ''
                       }`}
                       onClick={() => {
+                        // Cancel any pending request when switching tools
+                        if (abortControllerRef.current) {
+                          abortControllerRef.current.abort();
+                          abortControllerRef.current = null;
+                        }
                         setSelectedTool(tool.name);
                         const initialData = initializeFormData(tool.inputSchema as JsonSchemaType);
                         setToolParameters(initialData);
@@ -469,49 +505,53 @@ export const RemoteMCPInspectorTab = () => {
                             schema={(selectedToolData?.inputSchema as JsonSchemaType) || { type: 'object' }}
                             value={toolParameters}
                             onChange={handleFormChange}
-                        showPlaceholder={true}
-                        customFields={
-                          (mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
-                            getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT &&
-                          topicsData?.topics
-                            ? [
-                                {
-                                  fieldName: 'topic_name',
-                                  options: topicsData.topics.map((topic) => ({
-                                    value: topic.topicName,
-                                    label: topic.topicName,
-                                  })),
-                                  placeholder: 'Select a topic or create a new one...',
-                                  onCreateOption: async (newTopicName: string, path: string[], handleFieldChange: (path: string[], value: JsonValue) => void) => {
-                                    try {
-                                      const request = create(CreateTopicRequestSchema, {
-                                        topic: create(CreateTopicRequest_TopicSchema, {
-                                          name: newTopicName,
-                                          partitionCount: DEFAULT_TOPIC_PARTITION_COUNT,
-                                          replicationFactor: DEFAULT_TOPIC_REPLICATION_FACTOR,
-                                          configs: [
-                                            create(CreateTopicRequest_Topic_ConfigSchema, {
-                                              name: 'cleanup.policy',
-                                              value: 'delete',
+                            showPlaceholder={true}
+                            customFields={
+                              (mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
+                                getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT &&
+                              topicsData?.topics
+                                ? [
+                                    {
+                                      fieldName: 'topic_name',
+                                      options: topicsData.topics.map((topic) => ({
+                                        value: topic.topicName,
+                                        label: topic.topicName,
+                                      })),
+                                      placeholder: 'Select a topic or create a new one...',
+                                      onCreateOption: async (
+                                        newTopicName: string,
+                                        path: string[],
+                                        handleFieldChange: (path: string[], value: JsonValue) => void,
+                                      ) => {
+                                        try {
+                                          const request = create(CreateTopicRequestSchema, {
+                                            topic: create(CreateTopicRequest_TopicSchema, {
+                                              name: newTopicName,
+                                              partitionCount: DEFAULT_TOPIC_PARTITION_COUNT,
+                                              replicationFactor: DEFAULT_TOPIC_REPLICATION_FACTOR,
+                                              configs: [
+                                                create(CreateTopicRequest_Topic_ConfigSchema, {
+                                                  name: 'cleanup.policy',
+                                                  value: 'delete',
+                                                }),
+                                              ],
                                             }),
-                                          ],
-                                        }),
-                                      });
-                                      
-                                      await createTopic(request);
-                                      toast.success(`Topic '${newTopicName}' created successfully`);
-                                      await refetchTopics();
-                                      
-                                      // Use the provided path and handleFieldChange to update the correct field
-                                      handleFieldChange(path, newTopicName);
-                                    } catch (error) {
-                                      toast.error(`Failed to create topic: ${error}`);
-                                    }
-                                  },
-                                },
-                              ]
-                            : []
-                        }
+                                          });
+
+                                          await createTopic(request);
+                                          toast.success(`Topic '${newTopicName}' created successfully`);
+                                          await refetchTopics();
+
+                                          // Use the provided path and handleFieldChange to update the correct field
+                                          handleFieldChange(path, newTopicName);
+                                        } catch (error) {
+                                          toast.error(`Failed to create topic: ${error}`);
+                                        }
+                                      },
+                                    },
+                                  ]
+                                : []
+                            }
                           />
                         );
                       })()}
@@ -564,27 +604,33 @@ export const RemoteMCPInspectorTab = () => {
                     {/* Buttons positioned at bottom left within card */}
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-gray-200 dark:border-border rounded-b-lg">
                       <div className="flex gap-2">
-                        <Button
-                          onClick={executeToolRequest}
-                          disabled={
-                            isServerToolPending ||
-                            !validateRequiredFields(selectedToolData?.inputSchema as JsonSchemaType, toolParameters)
-                              .isValid
-                          }
-                          variant="secondary"
-                        >
-                          {isServerToolPending ? (
-                            <>
-                              <Clock className="w-4 h-4 mr-2 animate-spin" />
+                        {isServerToolPending ? (
+                          <>
+                            <Button onClick={executeToolRequest} disabled variant="secondary">
+                              <Clock className="w-4 h-4 animate-spin" />
                               Run Tool
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4 mr-2" />
-                              Run Tool
-                            </>
-                          )}
-                        </Button>
+                            </Button>
+                            <Button
+                              onClick={cancelToolRequest}
+                              variant="destructive"
+                            >
+                              <X className="w-4 h-4" />
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={executeToolRequest}
+                            disabled={
+                              !validateRequiredFields(selectedToolData?.inputSchema as JsonSchemaType, toolParameters)
+                                .isValid
+                            }
+                            variant="secondary"
+                          >
+                            <Send className="w-4 h-4" />
+                            Run Tool
+                          </Button>
+                        )}
                         <CopyButton
                           variant="outline"
                           content={JSON.stringify(toolParameters, null, 2)}
@@ -606,7 +652,7 @@ export const RemoteMCPInspectorTab = () => {
                 <Text className="text-muted-foreground">
                   {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
                     ? 'Server is starting...'
-                    : 'Select a tool from the left panel to test it'}
+                    : 'Select a tool from the panel to test it'}
                 </Text>
               </div>
             </div>

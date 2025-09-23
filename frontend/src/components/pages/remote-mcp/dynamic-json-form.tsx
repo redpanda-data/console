@@ -1,9 +1,9 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: part of DynamicJSONForm implementation */
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import { Braces, FileEdit, SpellCheck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -15,7 +15,11 @@ interface CustomFieldConfig {
   fieldName: string;
   options: { value: string; label: string }[];
   placeholder?: string;
-  onCreateOption?: (newValue: string, path: string[], handleFieldChange: (path: string[], value: JsonValue) => void) => Promise<void>;
+  onCreateOption?: (
+    newValue: string,
+    path: string[],
+    handleFieldChange: (path: string[], value: JsonValue) => void,
+  ) => Promise<void>;
 }
 
 interface DynamicJSONFormProps {
@@ -323,7 +327,7 @@ export const DynamicJSONForm = ({
             value: option.const as string,
             label: option.title as string,
           }));
-          
+
           return (
             <Combobox
               options={oneOfOptions}
@@ -351,7 +355,7 @@ export const DynamicJSONForm = ({
             value: option,
             label: option,
           }));
-          
+
           return (
             <Combobox
               options={enumOptions}
