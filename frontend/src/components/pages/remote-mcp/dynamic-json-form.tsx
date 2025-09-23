@@ -15,7 +15,7 @@ interface CustomFieldConfig {
   fieldName: string;
   options: { value: string; label: string }[];
   placeholder?: string;
-  onCreateOption?: (newValue: string, path: string[], handleFieldChange: (path: string[], value: JsonValue) => void) => void;
+  onCreateOption?: (newValue: string, path: string[], handleFieldChange: (path: string[], value: JsonValue) => void) => Promise<void>;
 }
 
 interface DynamicJSONFormProps {

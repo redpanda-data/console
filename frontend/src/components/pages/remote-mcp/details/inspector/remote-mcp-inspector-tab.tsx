@@ -94,7 +94,23 @@ export const RemoteMCPInspectorTab = () => {
   const { data: topicsData, refetch: refetchTopics } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
   const { mutateAsync: createTopic } = useCreateTopicMutation();
 
-  // Auto-select topic when there's only one available for OUTPUT components
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
+  useEffect(() => {
+    if (
+      !selectedTool &&
+      mcpServerTools?.tools &&
+      mcpServerTools.tools.length === 1
+    ) {
+      const singleTool = mcpServerTools.tools[0];
+      setSelectedTool(singleTool.name);
+      const initialData = initializeFormData(singleTool.inputSchema as JsonSchemaType);
+      setToolParameters(initialData);
+      resetMCPServerToolCall();
+      setValidationErrors({});
+    }
+  }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   useEffect(() => {
     if (
       selectedTool &&
@@ -104,6 +120,7 @@ export const RemoteMCPInspectorTab = () => {
       (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT
     ) {
       const availableTopic = topicsData.topics[0].topicName;
+      // biome-ignore lint/suspicious/noExplicitAny: tool parameters are arbitrary
       const params = toolParameters as any;
       
       // Check if topic_name needs to be set - auto-select for messages without topic_name
@@ -115,7 +132,8 @@ export const RemoteMCPInspectorTab = () => {
         
         // Check nested topic_name in messages array - look for messages without topics
         if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
-          const messagesNeedingTopics = params.messages.some((msg: any) => !msg?.topic_name);
+          // biome-ignore lint/suspicious/noExplicitAny: output type messages are arbitrary
+          const messagesNeedingTopics = params.messages.some((message: any) => !message?.topic_name);
           return messagesNeedingTopics;
         }
         
@@ -583,7 +601,7 @@ export const RemoteMCPInspectorTab = () => {
           </>
         ) : (
           <div className="p-4">
-            <div className="flex items-center justify-center h-96 text-center">
+            <div className="flex items-center justify-center h-128 text-center">
               <div className="space-y-2">
                 <Text className="text-muted-foreground">
                   {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
