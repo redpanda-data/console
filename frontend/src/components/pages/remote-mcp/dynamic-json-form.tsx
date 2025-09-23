@@ -3,13 +3,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Input } from 'components/redpanda-ui/components/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
+import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import { Braces, FileEdit, SpellCheck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -21,6 +15,7 @@ interface CustomFieldConfig {
   fieldName: string;
   options: { value: string; label: string }[];
   placeholder?: string;
+  onCreateOption?: (newValue: string, path: string[], handleFieldChange: (path: string[], value: JsonValue) => void) => void;
 }
 
 interface DynamicJSONFormProps {
@@ -298,77 +293,84 @@ export const DynamicJSONForm = ({
           })();
 
           return (
-            <Select
+            <Combobox
+              options={customFieldConfig.options}
               value={effectiveValue ?? ''}
-              onValueChange={(val) => {
+              onChange={(val) => {
                 if (!val && !isRequired) {
                   handleFieldChange(path, undefined);
                 } else {
                   handleFieldChange(path, val);
                 }
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={customFieldConfig.placeholder || 'Select an option...'} />
-              </SelectTrigger>
-              <SelectContent>
-                {customFieldConfig.options.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={customFieldConfig.placeholder || 'Select an option...'}
+              creatable
+              onCreateOption={(newValue) => {
+                if (customFieldConfig.onCreateOption) {
+                  customFieldConfig.onCreateOption(newValue, path, handleFieldChange);
+                } else {
+                  const newOption = { value: newValue, label: newValue };
+                  customFieldConfig.options.push(newOption);
+                  handleFieldChange(path, newValue);
+                }
+              }}
+            />
           );
         }
 
         if (propSchema.oneOf?.every((option) => typeof option.const === 'string' && typeof option.title === 'string')) {
+          const oneOfOptions: ComboboxOption[] = propSchema.oneOf.map((option) => ({
+            value: option.const as string,
+            label: option.title as string,
+          }));
+          
           return (
-            <select
+            <Combobox
+              options={oneOfOptions}
               value={(currentValue as string) ?? ''}
-              onChange={(e) => {
-                const val = e.target.value;
+              onChange={(val) => {
                 if (!val && !isRequired) {
                   handleFieldChange(path, undefined);
                 } else {
                   handleFieldChange(path, val);
                 }
               }}
-              required={isRequired}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800"
-            >
-              <option value="">Select an option...</option>
-              {propSchema.oneOf.map((option) => (
-                <option key={option.const as string} value={option.const as string}>
-                  {option.title as string}
-                </option>
-              ))}
-            </select>
+              placeholder="Select an option..."
+              creatable
+              onCreateOption={(newValue) => {
+                const newOption = { value: newValue, label: newValue };
+                oneOfOptions.push(newOption);
+                handleFieldChange(path, newValue);
+              }}
+            />
           );
         }
 
         if (propSchema.enum) {
+          const enumOptions: ComboboxOption[] = propSchema.enum.map((option) => ({
+            value: option,
+            label: option,
+          }));
+          
           return (
-            <select
+            <Combobox
+              options={enumOptions}
               value={(currentValue as string) ?? ''}
-              onChange={(e) => {
-                const val = e.target.value;
+              onChange={(val) => {
                 if (!val && !isRequired) {
                   handleFieldChange(path, undefined);
                 } else {
                   handleFieldChange(path, val);
                 }
               }}
-              required={isRequired}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800"
-            >
-              <option value="">Select an option...</option>
-              {propSchema.enum.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              placeholder="Select an option..."
+              creatable
+              onCreateOption={(newValue) => {
+                const newOption = { value: newValue, label: newValue };
+                enumOptions.push(newOption);
+                handleFieldChange(path, newValue);
+              }}
+            />
           );
         }
 

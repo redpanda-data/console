@@ -19,9 +19,15 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Clock, Hammer, Send } from 'lucide-react';
 import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useState } from 'react';
+import { create } from '@bufbuild/protobuf';
+import {
+  CreateTopicRequest_Topic_ConfigSchema,
+  CreateTopicRequest_TopicSchema,
+  CreateTopicRequestSchema,
+} from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { useState, useEffect } from 'react';
 import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useLegacyListTopicsQuery, useCreateTopicMutation } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DynamicJSONForm } from '../../dynamic-json-form';
@@ -58,6 +64,10 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
   return MCPServer_Tool_ComponentType.UNSPECIFIED;
 };
 
+// Constants for default topic settings
+const DEFAULT_TOPIC_PARTITION_COUNT = 1;
+const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
+
 export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
@@ -81,7 +91,69 @@ export const RemoteMCPInspectorTab = () => {
     mcpServer: mcpServerData?.mcpServer,
   });
 
-  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  const { data: topicsData, refetch: refetchTopics } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  const { mutateAsync: createTopic } = useCreateTopicMutation();
+
+  // Auto-select topic when there's only one available for OUTPUT components
+  useEffect(() => {
+    if (
+      selectedTool &&
+      topicsData?.topics &&
+      topicsData.topics.length === 1 &&
+      mcpServerData?.mcpServer?.tools?.[selectedTool] &&
+      (mcpServerData.mcpServer.tools[selectedTool].componentType || getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT
+    ) {
+      const availableTopic = topicsData.topics[0].topicName;
+      const params = toolParameters as any;
+      
+      // Check if topic_name needs to be set - auto-select for messages without topic_name
+      const needsUpdate = (() => {
+        // Check top-level topic_name
+        if (params?.topic_name === availableTopic) {
+          return false;
+        }
+        
+        // Check nested topic_name in messages array - look for messages without topics
+        if (params?.messages && Array.isArray(params.messages) && params.messages.length > 0) {
+          const messagesNeedingTopics = params.messages.some((msg: any) => !msg?.topic_name);
+          return messagesNeedingTopics;
+        }
+        
+        return true;
+      })();
+      
+      if (needsUpdate) {
+        let updatedParams = {
+          ...(typeof toolParameters === 'object' && toolParameters !== null && !Array.isArray(toolParameters) ? toolParameters : {}),
+        };
+        
+        // If there's a messages array, set topic_name in all messages that don't have one
+        if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
+          updatedParams = {
+            ...updatedParams,
+            messages: updatedParams.messages.map((msg: any) => 
+              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg
+            )
+          };
+        } else {
+          // Fallback to top-level topic_name
+          updatedParams.topic_name = availableTopic;
+        }
+        
+        setToolParameters(updatedParams);
+        
+        // Also trigger validation
+        const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
+        if (selectedToolData) {
+          const validation = validateRequiredFields(
+            selectedToolData.inputSchema as JsonSchemaType,
+            updatedParams,
+          );
+          setValidationErrors(validation.errors);
+        }
+      }
+    }
+  }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
 
   const executeToolRequest = async () => {
     if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
@@ -140,7 +212,7 @@ export const RemoteMCPInspectorTab = () => {
           if (topicsData?.topics && Array.isArray(topicsData.topics)) {
             const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
             if (!topicExists) {
-              errors[requiredField] = `Topic '${value}' does not exist. Please select a valid topic name.`;
+              errors[requiredField] = `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
               continue;
             }
           }
@@ -363,10 +435,8 @@ export const RemoteMCPInspectorTab = () => {
                 return (
                   <>
                     <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
-                      <DynamicJSONForm
-                        schema={(selectedToolData?.inputSchema as JsonSchemaType) || { type: 'object' }}
-                        value={toolParameters}
-                        onChange={(newValue: JsonValue) => {
+                      {(() => {
+                        const handleFormChange = (newValue: JsonValue) => {
                           setToolParameters(newValue);
                           // Update validation errors when parameters change
                           const validation = validateRequiredFields(
@@ -374,7 +444,13 @@ export const RemoteMCPInspectorTab = () => {
                             newValue,
                           );
                           setValidationErrors(validation.errors);
-                        }}
+                        };
+
+                        return (
+                          <DynamicJSONForm
+                            schema={(selectedToolData?.inputSchema as JsonSchemaType) || { type: 'object' }}
+                            value={toolParameters}
+                            onChange={handleFormChange}
                         showPlaceholder={true}
                         customFields={
                           (mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
@@ -387,12 +463,40 @@ export const RemoteMCPInspectorTab = () => {
                                     value: topic.topicName,
                                     label: topic.topicName,
                                   })),
-                                  placeholder: 'Select a topic...',
+                                  placeholder: 'Select a topic or create a new one...',
+                                  onCreateOption: async (newTopicName: string, path: string[], handleFieldChange: (path: string[], value: JsonValue) => void) => {
+                                    try {
+                                      const request = create(CreateTopicRequestSchema, {
+                                        topic: create(CreateTopicRequest_TopicSchema, {
+                                          name: newTopicName,
+                                          partitionCount: DEFAULT_TOPIC_PARTITION_COUNT,
+                                          replicationFactor: DEFAULT_TOPIC_REPLICATION_FACTOR,
+                                          configs: [
+                                            create(CreateTopicRequest_Topic_ConfigSchema, {
+                                              name: 'cleanup.policy',
+                                              value: 'delete',
+                                            }),
+                                          ],
+                                        }),
+                                      });
+                                      
+                                      await createTopic(request);
+                                      toast.success(`Topic '${newTopicName}' created successfully`);
+                                      await refetchTopics();
+                                      
+                                      // Use the provided path and handleFieldChange to update the correct field
+                                      handleFieldChange(path, newTopicName);
+                                    } catch (error) {
+                                      toast.error(`Failed to create topic: ${error}`);
+                                    }
+                                  },
                                 },
                               ]
                             : []
                         }
-                      />
+                          />
+                        );
+                      })()}
 
                       {/* Display validation errors */}
                       {Object.keys(validationErrors).length > 0 && (
