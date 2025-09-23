@@ -34,7 +34,7 @@ const JsonView = memo(
         setCopied(true);
       } catch (error) {
         toast.error('Error', {
-          description: `There was an error coping result into the clipboard: ${error instanceof Error ? error.message : String(error)}`,
+          description: `There was an error copying result into the clipboard: ${error instanceof Error ? error.message : String(error)}`,
         });
       }
     }, [normalizedData, setCopied]);
