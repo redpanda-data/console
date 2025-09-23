@@ -13,7 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { YamlEditor } from 'components/misc/yaml-editor';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -26,17 +25,18 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { FileText, Plus, Save, Trash2 } from 'lucide-react';
+import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import {
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useState } from 'react';
-import { useGetMCPServerQuery, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
+import React, { useState } from 'react';
+import { useGetMCPServerQuery, useListMCPServerTools, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from 'utils/resource-tiers';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
-import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
 import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 
@@ -65,32 +65,44 @@ interface LocalMCPServer {
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
-  const { mutateAsync: updateMCPServer, isPending: isUpdating } = useUpdateMCPServerMutation();
+  const { mutateAsync: updateMCPServer, isPending: isUpdateMCPServerPending } = useUpdateMCPServerMutation();
+  const { data: serverToolsData } = useListMCPServerTools({ mcpServer: mcpServerData?.mcpServer });
 
-  // Local state for configuration editing
   const [isEditing, setIsEditing] = useState(false);
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
+  const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+
+  const getCurrentData = (): LocalMCPServer | null => {
+    if (editedServerData) {
+      return editedServerData;
+    }
+
+    if (mcpServerData?.mcpServer) {
+      return {
+        id: mcpServerData.mcpServer.id,
+        displayName: mcpServerData.mcpServer.displayName,
+        description: mcpServerData.mcpServer.description,
+        tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
+        resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
+        tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
+          id: name,
+          name,
+          componentType: tool.componentType,
+          config: tool.configYaml,
+          selectedTemplate: undefined,
+        })),
+        state: mcpServerData.mcpServer.state,
+        status: mcpServerData.mcpServer.status?.error || '',
+        url: mcpServerData.mcpServer.url,
+      };
+    }
+
+    return null;
+  };
 
   const applyTemplate = (toolId: string, template: Template) => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     const updatedTools = currentData.tools.map((tool) => {
       if (tool.id === toolId) {
@@ -114,27 +126,10 @@ export const RemoteMCPConfigurationTab = () => {
   const handleSave = async () => {
     if (!mcpServerData?.mcpServer || !id) return;
 
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
     if (!currentData) return;
 
     try {
-      // Convert tools from local format to API format
       const toolsMap: { [key: string]: { componentType: number; configYaml: string } } = {};
       currentData.tools.forEach((tool) => {
         toolsMap[tool.name] = {
@@ -143,7 +138,6 @@ export const RemoteMCPConfigurationTab = () => {
         };
       });
 
-      // Convert tags from array to map format, filtering out empty tags
       const tagsMap: { [key: string]: string } = {};
       currentData.tags.forEach((tag) => {
         if (tag.key.trim() && tag.value.trim()) {
@@ -168,6 +162,11 @@ export const RemoteMCPConfigurationTab = () => {
             paths: ['display_name', 'description', 'tools', 'tags', 'resources'],
           }),
         }),
+        {
+          onError: (error) => {
+            toast.error(formatToastErrorMessageGRPC({ error, action: 'update', entity: 'MCP server' }));
+          },
+        },
       );
       setIsEditing(false);
       setEditedServerData(null);
@@ -177,32 +176,15 @@ export const RemoteMCPConfigurationTab = () => {
   };
 
   const handleAddTool = () => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     const newToolId = `tool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const newTool = {
       id: newToolId,
       name: '',
       componentType: MCPServer_Tool_ComponentType.PROCESSOR,
-      config: `name: 
+      config: `label: 
 meta:
   mcp:
     enabled: true
@@ -215,74 +197,62 @@ spec:
       ...currentData,
       tools: [...currentData.tools, newTool],
     });
+
+    setSelectedToolId(newToolId);
   };
 
   const handleRemoveTool = (toolId: string) => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     const updatedTools = currentData.tools.filter((tool) => tool.id !== toolId);
     setEditedServerData({
       ...currentData,
       tools: updatedTools,
     });
+
+    if (selectedToolId === toolId) {
+      if (updatedTools.length > 0) {
+        setSelectedToolId(updatedTools[0].id);
+      } else {
+        setSelectedToolId(null);
+      }
+    }
   };
 
   const handleUpdateTool = (toolId: string, updates: Partial<LocalTool>) => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     const updatedTools = [...currentData.tools];
     const toolIndex = updatedTools.findIndex((tool) => tool.id === toolId);
     if (toolIndex !== -1) {
       const updatedTool = { ...updatedTools[toolIndex], ...updates };
 
-      // Clear selected template if user manually edits config YAML
       if (updates.config && updates.config !== updatedTools[toolIndex].config) {
         updatedTool.selectedTemplate = undefined;
 
-        // Try to extract label from YAML and update tool name
+        // Sync tool name from YAML label when config changes
         try {
-          const parsedYaml = parse(updates.config);
-          if (parsedYaml?.label && !updates.name) {
-            updatedTool.name = parsedYaml.label;
+          const parsed = parse(updates.config);
+          if (parsed?.label && typeof parsed.label === 'string') {
+            updatedTool.name = parsed.label;
           }
-        } catch (_error) {
-          // Ignore YAML parsing errors, keep existing name
+        } catch {
+          // If YAML is invalid, keep the current tool name
+        }
+      }
+
+      // Sync YAML label when tool name changes
+      if (updates.name && updates.name !== updatedTools[toolIndex].name) {
+        try {
+          const parsed = parse(updatedTool.config);
+          if (parsed) {
+            parsed.label = updates.name;
+            updatedTool.config = stringify(parsed);
+          }
+        } catch {
+          // If YAML is invalid, just update the name field
         }
       }
 
@@ -295,25 +265,8 @@ spec:
   };
 
   const handleAddTag = () => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     setEditedServerData({
       ...currentData,
@@ -322,25 +275,8 @@ spec:
   };
 
   const handleRemoveTag = (index: number) => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     const updatedTags = currentData.tags.filter((_, i) => i !== index);
     setEditedServerData({
@@ -350,25 +286,8 @@ spec:
   };
 
   const handleUpdateTag = (index: number, field: 'key' | 'value', value: string) => {
-    if (!mcpServerData?.mcpServer) return;
-
-    const currentData = editedServerData || {
-      id: mcpServerData.mcpServer.id,
-      displayName: mcpServerData.mcpServer.displayName,
-      description: mcpServerData.mcpServer.description,
-      tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-      resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-      tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-        id: name,
-        name,
-        componentType: tool.componentType,
-        config: tool.configYaml,
-        selectedTemplate: undefined,
-      })),
-      state: mcpServerData.mcpServer.state,
-      status: mcpServerData.mcpServer.status?.error || '',
-      url: mcpServerData.mcpServer.url,
-    };
+    const currentData = getCurrentData();
+    if (!currentData) return;
 
     const updatedTags = [...currentData.tags];
     updatedTags[index] = { ...updatedTags[index], [field]: value };
@@ -389,11 +308,9 @@ spec:
     return new Set(duplicates);
   };
 
-  // Convert server resource data to tier name
-  const getResourceTierFromServer = (resources?: any) => {
+  const getResourceTierFromServer = (resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) return 'Small';
 
-    // Find matching tier based on CPU and memory values
     const matchingTier = RESOURCE_TIERS.find((tier) => {
       const serverCpu = resources.cpuShares || '';
       const serverMemory = resources.memoryShares || '';
@@ -403,27 +320,34 @@ spec:
     return matchingTier?.name || 'Small';
   };
 
-  const displayData =
-    editedServerData ||
-    (mcpServerData?.mcpServer
-      ? {
-          id: mcpServerData.mcpServer.id,
-          displayName: mcpServerData.mcpServer.displayName,
-          description: mcpServerData.mcpServer.description,
-          tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-          resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-          tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-            id: name,
-            name,
-            componentType: tool.componentType,
-            config: tool.configYaml,
-            selectedTemplate: undefined,
-          })),
-          state: mcpServerData.mcpServer.state,
-          status: mcpServerData.mcpServer.status?.error || '',
-          url: mcpServerData.mcpServer.url,
-        }
-      : null);
+  const getToolDescription = (tool: LocalTool) => {
+    if (serverToolsData?.tools) {
+      const mcpTool = serverToolsData.tools.find((t) => t.name === tool.name);
+      if (mcpTool?.description) {
+        return mcpTool.description;
+      }
+    }
+
+    try {
+      const parsed = parse(tool.config);
+      return parsed?.spec?.description || 'No description available';
+    } catch {
+      return 'Invalid YAML configuration';
+    }
+  };
+
+  const displayData = getCurrentData();
+
+  const selectedTool = React.useMemo(() => {
+    if (!selectedToolId || !displayData?.tools) return null;
+    return displayData.tools.find((tool) => tool.id === selectedToolId) || null;
+  }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
+
+  React.useEffect(() => {
+    if (!selectedToolId && displayData?.tools.length) {
+      setSelectedToolId(displayData.tools[0].id);
+    }
+  }, [selectedToolId, displayData?.tools]);
 
   if (!displayData) {
     return null;
@@ -431,243 +355,280 @@ spec:
 
   return (
     <div>
-      <div className="flex justify-end">
-        {isEditing ? (
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleSave} disabled={isUpdating}>
-              <Save className="h-4 w-4 mr-2" />
-              {isUpdating ? 'Saving...' : 'Save Changes'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsEditing(false);
-                setEditedServerData(null);
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <Button variant="secondary" onClick={() => setIsEditing(true)}>
-            Edit Configuration
-          </Button>
-        )}
-      </div>
-
-      <div className="space-y-6 w-full">
-        <Card className="w-full max-w-none px-8 py-6">
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Core server configuration and metadata</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="id">Server ID</Label>
-              <div className="w-full">
-                <DynamicCodeBlock lang="text" code={displayData.id} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="serverUrl">Server URL</Label>
-              <div className="w-full">
-                <DynamicCodeBlock lang="text" code={displayData.url} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input
-                id="displayName"
-                value={displayData.displayName}
-                disabled={!isEditing}
-                onChange={(e) => {
-                  if (!mcpServerData?.mcpServer) return;
-                  const currentData = editedServerData || {
-                    id: mcpServerData.mcpServer.id,
-                    displayName: mcpServerData.mcpServer.displayName,
-                    description: mcpServerData.mcpServer.description,
-                    tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-                    resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-                    tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-                      id: name,
-                      name,
-                      componentType: tool.componentType,
-                      config: tool.configYaml,
-                    })),
-                    state: mcpServerData.mcpServer.state,
-                    status: mcpServerData.mcpServer.status?.error || '',
-                    url: mcpServerData.mcpServer.url,
-                  };
-                  setEditedServerData({ ...currentData, displayName: e.target.value });
-                }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={displayData.description}
-                disabled={!isEditing}
-                onChange={(e) => {
-                  if (!mcpServerData?.mcpServer) return;
-                  const currentData = editedServerData || {
-                    id: mcpServerData.mcpServer.id,
-                    displayName: mcpServerData.mcpServer.displayName,
-                    description: mcpServerData.mcpServer.description,
-                    tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-                    resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-                    tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-                      id: name,
-                      name,
-                      componentType: tool.componentType,
-                      config: tool.configYaml,
-                    })),
-                    state: mcpServerData.mcpServer.state,
-                    status: mcpServerData.mcpServer.status?.error || '',
-                    url: mcpServerData.mcpServer.url,
-                  };
-                  setEditedServerData({ ...currentData, description: e.target.value });
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="w-full max-w-none px-8 py-6">
-          <CardHeader>
-            <CardTitle>Tags</CardTitle>
-            <CardDescription>Key-value pairs for organizing and categorizing</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {isEditing && hasDuplicateKeys(displayData.tags) && (
-              <Text variant="small" className="text-destructive">
-                Tags must have unique keys
-              </Text>
-            )}
-            {displayData.tags.map((tag, index) => {
-              const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
-              const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
-              return (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Key"
-                      value={tag.key}
-                      disabled={!isEditing}
-                      className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
-                      onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Value"
-                      value={tag.value}
-                      disabled={!isEditing}
-                      onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                    />
-                  </div>
-                  {isEditing && (
-                    <div className="flex items-end h-9">
-                      <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {isEditing && (
-              <Button variant="outline" size="sm" onClick={handleAddTag}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Tag
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="w-full max-w-none px-8 py-6">
-          <CardHeader>
-            <CardTitle>Pipeline Resources</CardTitle>
-            <CardDescription>Resource tier allocation for the server</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Label htmlFor="tier">Resource Tier</Label>
-            {isEditing ? (
-              <Select
-                value={displayData.resources.tier}
-                onValueChange={(value) => {
-                  if (!mcpServerData?.mcpServer) return;
-                  const currentData = editedServerData || {
-                    id: mcpServerData.mcpServer.id,
-                    displayName: mcpServerData.mcpServer.displayName,
-                    description: mcpServerData.mcpServer.description,
-                    tags: Object.entries(mcpServerData.mcpServer.tags).map(([key, value]) => ({ key, value })),
-                    resources: { tier: getResourceTierFromServer(mcpServerData.mcpServer.resources) },
-                    tools: Object.entries(mcpServerData.mcpServer.tools).map(([name, tool]) => ({
-                      id: name,
-                      name,
-                      componentType: tool.componentType,
-                      config: tool.configYaml,
-                    })),
-                    state: mcpServerData.mcpServer.state,
-                    status: mcpServerData.mcpServer.status?.error || '',
-                    url: mcpServerData.mcpServer.url,
-                  };
-                  setEditedServerData({ ...currentData, resources: { tier: value } });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select tier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESOURCE_TIERS.map((tier) => (
-                    <SelectItem key={tier.id} value={tier.id}>
-                      {tier.fullSpec}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
-                <code className="text-sm font-mono">{getResourceTierFullSpec(displayData.resources.tier)}</code>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="w-full max-w-none px-8 py-6">
-          <CardHeader>
-            <CardTitle>Tools Configuration</CardTitle>
-            <CardDescription>Configure the tools available in this MCP server</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {displayData.tools.map((tool) => (
-              <div key={tool.id} className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                <div className="flex items-start gap-4">
+      <div className="space-y-6">
+        <div>
+          <div className="bg-card border border-border rounded-lg shadow">
+            <div className="p-4 border-b border-gray-200 dark:border-border">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold dark:text-white flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Server Configuration
+                </h3>
+                <div className="flex gap-2">
                   {isEditing ? (
                     <>
-                      <div className="flex-1 space-y-1">
+                      <Button variant="secondary" onClick={handleSave} disabled={isUpdateMCPServerPending}>
+                        <Save className="h-4 w-4" />
+                        {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditedServerData(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                      <Edit className="h-4 w-4" />
+                      Edit Configuration
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="id">Server ID</Label>
+                      <div className="w-full">
+                        <DynamicCodeBlock lang="text" code={displayData.id} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="serverUrl">Server URL</Label>
+                      <div className="w-full">
+                        <DynamicCodeBlock lang="text" code={displayData.url} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Display Name</Label>
+                      <Input
+                        id="displayName"
+                        value={displayData.displayName}
+                        disabled={!isEditing}
+                        onChange={(e) => {
+                          const currentData = getCurrentData();
+                          if (!currentData) return;
+                          setEditedServerData({ ...currentData, displayName: e.target.value });
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={displayData.description}
+                        disabled={!isEditing}
+                        onChange={(e) => {
+                          const currentData = getCurrentData();
+                          if (!currentData) return;
+                          setEditedServerData({ ...currentData, description: e.target.value });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tier">Resource Tier</Label>
+                    {isEditing ? (
+                      <Select
+                        value={displayData.resources.tier}
+                        onValueChange={(value) => {
+                          const currentData = getCurrentData();
+                          if (!currentData) return;
+                          setEditedServerData({ ...currentData, resources: { tier: value } });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RESOURCE_TIERS.map((tier) => (
+                            <SelectItem key={tier.id} value={tier.id}>
+                              {tier.fullSpec}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
+                        <code className="text-sm font-mono">{getResourceTierFullSpec(displayData.resources.tier)}</code>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {(displayData.tags.length > 0 || isEditing) && (
+                  <div className="space-y-4 flex flex-col gap-2">
+                    <h4 className="text-sm font-medium text-foreground">Tags</h4>
+                    <div className="space-y-2">
+                      {isEditing && hasDuplicateKeys(displayData.tags) && (
+                        <Text variant="small" className="text-destructive">
+                          Tags must have unique keys
+                        </Text>
+                      )}
+                      {displayData.tags.map((tag, index) => {
+                        const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
+                        const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
+                        return (
+                          <div
+                            key={`tag-${tag.key || 'empty'}-${tag.value || 'empty'}-${index}`}
+                            className="flex items-center gap-2"
+                          >
+                            <div className="flex-1">
+                              <Input
+                                placeholder="Key"
+                                value={tag.key}
+                                disabled={!isEditing}
+                                className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                                onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <Input
+                                placeholder="Value"
+                                value={tag.value}
+                                disabled={!isEditing}
+                                onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                              />
+                            </div>
+                            {isEditing && (
+                              <div className="flex items-end h-9">
+                                <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {isEditing && (
+                        <Button variant="outline" size="sm" onClick={handleAddTag}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Tag
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg shadow">
+          <div className="p-4 border-b border-gray-200 dark:border-border">
+            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+              <Hammer className="h-4 w-4" />
+              Tools Configuration
+            </h3>
+          </div>
+          <div className="p-4">
+            <Text variant="small" className="text-muted-foreground mb-4">
+              Configure the tools available in this MCP server
+            </Text>
+
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  {isEditing && (
+                    <Button variant="outline" size="sm" onClick={handleAddTool}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Tool
+                    </Button>
+                  )}
+                </div>
+
+                {displayData.tools.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-96">
+                    {displayData.tools.map((tool) => (
+                      <button
+                        key={tool.id}
+                        type="button"
+                        className={`flex flex-col p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer text-left w-full ${
+                          selectedToolId === tool.id
+                            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
+                            : 'bg-card hover:bg-gray-50 dark:hover:bg-secondary border-border'
+                        }`}
+                        onClick={() => setSelectedToolId(tool.id)}
+                        aria-pressed={selectedToolId === tool.id}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <RemoteMCPToolTypeBadge componentType={tool.componentType} />
+                          {isEditing && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveTool(tool.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm mb-1 truncate" title={tool.name || 'Unnamed Tool'}>
+                            {tool.name || 'Unnamed Tool'}
+                          </h5>
+                          <p className="text-xs text-muted-foreground line-clamp-2" title={getToolDescription(tool)}>
+                            {getToolDescription(tool)}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-muted rounded-lg">
+                    <div className="space-y-2">
+                      <Hammer className="h-8 w-8 mx-auto opacity-50" />
+                      <div className="text-sm">No tools configured</div>
+                      {isEditing && (
+                        <Button variant="outline" size="sm" onClick={handleAddTool} className="mt-2">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Tool
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {selectedTool && (
+                <div className="space-y-4">
+                  {isEditing && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium">Tool Name</Label>
                         <Input
-                          value={tool.name}
+                          value={selectedTool.name}
                           placeholder="e.g., search-posts (must be filename-compatible)"
-                          onChange={(e) => handleUpdateTool(tool.id, { name: e.target.value })}
+                          onChange={(e) => handleUpdateTool(selectedTool.id, { name: e.target.value })}
                         />
                       </div>
-                      <div className="flex-1 space-y-1">
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium">Component Type</Label>
                         <Select
-                          value={tool.componentType.toString()}
+                          value={selectedTool.componentType.toString()}
                           onValueChange={(value) => {
                             const componentType = Number.parseInt(value) as MCPServer_Tool_ComponentType;
-                            handleUpdateTool(tool.id, { componentType });
+                            handleUpdateTool(selectedTool.id, { componentType });
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select component type">
-                              <RemoteMCPToolTypeBadge componentType={tool.componentType} />
+                            <SelectValue>
+                              <RemoteMCPToolTypeBadge componentType={selectedTool.componentType} />
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
@@ -685,25 +646,24 @@ spec:
                               ))}
                           </SelectContent>
                         </Select>
-                        <RemoteMCPComponentTypeDescription componentType={tool.componentType} />
                       </div>
-                      <div className="flex-1 space-y-1">
+                      <div className="space-y-2">
                         <Label className="text-sm font-medium">Template</Label>
                         <Select
-                          value={tool.selectedTemplate || ''}
+                          value={selectedTool.selectedTemplate || ''}
                           onValueChange={(templateName) => {
                             const template = templates.find((t) => t.name === templateName);
                             if (template) {
-                              applyTemplate(tool.id, template);
+                              applyTemplate(selectedTool.id, template);
                             }
                           }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Choose template (optional)">
-                              {tool.selectedTemplate ? (
+                              {selectedTool.selectedTemplate ? (
                                 <div className="flex items-center gap-2">
                                   <FileText className="h-4 w-4" />
-                                  {tool.selectedTemplate}
+                                  {selectedTool.selectedTemplate}
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2">
@@ -727,49 +687,39 @@ spec:
                             ))}
                           </SelectContent>
                         </Select>
-                        <Text variant="small" className="text-gray-500">
-                          Select a template to prefill configuration
-                        </Text>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => handleRemoveTool(tool.id)} className="mt-6">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <div className="flex-1 space-y-1">
-                      <Label className="text-sm font-medium">Tool Name</Label>
-                      <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center gap-3">
-                        <RemoteMCPToolTypeBadge componentType={tool.componentType} />
-                        <code className="text-sm font-mono">{tool.name}</code>
                       </div>
                     </div>
                   )}
-                </div>
-                <div className="space-y-2 flex-1 flex flex-col">
-                  <Label>Tool Configuration (YAML)</Label>
-                  <div className="overflow-hidden" style={{ height: '400px' }}>
-                    <YamlEditor
-                      value={tool.config}
-                      onChange={(value) => handleUpdateTool(tool.id, { config: value || '' })}
-                      options={{
-                        readOnly: !isEditing,
-                        theme: 'vs',
-                      }}
-                    />
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">YAML Configuration</Label>
+                    <div className="overflow-hidden" style={{ height: '500px' }}>
+                      <YamlEditor
+                        key={`${selectedTool.id}-${selectedTool.config.length}`}
+                        value={selectedTool.config}
+                        onChange={(value) => handleUpdateTool(selectedTool.id, { config: value || '' })}
+                        options={{
+                          readOnly: !isEditing,
+                          theme: 'vs',
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {isEditing && (
-              <div className="space-y-4">
-                <Button variant="outline" onClick={handleAddTool} className="bg-transparent">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Tool
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+
+              {!selectedTool && displayData.tools.length > 0 && (
+                <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
+                  <div className="space-y-2">
+                    <FileText className="h-8 w-8 mx-auto opacity-50" />
+                    <div className="text-sm text-muted-foreground">
+                      Select a tool to view and edit its configuration
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -396,8 +396,8 @@ export const RemoteMCPListPage = () => {
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
           <Button size="sm" variant="secondary" onClick={() => navigate('/remote-mcp/create')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create new MCP Server
+            <Plus className="h-4 w-4" />
+            Create MCP Server
           </Button>
         </div>
         <Table>

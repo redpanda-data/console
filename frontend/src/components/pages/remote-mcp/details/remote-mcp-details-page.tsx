@@ -11,7 +11,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { isFeatureFlagEnabled } from 'config';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Link, Loader2, Logs, Search, Settings } from 'lucide-react';
 import { runInAction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
@@ -96,10 +96,26 @@ export const RemoteMCPDetailsPage = () => {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="configuration">Configuration</TabsTrigger>
-          <TabsTrigger value="connection">Connection</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-          {isRemoteMcpInspectorFeatureEnabled && <TabsTrigger value="inspector">MCP Inspector</TabsTrigger>}
+          <TabsTrigger value="configuration" className="gap-2">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configuration
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="connection" className="gap-2">
+            <Link className="h-4 w-4" />
+            Connection
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="gap-2">
+            <Logs className="h-4 w-4" />
+            Logs
+          </TabsTrigger>
+          {isRemoteMcpInspectorFeatureEnabled && (
+            <TabsTrigger value="inspector" className="gap-2">
+              <Search className="h-4 w-4" />
+              MCP Inspector
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="configuration">
