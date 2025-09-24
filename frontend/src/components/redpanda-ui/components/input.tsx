@@ -10,7 +10,7 @@ import { useGroup } from './group';
 import { cn } from '../lib/utils';
 
 export const inputVariants = cva(
-  'file:text-foreground placeholder:text-muted-foreground selection:bg-selection selection:text-selection-foreground dark:bg-input/30 border-input flex w-full min-w-0 border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
+  'file:text-foreground placeholder:!text-muted-foreground selection:bg-selection selection:text-selection-foreground dark:bg-input/30 border-input flex w-full min-w-0 border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
   {
     variants: {
       size: {
@@ -47,6 +47,7 @@ interface InputProps extends Omit<React.ComponentProps<'input'>, 'size'>, Varian
   showStepControls?: boolean;
   testId?: string;
   children?: React.ReactNode;
+  containerClassName?: string;
 }
 
 function useInputState(props: InputProps) {
@@ -96,7 +97,7 @@ function useNumberInputHandlers(
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, showStepControls, size, variant, testId, children, ...props }, ref) => {
+  ({ className, type, showStepControls, size, variant, testId, children, containerClassName, ...props }, ref) => {
     const { value, setValue, showPassword, setShowPassword } = useInputState(props);
     const [startWidth, setStartWidth] = useState<number | undefined>();
     const [endWidth, setEndWidth] = useState<number | undefined>();
@@ -151,6 +152,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div
           className={cn(
             inputContainerVariants({ layout: shouldShowControls ? 'number' : isPasswordInput ? 'password' : variant }),
+            containerClassName,
           )}
         >
           {inputElement}

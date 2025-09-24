@@ -27,11 +27,19 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
+import { Button as NewButton } from 'components/redpanda-ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
+import { isFeatureFlagEnabled } from 'config';
+import { ChevronDownIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
+import React, { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
@@ -43,6 +51,10 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { ConnectTiles } from './tiles/connect-tiles';
+import { useConnectTemplate, useSessionStorage } from './tiles/hooks';
+import type { ConnectTilesFormData } from './tiles/types';
+import { CONNECT_TILE_STORAGE_KEY } from './tiles/utils';
 
 const exampleContent = `
 `;
@@ -302,12 +314,35 @@ export const PipelineEditor = observer(
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
+    const [persistedFormData, setPersistedFormData] = useSessionStorage<Partial<ConnectTilesFormData>>(
+      CONNECT_TILE_STORAGE_KEY,
+      {},
+    );
+    const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
+    const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+    const connectComponentTemplate = useMemo(() => {
+      const template = useConnectTemplate(persistedFormData?.connectionName);
+      return template;
+    }, [persistedFormData.connectionName]);
+
+    const yaml = useMemo(() => {
+      const finalYaml = enableRpcnTiles && connectComponentTemplate ? connectComponentTemplate : p.yaml;
+      return finalYaml;
+    }, [enableRpcnTiles, connectComponentTemplate, p.yaml]);
 
     const resetEditor = async () => {
       if (monaco) {
         await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
       }
     };
+
+    const handleConnectionChange = useCallback(
+      (compositeValue: string) => {
+        setPersistedFormData({ connectionName: compositeValue });
+        setIsTemplateMenuOpen(false);
+      },
+      [setPersistedFormData],
+    );
 
     useEffect(() => {
       return () => {
@@ -326,12 +361,30 @@ export const PipelineEditor = observer(
             title: 'Configuration',
             content: () => (
               <Box>
+                <div className="flex justify-end">
+                  <DropdownMenu open={isTemplateMenuOpen} onOpenChange={setIsTemplateMenuOpen}>
+                    <DropdownMenuTrigger>
+                      <NewButton>
+                        Select Template
+                        <ChevronDownIcon className="size-4" />
+                      </NewButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="max-w-2xl">
+                      <ConnectTiles
+                        onChange={handleConnectionChange}
+                        defaultCompositeValue={persistedFormData.connectionName}
+                        hideHeader
+                        gridCols={3}
+                      />
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 {/* yaml editor */}
                 <Flex height="400px" gap={7}>
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
                     path="config.yaml"
-                    value={p.yaml}
+                    value={yaml}
                     onChange={(e) => {
                       if (e) p.onChange?.(e);
                     }}
@@ -345,8 +398,11 @@ export const PipelineEditor = observer(
                       await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                     }}
                   />
+
                   {!p.isDisabled && (
-                    <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                    <div className="flex gap-2">
+                      <QuickActions editorInstance={editorInstance} resetAutocompleteSecrets={resetEditor} />
+                    </div>
                   )}
                 </Flex>
                 {isKafkaConnectPipeline(p.yaml) && (
