@@ -50,17 +50,16 @@ import {
 
 export const CONNECT_TILE_STORAGE_KEY = 'selected-connect-tile';
 
-
 /**
  * Converts a component specification to a config structure with default values
  */
-export const schemaToConfig = (componentSpec?: ConnectComponentSpec) => {
+export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
   if (!componentSpec?.config) {
     return undefined;
   }
 
   // Generate the configuration object from the component's FieldSpec
-  const connectionConfig = generateDefaultValue(componentSpec.config);
+  const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields);
 
   return {
     [componentSpec.type]: {
@@ -159,15 +158,15 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     // Format the comment based on field properties
     let comment = '';
 
-    if (!fieldSpec.is_optional) {
-      // Required field
-      if (fieldSpec.default !== undefined) {
-        comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
-      } else {
-        comment = ' # Required';
-      }
+    // In the rp-connect-schema, fields with default values are optional
+    // Fields without default values are required
+    const isOptionalField = fieldSpec.default !== undefined || fieldSpec.is_optional === true;
+
+    if (!isOptionalField) {
+      // Required field without default
+      comment = ' # Required (no default)';
     } else {
-      // Optional field
+      // Optional field (has default or marked as optional)
       if (fieldSpec.default !== undefined) {
         comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
       } else {
@@ -175,9 +174,16 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
       }
     }
 
-    // Don't add comments to structural elements (empty objects/arrays)
-    if ((value.trim() === '{}' || value.trim() === '[]') && !fieldSpec.default) {
-      comment = '';
+    // Don't add comments to structural elements (empty objects/arrays) unless they have defaults
+    // For required fields that become empty due to optional child filtering, still show requirement status
+    if (value.trim() === '{}' || value.trim() === '[]') {
+      if (fieldSpec.default !== undefined) {
+        // Optional field with empty default - no comment needed
+        comment = '';
+      } else if (!isOptionalField) {
+        // Required field that became empty due to child filtering - show as required
+        comment = ' # Required';
+      }
     }
 
     return `${indent}${cleanKey}: ${value}${comment}`;
@@ -210,7 +216,16 @@ export const configToYaml = (config: BaseConnectConfig, componentSpec: ConnectCo
   }
 };
 
-export function generateDefaultValue(spec: ConnectFieldSpec): unknown {
+export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
+  // In the rp-connect-schema, fields with default values are considered optional
+  // Fields without default values are required
+  const isOptionalField = spec.default !== undefined || spec.is_optional === true;
+
+  // Check if this is an optional field that should be excluded
+  if (isOptionalField && !showOptionalFields) {
+    return undefined;
+  }
+
   // Use the explicit default if it exists
   if (spec.default !== undefined) {
     return spec.default;
@@ -233,7 +248,11 @@ export function generateDefaultValue(spec: ConnectFieldSpec): unknown {
             // For configuration templates, include all fields to provide comprehensive examples
             // This gives users visibility into all available configuration options
             for (const child of spec.children) {
-              obj[child.name] = generateDefaultValue(child);
+              const childValue = generateDefaultValue(child, showOptionalFields);
+              // Only include fields that are not undefined (i.e., not excluded optional fields)
+              if (childValue !== undefined) {
+                obj[child.name] = childValue;
+              }
             }
 
             return obj;
@@ -632,7 +651,6 @@ export const getComponentByTypeAndName = (
   additionalComponents?: ExtendedConnectComponentSpec[],
 ): InternalConnectComponentSpec | undefined =>
   getAllComponents(additionalComponents).find((comp) => comp.type === type && comp.name === name);
-
 
 // Specialized helpers for common workflows
 export const getDataIngestionComponents = (
@@ -1046,4 +1064,27 @@ export const getStatusConfig = (status: ConnectComponentStatus): ComponentConfig
         variant: 'gray' as const,
       };
   }
+};
+
+/**
+ * generates a yaml string for a connect config based on the selected connectionName and connectionType
+ * @returns yaml string of connect config for the selected connectionName and connectionType
+ */
+export const getConnectTemplate = ({
+  connectionName,
+  connectionType,
+  showOptionalFields,
+}: {
+  connectionName: string;
+  connectionType: string;
+  showOptionalFields?: boolean;
+}) => {
+  const componentSpec =
+    connectionName && connectionType ? getComponentByTypeAndName(connectionType, connectionName) : undefined;
+  const baseConfig = schemaToConfig(componentSpec, showOptionalFields);
+
+  if (!baseConfig || !componentSpec) {
+    return undefined;
+  }
+  return configToYaml(baseConfig, componentSpec);
 };

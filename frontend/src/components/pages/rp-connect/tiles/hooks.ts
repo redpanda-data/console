@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { configToYaml, getComponentByTypeAndName, schemaToConfig } from './utils';
 
 /**
  * Custom hook for managing session storage state
@@ -29,20 +28,4 @@ export const useSessionStorage = <T>(key: string, initialValue?: T) => {
   );
 
   return [storedValue, setValue] as const;
-};
-
-/**
- * Custom hook that generates a yaml string for a connect config based on the selected connectionName and connectionType
- * @returns yaml string of connect config for the selected connectionName and connectionType
- */
-export const useConnectTemplate = (connectionName?: string, connectionType?: string) => {
-  const componentSpec = connectionName && connectionType 
-    ? getComponentByTypeAndName(connectionType, connectionName) 
-    : undefined;
-  const baseConfig = schemaToConfig(componentSpec);
-
-  if (!baseConfig || !componentSpec) {
-    return undefined;
-  }
-  return configToYaml(baseConfig, componentSpec);
 };

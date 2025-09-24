@@ -26,14 +26,16 @@ export const ConnectTiles = ({
   componentTypeFilter: defaultComponentTypeFilter,
   onChange,
   hideHeader,
+  hideFilters,
   defaultConnectionName,
   defaultConnectionType,
   gridCols = 4,
 }: {
   additionalComponents?: ExtendedConnectComponentSpec[];
-  componentTypeFilter?: ConnectComponentType;
+  componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
   hideHeader?: boolean;
+  hideFilters?: boolean;
   defaultConnectionName?: string;
   defaultConnectionType?: ConnectComponentType;
   gridCols?: number;
@@ -43,7 +45,7 @@ export const ConnectTiles = ({
 
   // Default to showing all component types if no default provided, otherwise respect the prop
   const [componentTypeFilter, setComponentTypeFilter] = useState<ConnectComponentType[]>(
-    defaultComponentTypeFilter ? [defaultComponentTypeFilter] : [],
+    defaultComponentTypeFilter ? defaultComponentTypeFilter : [],
   );
 
   const form = useForm<ConnectTilesFormData>({
@@ -88,67 +90,69 @@ export const ConnectTiles = ({
       <CardContent>
         <Form {...form}>
           <div className="flex flex-col gap-4 mb-6">
-            <div className="grid grid-cols-3 gap-2">
-              <Label className="flex-1">
-                Search for Connectors
-                <Input
-                  value={filter}
-                  onChange={(e) => {
-                    setFilter(e.target.value);
-                  }}
-                  placeholder="Snowflake, S3..."
-                  className="flex-1"
-                >
-                  <InputStart>
-                    <SearchIcon className="size-4" />
-                  </InputStart>
-                </Input>
-              </Label>
+            {!hideFilters && (
+              <div className="grid grid-cols-3 gap-2">
+                <Label className="flex-1">
+                  Search for Connectors
+                  <Input
+                    value={filter}
+                    onChange={(e) => {
+                      setFilter(e.target.value);
+                    }}
+                    placeholder="Snowflake, S3..."
+                    className="flex-1"
+                  >
+                    <InputStart>
+                      <SearchIcon className="size-4" />
+                    </InputStart>
+                  </Input>
+                </Label>
 
-              <Label className="flex-1">
-                Component Type
-                <SimpleMultiSelect
-                  options={CONNECT_COMPONENT_TYPE.map((type) => {
-                    const { text, icon, variant } = getComponentTypeConfig(type);
-                    return {
-                      value: type,
-                      label: (
-                        <Badge icon={icon} variant={variant}>
-                          {text}
-                        </Badge>
-                      ),
-                    };
-                  })}
-                  value={componentTypeFilter}
-                  onValueChange={setComponentTypeFilter}
-                  placeholder="Input, Output..."
-                  maxDisplay={2}
-                  width="full"
-                />
-              </Label>
+                <Label className="flex-1">
+                  Component Type
+                  <SimpleMultiSelect
+                    options={CONNECT_COMPONENT_TYPE.map((type) => {
+                      const { text, icon, variant } = getComponentTypeConfig(type);
+                      return {
+                        value: type,
+                        label: (
+                          <Badge icon={icon} variant={variant}>
+                            {text}
+                          </Badge>
+                        ),
+                      };
+                    })}
+                    value={componentTypeFilter}
+                    onValueChange={setComponentTypeFilter}
+                    placeholder="Input, Output..."
+                    maxDisplay={2}
+                    width="full"
+                  />
+                </Label>
 
-              <Label className="flex-1">
-                Categories
-                <SimpleMultiSelect
-                  options={categories.map((category) => {
-                    const { icon, text, variant } = getCategoryConfig(category.id);
-                    return {
-                      value: category.id,
-                      label: (
-                        <Badge icon={icon} variant={variant}>
-                          {text}
-                        </Badge>
-                      ),
-                    };
-                  })}
-                  value={selectedCategories}
-                  onValueChange={setSelectedCategories}
-                  placeholder="Databases, Social..."
-                  maxDisplay={3}
-                  width="full"
-                />
-              </Label>
-            </div>
+                <Label className="flex-1">
+                  Categories
+                  <SimpleMultiSelect
+                    options={categories.map((category) => {
+                      const { icon, text, variant } = getCategoryConfig(category.id);
+                      return {
+                        value: category.id,
+                        label: (
+                          <Badge icon={icon} variant={variant}>
+                            {text}
+                          </Badge>
+                        ),
+                      };
+                    })}
+                    value={selectedCategories}
+                    onValueChange={setSelectedCategories}
+                    placeholder="Databases, Social..."
+                    maxDisplay={3}
+                    width="full"
+                  />
+                </Label>
+              </div>
+            )}
           </div>
 
           <FormField
