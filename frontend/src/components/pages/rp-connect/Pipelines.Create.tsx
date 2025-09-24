@@ -53,7 +53,7 @@ import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { ConnectTiles } from './tiles/connect-tiles';
 import { useConnectTemplate, useSessionStorage } from './tiles/hooks';
-import type { ConnectTilesFormData } from './tiles/types';
+import type { ConnectTilesFormData, ConnectComponentType } from './tiles/types';
 import { CONNECT_TILE_STORAGE_KEY } from './tiles/utils';
 
 const exampleContent = `
@@ -321,9 +321,9 @@ export const PipelineEditor = observer(
     const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
     const connectComponentTemplate = useMemo(() => {
-      const template = useConnectTemplate(persistedFormData?.connectionName);
+      const template = useConnectTemplate(persistedFormData?.connectionName, persistedFormData?.connectionType);
       return template;
-    }, [persistedFormData.connectionName]);
+    }, [persistedFormData.connectionName, persistedFormData.connectionType]);
 
     const yaml = useMemo(() => {
       const finalYaml = enableRpcnTiles && connectComponentTemplate ? connectComponentTemplate : p.yaml;
@@ -337,8 +337,8 @@ export const PipelineEditor = observer(
     };
 
     const handleConnectionChange = useCallback(
-      (compositeValue: string) => {
-        setPersistedFormData({ connectionName: compositeValue });
+      (connectionName: string, connectionType: ConnectComponentType) => {
+        setPersistedFormData({ connectionName, connectionType });
         setIsTemplateMenuOpen(false);
       },
       [setPersistedFormData],
@@ -372,7 +372,8 @@ export const PipelineEditor = observer(
                     <DropdownMenuContent className="max-w-2xl">
                       <ConnectTiles
                         onChange={handleConnectionChange}
-                        defaultCompositeValue={persistedFormData.connectionName}
+                        defaultConnectionName={persistedFormData.connectionName}
+                        defaultConnectionType={persistedFormData.connectionType}
                         hideHeader
                         gridCols={3}
                       />

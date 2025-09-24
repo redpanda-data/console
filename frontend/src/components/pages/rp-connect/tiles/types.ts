@@ -2,10 +2,12 @@ import { z } from 'zod';
 
 export const connectTilesFormSchema = z.object({
   connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
+  connectionType: z.optional(z.string()),
 });
 
 export type ConnectTilesFormData = {
   connectionName?: string;
+  connectionType?: ConnectComponentType;
 };
 
 export interface FormSubmitResult {

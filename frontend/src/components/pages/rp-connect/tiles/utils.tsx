@@ -50,27 +50,6 @@ import {
 
 export const CONNECT_TILE_STORAGE_KEY = 'selected-connect-tile';
 
-/**
- * Parses a composite connection value (type-name) back into its components
- */
-export const parseConnectionValue = (
-  compositeValue?: string,
-): { type: ConnectComponentType | null; name: string | null } => {
-  if (!compositeValue) {
-    return { type: null, name: null };
-  }
-
-  // Try to find a valid component type at the beginning
-  for (const componentType of CONNECT_COMPONENT_TYPE) {
-    if (compositeValue.startsWith(`${componentType}-`)) {
-      const name = compositeValue.substring(componentType.length + 1);
-      return { type: componentType, name };
-    }
-  }
-
-  // If no valid component type found, treat as legacy format (just the name)
-  return { type: null, name: compositeValue };
-};
 
 /**
  * Converts a component specification to a config structure with default values
@@ -654,20 +633,6 @@ export const getComponentByTypeAndName = (
 ): InternalConnectComponentSpec | undefined =>
   getAllComponents(additionalComponents).find((comp) => comp.type === type && comp.name === name);
 
-// Get component by composite value (type-name format)
-export const getComponentByCompositeValue = (
-  compositeValue?: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec | undefined => {
-  const { type, name } = parseConnectionValue(compositeValue);
-
-  if (!name) return undefined;
-
-  if (type) {
-    // Use precise lookup with both type and name
-    return getComponentByTypeAndName(type, name, additionalComponents);
-  }
-};
 
 // Specialized helpers for common workflows
 export const getDataIngestionComponents = (

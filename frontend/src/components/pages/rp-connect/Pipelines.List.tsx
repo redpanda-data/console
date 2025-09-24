@@ -51,7 +51,7 @@ import { PageComponent, type PageInitHelper } from "../Page";
 import { openDeleteModal } from "./modals";
 import { ConnectTiles } from "./tiles/connect-tiles";
 import { useSessionStorage } from "./tiles/hooks";
-import type { ConnectTilesFormData } from "./tiles/types";
+import type { ConnectTilesFormData, ConnectComponentType } from "./tiles/types";
 import { CONNECT_TILE_STORAGE_KEY } from "./tiles/utils";
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -67,7 +67,7 @@ const CreatePipelineButton = () => {
 };
 
 const EmptyPlaceholder = () => {
-	const [persistedConnectionName, setPersistedConnectionName] =
+	const [, setPersistedConnectionName] =
 		useSessionStorage<Partial<ConnectTilesFormData>>(
 			CONNECT_TILE_STORAGE_KEY,
 			{},
@@ -76,9 +76,9 @@ const EmptyPlaceholder = () => {
 	const enableConnectTiles = isFeatureFlagEnabled("enableRpcnTiles");
 
 	const handleConnectionChange = useCallback(
-		(compositeValue: string) => {
+		(connectionName: string, connectionType: ConnectComponentType) => {
 			try {
-				setPersistedConnectionName({ connectionName: compositeValue });
+				setPersistedConnectionName({ connectionName, connectionType });
 				navigate("/rp-connect/create");
 			} catch (error) {
 				toast({
@@ -177,8 +177,8 @@ export const CreateConnectionMenuButton = () => {
 	const navigate = useNavigate();
 
 	const handleConnectionChange = useCallback(
-		(compositeValue: string) => {
-			setPersistedConnectionName({ connectionName: compositeValue });
+		(connectionName: string, connectionType: ConnectComponentType) => {
+			setPersistedConnectionName({ connectionName, connectionType });
 			navigate("/rp-connect/create");
 		},
 		[setPersistedConnectionName, navigate],
