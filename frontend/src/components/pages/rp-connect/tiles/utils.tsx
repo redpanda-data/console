@@ -435,7 +435,8 @@ const parseSchema = () => {
 
   // Parse each component type using the constants from types.ts
   for (const componentType of CONNECT_COMPONENT_TYPE) {
-    const schemaKey = componentType === 'rate_limit' ? 'rate-limits' : componentType + 's';
+    const schemaKey =
+      componentType === 'rate_limit' ? 'rate-limits' : componentType === 'metrics' ? 'metrics' : `${componentType}s`;
     const componentArray = schemaData[schemaKey];
     if (Array.isArray(componentArray)) {
       const components = componentArray.map(processComponentFromSchema);

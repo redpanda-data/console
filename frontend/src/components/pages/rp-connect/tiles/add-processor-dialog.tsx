@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogOverlay,
 } from 'components/redpanda-ui/components/dialog';
+import { Heading } from 'components/redpanda-ui/components/typography';
 import { ConnectTiles } from './connect-tiles';
 import type { ConnectComponentType } from './types';
 
@@ -23,13 +24,16 @@ export const AddProcessorDialog = ({
     <Dialog open={isOpen} onOpenChange={onCloseAddProcessor}>
       <DialogOverlay />
       <DialogContent size="full">
-        <DialogHeader>Add Processor</DialogHeader>
+        <DialogHeader>
+          <Heading level={2}>Add a Processor</Heading>
+        </DialogHeader>
         <DialogBody>
           <ConnectTiles
             componentTypeFilter={processorType ? [processorType] : undefined}
             hideHeader
             hideFilters
             onChange={onAddProcessor}
+            variant="ghost"
           />
         </DialogBody>
       </DialogContent>

@@ -16,7 +16,7 @@ import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { isFeatureFlagEnabled } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
@@ -34,26 +34,52 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 import { ConnectTiles } from './tiles/connect-tiles';
 import { useSessionStorage } from './tiles/hooks';
+import { OnboardingWizard } from './tiles/onboarding-wizard';
 import type { ConnectComponentType, ConnectTilesFormData } from './tiles/types';
 import { CONNECT_TILE_STORAGE_KEY } from './tiles/utils';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-const CreatePipelineButton = ({ shouldResetCache }: { shouldResetCache?: boolean }) => {
+const CreatePipelineButton = () => {
+  return (
+    <div>
+      <NewButton as={Link} to="/rp-connect/create">
+        Create pipeline
+      </NewButton>
+    </div>
+  );
+};
+
+const NewCreatePipelineButton = () => {
   const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
     CONNECT_TILE_STORAGE_KEY,
     {},
   );
+  const [isOpenOnboardingWizard, setIsOpenOnboardingWizard] = useState(false);
+  const navigate = useNavigate();
+
   const handleClick = useCallback(() => {
-    if (shouldResetCache) {
-      setPersistedConnectionName({});
-    }
-  }, [shouldResetCache, setPersistedConnectionName]);
+    setPersistedConnectionName({});
+    setIsOpenOnboardingWizard(true);
+  }, [setPersistedConnectionName]);
+
+  const handleSubmit = useCallback(
+    (connectionName: string, connectionType: ConnectComponentType) => {
+      setPersistedConnectionName({ connectionName, connectionType });
+      setIsOpenOnboardingWizard(false);
+      navigate('/rp-connect/create');
+    },
+    [setPersistedConnectionName, navigate],
+  );
+
   return (
     <div>
-      <NewButton as={Link} to={'/rp-connect/create'} onClick={handleClick}>
-        Create pipeline
-      </NewButton>
+      <NewButton onClick={handleClick}>Create pipeline</NewButton>
+      <OnboardingWizard
+        isOpen={isOpenOnboardingWizard}
+        onOpenChange={setIsOpenOnboardingWizard}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };
@@ -226,7 +252,7 @@ class RpConnectPipelinesList extends PageComponent<{
 
         {pipelinesApi.pipelines.length !== 0 && this.props.isRpcnTilesFeatureEnabled ? (
           <div className="my-5">
-            <CreatePipelineButton shouldResetCache />
+            <NewCreatePipelineButton />
           </div>
         ) : pipelinesApi.pipelines.length !== 0 ? (
           <div className="flex flex-col gap-2 my-5">
