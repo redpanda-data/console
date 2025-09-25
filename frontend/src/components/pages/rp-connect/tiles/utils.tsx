@@ -50,132 +50,10 @@ import {
 export const CONNECT_TILE_STORAGE_KEY = 'selected-connect-tile';
 
 /**
- * Creates a simplified addSchemaComments function for a specific component
- */
-const addSchemaCommentsForComponent = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
-  if (!componentSpec.config.children) {
-    return yamlString;
-  }
-
-  // Create a map of field paths to their specs for quick lookup
-  const fieldMap = new Map<string, ConnectFieldSpec>();
-  const addFieldsToMap = (fields: ConnectFieldSpec[], prefix = '') => {
-    fields.forEach((field) => {
-      const fullName = prefix ? `${prefix}.${field.name}` : field.name;
-      fieldMap.set(fullName, field);
-      fieldMap.set(field.name, field); // Also add without prefix for direct lookup
-
-      if (field.children) {
-        addFieldsToMap(field.children, fullName);
-      }
-    });
-  };
-
-  addFieldsToMap(componentSpec.config.children);
-
-  // Parse YAML lines and add comments
-  const lines = yamlString.split('\n');
-  const contextStack: string[] = [];
-  const indentStack: number[] = [];
-  const processedLines: string[] = [];
-
-  lines.forEach((line) => {
-    // Skip empty lines and comments - add them as-is
-    if (!line.trim() || line.trim().startsWith('#')) {
-      processedLines.push(line);
-      return;
-    }
-
-    // Calculate current indentation
-    const currentIndent = line.length - line.trimStart().length;
-
-    // Extract key and value
-    const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
-    if (!keyValueMatch) {
-      processedLines.push(line);
-      return;
-    }
-
-    const [, indent, key, value] = keyValueMatch;
-    const cleanKey = key.trim();
-    const hasExistingComment = line.includes('#');
-
-    if (hasExistingComment) {
-      processedLines.push(line);
-      return;
-    }
-
-    // Update context stack based on indentation
-    while (indentStack.length > 0 && currentIndent <= indentStack[indentStack.length - 1]) {
-      indentStack.pop();
-      contextStack.pop();
-    }
-
-    // Build full path for this key
-    const fullPath = contextStack.length > 0 ? `${contextStack.join('.')}.${cleanKey}` : cleanKey;
-
-    // Look up field spec
-    let fieldSpec = fieldMap.get(fullPath) || fieldMap.get(cleanKey);
-
-    // Try parent context + key if not found
-    if (!fieldSpec && contextStack.length > 0) {
-      for (let i = contextStack.length - 1; i >= 0; i--) {
-        const partialPath = `${contextStack.slice(i).join('.')}.${cleanKey}`;
-        fieldSpec = fieldMap.get(partialPath);
-        if (fieldSpec) break;
-      }
-    }
-
-    // Determine if this key will have children
-    const hasChildren = value.trim() === '' || value.trim() === '{}' || value.trim() === '[]';
-
-    if (hasChildren) {
-      contextStack.push(cleanKey);
-      indentStack.push(currentIndent);
-    }
-
-    if (!fieldSpec) {
-      processedLines.push(line);
-      return;
-    }
-
-    // Format the comment based on field properties
-    let comment = '';
-    const isOptionalField = fieldSpec.default !== undefined || fieldSpec.is_optional === true;
-
-    if (!isOptionalField) {
-      comment = ' # Required (no default)';
-    } else {
-      if (fieldSpec.default !== undefined) {
-        comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
-      } else {
-        comment = ' # Optional';
-      }
-    }
-
-    // Don't add comments to structural elements unless they have defaults
-    if (value.trim() === '{}' || value.trim() === '[]') {
-      if (fieldSpec.default !== undefined) {
-        comment = '';
-      } else if (!isOptionalField) {
-        comment = ' # Required';
-      }
-    }
-
-    processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
-  });
-
-  return processedLines.join('\n');
-};
-
-/**
- * Converts a component specification to a commented YAML string
+ * Phase 1: Converts a component specification to a config object structure
  * following the Redpanda Connect YAML schema structure
  */
-export const schemaToConfig = (
-  componentSpec?: ConnectComponentSpec,
-  showOptionalFields?: boolean,
-): string | undefined => {
+export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
   if (!componentSpec?.config) {
     return undefined;
   }
@@ -188,21 +66,18 @@ export const schemaToConfig = (
   // Structure the config according to Redpanda Connect schema
   switch (componentSpec.type) {
     case 'input':
-      // Inputs go at root level under input: {}
       config.input = {
         [componentSpec.name]: connectionConfig,
       };
       break;
 
     case 'output':
-      // Outputs go at root level under output: {}
       config.output = {
         [componentSpec.name]: connectionConfig,
       };
       break;
 
     case 'processor':
-      // Processors go in pipeline.processors[] array
       config.pipeline = {
         processors: [
           {
@@ -213,28 +88,24 @@ export const schemaToConfig = (
       break;
 
     case 'buffer':
-      // Buffers go at root level
       config.buffer = {
         [componentSpec.name]: connectionConfig,
       };
       break;
 
     case 'metrics':
-      // Metrics go at root level
       config.metrics = {
         [componentSpec.name]: connectionConfig,
       };
       break;
 
     case 'tracer':
-      // Tracers go at root level
       config.tracer = {
         [componentSpec.name]: connectionConfig,
       };
       break;
 
     case 'cache':
-      // Caches go in cache_resources[] array with labels
       config.cache_resources = [
         {
           label: componentSpec.name,
@@ -244,7 +115,6 @@ export const schemaToConfig = (
       break;
 
     case 'rate_limit':
-      // Rate limits go in rate_limit_resources[] array with labels
       config.rate_limit_resources = [
         {
           label: componentSpec.name,
@@ -255,21 +125,14 @@ export const schemaToConfig = (
 
     case 'scanner':
       // Scanners are embedded in inputs, return config directly
-      config = { [componentSpec.name]: connectionConfig };
-      break;
+      return { [componentSpec.name]: connectionConfig };
 
     default:
       config[componentSpec.name] = connectionConfig;
       break;
   }
 
-  // Convert to YAML
-  let yamlString = yamlStringify(config, yamlOptions);
-
-  // Add schema-based comments for this component
-  yamlString = addSchemaCommentsForComponent(yamlString, componentSpec);
-
-  return yamlString;
+  return config;
 };
 
 const yamlOptions = {
@@ -280,18 +143,17 @@ const yamlOptions = {
 };
 
 /**
- * Merges a new component YAML string into existing YAML configuration
+ * Phase 2: Merges a new component config object into existing YAML configuration
  * following the Redpanda Connect schema merging rules
  */
 export const mergeConnectConfigs = (
   existingYaml: string,
-  newComponentYaml: string,
+  newConfigObject: any,
   componentSpec: ConnectComponentSpec,
-): string => {
+) => {
   let existingConfig: any = {};
-  let newConfig: any = {};
 
-  // Parse existing YAML if provided
+  // Parse existing YAML if provided (comments will be lost here - unavoidable)
   if (existingYaml.trim()) {
     try {
       existingConfig = yamlParse(existingYaml) || {};
@@ -299,14 +161,6 @@ export const mergeConnectConfigs = (
       console.warn('Failed to parse existing YAML, starting with empty config:', error);
       existingConfig = {};
     }
-  }
-
-  // Parse new component YAML
-  try {
-    newConfig = yamlParse(newComponentYaml) || {};
-  } catch (error) {
-    console.warn('Failed to parse new component YAML:', error);
-    return existingYaml;
   }
 
   // Apply merging rules based on component type
@@ -319,9 +173,9 @@ export const mergeConnectConfigs = (
       if (!existingConfig.pipeline.processors) {
         existingConfig.pipeline.processors = [];
       }
-      // Add the new processor to the array (newConfig should have pipeline.processors with one item)
-      if (newConfig.pipeline?.processors?.[0]) {
-        existingConfig.pipeline.processors.push(newConfig.pipeline.processors[0]);
+      // Add the new processor to the array
+      if (newConfigObject.pipeline?.processors?.[0]) {
+        existingConfig.pipeline.processors.push(newConfigObject.pipeline.processors[0]);
       }
       break;
 
@@ -330,9 +184,9 @@ export const mergeConnectConfigs = (
       if (!existingConfig.cache_resources) {
         existingConfig.cache_resources = [];
       }
-      if (newConfig.cache_resources?.[0]) {
+      if (newConfigObject.cache_resources?.[0]) {
         // Check for label conflicts and resolve
-        const newResource = newConfig.cache_resources[0];
+        const newResource = newConfigObject.cache_resources[0];
         const existingLabels = existingConfig.cache_resources.map((r: any) => r.label);
         if (existingLabels.includes(newResource.label)) {
           // Generate unique label
@@ -353,9 +207,9 @@ export const mergeConnectConfigs = (
       if (!existingConfig.rate_limit_resources) {
         existingConfig.rate_limit_resources = [];
       }
-      if (newConfig.rate_limit_resources?.[0]) {
+      if (newConfigObject.rate_limit_resources?.[0]) {
         // Check for label conflicts and resolve
-        const newResource = newConfig.rate_limit_resources[0];
+        const newResource = newConfigObject.rate_limit_resources[0];
         const existingLabels = existingConfig.rate_limit_resources.map((r: any) => r.label);
         if (existingLabels.includes(newResource.label)) {
           // Generate unique label
@@ -377,24 +231,138 @@ export const mergeConnectConfigs = (
     case 'metrics':
     case 'tracer':
       // Root level components: replace existing
-      Object.assign(existingConfig, newConfig);
+      Object.assign(existingConfig, newConfigObject);
       break;
 
     case 'scanner':
       // Scanners are embedded, return as-is for manual handling
-      return newConfig;
+      return newConfigObject;
 
     default:
       // Unknown component type: merge at root level
-      Object.assign(existingConfig, newConfig);
+      Object.assign(existingConfig, newConfigObject);
       break;
   }
 
-  // Convert back to YAML with proper spacing
-  const mergedYaml = yamlStringify(existingConfig, yamlOptions);
+  return existingConfig;
+};
 
-  // Add spacing between root-level components for readability
-  const lines = mergedYaml.split('\n');
+/**
+ * Phase 3: Converts config object to formatted YAML string with schema comments
+ */
+export const configToYaml = (configObject: any, componentSpec: ConnectComponentSpec): string => {
+  try {
+    // Stringify to clean YAML
+    let yamlString = yamlStringify(configObject, yamlOptions);
+
+    // Add schema comments for the new component
+    yamlString = addSchemaComments(yamlString, componentSpec);
+
+    // Add spacing between root-level components for readability
+    yamlString = addRootSpacing(yamlString);
+
+    return yamlString;
+  } catch (error) {
+    console.error('Error converting config to YAML:', error);
+    return JSON.stringify(configObject, null, 2);
+  }
+};
+
+/**
+ * Adds schema-based comments to YAML for the specified component
+ */
+const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
+  if (!componentSpec.config.children) {
+    return yamlString;
+  }
+
+  // Create field map for quick lookup
+  const fieldMap = new Map<string, ConnectFieldSpec>();
+  const addFieldsToMap = (fields: ConnectFieldSpec[], prefix = '') => {
+    fields.forEach((field) => {
+      const fullName = prefix ? `${prefix}.${field.name}` : field.name;
+      fieldMap.set(fullName, field);
+      fieldMap.set(field.name, field); // Fallback lookup
+
+      if (field.children) {
+        addFieldsToMap(field.children, fullName);
+      }
+    });
+  };
+
+  addFieldsToMap(componentSpec.config.children);
+
+  const lines = yamlString.split('\n');
+  const contextStack: string[] = [];
+  const indentStack: number[] = [];
+  const processedLines: string[] = [];
+
+  lines.forEach((line) => {
+    // Skip empty lines and existing comments
+    if (!line.trim() || line.trim().startsWith('#') || line.includes('#')) {
+      processedLines.push(line);
+      return;
+    }
+
+    const currentIndent = line.length - line.trimStart().length;
+    const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
+    if (!keyValueMatch) {
+      processedLines.push(line);
+      return;
+    }
+
+    const [, indent, key, value] = keyValueMatch;
+    const cleanKey = key.trim();
+
+    // Update context stack
+    while (indentStack.length > 0 && currentIndent <= indentStack[indentStack.length - 1]) {
+      indentStack.pop();
+      contextStack.pop();
+    }
+
+    const fullPath = contextStack.length > 0 ? `${contextStack.join('.')}.${cleanKey}` : cleanKey;
+    const fieldSpec = fieldMap.get(fullPath) || fieldMap.get(cleanKey);
+
+    // Track nesting
+    const hasChildren = value.trim() === '' || value.trim() === '{}' || value.trim() === '[]';
+    if (hasChildren) {
+      contextStack.push(cleanKey);
+      indentStack.push(currentIndent);
+    }
+
+    if (!fieldSpec) {
+      processedLines.push(line);
+      return;
+    }
+
+    // Generate comment
+    let comment = '';
+    const isOptional = fieldSpec.default !== undefined || fieldSpec.is_optional === true;
+
+    if (!isOptional) {
+      comment = ' # Required (no default)';
+    } else if (fieldSpec.default !== undefined) {
+      comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
+    } else {
+      comment = ' # Optional';
+    }
+
+    // Skip comments for empty structural elements unless required
+    if ((value.trim() === '{}' || value.trim() === '[]') && isOptional) {
+      comment = '';
+    }
+
+    processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
+  });
+
+  return processedLines.join('\n');
+};
+
+/**
+ * Adds spacing between root-level components for readability
+ */
+const addRootSpacing = (yamlString: string): string => {
+  const lines = yamlString.split('\n');
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
 
@@ -404,14 +372,14 @@ export const mergeConnectConfigs = (
       return;
     }
 
-    // Check if this is a root-level key (no indentation)
+    // Check if this is a root-level key
     const currentIndent = line.length - line.trimStart().length;
     if (currentIndent === 0 && line.includes(':')) {
       const keyMatch = line.match(/^([^:#\n]+):/);
       if (keyMatch) {
         const cleanKey = keyMatch[1].trim();
 
-        // Add spacing before root components (except the first one)
+        // Add spacing before root components (except first)
         if (previousRootKey !== null && cleanKey !== previousRootKey) {
           if (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() !== '') {
             processedLines.push('');
@@ -426,8 +394,6 @@ export const mergeConnectConfigs = (
 
   return processedLines.join('\n');
 };
-
-// Remove configToYaml since schemaToConfig now returns YAML strings directly
 
 export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
   // In the rp-connect-schema, fields with default values are considered optional
@@ -1348,16 +1314,22 @@ export const getConnectTemplate = ({
 }) => {
   const componentSpec =
     connectionName && connectionType ? getComponentByTypeAndName(connectionType, connectionName) : undefined;
-  const newComponentYaml = schemaToConfig(componentSpec, showOptionalFields);
 
-  if (!newComponentYaml || !componentSpec) {
+  if (!componentSpec) {
     return undefined;
   }
 
-  // If existing YAML is provided, merge the configs
-  if (existingYaml) {
-    return mergeConnectConfigs(existingYaml, newComponentYaml, componentSpec);
+  // Phase 1: Generate config object for new component
+  const newConfigObject = schemaToConfig(componentSpec, showOptionalFields);
+  if (!newConfigObject) {
+    return undefined;
   }
 
-  return newComponentYaml;
+  // Phase 2 & 3: Merge with existing (if any) and convert to YAML
+  if (existingYaml) {
+    const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject, componentSpec);
+    return configToYaml(mergedConfig, componentSpec);
+  }
+
+  return configToYaml(newConfigObject, componentSpec);
 };
