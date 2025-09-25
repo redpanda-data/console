@@ -61,7 +61,7 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
   // Generate the configuration object from the component's FieldSpec
   const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields);
 
-  let config: any = {};
+  const config: any = {};
 
   // Structure the config according to Redpanda Connect schema
   switch (componentSpec.type) {
