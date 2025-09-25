@@ -68,6 +68,7 @@ import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 import RpConnectSecretCreate from './pages/rp-connect/secrets/Secrets.Create';
 import RpConnectSecretUpdate from './pages/rp-connect/secrets/Secrets.Update';
+import { OnboardingWizard } from './pages/rp-connect/tiles/onboarding-wizard';
 import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/Schema.Create';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
@@ -476,6 +477,7 @@ export const APP_ROUTES: IRouteEntry[] = [
   // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
   MakeRoute<{}>('/rp-connect/secrets/create', RpConnectSecretCreate, 'Connector-Secrets'),
   MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
+  MakeRoute<{}>('/rp-connect/wizard', OnboardingWizard, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
   MakeRoute<{ secretId: string }>('/rp-connect/secrets/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),

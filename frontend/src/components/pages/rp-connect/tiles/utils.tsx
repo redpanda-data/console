@@ -31,10 +31,9 @@ import {
   Wrench,
   XCircle,
 } from 'lucide-react';
-import { stringify as yamlStringify } from 'yaml';
+import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
 import {
-  type BaseConnectConfig,
   COMPONENT_CATEGORIES,
   CONNECT_COMPONENT_TYPE,
   type ComponentCategory,
@@ -51,28 +50,9 @@ import {
 export const CONNECT_TILE_STORAGE_KEY = 'selected-connect-tile';
 
 /**
- * Converts a component specification to a config structure with default values
+ * Creates a simplified addSchemaComments function for a specific component
  */
-export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
-  if (!componentSpec?.config) {
-    return undefined;
-  }
-
-  // Generate the configuration object from the component's FieldSpec
-  const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields);
-
-  return {
-    [componentSpec.type]: {
-      label: '',
-      [componentSpec.name]: connectionConfig,
-    },
-  };
-};
-
-/**
- * Adds inline comments to YAML string based on component specification
- */
-const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
+const addSchemaCommentsForComponent = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
   if (!componentSpec.config.children) {
     return yamlString;
   }
@@ -93,15 +73,17 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
 
   addFieldsToMap(componentSpec.config.children);
 
-  // Parse YAML lines and track nesting context
+  // Parse YAML lines and add comments
   const lines = yamlString.split('\n');
-  const contextStack: string[] = []; // Track current nesting path
-  const indentStack: number[] = []; // Track indentation levels
+  const contextStack: string[] = [];
+  const indentStack: number[] = [];
+  const processedLines: string[] = [];
 
-  const processedLines = lines.map((line) => {
-    // Skip empty lines and comments
+  lines.forEach((line) => {
+    // Skip empty lines and comments - add them as-is
     if (!line.trim() || line.trim().startsWith('#')) {
-      return line;
+      processedLines.push(line);
+      return;
     }
 
     // Calculate current indentation
@@ -110,7 +92,8 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     // Extract key and value
     const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
     if (!keyValueMatch) {
-      return line;
+      processedLines.push(line);
+      return;
     }
 
     const [, indent, key, value] = keyValueMatch;
@@ -118,7 +101,8 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const hasExistingComment = line.includes('#');
 
     if (hasExistingComment) {
-      return line; // Don't override existing comments
+      processedLines.push(line);
+      return;
     }
 
     // Update context stack based on indentation
@@ -130,10 +114,10 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     // Build full path for this key
     const fullPath = contextStack.length > 0 ? `${contextStack.join('.')}.${cleanKey}` : cleanKey;
 
-    // Look up field spec using full path or just key name
+    // Look up field spec
     let fieldSpec = fieldMap.get(fullPath) || fieldMap.get(cleanKey);
 
-    // If not found, try parent context + key (for cases where schema structure differs)
+    // Try parent context + key if not found
     if (!fieldSpec && contextStack.length > 0) {
       for (let i = contextStack.length - 1; i >= 0; i--) {
         const partialPath = `${contextStack.slice(i).join('.')}.${cleanKey}`;
@@ -142,31 +126,26 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
       }
     }
 
-    // Determine if this key will have children (object/array values)
+    // Determine if this key will have children
     const hasChildren = value.trim() === '' || value.trim() === '{}' || value.trim() === '[]';
 
     if (hasChildren) {
-      // Add to context stack for nested fields
       contextStack.push(cleanKey);
       indentStack.push(currentIndent);
     }
 
     if (!fieldSpec) {
-      return line;
+      processedLines.push(line);
+      return;
     }
 
     // Format the comment based on field properties
     let comment = '';
-
-    // In the rp-connect-schema, fields with default values are optional
-    // Fields without default values are required
     const isOptionalField = fieldSpec.default !== undefined || fieldSpec.is_optional === true;
 
     if (!isOptionalField) {
-      // Required field without default
       comment = ' # Required (no default)';
     } else {
-      // Optional field (has default or marked as optional)
       if (fieldSpec.default !== undefined) {
         comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
       } else {
@@ -174,22 +153,123 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
       }
     }
 
-    // Don't add comments to structural elements (empty objects/arrays) unless they have defaults
-    // For required fields that become empty due to optional child filtering, still show requirement status
+    // Don't add comments to structural elements unless they have defaults
     if (value.trim() === '{}' || value.trim() === '[]') {
       if (fieldSpec.default !== undefined) {
-        // Optional field with empty default - no comment needed
         comment = '';
       } else if (!isOptionalField) {
-        // Required field that became empty due to child filtering - show as required
         comment = ' # Required';
       }
     }
 
-    return `${indent}${cleanKey}: ${value}${comment}`;
+    processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
   });
 
   return processedLines.join('\n');
+};
+
+/**
+ * Converts a component specification to a commented YAML string
+ * following the Redpanda Connect YAML schema structure
+ */
+export const schemaToConfig = (
+  componentSpec?: ConnectComponentSpec,
+  showOptionalFields?: boolean,
+): string | undefined => {
+  if (!componentSpec?.config) {
+    return undefined;
+  }
+
+  // Generate the configuration object from the component's FieldSpec
+  const connectionConfig = generateDefaultValue(componentSpec.config, showOptionalFields);
+
+  let config: any = {};
+
+  // Structure the config according to Redpanda Connect schema
+  switch (componentSpec.type) {
+    case 'input':
+      // Inputs go at root level under input: {}
+      config.input = {
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
+
+    case 'output':
+      // Outputs go at root level under output: {}
+      config.output = {
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
+
+    case 'processor':
+      // Processors go in pipeline.processors[] array
+      config.pipeline = {
+        processors: [
+          {
+            [componentSpec.name]: connectionConfig,
+          },
+        ],
+      };
+      break;
+
+    case 'buffer':
+      // Buffers go at root level
+      config.buffer = {
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
+
+    case 'metrics':
+      // Metrics go at root level
+      config.metrics = {
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
+
+    case 'tracer':
+      // Tracers go at root level
+      config.tracer = {
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
+
+    case 'cache':
+      // Caches go in cache_resources[] array with labels
+      config.cache_resources = [
+        {
+          label: componentSpec.name,
+          [componentSpec.name]: connectionConfig,
+        },
+      ];
+      break;
+
+    case 'rate_limit':
+      // Rate limits go in rate_limit_resources[] array with labels
+      config.rate_limit_resources = [
+        {
+          label: componentSpec.name,
+          [componentSpec.name]: connectionConfig,
+        },
+      ];
+      break;
+
+    case 'scanner':
+      // Scanners are embedded in inputs, return config directly
+      config = { [componentSpec.name]: connectionConfig };
+      break;
+
+    default:
+      config[componentSpec.name] = connectionConfig;
+      break;
+  }
+
+  // Convert to YAML
+  let yamlString = yamlStringify(config, yamlOptions);
+
+  // Add schema-based comments for this component
+  yamlString = addSchemaCommentsForComponent(yamlString, componentSpec);
+
+  return yamlString;
 };
 
 const yamlOptions = {
@@ -200,21 +280,154 @@ const yamlOptions = {
 };
 
 /**
- * Converts a config object to formatted YAML with comments
+ * Merges a new component YAML string into existing YAML configuration
+ * following the Redpanda Connect schema merging rules
  */
-export const configToYaml = (config: BaseConnectConfig, componentSpec: ConnectComponentSpec): string => {
-  try {
-    let yamlString = yamlStringify(config, yamlOptions);
+export const mergeConnectConfigs = (
+  existingYaml: string,
+  newComponentYaml: string,
+  componentSpec: ConnectComponentSpec,
+): string => {
+  let existingConfig: any = {};
+  let newConfig: any = {};
 
-    // Add schema-based comments for optional fields
-    yamlString = addSchemaComments(yamlString, componentSpec);
-
-    return yamlString;
-  } catch (error) {
-    console.error('Error converting config to YAML:', error);
-    return JSON.stringify(config, null, 2);
+  // Parse existing YAML if provided
+  if (existingYaml.trim()) {
+    try {
+      existingConfig = yamlParse(existingYaml) || {};
+    } catch (error) {
+      console.warn('Failed to parse existing YAML, starting with empty config:', error);
+      existingConfig = {};
+    }
   }
+
+  // Parse new component YAML
+  try {
+    newConfig = yamlParse(newComponentYaml) || {};
+  } catch (error) {
+    console.warn('Failed to parse new component YAML:', error);
+    return existingYaml;
+  }
+
+  // Apply merging rules based on component type
+  switch (componentSpec.type) {
+    case 'processor':
+      // Processors: append to pipeline.processors[] array
+      if (!existingConfig.pipeline) {
+        existingConfig.pipeline = {};
+      }
+      if (!existingConfig.pipeline.processors) {
+        existingConfig.pipeline.processors = [];
+      }
+      // Add the new processor to the array (newConfig should have pipeline.processors with one item)
+      if (newConfig.pipeline?.processors?.[0]) {
+        existingConfig.pipeline.processors.push(newConfig.pipeline.processors[0]);
+      }
+      break;
+
+    case 'cache':
+      // Cache: append to cache_resources[] array
+      if (!existingConfig.cache_resources) {
+        existingConfig.cache_resources = [];
+      }
+      if (newConfig.cache_resources?.[0]) {
+        // Check for label conflicts and resolve
+        const newResource = newConfig.cache_resources[0];
+        const existingLabels = existingConfig.cache_resources.map((r: any) => r.label);
+        if (existingLabels.includes(newResource.label)) {
+          // Generate unique label
+          let counter = 1;
+          let uniqueLabel = `${newResource.label}_${counter}`;
+          while (existingLabels.includes(uniqueLabel)) {
+            counter++;
+            uniqueLabel = `${newResource.label}_${counter}`;
+          }
+          newResource.label = uniqueLabel;
+        }
+        existingConfig.cache_resources.push(newResource);
+      }
+      break;
+
+    case 'rate_limit':
+      // Rate limit: append to rate_limit_resources[] array
+      if (!existingConfig.rate_limit_resources) {
+        existingConfig.rate_limit_resources = [];
+      }
+      if (newConfig.rate_limit_resources?.[0]) {
+        // Check for label conflicts and resolve
+        const newResource = newConfig.rate_limit_resources[0];
+        const existingLabels = existingConfig.rate_limit_resources.map((r: any) => r.label);
+        if (existingLabels.includes(newResource.label)) {
+          // Generate unique label
+          let counter = 1;
+          let uniqueLabel = `${newResource.label}_${counter}`;
+          while (existingLabels.includes(uniqueLabel)) {
+            counter++;
+            uniqueLabel = `${newResource.label}_${counter}`;
+          }
+          newResource.label = uniqueLabel;
+        }
+        existingConfig.rate_limit_resources.push(newResource);
+      }
+      break;
+
+    case 'input':
+    case 'output':
+    case 'buffer':
+    case 'metrics':
+    case 'tracer':
+      // Root level components: replace existing
+      Object.assign(existingConfig, newConfig);
+      break;
+
+    case 'scanner':
+      // Scanners are embedded, return as-is for manual handling
+      return newConfig;
+
+    default:
+      // Unknown component type: merge at root level
+      Object.assign(existingConfig, newConfig);
+      break;
+  }
+
+  // Convert back to YAML with proper spacing
+  const mergedYaml = yamlStringify(existingConfig, yamlOptions);
+
+  // Add spacing between root-level components for readability
+  const lines = mergedYaml.split('\n');
+  const processedLines: string[] = [];
+  let previousRootKey: string | null = null;
+
+  lines.forEach((line) => {
+    if (!line.trim()) {
+      processedLines.push(line);
+      return;
+    }
+
+    // Check if this is a root-level key (no indentation)
+    const currentIndent = line.length - line.trimStart().length;
+    if (currentIndent === 0 && line.includes(':')) {
+      const keyMatch = line.match(/^([^:#\n]+):/);
+      if (keyMatch) {
+        const cleanKey = keyMatch[1].trim();
+
+        // Add spacing before root components (except the first one)
+        if (previousRootKey !== null && cleanKey !== previousRootKey) {
+          if (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() !== '') {
+            processedLines.push('');
+          }
+        }
+        previousRootKey = cleanKey;
+      }
+    }
+
+    processedLines.push(line);
+  });
+
+  return processedLines.join('\n');
 };
+
+// Remove configToYaml since schemaToConfig now returns YAML strings directly
 
 export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
   // In the rp-connect-schema, fields with default values are considered optional
@@ -745,6 +958,7 @@ export type ComponentConfig = {
   icon: React.ReactNode;
   text: string;
   variant: BadgeVariant;
+  className: string;
 };
 
 export const getComponentTypeConfig = (type: ConnectComponentType): ComponentConfig => {
@@ -754,60 +968,70 @@ export const getComponentTypeConfig = (type: ConnectComponentType): ComponentCon
         icon: <FolderInput className="h-3 w-3" />,
         text: 'Input',
         variant: 'green' as const,
+        className: 'text-green-800 dark:text-green-300',
       };
     case 'output':
       return {
         icon: <FolderOutput className="h-3 w-3" />,
         text: 'Output',
         variant: 'orange' as const,
+        className: 'text-orange-800 dark:text-orange-300',
       };
     case 'processor':
       return {
         icon: <Cpu className="h-3 w-3" />,
         text: 'Processor',
         variant: 'blue' as const,
+        className: 'text-blue-800 dark:text-blue-300',
       };
     case 'cache':
       return {
         icon: <Database className="h-3 w-3" />,
         text: 'Cache',
         variant: 'purple' as const,
+        className: 'text-purple-800 dark:text-purple-300',
       };
     case 'buffer':
       return {
         icon: <Layers className="h-3 w-3" />,
         text: 'Buffer',
         variant: 'indigo' as const,
+        className: 'text-indigo-800 dark:text-indigo-300',
       };
     case 'rate_limit':
       return {
         icon: <Timer className="h-3 w-3" />,
         text: 'Rate Limit',
         variant: 'yellow' as const,
+        className: 'text-yellow-800 dark:text-yellow-300',
       };
     case 'scanner':
       return {
         icon: <Search className="h-3 w-3" />,
         text: 'Scanner',
         variant: 'cyan' as const,
+        className: 'text-cyan-800 dark:text-cyan-300',
       };
     case 'metrics':
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Metrics',
         variant: 'teal' as const,
+        className: 'text-teal-800 dark:text-teal-300',
       };
     case 'tracer':
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: 'Tracer',
         variant: 'rose' as const,
+        className: 'text-rose-800 dark:text-rose-300',
       };
     default:
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
         variant: 'gray' as const,
+        className: 'text-gray-800 dark:text-gray-300',
       };
   }
 };
@@ -819,6 +1043,7 @@ export const getCategoryConfig = (category: ComponentCategory | ConnectComponent
       icon: <HelpCircle className="h-3 w-3" />,
       text: 'Unknown',
       variant: 'gray' as const,
+      className: 'text-gray-800 dark:text-gray-300',
     };
   }
 
@@ -831,54 +1056,63 @@ export const getCategoryConfig = (category: ComponentCategory | ConnectComponent
         icon: <FolderInput className="h-3 w-3" />,
         text: displayText,
         variant: 'green' as const,
+        className: 'text-green-800 dark:text-green-300',
       };
     case 'output':
       return {
         icon: <FolderOutput className="h-3 w-3" />,
         text: displayText,
         variant: 'orange' as const,
+        className: 'text-orange-800 dark:text-orange-300',
       };
     case 'processor':
       return {
         icon: <Cpu className="h-3 w-3" />,
         text: displayText,
         variant: 'blue' as const,
+        className: 'text-blue-800 dark:text-blue-300',
       };
     case 'cache':
       return {
         icon: <Database className="h-3 w-3" />,
         text: displayText,
         variant: 'purple' as const,
+        className: 'text-purple-800 dark:text-purple-300',
       };
     case 'buffer':
       return {
         icon: <Layers className="h-3 w-3" />,
         text: displayText,
         variant: 'indigo' as const,
+        className: 'text-indigo-800 dark:text-indigo-300',
       };
     case 'rate_limit':
       return {
         icon: <Timer className="h-3 w-3" />,
         text: displayText,
         variant: 'yellow' as const,
+        className: 'text-yellow-800 dark:text-yellow-300',
       };
     case 'scanner':
       return {
         icon: <Search className="h-3 w-3" />,
         text: displayText,
         variant: 'cyan' as const,
+        className: 'text-cyan-800 dark:text-cyan-300',
       };
     case 'metrics':
       return {
         icon: <Activity className="h-3 w-3" />,
         text: displayText,
         variant: 'teal' as const,
+        className: 'text-teal-800 dark:text-teal-300',
       };
     case 'tracer':
       return {
         icon: <RefreshCw className="h-3 w-3" />,
         text: displayText,
         variant: 'rose' as const,
+        className: 'text-rose-800 dark:text-rose-300',
       };
     // Semantic categories
     case 'databases':
@@ -886,138 +1120,161 @@ export const getCategoryConfig = (category: ComponentCategory | ConnectComponent
         icon: <Database className="h-3 w-3" />,
         text: displayText,
         variant: 'purple' as const,
+        className: 'text-purple-800 dark:text-purple-300',
       };
     case 'messaging':
       return {
         icon: <MessageCircle className="h-3 w-3" />,
         text: displayText,
         variant: 'blue' as const,
+        className: 'text-blue-800 dark:text-blue-300',
       };
     case 'storage':
       return {
         icon: <HardDrive className="h-3 w-3" />,
         text: displayText,
         variant: 'indigo' as const,
+        className: 'text-indigo-800 dark:text-indigo-300',
       };
     case 'api':
       return {
         icon: <Globe className="h-3 w-3" />,
         text: displayText,
         variant: 'green' as const,
+        className: 'text-green-800 dark:text-green-300',
       };
     case 'aws':
       return {
         icon: <Cloud className="h-3 w-3" />,
         text: displayText,
         variant: 'orange' as const,
+        className: 'text-orange-800 dark:text-orange-300',
       };
     case 'gcp':
       return {
         icon: <Cloud className="h-3 w-3" />,
         text: displayText,
         variant: 'blue' as const,
+        className: 'text-blue-800 dark:text-blue-300',
       };
     case 'azure':
       return {
         icon: <Cloud className="h-3 w-3" />,
         text: displayText,
         variant: 'cyan' as const,
+        className: 'text-cyan-800 dark:text-cyan-300',
       };
     case 'cloud':
       return {
         icon: <Cloud className="h-3 w-3" />,
         text: displayText,
         variant: 'gray' as const,
+        className: 'text-gray-800 dark:text-gray-300',
       };
     case 'export':
       return {
         icon: <Download className="h-3 w-3" />,
         text: displayText,
         variant: 'emerald' as const,
+        className: 'text-emerald-800 dark:text-emerald-300',
       };
     case 'transformation':
       return {
         icon: <RefreshCw className="h-3 w-3" />,
         text: displayText,
         variant: 'yellow' as const,
+        className: 'text-yellow-800 dark:text-yellow-300',
       };
     case 'monitoring':
       return {
         icon: <Activity className="h-3 w-3" />,
         text: displayText,
         variant: 'teal' as const,
+        className: 'text-teal-800 dark:text-teal-300',
       };
     case 'windowing':
       return {
         icon: <Monitor className="h-3 w-3" />,
         text: displayText,
         variant: 'purple' as const,
+        className: 'text-purple-800 dark:text-purple-300',
       };
     case 'utility':
       return {
         icon: <Wrench className="h-3 w-3" />,
         text: displayText,
         variant: 'amber' as const,
+        className: 'text-amber-800 dark:text-amber-300',
       };
     case 'local':
       return {
         icon: <Home className="h-3 w-3" />,
         text: displayText,
         variant: 'green' as const,
+        className: 'text-green-800 dark:text-green-300',
       };
     case 'social':
       return {
         icon: <Users className="h-3 w-3" />,
         text: displayText,
         variant: 'blue' as const,
+        className: 'text-blue-800 dark:text-blue-300',
       };
     case 'network':
       return {
         icon: <Network className="h-3 w-3" />,
         text: displayText,
         variant: 'indigo' as const,
+        className: 'text-indigo-800 dark:text-indigo-300',
       };
     case 'integration':
       return {
         icon: <GitBranch className="h-3 w-3" />,
         text: displayText,
         variant: 'emerald' as const,
+        className: 'text-emerald-800 dark:text-emerald-300',
       };
     case 'spicedb':
       return {
         icon: <Shield className="h-3 w-3" />,
         text: displayText,
         variant: 'red' as const,
+        className: 'text-red-800 dark:text-red-300',
       };
     case 'ai':
       return {
         icon: <Brain className="h-3 w-3" />,
         text: displayText,
         variant: 'purple' as const,
+        className: 'text-purple-800 dark:text-purple-300',
       };
     case 'parsing':
       return {
         icon: <FileText className="h-3 w-3" />,
         text: displayText,
         variant: 'blue' as const,
+        className: 'text-blue-800 dark:text-blue-300',
       };
     case 'mapping':
       return {
         icon: <ArrowRightLeft className="h-3 w-3" />,
         text: displayText,
         variant: 'yellow' as const,
+        className: 'text-yellow-800 dark:text-yellow-300',
       };
     case 'composition':
       return {
         icon: <Layers className="h-3 w-3" />,
         text: displayText,
         variant: 'teal' as const,
+        className: 'text-teal-800 dark:text-teal-300',
       };
     case 'unstructured':
       return {
         icon: <Hash className="h-3 w-3" />,
         text: displayText,
         variant: 'orange' as const,
+        className: 'text-orange-800 dark:text-orange-300',
       };
     default:
       // Log unknown categories for debugging
@@ -1028,6 +1285,7 @@ export const getCategoryConfig = (category: ComponentCategory | ConnectComponent
         icon: <HelpCircle className="h-3 w-3" />,
         text: displayText,
         variant: 'gray' as const,
+        className: 'text-gray-800 dark:text-gray-300',
       };
   }
 };
@@ -1039,53 +1297,67 @@ export const getStatusConfig = (status: ConnectComponentStatus): ComponentConfig
         icon: <CheckCircle2 className="h-3 w-3" />,
         text: 'Stable',
         variant: 'emerald' as const,
+        className: 'text-emerald-800 dark:text-emerald-300',
       };
     case 'beta':
       return {
         icon: <Clock className="h-3 w-3" />,
         text: 'Beta',
         variant: 'amber' as const,
+        className: 'text-amber-800 dark:text-amber-300',
       };
     case 'experimental':
       return {
         icon: <AlertTriangle className="h-3 w-3" />,
         text: 'Experimental',
         variant: 'orange' as const,
+        className: 'text-orange-800 dark:text-orange-300',
       };
     case 'deprecated':
       return {
         icon: <XCircle className="h-3 w-3" />,
         text: 'Deprecated',
         variant: 'red' as const,
+        className: 'text-red-800 dark:text-red-300',
       };
     default:
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: status.charAt(0).toUpperCase() + status.slice(1),
         variant: 'gray' as const,
+        className: 'text-gray-800 dark:text-gray-300',
       };
   }
 };
 
 /**
  * generates a yaml string for a connect config based on the selected connectionName and connectionType
+ * @param existingYaml - optional existing YAML content to merge with
  * @returns yaml string of connect config for the selected connectionName and connectionType
  */
 export const getConnectTemplate = ({
   connectionName,
   connectionType,
   showOptionalFields,
+  existingYaml,
 }: {
   connectionName: string;
   connectionType: string;
   showOptionalFields?: boolean;
+  existingYaml?: string;
 }) => {
   const componentSpec =
     connectionName && connectionType ? getComponentByTypeAndName(connectionType, connectionName) : undefined;
-  const baseConfig = schemaToConfig(componentSpec, showOptionalFields);
+  const newComponentYaml = schemaToConfig(componentSpec, showOptionalFields);
 
-  if (!baseConfig || !componentSpec) {
+  if (!newComponentYaml || !componentSpec) {
     return undefined;
   }
-  return configToYaml(baseConfig, componentSpec);
+
+  // If existing YAML is provided, merge the configs
+  if (existingYaml) {
+    return mergeConnectConfigs(existingYaml, newComponentYaml, componentSpec);
+  }
+
+  return newComponentYaml;
 };

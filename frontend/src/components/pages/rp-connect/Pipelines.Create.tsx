@@ -28,17 +28,9 @@ import {
 } from '@redpanda-data/ui';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardDescription } from 'components/redpanda-ui/components/card';
-import { Label } from 'components/redpanda-ui/components/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'components/redpanda-ui/components/select';
-import { Switch } from 'components/redpanda-ui/components/switch';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { isFeatureFlagEnabled } from 'config';
+import { PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
@@ -246,8 +238,6 @@ export default RpConnectPipelinesCreate;
 interface QuickActionsProps {
   editorInstance: editor.IStandaloneCodeEditor | null;
   resetAutocompleteSecrets: VoidFunction;
-  showOptionalFields: boolean;
-  setShowOptionalFields: Dispatch<SetStateAction<boolean>>;
   onAddProcessor: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
 }
 
@@ -261,13 +251,7 @@ const processorTypes: ConnectComponentType[] = [
   'scanner',
 ];
 
-const QuickActions = ({
-  editorInstance,
-  resetAutocompleteSecrets,
-  showOptionalFields,
-  setShowOptionalFields,
-  onAddProcessor,
-}: QuickActionsProps) => {
+const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor }: QuickActionsProps) => {
   const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
   const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
   const { isOpen: isAddProcessorOpen, onOpen: openAddProcessor, onClose: closeAddProcessor } = useDisclosure();
@@ -299,57 +283,40 @@ const QuickActions = ({
   return (
     <div className="flex gap-3 flex-col">
       <Card>
+        <CardHeader>
+          <CardTitle>Variables</CardTitle>
+          <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
+        </CardHeader>
         <CardContent>
           <NewButton variant="secondary" onClick={openAddSecret}>
+            <PlusIcon className="size-4" color="white" />
             Add Secrets
           </NewButton>
-          <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
         </CardContent>
       </Card>
       <SecretsQuickAdd isOpen={isAddSecretOpen} onCloseAddSecret={closeAddSecret} onAdd={onAddSecret} />
       {enableRpcnTiles && (
-        <Card>
-          <CardContent>
-            <div className="flex gap-2">
-              <Switch checked={showOptionalFields} onCheckedChange={(value) => setShowOptionalFields(value)} />
-              <Label>Show optional fields</Label>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      {enableRpcnTiles && (
         <>
           <Card>
-            <CardContent className="flex gap-2 flex-wrap">
-              <Label>
-                Add a Processor
-                <Select onValueChange={handleProcessorTypeChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a processor">
-                      {selectedProcessor ? (
-                        <Badge
-                          icon={getComponentTypeConfig(selectedProcessor).icon}
-                          variant={getComponentTypeConfig(selectedProcessor).variant}
-                        >
-                          {getComponentTypeConfig(selectedProcessor).text}
-                        </Badge>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {processorTypes.map((processorType) => {
-                      const { icon, text, variant } = getComponentTypeConfig(processorType);
-                      return (
-                        <SelectItem key={processorType} value={processorType}>
-                          <Badge key={processorType} icon={icon} variant={variant}>
-                            {text}
-                          </Badge>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </Label>
+            <CardHeader>
+              <CardTitle>Connectors</CardTitle>
+              <CardDescription>Add connectors to your pipeline.</CardDescription>
+            </CardHeader>
+            <CardContent className="gap-2 flex flex-wrap space-y-0">
+              {processorTypes.map((processorType) => {
+                const { text, variant, className } = getComponentTypeConfig(processorType);
+                return (
+                  <Badge
+                    key={processorType}
+                    icon={<PlusIcon size={16} className={className} />}
+                    variant={variant}
+                    className="cursor-pointer py-2 px-3 max-w-fit"
+                    onClick={() => handleProcessorTypeChange(processorType)}
+                  >
+                    {text}
+                  </Badge>
+                );
+              })}
             </CardContent>
           </Card>
           <AddProcessorDialog
@@ -407,10 +374,6 @@ export const PipelineEditor = observer(
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
     const [persistedFormData, _] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_TILE_STORAGE_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
-    const [showOptionalFields, setShowOptionalFields] = useState(false);
-    const [processorConfig, setProcessorConfig] = useState<
-      { connectionName: string; connectionType: string } | undefined
-    >(undefined);
 
     const persistedConnectComponentTemplate = useMemo(() => {
       if (!persistedFormData?.connectionName || !persistedFormData?.connectionType) {
@@ -419,31 +382,14 @@ export const PipelineEditor = observer(
       const template = getConnectTemplate({
         connectionName: persistedFormData?.connectionName,
         connectionType: persistedFormData?.connectionType,
-        showOptionalFields,
+        showOptionalFields: false,
       });
       return template;
-    }, [persistedFormData.connectionName, persistedFormData.connectionType, showOptionalFields]);
-
-    const processcorComponentTemplate = useMemo(() => {
-      if (!processorConfig) return undefined;
-      return getConnectTemplate({
-        connectionName: processorConfig.connectionName,
-        connectionType: processorConfig.connectionType,
-        showOptionalFields,
-      });
-    }, [processorConfig, showOptionalFields]);
+    }, [persistedFormData.connectionName, persistedFormData.connectionType]);
 
     const yaml = useMemo(() => {
-      const finalYaml =
-        enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;
-
-      // Concatenate processorConfig if rpcn tiles is enabled and processorConfig exists
-      if (enableRpcnTiles && processorConfig) {
-        return `${finalYaml}\n${processcorComponentTemplate}`;
-      }
-
-      return finalYaml;
-    }, [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml, processcorComponentTemplate, processorConfig]);
+      return enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;
+    }, [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]);
 
     const resetEditor = async () => {
       if (monaco) {
@@ -452,7 +398,19 @@ export const PipelineEditor = observer(
     };
 
     const handleAddProcessor = (connectionName: string, connectionType: ConnectComponentType) => {
-      setProcessorConfig({ connectionName, connectionType });
+      if (!editorInstance) return;
+
+      const currentValue = editorInstance.getValue();
+      const mergedYaml = getConnectTemplate({
+        connectionName,
+        connectionType,
+        showOptionalFields: false,
+        existingYaml: currentValue,
+      });
+
+      if (!mergedYaml) return;
+
+      editorInstance.setValue(mergedYaml);
     };
 
     useEffect(() => {
@@ -496,8 +454,6 @@ export const PipelineEditor = observer(
                     <QuickActions
                       editorInstance={editorInstance}
                       resetAutocompleteSecrets={resetEditor}
-                      showOptionalFields={showOptionalFields}
-                      setShowOptionalFields={setShowOptionalFields}
                       onAddProcessor={handleAddProcessor}
                     />
                   )}

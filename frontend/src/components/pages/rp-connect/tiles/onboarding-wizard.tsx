@@ -1,30 +1,24 @@
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogHeader,
-  DialogOverlay,
-} from 'components/redpanda-ui/components/dialog';
+import PageContent from 'components/misc/PageContent';
+import { useNavigate } from 'react-router-dom';
 import { ConnectTiles } from './connect-tiles';
-import type { ConnectComponentType } from './types';
+import { useSessionStorage } from './hooks';
+import type { ConnectComponentType, ConnectTilesFormData } from './types';
+import { CONNECT_TILE_STORAGE_KEY } from './utils';
 
-export const OnboardingWizard = ({
-  isOpen,
-  onOpenChange,
-  onSubmit,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (connectionName: string, connectionType: ConnectComponentType) => void;
-}) => {
+export const OnboardingWizard = () => {
+  const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
+    CONNECT_TILE_STORAGE_KEY,
+    {},
+  );
+  const navigate = useNavigate();
+
+  const onSubmit = (connectionName: string, connectionType: ConnectComponentType) => {
+    setPersistedConnectionName({ connectionName, connectionType });
+    navigate('/rp-connect/create');
+  };
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogOverlay />
-      <DialogContent size="full">
-        <DialogBody>
-          <ConnectTiles componentTypeFilter={['input', 'output']} onChange={onSubmit} variant="ghost" />
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+    <PageContent>
+      <ConnectTiles componentTypeFilter={['input', 'output']} onChange={onSubmit} variant="ghost" className="px-0" />
+    </PageContent>
   );
 };

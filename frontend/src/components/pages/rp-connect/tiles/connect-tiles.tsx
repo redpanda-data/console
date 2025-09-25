@@ -5,9 +5,9 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardSize,
+  type CardSize,
   CardTitle,
-  CardVariant,
+  type CardVariant,
 } from 'components/redpanda-ui/components/card';
 import { Choicebox, ChoiceboxItem, ChoiceboxItemIndicator } from 'components/redpanda-ui/components/choicebox';
 import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
@@ -40,6 +40,7 @@ export const ConnectTiles = ({
   gridCols = 4,
   variant = 'default',
   size = 'full',
+  className,
 }: {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
@@ -51,6 +52,7 @@ export const ConnectTiles = ({
   gridCols?: number;
   variant?: CardVariant;
   size?: CardSize;
+  className?: string;
 }) => {
   const [filter, setFilter] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -84,7 +86,7 @@ export const ConnectTiles = ({
   }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
 
   return (
-    <Card size={size} variant={variant}>
+    <Card size={size} variant={variant} className={className}>
       {!hideHeader && (
         <CardHeader className="mb-4">
           <CardTitle>

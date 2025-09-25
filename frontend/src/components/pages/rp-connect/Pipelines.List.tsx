@@ -16,7 +16,7 @@ import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { isFeatureFlagEnabled } from 'config';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
@@ -34,7 +34,6 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 import { ConnectTiles } from './tiles/connect-tiles';
 import { useSessionStorage } from './tiles/hooks';
-import { OnboardingWizard } from './tiles/onboarding-wizard';
 import type { ConnectComponentType, ConnectTilesFormData } from './tiles/types';
 import { CONNECT_TILE_STORAGE_KEY } from './tiles/utils';
 
@@ -55,31 +54,16 @@ const NewCreatePipelineButton = () => {
     CONNECT_TILE_STORAGE_KEY,
     {},
   );
-  const [isOpenOnboardingWizard, setIsOpenOnboardingWizard] = useState(false);
   const navigate = useNavigate();
 
   const handleClick = useCallback(() => {
     setPersistedConnectionName({});
-    setIsOpenOnboardingWizard(true);
-  }, [setPersistedConnectionName]);
-
-  const handleSubmit = useCallback(
-    (connectionName: string, connectionType: ConnectComponentType) => {
-      setPersistedConnectionName({ connectionName, connectionType });
-      setIsOpenOnboardingWizard(false);
-      navigate('/rp-connect/create');
-    },
-    [setPersistedConnectionName, navigate],
-  );
+    navigate('/rp-connect/wizard');
+  }, [setPersistedConnectionName, navigate]);
 
   return (
     <div>
       <NewButton onClick={handleClick}>Create pipeline</NewButton>
-      <OnboardingWizard
-        isOpen={isOpenOnboardingWizard}
-        onOpenChange={setIsOpenOnboardingWizard}
-        onSubmit={handleSubmit}
-      />
     </div>
   );
 };
