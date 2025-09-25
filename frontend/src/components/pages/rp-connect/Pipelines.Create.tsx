@@ -47,7 +47,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-import { AddProcessorDialog } from './tiles/add-processor-dialog';
+import { AddConnectorDialog } from './tiles/add-connector-dialog';
 import { useSessionStorage } from './tiles/hooks';
 import type { ConnectComponentType, ConnectTilesFormData } from './tiles/types';
 import { CONNECT_TILE_STORAGE_KEY, getComponentTypeConfig, getConnectTemplate } from './tiles/utils';
@@ -319,11 +319,11 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
               })}
             </CardContent>
           </Card>
-          <AddProcessorDialog
+          <AddConnectorDialog
             isOpen={isAddProcessorOpen}
-            onCloseAddProcessor={closeAddProcessor}
-            onAddProcessor={handleAddProcessor}
-            processorType={selectedProcessor}
+            onCloseAddConnector={closeAddProcessor}
+            onAddConnector={handleAddProcessor}
+            connectorType={selectedProcessor}
           />
         </>
       )}

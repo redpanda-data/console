@@ -9,30 +9,30 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { ConnectTiles } from './connect-tiles';
 import type { ConnectComponentType } from './types';
 
-export const AddProcessorDialog = ({
+export const AddConnectorDialog = ({
   isOpen,
-  onCloseAddProcessor,
-  processorType,
-  onAddProcessor,
+  onCloseAddConnector,
+  connectorType,
+  onAddConnector,
 }: {
   isOpen: boolean;
-  onCloseAddProcessor: () => void;
-  processorType?: ConnectComponentType;
-  onAddProcessor: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
+  onCloseAddConnector: () => void;
+  connectorType?: ConnectComponentType;
+  onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
 }) => {
   return (
-    <Dialog open={isOpen} onOpenChange={onCloseAddProcessor}>
+    <Dialog open={isOpen} onOpenChange={onCloseAddConnector}>
       <DialogOverlay />
       <DialogContent size="full">
         <DialogHeader>
-          <Heading level={2}>Add a Processor</Heading>
+          <Heading level={2}>Add a Connector</Heading>
         </DialogHeader>
         <DialogBody>
           <ConnectTiles
-            componentTypeFilter={processorType ? [processorType] : undefined}
+            componentTypeFilter={connectorType ? [connectorType] : undefined}
             hideHeader
             hideFilters
-            onChange={onAddProcessor}
+            onChange={onAddConnector}
             variant="ghost"
           />
         </DialogBody>
