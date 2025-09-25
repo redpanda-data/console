@@ -21,6 +21,7 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/outline';
 import type { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
@@ -272,7 +273,9 @@ function MakeRoute<TRouteParams>(
       key={path}
       element={
         <ProtectedRoute path={path}>
-          <RouteRenderer route={route} />
+          <NuqsAdapter>
+            <RouteRenderer route={route} />
+          </NuqsAdapter>
         </ProtectedRoute>
       }
     />
