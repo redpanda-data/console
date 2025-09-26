@@ -176,7 +176,7 @@ const MultiSelectTrigger = React.forwardRef<React.ComponentRef<'button'>, MultiS
           data-disabled={disabled}
           {...props}
           className={cn(
-            "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+            "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-1 h-9 text-base md:text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
             disabled ? 'cursor-not-allowed opacity-50' : 'cursor-text',
             className,
           )}
@@ -202,23 +202,18 @@ interface MultiSelectValueProps extends React.ComponentPropsWithoutRef<'div'> {
 const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelectValueProps>(
   ({ className, placeholder, maxDisplay, maxItemLength, ...props }, forwardRef) => {
     const { value, itemCache, onDeselect } = useMultiSelect();
-    const [firstRendered, setFirstRendered] = React.useState(false);
 
     const renderRemain = maxDisplay && value.length > maxDisplay ? value.length - maxDisplay : 0;
     const renderItems = renderRemain ? value.slice(0, maxDisplay) : value;
 
-    React.useLayoutEffect(() => {
-      setFirstRendered(true);
-    }, []);
-
-    if (!value.length || !firstRendered) {
+    if (!value.length) {
       return <span className="text-muted-foreground pointer-events-none">{placeholder}</span>;
     }
 
     return (
       <TooltipProvider delayDuration={300}>
         <div
-          className={cn('flex flex-1 flex-wrap items-center gap-0.25 overflow-x-hidden', className)}
+          className={cn('flex flex-1 flex-nowrap items-center gap-0.25 overflow-x-scroll', className)}
           {...props}
           ref={forwardRef}
         >
@@ -227,10 +222,14 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
 
             const content = item?.label || value;
 
+            // For React nodes, don't truncate - show full content
             const child =
               maxItemLength && typeof content === 'string' && content.length > maxItemLength
                 ? `${content.slice(0, maxItemLength)}...`
                 : content;
+            
+            // Determine if we should show a tooltip - only for truncated strings
+            const shouldShowTooltip = maxItemLength && typeof content === 'string' && content.length > maxItemLength;
 
             const el = (
               <TagsValue
@@ -245,7 +244,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
               </TagsValue>
             );
 
-            if (child !== content) {
+            if (shouldShowTooltip) {
               return (
                 <Tooltip key={value}>
                   <TooltipTrigger className="inline-flex">{el}</TooltipTrigger>

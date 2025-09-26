@@ -2,7 +2,7 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot as SlotPrimitive } from 'radix-ui';
-import React from 'react';
+import React, { ElementType } from 'react';
 
 import { useGroup } from './group';
 import { cn } from '../lib/utils';
@@ -42,9 +42,11 @@ const Button = React.forwardRef<
     VariantProps<typeof buttonVariants> & {
       asChild?: boolean;
       testId?: string;
+      as?: ElementType;
+      to?: string;
     }
->(({ className, variant, size, asChild = false, testId, ...props }, ref) => {
-  const Comp = asChild ? SlotPrimitive.Slot : 'button';
+>(({ className, variant, size, asChild = false, testId, as, to, ...props }, ref) => {
+  const Comp = as ?? (asChild ? SlotPrimitive.Slot : 'button');
   const { attached, position } = useGroup();
 
   return (
@@ -63,6 +65,7 @@ const Button = React.forwardRef<
               : 'rounded-md',
         className,
       )}
+      to={to}
       {...props}
     />
   );

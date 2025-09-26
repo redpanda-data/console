@@ -29,8 +29,13 @@ const cardVariants = cva(
   },
 );
 
-export interface CardProps extends React.ComponentProps<'div'>, VariantProps<typeof cardVariants> {
+export type CardVariant = VariantProps<typeof cardVariants>['variant'];
+export type CardSize = VariantProps<typeof cardVariants>['size'];
+
+export interface CardProps extends React.ComponentProps<'div'> {
+  size?: CardSize;
   testId?: string;
+  variant?: CardVariant;
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, size, variant, testId, ...props }, ref) => {
