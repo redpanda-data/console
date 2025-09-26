@@ -16,7 +16,7 @@ describe('TopicConfiguration', () => {
       '', // unknown options should appear at the end as 'Other'
       'Message Handling',
       'Write Caching',
-      'Schema Registry and Validation'
+      'Schema Registry and Validation',
     ].map((category) => {
       return {
         name: 'test.option',
@@ -33,7 +33,7 @@ describe('TopicConfiguration', () => {
       };
     });
 
-    const { container } = render(<ConfigurationEditor entries={entries} targetTopic="" onForceRefresh={() => { }} />);
+    const { container } = render(<ConfigurationEditor entries={entries} targetTopic="" onForceRefresh={() => {}} />);
     expect(screen.getByTestId('config-group-table')).toBeVisible();
 
     const groups = container.querySelectorAll('.configGroupTitle');
