@@ -239,7 +239,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[160px]">
               <DropdownMenuItem onClick={handleCopy}>
-                <Copy className="mr-2 h-4 w-4" />
+                <Copy className="h-4 w-4" />
                 Copy URL
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -419,7 +419,7 @@ export const RemoteMCPListPage = () => {
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex items-center justify-center">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Loading MCP servers...
                   </div>
                 </TableCell>
@@ -428,7 +428,7 @@ export const RemoteMCPListPage = () => {
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex items-center justify-center text-red-600">
-                    <AlertCircle className="h-4 w-4 mr-2" />
+                    <AlertCircle className="h-4 w-4" />
                     Error loading MCP servers: {error.message}
                   </div>
                 </TableCell>

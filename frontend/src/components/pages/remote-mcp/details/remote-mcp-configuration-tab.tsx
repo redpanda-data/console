@@ -514,7 +514,7 @@ spec:
                       })}
                       {isEditing && (
                         <Button variant="outline" size="sm" onClick={handleAddTag}>
-                          <Plus className="h-4 w-4 mr-2" />
+                          <Plus className="h-4 w-4" />
                           Add Tag
                         </Button>
                       )}
@@ -541,12 +541,6 @@ spec:
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  {isEditing && (
-                    <Button variant="outline" size="sm" onClick={handleAddTool}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Tool
-                    </Button>
-                  )}
                 </div>
 
                 {displayData.tools.length > 0 ? (
@@ -596,7 +590,7 @@ spec:
                       <div className="text-sm">No tools configured</div>
                       {isEditing && (
                         <Button variant="outline" size="sm" onClick={handleAddTool} className="mt-2">
-                          <Plus className="h-4 w-4 mr-2" />
+                          <Plus className="h-4 w-4" />
                           Add Your First Tool
                         </Button>
                       )}
@@ -716,6 +710,13 @@ spec:
                     </div>
                   </div>
                 </div>
+              )}
+
+              {isEditing && (
+                <Button variant="dashed" className="w-full" onClick={handleAddTool}>
+                  <Plus className="h-4 w-4" />
+                  Add Tool
+                </Button>
               )}
             </div>
           </div>

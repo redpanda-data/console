@@ -731,7 +731,7 @@ export const DynamicJSONForm = ({
               Copy JSON
             </CopyButton>
             <Button type="button" variant="outline" size="sm" onClick={formatJson}>
-              <SpellCheck className="h-4 w-4 mr-2" />
+              <SpellCheck className="h-4 w-4" />
               Format JSON
             </Button>
           </>
@@ -741,12 +741,12 @@ export const DynamicJSONForm = ({
           <Button variant="outline" size="sm" onClick={handleSwitchToFormMode}>
             {isJsonMode ? (
               <>
-                <FileEdit className="h-4 w-4 mr-2" />
+                <FileEdit className="h-4 w-4" />
                 Switch to Form
               </>
             ) : (
               <>
-                <Braces className="h-4 w-4 mr-2" />
+                <Braces className="h-4 w-4" />
                 Switch to JSON
               </>
             )}
