@@ -15,8 +15,8 @@ import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Mes
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { RefreshCcw } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { Logs, RefreshCcw } from 'lucide-react';
 import { observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -152,34 +152,37 @@ export const RemoteMCPLogsTab = observer(() => {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-4">
-        <div>
-          <Heading level={3} className="mb-2">
-            Server Logs
-          </Heading>
-          <Text variant="small" className="text-muted-foreground mb-4">
+    <div className="bg-card border border-border rounded-lg shadow">
+      <div className="p-4 border-b border-gray-200 dark:border-border">
+        <h3 className="font-semibold dark:text-white flex items-center gap-2">
+          <Logs className="h-4 w-4" />
+          Server Logs
+        </h3>
+      </div>
+      <div className="p-4">
+        <div className="flex flex-col gap-2">
+          <Text variant="small" className="text-muted-foreground">
             Real-time logs from the MCP server.
           </Text>
-        </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <Input
-            className="w-60"
-            placeholder="Filter logs..."
-            value={uiState.remoteMcpDetails.logsQuickSearch}
-            onChange={(e) => {
-              runInAction(() => {
-                uiState.remoteMcpDetails.logsQuickSearch = e.target.value;
-              });
-            }}
-          />
-          <Button variant="outline" className="ml-auto" onClick={() => setState(createLogsTabState())}>
-            <div className="flex items-center gap-2">
-              <RefreshCcw className="h-4 w-4" />
-              Refresh logs
-            </div>
-          </Button>
+          <div className="flex items-center gap-4 mb-6">
+            <Input
+              className="w-60"
+              placeholder="Filter logs..."
+              value={uiState.remoteMcpDetails.logsQuickSearch}
+              onChange={(e) => {
+                runInAction(() => {
+                  uiState.remoteMcpDetails.logsQuickSearch = e.target.value;
+                });
+              }}
+            />
+            <Button variant="outline" className="ml-auto" onClick={() => setState(createLogsTabState())}>
+              <div className="flex items-center gap-2">
+                <RefreshCcw className="h-4 w-4" />
+                Refresh logs
+              </div>
+            </Button>
+          </div>
         </div>
 
         <div>

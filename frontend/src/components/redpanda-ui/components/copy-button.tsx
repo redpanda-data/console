@@ -34,7 +34,7 @@ const buttonVariants = cva(
   },
 );
 
-type CopyButtonProps = Omit<HTMLMotionProps<'button'>, 'children' | 'onCopy'> &
+type CopyButtonProps = Omit<HTMLMotionProps<'button'>, 'onCopy'> &
   VariantProps<typeof buttonVariants> & {
     content?: string;
     delay?: number;
@@ -42,6 +42,7 @@ type CopyButtonProps = Omit<HTMLMotionProps<'button'>, 'children' | 'onCopy'> &
     isCopied?: boolean;
     onCopyChange?: (isCopied: boolean) => void;
     testId?: string;
+    children?: React.ReactNode;
   };
 
 function CopyButton({
@@ -55,6 +56,7 @@ function CopyButton({
   isCopied,
   onCopyChange,
   testId,
+  children,
   ...props
 }: CopyButtonProps) {
   const [localIsCopied, setLocalIsCopied] = React.useState(isCopied ?? false);
@@ -114,6 +116,7 @@ function CopyButton({
           <Icon />
         </motion.span>
       </AnimatePresence>
+      {children}
     </motion.button>
   );
 }

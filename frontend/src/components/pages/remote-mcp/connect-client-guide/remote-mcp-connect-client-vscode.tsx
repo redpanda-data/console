@@ -114,7 +114,7 @@ export const RemoteMCPConnectClientVSCode = ({
               </Text>
             </div>
             <Button variant="outline" onClick={handleAddToVSCode} className="mt-2">
-              <img src={VSCodeLogo} alt="VSCode" className="w-4 h-4 mr-2" />
+              <img src={VSCodeLogo} alt="VSCode" className="w-4 h-4" />
               Add to VSCode
             </Button>
           </ListItem>

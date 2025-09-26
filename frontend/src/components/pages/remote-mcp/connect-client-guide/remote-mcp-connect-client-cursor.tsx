@@ -99,7 +99,7 @@ export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClie
               </Text>
             </div>
             <Button variant="outline" onClick={handleAddToCursor} className="mt-2">
-              <img src={CursorLogo} alt="Cursor" className="w-4 h-4 mr-2" />
+              <img src={CursorLogo} alt="Cursor" className="w-4 h-4" />
               Add to Cursor
             </Button>
           </ListItem>
