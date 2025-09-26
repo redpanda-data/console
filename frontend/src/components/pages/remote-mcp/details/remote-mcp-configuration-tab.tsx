@@ -27,6 +27,7 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import {
+  type MCPServer_State,
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
@@ -34,9 +35,9 @@ import React, { useState } from 'react';
 import { useGetMCPServerQuery, useListMCPServerTools, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getResourceTierByName, getResourceTierFullSpec, RESOURCE_TIERS } from 'utils/resource-tiers';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
+import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 
@@ -57,7 +58,7 @@ interface LocalMCPServer {
     tier: string;
   };
   tools: LocalTool[];
-  state: any;
+  state: MCPServer_State;
   status: string;
   url: string;
 }
@@ -154,7 +155,9 @@ export const RemoteMCPConfigurationTab = () => {
             tools: toolsMap,
             tags: tagsMap,
             resources: {
-              memoryShares: getResourceTierByName(currentData.resources.tier)?.memory || '512MiB',
+              memoryShares: convertToApiMemoryFormat(
+                getResourceTierByName(currentData.resources.tier)?.memory || '512M',
+              ),
               cpuShares: getResourceTierByName(currentData.resources.tier)?.cpu || '200m',
             },
           },
@@ -308,16 +311,32 @@ spec:
     return new Set(duplicates);
   };
 
+  const getResourceTierByName = (name: string) => {
+    return RESOURCE_TIERS.find((tier) => tier.name === name || tier.id === name);
+  };
+
+  const getResourceDisplayString = (resources: { cpuShares?: string; memoryShares?: string }): string => {
+    const cpu = resources.cpuShares || '0';
+    const memory = resources.memoryShares || '0';
+    return `${cpu} CPU, ${memory} RAM`;
+  };
+
+  const convertToApiMemoryFormat = (memory: string): string => {
+    // Memory is already in the correct format (M, G)
+    return memory;
+  };
+
   const getResourceTierFromServer = (resources?: { cpuShares?: string; memoryShares?: string }) => {
     if (!resources) return 'Small';
 
+    // Try to find exact string match with predefined tiers
     const matchingTier = RESOURCE_TIERS.find((tier) => {
       const serverCpu = resources.cpuShares || '';
       const serverMemory = resources.memoryShares || '';
       return tier.cpu === serverCpu && tier.memory === serverMemory;
     });
 
-    return matchingTier?.name || 'Small';
+    return matchingTier?.id || 'Small';
   };
 
   const getToolDescription = (tool: LocalTool) => {
@@ -439,7 +458,7 @@ spec:
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="tier">Resource Tier</Label>
+                    <Label htmlFor="resources">Resources</Label>
                     {isEditing ? (
                       <Select
                         value={displayData.resources.tier}
@@ -450,19 +469,21 @@ spec:
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select tier" />
+                          <SelectValue placeholder="Select resource tier" />
                         </SelectTrigger>
                         <SelectContent>
                           {RESOURCE_TIERS.map((tier) => (
                             <SelectItem key={tier.id} value={tier.id}>
-                              {tier.fullSpec}
+                              {tier.displayName}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
                       <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
-                        <code className="text-sm font-mono">{getResourceTierFullSpec(displayData.resources.tier)}</code>
+                        <code className="text-sm font-mono">
+                          {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
+                        </code>
                       </div>
                     )}
                   </div>
@@ -540,8 +561,7 @@ spec:
 
             <div className="space-y-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                </div>
+                <div className="flex items-center justify-between" />
 
                 {displayData.tools.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-96">

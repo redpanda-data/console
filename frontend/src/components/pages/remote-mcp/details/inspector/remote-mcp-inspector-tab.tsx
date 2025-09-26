@@ -610,10 +610,7 @@ export const RemoteMCPInspectorTab = () => {
                               <Clock className="w-4 h-4 animate-spin" />
                               Run Tool
                             </Button>
-                            <Button
-                              onClick={cancelToolRequest}
-                              variant="destructive"
-                            >
+                            <Button onClick={cancelToolRequest} variant="destructive">
                               <X className="w-4 h-4" />
                               Cancel
                             </Button>

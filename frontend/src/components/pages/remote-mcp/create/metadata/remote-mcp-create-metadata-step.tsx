@@ -13,7 +13,7 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCheckMCPServerNameUniqueness } from 'react-query/api/remote-mcp';
-import { RESOURCE_TIERS } from 'utils/resource-tiers';
+import { RESOURCE_TIERS } from '../../remote-mcp-constants';
 
 interface MetadataStepProps {
   displayName: string;
@@ -151,12 +151,12 @@ export const RemoteMCPCreateMetadataStep = ({
           <Label htmlFor="resources">Resources</Label>
           <Select value={resources} onValueChange={setResources}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select resource tier" />
             </SelectTrigger>
             <SelectContent>
               {RESOURCE_TIERS.map((tier) => (
                 <SelectItem key={tier.id} value={tier.id}>
-                  {tier.fullSpec}
+                  {tier.displayName}
                 </SelectItem>
               ))}
             </SelectContent>
