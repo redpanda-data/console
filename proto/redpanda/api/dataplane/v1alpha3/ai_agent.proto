@@ -83,6 +83,10 @@ message AIAgent {
   // URL to connect to the AI agent endpoint.
   string url = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  int32 max_iterations = 13;
+
+  Authentication authentication = 14;
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -96,6 +100,26 @@ message AIAgent {
       option (buf.validate.oneof).required = true;
       OpenAI openai = 1;
     }
+  }
+
+  message Authentication {
+    string client_id = 1 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    string client_secret = 2 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true,
+      (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z0-9_]+\\}$"
+    ];
+    string token_url = 3 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
+    string audience = 4 [
+      (google.api.field_behavior) = REQUIRED,
+      (buf.validate.field).required = true
+    ];
   }
 
   // State of the AI agent.
@@ -382,6 +406,10 @@ message AIAgentCreate {
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
+
+  int32 max_iterations = 10;
+
+  AIAgent.Authentication authentication = 11;
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -510,6 +538,10 @@ message AIAgentUpdate {
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
   redpanda.api.dataplane.v1.Pipeline.Resources resources = 9;
+
+  int32 max_iterations = 10;
+
+  AIAgent.Authentication authentication = 11;
 }
 
 message UpdateAIAgentRequest {
