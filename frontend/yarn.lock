@@ -435,7 +435,7 @@
   resolved "https://registry.npmjs.org/@biomejs/cli-win32-x64/-/cli-win32-x64-2.0.6.tgz"
   integrity sha512-bfM1Bce0d69Ao7pjTjUS+AWSZ02+5UHdiAP85Th8e9yV5xzw6JrHXbL5YWlcEKQ84FIZMdDc7ncuti1wd2sdbw==
 
-"@bufbuild/protobuf@2.5.2", "@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.2.0", "@bufbuild/protobuf@^2.5.0", "@bufbuild/protobuf@^2.5.2":
+"@bufbuild/protobuf@2.5.2", "@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.5.0", "@bufbuild/protobuf@^2.5.2", "@bufbuild/protobuf@^2.7.0":
   version "2.5.2"
   resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.5.2.tgz"
   integrity sha512-foZ7qr0IsUBjzWIq+SuBLfdQCpJ1j8cTuNNT4owngTHoN5KsJb8L9t65fzz7SCeSWzescoOil/0ldqiL041ABg==
@@ -700,27 +700,27 @@
     "@types/lodash.mergewith" "4.6.9"
     lodash.mergewith "4.6.2"
 
-"@connectrpc/connect@2.0.2", "@connectrpc/connect@^2.0.1", "@connectrpc/connect@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-2.0.2.tgz"
-  integrity sha512-xZuylIUNvNlH52e/4eQsZvY4QZyDJRtEFEDnn/yBrv5Xi5ZZI/p8X+GAHH35ucVaBvv9u7OzHZo8+tEh1EFTxA==
-
-"@connectrpc/connect-query@^2.1.0":
+"@connectrpc/connect@2.1.0", "@connectrpc/connect@^2.0.1", "@connectrpc/connect@^2.1.0":
   version "2.1.0"
-  resolved "https://registry.npmjs.org/@connectrpc/connect-query/-/connect-query-2.1.0.tgz"
-  integrity sha512-y0g+/CxWDL2xAhOeisOZqRQT4/bqbUKe3oNSyCdH31EL3+DCBNTv0tM+Mkw8WaxYr3q10z0eeJinjOG2R7fxxQ==
+  resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-2.1.0.tgz"
+  integrity sha512-xhiwnYlJNHzmFsRw+iSPIwXR/xweTvTw8x5HiwWp10sbVtd4OpOXbRgE7V58xs1EC17fzusF1f5uOAy24OkBuA==
+
+"@connectrpc/connect-query@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.npmjs.org/@connectrpc/connect-query/-/connect-query-2.2.0.tgz"
+  integrity sha512-oQ+coXOwBmfl4/t6EOrTfzW0zdoGDe3kvUYqZHrbzORkRFd693Cz8PxuDBjRCjmBPhDRCQMxFhR1jn2+SbgEKQ==
   dependencies:
-    "@connectrpc/connect-query-core" "^2.1.0"
+    "@connectrpc/connect-query-core" "^2.2.0"
 
-"@connectrpc/connect-query-core@^2.1.0":
+"@connectrpc/connect-query-core@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.npmjs.org/@connectrpc/connect-query-core/-/connect-query-core-2.2.0.tgz"
+  integrity sha512-t/CuxW/vP84y2iyS+PnbAnBwgOTYMzHXTSoBUKC1vIn706aNiZP40Y6mGJybglyH63RhAPcOdUgzG7DjzaAHCw==
+
+"@connectrpc/connect-web@^2.1.0":
   version "2.1.0"
-  resolved "https://registry.npmjs.org/@connectrpc/connect-query-core/-/connect-query-core-2.1.0.tgz"
-  integrity sha512-lkBLMW8sIEkAgoUMe6DUEQ+vFwLc5TPjtkmFWW2rFPdkYgWw+gFJeHiMVUw+20K2zS3Ly5NPVWUtkl2kwgrZQQ==
-
-"@connectrpc/connect-web@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/@connectrpc/connect-web/-/connect-web-2.0.2.tgz"
-  integrity sha512-QANMFPiL2o66BdBEctg4TsQLe5ozsBLqcle3dCBp7BwGlNGTY6NnNnqmt+YRnpeMW88GgomJwWNMGCrRD9pRKA==
+  resolved "https://registry.npmjs.org/@connectrpc/connect-web/-/connect-web-2.1.0.tgz"
+  integrity sha512-4IBFeMeXS1RVtmmFE/MwH+vWq/5vDRKys70va+DAaWDh83Rdy0iUQOJbITUDzvonlY5as3vwfs5yy9Yp2miHSw==
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -3290,15 +3290,15 @@
   dependencies:
     "@tanstack/store" "^0.7.1"
 
-"@tanstack/query-core@5.80.7", "@tanstack/query-core@>=5.62.0":
-  version "5.80.7"
-  resolved "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.80.7.tgz"
-  integrity sha512-s09l5zeUKC8q7DCCCIkVSns8zZrK4ZDT6ryEjxNBFi68G4z2EBobBS7rdOY3r6W1WbUDpc1fe5oY+YO/+2UVUg==
+"@tanstack/query-core@5.90.2", "@tanstack/query-core@>=5.62.0":
+  version "5.90.2"
+  resolved "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.90.2.tgz"
+  integrity sha512-k/TcR3YalnzibscALLwxeiLUub6jN5EDLwKDiO7q5f4ICEoptJ+n9+7vcEFy5/x/i6Q+Lb/tXrsKCggf5uQJXQ==
 
-"@tanstack/query-devtools@5.80.0":
-  version "5.80.0"
-  resolved "https://registry.npmjs.org/@tanstack/query-devtools/-/query-devtools-5.80.0.tgz"
-  integrity sha512-D6gH4asyjaoXrCOt5vG5Og/YSj0D/TxwNQgtLJIgWbhbWCC/emu2E92EFoVHh4ppVWg1qT2gKHvKyQBEFZhCuA==
+"@tanstack/query-devtools@5.90.1":
+  version "5.90.1"
+  resolved "https://registry.npmjs.org/@tanstack/query-devtools/-/query-devtools-5.90.1.tgz"
+  integrity sha512-GtINOPjPUH0OegJExZ70UahT9ykmAhmtNVcmtdnOZbxLwT7R5OmRztR5Ahe3/Cu7LArEmR6/588tAycuaWb1xQ==
 
 "@tanstack/react-form@^1.12.3":
   version "1.12.3"
@@ -3310,19 +3310,19 @@
     decode-formdata "^0.9.0"
     devalue "^5.1.1"
 
-"@tanstack/react-query@>=5.62.0", "@tanstack/react-query@^5.80.7":
-  version "5.80.7"
-  resolved "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.80.7.tgz"
-  integrity sha512-u2F0VK6+anItoEvB3+rfvTO9GEh2vb00Je05OwlUe/A0lkJBgW1HckiY3f9YZa+jx6IOe4dHPh10dyp9aY3iRQ==
+"@tanstack/react-query@>=5.62.0", "@tanstack/react-query@^5.90.2":
+  version "5.90.2"
+  resolved "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.90.2.tgz"
+  integrity sha512-CLABiR+h5PYfOWr/z+vWFt5VsOA2ekQeRQBFSKlcoW6Ndx/f8rfyVmq4LbgOM4GG2qtxAxjLYLOpCNTYm4uKzw==
   dependencies:
-    "@tanstack/query-core" "5.80.7"
+    "@tanstack/query-core" "5.90.2"
 
-"@tanstack/react-query-devtools@^5.80.7":
-  version "5.80.7"
-  resolved "https://registry.npmjs.org/@tanstack/react-query-devtools/-/react-query-devtools-5.80.7.tgz"
-  integrity sha512-7Dz/19fVo0i+jgLVBabV5vfGOlLyN5L1w8w1/ogFhe6ItNNsNA+ZgNTbtiKpbR3CcX2WDRRTInz1uMSmHzTsoQ==
+"@tanstack/react-query-devtools@^5.90.2":
+  version "5.90.2"
+  resolved "https://registry.npmjs.org/@tanstack/react-query-devtools/-/react-query-devtools-5.90.2.tgz"
+  integrity sha512-vAXJzZuBXtCQtrY3F/yUNJCV4obT/A/n81kb3+YqLbro5Z2+phdAbceO+deU3ywPw8B42oyJlp4FhO0SoivDFQ==
   dependencies:
-    "@tanstack/query-devtools" "5.80.0"
+    "@tanstack/query-devtools" "5.90.1"
 
 "@tanstack/react-store@^0.7.1":
   version "0.7.1"
