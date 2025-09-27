@@ -12,11 +12,12 @@
 import { Markdown } from '@redpanda-data/ui';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled, isServerless } from 'config';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Code, Link } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
@@ -55,47 +56,69 @@ export const RemoteMCPConnectionTab = () => {
   if (!mcpServerData?.mcpServer) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-4">
-        <div>
-          <Heading level={3} className="mb-2">
-            Connection Information
-          </Heading>
-          <Text variant="small" className="text-muted-foreground mb-6">
-            Connect to this MCP server using various clients. The server supports both streamable HTTP and Server-Sent
-            Events (SSE). The client will automatically select the preferred transport method.
-          </Text>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Left Panel - Client Setup Guide */}
+      <div className="bg-card border border-border rounded-lg shadow">
+        <div className="p-4 border-b border-gray-200 dark:border-border">
+          <h3 className="font-semibold dark:text-white flex items-center gap-2">
+            <MCPIcon className="h-4 w-4" />
+            Client Setup Guide
+          </h3>
         </div>
-        <div className="space-y-4">
-          <Label className="text-sm font-medium">Server URL</Label>
-          <div className="w-full">
-            <DynamicCodeBlock lang="text" code={mcpServerData?.mcpServer?.url || ''} />
-          </div>
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="space-y-2 text-sm">
-                <Text className="text-blue-800 dark:text-blue-200 font-medium">Authentication Required</Text>
-                <Text className="text-blue-700 dark:text-blue-300">
-                  This server requires a Redpanda Cloud M2M token for authentication.
-                  <a href="/organization-iam?tab=service-accounts" className="underline hover:no-underline ml-1">
-                    Create an M2M token here.
-                  </a>
-                  &nbsp;You can test the server directly using the MCP Inspector tab without setting up a client.
-                </Text>
-              </div>
-            </div>
-          </div>
-
+        <div className="p-4">
           {(!isServerless() || isFeatureFlagEnabled('enableRemoteMcpConnectClientInConsoleServerless')) && (
             <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
           )}
+        </div>
+      </div>
 
-          <div className="pt-10">
-            <Heading level={4} className="mb-4">
+      {/* Right Column */}
+      <div className="space-y-4">
+        {/* Connection Information Panel */}
+        <div className="bg-card border border-border rounded-lg shadow">
+          <div className="p-4 border-b border-gray-200 dark:border-border">
+            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Connection Information
+            </h3>
+          </div>
+          <div className="p-4">
+            <div className="space-y-4">
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Server URL</Label>
+                <div className="w-full">
+                  <DynamicCodeBlock lang="text" code={mcpServerData?.mcpServer?.url || ''} />
+                </div>
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-2 text-sm">
+                      <Text className="text-blue-800 dark:text-blue-200 font-medium">Authentication Required</Text>
+                      <Text className="text-blue-700 dark:text-blue-300">
+                        This server requires a Redpanda Cloud M2M token for authentication.
+                        <a href="/organization-iam?tab=service-accounts" className="underline hover:no-underline ml-1">
+                          Create an M2M token here.
+                        </a>
+                        &nbsp;You can test the server directly using the MCP Inspector tab without setting up a client.
+                      </Text>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Code Examples Panel */}
+        <div className="bg-card border border-border rounded-lg shadow">
+          <div className="p-4 border-b border-gray-200 dark:border-border">
+            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+              <Code className="h-4 w-4" />
               Code Examples
-            </Heading>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            </h3>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-2">
               {AVAILABLE_LANGUAGES.map((language) => (
                 <Sheet key={language}>
                   <SheetTrigger asChild>

@@ -3,6 +3,8 @@ components:
     AIAgent:
       description: Defines the AI Agent resource.
       properties:
+        authentication:
+          $ref: '#/components/schemas/Authentication'
         description:
           description: Optional AI agent description.
           type: string
@@ -16,6 +18,9 @@ components:
           description: AI Agent ID.
           readOnly: true
           type: string
+        max_iterations:
+          format: int32
+          type: integer
         mcp_servers:
           additionalProperties:
             $ref: '#/components/schemas/AIAgent.MCPServer'
@@ -88,6 +93,8 @@ components:
     AIAgentCreate:
       description: AIAgentCreate contains the details for the AI agent creation request.
       properties:
+        authentication:
+          $ref: '#/components/schemas/Authentication'
         description:
           description: AI agent description.
           type: string
@@ -97,6 +104,9 @@ components:
         display_name:
           description: User-friendly AI agent name.
           type: string
+        max_iterations:
+          format: int32
+          type: integer
         mcp_servers:
           additionalProperties:
             $ref: '#/components/schemas/AIAgent.MCPServer'
@@ -125,6 +135,8 @@ components:
       type: object
     AIAgentUpdate:
       properties:
+        authentication:
+          $ref: '#/components/schemas/Authentication'
         description:
           description: AI agent description.
           type: string
@@ -134,6 +146,9 @@ components:
         display_name:
           description: User-friendly AI agent name.
           type: string
+        max_iterations:
+          format: int32
+          type: integer
         mcp_servers:
           additionalProperties:
             $ref: '#/components/schemas/AIAgent.MCPServer'
@@ -165,6 +180,22 @@ components:
       properties:
         '@type':
           type: string
+      type: object
+    Authentication:
+      properties:
+        audience:
+          type: string
+        client_id:
+          type: string
+        client_secret:
+          type: string
+        token_url:
+          type: string
+      required:
+        - client_id
+        - client_secret
+        - token_url
+        - audience
       type: object
     ComponentType:
       description: Component type for this tool.

@@ -159,7 +159,7 @@ class GroupList extends PageComponent {
                 cell: ({ row: { original } }) => original.members.length,
               },
               {
-                header: 'Lag (Sum)',
+                header: 'Offset Lag (Sum)',
                 accessorKey: 'lagSum',
                 cell: ({ row: { original } }) => ShortNum({ value: original.lagSum }),
               },

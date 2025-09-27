@@ -1,0 +1,42 @@
+export const RESOURCE_TIERS = [
+  {
+    id: 'XSmall',
+    name: 'XSmall',
+    cpu: '100m',
+    memory: '400M',
+    displayName: 'XSmall - 100m CPU, 400M RAM',
+    index: 0,
+  },
+  {
+    id: 'Small',
+    name: 'Small',
+    cpu: '200m',
+    memory: '800M',
+    displayName: 'Small - 200m CPU, 800M RAM',
+    index: 1,
+  },
+  {
+    id: 'Medium',
+    name: 'Medium',
+    cpu: '300m',
+    memory: '1200M',
+    displayName: 'Medium - 300m CPU, 1200M RAM',
+    index: 2,
+  },
+  {
+    id: 'Large',
+    name: 'Large',
+    cpu: '400m',
+    memory: '1600M',
+    displayName: 'Large - 400m CPU, 1600M RAM',
+    index: 3,
+  },
+  {
+    id: 'XLarge',
+    name: 'XLarge',
+    cpu: '500m',
+    memory: '2G',
+    displayName: 'XLarge - 500m CPU, 2G RAM',
+    index: 4,
+  },
+];

@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/uiState';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { RemoteMCPCreateMetadataStep } from './metadata/remote-mcp-create-metadata-step';
 import { RemoteMCPCreateToolsStep } from './tools/remote-mcp-create-tools-step';
 
@@ -137,12 +138,13 @@ export const RemoteMCPCreatePage = () => {
         tagsMap[tag.key] = tag.value;
       }
 
-      // Map resource sizes to actual values
+      // Map resource sizes to actual values using RESOURCE_TIERS
+
+      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === resources) || RESOURCE_TIERS[0];
       const resourceValues = {
-        small: { cpu: '0.5', memory: '1Gi' },
-        medium: { cpu: '1', memory: '2Gi' },
-        large: { cpu: '2', memory: '4Gi' },
-      }[resources] || { cpu: '0.5', memory: '1Gi' };
+        cpu: selectedTier.cpu,
+        memory: selectedTier.memory,
+      };
 
       const request = create(CreateMCPServerRequestSchema, {
         mcpServer: create(MCPServerCreateSchema, {

@@ -1792,6 +1792,8 @@ components:
       enum:
         - SCOPE_REDPANDA_CONNECT
         - SCOPE_REDPANDA_CLUSTER
+        - SCOPE_MCP_SERVER
+        - SCOPE_AI_AGENT
       type: string
     Secret:
       description: Defines the secret resource.
@@ -3514,6 +3516,8 @@ paths:
               enum:
                 - SCOPE_REDPANDA_CONNECT
                 - SCOPE_REDPANDA_CLUSTER
+                - SCOPE_MCP_SERVER
+                - SCOPE_AI_AGENT
               type: string
             type: array
         - description: |-
@@ -4804,6 +4808,8 @@ paths:
               enum:
                 - SCOPE_REDPANDA_CONNECT
                 - SCOPE_REDPANDA_CLUSTER
+                - SCOPE_MCP_SERVER
+                - SCOPE_AI_AGENT
               type: string
             type: array
         - description: |-
@@ -5591,7 +5597,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
