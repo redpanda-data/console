@@ -67,12 +67,12 @@ export const monacoYamlOptions = {
       // The following schema will be applied
       schema: {
         type: 'object',
-        definitions: (benthosSchema as any).definitions || {},
-        properties: (benthosSchema as any).properties || {},
+        definitions: benthosSchema,
+        properties: benthosSchema,
       },
 
       // And the URI will be linked to as the source.
-      uri: 'http://example.com/redpanda-connect-schema.json', // '../../benthos-schema.json',
+      uri: 'https://github.com/redpanda-data/console/blob/master/frontend/src/assets/rp-connect-schema.json',
     },
   ],
 } as MonacoYamlOptions;

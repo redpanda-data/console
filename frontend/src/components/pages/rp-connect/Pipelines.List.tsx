@@ -14,6 +14,7 @@ import { TrashIcon } from '@heroicons/react/outline';
 import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { isFeatureFlagEnabled } from 'config';
+import { useSessionStorage } from 'hooks/use-session-storage';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useCallback } from 'react';
@@ -21,6 +22,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
+import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -33,9 +35,8 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 import { ConnectTiles } from './tiles/connect-tiles';
-import { useSessionStorage } from './tiles/hooks';
-import type { ConnectComponentType, ConnectTilesFormData } from './tiles/types';
-import { CONNECT_TILE_STORAGE_KEY } from './tiles/utils';
+import type { ConnectComponentType } from './types/rpcn-schema';
+import type { ConnectTilesFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -171,9 +172,7 @@ export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
 });
 
 @observer
-class RpConnectPipelinesList extends PageComponent<{
-  isRpcnTilesFeatureEnabled: boolean;
-}> {
+class RpConnectPipelinesList extends PageComponent<{}> {
   @observable placeholder = 5;
 
   constructor(p: any) {
@@ -234,7 +233,7 @@ class RpConnectPipelinesList extends PageComponent<{
         <ToastContainer />
         {/* Pipeline List */}
 
-        {pipelinesApi.pipelines.length !== 0 && this.props.isRpcnTilesFeatureEnabled ? (
+        {pipelinesApi.pipelines.length !== 0 && isFeatureFlagEnabled('enableRpcnTiles') ? (
           <div className="my-5">
             <NewCreatePipelineButton />
           </div>

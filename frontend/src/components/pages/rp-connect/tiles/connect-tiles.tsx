@@ -19,15 +19,63 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { ConnectComponentType, ConnectTilesFormData, ExtendedConnectComponentSpec } from './types';
-import { CONNECT_COMPONENT_TYPE, connectTilesFormSchema } from './types';
-import {
-  getCategoryConfig,
-  getComponentTypeConfig,
-  getNodeCategories,
-  getStatusConfig,
-  searchComponents,
-} from './utils';
+import { z } from 'zod';
+import type {
+  ComponentCategory,
+  ConnectComponentStatus,
+  ConnectComponentType,
+  ExtendedConnectComponentSpec,
+  InternalConnectComponentSpec,
+} from '../types/rpcn-schema';
+import { CONNECT_COMPONENT_TYPE } from '../types/rpcn-schema';
+import type { ConnectTilesFormData } from '../types/wizard';
+import { getCategoryBadgeProps, getComponentTypeBadgeProps, getStatusBadgeProps } from '../utils/badges';
+import { getAllComponents, getNodeCategories } from '../utils/schemaParsers';
+
+const connectTilesFormSchema = z.object({
+  connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
+  connectionType: z.optional(z.string()),
+});
+
+const searchComponents = (
+  query: string,
+  filters?: {
+    types?: ConnectComponentType[];
+    categories?: (ComponentCategory | string)[];
+    status?: ConnectComponentStatus[];
+  },
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec[] => {
+  return getAllComponents(additionalComponents).filter((component) => {
+    // Filter by search text
+    if (query.trim()) {
+      const searchLower = query.toLowerCase();
+      const matchesName = component.name.toLowerCase().includes(searchLower);
+      const matchesSummary = component.summary?.toLowerCase().includes(searchLower);
+      const matchesDescription = component.description?.toLowerCase().includes(searchLower);
+
+      if (!matchesName && !matchesSummary && !matchesDescription) return false;
+    }
+
+    // Filter by types
+    if (filters?.types?.length && !filters.types.includes(component.type as ConnectComponentType)) {
+      return false;
+    }
+
+    // Filter by categories
+    if (filters?.categories?.length) {
+      const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
+      if (!hasMatchingCategory) return false;
+    }
+
+    // Filter by status
+    if (filters?.status?.length && !filters.status.includes(component.status)) {
+      return false;
+    }
+
+    return true;
+  });
+};
 
 export const ConnectTiles = ({
   additionalComponents,
@@ -126,7 +174,7 @@ export const ConnectTiles = ({
                   Component Type
                   <SimpleMultiSelect
                     options={CONNECT_COMPONENT_TYPE.map((type) => {
-                      const { text, icon, variant } = getComponentTypeConfig(type);
+                      const { text, icon, variant } = getComponentTypeBadgeProps(type);
                       return {
                         value: type,
                         label: (
@@ -148,7 +196,7 @@ export const ConnectTiles = ({
                   Categories
                   <SimpleMultiSelect
                     options={categories.map((category) => {
-                      const { icon, text, variant } = getCategoryConfig(category.id);
+                      const { icon, text, variant } = getCategoryBadgeProps(category.id);
                       return {
                         value: category.id,
                         label: (
@@ -187,7 +235,7 @@ export const ConnectTiles = ({
                       <Choicebox>
                         <div className={cn('grid gap-2', `grid-cols-${gridCols}`)}>
                           {filteredComponents.map((component) => {
-                            const statusConfig = getStatusConfig(component.status);
+                            const statusConfig = getStatusBadgeProps(component.status);
                             const uniqueKey = `${component.type}-${component.name}-${component.status}`;
 
                             return (
@@ -218,14 +266,14 @@ export const ConnectTiles = ({
                                   <div className="flex gap-1 flex-wrap">
                                     {/* Component type badge */}
                                     <Badge
-                                      icon={getComponentTypeConfig(component.type).icon}
-                                      variant={getComponentTypeConfig(component.type).variant}
+                                      icon={getComponentTypeBadgeProps(component.type).icon}
+                                      variant={getComponentTypeBadgeProps(component.type).variant}
                                     >
-                                      {getComponentTypeConfig(component.type).text}
+                                      {getComponentTypeBadgeProps(component.type).text}
                                     </Badge>
                                     {/* Category badges */}
                                     {component.categories?.filter(Boolean).map((c) => {
-                                      const { icon, text, variant } = getCategoryConfig(c);
+                                      const { icon, text, variant } = getCategoryBadgeProps(c);
                                       return (
                                         <Badge icon={icon} variant={variant} key={`${c}-${text}`}>
                                           {text}

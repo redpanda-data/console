@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 /**
  * Custom hook for managing session storage state
  */
+
 export const useSessionStorage = <T>(key: string, initialValue?: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {

@@ -30,6 +30,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { isFeatureFlagEnabled } from 'config';
+import { useSessionStorage } from 'hooks/use-session-storage';
 import { PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -37,6 +38,7 @@ import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -48,9 +50,10 @@ import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { AddConnectorDialog } from './tiles/add-connector-dialog';
-import { useSessionStorage } from './tiles/hooks';
-import type { ConnectComponentType, ConnectTilesFormData } from './tiles/types';
-import { CONNECT_TILE_STORAGE_KEY, getComponentTypeConfig, getConnectTemplate } from './tiles/utils';
+import type { ConnectComponentType } from './types/rpcn-schema';
+import type { ConnectTilesFormData } from './types/wizard';
+import { getComponentTypeBadgeProps } from './utils/badges';
+import { getConnectTemplate } from './utils/yaml';
 
 const exampleContent = `
 `;
@@ -304,7 +307,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
             </CardHeader>
             <CardContent className="gap-2 flex flex-wrap space-y-0">
               {processorTypes.map((processorType) => {
-                const { text, variant, className } = getComponentTypeConfig(processorType);
+                const { text, variant, className } = getComponentTypeBadgeProps(processorType);
                 return (
                   <Badge
                     key={processorType}

@@ -73,16 +73,13 @@ const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpand
 
 const WrapUseSearchParamsHook: FunctionComponent<{ matchedPath: string }> = (props) => {
   const { search } = useLocation();
-  const isRpcnTilesFeatureEnabled = isFeatureFlagEnabled('enableRpcnTiles');
   const searchParams = new URLSearchParams(search);
   const defaultTab = searchParams.get('defaultTab') || '';
-  return (
-    <KafkaConnectOverview defaultView={defaultTab} {...props} isRpcnTilesFeatureEnabled={isRpcnTilesFeatureEnabled} />
-  );
+  return <KafkaConnectOverview defaultView={defaultTab} {...props} />;
 };
 
 @observer
-class KafkaConnectOverview extends PageComponent<{ defaultView: string; isRpcnTilesFeatureEnabled: boolean }> {
+class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
   initPage(p: PageInitHelper): void {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
@@ -127,14 +124,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string; isRpcnTi
                 Learn more.
               </Link>
             </Text>
-            {Features.pipelinesApi ? (
-              <RpConnectPipelinesList
-                matchedPath="/rp-connect"
-                isRpcnTilesFeatureEnabled={this.props.isRpcnTilesFeatureEnabled}
-              />
-            ) : (
-              <RedpandaConnectIntro />
-            )}
+            {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
           </Box>
         ),
       },
@@ -160,7 +150,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string; isRpcnTi
 
     return (
       <PageContent>
-        {!this.props.isRpcnTilesFeatureEnabled && (
+        {!isFeatureFlagEnabled('enableRpcnTiles') && (
           <Text>
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.

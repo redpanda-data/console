@@ -1,9 +1,10 @@
 import PageContent from 'components/misc/PageContent';
+import { useSessionStorage } from 'hooks/use-session-storage';
 import { useNavigate } from 'react-router-dom';
+import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
+import type { ConnectComponentType } from '../types/rpcn-schema';
+import type { ConnectTilesFormData } from '../types/wizard';
 import { ConnectTiles } from './connect-tiles';
-import { useSessionStorage } from './hooks';
-import type { ConnectComponentType, ConnectTilesFormData } from './types';
-import { CONNECT_TILE_STORAGE_KEY } from './utils';
 
 export const OnboardingWizard = () => {
   const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
