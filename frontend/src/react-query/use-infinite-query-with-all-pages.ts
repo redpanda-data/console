@@ -22,10 +22,10 @@ export type UseInfiniteQueryWithAllPagesOptions<
     MessageShape<O>,
     ConnectError,
     InfiniteData<MessageShape<O>>,
-    ConnectQueryKey,
+    ConnectQueryKey<O>,
     MessageInitShape<I>[ParamKey]
   >,
-  'initialPageParam' | 'queryFn' | 'queryKey'
+  'getNextPageParam' | 'initialPageParam' | 'queryFn' | 'queryKey'
 > &
   ConnectInfiniteQueryOptions<I, O, ParamKey> & {
     /** The transport to be used for the fetching. */
