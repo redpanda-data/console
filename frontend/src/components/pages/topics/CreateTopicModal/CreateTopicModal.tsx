@@ -252,7 +252,7 @@ export function NumInput(p: {
 }
 
 export type RetentionTimeUnit = keyof typeof timeFactors;
-const timeFactors = {
+export const timeFactors = {
   default: -1,
   infinite: Number.POSITIVE_INFINITY,
 
@@ -338,7 +338,7 @@ function RetentionTimeSelect(p: {
 }
 
 export type RetentionSizeUnit = keyof typeof sizeFactors;
-const sizeFactors = {
+export const sizeFactors = {
   default: -1,
   infinite: Number.POSITIVE_INFINITY,
 

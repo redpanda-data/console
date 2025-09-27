@@ -22,6 +22,7 @@ export function Combobox({
   creatable,
   autocomplete = true,
   onCreateOption,
+  className,
 }: {
   options: ComboboxOption[];
   value?: string;
@@ -34,6 +35,7 @@ export function Combobox({
   creatable?: boolean;
   /** Callback function to create a new option */
   onCreateOption?: (value: string) => void;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(controlledValue ?? '');
@@ -47,6 +49,13 @@ export function Combobox({
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [open]);
+
+  // Sync internal inputValue with external controlledValue
+  useEffect(() => {
+    if (controlledValue !== undefined) {
+      setInputValue(controlledValue);
+    }
+  }, [controlledValue]);
 
   // Find the best matching option for autocomplete
   const bestMatchOption = useMemo(() => {
@@ -164,7 +173,8 @@ export function Combobox({
       <PopoverTrigger asChild>
         <Input
           placeholder={placeholder}
-          className="w-full shadow-none text-transparent placeholder:text-transparent caret-foreground relative selection:text-transparent"
+          className={cn("w-full shadow-none text-transparent placeholder:text-transparent caret-foreground relative selection:text-transparent")}
+          containerClassName={className}
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}

@@ -47,6 +47,7 @@ interface InputProps extends Omit<React.ComponentProps<'input'>, 'size'>, Varian
   showStepControls?: boolean;
   testId?: string;
   children?: React.ReactNode;
+  containerClassName?: string;
 }
 
 function useInputState(props: InputProps) {
@@ -96,7 +97,7 @@ function useNumberInputHandlers(
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, showStepControls, size, variant, testId, children, ...props }, ref) => {
+  ({ className, type, showStepControls, size, variant, testId, children, containerClassName, ...props }, ref) => {
     const { value, setValue, showPassword, setShowPassword } = useInputState(props);
     const [startWidth, setStartWidth] = useState<number | undefined>();
     const [endWidth, setEndWidth] = useState<number | undefined>();
@@ -151,6 +152,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div
           className={cn(
             inputContainerVariants({ layout: shouldShowControls ? 'number' : isPasswordInput ? 'password' : variant }),
+            containerClassName,
           )}
         >
           {inputElement}

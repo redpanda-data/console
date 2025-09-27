@@ -1,5 +1,3 @@
-'use client';
-
 import { Separator as SeparatorPrimitive } from 'radix-ui';
 import React from 'react';
 
