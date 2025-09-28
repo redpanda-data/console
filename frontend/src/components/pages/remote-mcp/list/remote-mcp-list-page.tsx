@@ -146,7 +146,11 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+    cell: ({ row }) => (
+      <Text variant="default" className="font-medium">
+        {row.getValue('name')}
+      </Text>
+    ),
   },
   {
     accessorKey: 'tools',
@@ -184,7 +188,9 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="font-mono text-sm text-gray-600 cursor-help">{truncatedUrl}</div>
+            <Text variant="small" className="font-mono text-muted-foreground cursor-help">
+              {truncatedUrl}
+            </Text>
           </TooltipTrigger>
           <TooltipContent>
             <Text>{url}</Text>

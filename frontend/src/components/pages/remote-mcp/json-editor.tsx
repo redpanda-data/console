@@ -1,3 +1,4 @@
+import { Text } from 'components/redpanda-ui/components/typography';
 import Prism from 'prismjs';
 import { useEffect, useState } from 'react';
 import Editor from 'react-simple-code-editor';
@@ -43,7 +44,11 @@ export const JsonEditor = ({ value, onChange, error: externalError }: JsonEditor
           className="w-full"
         />
       </div>
-      {displayError && <p className="text-sm text-red-500 mt-1">{displayError}</p>}
+      {displayError && (
+        <Text variant="small" className="text-red-500 mt-1">
+          {displayError}
+        </Text>
+      )}
     </div>
   );
 };

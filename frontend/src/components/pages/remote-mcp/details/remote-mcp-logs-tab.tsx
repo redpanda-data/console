@@ -13,6 +13,7 @@ import { DataTable } from '@redpanda-data/ui';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { ExpandedMessage, MessagePreview } from 'components/pages/topics/Tab.Messages';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -152,18 +153,16 @@ export const RemoteMCPLogsTab = observer(() => {
   });
 
   return (
-    <div className="bg-card border border-border rounded-lg shadow">
-      <div className="p-4 border-b border-gray-200 dark:border-border">
-        <h3 className="font-semibold dark:text-white flex items-center gap-2">
+    <Card size="full" className="px-0 py-0">
+      <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+        <CardTitle className="flex items-center gap-2">
           <Logs className="h-4 w-4" />
-          Server Logs
-        </h3>
-      </div>
-      <div className="p-4">
+          <Text className="font-semibold">Server Logs</Text>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 pb-4">
         <div className="flex flex-col gap-2">
-          <Text variant="small" className="text-muted-foreground">
-            Real-time logs from the MCP server.
-          </Text>
+          <Text variant="muted">Real-time logs from the MCP server.</Text>
 
           <div className="flex items-center gap-4 mb-6">
             <Input
@@ -222,7 +221,7 @@ export const RemoteMCPLogsTab = observer(() => {
             />
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 });

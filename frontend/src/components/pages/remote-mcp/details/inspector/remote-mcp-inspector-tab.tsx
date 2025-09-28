@@ -14,6 +14,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -379,14 +380,14 @@ export const RemoteMCPInspectorTab = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Left Panel - Tools */}
-      <div className="bg-card border border-border rounded-lg shadow">
-        <div className="p-4 border-b border-gray-200 dark:border-border">
-          <h3 className="font-semibold dark:text-white flex items-center gap-2">
+      <Card size="full" className="px-0 py-0">
+        <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+          <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
-            Tools
-          </h3>
-        </div>
-        <div className="p-4">
+            <Text className="font-semibold">Tools</Text>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
           {/* Loading State */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING && (
             <div className="space-y-2">
@@ -406,7 +407,7 @@ export const RemoteMCPInspectorTab = () => {
 
           {/* Tools List */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
-            <div className="space-y-2 overflow-y-auto max-h-96">
+            <div className="space-y-2">
               {isLoadingTools && (
                 <div className="flex items-center justify-center py-4">
                   <Badge variant="outline" className="text-xs">
@@ -465,24 +466,24 @@ export const RemoteMCPInspectorTab = () => {
                   )}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Right Panel - Selected Tool */}
-      <div className="bg-card border border-border rounded-lg shadow flex flex-col">
+      <Card size="full" className="px-0 py-0 flex flex-col">
         {selectedTool && mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING ? (
           <>
-            <div className="p-4 border-b border-gray-200 dark:border-border">
-              <div className="flex items-center gap-2">
+            <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
                 <RemoteMCPToolTypeBadge
                   componentType={
                     mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
                     getComponentTypeFromToolName(selectedTool)
                   }
                 />
-                <h3 className="font-semibold">{selectedTool}</h3>
-              </div>
-            </div>
+                <Text className="font-semibold">{selectedTool}</Text>
+              </CardTitle>
+            </CardHeader>
             <div className="flex flex-col flex-1 relative">
               {(() => {
                 const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
@@ -565,9 +566,12 @@ export const RemoteMCPInspectorTab = () => {
                               className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md"
                             >
                               <div className="flex items-start">
-                                <div className="text-sm text-red-700 dark:text-red-400">
-                                  <span className="font-medium">{field}:</span> {error}
-                                </div>
+                                <Text variant="small" className="text-red-700 dark:text-red-400">
+                                  <Text as="span" className="font-medium">
+                                    {field}:
+                                  </Text>{' '}
+                                  {error}
+                                </Text>
                               </div>
                             </div>
                           ))}
@@ -643,7 +647,7 @@ export const RemoteMCPInspectorTab = () => {
             </div>
           </>
         ) : (
-          <div className="p-4">
+          <CardContent className="px-4 pb-4">
             <div className="flex items-center justify-center h-128 text-center">
               <div className="space-y-2">
                 <Text className="text-muted-foreground">
@@ -653,9 +657,9 @@ export const RemoteMCPInspectorTab = () => {
                 </Text>
               </div>
             </div>
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

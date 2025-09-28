@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { YamlEditor } from 'components/misc/yaml-editor';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -24,7 +25,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import {
   type MCPServer_State,
@@ -376,13 +377,13 @@ spec:
     <div>
       <div className="space-y-6">
         <div>
-          <div className="bg-card border border-border rounded-lg shadow">
-            <div className="p-4 border-b border-gray-200 dark:border-border">
+          <Card size="full" className="px-0 py-0">
+            <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold dark:text-white flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  Server Configuration
-                </h3>
+                  <Text className="font-semibold">Server Configuration</Text>
+                </CardTitle>
                 <div className="flex gap-2">
                   {isEditing ? (
                     <>
@@ -408,8 +409,8 @@ spec:
                   )}
                 </div>
               </div>
-            </div>
-            <div className="p-4">
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
               <div className="space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-4">
@@ -491,7 +492,9 @@ spec:
 
                 {(displayData.tags.length > 0 || isEditing) && (
                   <div className="space-y-4 flex flex-col gap-2">
-                    <h4 className="text-sm font-medium text-foreground">Tags</h4>
+                    <Heading level={4} className="text-sm font-medium">
+                      Tags
+                    </Heading>
                     <div className="space-y-2">
                       {isEditing && hasDuplicateKeys(displayData.tags) && (
                         <Text variant="small" className="text-destructive">
@@ -543,18 +546,18 @@ spec:
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="bg-card border border-border rounded-lg shadow">
-          <div className="p-4 border-b border-gray-200 dark:border-border">
-            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+        <Card size="full" className="px-0 py-0">
+          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <CardTitle className="flex items-center gap-2">
               <Hammer className="h-4 w-4" />
-              Tools Configuration
-            </h3>
-          </div>
-          <div className="p-4">
+              <Text className="font-semibold">Tools Configuration</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
             <Text variant="small" className="text-muted-foreground mb-4">
               Configure the tools available in this MCP server
             </Text>
@@ -564,7 +567,7 @@ spec:
                 <div className="flex items-center justify-between" />
 
                 {displayData.tools.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-96">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {displayData.tools.map((tool) => (
                       <button
                         key={tool.id}
@@ -577,8 +580,13 @@ spec:
                         onClick={() => setSelectedToolId(tool.id)}
                         aria-pressed={selectedToolId === tool.id}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <RemoteMCPToolTypeBadge componentType={tool.componentType} />
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <RemoteMCPToolTypeBadge componentType={tool.componentType} />
+                            <Text className="text-sm truncate" title={tool.name || 'Unnamed Tool'} as="span">
+                              {tool.name || 'Unnamed Tool'}
+                            </Text>
+                          </div>
                           {isEditing && (
                             <Button
                               variant="outline"
@@ -593,12 +601,9 @@ spec:
                           )}
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-medium text-sm mb-1 truncate" title={tool.name || 'Unnamed Tool'}>
-                            {tool.name || 'Unnamed Tool'}
-                          </h5>
-                          <p className="text-xs text-muted-foreground line-clamp-2" title={getToolDescription(tool)}>
+                          <Text variant="muted" className="text-xs line-clamp-2" title={getToolDescription(tool)}>
                             {getToolDescription(tool)}
-                          </p>
+                          </Text>
                         </div>
                       </button>
                     ))}
@@ -607,7 +612,7 @@ spec:
                   <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-muted rounded-lg">
                     <div className="space-y-2">
                       <Hammer className="h-8 w-8 mx-auto opacity-50" />
-                      <div className="text-sm">No tools configured</div>
+                      <Text variant="small">No tools configured</Text>
                       {isEditing && (
                         <Button variant="outline" size="sm" onClick={handleAddTool} className="mt-2">
                           <Plus className="h-4 w-4" />
@@ -693,8 +698,12 @@ spec:
                                 <div className="flex items-center gap-2">
                                   <RemoteMCPToolTypeBadge componentType={template.componentType} />
                                   <div>
-                                    <div className="font-medium">{template.name}</div>
-                                    <div className="text-xs text-gray-500">{template.description}</div>
+                                    <Text variant="default" className="font-medium">
+                                      {template.name}
+                                    </Text>
+                                    <Text variant="muted" className="text-xs">
+                                      {template.description}
+                                    </Text>
                                   </div>
                                 </div>
                               </SelectItem>
@@ -725,9 +734,9 @@ spec:
                 <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
                   <div className="space-y-2">
                     <FileText className="h-8 w-8 mx-auto opacity-50" />
-                    <div className="text-sm text-muted-foreground">
+                    <Text variant="small" className="text-muted-foreground">
                       Select a tool to view and edit its configuration
-                    </div>
+                    </Text>
                   </div>
                 </div>
               )}
@@ -739,8 +748,8 @@ spec:
                 </Button>
               )}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
