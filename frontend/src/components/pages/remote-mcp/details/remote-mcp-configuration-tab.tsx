@@ -708,7 +708,7 @@ spec:
                     <Label className="text-sm font-medium">YAML Configuration</Label>
                     <div className="overflow-hidden" style={{ height: '500px' }}>
                       <YamlEditor
-                        key={`${selectedTool.id}-${selectedTool.config.length}`}
+                        key={selectedTool.id}
                         value={selectedTool.config}
                         onChange={(value) => handleUpdateTool(selectedTool.id, { config: value || '' })}
                         options={{
