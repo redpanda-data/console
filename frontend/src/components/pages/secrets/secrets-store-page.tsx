@@ -54,6 +54,10 @@ export const getScopeDisplayValue = (scope: Scope) => {
       return 'RP Connect';
     case Scope.REDPANDA_CLUSTER:
       return 'Cluster';
+    case Scope.MCP_SERVER:
+      return 'MCP Server';
+    case Scope.AI_AGENT:
+      return 'AI Agent';
     case Scope.UNSPECIFIED:
       return 'Unspecified';
     default:
