@@ -35,6 +35,7 @@ import { DynamicJSONForm } from '../../dynamic-json-form';
 import type { JsonSchemaType, JsonValue } from '../../json-utils';
 import JsonView from '../../json-view';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
+import { RemoteMCPToolButton } from '../remote-mcp-tool-button';
 
 const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
   // Convert to lowercase for case-insensitive matching
@@ -380,7 +381,7 @@ export const RemoteMCPInspectorTab = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Left Panel - Tools */}
-      <Card size="full" className="px-0 py-0">
+      <Card size="full" className="px-0 py-0 h-fit">
         <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
@@ -425,11 +426,16 @@ export const RemoteMCPInspectorTab = () => {
               )}
               {mcpServerTools?.tools?.length && mcpServerTools?.tools?.length > 0
                 ? mcpServerTools.tools.map((tool) => (
-                    <div
+                    <RemoteMCPToolButton
                       key={tool.name}
-                      className={`flex items-center py-2 px-4 rounded hover:bg-gray-50 dark:hover:bg-secondary cursor-pointer ${
-                        selectedTool === tool.name ? 'bg-blue-50 dark:bg-blue-950/30' : ''
-                      }`}
+                      id={tool.name}
+                      name={tool.name}
+                      description={tool.description || ''}
+                      componentType={
+                        mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
+                        getComponentTypeFromToolName(tool.name)
+                      }
+                      isSelected={selectedTool === tool.name}
                       onClick={() => {
                         // Cancel any pending request when switching tools
                         if (abortControllerRef.current) {
@@ -443,20 +449,7 @@ export const RemoteMCPInspectorTab = () => {
                         // Clear validation errors when switching tools
                         setValidationErrors({});
                       }}
-                    >
-                      <div className="flex flex-col items-start w-full">
-                        <div className="flex items-center gap-2 mb-1">
-                          <RemoteMCPToolTypeBadge
-                            componentType={
-                              mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
-                              getComponentTypeFromToolName(tool.name)
-                            }
-                          />
-                          <span className="flex-1">{tool.name}</span>
-                        </div>
-                        <span className="text-sm text-gray-500 text-left">{tool.description}</span>
-                      </div>
-                    </div>
+                    />
                   ))
                 : !isLoadingTools &&
                   !toolsError && (

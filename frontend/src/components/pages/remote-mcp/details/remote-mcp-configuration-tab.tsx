@@ -41,6 +41,7 @@ import { parse, stringify } from 'yaml';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
+import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 interface LocalTool {
   id: string;
@@ -376,178 +377,191 @@ spec:
   return (
     <div>
       <div className="space-y-6">
-        <div>
-          <Card size="full" className="px-0 py-0">
-            <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <Text className="font-semibold">Server Configuration</Text>
-                </CardTitle>
-                <div className="flex gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button variant="secondary" onClick={handleSave} disabled={isUpdateMCPServerPending}>
-                        <Save className="h-4 w-4" />
-                        {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setEditedServerData(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <Button variant="secondary" onClick={() => setIsEditing(true)}>
-                      <Edit className="h-4 w-4" />
-                      Edit Configuration
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="id">Server ID</Label>
-                      <div className="w-full">
-                        <DynamicCodeBlock lang="text" code={displayData.id} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="serverUrl">Server URL</Label>
-                      <div className="w-full">
-                        <DynamicCodeBlock lang="text" code={displayData.url} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Display Name</Label>
-                      <Input
-                        id="displayName"
-                        value={displayData.displayName}
-                        disabled={!isEditing}
-                        onChange={(e) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) return;
-                          setEditedServerData({ ...currentData, displayName: e.target.value });
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={displayData.description}
-                        disabled={!isEditing}
-                        onChange={(e) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) return;
-                          setEditedServerData({ ...currentData, description: e.target.value });
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="resources">Resources</Label>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Server Configuration Card - takes 3/4 width on large screens */}
+          <div className="lg:col-span-3">
+            <Card size="full" className="px-0 py-0">
+              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <Text className="font-semibold">Server Configuration</Text>
+                  </CardTitle>
+                  <div className="flex gap-2">
                     {isEditing ? (
-                      <Select
-                        value={displayData.resources.tier}
-                        onValueChange={(value) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) return;
-                          setEditedServerData({ ...currentData, resources: { tier: value } });
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select resource tier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {RESOURCE_TIERS.map((tier) => (
-                            <SelectItem key={tier.id} value={tier.id}>
-                              {tier.displayName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <Button variant="secondary" onClick={handleSave} disabled={isUpdateMCPServerPending}>
+                          <Save className="h-4 w-4" />
+                          {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditedServerData(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </>
                     ) : (
-                      <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
-                        <code className="text-sm font-mono">
-                          {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
-                        </code>
-                      </div>
+                      <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                        <Edit className="h-4 w-4" />
+                        Edit Configuration
+                      </Button>
                     )}
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="id">Server ID</Label>
+                        <div className="w-full">
+                          <DynamicCodeBlock lang="text" code={displayData.id} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="serverUrl">Server URL</Label>
+                        <div className="w-full">
+                          <DynamicCodeBlock lang="text" code={displayData.url} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName">Display Name</Label>
+                        <Input
+                          id="displayName"
+                          value={displayData.displayName}
+                          disabled={!isEditing}
+                          onChange={(e) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) return;
+                            setEditedServerData({ ...currentData, displayName: e.target.value });
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={displayData.description}
+                          disabled={!isEditing}
+                          onChange={(e) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) return;
+                            setEditedServerData({ ...currentData, description: e.target.value });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                {(displayData.tags.length > 0 || isEditing) && (
-                  <div className="space-y-4 flex flex-col gap-2">
-                    <Heading level={4} className="text-sm font-medium">
-                      Tags
-                    </Heading>
+          {/* Resources Card */}
+          <div className="lg:col-span-1">
+            <Card size="full" className="px-0 py-0 h-full">
+              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <Text className="font-semibold">Resources</Text>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-6">
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      {isEditing && hasDuplicateKeys(displayData.tags) && (
-                        <Text variant="small" className="text-destructive">
-                          Tags must have unique keys
-                        </Text>
-                      )}
-                      {displayData.tags.map((tag, index) => {
-                        const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
-                        const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
-                        return (
-                          <div
-                            key={`tag-${tag.key || 'empty'}-${tag.value || 'empty'}-${index}`}
-                            className="flex items-center gap-2"
-                          >
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Key"
-                                value={tag.key}
-                                disabled={!isEditing}
-                                className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
-                                onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Value"
-                                value={tag.value}
-                                disabled={!isEditing}
-                                onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                              />
-                            </div>
-                            {isEditing && (
-                              <div className="flex items-end h-9">
-                                <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {isEditing && (
-                        <Button variant="outline" size="sm" onClick={handleAddTag}>
-                          <Plus className="h-4 w-4" />
-                          Add Tag
-                        </Button>
+                      <Label htmlFor="resources">Resources</Label>
+                      {isEditing ? (
+                        <Select
+                          value={displayData.resources.tier}
+                          onValueChange={(value) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) return;
+                            setEditedServerData({ ...currentData, resources: { tier: value } });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select resource tier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RESOURCE_TIERS.map((tier) => (
+                              <SelectItem key={tier.id} value={tier.id}>
+                                {tier.displayName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
+                          <code className="text-sm font-mono">
+                            {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
+                          </code>
+                        </div>
                       )}
                     </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
+                  {(displayData.tags.length > 0 || isEditing) && (
+                    <div className="space-y-4 flex flex-col gap-2">
+                      <Heading level={4} className="text-sm font-medium">
+                        Tags
+                      </Heading>
+                      <div className="space-y-2">
+                        {isEditing && hasDuplicateKeys(displayData.tags) && (
+                          <Text variant="small" className="text-destructive">
+                            Tags must have unique keys
+                          </Text>
+                        )}
+                        {displayData.tags.map((tag, index) => {
+                          const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
+                          const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
+                          return (
+                            <div key={`tag-${index}`} className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <Input
+                                  placeholder="Key"
+                                  value={tag.key}
+                                  disabled={!isEditing}
+                                  className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                                  onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <Input
+                                  placeholder="Value"
+                                  value={tag.value}
+                                  disabled={!isEditing}
+                                  onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                                />
+                              </div>
+                              {isEditing && (
+                                <div className="flex items-end h-9">
+                                  <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {isEditing && (
+                          <Button variant="dashed" className="w-full" onClick={handleAddTag}>
+                            <Plus className="h-4 w-4" />
+                            Add Tag
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Card size="full" className="px-0 py-0">
@@ -569,43 +583,17 @@ spec:
                 {displayData.tools.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {displayData.tools.map((tool) => (
-                      <button
+                      <RemoteMCPToolButton
                         key={tool.id}
-                        type="button"
-                        className={`flex flex-col p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer text-left w-full ${
-                          selectedToolId === tool.id
-                            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
-                            : 'bg-card hover:bg-gray-50 dark:hover:bg-secondary border-border'
-                        }`}
+                        id={tool.id}
+                        name={tool.name}
+                        description={getToolDescription(tool)}
+                        componentType={tool.componentType}
+                        isSelected={selectedToolId === tool.id}
+                        isEditing={isEditing}
                         onClick={() => setSelectedToolId(tool.id)}
-                        aria-pressed={selectedToolId === tool.id}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <RemoteMCPToolTypeBadge componentType={tool.componentType} />
-                            <Text className="text-sm truncate" title={tool.name || 'Unnamed Tool'} as="span">
-                              {tool.name || 'Unnamed Tool'}
-                            </Text>
-                          </div>
-                          {isEditing && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveTool(tool.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <Text variant="muted" className="text-xs line-clamp-2" title={getToolDescription(tool)}>
-                            {getToolDescription(tool)}
-                          </Text>
-                        </div>
-                      </button>
+                        onRemove={() => handleRemoveTool(tool.id)}
+                      />
                     ))}
                   </div>
                 ) : (
