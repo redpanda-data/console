@@ -75,17 +75,18 @@ export const RemoteMCPConnectClientCline = ({ mcpServer }: RemoteMCPConnectClien
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-1">
-              Open <img src={ClineLogo} alt="Cline" className="h-4 w-4" />{' '}
-              <Text as="span" className="font-bold">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Open</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                <img src={ClineLogo} alt="Cline" className="h-4 w-4" />
                 Cline extension
               </Text>
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1">
               <Text>Click on</Text>
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <Server className="h-4 w-4" />
                 MCP Servers
               </Text>
@@ -93,17 +94,18 @@ export const RemoteMCPConnectClientCline = ({ mcpServer }: RemoteMCPConnectClien
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Click{' '}
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Click</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <Settings className="h-4 w-4" />
                 Configure MCP Servers
               </Text>
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Add the following configuration to your <InlineCode>cline_mcp_settings.json</InlineCode>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Add the following configuration to your</span>
+              <InlineCode className="whitespace-nowrap">cline_mcp_settings.json</InlineCode>
             </div>
             <DynamicCodeBlock lang="json" code={clineConfigJson} />
           </ListItem>

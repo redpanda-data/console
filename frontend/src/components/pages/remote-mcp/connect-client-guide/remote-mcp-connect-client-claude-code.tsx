@@ -99,12 +99,13 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-1">
-                In <img src={ClaudeCodeLogo} alt="Claude Code" className="h-4 w-4" />
-                <Text as="span" className="font-bold">
+              <div className="flex flex-wrap items-center gap-1">
+                <span>In</span>
+                <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                  <img src={ClaudeCodeLogo} alt="Claude Code" className="h-4 w-4" />
                   Claude Code
                 </Text>
-                , select the configuration scope for the MCP server:
+                <span>, select the configuration scope for the MCP server:</span>
               </div>
               <Label className="text-sm font-medium">Scope</Label>
               <div>
@@ -138,15 +139,18 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">Run the following command to add the MCP server:</div>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Run the following command to add the MCP server:</span>
+            </div>
             <DynamicCodeBlock lang="bash" code={claudeCodeCommand} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Alternatively, you can manually update{' '}
-              {selectedScope === 'local' && <InlineCode>~/.claude.json</InlineCode>}
-              {selectedScope === 'user' && <InlineCode>~/.claude.json</InlineCode>}
-              {selectedScope === 'project' && <InlineCode>.mcp.json</InlineCode>} with:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, you can manually update</span>
+              {selectedScope === 'local' && <InlineCode className="whitespace-nowrap">~/.claude.json</InlineCode>}
+              {selectedScope === 'user' && <InlineCode className="whitespace-nowrap">~/.claude.json</InlineCode>}
+              {selectedScope === 'project' && <InlineCode className="whitespace-nowrap">.mcp.json</InlineCode>}
+              <span>with:</span>
             </div>
             <DynamicCodeBlock lang="json" code={claudeCodeConfigJson} />
           </ListItem>

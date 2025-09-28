@@ -54,24 +54,29 @@ export const RemoteMCPConnectClientWindsurf = ({ mcpServer }: RemoteMCPConnectCl
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-2">
-              In{' '}
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>In</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <img src={WindsurfLogo} alt="Windsurf" className="h-4 w-4" /> Windsurf
               </Text>
-              <Kbd>
-                <Command className="h-4 w-4" />
-              </Kbd>
-              /<Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>P</Kbd> to open the{' '}
+              <div className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Kbd>
+                  <Command className="h-4 w-4" />
+                </Kbd>
+                /<Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>P</Kbd>
+              </div>
+              <span>to open the</span>
               <Text as="span" className="font-bold">
                 Command Palette → Windsurf: MCP Configuration Panel → Add a Custom MCP Server
               </Text>
             </div>
           </ListItem>
           <ListItem>
-            <Text>
-              Update <InlineCode>~/.codeium/windsurf/mcp_config.json</InlineCode> with:
-            </Text>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Update</span>
+              <InlineCode className="whitespace-nowrap">~/.codeium/windsurf/mcp_config.json</InlineCode>
+              <span>with:</span>
+            </div>
             <DynamicCodeBlock lang="json" code={windsurfConfigJson} />
           </ListItem>
           <ListItem>Restart Windsurf and the MCP server should be available for use.</ListItem>

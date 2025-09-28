@@ -53,24 +53,29 @@ args = ["-X", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-1">
-              In <img src={CodexLogo} alt="Codex" className="h-4 w-4" />
-              <Text as="span" className="font-bold">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>In</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                <img src={CodexLogo} alt="Codex" className="h-4 w-4" />
                 Codex
               </Text>
-              , add the MCP server using the following command:
+              <span>, add the MCP server using the following command:</span>
             </div>
             <DynamicCodeBlock lang="bash" code={codexMcpAddCommand} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Alternatively, update <InlineCode>~/.codex/config.toml</InlineCode> with:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, update</span>
+              <InlineCode className="whitespace-nowrap">~/.codex/config.toml</InlineCode>
+              <span>with:</span>
             </div>
             <DynamicCodeBlock lang="toml" code={codexConfigToml} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-1">
-              Run Codex and check <InlineCode>/mcp</InlineCode> to verify the MCP server is connected and available.
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Run Codex and check</span>
+              <InlineCode className="whitespace-nowrap">/mcp</InlineCode>
+              <span>to verify the MCP server is connected and available.</span>
             </div>
           </ListItem>
         </List>

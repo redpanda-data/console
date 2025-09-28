@@ -84,19 +84,20 @@ export const RemoteMCPConnectClientAuggie = ({ mcpServer }: RemoteMCPConnectClie
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-2">
-              Open{' '}
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Open</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <img src={AuggieLogo} alt="Auggie (Augment Code) CLI" className="h-4 w-4" /> Auggie (Augment Code CLI)
-              </Text>{' '}
-              and run the following command:
+              </Text>
+              <span>and run the following command:</span>
             </div>
             <DynamicCodeBlock lang="bash" code={auggieCommand} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Alternatively, you can manually update <InlineCode>~/.augment/mcp.json</InlineCode> with the following MCP
-              server configuration:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, you can manually update</span>
+              <InlineCode className="whitespace-nowrap">~/.augment/mcp.json</InlineCode>
+              <span>with the following MCP server configuration:</span>
             </div>
             <DynamicCodeBlock lang="json" code={augmentCodeConfigJson} />
           </ListItem>
