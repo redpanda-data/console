@@ -90,6 +90,8 @@ export const RemoteMCPInspectorTab = () => {
     data: mcpServerTools,
     isLoading: isLoadingTools,
     error: toolsError,
+    isRefetchError: isRefetchToolsError,
+    isRefetching: isRefetchingTools,
   } = useListMCPServerTools({
     mcpServer: mcpServerData?.mcpServer,
   });
@@ -409,15 +411,15 @@ export const RemoteMCPInspectorTab = () => {
           {/* Tools List */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
             <div className="space-y-2">
-              {isLoadingTools && (
+              {(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
                   <Badge variant="outline" className="text-xs">
                     <Clock className="h-3 w-3 mr-1 animate-spin" />
-                    Loading tools...
+                    {isRefetchingTools ? 'Refreshing tools...' : 'Loading tools...'}
                   </Badge>
                 </div>
               )}
-              {toolsError && (
+              {toolsError && !isRefetchToolsError && (
                 <div className="flex items-center justify-center py-4">
                   <Badge variant="destructive" className="text-xs">
                     Failed to fetch tools
@@ -452,6 +454,7 @@ export const RemoteMCPInspectorTab = () => {
                     />
                   ))
                 : !isLoadingTools &&
+                  !isRefetchingTools &&
                   !toolsError && (
                     <Text variant="small" className="text-muted-foreground py-8 text-center">
                       No tools available on this MCP server.
@@ -640,15 +643,13 @@ export const RemoteMCPInspectorTab = () => {
             </div>
           </>
         ) : (
-          <CardContent className="px-4 pb-4">
-            <div className="flex items-center justify-center h-128 text-center">
-              <div className="space-y-2">
-                <Text className="text-muted-foreground">
-                  {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
-                    ? 'Server is starting...'
-                    : 'Select a tool from the panel to test it'}
-                </Text>
-              </div>
+          <CardContent className="px-4 pb-4 flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Text className="text-muted-foreground">
+                {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
+                  ? 'Server is starting...'
+                  : 'Select a tool from the panel to test it'}
+              </Text>
             </div>
           </CardContent>
         )}

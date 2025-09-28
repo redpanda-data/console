@@ -62,6 +62,10 @@ export const useGetMCPServerQuery = (input?: MessageInit<GetMCPServerRequest>, o
 
   return useQuery(getMCPServer, getMCPServerRequest, {
     enabled: options?.enabled,
+    refetchInterval: (query) => {
+      return query?.state?.data?.mcpServer?.state === MCPServer_State.STARTING ? 2 * 1_000 : false;
+    },
+    refetchIntervalInBackground: false,
   });
 };
 
