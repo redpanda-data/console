@@ -351,7 +351,7 @@ spec:
 
     try {
       const parsed = parse(tool.config);
-      return parsed?.spec?.description || 'No description available';
+      return parsed?.spec?.description || parsed?.meta?.mcp?.description || 'No description available';
     } catch {
       return 'Invalid YAML configuration';
     }
