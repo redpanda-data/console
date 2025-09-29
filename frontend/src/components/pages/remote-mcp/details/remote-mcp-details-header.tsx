@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
@@ -27,11 +28,11 @@ export const RemoteMCPDetailsHeader = () => {
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-semibold">{mcpServerData.mcpServer.displayName}</h1>
+          <Heading level={1}>{mcpServerData.mcpServer.displayName}</Heading>
           <RemoteMCPStatusBadge />
           <RemoteMCPToggleButton />
         </div>
-        <p className="text-muted-foreground">{mcpServerData.mcpServer.description}</p>
+        <Text variant="lead">{mcpServerData.mcpServer.description}</Text>
       </div>
     </div>
   );

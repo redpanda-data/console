@@ -11,6 +11,7 @@
 
 import { Markdown } from '@redpanda-data/ui';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -58,31 +59,31 @@ export const RemoteMCPConnectionTab = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Left Panel - Client Setup Guide */}
-      <div className="bg-card border border-border rounded-lg shadow">
-        <div className="p-4 border-b border-gray-200 dark:border-border">
-          <h3 className="font-semibold dark:text-white flex items-center gap-2">
+      <Card size="full" className="px-0 py-0">
+        <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+          <CardTitle className="flex items-center gap-2">
             <MCPIcon className="h-4 w-4" />
-            Client Setup Guide
-          </h3>
-        </div>
-        <div className="p-4">
+            <Text className="font-semibold">Client Setup Guide</Text>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
           {(!isServerless() || isFeatureFlagEnabled('enableRemoteMcpConnectClientInConsoleServerless')) && (
             <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Right Column */}
       <div className="space-y-4">
         {/* Connection Information Panel */}
-        <div className="bg-card border border-border rounded-lg shadow">
-          <div className="p-4 border-b border-gray-200 dark:border-border">
-            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+        <Card size="full" className="px-0 py-0">
+          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <CardTitle className="flex items-center gap-2">
               <Link className="h-4 w-4" />
-              Connection Information
-            </h3>
-          </div>
-          <div className="p-4">
+              <Text className="font-semibold">Connection Information</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
             <div className="space-y-4">
               <div className="space-y-4">
                 <Label className="text-sm font-medium">Server URL</Label>
@@ -106,18 +107,18 @@ export const RemoteMCPConnectionTab = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Code Examples Panel */}
-        <div className="bg-card border border-border rounded-lg shadow">
-          <div className="p-4 border-b border-gray-200 dark:border-border">
-            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+        <Card size="full" className="px-0 py-0">
+          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <CardTitle className="flex items-center gap-2">
               <Code className="h-4 w-4" />
-              Code Examples
-            </h3>
-          </div>
-          <div className="p-4">
+              <Text className="font-semibold">Code Examples</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
             <div className="grid grid-cols-2 gap-2">
               {AVAILABLE_LANGUAGES.map((language) => (
                 <Sheet key={language}>
@@ -154,8 +155,8 @@ export const RemoteMCPConnectionTab = () => {
                 </Sheet>
               ))}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -92,9 +92,9 @@ export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClie
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-2">
-              Click the button below to add MCP server to{' '}
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Click the button below to add MCP server to</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <img src={CursorLogo} alt="Cursor" className="h-4 w-4" /> Cursor
               </Text>
             </div>
@@ -104,29 +104,41 @@ export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClie
             </Button>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">Alternatively, run the following command:</div>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, run the following command:</span>
+            </div>
             <DynamicCodeBlock lang="bash" code={cursorCommand} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              <Kbd>
-                <Command className="h-4 w-4" />
-              </Kbd>
-              /<Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>P</Kbd> to open the{' '}
+            <div className="flex flex-wrap items-center gap-1">
+              <div className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Kbd>
+                  <Command className="h-4 w-4" />
+                </Kbd>
+                /<Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>P</Kbd>
+              </div>
+              <span>to open the</span>
               <Text as="span" className="font-bold">
                 Command Palette → Settings → Cursor Settings → MCP → Add a Custom MCP Server
               </Text>
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              You can also manually update <InlineCode>~/.cursor/mcp.json</InlineCode> with:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>You can also manually update</span>
+              <InlineCode className="whitespace-nowrap">~/.cursor/mcp.json</InlineCode>
+              <span>with:</span>
             </div>
             <DynamicCodeBlock lang="json" code={cursorConfigJson} />
           </ListItem>
           <ListItem>
-            Run <InlineCode>cursor</InlineCode> and <InlineCode>/mcp list</InlineCode> to list available MCP servers.
-            Approve the new MCP server when prompted.
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Run</span>
+              <InlineCode className="whitespace-nowrap">cursor</InlineCode>
+              <span>and</span>
+              <InlineCode className="whitespace-nowrap">/mcp list</InlineCode>
+              <span>to list available MCP servers. Approve the new MCP server when prompted.</span>
+            </div>
           </ListItem>
           <ListItem>
             Finally, authenticate against the MCP server:

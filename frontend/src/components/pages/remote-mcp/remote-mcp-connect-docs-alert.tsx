@@ -14,12 +14,17 @@ export const RemoteMCPConnectDocsAlert = ({ documentationUrl, clientName }: Remo
       <Info />
       <AlertTitle>{clientName} documentation</AlertTitle>
       <AlertDescription>
-        <div className="flex items-center gap-1">
-          Read the documentation for {clientName}{' '}
-          <Link href={documentationUrl} target="_blank" rel="noopener noreferrer">
+        <div className="flex flex-wrap items-center gap-1">
+          <span>Read the documentation for {clientName}</span>
+          <Link
+            href={documentationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1"
+          >
             here <ExternalLink className="h-3 w-3" />
-          </Link>{' '}
-          to learn how to connect to the MCP server.
+          </Link>
+          <span>to learn how to connect to the MCP server.</span>
         </div>
       </AlertDescription>
     </Alert>

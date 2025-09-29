@@ -85,18 +85,21 @@ export const RemoteMCPConnectClientClaudeDesktop = ({ mcpServer }: RemoteMCPConn
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-1">
-              In <img src={ClaudeDesktopLogo} alt="Claude Desktop" className="h-4 w-4" />
-              <Text as="span" className="font-bold">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>In</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                <img src={ClaudeDesktopLogo} alt="Claude Desktop" className="h-4 w-4" />
                 Claude Desktop
               </Text>
-              , run the following command to configure the MCP server:
+              <span>, run the following command to configure the MCP server:</span>
             </div>
             <DynamicCodeBlock lang="bash" code={claudeDesktopCommand} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Alternatively, you can manually update <InlineCode>Claude/claude_desktop_config.json</InlineCode> with:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, you can manually update</span>
+              <InlineCode className="whitespace-nowrap">Claude/claude_desktop_config.json</InlineCode>
+              <span>with:</span>
             </div>
             <DynamicCodeBlock lang="json" code={claudeDesktopConfigJson} />
           </ListItem>

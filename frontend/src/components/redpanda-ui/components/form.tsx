@@ -174,7 +174,7 @@ const FormLabel = React.forwardRef<
       ref={ref}
       data-slot="form-label"
       data-error={!!error}
-      className={cn('data-[error=true]:text-destructive', className)}
+      className={cn('data-[error=true]:text-destructive flex-row items-center', className)}
       htmlFor={formItemId}
       {...props}
     >

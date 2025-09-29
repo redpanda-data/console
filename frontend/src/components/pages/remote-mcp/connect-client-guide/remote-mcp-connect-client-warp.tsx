@@ -70,24 +70,28 @@ export const RemoteMCPConnectClientWarp = ({ mcpServer }: RemoteMCPConnectClient
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-2">
-              Open{' '}
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Open</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <img src={WarpLogo} alt="Warp" className="h-4 w-4" /> Warp
-              </Text>{' '}
-              and go to{' '}
-              <Text as="span" className="font-bold">
+              </Text>
+              <span>and go to</span>
+              <Text as="span" className="font-bold whitespace-nowrap">
                 Settings → AI → Manage MCP servers
               </Text>
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              Alternatively, use the <InlineCode>/add-mcp</InlineCode> command in Warp
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, use the</span>
+              <InlineCode className="whitespace-nowrap">/add-mcp</InlineCode>
+              <span>command in Warp</span>
             </div>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">Copy and paste the following configuration:</div>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Copy and paste the following configuration:</span>
+            </div>
             <DynamicCodeBlock lang="json" code={warpConfigJson} />
           </ListItem>
           <ListItem>

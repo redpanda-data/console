@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import { YamlEditor } from 'components/misc/yaml-editor';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -24,7 +25,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import {
   type MCPServer_State,
@@ -40,6 +41,7 @@ import { parse, stringify } from 'yaml';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
+import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 interface LocalTool {
   id: string;
@@ -375,248 +377,219 @@ spec:
   return (
     <div>
       <div className="space-y-6">
-        <div>
-          <div className="bg-card border border-border rounded-lg shadow">
-            <div className="p-4 border-b border-gray-200 dark:border-border">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold dark:text-white flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Server Configuration
-                </h3>
-                <div className="flex gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button variant="secondary" onClick={handleSave} disabled={isUpdateMCPServerPending}>
-                        <Save className="h-4 w-4" />
-                        {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setEditedServerData(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <Button variant="secondary" onClick={() => setIsEditing(true)}>
-                      <Edit className="h-4 w-4" />
-                      Edit Configuration
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="p-4">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="id">Server ID</Label>
-                      <div className="w-full">
-                        <DynamicCodeBlock lang="text" code={displayData.id} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="serverUrl">Server URL</Label>
-                      <div className="w-full">
-                        <DynamicCodeBlock lang="text" code={displayData.url} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Display Name</Label>
-                      <Input
-                        id="displayName"
-                        value={displayData.displayName}
-                        disabled={!isEditing}
-                        onChange={(e) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) return;
-                          setEditedServerData({ ...currentData, displayName: e.target.value });
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={displayData.description}
-                        disabled={!isEditing}
-                        onChange={(e) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) return;
-                          setEditedServerData({ ...currentData, description: e.target.value });
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="resources">Resources</Label>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Server Configuration Card - takes 3/4 width on large screens */}
+          <div className="lg:col-span-3">
+            <Card size="full" className="px-0 py-0">
+              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <Text className="font-semibold">Server Configuration</Text>
+                  </CardTitle>
+                  <div className="flex gap-2">
                     {isEditing ? (
-                      <Select
-                        value={displayData.resources.tier}
-                        onValueChange={(value) => {
-                          const currentData = getCurrentData();
-                          if (!currentData) return;
-                          setEditedServerData({ ...currentData, resources: { tier: value } });
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select resource tier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {RESOURCE_TIERS.map((tier) => (
-                            <SelectItem key={tier.id} value={tier.id}>
-                              {tier.displayName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <Button variant="secondary" onClick={handleSave} disabled={isUpdateMCPServerPending}>
+                          <Save className="h-4 w-4" />
+                          {isUpdateMCPServerPending ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditedServerData(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </>
                     ) : (
-                      <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
-                        <code className="text-sm font-mono">
-                          {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
-                        </code>
-                      </div>
+                      <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                        <Edit className="h-4 w-4" />
+                        Edit Configuration
+                      </Button>
                     )}
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="id">Server ID</Label>
+                        <div className="w-full">
+                          <DynamicCodeBlock lang="text" code={displayData.id} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="serverUrl">Server URL</Label>
+                        <div className="w-full">
+                          <DynamicCodeBlock lang="text" code={displayData.url} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName">Display Name</Label>
+                        <Input
+                          id="displayName"
+                          value={displayData.displayName}
+                          disabled={!isEditing}
+                          onChange={(e) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) return;
+                            setEditedServerData({ ...currentData, displayName: e.target.value });
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={displayData.description}
+                          disabled={!isEditing}
+                          onChange={(e) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) return;
+                            setEditedServerData({ ...currentData, description: e.target.value });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                {(displayData.tags.length > 0 || isEditing) && (
-                  <div className="space-y-4 flex flex-col gap-2">
-                    <h4 className="text-sm font-medium text-foreground">Tags</h4>
+          {/* Resources Card */}
+          <div className="lg:col-span-1">
+            <Card size="full" className="px-0 py-0 h-full">
+              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <Text className="font-semibold">Resources</Text>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-6">
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      {isEditing && hasDuplicateKeys(displayData.tags) && (
-                        <Text variant="small" className="text-destructive">
-                          Tags must have unique keys
-                        </Text>
-                      )}
-                      {displayData.tags.map((tag, index) => {
-                        const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
-                        const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
-                        return (
-                          <div
-                            key={`tag-${tag.key || 'empty'}-${tag.value || 'empty'}-${index}`}
-                            className="flex items-center gap-2"
-                          >
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Key"
-                                value={tag.key}
-                                disabled={!isEditing}
-                                className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
-                                onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Value"
-                                value={tag.value}
-                                disabled={!isEditing}
-                                onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
-                              />
-                            </div>
-                            {isEditing && (
-                              <div className="flex items-end h-9">
-                                <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {isEditing && (
-                        <Button variant="outline" size="sm" onClick={handleAddTag}>
-                          <Plus className="h-4 w-4" />
-                          Add Tag
-                        </Button>
+                      <Label htmlFor="resources">Resources</Label>
+                      {isEditing ? (
+                        <Select
+                          value={displayData.resources.tier}
+                          onValueChange={(value) => {
+                            const currentData = getCurrentData();
+                            if (!currentData) return;
+                            setEditedServerData({ ...currentData, resources: { tier: value } });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select resource tier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RESOURCE_TIERS.map((tier) => (
+                              <SelectItem key={tier.id} value={tier.id}>
+                                {tier.displayName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
+                          <code className="text-sm font-mono">
+                            {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
+                          </code>
+                        </div>
                       )}
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
+
+                  {(displayData.tags.length > 0 || isEditing) && (
+                    <div className="space-y-4 flex flex-col gap-2">
+                      <Heading level={4} className="text-sm font-medium">
+                        Tags
+                      </Heading>
+                      <div className="space-y-2">
+                        {isEditing && hasDuplicateKeys(displayData.tags) && (
+                          <Text variant="small" className="text-destructive">
+                            Tags must have unique keys
+                          </Text>
+                        )}
+                        {displayData.tags.map((tag, index) => {
+                          const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
+                          const isDuplicateKey = tag.key.trim() !== '' && duplicateKeys.has(tag.key.trim());
+                          return (
+                            <div key={`tag-${index}`} className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <Input
+                                  placeholder="Key"
+                                  value={tag.key}
+                                  disabled={!isEditing}
+                                  className={isDuplicateKey ? 'border-destructive focus:border-destructive' : ''}
+                                  onChange={(e) => handleUpdateTag(index, 'key', e.target.value)}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <Input
+                                  placeholder="Value"
+                                  value={tag.value}
+                                  disabled={!isEditing}
+                                  onChange={(e) => handleUpdateTag(index, 'value', e.target.value)}
+                                />
+                              </div>
+                              {isEditing && (
+                                <div className="flex items-end h-9">
+                                  <Button variant="outline" size="sm" onClick={() => handleRemoveTag(index)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {isEditing && (
+                          <Button variant="dashed" className="w-full" onClick={handleAddTag}>
+                            <Plus className="h-4 w-4" />
+                            Add Tag
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-lg shadow">
-          <div className="p-4 border-b border-gray-200 dark:border-border">
-            <h3 className="font-semibold dark:text-white flex items-center gap-2">
+        <Card size="full" className="px-0 py-0">
+          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <CardTitle className="flex items-center gap-2">
               <Hammer className="h-4 w-4" />
-              Tools Configuration
-            </h3>
-          </div>
-          <div className="p-4">
-            <Text variant="small" className="text-muted-foreground mb-4">
-              Configure the tools available in this MCP server
-            </Text>
-
+              <Text className="font-semibold">Tools Configuration</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between" />
-
-                {displayData.tools.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-96">
-                    {displayData.tools.map((tool) => (
-                      <button
-                        key={tool.id}
-                        type="button"
-                        className={`flex flex-col p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer text-left w-full ${
-                          selectedToolId === tool.id
-                            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
-                            : 'bg-card hover:bg-gray-50 dark:hover:bg-secondary border-border'
-                        }`}
-                        onClick={() => setSelectedToolId(tool.id)}
-                        aria-pressed={selectedToolId === tool.id}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <RemoteMCPToolTypeBadge componentType={tool.componentType} />
-                          {isEditing && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveTool(tool.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h5 className="font-medium text-sm mb-1 truncate" title={tool.name || 'Unnamed Tool'}>
-                            {tool.name || 'Unnamed Tool'}
-                          </h5>
-                          <p className="text-xs text-muted-foreground line-clamp-2" title={getToolDescription(tool)}>
-                            {getToolDescription(tool)}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-muted rounded-lg">
-                    <div className="space-y-2">
-                      <Hammer className="h-8 w-8 mx-auto opacity-50" />
-                      <div className="text-sm">No tools configured</div>
-                      {isEditing && (
-                        <Button variant="outline" size="sm" onClick={handleAddTool} className="mt-2">
-                          <Plus className="h-4 w-4" />
-                          Add Your First Tool
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {displayData.tools.map((tool) => (
+                    <RemoteMCPToolButton
+                      key={tool.id}
+                      id={tool.id}
+                      name={tool.name}
+                      description={getToolDescription(tool)}
+                      componentType={tool.componentType}
+                      isSelected={selectedToolId === tool.id}
+                      isEditing={isEditing}
+                      onClick={() => setSelectedToolId(tool.id)}
+                      onRemove={() => handleRemoveTool(tool.id)}
+                    />
+                  ))}
+                </div>
               </div>
 
               {selectedTool && (
@@ -693,8 +666,12 @@ spec:
                                 <div className="flex items-center gap-2">
                                   <RemoteMCPToolTypeBadge componentType={template.componentType} />
                                   <div>
-                                    <div className="font-medium">{template.name}</div>
-                                    <div className="text-xs text-gray-500">{template.description}</div>
+                                    <Text variant="default" className="font-medium">
+                                      {template.name}
+                                    </Text>
+                                    <Text variant="muted" className="text-xs">
+                                      {template.description}
+                                    </Text>
                                   </div>
                                 </div>
                               </SelectItem>
@@ -708,7 +685,7 @@ spec:
                     <Label className="text-sm font-medium">YAML Configuration</Label>
                     <div className="overflow-hidden" style={{ height: '500px' }}>
                       <YamlEditor
-                        key={`${selectedTool.id}-${selectedTool.config.length}`}
+                        key={selectedTool.id}
                         value={selectedTool.config}
                         onChange={(value) => handleUpdateTool(selectedTool.id, { config: value || '' })}
                         options={{
@@ -725,9 +702,9 @@ spec:
                 <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
                   <div className="space-y-2">
                     <FileText className="h-8 w-8 mx-auto opacity-50" />
-                    <div className="text-sm text-muted-foreground">
+                    <Text variant="small" className="text-muted-foreground">
                       Select a tool to view and edit its configuration
-                    </div>
+                    </Text>
                   </div>
                 </div>
               )}
@@ -739,8 +716,8 @@ spec:
                 </Button>
               )}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

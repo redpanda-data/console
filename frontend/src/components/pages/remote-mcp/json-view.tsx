@@ -1,11 +1,8 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: part of JsonNode implementation */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of JsonNode implementation */
 import clsx from 'clsx';
-import { Button } from 'components/redpanda-ui/components/button';
-import useCopy from 'components/redpanda-ui/lib/use-copy';
-import { CheckCheck, Copy } from 'lucide-react';
-import { memo, useCallback, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import { memo, useMemo, useState } from 'react';
 import type { JsonValue } from './json-utils';
 import { getDataType, tryParseJson } from './json-utils';
 
@@ -20,35 +17,18 @@ interface JsonViewProps {
 
 const JsonView = memo(
   ({ data, name, initialExpandDepth = 3, className, withCopyButton = true, isError = false }: JsonViewProps) => {
-    const { copied, setCopied } = useCopy();
-
     const normalizedData = useMemo(() => {
       return typeof data === 'string' ? (tryParseJson(data).success ? tryParseJson(data).data : data) : data;
     }, [data]);
 
-    const handleCopy = useCallback(() => {
-      try {
-        navigator.clipboard.writeText(
-          typeof normalizedData === 'string' ? normalizedData : JSON.stringify(normalizedData, null, 2),
-        );
-        setCopied(true);
-      } catch (error) {
-        toast.error('Error', {
-          description: `There was an error copying result into the clipboard: ${error instanceof Error ? error.message : String(error)}`,
-        });
-      }
-    }, [normalizedData, setCopied]);
+    const copyContent = useMemo(() => {
+      return typeof normalizedData === 'string' ? normalizedData : JSON.stringify(normalizedData, null, 2);
+    }, [normalizedData]);
 
     return (
       <div className={clsx('p-4 border rounded relative', className)}>
         {withCopyButton && (
-          <Button size="icon" variant="ghost" className="absolute top-2 right-2" onClick={handleCopy}>
-            {copied ? (
-              <CheckCheck className="size-4 dark:text-green-700 text-green-600" />
-            ) : (
-              <Copy className="size-4 text-foreground" />
-            )}
-          </Button>
+          <CopyButton size="icon" variant="ghost" className="absolute top-2 right-2" content={copyContent} />
         )}
         <div className="font-mono text-sm transition-all duration-300">
           <JsonNode

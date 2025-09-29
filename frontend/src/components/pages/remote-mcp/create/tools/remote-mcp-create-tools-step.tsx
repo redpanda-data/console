@@ -289,8 +289,12 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
                           <div className="flex items-center gap-2">
                             <RemoteMCPToolTypeBadge componentType={template.componentType} />
                             <div>
-                              <div className="font-medium">{template.name}</div>
-                              <div className="text-xs text-gray-500">{template.description}</div>
+                              <Text variant="default" className="font-medium">
+                                {template.name}
+                              </Text>
+                              <Text variant="muted" className="text-xs">
+                                {template.description}
+                              </Text>
                             </div>
                           </div>
                         </SelectItem>
@@ -353,7 +357,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
           </Card>
         ))}
 
-        <Button onClick={addTool} variant="outline" className="w-full gap-2 bg-transparent">
+        <Button onClick={addTool} variant="dashed" className="w-full gap-2 bg-transparent">
           <Plus className="h-4 w-4" />
           Add Tool
         </Button>

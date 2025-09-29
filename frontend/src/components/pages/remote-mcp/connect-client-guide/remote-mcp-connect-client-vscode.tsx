@@ -107,9 +107,9 @@ export const RemoteMCPConnectClientVSCode = ({
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
-            <div className="flex items-center gap-2">
-              Click the button below to add MCP server to{' '}
-              <Text as="span" className="font-bold inline-flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Click the button below to add MCP server to</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
                 <img src={VSCodeLogo} alt="VSCode" className="h-4 w-4" /> VSCode
               </Text>
             </div>
@@ -119,18 +119,24 @@ export const RemoteMCPConnectClientVSCode = ({
             </Button>
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              You can also set up autodiscovery for the MCP server from other IDEs by updating your VSCode settings:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>
+                You can also set up autodiscovery for the MCP server from other IDEs by updating your VSCode settings:
+              </span>
             </div>
             <DynamicCodeBlock lang="json" code={mcpDiscoveryConfig} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">Alternatively, run the following command:</div>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Alternatively, run the following command:</span>
+            </div>
             <DynamicCodeBlock lang="bash" code={vscodeCommand} />
           </ListItem>
           <ListItem>
-            <div className="flex items-center gap-2">
-              You can also manually update <InlineCode>~/.vscode/mcp.json</InlineCode> with:
+            <div className="flex flex-wrap items-center gap-1">
+              <span>You can also manually update</span>
+              <InlineCode className="whitespace-nowrap">~/.vscode/mcp.json</InlineCode>
+              <span>with:</span>
             </div>
             <DynamicCodeBlock lang="json" code={vscodeConfigJson} />
           </ListItem>

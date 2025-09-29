@@ -14,6 +14,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -34,6 +35,7 @@ import { DynamicJSONForm } from '../../dynamic-json-form';
 import type { JsonSchemaType, JsonValue } from '../../json-utils';
 import JsonView from '../../json-view';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
+import { RemoteMCPToolButton } from '../remote-mcp-tool-button';
 
 const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
   // Convert to lowercase for case-insensitive matching
@@ -88,6 +90,8 @@ export const RemoteMCPInspectorTab = () => {
     data: mcpServerTools,
     isLoading: isLoadingTools,
     error: toolsError,
+    isRefetchError: isRefetchToolsError,
+    isRefetching: isRefetchingTools,
   } = useListMCPServerTools({
     mcpServer: mcpServerData?.mcpServer,
   });
@@ -379,14 +383,14 @@ export const RemoteMCPInspectorTab = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Left Panel - Tools */}
-      <div className="bg-card border border-border rounded-lg shadow">
-        <div className="p-4 border-b border-gray-200 dark:border-border">
-          <h3 className="font-semibold dark:text-white flex items-center gap-2">
+      <Card size="full" className="px-0 py-0 h-fit">
+        <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+          <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
-            Tools
-          </h3>
-        </div>
-        <div className="p-4">
+            <Text className="font-semibold">Tools</Text>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
           {/* Loading State */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING && (
             <div className="space-y-2">
@@ -406,16 +410,16 @@ export const RemoteMCPInspectorTab = () => {
 
           {/* Tools List */}
           {mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING && (
-            <div className="space-y-2 overflow-y-auto max-h-96">
-              {isLoadingTools && (
+            <div className="space-y-2">
+              {(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
                   <Badge variant="outline" className="text-xs">
                     <Clock className="h-3 w-3 mr-1 animate-spin" />
-                    Loading tools...
+                    {isRefetchingTools ? 'Refreshing tools...' : 'Loading tools...'}
                   </Badge>
                 </div>
               )}
-              {toolsError && (
+              {toolsError && !isRefetchToolsError && (
                 <div className="flex items-center justify-center py-4">
                   <Badge variant="destructive" className="text-xs">
                     Failed to fetch tools
@@ -424,11 +428,16 @@ export const RemoteMCPInspectorTab = () => {
               )}
               {mcpServerTools?.tools?.length && mcpServerTools?.tools?.length > 0
                 ? mcpServerTools.tools.map((tool) => (
-                    <div
+                    <RemoteMCPToolButton
                       key={tool.name}
-                      className={`flex items-center py-2 px-4 rounded hover:bg-gray-50 dark:hover:bg-secondary cursor-pointer ${
-                        selectedTool === tool.name ? 'bg-blue-50 dark:bg-blue-950/30' : ''
-                      }`}
+                      id={tool.name}
+                      name={tool.name}
+                      description={tool.description || ''}
+                      componentType={
+                        mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
+                        getComponentTypeFromToolName(tool.name)
+                      }
+                      isSelected={selectedTool === tool.name}
                       onClick={() => {
                         // Cancel any pending request when switching tools
                         if (abortControllerRef.current) {
@@ -442,22 +451,10 @@ export const RemoteMCPInspectorTab = () => {
                         // Clear validation errors when switching tools
                         setValidationErrors({});
                       }}
-                    >
-                      <div className="flex flex-col items-start w-full">
-                        <div className="flex items-center gap-2 mb-1">
-                          <RemoteMCPToolTypeBadge
-                            componentType={
-                              mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
-                              getComponentTypeFromToolName(tool.name)
-                            }
-                          />
-                          <span className="flex-1">{tool.name}</span>
-                        </div>
-                        <span className="text-sm text-gray-500 text-left">{tool.description}</span>
-                      </div>
-                    </div>
+                    />
                   ))
                 : !isLoadingTools &&
+                  !isRefetchingTools &&
                   !toolsError && (
                     <Text variant="small" className="text-muted-foreground py-8 text-center">
                       No tools available on this MCP server.
@@ -465,24 +462,24 @@ export const RemoteMCPInspectorTab = () => {
                   )}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Right Panel - Selected Tool */}
-      <div className="bg-card border border-border rounded-lg shadow flex flex-col">
+      <Card size="full" className="px-0 py-0 flex flex-col">
         {selectedTool && mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING ? (
           <>
-            <div className="p-4 border-b border-gray-200 dark:border-border">
-              <div className="flex items-center gap-2">
+            <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+              <CardTitle className="flex items-center gap-2">
                 <RemoteMCPToolTypeBadge
                   componentType={
                     mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
                     getComponentTypeFromToolName(selectedTool)
                   }
                 />
-                <h3 className="font-semibold">{selectedTool}</h3>
-              </div>
-            </div>
+                <Text className="font-semibold">{selectedTool}</Text>
+              </CardTitle>
+            </CardHeader>
             <div className="flex flex-col flex-1 relative">
               {(() => {
                 const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
@@ -565,9 +562,12 @@ export const RemoteMCPInspectorTab = () => {
                               className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md"
                             >
                               <div className="flex items-start">
-                                <div className="text-sm text-red-700 dark:text-red-400">
-                                  <span className="font-medium">{field}:</span> {error}
-                                </div>
+                                <Text variant="small" className="text-red-700 dark:text-red-400">
+                                  <Text as="span" className="font-medium">
+                                    {field}:
+                                  </Text>{' '}
+                                  {error}
+                                </Text>
                               </div>
                             </div>
                           ))}
@@ -643,19 +643,17 @@ export const RemoteMCPInspectorTab = () => {
             </div>
           </>
         ) : (
-          <div className="p-4">
-            <div className="flex items-center justify-center h-128 text-center">
-              <div className="space-y-2">
-                <Text className="text-muted-foreground">
-                  {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
-                    ? 'Server is starting...'
-                    : 'Select a tool from the panel to test it'}
-                </Text>
-              </div>
+          <CardContent className="px-4 pb-4 flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Text className="text-muted-foreground">
+                {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
+                  ? 'Server is starting...'
+                  : 'Select a tool from the panel to test it'}
+              </Text>
             </div>
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
