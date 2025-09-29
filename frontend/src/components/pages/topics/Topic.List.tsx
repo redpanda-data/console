@@ -37,7 +37,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/useQueryStateWithCallback';
 import { observable } from 'mobx';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
-import React, { type FC, useCallback, useMemo, useRef, useState } from 'react';
+import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
@@ -47,6 +47,7 @@ import usePaginationParams from '../../../hooks/usePaginationParams';
 import { api } from '../../../state/backendApi';
 import { type Topic, TopicActions, type TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
+import { uiState } from '../../../state/uiState';
 import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
@@ -63,6 +64,10 @@ import {
 } from './CreateTopicModal/CreateTopicModal';
 
 const TopicList: FC = () => {
+  useEffect(() => {
+    uiState.pageBreadcrumbs = [{ title: 'Topics', linkTo: '' }];
+  }, []);
+
   const [localSearchValue, setLocalSearchValue] = useQueryState('q', parseAsString.withDefault(''));
 
   const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>(
