@@ -605,13 +605,13 @@ export const DynamicJSONForm = ({
                   );
                 })}
                 <Button
-                  variant="outline"
+                  variant="dashed"
                   size="sm"
                   onClick={() => {
                     const defaultValue = getArrayItemDefault(propSchema.items as JsonSchemaType);
                     handleFieldChange(path, [...arrayValue, defaultValue]);
                   }}
-                  className="w-full border-dashed"
+                  className="w-full"
                 >
                   + Add{' '}
                   {propSchema.items?.title ||

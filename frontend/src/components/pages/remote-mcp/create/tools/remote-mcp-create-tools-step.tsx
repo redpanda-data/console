@@ -357,7 +357,7 @@ export const RemoteMCPCreateToolsStep = ({ tools, setTools, expandedEditor, setE
           </Card>
         ))}
 
-        <Button onClick={addTool} variant="outline" className="w-full gap-2 bg-transparent">
+        <Button onClick={addTool} variant="dashed" className="w-full gap-2 bg-transparent">
           <Plus className="h-4 w-4" />
           Add Tool
         </Button>

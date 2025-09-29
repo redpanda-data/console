@@ -572,44 +572,24 @@ spec:
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <Text variant="small" className="text-muted-foreground mb-4">
-              Configure the tools available in this MCP server
-            </Text>
-
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between" />
-
-                {displayData.tools.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {displayData.tools.map((tool) => (
-                      <RemoteMCPToolButton
-                        key={tool.id}
-                        id={tool.id}
-                        name={tool.name}
-                        description={getToolDescription(tool)}
-                        componentType={tool.componentType}
-                        isSelected={selectedToolId === tool.id}
-                        isEditing={isEditing}
-                        onClick={() => setSelectedToolId(tool.id)}
-                        onRemove={() => handleRemoveTool(tool.id)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-muted rounded-lg">
-                    <div className="space-y-2">
-                      <Hammer className="h-8 w-8 mx-auto opacity-50" />
-                      <Text variant="small">No tools configured</Text>
-                      {isEditing && (
-                        <Button variant="outline" size="sm" onClick={handleAddTool} className="mt-2">
-                          <Plus className="h-4 w-4" />
-                          Add Your First Tool
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {displayData.tools.map((tool) => (
+                    <RemoteMCPToolButton
+                      key={tool.id}
+                      id={tool.id}
+                      name={tool.name}
+                      description={getToolDescription(tool)}
+                      componentType={tool.componentType}
+                      isSelected={selectedToolId === tool.id}
+                      isEditing={isEditing}
+                      onClick={() => setSelectedToolId(tool.id)}
+                      onRemove={() => handleRemoveTool(tool.id)}
+                    />
+                  ))}
+                </div>
               </div>
 
               {selectedTool && (
