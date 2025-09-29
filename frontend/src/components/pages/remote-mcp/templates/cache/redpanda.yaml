@@ -6,8 +6,8 @@ redpanda:
     enabled: true
   sasl:
     - mechanism: "SCRAM-SHA-512"
-      username: "${secrets.MCP_REDPANDA_CREDENTIALS.username}"
-      password: "${secrets.MCP_REDPANDA_CREDENTIALS.password}"
+      username: "${secrets.REDPANDA_USERNAME}"
+      password: "${secrets.REDPANDA_PASSWORD}"
 
 meta:
   mcp:
