@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from '@rsbuild/core';
+import { defineConfig, loadEnv, rspack } from '@rsbuild/core';
 
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
@@ -32,6 +32,7 @@ export default defineConfig({
   ],
   dev: {
     hmr: true,
+    lazyCompilation: false,
   },
   html: {
     template: './public/index.html',
@@ -74,6 +75,10 @@ export default defineConfig({
   },
   tools: {
     rspack: (config, { appendPlugins }) => {
+      config.lazyCompilation = false;
+      config.experiments ||= {
+        lazyBarrel: false,
+      };
       config.resolve ||= {};
       config.resolve.alias ||= {};
       config.output ||= {};
