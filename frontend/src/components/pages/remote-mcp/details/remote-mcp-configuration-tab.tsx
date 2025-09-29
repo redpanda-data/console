@@ -32,15 +32,18 @@ import {
   MCPServer_Tool_ComponentType,
   UpdateMCPServerRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useGetMCPServerQuery, useListMCPServerTools, useUpdateMCPServerMutation } from 'react-query/api/remote-mcp';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
+import { QuickAddSecrets } from '../create/quick-add-secrets';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
+import { extractSecretReferences, getUniqueSecretNames } from '../utils/secret-detection';
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 interface LocalTool {
@@ -70,12 +73,27 @@ export const RemoteMCPConfigurationTab = () => {
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
   const { mutateAsync: updateMCPServer, isPending: isUpdateMCPServerPending } = useUpdateMCPServerMutation();
   const { data: serverToolsData } = useListMCPServerTools({ mcpServer: mcpServerData?.mcpServer });
+  const { data: secretsData } = useListSecretsQuery();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedServerData, setEditedServerData] = useState<LocalMCPServer | null>(null);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);
 
-  const getCurrentData = (): LocalMCPServer | null => {
+  const getResourceTierFromServer = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
+    if (!resources) return 'Small';
+
+    // Try to find exact string match with predefined tiers
+    const matchingTier = RESOURCE_TIERS.find((tier) => {
+      const serverCpu = resources.cpuShares || '';
+      const serverMemory = resources.memoryShares || '';
+      return tier.cpu === serverCpu && tier.memory === serverMemory;
+    });
+
+    return matchingTier?.id || 'Small';
+  }, []);
+
+  const getCurrentData = useCallback((): LocalMCPServer | null => {
     if (editedServerData) {
       return editedServerData;
     }
@@ -101,7 +119,7 @@ export const RemoteMCPConfigurationTab = () => {
     }
 
     return null;
-  };
+  }, [editedServerData, mcpServerData, getResourceTierFromServer]);
 
   const applyTemplate = (toolId: string, template: Template) => {
     const currentData = getCurrentData();
@@ -189,13 +207,7 @@ export const RemoteMCPConfigurationTab = () => {
       id: newToolId,
       name: '',
       componentType: MCPServer_Tool_ComponentType.PROCESSOR,
-      config: `label: 
-meta:
-  mcp:
-    enabled: true
-spec:
-  description: ""
-  parameters: {}`,
+      config: '',
     };
 
     setEditedServerData({
@@ -328,19 +340,6 @@ spec:
     return memory;
   };
 
-  const getResourceTierFromServer = (resources?: { cpuShares?: string; memoryShares?: string }) => {
-    if (!resources) return 'Small';
-
-    // Try to find exact string match with predefined tiers
-    const matchingTier = RESOURCE_TIERS.find((tier) => {
-      const serverCpu = resources.cpuShares || '';
-      const serverMemory = resources.memoryShares || '';
-      return tier.cpu === serverCpu && tier.memory === serverMemory;
-    });
-
-    return matchingTier?.id || 'Small';
-  };
-
   const getToolDescription = (tool: LocalTool) => {
     if (serverToolsData?.tools) {
       const mcpTool = serverToolsData.tools.find((t) => t.name === tool.name);
@@ -364,11 +363,50 @@ spec:
     return displayData.tools.find((tool) => tool.id === selectedToolId) || null;
   }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
 
+  // Detect secrets in YAML configurations
+  useEffect(() => {
+    const currentData = getCurrentData();
+    if (!currentData?.tools) {
+      setDetectedSecrets([]);
+      return;
+    }
+
+    const allSecretReferences: string[] = [];
+
+    currentData.tools.forEach((tool) => {
+      if (tool.config) {
+        try {
+          const secretRefs = extractSecretReferences(tool.config);
+          const secretNames = getUniqueSecretNames(secretRefs);
+          allSecretReferences.push(...secretNames);
+        } catch {
+          // Ignore YAML parsing errors
+        }
+      }
+    });
+
+    // Get unique secret names
+    const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();
+    setDetectedSecrets(uniqueSecrets);
+  }, [getCurrentData]);
+
   React.useEffect(() => {
     if (!selectedToolId && displayData?.tools.length) {
       setSelectedToolId(displayData.tools[0].id);
     }
   }, [selectedToolId, displayData?.tools]);
+
+  // Get existing secret names
+  const existingSecrets = React.useMemo(() => {
+    if (!secretsData?.secrets) return [];
+    return secretsData.secrets.map((secret) => secret?.id).filter(Boolean);
+  }, [secretsData]);
+
+  // Check if any detected secrets are missing
+  const hasSecretWarnings = React.useMemo(() => {
+    if (detectedSecrets.length === 0) return false;
+    return detectedSecrets.some((secretName) => !existingSecrets.includes(secretName));
+  }, [detectedSecrets, existingSecrets]);
 
   if (!displayData) {
     return null;
@@ -564,160 +602,177 @@ spec:
           </div>
         </div>
 
-        <Card size="full" className="px-0 py-0">
-          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Hammer className="h-4 w-4" />
-              <Text className="font-semibold">Tools Configuration</Text>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {displayData.tools.map((tool) => (
-                    <RemoteMCPToolButton
-                      key={tool.id}
-                      id={tool.id}
-                      name={tool.name}
-                      description={getToolDescription(tool)}
-                      componentType={tool.componentType}
-                      isSelected={selectedToolId === tool.id}
-                      isEditing={isEditing}
-                      onClick={() => setSelectedToolId(tool.id)}
-                      onRemove={() => handleRemoveTool(tool.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {selectedTool && (
-                <div className="space-y-4">
-                  {isEditing && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Tool Name</Label>
-                        <Input
-                          value={selectedTool.name}
-                          placeholder="e.g., search-posts (must be filename-compatible)"
-                          onChange={(e) => handleUpdateTool(selectedTool.id, { name: e.target.value })}
+        <div className={`grid grid-cols-1 gap-6 ${hasSecretWarnings && isEditing ? 'xl:grid-cols-3' : ''}`}>
+          {/* Main tools configuration - takes 2 columns on xl screens when secrets panel is shown, full width otherwise */}
+          <div className={hasSecretWarnings && isEditing ? 'xl:col-span-2' : ''}>
+            <Card size="full" className="px-0 py-0">
+              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Hammer className="h-4 w-4" />
+                  <Text className="font-semibold">Tools Configuration</Text>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {displayData.tools.map((tool) => (
+                        <RemoteMCPToolButton
+                          key={tool.id}
+                          id={tool.id}
+                          name={tool.name}
+                          description={getToolDescription(tool)}
+                          componentType={tool.componentType}
+                          isSelected={selectedToolId === tool.id}
+                          isEditing={isEditing}
+                          onClick={() => setSelectedToolId(tool.id)}
+                          onRemove={() => handleRemoveTool(tool.id)}
                         />
-                      </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedTool && (
+                    <div className="space-y-4">
+                      {isEditing && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Component Type</Label>
+                            <Select
+                              value={selectedTool.componentType.toString()}
+                              onValueChange={(value) => {
+                                const componentType = Number.parseInt(value) as MCPServer_Tool_ComponentType;
+                                handleUpdateTool(selectedTool.id, { componentType });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue>
+                                  <RemoteMCPToolTypeBadge componentType={selectedTool.componentType} />
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.values(MCPServer_Tool_ComponentType)
+                                  .filter(
+                                    (value) =>
+                                      typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED,
+                                  )
+                                  .map((componentType) => (
+                                    <SelectItem key={componentType} value={componentType.toString()}>
+                                      <RemoteMCPToolTypeBadge
+                                        componentType={componentType as MCPServer_Tool_ComponentType}
+                                      />
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Tool Name</Label>
+                            <Input
+                              value={selectedTool.name}
+                              placeholder="e.g., search-posts (must be filename-compatible)"
+                              onChange={(e) => handleUpdateTool(selectedTool.id, { name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Template</Label>
+                            <Select
+                              value={selectedTool.selectedTemplate || ''}
+                              onValueChange={(templateName) => {
+                                const template = templates.find((t) => t.name === templateName);
+                                if (template) {
+                                  applyTemplate(selectedTool.id, template);
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose template (optional)">
+                                  {selectedTool.selectedTemplate ? (
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4" />
+                                      {selectedTool.selectedTemplate}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4" />
+                                      Choose template
+                                    </div>
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {templates.map((template) => (
+                                  <SelectItem key={template.name} value={template.name}>
+                                    <div className="flex items-center gap-2">
+                                      <RemoteMCPToolTypeBadge componentType={template.componentType} />
+                                      <div>
+                                        <Text variant="default" className="font-medium">
+                                          {template.name}
+                                        </Text>
+                                        <Text variant="muted" className="text-xs">
+                                          {template.description}
+                                        </Text>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">Component Type</Label>
-                        <Select
-                          value={selectedTool.componentType.toString()}
-                          onValueChange={(value) => {
-                            const componentType = Number.parseInt(value) as MCPServer_Tool_ComponentType;
-                            handleUpdateTool(selectedTool.id, { componentType });
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue>
-                              <RemoteMCPToolTypeBadge componentType={selectedTool.componentType} />
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.values(MCPServer_Tool_ComponentType)
-                              .filter(
-                                (value) =>
-                                  typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED,
-                              )
-                              .map((componentType) => (
-                                <SelectItem key={componentType} value={componentType.toString()}>
-                                  <RemoteMCPToolTypeBadge
-                                    componentType={componentType as MCPServer_Tool_ComponentType}
-                                  />
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Template</Label>
-                        <Select
-                          value={selectedTool.selectedTemplate || ''}
-                          onValueChange={(templateName) => {
-                            const template = templates.find((t) => t.name === templateName);
-                            if (template) {
-                              applyTemplate(selectedTool.id, template);
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose template (optional)">
-                              {selectedTool.selectedTemplate ? (
-                                <div className="flex items-center gap-2">
-                                  <FileText className="h-4 w-4" />
-                                  {selectedTool.selectedTemplate}
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <FileText className="h-4 w-4" />
-                                  Choose template
-                                </div>
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {templates.map((template) => (
-                              <SelectItem key={template.name} value={template.name}>
-                                <div className="flex items-center gap-2">
-                                  <RemoteMCPToolTypeBadge componentType={template.componentType} />
-                                  <div>
-                                    <Text variant="default" className="font-medium">
-                                      {template.name}
-                                    </Text>
-                                    <Text variant="muted" className="text-xs">
-                                      {template.description}
-                                    </Text>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-sm font-medium">YAML Configuration</Label>
+                        <div className="overflow-hidden" style={{ height: '500px' }}>
+                          <YamlEditor
+                            key={selectedTool.id}
+                            value={selectedTool.config}
+                            onChange={(value) => handleUpdateTool(selectedTool.id, { config: value || '' })}
+                            options={{
+                              readOnly: !isEditing,
+                              theme: 'vs',
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">YAML Configuration</Label>
-                    <div className="overflow-hidden" style={{ height: '500px' }}>
-                      <YamlEditor
-                        key={selectedTool.id}
-                        value={selectedTool.config}
-                        onChange={(value) => handleUpdateTool(selectedTool.id, { config: value || '' })}
-                        options={{
-                          readOnly: !isEditing,
-                          theme: 'vs',
-                        }}
-                      />
+
+                  {!selectedTool && displayData.tools.length > 0 && (
+                    <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
+                      <div className="space-y-2">
+                        <FileText className="h-8 w-8 mx-auto opacity-50" />
+                        <Text variant="small" className="text-muted-foreground">
+                          Select a tool to view and edit its configuration
+                        </Text>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {!selectedTool && displayData.tools.length > 0 && (
-                <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
-                  <div className="space-y-2">
-                    <FileText className="h-8 w-8 mx-auto opacity-50" />
-                    <Text variant="small" className="text-muted-foreground">
-                      Select a tool to view and edit its configuration
-                    </Text>
-                  </div>
+                  {isEditing && (
+                    <Button variant="dashed" className="w-full" onClick={handleAddTool}>
+                      <Plus className="h-4 w-4" />
+                      Add Tool
+                    </Button>
+                  )}
                 </div>
-              )}
+              </CardContent>
+            </Card>
+          </div>
 
-              {isEditing && (
-                <Button variant="dashed" className="w-full" onClick={handleAddTool}>
-                  <Plus className="h-4 w-4" />
-                  Add Tool
-                </Button>
-              )}
+          {/* Secrets panel - takes 1 column on xl screens, only shown when editing and there are missing secrets */}
+          {hasSecretWarnings && isEditing && (
+            <div className="xl:col-span-1">
+              <div className="sticky top-4">
+                <QuickAddSecrets
+                  requiredSecrets={detectedSecrets}
+                  existingSecrets={existingSecrets.filter((id): id is string => Boolean(id))}
+                />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );

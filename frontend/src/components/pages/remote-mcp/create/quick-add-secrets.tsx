@@ -12,13 +12,15 @@
 'use client';
 
 import { create } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import { AlertTriangle, Key, Plus } from 'lucide-react';
+import { Text } from 'components/redpanda-ui/components/typography';
+import { AlertTriangle, Key, Loader2, Plus } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
@@ -61,14 +63,13 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
 
   const handleCreateSecrets = async (data: SecretFormData) => {
     const secretEntries = Object.entries(data);
-    const errors: Array<{ secretName: string; error: any }> = [];
+    const errors: Array<{ secretName: string; error: ConnectError }> = [];
     const successfulSecrets: string[] = [];
 
     await Promise.allSettled(
       secretEntries.map(([secretName, { value }]) => {
         const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
           id: secretName,
-          // @ts-ignore js-base64 does not play nice with TypeScript 5
           secretData: base64ToUInt8Array(encodeBase64(value)),
           scopes: [Scope.MCP_SERVER], // Automatically set scope to Remote MCP
           labels: {}, // Default to no labels for quick add
@@ -93,18 +94,11 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
     // Update created secrets state
     if (successfulSecrets.length > 0) {
       setCreatedSecrets((prev) => [...prev, ...successfulSecrets]);
-      toast.success(`Created ${successfulSecrets.length} secret${successfulSecrets.length > 1 ? 's' : ''}`);
     }
 
     // Display error toasts for failed secrets
     errors.forEach(({ secretName, error }) => {
-      if (error?.message?.includes('already scheduled for deletion')) {
-        toast.error(
-          `Cannot create secret "${secretName}": A secret with this name is already scheduled for deletion. Please wait for the deletion to complete or use a different name.`,
-        );
-      } else {
-        toast.error(`Failed to create secret "${secretName}": ${formatToastErrorMessageGRPC(error)}`);
-      }
+      toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: `secret ${secretName}` }));
     });
   };
 
@@ -165,7 +159,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
                     className="w-full"
                   >
                     {isCreateSecretPending ? (
-                      'Creating...'
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Text as="span">Creating...</Text>
+                      </div>
                     ) : (
                       <>
                         <Plus className="h-4 w-4" />

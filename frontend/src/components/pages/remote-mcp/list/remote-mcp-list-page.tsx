@@ -424,7 +424,7 @@ export const RemoteMCPListPage = () => {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center gap-2 justify-center">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Loading MCP servers...
                   </div>
@@ -433,7 +433,7 @@ export const RemoteMCPListPage = () => {
             ) : error ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="flex items-center justify-center text-red-600">
+                  <div className="flex items-center gap-2 justify-center text-red-600">
                     <AlertCircle className="h-4 w-4" />
                     Error loading MCP servers: {error.message}
                   </div>
