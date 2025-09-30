@@ -10,12 +10,12 @@
  */
 
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import memoryCacheTemplate from './templates/cache/memory.yaml';
-import redpandaCacheTemplate from './templates/cache/redpanda.yaml';
-import generateInputTemplate from './templates/input/generate.yaml';
-import redpandaOutputTemplate from './templates/output/redpanda.yaml';
-import bigqueryProcessorTemplate from './templates/processor/gcp_bigquery_select.yaml';
-import httpProcessorTemplate from './templates/processor/http.yaml';
+import memoryCacheTemplate from './cache/memory.yaml';
+import redpandaCacheTemplate from './cache/redpanda.yaml';
+import generateInputTemplate from './input/generate.yaml';
+import redpandaOutputTemplate from './output/redpanda.yaml';
+import bigqueryProcessorTemplate from './processor/gcp_bigquery_select.yaml';
+import httpProcessorTemplate from './processor/http.yaml';
 
 export interface Template {
   name: string;

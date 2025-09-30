@@ -11,7 +11,7 @@
 import type { UseFormReturn } from 'react-hook-form';
 import { stringify } from 'yaml';
 import { RESOURCE_TIERS } from '../../remote-mcp-constants';
-import type { Template } from '../../remote-mcp-templates';
+import type { Template } from '../../templates/remote-mcp-templates';
 import type { FormValues } from '../schemas';
 
 export function getTierById(id: string | undefined) {

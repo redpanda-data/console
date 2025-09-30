@@ -20,6 +20,8 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
 import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
+import { ExpandedYamlDialog } from 'components/ui/yaml/expanded-yaml-dialog';
+import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
   CreateMCPServerRequestSchema,
@@ -33,11 +35,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
-import { ExpandedYamlDialog } from './components/expanded-yaml-dialog';
 import { MetadataStep } from './components/metadata-step';
 import { ToolsStep } from './components/tools-step';
 import { useMetadataValidation } from './hooks/use-metadata-validation';
-import { useYamlLabelSync } from './hooks/use-yaml-label-sync';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { getTierById } from './utils/form-helpers';
 

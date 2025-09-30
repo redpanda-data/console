@@ -8,7 +8,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { YamlEditor } from 'components/misc/yaml-editor';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import {
@@ -30,12 +29,13 @@ import {
 import { Text } from 'components/redpanda-ui/components/typography';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
-import { Code, Maximize2, PencilRuler, Trash2 } from 'lucide-react';
+import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
+import { Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import type { UseFormReturn } from 'react-hook-form';
 import { RemoteMCPComponentTypeDescription } from '../../remote-mcp-component-type-description';
-import { templates } from '../../remote-mcp-templates';
+import { templates } from '../../templates/remote-mcp-templates';
 import type { FormValues } from '../schemas';
 import { applyTemplateToTool } from '../utils/form-helpers';
 
@@ -214,43 +214,16 @@ export const ToolCard: React.FC<ToolCardProps> = ({
           </div>
 
           <div className="space-y-2">
-            <div className="relative border rounded-lg">
-              <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t-lg">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Code className="h-4 w-4" />
-                  YAML Configuration
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onLint}
-                    disabled={isLintConfigPending}
-                    className="h-7 px-2 text-xs gap-1"
-                  >
-                    <PencilRuler className="h-3 w-3" />
-                    {isLintConfigPending ? 'Linting...' : 'Lint'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1"
-                    onClick={onExpand}
-                  >
-                    <Maximize2 className="h-3 w-3" />
-                    Expand
-                  </Button>
-                </div>
-              </div>
-              <div className="h-[500px] border-0 rounded-t-none overflow-hidden">
-                <YamlEditor
-                  value={form.watch(`tools.${toolIndex}.config`)}
-                  onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val || '', { shouldDirty: true })}
-                />
-              </div>
-            </div>
+            <YamlEditorCard
+              value={form.watch(`tools.${toolIndex}.config`)}
+              onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val, { shouldDirty: true })}
+              height="500px"
+              showLint={true}
+              showExpand={true}
+              onLint={onLint}
+              onExpand={onExpand}
+              isLinting={isLintConfigPending}
+            />
             <FormMessage />
             <LintHintList lintHints={lintHints} />
           </div>

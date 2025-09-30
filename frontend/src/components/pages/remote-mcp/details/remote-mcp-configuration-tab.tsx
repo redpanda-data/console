@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
-import { YamlEditor } from 'components/misc/yaml-editor';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -29,6 +28,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -44,7 +44,7 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
-import { type Template, templates } from '../remote-mcp-templates';
+import { type Template, templates } from '../templates/remote-mcp-templates';
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 interface LocalTool {

@@ -38,12 +38,9 @@ const getComponentTypeDocumentationUrl = (componentType: MCPServer_Tool_Componen
   }
 };
 
-export const RemoteMCPComponentTypeDescription = ({
-  componentType,
-  className = 'text-muted-foreground',
-}: RemoteMCPComponentTypeDescriptionProps) => {
+export const RemoteMCPComponentTypeDescription = ({ componentType }: RemoteMCPComponentTypeDescriptionProps) => {
   return (
-    <Text variant="small" className={className}>
+    <Text variant="muted">
       {getComponentTypeDescription(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}{' '}
       {componentType !== undefined && (
         <a
