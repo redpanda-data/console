@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         working-directory: frontend
@@ -34,10 +34,11 @@ jobs:
   integration-test:
     needs: "lint-and-compile"
     timeout-minutes: 15
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         working-directory: frontend
@@ -51,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest-8
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - name: Docker compose up
         working-directory: frontend

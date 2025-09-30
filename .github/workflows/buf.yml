@@ -43,7 +43,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Buf – lint, format & breaking
         uses: bufbuild/buf-action@v1
         with:
@@ -75,7 +75,7 @@ jobs:
             ,sdlc/prod/github/buf_token
           parse-json-secrets: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Buf – push to registry
         uses: bufbuild/buf-action@v1
@@ -108,7 +108,7 @@ jobs:
             ,sdlc/prod/github/buf_token
           parse-json-secrets: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Buf – archive label (ignore if not found)
         uses: bufbuild/buf-action@v1
