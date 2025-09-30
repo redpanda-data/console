@@ -17,10 +17,10 @@ import { useEffect, useState } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
-import { RemoteMCPInspectorTab } from './inspector/remote-mcp-inspector-tab';
 import { RemoteMCPConfigurationTab } from './remote-mcp-configuration-tab';
 import { RemoteMCPConnectionTab } from './remote-mcp-connection-tab';
 import { RemoteMCPDetailsHeader } from './remote-mcp-details-header';
+import { RemoteMCPInspectorTab } from './remote-mcp-inspector-tab';
 import { RemoteMCPLogsTab } from './remote-mcp-logs-tab';
 
 export const updatePageTitle = (serverName?: string) => {

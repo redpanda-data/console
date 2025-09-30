@@ -19,6 +19,7 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { Clock, Hammer, Send, X } from 'lucide-react';
 import {
   CreateTopicRequest_Topic_ConfigSchema,
@@ -31,11 +32,10 @@ import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerToo
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DynamicJSONForm } from '../../dynamic-json-form';
-import type { JsonSchemaType, JsonValue } from '../../json-utils';
-import JsonView from '../../json-view';
-import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
-import { RemoteMCPToolButton } from '../remote-mcp-tool-button';
+import { DynamicJSONForm } from '../dynamic-json-form';
+import type { JsonSchemaType, JsonValue } from '../json-utils';
+import JsonView from '../json-view';
+import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
   // Convert to lowercase for case-insensitive matching
@@ -471,7 +471,7 @@ export const RemoteMCPInspectorTab = () => {
           <>
             <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
-                <RemoteMCPToolTypeBadge
+                <RedpandaConnectComponentTypeBadge
                   componentType={
                     mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
                     getComponentTypeFromToolName(selectedTool)

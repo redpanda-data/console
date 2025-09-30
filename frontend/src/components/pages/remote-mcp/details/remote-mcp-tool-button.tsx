@@ -11,9 +11,9 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { Trash2 } from 'lucide-react';
 import type { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 
 interface RemoteMCPToolButtonProps {
   id: string;
@@ -57,7 +57,7 @@ export const RemoteMCPToolButton = ({
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <RemoteMCPToolTypeBadge componentType={componentType} />
+          <RedpandaConnectComponentTypeBadge componentType={componentType} />
           <Text className="text-sm truncate" title={name || 'Unnamed Tool'} as="span">
             {name || 'Unnamed Tool'}
           </Text>

@@ -28,7 +28,7 @@ import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';
 
-export interface DeleteAlertDialogProps {
+export interface DeleteResourceAlertDialogProps {
   resourceId: string;
   resourceName: string;
   resourceType: string;
@@ -37,7 +37,7 @@ export interface DeleteAlertDialogProps {
   isDeleting?: boolean;
 }
 
-export const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
+export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps> = ({
   resourceId,
   resourceName,
   resourceType,

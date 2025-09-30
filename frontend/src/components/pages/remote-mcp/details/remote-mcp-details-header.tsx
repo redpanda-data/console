@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { McpServerStateBadge } from 'components/ui/mcp-server-state-badge';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
-import { RemoteMCPStatusBadge } from './remote-mcp-status-badge';
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
 
 export const RemoteMCPDetailsHeader = () => {
@@ -29,7 +29,7 @@ export const RemoteMCPDetailsHeader = () => {
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-4">
           <Heading level={1}>{mcpServerData.mcpServer.displayName}</Heading>
-          <RemoteMCPStatusBadge />
+          <McpServerStateBadge />
           <RemoteMCPToggleButton />
         </div>
         <Text variant="lead">{mcpServerData.mcpServer.description}</Text>

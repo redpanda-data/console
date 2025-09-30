@@ -44,6 +44,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { AlertCircle, Check, Copy, Loader2, MoreHorizontal, Pause, Play, Plus, X } from 'lucide-react';
 import { runInAction } from 'mobx';
 import type { MCPServer as APIMCPServer } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
@@ -58,7 +59,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { uiState } from 'state/uiState';
-import { DeleteAlertDialog } from '../delete-alert-dialog';
 
 const statusOptions = [
   { value: String(MCPServer_State.RUNNING), label: 'Running', icon: Check },
@@ -277,7 +277,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
                 </DropdownMenuItem>
               )}
               {(canStart || canStop) && <DropdownMenuSeparator />}
-              <DeleteAlertDialog
+              <DeleteResourceAlertDialog
                 resourceId={server.id}
                 resourceName={server.name}
                 resourceType="Remote MCP Server"

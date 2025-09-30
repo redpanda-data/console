@@ -26,6 +26,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import {
   type MCPServer_State,
@@ -42,7 +43,6 @@ import { parse, stringify } from 'yaml';
 import { QuickAddSecrets } from '../create/quick-add-secrets';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../remote-mcp-templates';
-import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
 import { extractSecretReferences, getUniqueSecretNames } from '../utils/secret-detection';
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
@@ -648,7 +648,7 @@ export const RemoteMCPConfigurationTab = () => {
                             >
                               <SelectTrigger>
                                 <SelectValue>
-                                  <RemoteMCPToolTypeBadge componentType={selectedTool.componentType} />
+                                  <RedpandaConnectComponentTypeBadge componentType={selectedTool.componentType} />
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -659,7 +659,7 @@ export const RemoteMCPConfigurationTab = () => {
                                   )
                                   .map((componentType) => (
                                     <SelectItem key={componentType} value={componentType.toString()}>
-                                      <RemoteMCPToolTypeBadge
+                                      <RedpandaConnectComponentTypeBadge
                                         componentType={componentType as MCPServer_Tool_ComponentType}
                                       />
                                     </SelectItem>
@@ -705,7 +705,7 @@ export const RemoteMCPConfigurationTab = () => {
                                 {templates.map((template) => (
                                   <SelectItem key={template.name} value={template.name}>
                                     <div className="flex items-center gap-2">
-                                      <RemoteMCPToolTypeBadge componentType={template.componentType} />
+                                      <RedpandaConnectComponentTypeBadge componentType={template.componentType} />
                                       <div>
                                         <Text variant="default" className="font-medium">
                                           {template.name}
