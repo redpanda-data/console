@@ -1,12 +1,12 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: part of JsonNode implementation */
-/** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of JsonNode implementation */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: part of JSONNode implementation */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of JSONNode implementation */
 import clsx from 'clsx';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { memo, useMemo, useState } from 'react';
-import type { JsonValue } from './json-utils';
-import { getDataType, tryParseJson } from './json-utils';
+import type { JSONValue } from './json-utils';
+import { getDataType, tryParseJSON } from './json-utils';
 
-interface JsonViewProps {
+interface JSONViewProps {
   data: unknown;
   name?: string;
   initialExpandDepth?: number;
@@ -15,10 +15,10 @@ interface JsonViewProps {
   isError?: boolean;
 }
 
-const JsonView = memo(
-  ({ data, name, initialExpandDepth = 3, className, withCopyButton = true, isError = false }: JsonViewProps) => {
+const JSONView = memo(
+  ({ data, name, initialExpandDepth = 3, className, withCopyButton = true, isError = false }: JSONViewProps) => {
     const normalizedData = useMemo(() => {
-      return typeof data === 'string' ? (tryParseJson(data).success ? tryParseJson(data).data : data) : data;
+      return typeof data === 'string' ? (tryParseJSON(data).success ? tryParseJSON(data).data : data) : data;
     }, [data]);
 
     const copyContent = useMemo(() => {
@@ -31,8 +31,8 @@ const JsonView = memo(
           <CopyButton size="icon" variant="ghost" className="absolute top-2 right-2" content={copyContent} />
         )}
         <div className="font-mono text-sm transition-all duration-300">
-          <JsonNode
-            data={normalizedData as JsonValue}
+          <JSONNode
+            data={normalizedData as JSONValue}
             name={name}
             depth={0}
             initialExpandDepth={initialExpandDepth}
@@ -44,17 +44,17 @@ const JsonView = memo(
   },
 );
 
-JsonView.displayName = 'JsonView';
+JSONView.displayName = 'JSONView';
 
-interface JsonNodeProps {
-  data: JsonValue;
+interface JSONNodeProps {
+  data: JSONValue;
   name?: string;
   depth: number;
   initialExpandDepth: number;
   isError?: boolean;
 }
 
-const JsonNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = false }: JsonNodeProps) => {
+const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = false }: JSONNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(depth < initialExpandDepth);
   const [typeStyleMap] = useState<Record<string, string>>({
     number: 'text-blue-600',
@@ -68,7 +68,7 @@ const JsonNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
   const dataType = getDataType(data);
 
   const renderCollapsible = (isArray: boolean) => {
-    const items = isArray ? (data as JsonValue[]) : Object.entries(data as Record<string, JsonValue>);
+    const items = isArray ? (data as JSONValue[]) : Object.entries(data as Record<string, JSONValue>);
     const itemCount = items.length;
     const isEmpty = itemCount === 0;
 
@@ -90,7 +90,7 @@ const JsonNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
 
     return (
       <div className="flex flex-col">
-        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of JsonNode implementation */}
+        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of JSONNode implementation */}
         <div
           className="flex items-center mr-1 rounded cursor-pointer group hover:bg-gray-800/10 dark:hover:bg-gray-800/20"
           onClick={() => setIsExpanded(!isExpanded)}
@@ -124,9 +124,9 @@ const JsonNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
           <>
             <div className="pl-2 ml-4 border-l border-gray-200 dark:border-gray-800">
               {isArray
-                ? (items as JsonValue[]).map((item, index) => (
+                ? (items as JSONValue[]).map((item, index) => (
                     <div key={index} className="my-1">
-                      <JsonNode
+                      <JSONNode
                         data={item}
                         name={`${index}`}
                         depth={depth + 1}
@@ -134,9 +134,9 @@ const JsonNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
                       />
                     </div>
                   ))
-                : (items as [string, JsonValue][]).map(([key, value]) => (
+                : (items as [string, JSONValue][]).map(([key, value]) => (
                     <div key={key} className="my-1">
-                      <JsonNode data={value} name={key} depth={depth + 1} initialExpandDepth={initialExpandDepth} />
+                      <JSONNode data={value} name={key} depth={depth + 1} initialExpandDepth={initialExpandDepth} />
                     </div>
                   ))}
             </div>
@@ -201,6 +201,6 @@ const JsonNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
   }
 });
 
-JsonNode.displayName = 'JsonNode';
+JSONNode.displayName = 'JSONNode';
 
-export default JsonView;
+export default JSONView;

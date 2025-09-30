@@ -8,8 +8,8 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Braces, FileEdit, SpellCheck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { JsonEditor } from './json-editor';
-import type { JsonSchemaType, JsonValue } from './json-utils';
+import { JSONEditor } from './json-editor';
+import type { JSONSchemaType, JSONValue } from './json-utils';
 import { updateValueAtPath } from './json-utils';
 
 interface CustomFieldConfig {
@@ -19,27 +19,27 @@ interface CustomFieldConfig {
   onCreateOption?: (
     newValue: string,
     path: string[],
-    handleFieldChange: (path: string[], value: JsonValue) => void,
+    handleFieldChange: (path: string[], value: JSONValue) => void,
   ) => Promise<void>;
 }
 
 interface DynamicJSONFormProps {
-  schema: JsonSchemaType;
-  value: JsonValue;
-  onChange: (value: JsonValue) => void;
+  schema: JSONSchemaType;
+  value: JSONValue;
+  onChange: (value: JSONValue) => void;
   maxDepth?: number;
   showPlaceholder?: boolean;
   customFields?: CustomFieldConfig[];
 }
 
-const isTypeSupported = (type: JsonSchemaType['type'], supportedTypes: string[]): boolean => {
+const isTypeSupported = (type: JSONSchemaType['type'], supportedTypes: string[]): boolean => {
   if (Array.isArray(type)) {
     return type.every((t) => supportedTypes.includes(t));
   }
   return typeof type === 'string' && supportedTypes.includes(type);
 };
 
-const isSimpleObject = (schema: JsonSchemaType): boolean => {
+const isSimpleObject = (schema: JSONSchemaType): boolean => {
   const supportedTypes = ['string', 'number', 'integer', 'boolean', 'null'];
   if (schema.type && isTypeSupported(schema.type, supportedTypes)) return true;
   if (schema.type === 'object') {
@@ -53,7 +53,7 @@ const isSimpleObject = (schema: JsonSchemaType): boolean => {
   return false;
 };
 
-const getArrayItemDefault = (schema: JsonSchemaType): JsonValue => {
+const getArrayItemDefault = (schema: JSONSchemaType): JSONValue => {
   if ('default' in schema && schema.default !== undefined) {
     return schema.default;
   }
@@ -77,7 +77,7 @@ const getArrayItemDefault = (schema: JsonSchemaType): JsonValue => {
   }
 };
 
-const generateExampleData = (schema: JsonSchemaType): JsonValue => {
+const generateExampleData = (schema: JSONSchemaType): JSONValue => {
   if ('default' in schema && schema.default !== undefined) {
     return schema.default;
   }
@@ -92,14 +92,14 @@ const generateExampleData = (schema: JsonSchemaType): JsonValue => {
       return (schema.examples?.[0] as boolean) || true;
     case 'array':
       if (schema.items) {
-        return [generateExampleData(schema.items as JsonSchemaType)];
+        return [generateExampleData(schema.items as JSONSchemaType)];
       }
       return [];
     case 'object':
       if (schema.properties) {
-        const result: Record<string, JsonValue> = {};
+        const result: Record<string, JSONValue> = {};
         Object.entries(schema.properties).forEach(([key, propSchema]) => {
-          result[key] = generateExampleData(propSchema as JsonSchemaType);
+          result[key] = generateExampleData(propSchema as JSONSchemaType);
         });
         return result;
       }
@@ -111,18 +111,18 @@ const generateExampleData = (schema: JsonSchemaType): JsonValue => {
   }
 };
 
-const hasEmptyValues = (value: JsonValue, schema: JsonSchemaType): boolean => {
+const hasEmptyValues = (value: JSONValue, schema: JSONSchemaType): boolean => {
   if (!value) return true;
 
   if (schema.type === 'object' && typeof value === 'object' && !Array.isArray(value)) {
-    const obj = value as Record<string, JsonValue>;
+    const obj = value as Record<string, JSONValue>;
     if (Object.keys(obj).length === 0) return true;
 
     // Check if all values are empty/default
     if (schema.properties) {
       return Object.entries(schema.properties).every(([key, propSchema]) => {
         const val = obj[key];
-        const subSchema = propSchema as JsonSchemaType;
+        const subSchema = propSchema as JSONSchemaType;
 
         if (val === undefined || val === null) return true;
         if (subSchema.type === 'string' && val === '') return true;
@@ -153,14 +153,14 @@ export const DynamicJSONForm = ({
 }: DynamicJSONFormProps) => {
   // Always allow switching between Form and JSON modes - Form is the default
   const isOnlyJSON = false;
-  const [isJsonMode, setIsJsonMode] = useState(false);
-  const [jsonError, setJsonError] = useState<string>();
+  const [isJSONMode, setIsJSONMode] = useState(false);
+  const [jsonError, setJSONError] = useState<string>();
 
   // Store the raw JSON string to allow immediate feedback during typing
   // while deferring parsing until the user stops typing
-  const [rawJsonValue, setRawJsonValue] = useState<string>(() => {
+  const [rawJSONValue, setRawJSONValue] = useState<string>(() => {
     // Use example data when starting with empty values and showPlaceholder is true
-    let initialValue: JsonValue;
+    let initialValue: JSONValue;
     if (showPlaceholder && hasEmptyValues(value, schema)) {
       initialValue = generateExampleData(schema);
     } else {
@@ -186,7 +186,7 @@ export const DynamicJSONForm = ({
         try {
           const parsed = JSON.parse(jsonString);
           onChange(parsed);
-          setJsonError(undefined);
+          setJSONError(undefined);
         } catch {
           // Don't set error during normal typing
         }
@@ -195,78 +195,78 @@ export const DynamicJSONForm = ({
     [onChange],
   );
 
-  // Update rawJsonValue when value prop changes
+  // Update rawJSONValue when value prop changes
   useEffect(() => {
     // Use example data when the value is empty and showPlaceholder is true
-    let displayValue: JsonValue;
+    let displayValue: JSONValue;
     if (showPlaceholder && hasEmptyValues(value, schema)) {
       displayValue = generateExampleData(schema);
     } else {
       displayValue = value || (schema.type === 'array' ? [] : {});
     }
-    setRawJsonValue(JSON.stringify(displayValue, null, 2));
+    setRawJSONValue(JSON.stringify(displayValue, null, 2));
   }, [value, schema, showPlaceholder]);
 
   const handleSwitchToFormMode = () => {
-    if (isJsonMode) {
+    if (isJSONMode) {
       // When switching to Form mode, ensure we have valid JSON
       try {
-        const parsed = JSON.parse(rawJsonValue);
+        const parsed = JSON.parse(rawJSONValue);
         // Update the parent component's state with the parsed value
         onChange(parsed);
         // Switch to form mode
-        setIsJsonMode(false);
+        setIsJSONMode(false);
       } catch (err) {
-        setJsonError(err instanceof Error ? err.message : 'Invalid JSON');
+        setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
       }
     } else {
       // When switching to JSON mode, generate example data if showPlaceholder is true and current value is empty
-      let displayValue: JsonValue;
+      let displayValue: JSONValue;
       if (showPlaceholder && hasEmptyValues(value, schema)) {
         displayValue = generateExampleData(schema);
       } else {
         displayValue = value || (schema.type === 'array' ? [] : {});
       }
-      setRawJsonValue(JSON.stringify(displayValue, null, 2));
-      setIsJsonMode(true);
+      setRawJSONValue(JSON.stringify(displayValue, null, 2));
+      setIsJSONMode(true);
     }
   };
 
-  const formatJson = () => {
+  const formatJSON = () => {
     try {
-      const jsonStr = rawJsonValue.trim();
+      const jsonStr = rawJSONValue.trim();
       if (!jsonStr) {
         return;
       }
       const formatted = JSON.stringify(JSON.parse(jsonStr), null, 2);
-      setRawJsonValue(formatted);
+      setRawJSONValue(formatted);
       debouncedUpdateParent(formatted);
-      setJsonError(undefined);
+      setJSONError(undefined);
     } catch (err) {
-      setJsonError(err instanceof Error ? err.message : 'Invalid JSON');
+      setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
     }
   };
 
   const renderFormFields = (
-    propSchema: JsonSchemaType,
-    currentValue: JsonValue,
+    propSchema: JSONSchemaType,
+    currentValue: JSONValue,
     path: string[] = [],
     depth = 0,
-    parentSchema?: JsonSchemaType,
+    parentSchema?: JSONSchemaType,
     propertyName?: string,
   ) => {
     if (depth >= maxDepth && (propSchema.type === 'object' || propSchema.type === 'array')) {
       // Render as JSON editor when max depth is reached
       return (
-        <JsonEditor
+        <JSONEditor
           value={JSON.stringify(currentValue ?? (propSchema.type === 'array' ? [] : {}), null, 2)}
           onChange={(newValue) => {
             try {
               const parsed = JSON.parse(newValue);
               handleFieldChange(path, parsed);
-              setJsonError(undefined);
+              setJSONError(undefined);
             } catch (err) {
-              setJsonError(err instanceof Error ? err.message : 'Invalid JSON');
+              setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
             }
           }}
           error={jsonError}
@@ -478,15 +478,15 @@ export const DynamicJSONForm = ({
       case 'object':
         if (!propSchema.properties) {
           return (
-            <JsonEditor
+            <JSONEditor
               value={JSON.stringify(currentValue ?? {}, null, 2)}
               onChange={(newValue) => {
                 try {
                   const parsed = JSON.parse(newValue);
                   handleFieldChange(path, parsed);
-                  setJsonError(undefined);
+                  setJSONError(undefined);
                 } catch (err) {
-                  setJsonError(err instanceof Error ? err.message : 'Invalid JSON');
+                  setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
                 }
               }}
               error={jsonError}
@@ -504,12 +504,12 @@ export const DynamicJSONForm = ({
                     {propSchema.required?.includes(key) && <span className="text-red-500 ml-1">*</span>}
                   </Text>
                   <Badge variant="outline" className="text-xs px-1 py-0">
-                    {(subSchema as JsonSchemaType).type || 'unknown'}
+                    {(subSchema as JSONSchemaType).type || 'unknown'}
                   </Badge>
                 </div>
                 {renderFormFields(
-                  subSchema as JsonSchemaType,
-                  (currentValue as Record<string, JsonValue>)?.[key],
+                  subSchema as JSONSchemaType,
+                  (currentValue as Record<string, JSONValue>)?.[key],
                   [...path, key],
                   depth + 1,
                   propSchema,
@@ -525,7 +525,7 @@ export const DynamicJSONForm = ({
 
         // Handle empty arrays without triggering state update during render
         if (arrayValue.length === 0) {
-          const defaultValue = getArrayItemDefault(propSchema.items as JsonSchemaType);
+          const defaultValue = getArrayItemDefault(propSchema.items as JSONSchemaType);
           arrayValue = [defaultValue];
         }
 
@@ -578,15 +578,15 @@ export const DynamicJSONForm = ({
                                     {key}
                                   </Text>
                                   <Badge variant="outline" className="text-xs px-1 py-0">
-                                    {(subSchema as JsonSchemaType).type || 'unknown'}
+                                    {(subSchema as JSONSchemaType).type || 'unknown'}
                                   </Badge>
                                   {propSchema.items?.required?.includes(key) && (
                                     <span className="text-red-500 ml-1">*</span>
                                   )}
                                 </div>
                                 {renderFormFields(
-                                  subSchema as JsonSchemaType,
-                                  (item as Record<string, JsonValue>)?.[key],
+                                  subSchema as JSONSchemaType,
+                                  (item as Record<string, JSONValue>)?.[key],
                                   [...path, index.toString(), key],
                                   depth + 1,
                                   propSchema.items,
@@ -595,7 +595,7 @@ export const DynamicJSONForm = ({
                               </div>
                             ))
                           : renderFormFields(
-                              propSchema.items as JsonSchemaType,
+                              propSchema.items as JSONSchemaType,
                               item,
                               [...path, index.toString()],
                               depth + 1,
@@ -608,7 +608,7 @@ export const DynamicJSONForm = ({
                   variant="dashed"
                   size="sm"
                   onClick={() => {
-                    const defaultValue = getArrayItemDefault(propSchema.items as JsonSchemaType);
+                    const defaultValue = getArrayItemDefault(propSchema.items as JSONSchemaType);
                     handleFieldChange(path, [...arrayValue, defaultValue]);
                   }}
                   className="w-full"
@@ -626,15 +626,15 @@ export const DynamicJSONForm = ({
 
         // For complex arrays, fall back to JSON editor
         return (
-          <JsonEditor
+          <JSONEditor
             value={JSON.stringify(currentValue ?? [], null, 2)}
             onChange={(newValue) => {
               try {
                 const parsed = JSON.parse(newValue);
                 handleFieldChange(path, parsed);
-                setJsonError(undefined);
+                setJSONError(undefined);
               } catch (err) {
-                setJsonError(err instanceof Error ? err.message : 'Invalid JSON');
+                setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
               }
             }}
             error={jsonError}
@@ -646,7 +646,7 @@ export const DynamicJSONForm = ({
     }
   };
 
-  const handleFieldChange = (path: string[], fieldValue: JsonValue) => {
+  const handleFieldChange = (path: string[], fieldValue: JSONValue) => {
     if (path.length === 0) {
       onChange(fieldValue);
       return;
@@ -661,46 +661,46 @@ export const DynamicJSONForm = ({
     }
   };
 
-  const shouldUseJsonMode =
+  const shouldUseJSONMode =
     schema.type === 'object' && (!schema.properties || Object.keys(schema.properties).length === 0);
 
   useEffect(() => {
-    if (shouldUseJsonMode && !isJsonMode) {
-      setIsJsonMode(true);
+    if (shouldUseJSONMode && !isJSONMode) {
+      setIsJSONMode(true);
     }
-  }, [shouldUseJsonMode, isJsonMode]);
+  }, [shouldUseJSONMode, isJSONMode]);
 
   // Handle initialization of empty arrays with default values
   useEffect(() => {
-    const initializeArrayDefaults = (currentSchema: JsonSchemaType, currentValue: JsonValue, path: string[] = []) => {
+    const initializeArrayDefaults = (currentSchema: JSONSchemaType, currentValue: JSONValue, path: string[] = []) => {
       if (currentSchema.type === 'array' && currentSchema.items) {
         const arrayValue = Array.isArray(currentValue) ? currentValue : [];
         if (arrayValue.length === 0) {
-          const defaultValue = getArrayItemDefault(currentSchema.items as JsonSchemaType);
+          const defaultValue = getArrayItemDefault(currentSchema.items as JSONSchemaType);
           const newValue = updateValueAtPath(value, path, [defaultValue]);
           onChange(newValue);
         }
       } else if (currentSchema.type === 'object' && currentSchema.properties) {
         Object.entries(currentSchema.properties).forEach(([key, subSchema]) => {
-          const subValue = (currentValue as Record<string, JsonValue>)?.[key];
-          initializeArrayDefaults(subSchema as JsonSchemaType, subValue, [...path, key]);
+          const subValue = (currentValue as Record<string, JSONValue>)?.[key];
+          initializeArrayDefaults(subSchema as JSONSchemaType, subValue, [...path, key]);
         });
       }
     };
 
     // Only initialize if we have a value and are not in JSON mode
-    if (value !== undefined && !isJsonMode) {
+    if (value !== undefined && !isJSONMode) {
       initializeArrayDefaults(schema, value);
     }
-  }, [schema, value, onChange, isJsonMode]);
+  }, [schema, value, onChange, isJSONMode]);
 
   // Handle auto-selection for custom fields with single options
   // biome-ignore lint/correctness/useExhaustiveDependencies: part of DynamicJSONForm implementation
   useEffect(() => {
-    const syncAutoSelections = (currentSchema: JsonSchemaType, currentValue: JsonValue, path: string[] = []) => {
+    const syncAutoSelections = (currentSchema: JSONSchemaType, currentValue: JSONValue, path: string[] = []) => {
       if (currentSchema.type === 'object' && currentSchema.properties) {
         Object.entries(currentSchema.properties).forEach(([key, subSchema]) => {
-          const subValue = (currentValue as Record<string, JsonValue>)?.[key];
+          const subValue = (currentValue as Record<string, JSONValue>)?.[key];
           const customFieldConfig = customFields.find((field) => field.fieldName === key);
 
           if (customFieldConfig && customFieldConfig.options.length === 1 && !subValue) {
@@ -708,20 +708,20 @@ export const DynamicJSONForm = ({
             handleFieldChange([...path, key], autoSelectedValue);
           }
 
-          syncAutoSelections(subSchema as JsonSchemaType, subValue, [...path, key]);
+          syncAutoSelections(subSchema as JSONSchemaType, subValue, [...path, key]);
         });
       }
     };
 
-    if (value !== undefined && !isJsonMode && customFields.length > 0) {
+    if (value !== undefined && !isJSONMode && customFields.length > 0) {
       syncAutoSelections(schema, value);
     }
-  }, [schema, value, customFields, isJsonMode]);
+  }, [schema, value, customFields, isJSONMode]);
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end space-x-2">
-        {isJsonMode && (
+        {isJSONMode && (
           <>
             <CopyButton
               variant="outline"
@@ -735,7 +735,7 @@ export const DynamicJSONForm = ({
             >
               Copy JSON
             </CopyButton>
-            <Button type="button" variant="outline" size="sm" onClick={formatJson}>
+            <Button type="button" variant="outline" size="sm" onClick={formatJSON}>
               <SpellCheck className="h-4 w-4" />
               Format JSON
             </Button>
@@ -744,7 +744,7 @@ export const DynamicJSONForm = ({
 
         {!isOnlyJSON && (
           <Button variant="outline" size="sm" onClick={handleSwitchToFormMode}>
-            {isJsonMode ? (
+            {isJSONMode ? (
               <>
                 <FileEdit className="h-4 w-4" />
                 Switch to Form
@@ -759,12 +759,12 @@ export const DynamicJSONForm = ({
         )}
       </div>
 
-      {isJsonMode ? (
-        <JsonEditor
-          value={rawJsonValue}
+      {isJSONMode ? (
+        <JSONEditor
+          value={rawJSONValue}
           onChange={(newValue) => {
             // Always update local state
-            setRawJsonValue(newValue);
+            setRawJSONValue(newValue);
 
             // Use the debounced function to attempt parsing and updating parent
             debouncedUpdateParent(newValue);

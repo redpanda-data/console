@@ -19,6 +19,9 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { DynamicJSONForm } from 'components/ui/json/dynamic-json-form';
+import type { JSONSchemaType, JSONValue } from 'components/ui/json/json-utils';
+import JSONView from 'components/ui/json/json-view';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { Clock, Hammer, Send, X } from 'lucide-react';
 import {
@@ -32,10 +35,77 @@ import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerToo
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { DynamicJSONForm } from '../dynamic-json-form';
-import type { JsonSchemaType, JsonValue } from '../json-utils';
-import JsonView from '../json-view';
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
+
+const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
+  if ('default' in fieldSchema && fieldSchema.default !== undefined) {
+    return fieldSchema.default;
+  }
+
+  switch (fieldSchema.type) {
+    case 'string':
+      return (fieldSchema as any).examples?.[0] || '';
+    case 'number':
+    case 'integer':
+      return (fieldSchema as any).examples?.[0] || 42;
+    case 'boolean':
+      return (fieldSchema as any).examples?.[0] || true;
+    case 'array':
+      if (fieldSchema.items) {
+        return [generateDefaultValue(fieldSchema.items as JSONSchemaType)];
+      }
+      return [];
+    case 'object':
+      if (fieldSchema.properties) {
+        const result: Record<string, JSONValue> = {};
+        Object.entries(fieldSchema.properties).forEach(([propKey, propSchema]) => {
+          // Generate defaults for object properties, especially if they're required
+          if (fieldSchema.required?.includes(propKey)) {
+            result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
+          } else {
+            // Use specific example values for common property names
+            if (propKey === 'key') {
+              result[propKey] = 'key';
+            } else if (propKey === 'value') {
+              result[propKey] = 'value';
+            } else {
+              result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
+            }
+          }
+        });
+        return result;
+      }
+      return {};
+    case 'null':
+      return null;
+    default:
+      return null;
+  }
+};
+
+const initializeFormData = (schema: JSONSchemaType | undefined): JSONValue => {
+  if (!schema || !schema.properties) {
+    return {};
+  }
+
+  const initialData: Record<string, unknown> = {};
+
+  // Initialize all fields with appropriate default values, prioritizing required fields
+  Object.entries(schema.properties).forEach(([key, propSchema]) => {
+    const fieldSchema = propSchema as JSONSchemaType;
+    const isRequired = schema.required?.includes(key) ?? false;
+
+    if (isRequired) {
+      // Always initialize required fields with meaningful defaults
+      initialData[key] = generateDefaultValue(fieldSchema);
+    } else if (fieldSchema.type === 'array') {
+      // Still initialize arrays even if not required, for better UX
+      initialData[key] = generateDefaultValue(fieldSchema);
+    }
+  });
+
+  return initialData as JSONValue;
+};
 
 const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_ComponentType => {
   // Convert to lowercase for case-insensitive matching
@@ -73,7 +143,7 @@ const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 export const RemoteMCPInspectorTab = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTool, setSelectedTool] = useState<string>('');
-  const [toolParameters, setToolParameters] = useState<JsonValue>({});
+  const [toolParameters, setToolParameters] = useState<JSONValue>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -101,12 +171,11 @@ export const RemoteMCPInspectorTab = () => {
   });
   const { mutateAsync: createTopic } = useCreateTopicMutation();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   useEffect(() => {
     if (!selectedTool && mcpServerTools?.tools && mcpServerTools.tools.length === 1) {
       const singleTool = mcpServerTools.tools[0];
       setSelectedTool(singleTool.name);
-      const initialData = initializeFormData(singleTool.inputSchema as JsonSchemaType);
+      const initialData = initializeFormData(singleTool.inputSchema as JSONSchemaType);
       setToolParameters(initialData);
       resetMCPServerToolCall();
       setValidationErrors({});
@@ -175,7 +244,7 @@ export const RemoteMCPInspectorTab = () => {
         // Also trigger validation
         const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
         if (selectedToolData) {
-          const validation = validateRequiredFields(selectedToolData.inputSchema as JsonSchemaType, updatedParams);
+          const validation = validateRequiredFields(selectedToolData.inputSchema as JSONSchemaType, updatedParams);
           setValidationErrors(validation.errors);
         }
       }
@@ -227,8 +296,8 @@ export const RemoteMCPInspectorTab = () => {
   };
 
   const validateRequiredFields = (
-    schema: JsonSchemaType | undefined,
-    values: JsonValue,
+    schema: JSONSchemaType | undefined,
+    values: JSONValue,
   ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 
@@ -274,7 +343,7 @@ export const RemoteMCPInspectorTab = () => {
 
       // For arrays, check if they have at least one item when required
       if (Array.isArray(value) && value.length === 0) {
-        const fieldSchema = schema.properties[requiredField] as JsonSchemaType;
+        const fieldSchema = schema.properties[requiredField] as JSONSchemaType;
         if (fieldSchema?.type === 'array') {
           errors[requiredField] = 'This field is required';
         }
@@ -282,76 +351,6 @@ export const RemoteMCPInspectorTab = () => {
     }
 
     return { isValid: Object.keys(errors).length === 0, errors };
-  };
-
-  const generateDefaultValue = (fieldSchema: JsonSchemaType): JsonValue => {
-    if ('default' in fieldSchema && fieldSchema.default !== undefined) {
-      return fieldSchema.default;
-    }
-
-    switch (fieldSchema.type) {
-      case 'string':
-        return (fieldSchema as any).examples?.[0] || '';
-      case 'number':
-      case 'integer':
-        return (fieldSchema as any).examples?.[0] || 42;
-      case 'boolean':
-        return (fieldSchema as any).examples?.[0] || true;
-      case 'array':
-        if (fieldSchema.items) {
-          return [generateDefaultValue(fieldSchema.items as JsonSchemaType)];
-        }
-        return [];
-      case 'object':
-        if (fieldSchema.properties) {
-          const result: Record<string, JsonValue> = {};
-          Object.entries(fieldSchema.properties).forEach(([propKey, propSchema]) => {
-            // Generate defaults for object properties, especially if they're required
-            if (fieldSchema.required?.includes(propKey)) {
-              result[propKey] = generateDefaultValue(propSchema as JsonSchemaType);
-            } else {
-              // Use specific example values for common property names
-              if (propKey === 'key') {
-                result[propKey] = 'key';
-              } else if (propKey === 'value') {
-                result[propKey] = 'value';
-              } else {
-                result[propKey] = generateDefaultValue(propSchema as JsonSchemaType);
-              }
-            }
-          });
-          return result;
-        }
-        return {};
-      case 'null':
-        return null;
-      default:
-        return null;
-    }
-  };
-
-  const initializeFormData = (schema: JsonSchemaType | undefined): JsonValue => {
-    if (!schema || !schema.properties) {
-      return {};
-    }
-
-    const initialData: Record<string, unknown> = {};
-
-    // Initialize all fields with appropriate default values, prioritizing required fields
-    Object.entries(schema.properties).forEach(([key, propSchema]) => {
-      const fieldSchema = propSchema as JsonSchemaType;
-      const isRequired = schema.required?.includes(key) ?? false;
-
-      if (isRequired) {
-        // Always initialize required fields with meaningful defaults
-        initialData[key] = generateDefaultValue(fieldSchema);
-      } else if (fieldSchema.type === 'array') {
-        // Still initialize arrays even if not required, for better UX
-        initialData[key] = generateDefaultValue(fieldSchema);
-      }
-    });
-
-    return initialData as JsonValue;
   };
 
   const getToolResponseData = () => {
@@ -365,7 +364,7 @@ export const RemoteMCPInspectorTab = () => {
     ) {
       const firstContentItem = serverToolResponse.content[0];
       if (firstContentItem.type === 'text' && firstContentItem.text) {
-        // Try to parse text content as JSON for JsonView
+        // Try to parse text content as JSON for JSONView
         try {
           return JSON.parse(firstContentItem.text);
         } catch {
@@ -445,7 +444,7 @@ export const RemoteMCPInspectorTab = () => {
                           abortControllerRef.current = null;
                         }
                         setSelectedTool(tool.name);
-                        const initialData = initializeFormData(tool.inputSchema as JsonSchemaType);
+                        const initialData = initializeFormData(tool.inputSchema as JSONSchemaType);
                         setToolParameters(initialData);
                         resetMCPServerToolCall();
                         // Clear validation errors when switching tools
@@ -487,11 +486,11 @@ export const RemoteMCPInspectorTab = () => {
                   <>
                     <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
                       {(() => {
-                        const handleFormChange = (newValue: JsonValue) => {
+                        const handleFormChange = (newValue: JSONValue) => {
                           setToolParameters(newValue);
                           // Update validation errors when parameters change
                           const validation = validateRequiredFields(
-                            selectedToolData?.inputSchema as JsonSchemaType,
+                            selectedToolData?.inputSchema as JSONSchemaType,
                             newValue,
                           );
                           setValidationErrors(validation.errors);
@@ -499,7 +498,7 @@ export const RemoteMCPInspectorTab = () => {
 
                         return (
                           <DynamicJSONForm
-                            schema={(selectedToolData?.inputSchema as JsonSchemaType) || { type: 'object' }}
+                            schema={(selectedToolData?.inputSchema as JSONSchemaType) || { type: 'object' }}
                             value={toolParameters}
                             onChange={handleFormChange}
                             showPlaceholder={true}
@@ -518,7 +517,7 @@ export const RemoteMCPInspectorTab = () => {
                                       onCreateOption: async (
                                         newTopicName: string,
                                         path: string[],
-                                        handleFieldChange: (path: string[], value: JsonValue) => void,
+                                        handleFieldChange: (path: string[], value: JSONValue) => void,
                                       ) => {
                                         try {
                                           const request = create(CreateTopicRequestSchema, {
@@ -591,7 +590,7 @@ export const RemoteMCPInspectorTab = () => {
                       {!isServerToolPending && (toolError || toolResponseData) && (
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Response</Label>
-                          <JsonView
+                          <JSONView
                             data={toolError ? toolError?.message : toolResponseData}
                             isError={!!toolError}
                             initialExpandDepth={3}
@@ -619,7 +618,7 @@ export const RemoteMCPInspectorTab = () => {
                           <Button
                             onClick={executeToolRequest}
                             disabled={
-                              !validateRequiredFields(selectedToolData?.inputSchema as JsonSchemaType, toolParameters)
+                              !validateRequiredFields(selectedToolData?.inputSchema as JSONSchemaType, toolParameters)
                                 .isValid
                             }
                             variant="secondary"

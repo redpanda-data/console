@@ -1,12 +1,12 @@
-export type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue };
+export type JSONValue = string | number | boolean | null | undefined | JSONValue[] | { [key: string]: JSONValue };
 
-export type JsonSchemaConst = {
-  const: JsonValue;
+export type JSONSchemaConst = {
+  const: JSONValue;
   title?: string;
   description?: string;
 };
 
-export type JsonSchemaType = {
+export type JSONSchemaType = {
   type?:
     | 'string'
     | 'number'
@@ -19,10 +19,10 @@ export type JsonSchemaType = {
   title?: string;
   description?: string;
   required?: string[];
-  default?: JsonValue;
-  examples?: JsonValue[];
-  properties?: Record<string, JsonSchemaType>;
-  items?: JsonSchemaType;
+  default?: JSONValue;
+  examples?: JSONValue[];
+  properties?: Record<string, JSONSchemaType>;
+  items?: JSONSchemaType;
   minimum?: number;
   maximum?: number;
   minLength?: number;
@@ -30,12 +30,12 @@ export type JsonSchemaType = {
   pattern?: string;
   format?: string;
   enum?: string[];
-  const?: JsonValue;
-  oneOf?: (JsonSchemaType | JsonSchemaConst)[];
-  anyOf?: (JsonSchemaType | JsonSchemaConst)[];
+  const?: JSONValue;
+  oneOf?: (JSONSchemaType | JSONSchemaConst)[];
+  anyOf?: (JSONSchemaType | JSONSchemaConst)[];
 };
 
-export type JsonObject = { [key: string]: JsonValue };
+export type JSONObject = { [key: string]: JSONValue };
 
 export type DataType =
   | 'string'
@@ -54,7 +54,7 @@ export type DataType =
  * @param value The JSON value to analyze
  * @returns The specific data type including "array" and "null" as distinct types
  */
-export function getDataType(value: JsonValue): DataType {
+export function getDataType(value: JSONValue): DataType {
   if (Array.isArray(value)) return 'array';
   if (value === null) return 'null';
   return typeof value;
@@ -65,9 +65,9 @@ export function getDataType(value: JsonValue): DataType {
  * @param str The string to parse
  * @returns Object with success boolean and either parsed data or original string
  */
-export function tryParseJson(str: string): {
+export function tryParseJSON(str: string): {
   success: boolean;
-  data: JsonValue;
+  data: JSONValue;
 } {
   const trimmed = str.trim();
   if (!(trimmed.startsWith('{') && trimmed.endsWith('}')) && !(trimmed.startsWith('[') && trimmed.endsWith(']'))) {
@@ -87,7 +87,7 @@ export function tryParseJson(str: string): {
  * @param value The new value to set
  * @returns A new JSON value with the updated path
  */
-export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue): JsonValue {
+export function updateValueAtPath(obj: JSONValue, path: string[], value: JSONValue): JSONValue {
   if (path.length === 0) return value;
 
   if (obj === null || obj === undefined) {
@@ -98,7 +98,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
     return updateArray(obj, path, value);
   }
   if (typeof obj === 'object' && obj !== null) {
-    return updateObject(obj as JsonObject, path, value);
+    return updateObject(obj as JSONObject, path, value);
   }
   console.error(`Cannot update path ${path.join('.')} in non-object/array value:`, obj);
   return obj;
@@ -107,7 +107,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
 /**
  * Updates an array at a specific path
  */
-function updateArray(array: JsonValue[], path: string[], value: JsonValue): JsonValue[] {
+function updateArray(array: JSONValue[], path: string[], value: JSONValue): JSONValue[] {
   const [index, ...restPath] = path;
   const arrayIndex = Number(index);
 
@@ -121,13 +121,13 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
     return array;
   }
 
-  let newArray: JsonValue[] = [];
+  let newArray: JSONValue[] = [];
   for (let i = 0; i < array.length; i++) {
     newArray[i] = i in array ? array[i] : null;
   }
 
   if (arrayIndex >= newArray.length) {
-    const extendedArray: JsonValue[] = new Array(arrayIndex).fill(null);
+    const extendedArray: JSONValue[] = new Array(arrayIndex).fill(null);
     // Copy over the existing elements (now guaranteed to be dense)
     for (let i = 0; i < newArray.length; i++) {
       extendedArray[i] = newArray[i];
@@ -146,7 +146,7 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
 /**
  * Updates an object at a specific path
  */
-function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonObject {
+function updateObject(obj: JSONObject, path: string[], value: JSONValue): JSONObject {
   const [key, ...restPath] = path;
 
   // Validate object key
@@ -176,7 +176,7 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
  * @param defaultValue Value to return if path doesn't exist
  * @returns The value at the path, or defaultValue if not found
  */
-export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: JsonValue = null): JsonValue {
+export function getValueAtPath(obj: JSONValue, path: string[], defaultValue: JSONValue = null): JSONValue {
   if (path.length === 0) return obj;
 
   const [first, ...rest] = path;
@@ -197,7 +197,7 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
     if (!(first in obj)) {
       return defaultValue;
     }
-    return getValueAtPath((obj as JsonObject)[first], rest, defaultValue);
+    return getValueAtPath((obj as JSONObject)[first], rest, defaultValue);
   }
 
   return defaultValue;

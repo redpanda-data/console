@@ -5,13 +5,13 @@ import Editor from 'react-simple-code-editor';
 import 'prismjs/components/prism-json';
 import 'prismjs/themes/prism.css';
 
-interface JsonEditorProps {
+interface JSONEditorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
 }
 
-export const JsonEditor = ({ value, onChange, error: externalError }: JsonEditorProps) => {
+export const JSONEditor = ({ value, onChange, error: externalError }: JSONEditorProps) => {
   const [editorContent, setEditorContent] = useState(value || '');
   const [internalError, setInternalError] = useState<string | undefined>(undefined);
 
