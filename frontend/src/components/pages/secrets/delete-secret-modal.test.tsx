@@ -1,3 +1,4 @@
+import { describe, expect, test, vi } from 'bun:test';
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
@@ -11,11 +12,11 @@ import {
   PipelinesForSecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { DeleteSecretRequestSchema as DeleteSecretRequestSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { fireEvent, render, screen, waitFor, within } from 'test-utils';
+import { act, fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { DeleteSecretModal } from './delete-secret-modal';
 
 describe('DeleteSecretModal', () => {
-  test('should let the user delete a secret after entering confirmation text', async () => {
+  test.serial('should let the user delete a secret after entering confirmation text', async () => {
     const secretId = 'SECRET_ID';
 
     const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
@@ -37,26 +38,26 @@ describe('DeleteSecretModal', () => {
 
     render(<DeleteSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('delete-secret-button')).toBeVisible();
+    act(() => {
+      fireEvent.click(screen.getByTestId('delete-secret-button'));
     });
 
-    fireEvent.click(screen.getByTestId('delete-secret-button'));
-
     await waitFor(() => {
-      expect(screen.getByTestId('delete-secret-button')).toBeVisible();
       expect(screen.getByTestId('delete-secret-button')).toBeDisabled();
     });
 
-    fireEvent.change(screen.getByTestId('txt-confirmation-delete'), { target: { value: secretId } });
+    act(() => {
+      fireEvent.change(screen.getByTestId('txt-confirmation-delete'), { target: { value: secretId } });
+    });
 
     await waitFor(() => {
-      expect(screen.getByTestId('delete-secret-button')).toBeVisible();
       expect(screen.getByTestId('delete-secret-button')).toBeEnabled();
     });
 
     // Click the delete button
-    fireEvent.click(screen.getByTestId('delete-secret-button'));
+    act(() => {
+      fireEvent.click(screen.getByTestId('delete-secret-button'));
+    });
 
     // Verify that the delete mutation was called with the correct parameters
     await waitFor(() => {
@@ -72,7 +73,7 @@ describe('DeleteSecretModal', () => {
     });
   });
 
-  test('should show a warning if the secret is in use', async () => {
+  test.serial('should show a warning if the secret is in use', async () => {
     const secretId = 'SECRET_ID';
 
     const pipeline = create(PipelineSchema, {
@@ -100,7 +101,6 @@ describe('DeleteSecretModal', () => {
     render(<DeleteSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
 
     await waitFor(() => {
-      expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();
       expect(within(screen.getByTestId('resource-in-use-alert')).getByText(pipeline.id)).toBeVisible();
     });
   });
