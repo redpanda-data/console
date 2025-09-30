@@ -12,17 +12,17 @@
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
-import CodexLogo from '../../../../assets/codex.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import CodexLogo from '../../../../../assets/codex.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientCodexProps {
+interface ClientCodexProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientCodex = ({ mcpServer }: RemoteMCPConnectClientCodexProps) => {
+export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
   const clusterId = config?.clusterId;

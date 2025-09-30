@@ -13,21 +13,18 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
-import VSCodeLogo from '../../../../assets/vscode.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import VSCodeLogo from '../../../../../assets/vscode.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientVSCodeProps {
+interface ClientVscodeProps {
   mcpServer: MCPServer;
   enableMcpDiscovery?: boolean;
 }
 
-export const RemoteMCPConnectClientVSCode = ({
-  mcpServer,
-  enableMcpDiscovery = true,
-}: RemoteMCPConnectClientVSCodeProps) => {
+export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVscodeProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');

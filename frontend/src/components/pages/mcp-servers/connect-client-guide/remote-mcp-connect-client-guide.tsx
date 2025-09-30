@@ -32,17 +32,17 @@ import ManusLogo from '../../../../assets/manus.svg';
 import VSCodeLogo from '../../../../assets/vscode.svg';
 import WarpLogo from '../../../../assets/warp.svg';
 import WindsurfLogo from '../../../../assets/windsurf.svg';
-import { RemoteMCPConnectClientAuggie } from './remote-mcp-connect-client-auggie';
-import { RemoteMCPConnectClientClaudeCode } from './remote-mcp-connect-client-claude-code';
-import { RemoteMCPConnectClientClaudeDesktop } from './remote-mcp-connect-client-claude-desktop';
-import { RemoteMCPConnectClientCline } from './remote-mcp-connect-client-cline';
-import { RemoteMCPConnectClientCodex } from './remote-mcp-connect-client-codex';
-import { RemoteMCPConnectClientCursor } from './remote-mcp-connect-client-cursor';
-import { RemoteMCPConnectClientGemini } from './remote-mcp-connect-client-gemini';
-import { RemoteMCPConnectClientManus } from './remote-mcp-connect-client-manus';
-import { RemoteMCPConnectClientVSCode } from './remote-mcp-connect-client-vscode';
-import { RemoteMCPConnectClientWarp } from './remote-mcp-connect-client-warp';
-import { RemoteMCPConnectClientWindsurf } from './remote-mcp-connect-client-windsurf';
+import { ClientAuggie } from './clients/auggie';
+import { ClientClaudeCode } from './clients/claude-code';
+import { ClientClaudeDesktop } from './clients/claude-desktop';
+import { ClientCline } from './clients/cline';
+import { ClientCodex } from './clients/codex';
+import { ClientCursor } from './clients/cursor';
+import { ClientGemini } from './clients/gemini';
+import { ClientManus } from './clients/manus';
+import { ClientVscode } from './clients/vscode';
+import { ClientWarp } from './clients/warp';
+import { ClientWindsurf } from './clients/windsurf';
 import type { MCPServer } from './utils';
 
 const AVAILABLE_CLIENTS = [
@@ -87,29 +87,29 @@ interface RemoteMCPClientGuideContentProps {
 const RemoteMCPClientGuideContent = ({ client, mcpServer }: RemoteMCPClientGuideContentProps) => {
   switch (client) {
     case 'claude-code':
-      return <RemoteMCPConnectClientClaudeCode mcpServer={mcpServer} />;
+      return <ClientClaudeCode mcpServer={mcpServer} />;
     case 'claude-desktop':
-      return <RemoteMCPConnectClientClaudeDesktop mcpServer={mcpServer} />;
+      return <ClientClaudeDesktop mcpServer={mcpServer} />;
     case 'vscode':
-      return <RemoteMCPConnectClientVSCode mcpServer={mcpServer} />;
+      return <ClientVscode mcpServer={mcpServer} />;
     case 'cursor':
-      return <RemoteMCPConnectClientCursor mcpServer={mcpServer} />;
+      return <ClientCursor mcpServer={mcpServer} />;
     case 'windsurf':
-      return <RemoteMCPConnectClientWindsurf mcpServer={mcpServer} />;
+      return <ClientWindsurf mcpServer={mcpServer} />;
     case 'gemini':
-      return <RemoteMCPConnectClientGemini mcpServer={mcpServer} />;
+      return <ClientGemini mcpServer={mcpServer} />;
     case 'codex':
-      return <RemoteMCPConnectClientCodex mcpServer={mcpServer} />;
+      return <ClientCodex mcpServer={mcpServer} />;
     case 'warp':
-      return <RemoteMCPConnectClientWarp mcpServer={mcpServer} />;
+      return <ClientWarp mcpServer={mcpServer} />;
     case 'auggie':
-      return <RemoteMCPConnectClientAuggie mcpServer={mcpServer} />;
+      return <ClientAuggie mcpServer={mcpServer} />;
     case 'cline':
-      return <RemoteMCPConnectClientCline mcpServer={mcpServer} />;
+      return <ClientCline mcpServer={mcpServer} />;
     case 'manus':
-      return <RemoteMCPConnectClientManus mcpServer={mcpServer} />;
+      return <ClientManus mcpServer={mcpServer} />;
     default:
-      return <RemoteMCPConnectClientClaudeCode mcpServer={mcpServer} />;
+      return <ClientClaudeCode mcpServer={mcpServer} />;
   }
 };
 

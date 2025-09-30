@@ -13,16 +13,16 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Cable, FileJson, Plus, Send } from 'lucide-react';
-import ManusLogo from '../../../../assets/manus.svg';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import ManusLogo from '../../../../../assets/manus.svg';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientManusProps {
+interface ClientManusProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientManus = ({ mcpServer }: RemoteMCPConnectClientManusProps) => {
+export const ClientManus = ({ mcpServer }: ClientManusProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');

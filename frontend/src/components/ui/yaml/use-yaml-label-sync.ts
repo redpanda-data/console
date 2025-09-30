@@ -9,7 +9,7 @@
  */
 /** biome-ignore-all lint/suspicious/noExplicitAny: when parsing YAML, we have no way to predict the exact document we get */
 
-import type { FormValues } from 'components/pages/remote-mcp/create/schemas';
+import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
 import { useEffect } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { parse, stringify } from 'yaml';

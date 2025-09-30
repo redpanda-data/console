@@ -8,7 +8,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { FormValues } from 'components/pages/remote-mcp/create/schemas';
+import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';

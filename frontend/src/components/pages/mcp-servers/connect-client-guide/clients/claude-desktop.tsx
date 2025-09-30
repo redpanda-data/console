@@ -12,17 +12,17 @@
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
-import ClaudeDesktopLogo from '../../../../assets/claude-desktop.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, getRpkCommand, type MCPServer } from './utils';
+import ClaudeDesktopLogo from '../../../../../assets/claude-desktop.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { getMCPServerName, getRpkCloudEnvironment, getRpkCommand, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientClaudeDesktopProps {
+interface ClientClaudeDesktopProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientClaudeDesktop = ({ mcpServer }: RemoteMCPConnectClientClaudeDesktopProps) => {
+export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');

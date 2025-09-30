@@ -12,35 +12,26 @@
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
-import AuggieLogo from '../../../../assets/auggie.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import { Server, Settings } from 'lucide-react';
+import ClineLogo from '../../../../../assets/cline.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientAuggieProps {
+interface ClientClineProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientAuggie = ({ mcpServer }: RemoteMCPConnectClientAuggieProps) => {
+export const ClientCline = ({ mcpServer }: ClientClineProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
   const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
-
   const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
 
-  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}" ` : '';
-  const auggieCommand = `auggie mcp add ${mcpServerName} \\
---transport stdio \\
---command rpk \\
---args "-X" ${cloudEnvArg}\\
-"cloud" "mcp" "proxy" \\
-"${clusterFlag}" "${clusterId}" \\
-"--mcp-server-id" "${mcpServerId}"`;
-
-  const augmentCodeConfigJson = showCloudEnvironmentFlag
+  const clineConfigJson = showCloudEnvironmentFlag
     ? `{
   "mcpServers": {
     "${mcpServerName}": {
@@ -87,32 +78,51 @@ export const RemoteMCPConnectClientAuggie = ({ mcpServer }: RemoteMCPConnectClie
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={AuggieLogo} alt="Auggie (Augment Code) CLI" className="h-4 w-4" /> Auggie (Augment Code CLI)
+                <img src={ClineLogo} alt="Cline" className="h-4 w-4" />
+                Cline extension
               </Text>
-              <span>and run the following command:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={auggieCommand} />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
-              <span>Alternatively, you can manually update</span>
-              <InlineCode className="whitespace-nowrap">~/.augment/mcp.json</InlineCode>
-              <span>with the following MCP server configuration:</span>
+              <Text>Click on</Text>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                <Server className="h-4 w-4" />
+                MCP Servers
+              </Text>
+              <Text>section at the bottom of the prompt window</Text>
             </div>
-            <DynamicCodeBlock lang="json" code={augmentCodeConfigJson} />
           </ListItem>
           <ListItem>
-            Verify the MCP server is available with:
-            <DynamicCodeBlock lang="bash" code="auggie mcp list" />
-            Or alternatively use:
-            <DynamicCodeBlock lang="bash" code="/mcp-status" />
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Click</span>
+              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                <Settings className="h-4 w-4" />
+                Configure MCP Servers
+              </Text>
+            </div>
+          </ListItem>
+          <ListItem>
+            <div className="flex flex-wrap items-center gap-1">
+              <span>Add the following configuration to your</span>
+              <InlineCode className="whitespace-nowrap">cline_mcp_settings.json</InlineCode>
+            </div>
+            <DynamicCodeBlock lang="json" code={clineConfigJson} />
+          </ListItem>
+          <ListItem>
+            Press{' '}
+            <Text as="span" className="font-bold">
+              Done
+            </Text>
+          </ListItem>
+          <ListItem>
+            <div className="flex items-center gap-2">
+              Cline will automatically reload and you can start using the MCP server
+            </div>
           </ListItem>
         </List>
       </div>
-      <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.augmentcode.com/setup-augment/mcp#import-from-json"
-        clientName="Auggie"
-      />
+      <RemoteMCPConnectDocsAlert documentationUrl="https://docs.cline.bot/mcp/mcp-overview" clientName="Cline" />
     </div>
   );
 };

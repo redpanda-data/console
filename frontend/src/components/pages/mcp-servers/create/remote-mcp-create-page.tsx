@@ -35,11 +35,11 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
-import { MetadataStep } from './components/metadata-step';
-import { ToolsStep } from './components/tools-step';
-import { useMetadataValidation } from './hooks/use-metadata-validation';
+import { getTierById } from './form-helpers';
+import { MetadataStep } from './metadata-step';
 import { FormSchema, type FormValues, initialValues } from './schemas';
-import { getTierById } from './utils/form-helpers';
+import { ToolsStep } from './tools-step';
+import { useMetadataValidation } from './use-metadata-validation';
 
 // Stepper definition
 const { Stepper } = defineStepper(

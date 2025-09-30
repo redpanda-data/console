@@ -15,17 +15,17 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Command } from 'lucide-react';
-import CursorLogo from '../../../../assets/cursor.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import CursorLogo from '../../../../../assets/cursor.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientCursorProps {
+interface ClientCursorProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientCursor = ({ mcpServer }: RemoteMCPConnectClientCursorProps) => {
+export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');

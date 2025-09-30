@@ -14,7 +14,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { Plus, Trash2 } from 'lucide-react';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
-import type { FormValues } from '../schemas';
+import type { FormValues } from './schemas';
 
 interface TagsFieldListProps {
   form: UseFormReturn<FormValues>;

@@ -8,7 +8,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { FormValues } from 'components/pages/remote-mcp/create/schemas';
+import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,

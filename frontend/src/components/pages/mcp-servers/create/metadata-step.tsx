@@ -28,8 +28,8 @@ import {
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
-import { RESOURCE_TIERS } from '../../remote-mcp-constants';
-import type { FormValues } from '../schemas';
+import { RESOURCE_TIERS } from '../remote-mcp-constants';
+import type { FormValues } from './schemas';
 import { TagsFieldList } from './tags-field-list';
 
 interface MetadataStepProps {

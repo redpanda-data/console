@@ -14,17 +14,17 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Command } from 'lucide-react';
-import WindsurfLogo from '../../../../assets/windsurf.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import WindsurfLogo from '../../../../../assets/windsurf.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientWindsurfProps {
+interface ClientWindsurfProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientWindsurf = ({ mcpServer }: RemoteMCPConnectClientWindsurfProps) => {
+export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
   const clusterId = config?.clusterId;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
   const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';

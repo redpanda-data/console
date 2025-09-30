@@ -23,18 +23,18 @@ import {
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useState } from 'react';
-import ClaudeCodeLogo from '../../../../assets/claude-code.svg';
-import { RemoteMCPConnectDocsAlert } from '../remote-mcp-connect-docs-alert';
-import { InstallRpkListItem } from './install-rpk-list-item';
-import { LoginToRpkListItem } from './login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from './utils';
+import GeminiLogo from '../../../../../assets/gemini.svg';
+import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
+import { InstallRpkListItem } from '../install-rpk-list-item';
+import { LoginToRpkListItem } from '../login-to-rpk-list-item';
+import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface RemoteMCPConnectClientClaudeCodeProps {
+interface ClientGeminiProps {
   mcpServer: MCPServer;
 }
 
-export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnectClientClaudeCodeProps) => {
-  const [selectedScope, setSelectedScope] = useState<string>('local');
+export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
+  const [selectedScope, setSelectedScope] = useState<string>('user');
 
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
@@ -42,51 +42,49 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
   const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}",` : '';
+  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}" ` : '';
 
-  const claudeCodeCommand = `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
-'{"type":"stdio","command":"rpk","args":[
-"-X",${cloudEnvArg}"cloud","mcp","proxy",
-"${clusterFlag}","${clusterId}",
-"--mcp-server-id","${mcpServerId}"]}'`;
+  const geminiCommand = `gemini mcp add ${mcpServerName} \\
+--scope ${selectedScope} \\
+--transport stdio rpk \\
+--args "-X" ${cloudEnvArg}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
 
-  const claudeCodeConfigJson = showCloudEnvironmentFlag
+  const geminiConfigJson = showCloudEnvironmentFlag
     ? `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud_environment=${getRpkCloudEnvironment()}",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud_environment=${getRpkCloudEnvironment()}",
+        "cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
     }
   }
 }`
     : `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
     }
   }
 }`;
@@ -102,8 +100,8 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
                 <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                  <img src={ClaudeCodeLogo} alt="Claude Code" className="h-4 w-4" />
-                  Claude Code
+                  <img src={GeminiLogo} alt="Gemini" className="h-4 w-4" />
+                  Gemini
                 </Text>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
@@ -116,7 +114,6 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Configuration Scope</SelectLabel>
-                      <SelectItem value="local">Local</SelectItem>
                       <SelectItem value="user">User</SelectItem>
                       <SelectItem value="project">Project</SelectItem>
                     </SelectGroup>
@@ -124,17 +121,8 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
                 </Select>
               </div>
               <Text variant="small" className="text-muted-foreground">
-                {selectedScope === 'local' && 'Configuration stored locally for this project only'}
-                {selectedScope === 'project' && (
-                  <Text as="span">
-                    Configuration shared with team via <InlineCode>.mcp.json</InlineCode> file in project
-                  </Text>
-                )}
-                {selectedScope === 'user' && (
-                  <Text as="span">
-                    Configuration available across all your projects in <InlineCode>~/.claude.json</InlineCode>
-                  </Text>
-                )}
+                {selectedScope === 'user' && 'Configuration available across all your projects'}
+                {selectedScope === 'project' && 'Configuration shared with team via project settings'}
               </Text>
             </div>
           </ListItem>
@@ -142,29 +130,27 @@ export const RemoteMCPConnectClientClaudeCode = ({ mcpServer }: RemoteMCPConnect
             <div className="flex flex-wrap items-center gap-1">
               <span>Run the following command to add the MCP server:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={claudeCodeCommand} />
+            <DynamicCodeBlock lang="bash" code={geminiCommand} />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Alternatively, you can manually update</span>
-              {selectedScope === 'local' && <InlineCode className="whitespace-nowrap">~/.claude.json</InlineCode>}
-              {selectedScope === 'user' && <InlineCode className="whitespace-nowrap">~/.claude.json</InlineCode>}
-              {selectedScope === 'project' && <InlineCode className="whitespace-nowrap">.mcp.json</InlineCode>}
+              <InlineCode className="whitespace-nowrap">~/.gemini/settings.json</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={claudeCodeConfigJson} />
+            <DynamicCodeBlock lang="json" code={geminiConfigJson} />
           </ListItem>
           <ListItem>
-            Restart Claude Code and verify the MCP server is available:
-            <DynamicCodeBlock lang="bash" code="claude mcp list" />
+            Restart Gemini and verify the MCP server is available:
+            <DynamicCodeBlock lang="bash" code="gemini mcp list" />
             Or alternatively use:
-            <DynamicCodeBlock lang="bash" code="/mcp" />
+            <DynamicCodeBlock lang="bash" code="/mcp list" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.anthropic.com/en/docs/claude-code/mcp"
-        clientName="Claude Code"
+        documentationUrl="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#how-to-interact-with-your-mcp-server"
+        clientName="Gemini"
       />
     </div>
   );
