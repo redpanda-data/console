@@ -27,7 +27,7 @@ export const updatePageTitle = (serverName?: string) => {
   runInAction(() => {
     uiState.pageTitle = serverName ? `Remote MCP - ${serverName}` : 'Remote MCP Details';
     uiState.pageBreadcrumbs = [
-      { title: 'Remote MCP', linkTo: '/remote-mcp' },
+      { title: 'Remote MCP', linkTo: '/mcp-servers' },
       { title: serverName || 'Details', linkTo: '', heading: serverName || 'Remote MCP Details' },
     ];
   });

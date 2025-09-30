@@ -166,7 +166,7 @@ function useShouldShowRefresh() {
 
 function useShouldHideHeader() {
   const remoteMcpDetailsMatch = useMatch({
-    path: '/remote-mcp/:id',
+    path: '/mcp-servers/:id',
     end: false,
   });
 

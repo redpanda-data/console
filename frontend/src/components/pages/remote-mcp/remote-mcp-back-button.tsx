@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 
 export const RemoteMCPBackButton = () => {
   return (
-    <Link to="/remote-mcp">
+    <Link to="/mcp-servers">
       <Button variant="ghost" size="sm" className="gap-2">
         <ArrowLeft className="h-4 w-4" />
         Back to MCP Servers

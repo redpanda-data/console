@@ -238,7 +238,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
         onSuccess: (data) => {
           if (data?.mcpServer?.id) {
             toast.success('MCP server created');
-            navigate(`/remote-mcp/${data.mcpServer.id}`);
+            navigate(`/mcp-servers/${data.mcpServer.id}`);
           }
         },
       },
