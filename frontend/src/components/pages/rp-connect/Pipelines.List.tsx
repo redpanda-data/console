@@ -22,7 +22,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -34,7 +34,7 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
-import { ConnectTiles } from './tiles/connect-tiles';
+import { ConnectTiles } from './onboarding/connect-tiles';
 import type { ConnectComponentType } from './types/rpcn-schema';
 import type { ConnectTilesFormData } from './types/wizard';
 
@@ -52,7 +52,7 @@ const CreatePipelineButton = () => {
 
 const NewCreatePipelineButton = () => {
   const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
-    CONNECT_TILE_STORAGE_KEY,
+    CONNECT_WIZARD_CONNECTOR_KEY,
     {},
   );
   const navigate = useNavigate();
@@ -70,7 +70,10 @@ const NewCreatePipelineButton = () => {
 };
 
 const EmptyPlaceholder = () => {
-  const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_TILE_STORAGE_KEY, {});
+  const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
+    CONNECT_WIZARD_CONNECTOR_KEY,
+    {},
+  );
   const navigate = useNavigate();
   const enableConnectTiles = isFeatureFlagEnabled('enableRpcnTiles');
 

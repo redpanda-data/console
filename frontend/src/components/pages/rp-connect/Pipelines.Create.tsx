@@ -28,7 +28,7 @@ import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -38,9 +38,9 @@ import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { LintResults } from '../remote-mcp/create/components/lint-results';
 import { extractLintHintsFromError } from './errors';
+import { AddConnectorDialog } from './onboarding/add-connector-dialog';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-import { AddConnectorDialog } from './tiles/add-connector-dialog';
 import type { ConnectComponentType } from './types/rpcn-schema';
 import type { ConnectTilesFormData } from './types/wizard';
 import { getComponentTypeBadgeProps } from './utils/badges';
@@ -384,7 +384,7 @@ export const PipelineEditor = observer(
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const [persistedFormData, _] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_TILE_STORAGE_KEY, {});
+    const [persistedFormData, _] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     const persistedConnectComponentTemplate = useMemo(() => {
