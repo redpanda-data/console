@@ -1,7 +1,7 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ValidateFunction } from 'ajv';
 import Ajv from 'ajv';
-import type { JsonObject, JsonSchemaType, JsonValue } from './json-utils';
+import type { JsonSchemaType } from './json-utils';
 
 const ajv = new Ajv();
 
@@ -70,70 +70,8 @@ export function hasOutputSchema(toolName: string): boolean {
   return toolOutputValidators.has(toolName);
 }
 
-/**
- * Generates a default value based on a JSON schema type
- * @param schema The JSON schema definition
- * @param propertyName Optional property name for checking if it's required in parent schema
- * @param parentSchema Optional parent schema to check required array
- * @returns A default value matching the schema type
- */
-export function generateDefaultValue(
-  schema: JsonSchemaType,
-  propertyName?: string,
-  parentSchema?: JsonSchemaType,
-): JsonValue {
-  if ('default' in schema && schema.default !== undefined) {
-    return schema.default;
-  }
-
-  // Check if this property is required in the parent schema
-  const isRequired = propertyName && parentSchema ? isPropertyRequired(propertyName, parentSchema) : false;
-
-  switch (schema.type) {
-    case 'string':
-      return isRequired ? '' : undefined;
-    case 'number':
-    case 'integer':
-      return isRequired ? 0 : undefined;
-    case 'boolean':
-      return isRequired ? false : undefined;
-    case 'array': {
-      // Always start arrays with at least 1 item to reduce user clicks
-      if (!schema.items) return [];
-      const defaultItem = generateDefaultValue(schema.items);
-      return [defaultItem];
-    }
-    case 'object': {
-      if (!schema.properties) return {};
-
-      const obj: JsonObject = {};
-      // Only include properties that are required according to the schema's required array
-      Object.entries(schema.properties).forEach(([key, prop]) => {
-        if (isPropertyRequired(key, schema)) {
-          const value = generateDefaultValue(prop, key, schema);
-          if (value !== undefined) {
-            obj[key] = value;
-          }
-        }
-      });
-      return obj;
-    }
-    case 'null':
-      return null;
-    default:
-      return undefined;
-  }
-}
-
-/**
- * Helper function to check if a property is required in a schema
- * @param propertyName The name of the property to check
- * @param schema The parent schema containing the required array
- * @returns true if the property is required, false otherwise
- */
-export function isPropertyRequired(propertyName: string, schema: JsonSchemaType): boolean {
-  return schema.required?.includes(propertyName) ?? false;
-}
+// Re-export from shared utilities
+export { generateDefaultFromJsonSchema as generateDefaultValue, isPropertyRequired } from 'utils/json-schema-utils';
 
 /**
  * Normalizes union types (like string|null from FastMCP) to simple types for form rendering

@@ -1,18 +1,124 @@
-import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
+import { parseDocument, stringify as yamlStringify } from 'yaml';
+import { generateDefaultFromJsonSchema } from 'utils/json-schema-utils';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
 import {
   COMPONENT_CATEGORIES,
   CONNECT_COMPONENT_TYPE,
-  type ComponentCategory,
   type ConnectComponentSpec,
-  type ConnectComponentStatus,
   type ConnectComponentType,
   type ConnectFieldSpec,
   type ConnectNodeCategory,
-  type ConnectSchemaNodeConfig,
   type ExtendedConnectComponentSpec,
   type InternalConnectComponentSpec,
 } from '../types/rpcn-schema';
+
+/**
+ * Extracts lightweight metadata from JSON Schema component variants
+ * No complex transformation - just metadata for display + raw schema reference
+ */
+const extractComponentMetadata = (componentType: string, definition: any): ConnectComponentSpec[] => {
+  const components: ConnectComponentSpec[] = [];
+
+  if (!definition.allOf || !Array.isArray(definition.allOf)) {
+    return components;
+  }
+
+  // The first element of allOf contains anyOf with component variants
+  const variantsSection = definition.allOf[0];
+  if (!variantsSection.anyOf || !Array.isArray(variantsSection.anyOf)) {
+    return components;
+  }
+
+  // Extract metadata from each variant
+  for (const variant of variantsSection.anyOf) {
+    if (!variant.properties) continue;
+
+    // Each variant has a single property key which is the component name
+    const componentNames = Object.keys(variant.properties);
+    for (const componentName of componentNames) {
+      const componentSchema = variant.properties[componentName];
+
+      // Simple metadata extraction - no transformation
+      const componentSpec: ConnectComponentSpec = {
+        name: componentName,
+        type: componentType as ConnectComponentType,
+        status: 'stable',
+        plugin: false,
+        summary: `${componentName} ${componentType}`,
+        description: componentSchema.description || `${componentName} ${componentType} component`,
+        categories: inferComponentCategory(componentName),
+        // Minimal config with raw JSON Schema reference
+        config: {
+          name: componentName,
+          type: 'object',
+          kind: 'scalar',
+          // Store raw JSON Schema for on-demand YAML generation
+          _jsonSchema: componentSchema,
+        } as ConnectFieldSpec,
+        version: '1.0.0',
+      };
+
+      components.push(componentSpec);
+    }
+  }
+
+  return components;
+};
+
+/**
+ * Phase 0: Parses benthos schema and returns categories and all components
+ */
+const parseSchema = () => {
+  const schemaData = benthosSchema as any;
+  const categories = new Map<string, ConnectNodeCategory>();
+  const allComponents: ConnectComponentSpec[] = [];
+
+  // Check if schema has the new JSON Schema format with definitions
+  if (!schemaData.definitions) {
+    console.error('Schema does not have definitions structure. Expected JSON Schema format.');
+    return { categories, allComponents };
+  }
+
+  // Parse each component type from definitions
+  for (const componentType of CONNECT_COMPONENT_TYPE) {
+    const definition = schemaData.definitions[componentType];
+    if (!definition) continue;
+
+    // Extract lightweight metadata from the JSON Schema definition
+    const components = extractComponentMetadata(componentType, definition);
+
+    if (components.length > 0) {
+      allComponents.push(...components);
+    }
+  }
+
+  // Create semantic category collections for the category filter
+  const semanticCategoryMap = new Map<string, Set<string>>();
+
+  for (const component of allComponents) {
+    if (component.categories) {
+      for (const categoryId of component.categories) {
+        if (!semanticCategoryMap.has(categoryId)) {
+          semanticCategoryMap.set(categoryId, new Set());
+        }
+      }
+    }
+  }
+
+  // Convert to NodeCategory format for semantic categories
+  for (const categoryId of semanticCategoryMap.keys()) {
+    const categoryData: ConnectNodeCategory = {
+      id: categoryId,
+      name: getCategoryDisplayName(categoryId),
+    };
+    categories.set(categoryId, categoryData);
+  }
+
+  return { categories, allComponents };
+};
+
+// Cache the parsed schema data
+const { categories, allComponents } = parseSchema();
 
 /**
  * Phase 1: Converts a component specification to a config object structure
@@ -102,75 +208,56 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
 
 /**
  * Phase 2: Merges a new component config object into existing YAML configuration
- * following the Redpanda Connect schema merging rules
+ * using Document API to PRESERVE COMMENTS
  */
 export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: any,
   componentSpec: ConnectComponentSpec,
 ) => {
-  let existingConfig: any = {};
-
-  // Parse existing YAML if provided (comments will be lost here - unavoidable)
-  if (existingYaml.trim()) {
-    try {
-      existingConfig = yamlParse(existingYaml) || {};
-    } catch (error) {
-      console.warn('Failed to parse existing YAML, starting with empty config:', error);
-      existingConfig = {};
-    }
+  // If no existing YAML, return new config object
+  if (!existingYaml.trim()) {
+    return newConfigObject;
   }
 
-  // Apply merging rules based on component type
+  // Parse existing YAML as Document (preserves comments!)
+  let doc: any;
+  try {
+    doc = parseDocument(existingYaml);
+  } catch (error) {
+    console.warn('Failed to parse existing YAML, starting with empty config:', error);
+    return newConfigObject;
+  }
+
+  // Apply merging rules based on component type using Document API
   switch (componentSpec.type) {
-    case 'processor':
+    case 'processor': {
       // Processors: append to pipeline.processors[] array
-      if (!existingConfig.pipeline) {
-        existingConfig.pipeline = {};
-      }
-      if (!existingConfig.pipeline.processors) {
-        existingConfig.pipeline.processors = [];
-      }
-      // Add the new processor to the array
-      if (newConfigObject.pipeline?.processors?.[0]) {
-        existingConfig.pipeline.processors.push(newConfigObject.pipeline.processors[0]);
+      const processors = doc.getIn(['pipeline', 'processors']) || [];
+      const newProcessor = newConfigObject.pipeline?.processors?.[0];
+
+      if (newProcessor) {
+        if (!Array.isArray(processors)) {
+          doc.setIn(['pipeline', 'processors'], [newProcessor]);
+        } else {
+          doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
+        }
       }
       break;
+    }
 
-    case 'cache':
+    case 'cache': {
       // Cache: append to cache_resources[] array
-      if (!existingConfig.cache_resources) {
-        existingConfig.cache_resources = [];
-      }
-      if (newConfigObject.cache_resources?.[0]) {
-        // Check for label conflicts and resolve
-        const newResource = newConfigObject.cache_resources[0];
-        const existingLabels = existingConfig.cache_resources.map((r: any) => r.label);
-        if (existingLabels.includes(newResource.label)) {
-          // Generate unique label
-          let counter = 1;
-          let uniqueLabel = `${newResource.label}_${counter}`;
-          while (existingLabels.includes(uniqueLabel)) {
-            counter++;
-            uniqueLabel = `${newResource.label}_${counter}`;
-          }
-          newResource.label = uniqueLabel;
-        }
-        existingConfig.cache_resources.push(newResource);
-      }
-      break;
+      const cacheResources = doc.getIn(['cache_resources']) || [];
+      const newResource = newConfigObject.cache_resources?.[0];
 
-    case 'rate_limit':
-      // Rate limit: append to rate_limit_resources[] array
-      if (!existingConfig.rate_limit_resources) {
-        existingConfig.rate_limit_resources = [];
-      }
-      if (newConfigObject.rate_limit_resources?.[0]) {
-        // Check for label conflicts and resolve
-        const newResource = newConfigObject.rate_limit_resources[0];
-        const existingLabels = existingConfig.rate_limit_resources.map((r: any) => r.label);
+      if (newResource) {
+        // Check for label conflicts
+        const existingLabels = Array.isArray(cacheResources)
+          ? cacheResources.map((r: any) => r?.label).filter(Boolean)
+          : [];
+
         if (existingLabels.includes(newResource.label)) {
-          // Generate unique label
           let counter = 1;
           let uniqueLabel = `${newResource.label}_${counter}`;
           while (existingLabels.includes(uniqueLabel)) {
@@ -179,18 +266,49 @@ export const mergeConnectConfigs = (
           }
           newResource.label = uniqueLabel;
         }
-        existingConfig.rate_limit_resources.push(newResource);
+
+        doc.setIn(['cache_resources'], [...cacheResources, newResource]);
       }
       break;
+    }
+
+    case 'rate_limit': {
+      // Rate limit: append to rate_limit_resources[] array
+      const rateLimitResources = doc.getIn(['rate_limit_resources']) || [];
+      const newResource = newConfigObject.rate_limit_resources?.[0];
+
+      if (newResource) {
+        // Check for label conflicts
+        const existingLabels = Array.isArray(rateLimitResources)
+          ? rateLimitResources.map((r: any) => r?.label).filter(Boolean)
+          : [];
+
+        if (existingLabels.includes(newResource.label)) {
+          let counter = 1;
+          let uniqueLabel = `${newResource.label}_${counter}`;
+          while (existingLabels.includes(uniqueLabel)) {
+            counter++;
+            uniqueLabel = `${newResource.label}_${counter}`;
+          }
+          newResource.label = uniqueLabel;
+        }
+
+        doc.setIn(['rate_limit_resources'], [...rateLimitResources, newResource]);
+      }
+      break;
+    }
 
     case 'input':
     case 'output':
     case 'buffer':
     case 'metrics':
-    case 'tracer':
+    case 'tracer': {
       // Root level components: replace existing
-      Object.assign(existingConfig, newConfigObject);
+      for (const [key, value] of Object.entries(newConfigObject)) {
+        doc.setIn([key], value);
+      }
       break;
+    }
 
     case 'scanner':
       // Scanners are embedded, return as-is for manual handling
@@ -198,31 +316,43 @@ export const mergeConnectConfigs = (
 
     default:
       // Unknown component type: merge at root level
-      Object.assign(existingConfig, newConfigObject);
+      for (const [key, value] of Object.entries(newConfigObject)) {
+        doc.setIn([key], value);
+      }
       break;
   }
 
-  return existingConfig;
+  // Return the modified Document (will be converted to YAML string in configToYaml)
+  return doc;
 };
 
 /**
  * Phase 3: Converts config object to formatted YAML string with schema comments
+ * Now handles both plain objects and YAML Documents (for comment preservation)
  */
 export const configToYaml = (configObject: any, componentSpec: ConnectComponentSpec): string => {
   try {
-    // Stringify to clean YAML
-    let yamlString = yamlStringify(configObject, {
-      indent: 2,
-      lineWidth: 120,
-      minContentWidth: 20,
-      doubleQuotedAsJSON: false,
-    });
+    let yamlString: string;
 
-    // Add schema comments for the new component
-    yamlString = addSchemaComments(yamlString, componentSpec);
+    // Check if this is a YAML Document (from mergeConnectConfigs with existing YAML)
+    if (configObject && typeof configObject.toString === 'function' && typeof configObject.getIn === 'function') {
+      // It's a Document - convert to string (preserves comments!)
+      yamlString = configObject.toString();
+    } else {
+      // It's a plain object - stringify to YAML
+      yamlString = yamlStringify(configObject, {
+        indent: 2,
+        lineWidth: 120,
+        minContentWidth: 20,
+        doubleQuotedAsJSON: false,
+      });
 
-    // Add spacing between root-level components for readability
-    yamlString = addRootSpacing(yamlString);
+      // Add schema comments for the new component (only for new configs, not merged ones)
+      yamlString = addSchemaComments(yamlString, componentSpec);
+
+      // Add spacing between root-level components for readability
+      yamlString = addRootSpacing(yamlString);
+    }
 
     return yamlString;
   } catch (error) {
@@ -231,33 +361,23 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
   }
 };
 
+// ===============================
+// Helper functions
+// ===============================
+
 /**
- * Adds schema-based comments to YAML for the specified component
+ * Adds helpful schema comments to NEW YAML configs
+ * Works directly with JSON Schema for simplicity
+ * Only called for new configs (not merged ones - Document API preserves existing comments)
  */
 const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
-  if (!componentSpec.config.children) {
+  // Get the JSON Schema for this component
+  const jsonSchema = componentSpec.config._jsonSchema;
+  if (!jsonSchema || !jsonSchema.properties) {
     return yamlString;
   }
 
-  // Create field map for quick lookup
-  const fieldMap = new Map<string, ConnectFieldSpec>();
-  const addFieldsToMap = (fields: ConnectFieldSpec[], prefix = '') => {
-    fields.forEach((field) => {
-      const fullName = prefix ? `${prefix}.${field.name}` : field.name;
-      fieldMap.set(fullName, field);
-      fieldMap.set(field.name, field); // Fallback lookup
-
-      if (field.children) {
-        addFieldsToMap(field.children, fullName);
-      }
-    });
-  };
-
-  addFieldsToMap(componentSpec.config.children);
-
   const lines = yamlString.split('\n');
-  const contextStack: string[] = [];
-  const indentStack: number[] = [];
   const processedLines: string[] = [];
 
   lines.forEach((line) => {
@@ -267,7 +387,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
       return;
     }
 
-    const currentIndent = line.length - line.trimStart().length;
+    // Match YAML key-value pairs
     const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
     if (!keyValueMatch) {
       processedLines.push(line);
@@ -277,41 +397,28 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const [, indent, key, value] = keyValueMatch;
     const cleanKey = key.trim();
 
-    // Update context stack
-    while (indentStack.length > 0 && currentIndent <= indentStack[indentStack.length - 1]) {
-      indentStack.pop();
-      contextStack.pop();
-    }
-
-    const fullPath = contextStack.length > 0 ? `${contextStack.join('.')}.${cleanKey}` : cleanKey;
-    const fieldSpec = fieldMap.get(fullPath) || fieldMap.get(cleanKey);
-
-    // Track nesting
-    const hasChildren = value.trim() === '' || value.trim() === '{}' || value.trim() === '[]';
-    if (hasChildren) {
-      contextStack.push(cleanKey);
-      indentStack.push(currentIndent);
-    }
-
-    if (!fieldSpec) {
+    // Look up field in JSON Schema properties
+    const fieldSchema = jsonSchema.properties[cleanKey];
+    if (!fieldSchema) {
       processedLines.push(line);
       return;
     }
 
-    // Generate comment
+    // Generate comment based on JSON Schema
     let comment = '';
-    const isOptional = fieldSpec.default !== undefined || fieldSpec.is_optional === true;
+    const requiredFields = jsonSchema.required || [];
+    const isRequired = requiredFields.includes(cleanKey);
 
-    if (!isOptional) {
-      comment = ' # Required (no default)';
-    } else if (fieldSpec.default !== undefined) {
-      comment = ` # Default: ${JSON.stringify(fieldSpec.default)}`;
+    if (isRequired) {
+      comment = ' # Required';
+    } else if (fieldSchema.default !== undefined) {
+      comment = ` # Default: ${JSON.stringify(fieldSchema.default)}`;
     } else {
       comment = ' # Optional';
     }
 
     // Skip comments for empty structural elements unless required
-    if ((value.trim() === '{}' || value.trim() === '[]') && isOptional) {
+    if ((value.trim() === '{}' || value.trim() === '[]') && !isRequired) {
       comment = '';
     }
 
@@ -321,9 +428,6 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
   return processedLines.join('\n');
 };
 
-/**
- * Adds spacing between root-level components for readability
- */
 const addRootSpacing = (yamlString: string): string => {
   const lines = yamlString.split('\n');
   const processedLines: string[] = [];
@@ -358,17 +462,28 @@ const addRootSpacing = (yamlString: string): string => {
   return processedLines.join('\n');
 };
 
+/**
+ * Generates default values from ConnectFieldSpec
+ * Uses shared JSON Schema utility when _jsonSchema is available
+ */
 export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
-  // In the rp-connect-schema, fields with default values are considered optional
-  // Fields without default values are required
-  const isOptionalField = spec.default !== undefined || spec.is_optional === true;
+  // If we have raw JSON Schema, use shared utility
+  if (spec._jsonSchema) {
+    // Shared utility doesn't have showOptionalFields concept
+    // It respects the required array in JSON Schema
+    // For now, if showOptionalFields is true, we need to handle it differently
+    if (showOptionalFields) {
+      return generateAllFieldsFromJsonSchema(spec._jsonSchema);
+    }
+    return generateDefaultFromJsonSchema(spec._jsonSchema);
+  }
 
-  // Check if this is an optional field that should be excluded
+  // Fallback to legacy behavior for backward compatibility (external components without _jsonSchema)
+  const isOptionalField = spec.default !== undefined || spec.is_optional === true;
   if (isOptionalField && !showOptionalFields) {
     return undefined;
   }
 
-  // Use the explicit default if it exists
   if (spec.default !== undefined) {
     return spec.default;
   }
@@ -383,25 +498,20 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
           return 0;
         case 'bool':
           return false;
-        case 'object': // A scalar object is a complex type, render its children
+        case 'object':
           if (spec.children) {
             const obj = {} as Record<string, unknown>;
-
-            // For configuration templates, include all fields to provide comprehensive examples
-            // This gives users visibility into all available configuration options
             for (const child of spec.children) {
               const childValue = generateDefaultValue(child, showOptionalFields);
-              // Only include fields that are not undefined (i.e., not excluded optional fields)
               if (childValue !== undefined) {
                 obj[child.name] = childValue;
               }
             }
-
             return obj;
           }
           return {};
         default:
-          return ''; // Fallback for other types like 'input', 'processor' etc.
+          return '';
       }
     case 'array':
       return [];
@@ -412,6 +522,47 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
     default:
       return undefined;
   }
+}
+
+/**
+ * Helper to generate ALL fields from JSON Schema (including optional ones)
+ * Used when showOptionalFields is true
+ */
+function generateAllFieldsFromJsonSchema(jsonSchema: any): unknown {
+  if (jsonSchema.default !== undefined) {
+    return jsonSchema.default;
+  }
+
+  if (jsonSchema.type === 'string') return '';
+  if (jsonSchema.type === 'number' || jsonSchema.type === 'integer') return 0;
+  if (jsonSchema.type === 'boolean') return false;
+  if (jsonSchema.type === 'array') return [];
+
+  if (jsonSchema.type === 'object') {
+    const obj: Record<string, unknown> = {};
+
+    if (jsonSchema.patternProperties) {
+      return {};
+    }
+
+    if (jsonSchema.properties) {
+      // Include ALL properties, not just required ones
+      for (const [propName, propSchema] of Object.entries(jsonSchema.properties)) {
+        const value = generateAllFieldsFromJsonSchema(propSchema);
+        if (value !== undefined) {
+          obj[propName] = value;
+        }
+      }
+    }
+
+    return obj;
+  }
+
+  if (jsonSchema.$ref) {
+    return {};
+  }
+
+  return undefined;
 }
 
 const displayNames: Record<string, string> = {
@@ -542,103 +693,13 @@ const inferComponentCategory = (componentName: string): string[] => {
   return categories;
 };
 
-// Convert raw component data from new schema format to ConnectComponentSpec
-const processComponentFromSchema = (rawComponent: any): ConnectComponentSpec => {
-  // The new schema format already has the component structure we need
-  const componentSpec: ConnectComponentSpec = {
-    name: rawComponent.name,
-    type: rawComponent.type,
-    status: rawComponent.status || 'stable',
-    plugin: rawComponent.plugin || false,
-    summary: rawComponent.summary,
-    description: rawComponent.description,
-    categories: rawComponent.categories || inferComponentCategory(rawComponent.name),
-    config: rawComponent.config, // Already in FieldSpec format
-    version: rawComponent.version,
-    footnotes: rawComponent.footnotes,
-    examples: rawComponent.examples,
-    support_level: rawComponent.support_level,
-  };
-
-  // Enrich with inferred categories if none exist
-  if (!componentSpec.categories || componentSpec.categories.length === 0) {
-    componentSpec.categories = inferComponentCategory(componentSpec.name);
-  }
-
-  return componentSpec;
-};
-
-const parseSchema = () => {
-  const schemaData = benthosSchema as any;
-  const componentsByType = new Map<string, ConnectComponentSpec[]>();
-  const nodeConfigs = new Map<string, ConnectSchemaNodeConfig>();
-  const categories = new Map<string, ConnectNodeCategory>();
-  const allComponents: ConnectComponentSpec[] = [];
-
-  // Parse each component type using the constants from types.ts
-  for (const componentType of CONNECT_COMPONENT_TYPE) {
-    const schemaKey =
-      componentType === 'rate_limit' ? 'rate-limits' : componentType === 'metrics' ? 'metrics' : `${componentType}s`;
-    const componentArray = schemaData[schemaKey];
-    if (Array.isArray(componentArray)) {
-      const components = componentArray.map(processComponentFromSchema);
-
-      componentsByType.set(componentType, components);
-      allComponents.push(...components);
-
-      // Create node configs for each component
-      for (const component of components) {
-        const nodeConfig: ConnectSchemaNodeConfig = {
-          id: `${componentType}-${component.name}`,
-          name: component.name,
-          type: component.type,
-          category: componentType as ConnectComponentType,
-          status: component.status || 'stable',
-          summary: component.summary,
-          description: component.description,
-          config: component.config,
-          categories: component.categories,
-          version: component.version,
-        };
-        nodeConfigs.set(nodeConfig.id, nodeConfig);
-      }
-    }
-  }
-
-  // Create semantic category collections
-  const semanticCategoryMap = new Map<string, ConnectComponentSpec[]>();
-
-  for (const component of allComponents) {
-    if (component.categories) {
-      for (const categoryId of component.categories) {
-        if (!semanticCategoryMap.has(categoryId)) {
-          semanticCategoryMap.set(categoryId, []);
-        }
-        const categoryComponents = semanticCategoryMap.get(categoryId);
-        if (categoryComponents) {
-          categoryComponents.push(component);
-        }
-      }
-    }
-  }
-
-  // Convert to NodeCategory format for semantic categories
-  for (const [categoryId, components] of semanticCategoryMap) {
-    const categoryData: ConnectNodeCategory = {
-      id: categoryId,
-      name: getCategoryDisplayName(categoryId),
-      components,
-    };
-    categories.set(categoryId, categoryData);
-  }
-
-  return { componentsByType, nodeConfigs, categories, allComponents };
-};
-
-// Cache the parsed schema data
-const { componentsByType, nodeConfigs, categories, allComponents } = parseSchema();
-
+// ===============================
 // Exported utility functions
+// ===============================
+
+/**
+ * Get all categories for the filter dropdown
+ */
 export const getNodeCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
   const allCategories = new Map(categories);
 
@@ -651,7 +712,6 @@ export const getNodeCategories = (additionalComponents?: ExtendedConnectComponen
             const categoryData: ConnectNodeCategory = {
               id: categoryId,
               name: getCategoryDisplayName(categoryId),
-              components: [],
             };
             allCategories.set(categoryId, categoryData);
           }
@@ -663,173 +723,13 @@ export const getNodeCategories = (additionalComponents?: ExtendedConnectComponen
   return Array.from(allCategories.values());
 };
 
-export const getAllNodeConfigs = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectSchemaNodeConfig[] => {
-  const builtInConfigs = Array.from(nodeConfigs.values());
-
-  const externalConfigs: ConnectSchemaNodeConfig[] = (additionalComponents || []).map((component) => ({
-    id: `${component.type}-${component.name}-external`,
-    name: component.name,
-    type: component.type,
-    category: component.type as ConnectComponentType,
-    status: component.status,
-    summary: component.summary,
-    description: component.description,
-    config: component.config,
-    categories: component.categories,
-    version: component.version,
-  }));
-
-  return [...builtInConfigs, ...externalConfigs];
-};
-
-export const getNodeConfigsByCategory = (
-  category: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): ConnectSchemaNodeConfig[] =>
-  getAllNodeConfigs(additionalComponents).filter((config) => config.category === category);
-
-export const getNodeConfig = (
-  id: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): ConnectSchemaNodeConfig | undefined => {
-  const builtInConfig = nodeConfigs.get(id);
-  if (builtInConfig) return builtInConfig;
-
-  // Check external components
-  const externalConfig = (additionalComponents || []).find((comp) => id === `${comp.type}-${comp.name}-external`);
-
-  if (externalConfig) {
-    return {
-      id,
-      name: externalConfig.name,
-      type: externalConfig.type,
-      category: externalConfig.type as ConnectComponentType,
-      status: externalConfig.status,
-      summary: externalConfig.summary,
-      description: externalConfig.description,
-      config: externalConfig.config,
-      categories: externalConfig.categories,
-      version: externalConfig.version,
-    };
-  }
-
-  return undefined;
-};
-
-export const searchNodeConfigs = (
-  query: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): ConnectSchemaNodeConfig[] => {
-  const lowerQuery = query.toLowerCase();
-  return getAllNodeConfigs(additionalComponents).filter(
-    (config) =>
-      config.name.toLowerCase().includes(lowerQuery) ||
-      config.summary?.toLowerCase().includes(lowerQuery) ||
-      config.description?.toLowerCase().includes(lowerQuery),
-  );
-};
-
-export const getNodeConfigsByStatus = (
-  status: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): ConnectSchemaNodeConfig[] => getAllNodeConfigs(additionalComponents).filter((config) => config.status === status);
-
-export const getSchemaVersion = (): string => 'unknown'; // JSON Schema format doesn't include version
-
-// Component type getters using the type-safe constants
-export const getComponentsOfType = (type: ConnectComponentType): ConnectComponentSpec[] =>
-  componentsByType.get(type) || [];
-
-// Legacy getters for backward compatibility
-export const getInputs = (): ConnectComponentSpec[] => getComponentsOfType('input');
-export const getOutputs = (): ConnectComponentSpec[] => getComponentsOfType('output');
-export const getProcessors = (): ConnectComponentSpec[] => getComponentsOfType('processor');
-export const getCaches = (): ConnectComponentSpec[] => getComponentsOfType('cache');
-export const getBuffers = (): ConnectComponentSpec[] => getComponentsOfType('buffer');
-export const getRateLimits = (): ConnectComponentSpec[] => getComponentsOfType('rate_limit');
-export const getScanners = (): ConnectComponentSpec[] => getComponentsOfType('scanner');
-export const getMetrics = (): ConnectComponentSpec[] => getComponentsOfType('metrics');
-export const getTracers = (): ConnectComponentSpec[] => getComponentsOfType('tracer');
-
-// Get components by type with external component support
-export const getComponentsByType = (
-  type: ConnectComponentType,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] => {
-  const builtInComponents = getComponentsOfType(type);
-  const mappedBuiltIn: InternalConnectComponentSpec[] = builtInComponents.map((comp) => ({
-    ...comp,
-    isExternal: false,
-  }));
-
-  const externalComponentsOfType: InternalConnectComponentSpec[] = (additionalComponents || [])
-    .filter((comp) => comp.type === type)
-    .map((comp) => ({ ...comp, isExternal: true }));
-
-  return [...mappedBuiltIn, ...externalComponentsOfType];
-};
-
-export const getComponentsByCategory = (
-  category: ComponentCategory | string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] =>
-  getAllComponents(additionalComponents).filter((comp) => comp.categories?.includes(category));
-
-export const getComponentsByStatus = (
-  status: ConnectComponentStatus,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] => getAllComponents(additionalComponents).filter((comp) => comp.status === status);
-
-// Get component by name
-export const getComponentByName = (
-  name?: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec | undefined =>
-  name ? getAllComponents(additionalComponents).find((comp) => comp.name === name) : undefined;
-
-// Get component by type and name (more precise)
-export const getComponentByTypeAndName = (
-  type: ConnectComponentType,
-  name: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec | undefined =>
-  getAllComponents(additionalComponents).find((comp) => comp.type === type && comp.name === name);
-
-// Specialized helpers for common workflows
-export const getDataIngestionComponents = (
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] => {
-  const allComponents = getAllComponents(additionalComponents);
-  return [
-    ...allComponents.filter((comp) => comp.type === 'input'),
-    ...allComponents.filter(
-      (comp) => comp.type === 'processor' && comp.categories?.includes(COMPONENT_CATEGORIES.TRANSFORMATION),
-    ),
-    ...allComponents.filter((comp) => comp.type === 'output'),
-  ];
-};
-
-export const getKafkaComponents = (
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] =>
-  getAllComponents(additionalComponents).filter(
-    (comp) => comp.name.toLowerCase().includes('kafka') || comp.categories?.includes(COMPONENT_CATEGORIES.MESSAGING),
-  );
-
-export const getDatabaseComponents = (
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] =>
-  getAllComponents(additionalComponents).filter((comp) => comp.categories?.includes(COMPONENT_CATEGORIES.DATABASES));
-
-export const getCloudComponents = (
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] =>
-  getAllComponents(additionalComponents).filter((comp) => comp.categories?.includes(COMPONENT_CATEGORIES.CLOUD));
-
+/**
+ * Get all components (built-in + external) with isExternal flag
+ * Used by connect-tiles.tsx for filtering
+ */
 export const getAllComponents = (
   additionalComponents?: ExtendedConnectComponentSpec[],
 ): InternalConnectComponentSpec[] => {
-  // Use the cached allComponents instead of calling individual getters
   const builtInComponents: InternalConnectComponentSpec[] = allComponents.map((component) => ({
     ...component,
     isExternal: false,
@@ -842,3 +742,14 @@ export const getAllComponents = (
 
   return [...builtInComponents, ...externalComponents];
 };
+
+/**
+ * Get a specific component by type and name
+ * Used by yaml.ts for template generation
+ */
+export const getComponentByTypeAndName = (
+  type: ConnectComponentType,
+  name: string,
+  additionalComponents?: ExtendedConnectComponentSpec[],
+): InternalConnectComponentSpec | undefined =>
+  getAllComponents(additionalComponents).find((comp) => comp.type === type && comp.name === name);

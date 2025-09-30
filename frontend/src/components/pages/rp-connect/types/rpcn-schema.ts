@@ -211,6 +211,10 @@ export interface ConnectFieldSpec<T = unknown> {
   // from this field's value when it's displayed (e.g., in logs, API responses, or UI).
   // It should transform the value to a redacted form (e.g., "!!!SECRET_SCRUBBED!!!") if it's sensitive.
   scrubber?: string;
+
+  // Raw JSON Schema reference for on-demand YAML generation
+  // This allows us to avoid complex upfront transformation and generate YAML directly from JSON Schema
+  _jsonSchema?: any;
 } // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
 // Example functions: `batch_index()`, `env("VAR_NAME")`, `uuid_v4()`.
 
@@ -520,10 +524,10 @@ export interface ConnectComponentSpec {
 
   // Version is the Benthos version this component was introduced.
   version?: string;
-} // Extended ComponentSpec for external connections (Phase 2)
+}
 
 export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
-  // External documentation
+  // External documentation URLs and metadata for components from external sources
   externalDocs?: {
     primaryUrl?: string;
     secondaryUrl?: string;
@@ -536,21 +540,11 @@ export interface InternalConnectComponentSpec extends ConnectComponentSpec {
   isExternal?: boolean;
 }
 
+/**
+ * Represents a semantic category for grouping components in the UI
+ * Used for the category filter dropdown in connect-tiles.tsx
+ */
 export interface ConnectNodeCategory {
   id: string;
   name: string;
-  components: ConnectComponentSpec[];
-}
-
-export interface ConnectSchemaNodeConfig {
-  id: string;
-  name: string;
-  type: string;
-  category: ConnectComponentType;
-  status: ConnectComponentStatus;
-  summary?: string;
-  description?: string;
-  config: ConnectComponentSpec['config'];
-  categories?: string[] | null;
-  version?: string;
 }
