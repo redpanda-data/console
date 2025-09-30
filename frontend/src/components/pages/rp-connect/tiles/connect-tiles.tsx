@@ -17,7 +17,7 @@ import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-selec
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type {
@@ -104,24 +104,26 @@ export const ConnectTiles = ({
 }) => {
   const [filter, setFilter] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [showScrollGradient, setShowScrollGradient] = useState(true);
+  const [showScrollGradient, setShowScrollGradient] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Default to showing all component types if no default provided, otherwise respect the prop
   const [componentTypeFilter, setComponentTypeFilter] = useState<ConnectComponentType[]>(
     defaultComponentTypeFilter ? defaultComponentTypeFilter : [],
   );
 
-  // Handle scroll to show/hide gradient
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const scrollTop = target.scrollTop;
-    const scrollHeight = target.scrollHeight;
-    const clientHeight = target.clientHeight;
+  // Check if content is scrollable and update gradient visibility
+  const checkScrollable = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-    // Hide gradient if within 80px of bottom
-    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 80;
-    setShowScrollGradient(!isNearBottom);
-  };
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isScrollable = scrollHeight > clientHeight;
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 40;
+
+    // Show gradient if scrollable AND not near bottom
+    setShowScrollGradient(isScrollable && !isNearBottom);
+  }, []);
 
   const form = useForm<ConnectTilesFormData>({
     resolver: zodResolver(connectTilesFormSchema),
@@ -145,6 +147,14 @@ export const ConnectTiles = ({
       additionalComponents,
     );
   }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
+
+  // Check if scrolling is needed whenever filtered components change
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
+      checkScrollable();
+    });
+  }, [checkScrollable]);
 
   return (
     <Card size={size} variant={variant} className={className}>
@@ -231,7 +241,7 @@ export const ConnectTiles = ({
           )}
 
           <div className="relative">
-            <div className="max-h-[50vh] overflow-y-auto py-4" onScroll={handleScroll}>
+            <div ref={scrollContainerRef} className="max-h-[50vh] overflow-y-auto py-4" onScroll={checkScrollable}>
               <FormField
                 control={form.control}
                 name="connectionName"
