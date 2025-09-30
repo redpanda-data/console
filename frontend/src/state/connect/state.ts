@@ -825,3 +825,4 @@ export interface Property {
   crud: 'create' | 'update';
   isDisabled: boolean | undefined;
 }
+export const CONNECT_TILE_STORAGE_KEY = 'selected-connect-tile';

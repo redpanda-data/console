@@ -15,7 +15,7 @@ import ErrorResult from 'components/misc/ErrorResult';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
-import { isServerless } from '../../../config';
+import { isFeatureFlagEnabled, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rpcnSecretManagerApi } from '../../../state/backendApi';
@@ -150,10 +150,12 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
 
     return (
       <PageContent>
-        <Text>
-          There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and Kafka
-          Connect.
-        </Text>
+        {!isFeatureFlagEnabled('enableRpcnTiles') && (
+          <Text>
+            There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
+            Kafka Connect.
+          </Text>
+        )}
         {tabs.length === 1 ? (
           typeof tabs[0].content === 'function' ? (
             tabs[0].content()
