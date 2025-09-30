@@ -98,7 +98,7 @@ const parseSchema = () => {
 export const builtInComponents = parseSchema();
 
 /**
- * Phase 1: Converts a component specification to a config object structure
+ * Phase 1: Converts a component specification to a config object structure with default values
  * following the Redpanda Connect YAML schema structure
  */
 export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
@@ -186,10 +186,14 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
 /**
  * Phase 2: Merges a new component config object into existing YAML configuration
  * using Document API to PRESERVE COMMENTS
+ *
+ * IMPORTANT:
+ * - Converts YAML nodes to JavaScript before array operations to fix spreading issues
+ * - Converts new config to YAML with comments first, then merges to preserve those comments
  */
 export const mergeConnectConfigs = (
   existingYaml: string,
-  newConfigObject: any,
+  newConfigObject: ReturnType<typeof schemaToConfig>,
   componentSpec: ConnectComponentSpec,
 ) => {
   // If no existing YAML, return new config object
@@ -206,17 +210,51 @@ export const mergeConnectConfigs = (
     return newConfigObject;
   }
 
+  // Convert new component to YAML with comments first
+  // This ensures the newly added component has schema comments
+  let newYamlWithComments: string;
+  try {
+    newYamlWithComments = yamlStringify(newConfigObject, {
+      indent: 2,
+      lineWidth: 120,
+      minContentWidth: 20,
+      doubleQuotedAsJSON: false,
+    });
+    // Add schema comments
+    newYamlWithComments = addSchemaComments(newYamlWithComments, componentSpec);
+  } catch (error) {
+    console.warn('Failed to generate YAML with comments, using plain object:', error);
+    // Fallback to plain object if YAML generation fails
+    newYamlWithComments = '';
+  }
+
+  // Parse the new YAML as a Document to extract commented nodes
+  let newDoc: any;
+  if (newYamlWithComments) {
+    try {
+      newDoc = parseDocument(newYamlWithComments);
+    } catch (error) {
+      console.warn('Failed to parse new YAML with comments:', error);
+    }
+  }
+
   // Apply merging rules based on component type using Document API
   switch (componentSpec.type) {
     case 'processor': {
       // Processors: append to pipeline.processors[] array
-      const processors = doc.getIn(['pipeline', 'processors']) || [];
-      const newProcessor = newConfigObject.pipeline?.processors?.[0];
+      // IMPORTANT: Convert YAML node to JS with .toJSON() before spreading
+      const processorsNode = doc.getIn(['pipeline', 'processors']);
+      const processors = processorsNode?.toJSON?.() || [];
+
+      // Get the new processor from the commented Document (or fallback to plain object)
+      const newProcessorNode = newDoc?.getIn(['pipeline', 'processors', 0]);
+      const newProcessor = newProcessorNode || newConfigObject.pipeline?.processors?.[0];
 
       if (newProcessor) {
         if (!Array.isArray(processors)) {
           doc.setIn(['pipeline', 'processors'], [newProcessor]);
         } else {
+          // Spread existing processors and append new one
           doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
         }
       }
@@ -225,10 +263,19 @@ export const mergeConnectConfigs = (
 
     case 'cache': {
       // Cache: append to cache_resources[] array
-      const cacheResources = doc.getIn(['cache_resources']) || [];
-      const newResource = newConfigObject.cache_resources?.[0];
+      const cacheResourcesNode = doc.getIn(['cache_resources']);
+      const cacheResources = cacheResourcesNode?.toJSON?.() || [];
+
+      // Get the new resource from the commented Document (or fallback to plain object)
+      const newResourceNode = newDoc?.getIn(['cache_resources', 0]);
+      let newResource = newResourceNode || newConfigObject.cache_resources?.[0];
 
       if (newResource) {
+        // If we got a node, convert to JS for label manipulation
+        if (newResourceNode) {
+          newResource = newResourceNode.toJSON();
+        }
+
         // Check for label conflicts
         const existingLabels = Array.isArray(cacheResources)
           ? cacheResources.map((r: any) => r?.label).filter(Boolean)
@@ -242,19 +289,33 @@ export const mergeConnectConfigs = (
             uniqueLabel = `${newResource.label}_${counter}`;
           }
           newResource.label = uniqueLabel;
+
+          // Update the node with the new label if we're using the commented node
+          if (newResourceNode) {
+            newResourceNode.set('label', uniqueLabel);
+          }
         }
 
-        doc.setIn(['cache_resources'], [...cacheResources, newResource]);
+        doc.setIn(['cache_resources'], [...cacheResources, newResourceNode || newResource]);
       }
       break;
     }
 
     case 'rate_limit': {
       // Rate limit: append to rate_limit_resources[] array
-      const rateLimitResources = doc.getIn(['rate_limit_resources']) || [];
-      const newResource = newConfigObject.rate_limit_resources?.[0];
+      const rateLimitResourcesNode = doc.getIn(['rate_limit_resources']);
+      const rateLimitResources = rateLimitResourcesNode?.toJSON?.() || [];
+
+      // Get the new resource from the commented Document (or fallback to plain object)
+      const newResourceNode = newDoc?.getIn(['rate_limit_resources', 0]);
+      let newResource = newResourceNode || newConfigObject.rate_limit_resources?.[0];
 
       if (newResource) {
+        // If we got a node, convert to JS for label manipulation
+        if (newResourceNode) {
+          newResource = newResourceNode.toJSON();
+        }
+
         // Check for label conflicts
         const existingLabels = Array.isArray(rateLimitResources)
           ? rateLimitResources.map((r: any) => r?.label).filter(Boolean)
@@ -268,9 +329,14 @@ export const mergeConnectConfigs = (
             uniqueLabel = `${newResource.label}_${counter}`;
           }
           newResource.label = uniqueLabel;
+
+          // Update the node with the new label if we're using the commented node
+          if (newResourceNode) {
+            newResourceNode.set('label', uniqueLabel);
+          }
         }
 
-        doc.setIn(['rate_limit_resources'], [...rateLimitResources, newResource]);
+        doc.setIn(['rate_limit_resources'], [...rateLimitResources, newResourceNode || newResource]);
       }
       break;
     }
@@ -281,8 +347,10 @@ export const mergeConnectConfigs = (
     case 'metrics':
     case 'tracer': {
       // Root level components: replace existing
-      for (const [key, value] of Object.entries(newConfigObject)) {
-        doc.setIn([key], value);
+      // Use commented nodes from newDoc if available
+      for (const [key] of Object.entries(newConfigObject)) {
+        const newNode = newDoc?.get(key);
+        doc.set(key, newNode || newConfigObject[key]);
       }
       break;
     }
@@ -293,8 +361,10 @@ export const mergeConnectConfigs = (
 
     default:
       // Unknown component type: merge at root level
-      for (const [key, value] of Object.entries(newConfigObject)) {
-        doc.setIn([key], value);
+      // Use commented nodes from newDoc if available
+      for (const [key] of Object.entries(newConfigObject)) {
+        const newNode = newDoc?.get(key);
+        doc.set(key, newNode || newConfigObject[key]);
       }
       break;
   }
@@ -304,8 +374,7 @@ export const mergeConnectConfigs = (
 };
 
 /**
- * Phase 3: Converts config object to formatted YAML string with schema comments
- * Now handles both plain objects and YAML Documents (for comment preservation)
+ * Phase 3: Converts config object to formatted YAML string
  */
 export const configToYaml = (configObject: any, componentSpec: ConnectComponentSpec): string => {
   try {
@@ -324,7 +393,7 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
         doubleQuotedAsJSON: false,
       });
 
-      // Add schema comments for the new component (only for new configs, not merged ones)
+      // Add schema comments
       yamlString = addSchemaComments(yamlString, componentSpec);
 
       // Add spacing between root-level components for readability
@@ -374,8 +443,6 @@ export const getAllCategories = (additionalComponents?: ExtendedConnectComponent
 
 /**
  * Adds helpful schema comments to NEW YAML configs
- * Works directly with JSON Schema for simplicity
- * Only called for new configs (not merged ones - Document API preserves existing comments)
  */
 const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
   // Get the JSON Schema for this component

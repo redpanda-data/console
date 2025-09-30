@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { isFeatureFlagEnabled } from 'config';
@@ -226,7 +227,7 @@ export default RpConnectPipelinesCreate;
 interface QuickActionsProps {
   editorInstance: editor.IStandaloneCodeEditor | null;
   resetAutocompleteSecrets: VoidFunction;
-  onAddProcessor: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
+  onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
 }
 
 const processorTypes: ConnectComponentType[] = [
@@ -239,11 +240,27 @@ const processorTypes: ConnectComponentType[] = [
   'scanner',
 ];
 
-const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor }: QuickActionsProps) => {
+const AddConnectorButton = ({
+  type,
+  onClick,
+}: {
+  type: ConnectComponentType;
+  onClick: (type: ConnectComponentType) => void;
+}) => {
+  const { text, variant, className, icon } = getComponentTypeBadgeProps(type);
+  return (
+    <Badge icon={icon} variant={variant} className="cursor-pointer max-w-fit" onClick={() => onClick(type)}>
+      {text}
+      <PlusIcon size={12} className={cn(className, 'ml-3 mb-0.5')} />
+    </Badge>
+  );
+};
+
+const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddConnector }: QuickActionsProps) => {
   const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
   const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
-  const { isOpen: isAddProcessorOpen, onOpen: openAddProcessor, onClose: closeAddProcessor } = useDisclosure();
-  const [selectedProcessor, setSelectedProcessor] = useState<ConnectComponentType | undefined>(undefined);
+  const { isOpen: isAddConnectorOpen, onOpen: openAddConnector, onClose: closeAddConnector } = useDisclosure();
+  const [selectedConnector, setSelectedConnector] = useState<ConnectComponentType | undefined>(undefined);
   if (editorInstance === null) {
     return <div className="min-w-[300px]" />;
   }
@@ -258,15 +275,18 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
     closeAddSecret();
   };
 
-  const handleProcessorTypeChange = (processorType: ConnectComponentType) => {
-    setSelectedProcessor(processorType);
-    openAddProcessor();
+  const handleConnectorTypeChange = (connectorType: ConnectComponentType) => {
+    setSelectedConnector(connectorType);
+    openAddConnector();
   };
 
-  const handleAddProcessor = (connectionName: string, connectionType: ConnectComponentType) => {
-    onAddProcessor?.(connectionName, connectionType);
-    closeAddProcessor();
+  const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
+    onAddConnector?.(connectionName, connectionType);
+    closeAddConnector();
   };
+
+  const hasInput = editorInstance.getValue().includes('input:');
+  const hasOutput = editorInstance.getValue().includes('output:');
 
   return (
     <div className="flex gap-3 flex-col">
@@ -290,29 +310,32 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
               <CardTitle>Connectors</CardTitle>
               <CardDescription>Add connectors to your pipeline.</CardDescription>
             </CardHeader>
-            <CardContent className="gap-2 flex flex-wrap space-y-0">
-              {processorTypes.map((processorType) => {
-                const { text, variant, className, icon } = getComponentTypeBadgeProps(processorType);
-                return (
-                  <Badge
+            <CardContent className="gap-4 flex flex-col space-y-0">
+              <div className="flex-wrap flex gap-2">
+                {processorTypes.map((processorType) => (
+                  <AddConnectorButton
                     key={processorType}
-                    icon={icon}
-                    variant={variant}
-                    className="cursor-pointer max-w-fit"
-                    onClick={() => handleProcessorTypeChange(processorType)}
-                  >
-                    {text}
-                    <PlusIcon size={12} className={cn(className, 'ml-3 mb-0.5')} />
-                  </Badge>
-                );
-              })}
+                    type={processorType}
+                    onClick={() => handleConnectorTypeChange(processorType)}
+                  />
+                ))}
+              </div>
+              {(!hasInput || !hasOutput) && (
+                <div className="flex flex-col gap-2">
+                  <Separator className="mb-2" />
+                  {!hasInput && <AddConnectorButton type="input" onClick={() => handleConnectorTypeChange('input')} />}
+                  {!hasOutput && (
+                    <AddConnectorButton type="output" onClick={() => handleConnectorTypeChange('output')} />
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
           <AddConnectorDialog
-            isOpen={isAddProcessorOpen}
-            onCloseAddConnector={closeAddProcessor}
-            onAddConnector={handleAddProcessor}
-            connectorType={selectedProcessor}
+            isOpen={isAddConnectorOpen}
+            onCloseAddConnector={closeAddConnector}
+            onAddConnector={handleAddConnector}
+            connectorType={selectedConnector}
           />
         </>
       )}
@@ -386,7 +409,7 @@ export const PipelineEditor = observer(
       }
     };
 
-    const handleAddProcessor = (connectionName: string, connectionType: ConnectComponentType) => {
+    const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
       if (!editorInstance) return;
 
       const currentValue = editorInstance.getValue();
@@ -443,28 +466,28 @@ export const PipelineEditor = observer(
                     <QuickActions
                       editorInstance={editorInstance}
                       resetAutocompleteSecrets={resetEditor}
-                      onAddProcessor={handleAddProcessor}
+                      onAddConnector={handleAddConnector}
                     />
                   )}
                 </Flex>
 
-                {/* {isKafkaConnectPipeline(p.yaml) && ( */}
-                <Alert variant="destructive">
-                  <AlertCircle size={16} />
-                  <AlertDescription>
-                    <UIText>
-                      This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
-                      <UILink
-                        target="_blank"
-                        href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                      >
-                        see our quickstart documentation
-                      </UILink>
-                      .
-                    </UIText>
-                  </AlertDescription>
-                </Alert>
-                {/* )} */}
+                {isKafkaConnectPipeline(p.yaml) && (
+                  <Alert variant="destructive">
+                    <AlertCircle size={16} />
+                    <AlertDescription>
+                      <UIText>
+                        This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
+                        <UILink
+                          target="_blank"
+                          href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                        >
+                          see our quickstart documentation
+                        </UILink>
+                        .
+                      </UIText>
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             ),
           },

@@ -104,11 +104,24 @@ export const ConnectTiles = ({
 }) => {
   const [filter, setFilter] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showScrollGradient, setShowScrollGradient] = useState(true);
 
   // Default to showing all component types if no default provided, otherwise respect the prop
   const [componentTypeFilter, setComponentTypeFilter] = useState<ConnectComponentType[]>(
     defaultComponentTypeFilter ? defaultComponentTypeFilter : [],
   );
+
+  // Handle scroll to show/hide gradient
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrollTop = target.scrollTop;
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+
+    // Hide gradient if within 80px of bottom
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 80;
+    setShowScrollGradient(!isNearBottom);
+  };
 
   const form = useForm<ConnectTilesFormData>({
     resolver: zodResolver(connectTilesFormSchema),
@@ -217,88 +230,97 @@ export const ConnectTiles = ({
             </div>
           )}
 
-          <div className="max-h-[50vh] overflow-y-auto py-4">
-            <FormField
-              control={form.control}
-              name="connectionName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    {filteredComponents.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                        <Text className="text-sm text-muted-foreground mt-1">
-                          Try adjusting your search, component type, or category filters
-                        </Text>
-                      </div>
-                    ) : (
-                      <Choicebox>
-                        <div className={cn('grid gap-2', `grid-cols-${gridCols}`)}>
-                          {filteredComponents.map((component) => {
-                            const statusConfig = getStatusBadgeProps(component.status);
-                            const uniqueKey = `${component.type}-${component.name}-${component.status}`;
-
-                            return (
-                              <ChoiceboxItem
-                                value={component.name}
-                                checked={
-                                  field.value === component.name && form.getValues('connectionType') === component.type
-                                }
-                                key={uniqueKey}
-                                onClick={() => {
-                                  field.onChange(component.name);
-                                  form.setValue('connectionType', component.type);
-                                  onChange?.(component.name, component.type as ConnectComponentType);
-                                }}
-                              >
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <Text className="truncate font-medium">{component.name}</Text>
-                                    {field.value === component.name &&
-                                      form.getValues('connectionType') === component.type && <ChoiceboxItemIndicator />}
-                                  </div>
-                                  {/* Component Summary */}
-                                  {component.summary && (
-                                    <Text className="text-sm text-muted-foreground line-clamp-2">
-                                      {component.summary}
-                                    </Text>
-                                  )}
-                                  <div className="flex gap-1 flex-wrap">
-                                    {/* Component type badge */}
-                                    <Badge
-                                      icon={getComponentTypeBadgeProps(component.type).icon}
-                                      variant={getComponentTypeBadgeProps(component.type).variant}
-                                    >
-                                      {getComponentTypeBadgeProps(component.type).text}
-                                    </Badge>
-                                    {/* Category badges */}
-                                    {component.categories?.filter(Boolean).map((c) => {
-                                      const { icon, text, variant } = getCategoryBadgeProps(c);
-                                      return (
-                                        <Badge icon={icon} variant={variant} key={`${c}-${text}`}>
-                                          {text}
-                                        </Badge>
-                                      );
-                                    })}
-                                    {/* Status badge for non-stable components */}
-                                    {component.status !== 'stable' && (
-                                      <Badge icon={statusConfig.icon} variant={statusConfig.variant}>
-                                        {statusConfig.text}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </ChoiceboxItem>
-                            );
-                          })}
+          <div className="relative">
+            <div className="max-h-[50vh] overflow-y-auto py-4" onScroll={handleScroll}>
+              <FormField
+                control={form.control}
+                name="connectionName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      {filteredComponents.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <Text className="text-muted-foreground">No connections found matching your filters</Text>
+                          <Text className="text-sm text-muted-foreground mt-1">
+                            Try adjusting your search, component type, or category filters
+                          </Text>
                         </div>
-                      </Choicebox>
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      ) : (
+                        <Choicebox>
+                          <div className={cn('grid gap-2', `grid-cols-${gridCols}`)}>
+                            {filteredComponents.map((component) => {
+                              const statusConfig = getStatusBadgeProps(component.status);
+                              const uniqueKey = `${component.type}-${component.name}-${component.status}`;
+
+                              return (
+                                <ChoiceboxItem
+                                  value={component.name}
+                                  checked={
+                                    field.value === component.name &&
+                                    form.getValues('connectionType') === component.type
+                                  }
+                                  key={uniqueKey}
+                                  onClick={() => {
+                                    field.onChange(component.name);
+                                    form.setValue('connectionType', component.type);
+                                    onChange?.(component.name, component.type as ConnectComponentType);
+                                  }}
+                                >
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <Text className="truncate font-medium">{component.name}</Text>
+                                      {field.value === component.name &&
+                                        form.getValues('connectionType') === component.type && (
+                                          <ChoiceboxItemIndicator />
+                                        )}
+                                    </div>
+                                    {/* Component Summary */}
+                                    {component.summary && (
+                                      <Text className="text-sm text-muted-foreground line-clamp-2">
+                                        {component.summary}
+                                      </Text>
+                                    )}
+                                    <div className="flex gap-1 flex-wrap">
+                                      {/* Component type badge */}
+                                      <Badge
+                                        icon={getComponentTypeBadgeProps(component.type).icon}
+                                        variant={getComponentTypeBadgeProps(component.type).variant}
+                                      >
+                                        {getComponentTypeBadgeProps(component.type).text}
+                                      </Badge>
+                                      {/* Category badges */}
+                                      {component.categories?.filter(Boolean).map((c) => {
+                                        const { icon, text, variant } = getCategoryBadgeProps(c);
+                                        return (
+                                          <Badge icon={icon} variant={variant} key={`${c}-${text}`}>
+                                            {text}
+                                          </Badge>
+                                        );
+                                      })}
+                                      {/* Status badge for non-stable components */}
+                                      {component.status !== 'stable' && (
+                                        <Badge icon={statusConfig.icon} variant={statusConfig.variant}>
+                                          {statusConfig.text}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </ChoiceboxItem>
+                              );
+                            })}
+                          </div>
+                        </Choicebox>
+                      )}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
+            {showScrollGradient && (
+              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+            )}
           </div>
         </Form>
       </CardContent>
