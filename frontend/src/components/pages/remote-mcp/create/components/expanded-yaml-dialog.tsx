@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Text } from 'components/redpanda-ui/components/typography';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { Code, PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import type { UseFormReturn } from 'react-hook-form';
@@ -27,7 +27,7 @@ interface ExpandedYamlDialogProps {
   form: UseFormReturn<FormValues>;
   toolIndex: number;
   isOpen: boolean;
-  lintResults: Record<string, LintHint>;
+  lintHints: Record<string, LintHint>;
   isLintConfigPending: boolean;
   onClose: () => void;
   onLint: () => void;
@@ -37,7 +37,7 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
   form,
   toolIndex,
   isOpen,
-  lintResults,
+  lintHints,
   isLintConfigPending,
   onClose,
   onLint,
@@ -89,47 +89,11 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
             </div>
           </div>
 
-          {/* Display validation errors and lint results below the editor */}
+          {/* Display validation errors and lint hints below the editor */}
           <div className="flex-shrink-0 mt-4 space-y-2">
             {configError && <div className="text-sm text-red-600">{configError.message}</div>}
 
-            {lintResults && Object.keys(lintResults).length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <PencilRuler className="h-4 w-4" />
-                  <Text variant="label" className="font-medium">
-                    Linting Issues
-                  </Text>
-                </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="p-3 space-y-3 max-h-40 overflow-y-auto">
-                    {Object.entries(lintResults).map(([toolName, hint]) => (
-                      <div key={toolName} className="space-y-1">
-                        {hint.line > 0 ? (
-                          <div className="flex flex-col gap-1">
-                            <Text className="text-xs font-medium text-gray-600">
-                              Line {hint.line}, Col {hint.column}
-                            </Text>
-                            <Text className="text-sm font-mono leading-relaxed bg-white px-2 py-1 rounded border text-gray-800">
-                              {hint.hint}
-                            </Text>
-                          </div>
-                        ) : (
-                          <Text className="text-sm font-mono leading-relaxed bg-white px-2 py-1 rounded border text-gray-800">
-                            {hint.hint}
-                          </Text>
-                        )}
-                        {hint.lintType && (
-                          <Text className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                            {hint.lintType}
-                          </Text>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            <LintHintList lintHints={lintHints} />
           </div>
         </div>
 

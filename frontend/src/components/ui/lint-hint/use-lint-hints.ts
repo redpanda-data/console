@@ -8,15 +8,15 @@
  * by the Apache License, Version 2.0
  */
 
+import type { FormValues } from 'components/pages/remote-mcp/create/schemas';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import type { FormValues } from '../schemas';
 
-export function useLintResults(form: UseFormReturn<FormValues>) {
-  const [lintResults, setLintResults] = useState<Record<number, Record<string, LintHint>>>({});
+export function useLintHints(form: UseFormReturn<FormValues>) {
+  const [lintHints, setLintHints] = useState<Record<number, Record<string, LintHint>>>({});
 
-  // Clear lint results when tool config changes
+  // Clear lint hints when tool config changes
   useEffect(() => {
     const subscription = form.watch((_, info) => {
       const name = info.name ?? '';
@@ -24,7 +24,7 @@ export function useLintResults(form: UseFormReturn<FormValues>) {
         const match = name.match(/^tools\.(\d+)\.config$/);
         if (match) {
           const index = Number(match[1]);
-          setLintResults((prev) => ({
+          setLintHints((prev) => ({
             ...prev,
             [index]: {},
           }));
@@ -36,8 +36,8 @@ export function useLintResults(form: UseFormReturn<FormValues>) {
 
   // Check if there are any linting issues
   const hasLintingIssues = useMemo(() => {
-    return Object.values(lintResults).some((toolLints) => Object.keys(toolLints).length > 0);
-  }, [lintResults]);
+    return Object.values(lintHints).some((toolLints) => Object.keys(toolLints).length > 0);
+  }, [lintHints]);
 
-  return { lintResults, setLintResults, hasLintingIssues };
+  return { lintHints, setLintHints, hasLintingIssues };
 }

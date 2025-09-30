@@ -18,6 +18,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
   CreateMCPServerRequestSchema,
@@ -34,7 +35,6 @@ import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 import { ExpandedYamlDialog } from './components/expanded-yaml-dialog';
 import { MetadataStep } from './components/metadata-step';
 import { ToolsStep } from './components/tools-step';
-import { useLintResults } from './hooks/use-lint-results';
 import { useMetadataValidation } from './hooks/use-metadata-validation';
 import { useSecretDetection } from './hooks/use-secret-detection';
 import { useYamlLabelSync } from './hooks/use-yaml-label-sync';
@@ -95,7 +95,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   // Custom hooks for form logic
   useYamlLabelSync(form);
-  const { lintResults, setLintResults, hasLintingIssues } = useLintResults(form);
+  const { lintHints, setLintHints, hasLintingIssues } = useLintHints(form);
 
   // Get existing secret names
   const existingSecrets = useMemo(() => {
@@ -137,8 +137,8 @@ export const RemoteMCPCreatePage: React.FC = () => {
       }),
     );
 
-    // Update lint results for this tool
-    setLintResults((prev) => ({
+    // Update lint hints for this tool
+    setLintHints((prev) => ({
       ...prev,
       [toolIndex]: response.lintHints || {},
     }));
@@ -300,7 +300,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                     toolFields={toolFields}
                     appendTool={appendTool}
                     removeTool={removeTool}
-                    lintResults={lintResults}
+                    lintHints={lintHints}
                     isLintConfigPending={isLintConfigPending}
                     hasSecretWarnings={hasSecretWarnings}
                     detectedSecrets={detectedSecrets}
@@ -350,7 +350,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                 form={form}
                 toolIndex={expandedTool.index}
                 isOpen={expandedTool.isOpen}
-                lintResults={lintResults[expandedTool.index] || {}}
+                lintHints={lintHints[expandedTool.index] || {}}
                 isLintConfigPending={isLintConfigPending}
                 onClose={() => setExpandedTool(null)}
                 onLint={() => handleLintTool(expandedTool.index)}

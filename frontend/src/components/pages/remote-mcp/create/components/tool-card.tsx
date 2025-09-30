@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { Code, Maximize2, PencilRuler, Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
@@ -37,13 +38,12 @@ import { RemoteMCPComponentTypeDescription } from '../../remote-mcp-component-ty
 import { templates } from '../../remote-mcp-templates';
 import type { FormValues } from '../schemas';
 import { applyTemplateToTool } from '../utils/form-helpers';
-import { LintResults } from './lint-results';
 
 interface ToolCardProps {
   form: UseFormReturn<FormValues>;
   toolIndex: number;
   canRemove: boolean;
-  lintResults: Record<string, LintHint>;
+  lintHints: Record<string, LintHint>;
   isLintConfigPending: boolean;
   onRemove: () => void;
   onExpand: () => void;
@@ -54,7 +54,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
   form,
   toolIndex,
   canRemove,
-  lintResults,
+  lintHints,
   isLintConfigPending,
   onRemove,
   onExpand,
@@ -252,7 +252,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
               </div>
             </div>
             <FormMessage />
-            <LintResults lintResults={lintResults} />
+            <LintHintList lintHints={lintHints} />
           </div>
         </div>
       </CardContent>

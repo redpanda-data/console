@@ -12,12 +12,12 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 
-interface LintResultsProps {
-  lintResults: Record<string, LintHint>;
+interface LintHintListProps {
+  lintHints: Record<string, LintHint>;
 }
 
-export const LintResults: React.FC<LintResultsProps> = ({ lintResults }) => {
-  if (!lintResults || Object.keys(lintResults).length === 0) {
+export const LintHintList: React.FC<LintHintListProps> = ({ lintHints }) => {
+  if (!lintHints || Object.keys(lintHints).length === 0) {
     return null;
   }
 
@@ -31,7 +31,7 @@ export const LintResults: React.FC<LintResultsProps> = ({ lintResults }) => {
       </div>
       <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
         <div className="p-3 space-y-3">
-          {Object.entries(lintResults).map(([toolName, hint]) => (
+          {Object.entries(lintHints).map(([toolName, hint]) => (
             <div key={toolName} className="space-y-1">
               {hint.line > 0 ? (
                 <div className="flex flex-col gap-1">

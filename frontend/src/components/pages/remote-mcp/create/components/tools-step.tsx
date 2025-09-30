@@ -24,7 +24,7 @@ interface ToolsStepProps {
   toolFields: UseFieldArrayReturn<FormValues, 'tools', 'id'>['fields'];
   appendTool: UseFieldArrayReturn<FormValues, 'tools', 'id'>['append'];
   removeTool: UseFieldArrayReturn<FormValues, 'tools', 'id'>['remove'];
-  lintResults: Record<number, Record<string, LintHint>>;
+  lintHints: Record<number, Record<string, LintHint>>;
   isLintConfigPending: boolean;
   hasSecretWarnings: boolean;
   detectedSecrets: string[];
@@ -39,7 +39,7 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
   toolFields,
   appendTool,
   removeTool,
-  lintResults,
+  lintHints,
   isLintConfigPending,
   hasSecretWarnings,
   detectedSecrets,
@@ -69,7 +69,7 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
                   form={form}
                   toolIndex={idx}
                   canRemove={toolFields.length > 1}
-                  lintResults={lintResults[idx] || {}}
+                  lintHints={lintHints[idx] || {}}
                   isLintConfigPending={isLintConfigPending}
                   onRemove={() => removeTool(idx)}
                   onExpand={() => onExpandTool(idx)}
