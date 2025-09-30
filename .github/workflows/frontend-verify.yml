@@ -35,7 +35,6 @@ jobs:
           bun run build
   integration-test:
     needs: "lint-and-compile"
-    timeout-minutes: 15
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +49,7 @@ jobs:
         run: bun run test
   e2e-test:
     needs: "lint-and-compile"
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-latest-8
     steps:
       - name: Checkout
