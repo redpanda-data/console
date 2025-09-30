@@ -19,6 +19,7 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
+import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
   CreateMCPServerRequestSchema,
@@ -36,7 +37,6 @@ import { ExpandedYamlDialog } from './components/expanded-yaml-dialog';
 import { MetadataStep } from './components/metadata-step';
 import { ToolsStep } from './components/tools-step';
 import { useMetadataValidation } from './hooks/use-metadata-validation';
-import { useSecretDetection } from './hooks/use-secret-detection';
 import { useYamlLabelSync } from './hooks/use-yaml-label-sync';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { getTierById } from './utils/form-helpers';

@@ -8,10 +8,10 @@
  * by the Apache License, Version 2.0
  */
 
+import type { FormValues } from 'components/pages/remote-mcp/create/schemas';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { extractSecretReferences, getUniqueSecretNames } from '../../utils/secret-detection';
-import type { FormValues } from '../schemas';
+import { extractSecretReferences, getUniqueSecretNames } from './secret-detection';
 
 export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecrets: string[]) {
   const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);

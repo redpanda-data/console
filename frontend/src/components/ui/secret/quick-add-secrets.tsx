@@ -24,7 +24,7 @@ import { AlertTriangle, Key, Loader2, Plus } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
-  Scope,
+  type Scope,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -37,6 +37,7 @@ import { z } from 'zod';
 interface QuickAddSecretsProps {
   requiredSecrets: string[];
   existingSecrets: string[];
+  scopes: Scope[];
 }
 
 const SecretFormSchema = z.record(
@@ -48,7 +49,7 @@ const SecretFormSchema = z.record(
 
 type SecretFormData = z.infer<typeof SecretFormSchema>;
 
-export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecrets, existingSecrets }) => {
+export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecrets, existingSecrets, scopes }) => {
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
 
@@ -71,8 +72,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
         const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
           id: secretName,
           secretData: base64ToUInt8Array(encodeBase64(value)),
-          scopes: [Scope.MCP_SERVER], // Automatically set scope to Remote MCP
-          labels: {}, // Default to no labels for quick add
+          scopes: scopes,
+          labels: {},
         });
 
         return createSecret(
@@ -118,7 +119,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
         <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            The tool requires secrets to function properly. Create them below before proceeding.
+            The following secrets are required. Create them below before proceeding.
           </AlertDescription>
         </Alert>
 
