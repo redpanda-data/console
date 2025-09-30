@@ -55,9 +55,10 @@ export const getRpkCommand = ({
 }) => {
   const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
   const clusterValue = clusterId || (isServerless ? 'YOUR_SERVERLESS_CLUSTER_ID' : 'YOUR_CLUSTER_ID');
-  const cloudEnvArg = getRpkCloudEnvironment() !== 'production' ? `cloud_environment=${getRpkCloudEnvironment()} ` : '';
+  const cloudEnv = getRpkCloudEnvironment();
+  const nonProdFlags = cloudEnv !== 'production' ? `-X cloud_environment=${cloudEnv} ` : '';
 
-  return `rpk -X ${cloudEnvArg}cloud mcp proxy \\
+  return `rpk ${nonProdFlags}cloud mcp proxy \\
 ${clusterFlag} ${clusterValue} \\
 --mcp-server-id ${mcpServerId || 'YOUR_MCP_SERVER_ID'} \\
 --install --client ${clientType || 'YOUR_CLIENT_TYPE'}`;
@@ -74,10 +75,13 @@ export const createMCPConfig = ({
   mcpServerId?: string;
   isServerless?: boolean;
 }) => {
-  const baseArgs = ['-X'];
-  if (getRpkCloudEnvironment() !== 'production') {
-    baseArgs.push(`cloud_environment=${getRpkCloudEnvironment()}`);
+  const baseArgs = [];
+  const cloudEnv = getRpkCloudEnvironment();
+
+  if (cloudEnv !== 'production') {
+    baseArgs.push('-X', `cloud_environment=${cloudEnv}`);
   }
+
   baseArgs.push(
     'cloud',
     'mcp',

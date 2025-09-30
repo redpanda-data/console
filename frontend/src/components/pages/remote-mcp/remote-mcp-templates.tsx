@@ -41,25 +41,25 @@ export const templates: Template[] = [
     name: 'Memory Cache',
     componentType: MCPServer_Tool_ComponentType.CACHE,
     yaml: memoryCacheTemplate,
-    description: 'In-memory cache for fast data access',
+    description: 'In-memory cache for storing user data, configuration, and temporary values',
   },
   {
     name: 'Redpanda Cache',
     componentType: MCPServer_Tool_ComponentType.CACHE,
     yaml: redpandaCacheTemplate,
-    description: 'Redpanda-based cache',
+    description: 'Redpanda-backed distributed cache using Kafka topics for persistence',
   },
   {
     name: 'Generate Input',
     componentType: MCPServer_Tool_ComponentType.INPUT,
     yaml: generateInputTemplate,
-    description: 'Generate synthetic data',
+    description: 'Generate example user event messages with realistic data',
   },
   {
     name: 'Redpanda Output',
     componentType: MCPServer_Tool_ComponentType.OUTPUT,
     yaml: redpandaOutputTemplate,
-    description: 'Send data to Redpanda topics',
+    description: 'Publishes a message to a specified Redpanda topic',
   },
 ];
 

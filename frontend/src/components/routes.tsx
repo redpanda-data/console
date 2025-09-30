@@ -119,7 +119,7 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
 
       // Handle AI Agents and Knowledge Base routes with beta badge
       const title =
-        entry.path === '/agents' || entry.path === '/knowledgebases' || entry.path === '/remote-mcp'
+        entry.path === '/agents' || entry.path === '/knowledgebases' || entry.path === '/mcp-servers'
           ? getSidebarItemTitleWithBetaBadge({ route: entry })
           : entry.title;
 
@@ -240,7 +240,7 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
-    if (!isRemoteMcpFeatureEnabled && path.includes('/remote-mcp') && location.pathname !== '/overview') {
+    if (!isRemoteMcpFeatureEnabled && path.includes('/mcp-servers') && location.pathname !== '/overview') {
       appGlobal.historyPush('/overview');
       window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
     }
@@ -526,13 +526,13 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 
   MakeRoute<Record<string, never>>(
-    '/remote-mcp',
+    '/mcp-servers',
     RemoteMCPListPage,
     'Remote MCP',
     MCPIcon,
     true,
     routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode with feature flag
   ),
-  MakeRoute<{}>('/remote-mcp/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
-  MakeRoute<{ id: string }>('/remote-mcp/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
+  MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
+  MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),
 ].filterNull();

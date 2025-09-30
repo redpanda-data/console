@@ -327,7 +327,7 @@ export const updatePageTitle = () => {
   runInAction(() => {
     uiState.pageTitle = 'Remote MCP';
     uiState.pageBreadcrumbs.pop(); // Remove last breadcrumb to ensure the title is used without previous page breadcrumb being shown
-    uiState.pageBreadcrumbs.push({ title: 'Remote MCP', linkTo: '/remote-mcp', heading: 'Remote MCP' });
+    uiState.pageBreadcrumbs.push({ title: 'Remote MCP', linkTo: '/mcp-servers', heading: 'Remote MCP' });
   });
 };
 
@@ -361,7 +361,7 @@ export const RemoteMCPListPage = () => {
     if (target.closest('[data-actions-column]') || target.closest('[role="menuitem"]') || target.closest('button')) {
       return;
     }
-    navigate(`/remote-mcp/${serverId}`);
+    navigate(`/mcp-servers/${serverId}`);
   };
 
   const columns = React.useMemo(() => createColumns(setIsDeleteDialogOpen), []);
@@ -401,7 +401,7 @@ export const RemoteMCPListPage = () => {
         <MCPDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button size="sm" variant="secondary" onClick={() => navigate('/remote-mcp/create')}>
+          <Button size="sm" variant="secondary" onClick={() => navigate('/mcp-servers/create')}>
             <Plus className="h-4 w-4" />
             Create MCP Server
           </Button>
@@ -424,7 +424,7 @@ export const RemoteMCPListPage = () => {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="flex items-center justify-center">
+                  <div className="flex items-center gap-2 justify-center">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Loading MCP servers...
                   </div>
@@ -433,7 +433,7 @@ export const RemoteMCPListPage = () => {
             ) : error ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  <div className="flex items-center justify-center text-red-600">
+                  <div className="flex items-center gap-2 justify-center text-red-600">
                     <AlertCircle className="h-4 w-4" />
                     Error loading MCP servers: {error.message}
                   </div>

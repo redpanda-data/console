@@ -83,6 +83,9 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
         const step = steps[stepIndex];
         const currentIndex = utils.getIndex(current.id);
 
+        // Use icon from step definition if available, otherwise fall back to passed icon
+        const stepIcon = step.icon || icon;
+
         const isLast = utils.getLast().id === props.of;
         const isActive = current.id === props.of;
 
@@ -142,7 +145,7 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(...steps: Steps): 
                 onKeyDown={(e) => onStepKeyDown(e, utils.getNext(props.of), utils.getPrev(props.of))}
                 {...props}
               >
-                {icon ?? stepIndex + 1}
+                {stepIcon ?? stepIndex + 1}
               </Button>
               {variant === 'horizontal' && labelOrientation === 'vertical' && (
                 <StepperSeparator

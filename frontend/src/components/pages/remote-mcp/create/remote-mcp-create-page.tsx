@@ -1,262 +1,361 @@
+/**
+ * Copyright 2025 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
 'use client';
 
 import { create } from '@bufbuild/protobuf';
-import { formatPipelineError } from 'components/pages/rp-connect/errors';
+import type { ConnectError } from '@connectrpc/connect';
+import { Code as ConnectCode } from '@connectrpc/connect';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { ArrowLeft, ArrowRight, FileText, Wrench } from 'lucide-react';
-import { runInAction } from 'mobx';
-import { Pipeline_ResourcesSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
   CreateMCPServerRequestSchema,
   LintMCPConfigRequestSchema,
-  type MCPServer_Tool,
-  MCPServer_Tool_ComponentType,
-  MCPServer_ToolSchema,
-  MCPServerCreateSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
-import { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
+import { useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { uiState } from 'state/uiState';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
-import { RESOURCE_TIERS } from '../remote-mcp-constants';
-import { RemoteMCPCreateMetadataStep } from './metadata/remote-mcp-create-metadata-step';
-import { RemoteMCPCreateToolsStep } from './tools/remote-mcp-create-tools-step';
+import { ExpandedYamlDialog } from './components/expanded-yaml-dialog';
+import { MetadataStep } from './components/metadata-step';
+import { ToolsStep } from './components/tools-step';
+import { useLintResults } from './hooks/use-lint-results';
+import { useMetadataValidation } from './hooks/use-metadata-validation';
+import { useSecretDetection } from './hooks/use-secret-detection';
+import { useYamlLabelSync } from './hooks/use-yaml-label-sync';
+import { FormSchema, type FormValues, initialValues } from './schemas';
+import { getTierById } from './utils/form-helpers';
 
-// Hack for MobX to ensure we don't need to use observables
-export const updatePageTitle = () => {
-  runInAction(() => {
-    uiState.pageTitle = 'Create Remote MCP Server';
-    uiState.pageBreadcrumbs = [
-      { title: 'Remote MCP', linkTo: '/remote-mcp' },
-      { title: 'Create Remote MCP Server', linkTo: '' },
-    ];
-  });
-};
-
-export interface Tool {
-  id: string;
-  name: string;
-  componentType?: MCPServer_Tool_ComponentType;
-  configYaml: string;
-  validationError?: string;
-  selectedTemplate?: string;
-}
-
+// Stepper definition
 const { Stepper } = defineStepper(
   {
     id: 'metadata',
     title: 'Metadata',
     description: 'Configure server information',
-    icon: <FileText />,
+    icon: <FileText className="h-4 w-4" />,
   },
   {
     id: 'tools',
     title: 'Tools',
     description: 'Define with YAML config',
-    icon: <Wrench />,
+    icon: <Hammer className="h-4 w-4" />,
   },
 );
 
-export const RemoteMCPCreatePage = () => {
+export const RemoteMCPCreatePage: React.FC = () => {
   const navigate = useNavigate();
-  const { mutateAsync: createMCPServer, isPending } = useCreateMCPServerMutation();
-  const { mutateAsync: lintMCPConfig } = useLintMCPConfigMutation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [description, setDescription] = useState('');
-  const [tags, setTags] = useState<Array<{ key: string; value: string }>>([]);
-  const [resources, setResources] = useState('XSmall');
-  const [tools, setTools] = useState<Tool[]>([
-    {
-      id: '1',
-      name: '',
-      componentType: MCPServer_Tool_ComponentType.PROCESSOR,
-      configYaml: '',
-      validationError: undefined,
-    },
-  ]);
-  const [expandedEditor, setExpandedEditor] = useState<string | null>(null);
+  const { mutateAsync: createServer, isPending: isCreateMCPServerPending } = useCreateMCPServerMutation();
+  const { mutateAsync: lintConfig, isPending: isLintConfigPending } = useLintMCPConfigMutation();
 
-  useEffect(() => {
-    updatePageTitle();
-  }, []);
+  // State for expanded YAML dialog
+  const [expandedTool, setExpandedTool] = useState<{ index: number; isOpen: boolean } | null>(null);
 
-  const validateMetadata = () => {
-    return displayName.trim() !== '';
-  };
+  // Query existing secrets
+  const { data: secretsData } = useListSecretsQuery();
 
-  const validateTools = () => {
-    return tools.every((tool) => tool.validationError === undefined);
-  };
+  // Form setup
+  const form = useForm<FormValues>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: initialValues,
+    mode: 'onChange',
+  });
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
+  const {
+    fields: tagFields,
+    append: appendTag,
+    remove: removeTag,
+  } = useFieldArray({
+    control: form.control,
+    name: 'tags',
+  });
 
-    try {
-      // Convert form data to the expected protobuf format
-      const toolsMap: { [key: string]: MCPServer_Tool } = {};
+  const {
+    fields: toolFields,
+    append: appendTool,
+    remove: removeTool,
+  } = useFieldArray({
+    control: form.control,
+    name: 'tools',
+  });
 
-      for (const tool of tools) {
-        toolsMap[tool.name] = create(MCPServer_ToolSchema, {
-          componentType: tool.componentType,
-          configYaml: tool.configYaml,
-        });
-      }
+  // Custom hooks for form logic
+  useYamlLabelSync(form);
+  const { lintResults, setLintResults, hasLintingIssues } = useLintResults(form);
 
-      // Run lint validation first
-      try {
-        const lintRequest = create(LintMCPConfigRequestSchema, {
-          tools: toolsMap,
-        });
+  // Get existing secret names
+  const existingSecrets = useMemo(() => {
+    if (!secretsData?.secrets) return [];
+    return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
+  }, [secretsData]);
 
-        const lintResponse = await lintMCPConfig(lintRequest);
+  const { detectedSecrets, hasSecretWarnings } = useSecretDetection(form, existingSecrets);
+  const { isMetadataInvalid } = useMetadataValidation(form);
 
-        // Check if there are any lint errors
-        const hasErrors = Object.keys(lintResponse.lintHints).length > 0;
-        if (hasErrors) {
-          // Show toast error with the first lint error found
-          const firstToolWithError = Object.keys(lintResponse.lintHints)[0];
-          const firstError = lintResponse.lintHints[firstToolWithError];
-          toast.error(`Configuration error in tool "${firstToolWithError}": ${firstError.hint}`);
-          setIsSubmitting(false);
-          return;
-        }
-      } catch (lintError) {
-        // Show formatted error for lint API failure
-        const formattedError = formatPipelineError(lintError);
-        toast.error(formattedError);
-        setIsSubmitting(false);
-        return;
-      }
+  // Check if there are any form errors
+  const hasFormErrors = Object.keys(form.formState.errors).length > 0;
 
-      const tagsMap: { [key: string]: string } = {};
-      for (const tag of tags) {
-        tagsMap[tag.key] = tag.value;
-      }
-
-      // Map resource sizes to actual values using RESOURCE_TIERS
-
-      const selectedTier = RESOURCE_TIERS.find((tier) => tier.id === resources) || RESOURCE_TIERS[0];
-      const resourceValues = {
-        cpu: selectedTier.cpu,
-        memory: selectedTier.memory,
-      };
-
-      const request = create(CreateMCPServerRequestSchema, {
-        mcpServer: create(MCPServerCreateSchema, {
-          displayName,
-          description,
-          tools: toolsMap,
-          tags: tagsMap,
-          resources: create(Pipeline_ResourcesSchema, {
-            cpuShares: resourceValues.cpu,
-            memoryShares: resourceValues.memory,
-          }),
-        }),
-      });
-
-      const response = await createMCPServer(request);
-
-      // Navigate to the created server details page if it is already available to view.
-      if (response.mcpServer?.id) {
-        navigate(`/remote-mcp/${response.mcpServer.id}`);
-      } else {
-        // Worst case, just go to the details page.
-        navigate('/remote-mcp');
-      }
-    } catch (error) {
-      console.error('Failed to create MCP server:', error);
-      // Error handling is already done by the mutation
-    } finally {
-      setIsSubmitting(false);
+  const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
+    if (isOnMetadataStep) {
+      const valid = await form.trigger(['displayName', 'description', 'resourcesTier', 'tags']);
+      if (!valid) return;
+      goNext();
     }
   };
 
+  const handleLintTool = async (toolIndex: number) => {
+    const tool = form.getValues(`tools.${toolIndex}`);
+    if (!tool || !tool.name.trim() || !tool.config.trim()) {
+      toast.error('Tool name and configuration are required for linting');
+      return;
+    }
+
+    const toolsMap: Record<string, { componentType: number; configYaml: string }> = {
+      [tool.name.trim()]: {
+        componentType: tool.componentType,
+        configYaml: tool.config,
+      },
+    };
+
+    const response = await lintConfig(
+      create(LintMCPConfigRequestSchema, {
+        tools: toolsMap,
+      }),
+    );
+
+    // Update lint results for this tool
+    setLintResults((prev) => ({
+      ...prev,
+      [toolIndex]: response.lintHints || {},
+    }));
+  };
+
+  const handleValidationError = (error: ConnectError) => {
+    if (error.code === ConnectCode.InvalidArgument && error.details) {
+      // Find BadRequest details
+      const badRequest = error.details.find((detail) => (detail as any).type === 'google.rpc.BadRequest') as any;
+      if (badRequest?.debug?.fieldViolations) {
+        // Set form errors for specific fields
+        badRequest.debug.fieldViolations.forEach((violation: { field: string; description: string }) => {
+          const { field, description } = violation;
+
+          // Map server field names to form field names
+          if (field === 'mcp_server.display_name') {
+            form.setError('displayName', {
+              type: 'server',
+              message: description,
+            });
+            toast.error(`Display Name: ${description}`);
+          } else if (field === 'mcp_server.description') {
+            form.setError('description', {
+              type: 'server',
+              message: description,
+            });
+            toast.error(`Description: ${description}`);
+          } else if (field.startsWith('mcp_server.tools.')) {
+            // Handle tool-specific validation errors
+            const toolFieldMatch = field.match(/mcp_server\.tools\.([^.]+)\.(.+)/);
+            if (toolFieldMatch) {
+              const [, toolName, toolField] = toolFieldMatch;
+              // Find the tool index by name
+              const toolIndex = form.getValues('tools').findIndex((t) => t.name.trim() === toolName);
+              if (toolIndex !== -1) {
+                if (toolField === 'component_type') {
+                  form.setError(`tools.${toolIndex}.componentType`, {
+                    type: 'server',
+                    message: description,
+                  });
+                } else if (toolField === 'config_yaml') {
+                  form.setError(`tools.${toolIndex}.config`, {
+                    type: 'server',
+                    message: description,
+                  });
+                }
+                toast.error(`Tool "${toolName}" - ${toolField.replace('_', ' ')}: ${description}`);
+              }
+            } else {
+              toast.error(`Tools: ${description}`);
+            }
+          } else {
+            // Generic field error
+            toast.error(`${field}: ${description}`);
+          }
+        });
+        return;
+      }
+    }
+
+    // Fallback to generic error message
+    toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'MCP server' }));
+  };
+
+  const onSubmit = async (values: FormValues) => {
+    const tier = getTierById(values.resourcesTier);
+    const tagsMap: Record<string, string> = {};
+    values.tags.forEach((t) => {
+      const key = t.key?.trim();
+      if (key) tagsMap[key] = (t.value ?? '').trim();
+    });
+
+    const toolsMap: Record<string, { componentType: number; configYaml: string }> = {};
+    values.tools.forEach((t) => {
+      if (!t.name.trim()) return;
+      toolsMap[t.name.trim()] = {
+        componentType: t.componentType,
+        configYaml: t.config,
+      };
+    });
+
+    await createServer(
+      create(CreateMCPServerRequestSchema, {
+        mcpServer: {
+          displayName: values.displayName.trim(),
+          description: values.description?.trim() ?? '',
+          tools: toolsMap,
+          tags: tagsMap,
+          resources: {
+            cpuShares: tier?.cpu ?? '200m',
+            memoryShares: tier?.memory ?? '800M',
+          },
+        },
+      }),
+      {
+        onError: handleValidationError,
+        onSuccess: (data) => {
+          if (data?.mcpServer?.id) {
+            toast.success('MCP server created');
+            navigate(`/mcp-servers/${data.mcpServer.id}`);
+          }
+        },
+      },
+    );
+  };
+
   return (
-    <div className="p-6 max-w-full mx-auto">
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
-          <RemoteMCPBackButton />
+    <div className="flex flex-col gap-4">
+      {/* Header */}
+      <div className="space-y-4">
+        <RemoteMCPBackButton />
+        <div className="space-y-2">
+          <Heading level={1}>Create MCP Server</Heading>
+          <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
         </div>
-        <Heading level={1} className="text-gray-900 mb-2">
-          Create MCP Server
-        </Heading>
-        <Text className="text-gray-600">Set up a new managed MCP server with custom tools and configurations.</Text>
       </div>
 
-      <Stepper.Provider className="space-y-8" variant="horizontal">
+      <Stepper.Provider className="space-y-4" variant="horizontal">
         {({ methods }) => (
           <>
             <Stepper.Navigation>
-              {methods.all.map((step) => (
-                <Stepper.Step key={step.id} of={step.id} onClick={() => methods.goTo(step.id)} icon={step.icon}>
-                  <Stepper.Title>{step.title}</Stepper.Title>
-                  <Stepper.Description>{step.description}</Stepper.Description>
-                </Stepper.Step>
-              ))}
+              <Stepper.Step
+                of="metadata"
+                onClick={hasFormErrors ? undefined : () => methods.goTo('metadata')}
+                disabled={hasFormErrors}
+              >
+                <Stepper.Title>Metadata</Stepper.Title>
+                <Stepper.Description>Configure server information</Stepper.Description>
+              </Stepper.Step>
+              <Stepper.Step
+                of="tools"
+                onClick={isMetadataInvalid ? undefined : () => methods.goTo('tools')}
+                disabled={!!isMetadataInvalid}
+              >
+                <Stepper.Title>Tools</Stepper.Title>
+                <Stepper.Description>Define with YAML config</Stepper.Description>
+              </Stepper.Step>
             </Stepper.Navigation>
 
-            {methods.switch({
-              metadata: () => (
+            <Form {...form}>
+              {/* METADATA STEP */}
+              {methods.current.id === 'metadata' && (
                 <Stepper.Panel>
-                  <RemoteMCPCreateMetadataStep
-                    displayName={displayName}
-                    setDisplayName={setDisplayName}
-                    description={description}
-                    setDescription={setDescription}
-                    tags={tags}
-                    setTags={setTags}
-                    resources={resources}
-                    setResources={setResources}
+                  <MetadataStep
+                    form={form}
+                    tagFields={tagFields}
+                    appendTag={appendTag}
+                    removeTag={removeTag}
+                    onSubmit={onSubmit}
                   />
                 </Stepper.Panel>
-              ),
-              tools: () => (
-                <Stepper.Panel>
-                  <RemoteMCPCreateToolsStep
-                    tools={tools}
-                    setTools={setTools}
-                    expandedEditor={expandedEditor}
-                    setExpandedEditor={setExpandedEditor}
-                  />
-                </Stepper.Panel>
-              ),
-            })}
+              )}
 
-            <div className="flex justify-between mt-8">
-              <div>
+              {/* TOOLS STEP */}
+              {methods.current.id === 'tools' && (
+                <Stepper.Panel>
+                  <ToolsStep
+                    form={form}
+                    toolFields={toolFields}
+                    appendTool={appendTool}
+                    removeTool={removeTool}
+                    lintResults={lintResults}
+                    isLintConfigPending={isLintConfigPending}
+                    hasSecretWarnings={hasSecretWarnings}
+                    detectedSecrets={detectedSecrets}
+                    existingSecrets={existingSecrets}
+                    onSubmit={onSubmit}
+                    onLintTool={handleLintTool}
+                    onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
+                  />
+                </Stepper.Panel>
+              )}
+
+              <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
                 {!methods.isFirst && (
-                  <Button variant="outline" onClick={methods.prev} className="gap-2">
+                  <Button variant="outline" onClick={methods.prev} disabled={isCreateMCPServerPending}>
                     <ArrowLeft className="h-4 w-4" />
                     Previous
                   </Button>
                 )}
-              </div>
-              <div>
-                {!methods.isLast ? (
+                {methods.isLast ? (
                   <Button
-                    onClick={methods.next}
-                    disabled={methods.current.id === 'metadata' ? !validateMetadata() : false}
-                    className="gap-2"
+                    onClick={form.handleSubmit(onSubmit)}
+                    disabled={isCreateMCPServerPending || hasFormErrors || hasLintingIssues || hasSecretWarnings}
                   >
-                    Next
-                    <ArrowRight className="h-4 w-4" />
+                    {isCreateMCPServerPending ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Text as="span">Creating...</Text>
+                      </div>
+                    ) : (
+                      'Create MCP Server'
+                    )}
                   </Button>
                 ) : (
                   <Button
-                    onClick={handleSubmit}
-                    disabled={!validateTools() || isSubmitting || isPending}
-                    className="gap-2"
+                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
+                    disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
                   >
-                    {isSubmitting || isPending ? 'Creating...' : 'Create MCP Server'}
+                    Next
                   </Button>
                 )}
-              </div>
-            </div>
+              </Stepper.Controls>
+            </Form>
+
+            {/* Expanded YAML Editor Dialog */}
+            {expandedTool && (
+              <ExpandedYamlDialog
+                form={form}
+                toolIndex={expandedTool.index}
+                isOpen={expandedTool.isOpen}
+                lintResults={lintResults[expandedTool.index] || {}}
+                isLintConfigPending={isLintConfigPending}
+                onClose={() => setExpandedTool(null)}
+                onLint={() => handleLintTool(expandedTool.index)}
+              />
+            )}
           </>
         )}
       </Stepper.Provider>
