@@ -11,27 +11,16 @@
 
 import { create } from '@bufbuild/protobuf';
 import type { Monaco } from '@monaco-editor/react';
-import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  Link as ChLink,
-  type CreateToastFnReturn,
-  Flex,
-  FormField,
-  Input,
-  NumberInput,
-  Text,
-  useDisclosure,
-  useToast,
-} from '@redpanda-data/ui';
+import { Button, Flex, FormField, Input, NumberInput, useDisclosure } from '@redpanda-data/ui';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { isFeatureFlagEnabled } from 'config';
 import { useSessionStorage } from 'hooks/use-session-storage';
-import { PlusIcon } from 'lucide-react';
+import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import type { editor, IDisposable, languages } from 'monaco-editor';
@@ -46,9 +35,10 @@ import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { formatPipelineError } from './errors';
+import { LintResults } from '../remote-mcp/create/components/lint-results';
+import { extractLintHintsFromError } from './errors';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { AddConnectorDialog } from './tiles/add-connector-dialog';
 import type { ConnectComponentType } from './types/rpcn-schema';
 import type { ConnectTilesFormData } from './types/wizard';
@@ -66,6 +56,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
+  @observable lintResults: Record<string, any> = {};
   // TODO: Actually show this within the pipeline create page
   @observable tags = {} as Record<string, string>;
 
@@ -99,15 +90,13 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     const isNameEmpty = this.fileName.trim().length === 0;
 
     const CreateButton = () => {
-      const toast = useToast();
-
       return (
         <Button
           variant="solid"
           isDisabled={alreadyExists || isNameEmpty || this.isCreating}
           loadingText="Creating..."
           isLoading={this.isCreating}
-          onClick={action(() => this.createPipeline(toast))}
+          onClick={action(() => this.createPipeline())}
         >
           Create
         </Button>
@@ -116,21 +105,23 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
     return (
       <PageContent>
-        <Box my="2">
-          For help creating your pipeline, see our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" isExternal>
-            quickstart documentation
-          </ChLink>
-          , our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" isExternal>
-            library of examples
-          </ChLink>
-          , or our{' '}
-          <ChLink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" isExternal>
-            connector catalog
-          </ChLink>
-          .
-        </Box>
+        <div className="my-2">
+          <UIText>
+            For help creating your pipeline, see our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
+              quickstart documentation
+            </UILink>
+            , our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+              library of examples
+            </UILink>
+            , or our{' '}
+            <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
+              connector catalog
+            </UILink>
+            .
+          </UIText>
+        </div>
 
         <Flex flexDirection="column" gap={3}>
           <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
@@ -169,9 +160,16 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           </FormField>
         </Flex>
 
-        <Box mt="4">
+        <div className="mt-4">
           <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
-        </Box>
+        </div>
+
+        {/* Lint Results - displayed after Create button is clicked */}
+        {this.lintResults && Object.keys(this.lintResults).length > 0 && (
+          <div className="mt-4">
+            <LintResults lintResults={this.lintResults} />
+          </div>
+        )}
 
         <Flex alignItems="center" gap="4">
           <CreateButton />
@@ -183,7 +181,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
-  async createPipeline(toast: CreateToastFnReturn) {
+  async createPipeline() {
     this.isCreating = true;
 
     pipelinesApi
@@ -202,34 +200,21 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           },
         }),
       )
-      .then(async (r) => {
-        toast({
-          status: 'success',
-          duration: 4000,
-          isClosable: false,
-          title: 'Pipeline created',
-        });
-        const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-        if (retUnits && this.tasks !== retUnits) {
-          toast({
-            status: 'warning',
-            duration: 6000,
-            isClosable: false,
-            title: `Pipeline has been resized to use ${retUnits} compute units`,
-          });
-        }
-        await pipelinesApi.refreshPipelines(true);
-        appGlobal.historyPush('/connect-clusters');
-      })
-      .catch((err) => {
-        toast({
-          status: 'error',
-          duration: null,
-          isClosable: true,
-          title: 'Failed to create pipeline',
-          description: formatPipelineError(err),
-        });
-      })
+      .then(
+        action(async () => {
+          // Clear lint results on successful creation
+          this.lintResults = {};
+
+          await pipelinesApi.refreshPipelines(true);
+          appGlobal.historyPush('/connect-clusters');
+        }),
+      )
+      .catch(
+        action((err) => {
+          // Extract all errors as lint hints and display them inline
+          this.lintResults = extractLintHintsFromError(err);
+        }),
+      )
       .finally(() => {
         this.isCreating = false;
       });
@@ -260,7 +245,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
   const { isOpen: isAddProcessorOpen, onOpen: openAddProcessor, onClose: closeAddProcessor } = useDisclosure();
   const [selectedProcessor, setSelectedProcessor] = useState<ConnectComponentType | undefined>(undefined);
   if (editorInstance === null) {
-    return <Box minW={300} />;
+    return <div className="min-w-[300px]" />;
   }
 
   const onAddSecret = (secretNotation: string) => {
@@ -307,16 +292,17 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets, onAddProcessor
             </CardHeader>
             <CardContent className="gap-2 flex flex-wrap space-y-0">
               {processorTypes.map((processorType) => {
-                const { text, variant, className } = getComponentTypeBadgeProps(processorType);
+                const { text, variant, className, icon } = getComponentTypeBadgeProps(processorType);
                 return (
                   <Badge
                     key={processorType}
-                    icon={<PlusIcon size={16} className={className} />}
+                    icon={icon}
                     variant={variant}
-                    className="cursor-pointer py-2 px-3 max-w-fit"
+                    className="cursor-pointer max-w-fit"
                     onClick={() => handleProcessorTypeChange(processorType)}
                   >
                     {text}
+                    <PlusIcon size={12} className={cn(className, 'ml-3 mb-0.5')} />
                   </Badge>
                 );
               })}
@@ -432,7 +418,7 @@ export const PipelineEditor = observer(
             key: 'config',
             title: 'Configuration',
             content: () => (
-              <Box>
+              <div>
                 {/* yaml editor */}
                 <Flex height="400px" gap={7}>
                   <PipelinesYamlEditor
@@ -461,22 +447,25 @@ export const PipelineEditor = observer(
                     />
                   )}
                 </Flex>
-                {isKafkaConnectPipeline(p.yaml) && (
-                  <Alert status="error" my={2}>
-                    <AlertIcon />
-                    <Text>
+
+                {/* {isKafkaConnectPipeline(p.yaml) && ( */}
+                <Alert variant="destructive">
+                  <AlertCircle size={16} />
+                  <AlertDescription>
+                    <UIText>
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
-                      <ChLink
+                      <UILink
                         target="_blank"
                         href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
                       >
                         see our quickstart documentation
-                      </ChLink>
+                      </UILink>
                       .
-                    </Text>
-                  </Alert>
-                )}
-              </Box>
+                    </UIText>
+                  </AlertDescription>
+                </Alert>
+                {/* )} */}
+              </div>
             ),
           },
           {

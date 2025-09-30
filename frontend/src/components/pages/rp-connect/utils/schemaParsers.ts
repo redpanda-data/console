@@ -1,16 +1,15 @@
-import { parseDocument, stringify as yamlStringify } from 'yaml';
 import { generateDefaultFromJsonSchema } from 'utils/json-schema-utils';
+import { parseDocument, stringify as yamlStringify } from 'yaml';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
 import {
-  COMPONENT_CATEGORIES,
   CONNECT_COMPONENT_TYPE,
   type ConnectComponentSpec,
   type ConnectComponentType,
   type ConnectFieldSpec,
   type ConnectNodeCategory,
   type ExtendedConnectComponentSpec,
-  type InternalConnectComponentSpec,
 } from '../types/rpcn-schema';
+import { getCategoryDisplayName, inferComponentCategory } from './categories';
 
 /**
  * Extracts lightweight metadata from JSON Schema component variants
@@ -66,17 +65,16 @@ const extractComponentMetadata = (componentType: string, definition: any): Conne
 };
 
 /**
- * Phase 0: Parses benthos schema and returns categories and all components
+ * Phase 0: Parses benthos schema and returns all components with metadata
  */
 const parseSchema = () => {
   const schemaData = benthosSchema as any;
-  const categories = new Map<string, ConnectNodeCategory>();
   const allComponents: ConnectComponentSpec[] = [];
 
   // Check if schema has the new JSON Schema format with definitions
   if (!schemaData.definitions) {
     console.error('Schema does not have definitions structure. Expected JSON Schema format.');
-    return { categories, allComponents };
+    return allComponents;
   }
 
   // Parse each component type from definitions
@@ -92,33 +90,12 @@ const parseSchema = () => {
     }
   }
 
-  // Create semantic category collections for the category filter
-  const semanticCategoryMap = new Map<string, Set<string>>();
-
-  for (const component of allComponents) {
-    if (component.categories) {
-      for (const categoryId of component.categories) {
-        if (!semanticCategoryMap.has(categoryId)) {
-          semanticCategoryMap.set(categoryId, new Set());
-        }
-      }
-    }
-  }
-
-  // Convert to NodeCategory format for semantic categories
-  for (const categoryId of semanticCategoryMap.keys()) {
-    const categoryData: ConnectNodeCategory = {
-      id: categoryId,
-      name: getCategoryDisplayName(categoryId),
-    };
-    categories.set(categoryId, categoryData);
-  }
-
-  return { categories, allComponents };
+  return allComponents;
 };
 
-// Cache the parsed schema data
-const { categories, allComponents } = parseSchema();
+// Cache the parsed schema data (built-in components only)
+// Exported for use by categories.ts and getAllComponents()
+export const builtInComponents = parseSchema();
 
 /**
  * Phase 1: Converts a component specification to a config object structure
@@ -365,6 +342,36 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
 // Helper functions
 // ===============================
 
+export const getAllCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
+  const categorySet = new Set<string>();
+
+  // Collect categories from built-in components
+  for (const component of builtInComponents) {
+    if (component.categories) {
+      for (const categoryId of component.categories) {
+        categorySet.add(categoryId);
+      }
+    }
+  }
+
+  // Collect categories from external components
+  if (additionalComponents) {
+    for (const component of additionalComponents) {
+      if (component.categories) {
+        for (const categoryId of component.categories) {
+          categorySet.add(categoryId);
+        }
+      }
+    }
+  }
+
+  // Convert to ConnectNodeCategory array with display names
+  return Array.from(categorySet).map((categoryId) => ({
+    id: categoryId,
+    name: getCategoryDisplayName(categoryId),
+  }));
+};
+
 /**
  * Adds helpful schema comments to NEW YAML configs
  * Works directly with JSON Schema for simplicity
@@ -565,191 +572,10 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any): unknown {
   return undefined;
 }
 
-const displayNames: Record<string, string> = {
-  // Component types
-  input: 'Inputs',
-  output: 'Outputs',
-  processor: 'Processors',
-  cache: 'Caches',
-  buffer: 'Buffers',
-  rate_limit: 'Rate Limits',
-  scanner: 'Scanners',
-  metrics: 'Metrics',
-  tracer: 'Tracers',
-  // Semantic categories
-  databases: 'Databases',
-  messaging: 'Message Queues',
-  storage: 'File Storage',
-  api: 'API Clients',
-  aws: 'AWS Services',
-  gcp: 'Google Cloud',
-  azure: 'Azure Services',
-  cloud: 'Cloud Services',
-  export: 'Data Export',
-  transformation: 'Data Transformation',
-  monitoring: 'Monitoring & Observability',
-  // Additional categories
-  windowing: 'Windowing',
-  utility: 'Utility',
-  local: 'Local',
-  social: 'Social',
-  network: 'Network',
-  integration: 'Integration',
-  spicedb: 'SpiceDB',
-  ai: 'AI/ML',
-  parsing: 'Parsing',
-  mapping: 'Mapping',
-  composition: 'Composition',
-  unstructured: 'Unstructured',
-};
-
-export const getCategoryDisplayName = (category: string): string => {
-  return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
-};
-
-const databaseComponents = [
-  'sql',
-  'postgres',
-  'mysql',
-  'redis',
-  'mongodb',
-  'cassandra',
-  'dynamodb',
-  'elasticsearch',
-  'opensearch',
-  'snowflake',
-  'clickhouse',
-  'influxdb',
-];
-const cloudComponents = ['aws', 'gcp', 'azure', 's3', 'sqs', 'sns', 'kinesis', 'pubsub', 'blob', 'cloud'];
-const messagingComponents = ['kafka', 'nats', 'rabbitmq', 'mqtt', 'amqp', 'jetstream', 'pubsub'];
-const fileComponents = ['file', 'sftp', 'ftp', 'tar', 'zip'];
-const httpComponents = ['http', 'webhook', 'api', 'websocket', 'rest'];
-const exportKeywords = ['json', 'xml', 'csv', 'parquet', 'avro', 'protobuf'];
-const transformationKeywords = [
-  'transform',
-  'process',
-  'map',
-  'bloblang',
-  'jq',
-  'jmespath',
-  'branch',
-  'split',
-  'compress',
-  'decompress',
-];
-const monitoringKeywords = ['metric', 'log', 'trace', 'prometheus', 'jaeger', 'opentelemetry', 'statsd'];
-
-const inferComponentCategory = (componentName: string): string[] => {
-  const name = componentName.toLowerCase();
-  const categories: string[] = [];
-
-  // Database-related components
-  if (databaseComponents.some((db) => name.includes(db))) {
-    categories.push(COMPONENT_CATEGORIES.DATABASES);
-  }
-
-  // Cloud/Service providers
-  if (cloudComponents.some((cloud) => name.includes(cloud))) {
-    categories.push(COMPONENT_CATEGORIES.CLOUD);
-    if (name.includes('aws')) categories.push(COMPONENT_CATEGORIES.AWS);
-    if (name.includes('gcp') || name.includes('google')) categories.push(COMPONENT_CATEGORIES.GCP);
-    if (name.includes('azure')) categories.push(COMPONENT_CATEGORIES.AZURE);
-  }
-
-  // Messaging/Streaming
-  if (messagingComponents.some((msg) => name.includes(msg))) {
-    categories.push(COMPONENT_CATEGORIES.MESSAGING);
-  }
-
-  // File/Storage
-  if (fileComponents.some((file) => name.includes(file))) {
-    categories.push(COMPONENT_CATEGORIES.STORAGE);
-  }
-
-  // HTTP/API
-  if (httpComponents.some((http) => name.includes(http))) {
-    categories.push(COMPONENT_CATEGORIES.API);
-  }
-
-  // Data format components
-  if (exportKeywords.some((exportComponent) => name.includes(exportComponent))) {
-    categories.push(COMPONENT_CATEGORIES.EXPORT);
-  }
-
-  // Transformation components (processors)
-  if (transformationKeywords.some((transformationComponent) => name.includes(transformationComponent))) {
-    categories.push(COMPONENT_CATEGORIES.TRANSFORMATION);
-  }
-
-  // Monitoring components
-  if (monitoringKeywords.some((monitoringComponent) => name.includes(monitoringComponent))) {
-    categories.push(COMPONENT_CATEGORIES.MONITORING);
-  }
-
-  // If no specific category found, leave empty (don't assign 'other')
-  // Components without categories will be handled by the default display logic
-
-  return categories;
-};
-
-// ===============================
-// Exported utility functions
-// ===============================
-
 /**
- * Get all categories for the filter dropdown
+ * Get all components (built-in + external)
+ * Used by connect-tiles.tsx for filtering and yaml.ts for template generation
  */
-export const getNodeCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
-  const allCategories = new Map(categories);
-
-  // Add categories from additional components
-  if (additionalComponents) {
-    for (const component of additionalComponents) {
-      if (component.categories) {
-        for (const categoryId of component.categories) {
-          if (!allCategories.has(categoryId)) {
-            const categoryData: ConnectNodeCategory = {
-              id: categoryId,
-              name: getCategoryDisplayName(categoryId),
-            };
-            allCategories.set(categoryId, categoryData);
-          }
-        }
-      }
-    }
-  }
-
-  return Array.from(allCategories.values());
+export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => {
+  return [...builtInComponents, ...(additionalComponents || [])];
 };
-
-/**
- * Get all components (built-in + external) with isExternal flag
- * Used by connect-tiles.tsx for filtering
- */
-export const getAllComponents = (
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] => {
-  const builtInComponents: InternalConnectComponentSpec[] = allComponents.map((component) => ({
-    ...component,
-    isExternal: false,
-  }));
-
-  const externalComponents: InternalConnectComponentSpec[] = (additionalComponents || []).map((component) => ({
-    ...component,
-    isExternal: true,
-  }));
-
-  return [...builtInComponents, ...externalComponents];
-};
-
-/**
- * Get a specific component by type and name
- * Used by yaml.ts for template generation
- */
-export const getComponentByTypeAndName = (
-  type: ConnectComponentType,
-  name: string,
-  additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec | undefined =>
-  getAllComponents(additionalComponents).find((comp) => comp.type === type && comp.name === name);

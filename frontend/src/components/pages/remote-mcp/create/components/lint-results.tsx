@@ -9,12 +9,63 @@
  */
 
 import { Text } from 'components/redpanda-ui/components/typography';
-import { PencilRuler } from 'lucide-react';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { AlertCircle, AlertTriangle, Info, PencilRuler } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 
 interface LintResultsProps {
   lintResults: Record<string, LintHint>;
 }
+
+/**
+ * Get styling based on lint type (error, warning, info)
+ */
+const getLintTypeStyles = (lintType?: string) => {
+  const type = lintType?.toLowerCase() || 'error';
+
+  switch (type) {
+    case 'error':
+      return {
+        containerBg: 'bg-red-50',
+        containerBorder: 'border-red-200',
+        hintBg: 'bg-red-100',
+        hintBorder: 'border-red-300',
+        hintText: 'text-red-900',
+        labelText: 'text-red-700',
+        icon: <AlertCircle className="h-4 w-4 text-red-600" />,
+      };
+    case 'warning':
+      return {
+        containerBg: 'bg-amber-50',
+        containerBorder: 'border-amber-200',
+        hintBg: 'bg-amber-100',
+        hintBorder: 'border-amber-300',
+        hintText: 'text-amber-900',
+        labelText: 'text-amber-700',
+        icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
+      };
+    case 'info':
+      return {
+        containerBg: 'bg-blue-50',
+        containerBorder: 'border-blue-200',
+        hintBg: 'bg-blue-100',
+        hintBorder: 'border-blue-300',
+        hintText: 'text-blue-900',
+        labelText: 'text-blue-700',
+        icon: <Info className="h-4 w-4 text-blue-600" />,
+      };
+    default:
+      return {
+        containerBg: 'bg-gray-50',
+        containerBorder: 'border-gray-200',
+        hintBg: 'bg-white',
+        hintBorder: 'border-gray-300',
+        hintText: 'text-gray-800',
+        labelText: 'text-gray-600',
+        icon: <PencilRuler className="h-4 w-4 text-gray-600" />,
+      };
+  }
+};
 
 export const LintResults: React.FC<LintResultsProps> = ({ lintResults }) => {
   if (!lintResults || Object.keys(lintResults).length === 0) {
@@ -29,30 +80,43 @@ export const LintResults: React.FC<LintResultsProps> = ({ lintResults }) => {
           Linting Issues
         </Text>
       </div>
-      <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-        <div className="p-3 space-y-3">
-          {Object.entries(lintResults).map(([toolName, hint]) => (
-            <div key={toolName} className="space-y-1">
-              {hint.line > 0 ? (
-                <div className="flex flex-col gap-1">
-                  <Text className="text-xs font-medium text-gray-600">
-                    Line {hint.line}, Col {hint.column}
-                  </Text>
-                  <Text className="text-sm font-mono leading-relaxed bg-white px-2 py-1 rounded border text-gray-800">
-                    {hint.hint}
-                  </Text>
-                </div>
-              ) : (
-                <Text className="text-sm font-mono leading-relaxed bg-white px-2 py-1 rounded border text-gray-800">
+      <div className="space-y-2">
+        {Object.entries(lintResults).map(([toolName, hint]) => {
+          const styles = getLintTypeStyles(hint.lintType);
+
+          return (
+            <div
+              key={toolName}
+              className={cn('rounded-lg overflow-hidden border', styles.containerBg, styles.containerBorder)}
+            >
+              <div className="p-3 space-y-2">
+                {hint.line > 0 && (
+                  <div className="flex items-center gap-2">
+                    {styles.icon}
+                    <Text className={cn('text-xs font-medium', styles.labelText)}>
+                      Line {hint.line}, Col {hint.column}
+                    </Text>
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    'text-sm font-mono leading-relaxed px-3 py-2 rounded border',
+                    styles.hintBg,
+                    styles.hintBorder,
+                    styles.hintText,
+                  )}
+                >
                   {hint.hint}
-                </Text>
-              )}
-              {hint.lintType && (
-                <Text className="text-xs font-medium uppercase tracking-wide text-gray-500">{hint.lintType}</Text>
-              )}
+                </div>
+                {hint.lintType && (
+                  <Text className={cn('text-xs font-medium uppercase tracking-wide', styles.labelText)}>
+                    {hint.lintType}
+                  </Text>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

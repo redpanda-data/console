@@ -22,15 +22,15 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type {
   ComponentCategory,
+  ConnectComponentSpec,
   ConnectComponentStatus,
   ConnectComponentType,
   ExtendedConnectComponentSpec,
-  InternalConnectComponentSpec,
 } from '../types/rpcn-schema';
 import { CONNECT_COMPONENT_TYPE } from '../types/rpcn-schema';
 import type { ConnectTilesFormData } from '../types/wizard';
 import { getCategoryBadgeProps, getComponentTypeBadgeProps, getStatusBadgeProps } from '../utils/badges';
-import { getAllComponents, getNodeCategories } from '../utils/schemaParsers';
+import { getAllCategories, getAllComponents } from '../utils/schemaParsers';
 
 const connectTilesFormSchema = z.object({
   connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
@@ -45,7 +45,7 @@ const searchComponents = (
     status?: ConnectComponentStatus[];
   },
   additionalComponents?: ExtendedConnectComponentSpec[],
-): InternalConnectComponentSpec[] => {
+): ConnectComponentSpec[] => {
   return getAllComponents(additionalComponents).filter((component) => {
     // Filter by search text
     if (query.trim()) {
@@ -119,7 +119,7 @@ export const ConnectTiles = ({
     },
   });
 
-  const categories = getNodeCategories(additionalComponents);
+  const categories = useMemo(() => getAllCategories(additionalComponents), [additionalComponents]);
 
   // Filter components based on search, categories, and component type
   const filteredComponents = useMemo(() => {
@@ -217,7 +217,7 @@ export const ConnectTiles = ({
             </div>
           )}
 
-          <div className="max-h-96 overflow-y-auto py-4">
+          <div className="max-h-[50vh] overflow-y-auto py-4">
             <FormField
               control={form.control}
               name="connectionName"

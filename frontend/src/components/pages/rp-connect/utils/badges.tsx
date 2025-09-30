@@ -32,7 +32,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { ComponentCategory, ConnectComponentStatus, ConnectComponentType } from '../types/rpcn-schema';
-import { getCategoryDisplayName } from './schemaParsers';
+import { getCategoryDisplayName } from './categories';
 
 export type ConnectBadgeProps = {
   icon: React.ReactNode;

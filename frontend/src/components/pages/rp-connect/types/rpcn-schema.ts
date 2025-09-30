@@ -534,10 +534,6 @@ export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
     format?: 'markdown' | 'asciidoc';
     logoUrl?: string;
   };
-} // Internal component spec with isExternal flag
-
-export interface InternalConnectComponentSpec extends ConnectComponentSpec {
-  isExternal?: boolean;
 }
 
 /**

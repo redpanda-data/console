@@ -1,6 +1,80 @@
+import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Text } from '@redpanda-data/ui';
 import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
+
+/**
+ * Extracts lint hints from a ConnectError for display in LintResults component.
+ * Converts all errors (validation errors, field violations, and generic errors) to lint hints.
+ *
+ * Key differences from formatPipelineError:
+ * - Returns structured LintHint objects (for LintResults component)
+ * - formatPipelineError returns JSX (for legacy toast display)
+ *
+ * Leverages ConnectError properties:
+ * - err.code: gRPC status code (e.g., "invalid_argument", "not_found")
+ * - err.message: Human-readable error message
+ * - err.rawMessage: Raw error from server
+ * - err.details: Array of error details (LintHint, BadRequest, etc.)
+ */
+export function extractLintHintsFromError(err: any): Record<string, LintHint> {
+  const lintHints: Record<string, LintHint> = {};
+  let hintIndex = 0;
+
+  if (err instanceof ConnectError) {
+    // First, check for lint hints (validation errors with line/column info)
+    let hasSpecificHints = false;
+
+    for (const detail of err.details) {
+      if (isLintHint(detail)) {
+        lintHints[`hint_${hintIndex++}`] = detail.debug;
+        hasSpecificHints = true;
+      } else if (isBadRequest(detail)) {
+        // Handle field violations as lint hints
+        for (const violation of detail.debug.fieldViolations) {
+          lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
+            line: 0,
+            column: 0,
+            hint: `${violation.field}: ${violation.description}`,
+            lintType: 'error',
+          });
+          hasSpecificHints = true;
+        }
+      }
+    }
+
+    // If no specific hints were found, create a generic error hint with additional context
+    if (!hasSpecificHints) {
+      // Build a more helpful error message using ConnectError properties
+      let errorMessage = err.message;
+
+      // Add error code context if available and different from message
+      if (err.code) {
+        const codeStr = String(err.code);
+        if (!errorMessage.toLowerCase().includes(codeStr.toLowerCase())) {
+          errorMessage = `[${codeStr}] ${errorMessage}`;
+        }
+      }
+
+      lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
+        line: 0,
+        column: 0,
+        hint: errorMessage || err.rawMessage || String(err),
+        lintType: 'error',
+      });
+    }
+  } else {
+    // For non-ConnectError errors, create a generic hint
+    lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
+      line: 0,
+      column: 0,
+      hint: err.message || String(err),
+      lintType: 'error',
+    });
+  }
+
+  return lintHints;
+}
 
 export function formatPipelineError(err: any): any {
   const details = [];
