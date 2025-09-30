@@ -218,8 +218,8 @@ export const ToolCard: React.FC<ToolCardProps> = ({
               value={form.watch(`tools.${toolIndex}.config`)}
               onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val, { shouldDirty: true })}
               height="500px"
-              showLint={true}
-              showExpand={true}
+              showLint
+              showExpand
               onLint={onLint}
               onExpand={onExpand}
               isLinting={isLintConfigPending}

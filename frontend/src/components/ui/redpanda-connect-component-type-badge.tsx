@@ -17,37 +17,39 @@ interface RedpandaConnectComponentTypeBadgeProps {
   componentType: MCPServer_Tool_ComponentType;
 }
 
-const getComponentTypeConfig = (componentType: MCPServer_Tool_ComponentType) => {
+const getComponentTypeConfig = (
+  componentType: MCPServer_Tool_ComponentType,
+): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (componentType) {
     case MCPServer_Tool_ComponentType.PROCESSOR:
       return {
         icon: <Cpu className="h-4 w-4" />,
         text: 'Processor',
-        variant: 'blue' as BadgeVariant,
+        variant: 'blue',
       };
     case MCPServer_Tool_ComponentType.CACHE:
       return {
         icon: <Database className="h-4 w-4" />,
         text: 'Cache',
-        variant: 'purple' as BadgeVariant,
+        variant: 'purple',
       };
     case MCPServer_Tool_ComponentType.INPUT:
       return {
         icon: <FolderInput className="h-4 w-4" />,
         text: 'Input',
-        variant: 'green' as BadgeVariant,
+        variant: 'green',
       };
     case MCPServer_Tool_ComponentType.OUTPUT:
       return {
         icon: <FolderOutput className="h-4 w-4" />,
         text: 'Output',
-        variant: 'orange' as BadgeVariant,
+        variant: 'orange',
       };
     default:
       return {
         icon: <HelpCircle className="h-4 w-4" />,
         text: 'Unspecified',
-        variant: 'gray' as BadgeVariant,
+        variant: 'gray',
       };
   }
 };

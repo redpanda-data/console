@@ -28,7 +28,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/redpanda-connect-component-type-badge';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { YamlEditor } from 'components/ui/yaml/yaml-editor';
+import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -723,20 +723,16 @@ export const RemoteMCPConfigurationTab = () => {
                           </div>
                         </div>
                       )}
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">YAML Configuration</Label>
-                        <div className="overflow-hidden" style={{ height: '500px' }}>
-                          <YamlEditor
-                            key={selectedTool.id}
-                            value={selectedTool.config}
-                            onChange={(value) => handleUpdateTool(selectedTool.id, { config: value || '' })}
-                            options={{
-                              readOnly: !isEditing,
-                              theme: 'vs',
-                            }}
-                          />
-                        </div>
-                      </div>
+                      <YamlEditorCard
+                        key={selectedTool.id}
+                        value={selectedTool.config}
+                        onChange={(value) => handleUpdateTool(selectedTool.id, { config: value })}
+                        height="500px"
+                        options={{
+                          readOnly: !isEditing,
+                          theme: 'vs',
+                        }}
+                      />
                     </div>
                   )}
 

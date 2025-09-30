@@ -65,7 +65,7 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
                 })
               }
               height="100%"
-              showLint={true}
+              showLint
               onLint={onLint}
               isLinting={isLintConfigPending}
             />
