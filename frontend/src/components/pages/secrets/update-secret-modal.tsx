@@ -26,6 +26,7 @@ import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { secretSchema } from './form/secret-schema';
 import { Scope, UpdateSecretRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
+import z from 'zod';
 
 type UpdateSecretModalProps = {
   isOpen: boolean;
@@ -56,8 +57,8 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
   // Get existing labels from the secret
   const existingLabels = matchingSecret?.labels
     ? Object.entries(matchingSecret.labels)
-        .filter(([key, value]) => !(key === 'owner' && value === 'console'))
-        .map(([key, value]) => ({ key, value }))
+      .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+      .map(([key, value]) => ({ key, value }))
     : [{ key: '', value: '' }];
 
   const formOpts = formOptions({
@@ -68,7 +69,7 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
       labels: existingLabels.length > 0 ? existingLabels : [],
     },
     validators: {
-      onChange: secretSchema(),
+      onChange: secretSchema(z.string().optional()),
     },
     onSubmit: async ({ value }) => {
       const labelsMap: { [key: string]: string } = {};
