@@ -484,17 +484,23 @@ const isPasswordField = (fieldName: string): boolean => {
  * Checks if a schema has any nested fields matching topic/user/password patterns
  */
 const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): boolean => {
-  if (!schema || schema.type !== 'object' || !schema.properties) {
-    return false;
-  }
+  // Check object properties
+  if (schema?.type === 'object' && schema.properties) {
+    for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
+      if (isTopicField(propName) && topicData?.topicName) return true;
+      if (isUserField(propName) && userData?.username) return true;
+      if (isPasswordField(propName) && userData?.password) return true;
 
-  for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
-    if (isTopicField(propName) && topicData?.topicName) return true;
-    if (isUserField(propName) && userData?.username) return true;
-    if (isPasswordField(propName) && userData?.password) return true;
+      if (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) {
+        return true;
+      }
 
-    if (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) {
-      return true;
+      // Check array items
+      if (propSchema.type === 'array' && propSchema.items) {
+        if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
+          return true;
+        }
+      }
     }
   }
 
@@ -529,7 +535,11 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
       const hasTopic = isTopicField(propName) && topicData?.topicName;
       const hasUser = isUserField(propName) && userData?.username;
       const hasPassword = isPasswordField(propName) && userData?.password;
-      const hasNestedRelevant = propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData);
+      const hasNestedRelevant =
+        (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) ||
+        (propSchema.type === 'array' &&
+          propSchema.items &&
+          hasRelevantNestedFields(propSchema.items, topicData, userData));
 
       if (existsInResult || isRequired || hasTopic || hasUser || hasPassword || hasNestedRelevant) {
         if (isTopicField(propName) && topicData?.topicName) {
@@ -538,18 +548,24 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
           } else if (propSchema.type === 'string') {
             result[propName] = topicData.topicName;
           }
-        }
-        else if (isUserField(propName) && userData?.username) {
-          result[propName] = userData.username;
-        }
-        else if (isPasswordField(propName) && userData?.password) {
-          result[propName] = userData.password;
-        }
-        else if (propSchema.type === 'object') {
+        } else if (isUserField(propName) && userData?.username) {
+          result[propName] = '$' + '{secrets.REDPANDA_USERNAME}';
+        } else if (isPasswordField(propName) && userData?.password) {
+          result[propName] = '$' + '{secrets.REDPANDA_PASSWORD}';
+        } else if (propSchema.type === 'object') {
           const nestedDefaults = existsInResult ? result[propName] : {};
           const populated = populatePersistedData(nestedDefaults, propSchema, propName);
           if (Object.keys(populated).length > 0) {
             result[propName] = populated;
+          }
+        } else if (propSchema.type === 'array' && propSchema.items) {
+          // Handle arrays that contain objects with relevant fields (e.g., sasl array)
+          if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
+            const itemDefaults = {};
+            const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
+            if (Object.keys(populated).length > 0) {
+              result[propName] = [populated];
+            }
           }
         }
       }
@@ -642,17 +658,18 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const requiredFields = jsonSchema.required || [];
     const isRequired = requiredFields.includes(cleanKey);
 
-    if (isRequired) {
-      comment = ' # Required';
-    } else if (fieldSchema.default !== undefined) {
-      comment = ` # Default: ${JSON.stringify(fieldSchema.default)}`;
-    } else {
-      comment = ' # Optional';
-    }
+    // Only add comments to lines with actual values (not structural keys)
+    // Skip if value is empty (array/object on next line) to prevent comment displacement
+    const hasValue = value.trim().length > 0 && value.trim() !== '{}' && value.trim() !== '[]';
 
-    // Skip comments for empty structural elements unless required
-    if ((value.trim() === '{}' || value.trim() === '[]') && !isRequired) {
-      comment = '';
+    if (hasValue) {
+      if (isRequired) {
+        comment = ' # Required';
+      } else if (fieldSchema.default !== undefined) {
+        comment = ` # Default: ${JSON.stringify(fieldSchema.default)}`;
+      } else {
+        comment = ' # Optional';
+      }
     }
 
     processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
@@ -696,6 +713,32 @@ const addRootSpacing = (yamlString: string): string => {
 };
 
 /**
+ * Recursively removes null values from arrays and objects
+ */
+const cleanupNullValues = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    // Remove null/undefined values from arrays
+    const filtered = obj.filter((item) => item !== null && item !== undefined);
+    // Recursively clean nested items
+    return filtered.map((item) => cleanupNullValues(item));
+  }
+
+  if (obj !== null && typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const cleanedValue = cleanupNullValues(value);
+      // Keep non-null values, or empty arrays/objects
+      if (cleanedValue !== null && cleanedValue !== undefined) {
+        cleaned[key] = cleanedValue;
+      }
+    }
+    return cleaned;
+  }
+
+  return obj;
+};
+
+/**
  * Generates default values from ConnectFieldSpec
  * Uses shared JSON Schema utility when _jsonSchema is available
  * Populates topic/user fields from session storage when applicable
@@ -703,10 +746,12 @@ const addRootSpacing = (yamlString: string): string => {
 export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
   if (spec._jsonSchema) {
     if (showOptionalFields) {
-      return generateAllFieldsFromJsonSchema(spec._jsonSchema, spec.name);
+      const allFields = generateAllFieldsFromJsonSchema(spec._jsonSchema, spec.name);
+      return cleanupNullValues(allFields);
     }
     const defaults = generateDefaultFromJsonSchema(spec._jsonSchema);
-    return populatePersistedData(defaults, spec._jsonSchema, spec.name);
+    const populated = populatePersistedData(defaults, spec._jsonSchema, spec.name);
+    return cleanupNullValues(populated);
   }
 
   // Fallback to legacy behavior for backward compatibility (external components without _jsonSchema)
@@ -778,11 +823,11 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     }
 
     if (isUserField(fieldName) && userData?.username) {
-      return userData.username;
+      return '$' + '{secrets.REDPANDA_USERNAME}';
     }
 
     if (isPasswordField(fieldName) && userData?.password) {
-      return userData.password;
+      return '$' + '{secrets.REDPANDA_PASSWORD}';
     }
   }
 

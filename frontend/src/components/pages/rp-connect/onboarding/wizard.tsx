@@ -97,7 +97,7 @@ export const ConnectOnboardingWizard = () => {
     <PageContent>
       <Stepper.Provider className="space-y-4" initialStep={initialStep}>
         {({ methods }) => (
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-8 relative">
             <Toaster expand />
             <div className="flex flex-col gap-8 pt-6 h-full">
               <div className="flex flex-col space-y-2 text-center">
@@ -131,11 +131,10 @@ export const ConnectOnboardingWizard = () => {
                 </Button>
               )}
               <div className="flex gap-2">
-                {!methods.isLast && (
-                  <Button type="button" variant="outline" onClick={handleSkip}>
-                    Skip
-                  </Button>
-                )}
+                <Button type="button" variant="outline" onClick={handleSkip}>
+                  Skip
+                </Button>
+
                 {(methods.isFirst && persistedConnector.connectionName && persistedConnector.connectionType) ||
                 !methods.isFirst ? (
                   <Button onClick={() => handleNext(methods)}>Next</Button>

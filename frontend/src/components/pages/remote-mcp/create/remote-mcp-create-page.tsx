@@ -18,6 +18,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { useSecretDetection } from 'hooks/use-secret-detection';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
   CreateMCPServerRequestSchema,
@@ -36,7 +37,6 @@ import { MetadataStep } from './components/metadata-step';
 import { ToolsStep } from './components/tools-step';
 import { useLintResults } from './hooks/use-lint-results';
 import { useMetadataValidation } from './hooks/use-metadata-validation';
-import { useSecretDetection } from './hooks/use-secret-detection';
 import { useYamlLabelSync } from './hooks/use-yaml-label-sync';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { getTierById } from './utils/form-helpers';
@@ -103,7 +103,13 @@ export const RemoteMCPCreatePage: React.FC = () => {
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
   }, [secretsData]);
 
-  const { detectedSecrets, hasSecretWarnings } = useSecretDetection(form, existingSecrets);
+  // Watch form and extract all YAML configs for secret detection
+  const tools = form.watch('tools');
+  const allYamlContent = useMemo(() => {
+    return tools.map((tool) => tool.config || '').join('\n');
+  }, [tools]);
+
+  const { detectedSecrets, hasSecretWarnings } = useSecretDetection(allYamlContent, existingSecrets);
   const { isMetadataInvalid } = useMetadataValidation(form);
 
   // Check if there are any form errors

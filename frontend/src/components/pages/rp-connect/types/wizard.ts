@@ -39,7 +39,11 @@ export const addTopicFormSchema = z.object({
         'Must not contain any whitespace. Must be alphanumeric and can contain underscores, periods, and hyphens.',
     }),
   partitions: z.number().min(1, { message: 'Partitions must be at least 1.' }),
-  replicationFactor: z.number().min(1, { message: 'Replication factor must be at least 1.' }).readonly(),
+  replicationFactor: z
+    .number()
+    .min(1, { message: 'Replication factor must be at least 1.' })
+    .max(5, { message: 'Replication factor must be less than or equal to 5.' })
+    .readonly(),
   retentionTimeMs: z.number().min(0, { message: 'Retention time must be at least 0.' }),
   retentionTimeUnit: z.enum(retentionTimeUnits),
   retentionSize: z.number().min(0, { message: 'Retention size must be at least 0.' }),

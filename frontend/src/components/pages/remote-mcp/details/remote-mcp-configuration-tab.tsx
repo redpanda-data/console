@@ -26,7 +26,9 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { QuickAddSecrets } from 'components/secrets/quick-add-secrets';
 import { Edit, FileText, Hammer, Plus, Save, Settings, Trash2 } from 'lucide-react';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   type MCPServer_State,
   MCPServer_Tool_ComponentType,
@@ -37,13 +39,12 @@ import { useGetMCPServerQuery, useListMCPServerTools, useUpdateMCPServerMutation
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { extractSecretReferences, getUniqueSecretNames } from 'utils/secret-detection';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
-import { QuickAddSecrets } from '../create/quick-add-secrets';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../remote-mcp-tool-type-badge';
-import { extractSecretReferences, getUniqueSecretNames } from '../utils/secret-detection';
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 interface LocalTool {
@@ -768,6 +769,7 @@ export const RemoteMCPConfigurationTab = () => {
                 <QuickAddSecrets
                   requiredSecrets={detectedSecrets}
                   existingSecrets={existingSecrets.filter((id): id is string => Boolean(id))}
+                  scope={Scope.MCP_SERVER}
                 />
               </div>
             </div>
