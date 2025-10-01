@@ -198,7 +198,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
 
   return (
     <Card size="full">
-      <CardHeader>
+      <CardHeader className="max-w-2xl">
         <CardTitle>
           <Heading level={2}>Select a user</Heading>
         </CardTitle>
@@ -210,7 +210,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-8">
+          <div className="space-y-8 max-w-2xl">
             <FormField
               control={form.control}
               name="username"
@@ -230,118 +230,122 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Group>
-                      <Input type="password" {...field} disabled={!!existingUserBeingEdited} />
-                      <CopyButton size="icon" content={field.value} variant="outline" />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        onClick={generateNewPassword}
-                        disabled={!!existingUserBeingEdited}
-                      >
-                        <RefreshCcw size={15} />
-                      </Button>
-                    </Group>
-                  </FormControl>
-                  <FormMessage />
+
+            {existingUserBeingEdited && (
+              <Alert>
+                <CircleAlert className="h-4 w-4" />
+                <AlertTitle>Existing User Selected</AlertTitle>
+                <AlertDescription>
+                  This user already exists. To change permissions or password, please create a new user.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!existingUserBeingEdited && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Group>
+                          <Input type="password" {...field} />
+                          <CopyButton size="icon" content={field.value} variant="outline" />
+                          <Button type="button" size="icon" variant="outline" onClick={generateNewPassword}>
+                            <RefreshCcw size={15} />
+                          </Button>
+                        </Group>
+                      </FormControl>
+                      <FormMessage />
+                      <FormField
+                        control={form.control}
+                        name="specialCharactersEnabled"
+                        render={({ field: specialCharsField }) => (
+                          <Label className="flex-row items-center text-muted-foreground font-normal">
+                            <Checkbox
+                              checked={specialCharsField.value}
+                              onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
+                            />
+                            Generate with special characters
+                          </Label>
+                        )}
+                      />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="saslMechanism"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SASL Mechanism</FormLabel>
+                      <FormControl>
+                        <Select {...field}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a SASL Mechanism" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {saslMechanisms.map((mechanism) => (
+                              <SelectItem key={mechanism} value={mechanism}>
+                                {mechanism}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {topicData?.topicName && (
                   <FormField
                     control={form.control}
-                    name="specialCharactersEnabled"
-                    disabled={!!existingUserBeingEdited}
-                    render={({ field: specialCharsField }) => (
-                      <Label className="flex-row items-center text-muted-foreground font-normal">
-                        <Checkbox
-                          checked={specialCharsField.value}
-                          onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
-                        />
-                        Generate with special characters
-                      </Label>
+                    name="superuser"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center space-x-3">
+                            <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium">
+                              Enable topic-specific permissions for this user for "{topicData.topicName}"
+                            </FormLabel>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {field.value ? (
+                              `This user will have full permissions (read, write, create, delete, describe, alter) on the selected topic "${topicData.topicName}".`
+                            ) : (
+                              <Alert variant="destructive">
+                                <AlertTitle className="flex gap-2 items-center">
+                                  <CircleAlert size={15} />
+                                  Want custom User Permissions?
+                                </AlertTitle>
+                                <AlertDescription>
+                                  You can configure custom ACLs to connect your data to Redpanda{' '}
+                                  <a
+                                    href="/security/acls"
+                                    className="text-blue-600 hover:text-blue-800 underline"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    here
+                                  </a>
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </p>
+
+                          <FormMessage />
+                        </div>
+                      </FormItem>
                     )}
                   />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="saslMechanism"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>SASL Mechanism</FormLabel>
-                  <FormControl>
-                    <Select {...field} disabled={!!existingUserBeingEdited}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a SASL Mechanism" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {saslMechanisms.map((mechanism) => (
-                          <SelectItem key={mechanism} value={mechanism}>
-                            {mechanism}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {topicData?.topicName && (
-              <FormField
-                control={form.control}
-                name="superuser"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center space-x-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!!existingUserBeingEdited}
-                          />
-                        </FormControl>
-                        <FormLabel className="text-sm font-medium">
-                          Enable topic-specific permissions for this user for "{topicData.topicName}"
-                        </FormLabel>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {field.value ? (
-                          `This user will have full permissions (read, write, create, delete, describe, alter) on the selected topic "${topicData.topicName}".`
-                        ) : (
-                          <Alert variant="destructive">
-                            <AlertTitle className="flex gap-2 items-center">
-                              <CircleAlert size={15} />
-                              Want custom User Permissions?
-                            </AlertTitle>
-                            <AlertDescription>
-                              You can configure custom ACLs to connect your data to Redpanda{' '}
-                              <a
-                                href="/security/acls"
-                                className="text-blue-600 hover:text-blue-800 underline"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                here
-                              </a>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                      </p>
-
-                      <FormMessage />
-                    </div>
-                  </FormItem>
                 )}
-              />
+              </>
             )}
           </div>
         </Form>

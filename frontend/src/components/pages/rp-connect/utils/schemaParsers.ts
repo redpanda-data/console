@@ -1,6 +1,7 @@
-import { generateDefaultFromJsonSchema } from 'utils/json-schema-utils';
 import { parseDocument, stringify as yamlStringify } from 'yaml';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
+import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
+import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema-utils';
 import {
   CONNECT_COMPONENT_TYPE,
   type ConnectComponentSpec,
@@ -9,6 +10,7 @@ import {
   type ConnectNodeCategory,
   type ExtendedConnectComponentSpec,
 } from '../types/rpcn-schema';
+import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
 import { getCategoryDisplayName, inferComponentCategory } from './categories';
 
 /**
@@ -411,6 +413,163 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
 // Helper functions
 // ===============================
 
+/**
+ * Reads persisted wizard data from session storage
+ */
+const getPersistedWizardData = () => {
+  let topicData: AddTopicFormData | null = null;
+  let userData: AddUserFormData | null = null;
+
+  try {
+    const topicJson = sessionStorage.getItem(CONNECT_WIZARD_TOPIC_KEY);
+    if (topicJson) {
+      topicData = JSON.parse(topicJson);
+    }
+  } catch (error) {
+    console.warn('Failed to parse topic data from session storage:', error);
+  }
+
+  try {
+    const userJson = sessionStorage.getItem(CONNECT_WIZARD_USER_KEY);
+    if (userJson) {
+      userData = JSON.parse(userJson);
+    }
+  } catch (error) {
+    console.warn('Failed to parse user data from session storage:', error);
+  }
+
+  return { topicData, userData };
+};
+
+/**
+ * Checks if a field name is topic-related
+ */
+const isTopicField = (fieldName: string): boolean => {
+  const normalizedName = fieldName.toLowerCase();
+  return (
+    normalizedName === 'topic' ||
+    normalizedName === 'topics' ||
+    normalizedName === 'target_topic' ||
+    normalizedName === 'target_topics' ||
+    normalizedName === 'source_topic' ||
+    normalizedName === 'source_topics' ||
+    normalizedName.endsWith('_topic') ||
+    normalizedName.endsWith('_topics')
+  );
+};
+
+/**
+ * Checks if a field name is user/authentication-related
+ */
+const isUserField = (fieldName: string): boolean => {
+  const normalizedName = fieldName.toLowerCase();
+  return (
+    normalizedName === 'user' ||
+    normalizedName === 'username' ||
+    normalizedName === 'sasl_user' ||
+    normalizedName.endsWith('.user') ||
+    normalizedName.endsWith('.username')
+  );
+};
+
+/**
+ * Checks if a field name is password-related
+ */
+const isPasswordField = (fieldName: string): boolean => {
+  const normalizedName = fieldName.toLowerCase();
+  return normalizedName === 'password' || normalizedName === 'sasl_password' || normalizedName.endsWith('.password');
+};
+
+/**
+ * Checks if a schema has any nested fields matching topic/user/password patterns
+ */
+const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): boolean => {
+  if (!schema || schema.type !== 'object' || !schema.properties) {
+    return false;
+  }
+
+  for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
+    if (isTopicField(propName) && topicData?.topicName) return true;
+    if (isUserField(propName) && userData?.username) return true;
+    if (isPasswordField(propName) && userData?.password) return true;
+
+    if (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Recursively populates persisted topic/user data in the generated defaults object
+ * Also creates optional nested objects when they contain relevant fields
+ */
+const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: string): any => {
+  const { topicData, userData } = getPersistedWizardData();
+
+  if (jsonSchema.type === 'object' && jsonSchema.properties) {
+    const hasRelevant = hasRelevantNestedFields(jsonSchema, topicData, userData);
+
+    if (!defaults || typeof defaults !== 'object') {
+      if (hasRelevant) {
+        defaults = {};
+      } else {
+        return defaults;
+      }
+    }
+
+    const result = { ...defaults };
+    const requiredFields = jsonSchema.required || [];
+
+    for (const [propName, propSchema] of Object.entries(jsonSchema.properties) as [string, any][]) {
+      const isRequired = requiredFields.includes(propName);
+      const existsInResult = propName in result;
+
+      const hasTopic = isTopicField(propName) && topicData?.topicName;
+      const hasUser = isUserField(propName) && userData?.username;
+      const hasPassword = isPasswordField(propName) && userData?.password;
+      const hasNestedRelevant = propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData);
+
+      if (existsInResult || isRequired || hasTopic || hasUser || hasPassword || hasNestedRelevant) {
+        if (isTopicField(propName) && topicData?.topicName) {
+          if (propSchema.type === 'array') {
+            result[propName] = [topicData.topicName];
+          } else if (propSchema.type === 'string') {
+            result[propName] = topicData.topicName;
+          }
+        }
+        else if (isUserField(propName) && userData?.username) {
+          result[propName] = userData.username;
+        }
+        else if (isPasswordField(propName) && userData?.password) {
+          result[propName] = userData.password;
+        }
+        else if (propSchema.type === 'object') {
+          const nestedDefaults = existsInResult ? result[propName] : {};
+          const populated = populatePersistedData(nestedDefaults, propSchema, propName);
+          if (Object.keys(populated).length > 0) {
+            result[propName] = populated;
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  if (Array.isArray(defaults)) {
+    return defaults.map((item) => {
+      if (typeof item === 'object' && jsonSchema.items) {
+        return populatePersistedData(item, jsonSchema.items, rootFieldName);
+      }
+      return item;
+    });
+  }
+
+  return defaults;
+};
+
 export const getAllCategories = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectNodeCategory[] => {
   const categorySet = new Set<string>();
 
@@ -539,17 +698,15 @@ const addRootSpacing = (yamlString: string): string => {
 /**
  * Generates default values from ConnectFieldSpec
  * Uses shared JSON Schema utility when _jsonSchema is available
+ * Populates topic/user fields from session storage when applicable
  */
 export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?: boolean): unknown {
-  // If we have raw JSON Schema, use shared utility
   if (spec._jsonSchema) {
-    // Shared utility doesn't have showOptionalFields concept
-    // It respects the required array in JSON Schema
-    // For now, if showOptionalFields is true, we need to handle it differently
     if (showOptionalFields) {
-      return generateAllFieldsFromJsonSchema(spec._jsonSchema);
+      return generateAllFieldsFromJsonSchema(spec._jsonSchema, spec.name);
     }
-    return generateDefaultFromJsonSchema(spec._jsonSchema);
+    const defaults = generateDefaultFromJsonSchema(spec._jsonSchema);
+    return populatePersistedData(defaults, spec._jsonSchema, spec.name);
   }
 
   // Fallback to legacy behavior for backward compatibility (external components without _jsonSchema)
@@ -601,10 +758,32 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
 /**
  * Helper to generate ALL fields from JSON Schema (including optional ones)
  * Used when showOptionalFields is true
+ * Also populates topic/user defaults from session storage when applicable
  */
-function generateAllFieldsFromJsonSchema(jsonSchema: any): unknown {
+function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): unknown {
   if (jsonSchema.default !== undefined) {
     return jsonSchema.default;
+  }
+
+  const { topicData, userData } = getPersistedWizardData();
+
+  if (fieldName) {
+    if (isTopicField(fieldName) && topicData?.topicName) {
+      if (jsonSchema.type === 'array') {
+        return [topicData.topicName];
+      }
+      if (jsonSchema.type === 'string') {
+        return topicData.topicName;
+      }
+    }
+
+    if (isUserField(fieldName) && userData?.username) {
+      return userData.username;
+    }
+
+    if (isPasswordField(fieldName) && userData?.password) {
+      return userData.password;
+    }
   }
 
   if (jsonSchema.type === 'string') return '';
@@ -620,9 +799,8 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any): unknown {
     }
 
     if (jsonSchema.properties) {
-      // Include ALL properties, not just required ones
       for (const [propName, propSchema] of Object.entries(jsonSchema.properties)) {
-        const value = generateAllFieldsFromJsonSchema(propSchema);
+        const value = generateAllFieldsFromJsonSchema(propSchema, propName);
         if (value !== undefined) {
           obj[propName] = value;
         }

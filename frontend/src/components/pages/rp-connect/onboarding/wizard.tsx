@@ -10,10 +10,10 @@ import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topi
 import { useCallback, useMemo, useRef } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
-import { Link as ReactRouterLink, useNavigate, useSearchParams } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
 import type { ConnectComponentType } from '../types/rpcn-schema';
-import type { AddTopicFormData, AddUserFormData, BaseStepRef, ConnectTilesFormData } from '../types/wizard';
+import type { BaseStepRef, ConnectTilesFormData } from '../types/wizard';
 import { handleStepResult, WizardStep } from '../utils/wizard';
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
@@ -35,20 +35,18 @@ export const ConnectOnboardingWizard = () => {
     CONNECT_WIZARD_CONNECTOR_KEY,
     {},
   );
-  const [persistedTopic, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(
-    CONNECT_WIZARD_TOPIC_KEY,
-    {},
-  );
-  const [persistedUser, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const initialStep = useMemo(() => {
-    return isServerless() &&
+    const isServerlessOnboardingWizard =
+      isServerless() &&
       searchParams.get('serverless') === 'true' &&
       persistedConnector.connectionName &&
-      persistedConnector.connectionType
+      persistedConnector.connectionType;
+    const isRedirectFromEmptyPipelinesList = isServerless() && searchParams.get('step') === 'add-topic';
+    return isServerlessOnboardingWizard || isRedirectFromEmptyPipelinesList
       ? WizardStep.ADD_TOPIC
       : WizardStep.ADD_CONNECTOR;
   }, [searchParams, persistedConnector]);
@@ -83,7 +81,7 @@ export const ConnectOnboardingWizard = () => {
       }
       case WizardStep.ADD_USER: {
         const result = await addUserStepRef.current?.triggerSubmit();
-        handleStepResult(result, methods.next);
+        handleStepResult(result, () => navigate('/rp-connect/create'));
         break;
       }
       default:
@@ -97,10 +95,10 @@ export const ConnectOnboardingWizard = () => {
 
   return (
     <PageContent>
-      <Toaster expand />
       <Stepper.Provider className="space-y-4" initialStep={initialStep}>
         {({ methods }) => (
           <div className="flex flex-col gap-8">
+            <Toaster expand />
             <div className="flex flex-col gap-8 pt-6 h-full">
               <div className="flex flex-col space-y-2 text-center">
                 <Stepper.Navigation>
@@ -138,12 +136,8 @@ export const ConnectOnboardingWizard = () => {
                     Skip
                   </Button>
                 )}
-                {methods.isLast ? (
-                  <Button as={ReactRouterLink} to="/rp-connect/create">
-                    Next
-                  </Button>
-                ) : (methods.isFirst && persistedConnector.connectionName && persistedConnector.connectionType) ||
-                  !methods.isLast ? (
+                {(methods.isFirst && persistedConnector.connectionName && persistedConnector.connectionType) ||
+                !methods.isFirst ? (
                   <Button onClick={() => handleNext(methods)}>Next</Button>
                 ) : null}
               </div>

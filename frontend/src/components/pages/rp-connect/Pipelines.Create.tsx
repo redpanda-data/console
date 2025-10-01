@@ -28,7 +28,11 @@ import type { editor, IDisposable, languages } from 'monaco-editor';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
+import {
+  CONNECT_WIZARD_CONNECTOR_KEY,
+  CONNECT_WIZARD_TOPIC_KEY,
+  CONNECT_WIZARD_USER_KEY,
+} from 'state/connect/state';
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
@@ -205,6 +209,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         action(async () => {
           // Clear lint results on successful creation
           this.lintResults = {};
+
+          // Clear wizard session storage
+          sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+          sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
+          sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
 
           await pipelinesApi.refreshPipelines(true);
           appGlobal.historyPush('/connect-clusters');

@@ -22,7 +22,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -36,7 +36,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 import { ConnectTiles } from './onboarding/connect-tiles';
 import type { ConnectComponentType } from './types/rpcn-schema';
-import type { ConnectTilesFormData } from './types/wizard';
+import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -55,12 +55,16 @@ const NewCreatePipelineButton = () => {
     CONNECT_WIZARD_CONNECTOR_KEY,
     {},
   );
+  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
+  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
   const navigate = useNavigate();
 
   const handleClick = useCallback(() => {
     setPersistedConnectionName({});
+    setPersistedTopic({});
+    setPersistedUser({});
     navigate('/rp-connect/wizard');
-  }, [setPersistedConnectionName, navigate]);
+  }, [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate]);
 
   return (
     <div>
@@ -74,6 +78,8 @@ const EmptyPlaceholder = () => {
     CONNECT_WIZARD_CONNECTOR_KEY,
     {},
   );
+  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
+  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
   const navigate = useNavigate();
   const enableConnectTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
@@ -81,7 +87,9 @@ const EmptyPlaceholder = () => {
     (connectionName: string, connectionType: ConnectComponentType) => {
       try {
         setPersistedConnectionName({ connectionName, connectionType });
-        navigate('/rp-connect/create');
+        setPersistedTopic({});
+        setPersistedUser({});
+        navigate('/rp-connect/wizard?step=add-topic');
       } catch (error) {
         toast({
           status: 'error',
@@ -92,7 +100,7 @@ const EmptyPlaceholder = () => {
         });
       }
     },
-    [setPersistedConnectionName, navigate],
+    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate],
   );
 
   const oldUI = (
