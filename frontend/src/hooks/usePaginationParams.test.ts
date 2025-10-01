@@ -1,17 +1,12 @@
+import { describe, expect, mock, test, vi } from 'bun:test';
 import { renderHook } from '@testing-library/react';
-import { useLocation } from 'react-router-dom';
 import usePaginationParams from './usePaginationParams';
 
 // Mock useLocation
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
-  return {
-    ...actual,
-    useLocation: vi.fn(),
-  };
-});
-
-const mockUseLocation = vi.mocked(useLocation);
+const mockUseLocation = vi.fn(() => ({ search: '' }));
+mock.module('react-router-dom', () => ({
+  useLocation: mockUseLocation,
+}));
 
 describe('usePaginationParams', () => {
   test('returns default values when URL parameters are absent', () => {

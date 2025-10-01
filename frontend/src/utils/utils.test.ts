@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'bun:test';
 import { substringWithEllipsis } from './utils'; // Adjust the import path as needed
 
 describe('substringWithEllipsis', () => {

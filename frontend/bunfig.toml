@@ -2,3 +2,19 @@
 save = true
 saveTextLockfile = true
 print = "yarn"
+
+[test]
+preload = ["./happydom.ts", "./testing-library.ts"]
+timeout = 15000
+coveragePathIgnorePatterns = [
+  "**/*.spec.ts",
+  "**/*.test.ts",
+  "src/utils/**",
+  "src/components/redpanda-ui/**",
+  "src/protogen/**",
+  "happydom.ts",
+  "testing-library.ts",
+  "tests/**",
+  "test-utils.tsx",
+  "src/colors.ts",
+]
