@@ -2081,8 +2081,6 @@ components:
           description: The secret data. Must be Base64-encoded.
           format: byte
           type: string
-      required:
-        - secret_data
       type: object
     UpdateSecretResponse:
       description: UpdateSecretResponse is the response of UpdateSecret.
