@@ -18,6 +18,8 @@ import (
 	"io"
 	"net/http"
 
+	"buf.build/gen/go/redpandadata/core/connectrpc/go/redpanda/core/admin/v2/adminv2connect"
+	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/rpadmin"
 )
 
@@ -165,4 +167,14 @@ type AdminAPIClient interface {
 	// broker node. The caller must call close on the response returned as it does
 	// not yet have its body read.
 	DownloadDebugBundleFile(ctx context.Context, filename string) (*http.Response, error)
+
+	// ShadowLinkService returns a client for the ShadowLinkService of the Admin API V2.
+	// This provides access to shadow link operations:
+	//   - CreateShadowLink: Creates a new shadow link
+	//   - DeleteShadowLink: Deletes an existing shadow link
+	//   - GetShadowLink: Retrieves details of a specific shadow link
+	//   - ListShadowLinks: Lists all shadow links
+	//   - UpdateShadowLink: Updates an existing shadow link
+	//   - FailOver: Fails over a shadow link or single shadow topic
+	ShadowLinkService(opts ...connect.ClientOption) adminv2connect.ShadowLinkServiceClient
 }

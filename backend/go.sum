@@ -398,6 +398,7 @@ github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7 h1:M
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7/go.mod h1:UJIi/yUxGOBYXUrfUsOkxfYxcb/ll7mZrwae/i+U2kc=
 github.com/redpanda-data/common-go/rpadmin v0.1.16 h1:XFRTFOsBHRByvwWLSmFeciJxbF356GJfPbCR2knZ/M4=
 github.com/redpanda-data/common-go/rpadmin v0.1.16/go.mod h1:zgE/M2UihQZRdivHfbm4x9Rb3Vm/crO5kiX3GQrxhG4=
+github.com/redpanda-data/common-go/rpadmin v0.1.17-0.20250918052456-493894730cb7/go.mod h1:NMOb9iySu0qkqREwoZaN0WANeqaGEZKDtKMecSobToQ=
 github.com/redpanda-data/common-go/rpsr v0.1.2 h1:DThUeyfBH8fkL9WoP1sEbRhT2NVV22zmsTpcCtzfusQ=
 github.com/redpanda-data/common-go/rpsr v0.1.2/go.mod h1:2j2416onosg5FKaKz52NooRE+q/9EJqQn0kyTcTXWHc=
 github.com/rickb777/period v1.0.15 h1:nWR4rgCtImT0CXw5kAsjHv+ExCEFt/18zAySOi7pWI8=
