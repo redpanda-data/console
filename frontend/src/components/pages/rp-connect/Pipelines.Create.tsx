@@ -11,7 +11,16 @@
 
 import { create } from '@bufbuild/protobuf';
 import type { Monaco } from '@monaco-editor/react';
-import { Button, Flex, FormField, Input, NumberInput, useDisclosure } from '@redpanda-data/ui';
+import {
+  Button,
+  type CreateToastFnReturn,
+  Flex,
+  FormField,
+  Input,
+  NumberInput,
+  useDisclosure,
+  useToast,
+} from '@redpanda-data/ui';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -31,15 +40,15 @@ import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { LintResults } from '../../lint-results';
 import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { LintResults } from '../remote-mcp/create/components/lint-results';
-import { extractLintHintsFromError } from './errors';
+import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
-import { MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/rpcn-schema';
 import type { AddUserFormData, ConnectTilesFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
@@ -95,13 +104,16 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     const isNameEmpty = this.fileName.trim().length === 0;
 
     const CreateButton = () => {
+      const toast = useToast();
+      const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+
       return (
         <Button
           variant="solid"
           isDisabled={alreadyExists || isNameEmpty || this.isCreating}
           loadingText="Creating..."
           isLoading={this.isCreating}
-          onClick={action(() => this.createPipeline())}
+          onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
         >
           Create
         </Button>
@@ -180,8 +192,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
         </div>
 
-        {/* Lint Results - displayed after Create button is clicked */}
-        {this.lintResults && Object.keys(this.lintResults).length > 0 && (
+        {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
           <div className="mt-4">
             <LintResults lintResults={this.lintResults} />
           </div>
@@ -197,7 +208,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
-  async createPipeline() {
+  async createPipeline(toast?: CreateToastFnReturn) {
     this.isCreating = true;
 
     pipelinesApi
@@ -217,14 +228,29 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         }),
       )
       .then(
-        action(async () => {
-          // Clear lint results on successful creation
-          this.lintResults = {};
-
-          // Clear wizard session storage
-          sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-          sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
-          sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+        action(async (r) => {
+          if (toast) {
+            toast({
+              status: 'success',
+              duration: 4000,
+              isClosable: false,
+              title: 'Pipeline created',
+            });
+            const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
+            if (retUnits && this.tasks !== retUnits) {
+              toast({
+                status: 'warning',
+                duration: 6000,
+                isClosable: false,
+                title: `Pipeline has been resized to use ${retUnits} compute units`,
+              });
+            }
+          } else {
+            this.lintResults = {};
+            sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
+            sessionStorage.removeItem(CONNECT_WIZARD_TOPIC_KEY);
+            sessionStorage.removeItem(CONNECT_WIZARD_USER_KEY);
+          }
 
           await pipelinesApi.refreshPipelines(true);
           appGlobal.historyPush('/connect-clusters');
@@ -232,8 +258,17 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
       )
       .catch(
         action((err) => {
-          // Extract all errors as lint hints and display them inline
-          this.lintResults = extractLintHintsFromError(err);
+          if (toast) {
+            toast({
+              status: 'error',
+              duration: null,
+              isClosable: true,
+              title: 'Failed to create pipeline',
+              description: formatPipelineError(err),
+            });
+          } else {
+            this.lintResults = extractLintHintsFromError(err);
+          }
         }),
       )
       .finally(() => {
@@ -344,7 +379,6 @@ export const PipelineEditor = observer(
       return enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;
     }, [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]);
 
-    // Secret detection
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
       if (!secretsData?.secrets) return [];
@@ -352,11 +386,8 @@ export const PipelineEditor = observer(
     }, [secretsData]);
 
     const { detectedSecrets } = useSecretDetection(yaml, existingSecrets);
-
-    // Wizard data detection - check if user came from wizard by presence of session storage data
     const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
 
-    // Prepare default values for secrets from wizard data
     const secretDefaultValues = useMemo(() => {
       if (!wizardUserData) return {};
       const values: Record<string, string> = {};

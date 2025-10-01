@@ -8,6 +8,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { LintResults } from 'components/lint-results';
 import { YamlEditor } from 'components/misc/yaml-editor';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -37,7 +38,6 @@ import { templates } from '../../remote-mcp-templates';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import type { FormValues } from '../schemas';
 import { applyTemplateToTool } from '../utils/form-helpers';
-import { LintResults } from './lint-results';
 
 interface ToolCardProps {
   form: UseFormReturn<FormValues>;

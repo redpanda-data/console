@@ -1,6 +1,5 @@
 import type { UseFormReturn } from 'react-hook-form';
-import type { RetentionSizeUnit, RetentionTimeUnit } from '../../topics/CreateTopicModal/CreateTopicModal';
-import { sizeFactors, timeFactors } from '../../topics/CreateTopicModal/CreateTopicModal';
+import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactors } from 'utils/topicUtils';
 import type { AddTopicFormData } from '../types/wizard';
 
 // Default values for topic creation
@@ -18,36 +17,6 @@ export const TOPIC_FORM_DEFAULTS = {
   retentionSize: DEFAULT_RETENTION_SIZE,
   retentionSizeUnit: DEFAULT_RETENTION_SIZE_UNIT,
 } as const;
-
-export const convertRetentionTimeToMs = (value: number, unit: string): number => {
-  if (unit === 'infinite' || unit === 'default') return -1;
-
-  const multipliers: Record<string, number> = {
-    ms: 1,
-    seconds: 1000,
-    minutes: 1000 * 60,
-    hours: 1000 * 60 * 60,
-    days: 1000 * 60 * 60 * 24,
-    months: 1000 * 60 * 60 * 24 * (365 / 12), // Updated to match CreateTopicModal
-    years: 1000 * 60 * 60 * 24 * 365,
-  };
-
-  return value * (multipliers[unit] || 1);
-};
-
-export const convertRetentionSizeToBytes = (value: number, unit: string): number => {
-  if (unit === 'infinite' || unit === 'default') return -1;
-
-  const multipliers: Record<string, number> = {
-    Bit: 1, // Updated to match CreateTopicModal (1 bit = 1 bit, not 0.125 bytes)
-    KiB: 1024,
-    MiB: 1024 * 1024,
-    GiB: 1024 * 1024 * 1024,
-    TiB: 1024 * 1024 * 1024 * 1024,
-  };
-
-  return Math.floor(value * (multipliers[unit] || 1));
-};
 
 export const isUsingDefaultRetentionSettings = (data: AddTopicFormData): boolean => {
   return (
@@ -210,18 +179,6 @@ export const getRetentionSizeUnitOptions = () => {
       value: unit,
       label: unit === 'infinite' ? 'Infinite' : unit,
     }));
-};
-
-// Validation utilities (extracted from CreateTopicModal patterns)
-export const validateReplicationFactor = (replicationFactor: number, isRedpanda: boolean): string => {
-  if (isRedpanda) {
-    // Enforce odd numbers for Redpanda
-    const isOdd = replicationFactor % 2 === 1;
-    if (!isOdd) {
-      return 'Replication factor must be an odd number';
-    }
-  }
-  return '';
 };
 
 // Check if retention unit is disabled (infinite or default)

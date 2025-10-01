@@ -70,9 +70,6 @@ export function hasOutputSchema(toolName: string): boolean {
   return toolOutputValidators.has(toolName);
 }
 
-// Re-export from shared utilities
-export { generateDefaultFromJsonSchema as generateDefaultValue, isPropertyRequired } from 'utils/json-schema-utils';
-
 /**
  * Normalizes union types (like string|null from FastMCP) to simple types for form rendering
  * @param schema The JSON schema to normalize
@@ -160,16 +157,4 @@ export function normalizeUnionType(schema: JsonSchemaType): JsonSchemaType {
   }
 
   return schema;
-}
-
-/**
- * Formats a field key into a human-readable label
- * @param key The field key to format
- * @returns A formatted label string
- */
-export function formatFieldLabel(key: string): string {
-  return key
-    .replace(/([A-Z])/g, ' $1') // Insert space before capital letters
-    .replace(/_/g, ' ') // Replace underscores with spaces
-    .replace(/^\w/, (c) => c.toUpperCase()); // Capitalize first letter
 }

@@ -18,6 +18,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { useLintResults } from 'hooks/use-lint-results';
 import { useSecretDetection } from 'hooks/use-secret-detection';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import {
@@ -35,7 +36,6 @@ import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 import { ExpandedYamlDialog } from './components/expanded-yaml-dialog';
 import { MetadataStep } from './components/metadata-step';
 import { ToolsStep } from './components/tools-step';
-import { useLintResults } from './hooks/use-lint-results';
 import { useMetadataValidation } from './hooks/use-metadata-validation';
 import { useYamlLabelSync } from './hooks/use-yaml-label-sync';
 import { FormSchema, type FormValues, initialValues } from './schemas';

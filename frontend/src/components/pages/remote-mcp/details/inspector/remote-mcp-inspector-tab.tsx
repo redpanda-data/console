@@ -31,8 +31,9 @@ import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerToo
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import type { JsonValue } from 'utils/jsonUtils';
 import { DynamicJSONForm } from '../../dynamic-json-form';
-import type { JsonSchemaType, JsonValue } from '../../json-utils';
+import type { JsonSchemaType } from '../../json-utils';
 import JsonView from '../../json-view';
 import { RemoteMCPToolTypeBadge } from '../../remote-mcp-tool-type-badge';
 import { RemoteMCPToolButton } from '../remote-mcp-tool-button';

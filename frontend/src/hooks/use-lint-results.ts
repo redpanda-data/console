@@ -10,10 +10,29 @@
 
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { useEffect, useMemo, useState } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
-import type { FormValues } from '../schemas';
+import type { FieldValues, UseFormReturn } from 'react-hook-form';
 
-export function useLintResults(form: UseFormReturn<FormValues>) {
+/**
+ * Hook to manage lint results for form fields
+ *
+ * Automatically clears lint results when a tool's config field changes.
+ * Works with any form that has fields matching the pattern: `tools.{index}.config`
+ *
+ * @param form - React Hook Form instance
+ * @returns Object containing lintResults, setLintResults, and hasLintingIssues
+ *
+ * @example
+ * ```tsx
+ * const { lintResults, setLintResults, hasLintingIssues } = useLintResults(form);
+ *
+ * // Update lint results after linting
+ * setLintResults((prev) => ({
+ *   ...prev,
+ *   [toolIndex]: response.lintHints || {},
+ * }));
+ * ```
+ */
+export function useLintResults<TFieldValues extends FieldValues = FieldValues>(form: UseFormReturn<TFieldValues>) {
   const [lintResults, setLintResults] = useState<Record<number, Record<string, LintHint>>>({});
 
   // Clear lint results when tool config changes

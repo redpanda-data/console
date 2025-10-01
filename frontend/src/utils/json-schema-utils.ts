@@ -3,9 +3,13 @@
  * Used by both remote-mcp and rp-connect features
  */
 
-export type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue };
+import type { JsonObject, JsonValue } from './jsonUtils';
 
-export type JsonObject = { [key: string]: JsonValue };
+export type JsonSchemaConst = {
+  const: JsonValue;
+  title?: string;
+  description?: string;
+};
 
 export type JsonSchemaType = {
   type?:
@@ -32,8 +36,8 @@ export type JsonSchemaType = {
   format?: string;
   enum?: string[];
   const?: JsonValue;
-  oneOf?: JsonSchemaType[];
-  anyOf?: JsonSchemaType[];
+  oneOf?: (JsonSchemaType | JsonSchemaConst)[];
+  anyOf?: (JsonSchemaType | JsonSchemaConst)[];
   patternProperties?: Record<string, JsonSchemaType>;
   additionalProperties?: boolean | JsonSchemaType;
   $ref?: string;

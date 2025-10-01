@@ -22,19 +22,14 @@ import {
   useTopicConfigQuery,
   useUpdateTopicConfigMutation,
 } from '../../../../react-query/api/topic';
+import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topicUtils';
 import {
   type AddTopicFormData,
   addTopicFormSchema,
   type BaseStepRef,
   type StepSubmissionResult,
 } from '../types/wizard';
-import {
-  convertRetentionSizeToBytes,
-  convertRetentionTimeToMs,
-  isUsingDefaultRetentionSettings,
-  parseTopicConfigFromExisting,
-  TOPIC_FORM_DEFAULTS,
-} from '../utils/topic';
+import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 import { hasValue } from '../utils/wizard';
 import { AdvancedTopicSettings } from './advanced-topic-settings';
 

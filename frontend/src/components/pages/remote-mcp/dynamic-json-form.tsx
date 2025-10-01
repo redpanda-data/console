@@ -8,9 +8,10 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Braces, FileEdit, SpellCheck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import type { JsonValue } from 'utils/jsonUtils';
+import { updateValueAtPath } from 'utils/jsonUtils';
 import { JsonEditor } from './json-editor';
-import type { JsonSchemaType, JsonValue } from './json-utils';
-import { updateValueAtPath } from './json-utils';
+import type { JsonSchemaType } from './json-utils';
 
 interface CustomFieldConfig {
   fieldName: string;

@@ -3,8 +3,8 @@
 import clsx from 'clsx';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { memo, useMemo, useState } from 'react';
-import type { JsonValue } from './json-utils';
-import { getDataType, tryParseJson } from './json-utils';
+import type { JsonValue } from 'utils/jsonUtils';
+import { getDataType, tryParseJson } from 'utils/jsonUtils';
 
 interface JsonViewProps {
   data: unknown;
