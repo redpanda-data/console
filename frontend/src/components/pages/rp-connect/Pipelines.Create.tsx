@@ -457,7 +457,7 @@ export const PipelineEditor = observer(
             content: () => (
               <div>
                 {/* yaml editor */}
-                <Flex height="400px" gap={7}>
+                <div className="min-h-[400px] flex gap-7">
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
                     path="config.yaml"
@@ -498,7 +498,7 @@ export const PipelineEditor = observer(
                         }}
                       />
                     ))}
-                </Flex>
+                </div>
 
                 {isKafkaConnectPipeline(p.yaml) && (
                   <Alert variant="destructive">
