@@ -68,6 +68,7 @@
     "cmdk": "^1.1.1",
     "dexie": "^4.2.0",
     "dexie-react-hooks": "^4.2.0",
+    "dotenv": "^17.2.3",
     "es-cookie": "^1.5.0",
     "framer-motion": "^7.10.3",
     "hast": "^1.0.0",
