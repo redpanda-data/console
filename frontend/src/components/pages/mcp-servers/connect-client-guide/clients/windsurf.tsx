@@ -18,7 +18,7 @@ import WindsurfLogo from '../../../../../assets/windsurf.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientWindsurfProps {
   mcpServer: MCPServer;
@@ -27,25 +27,13 @@ interface ClientWindsurfProps {
 export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
   const clusterId = config?.clusterId;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-  const baseArgs = ['-X'];
-  if (showCloudEnvironmentFlag) {
-    baseArgs.push(`cloud_environment=${getRpkCloudEnvironment()}`);
-  }
-  baseArgs.push('cloud', 'mcp', 'proxy', clusterFlag, `${clusterId}`, '--mcp-server-id', mcpServer?.id);
-
-  const windsurfConfig = {
-    mcpServers: {
-      [mcpServerName]: {
-        command: 'rpk',
-        args: baseArgs,
-      },
-    },
-  };
-
-  const windsurfConfigJson = JSON.stringify(windsurfConfig, null, 2);
+  const windsurfConfigJson = getClientConfig('windsurf', {
+    mcpServerName,
+    clusterId,
+    mcpServerId: mcpServer?.id,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

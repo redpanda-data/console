@@ -98,3 +98,219 @@ export const createMCPConfig = ({
     args: baseArgs,
   };
 };
+
+/**
+ * Returns the cloud environment args for shell commands
+ * Used in: auggie, codex, gemini command strings
+ * @returns Empty string for production, otherwise: '"-X" "cloud_environment=<env>" '
+ */
+export const getCloudEnvArgsForShell = () => {
+  const cloudEnv = getRpkCloudEnvironment();
+  return cloudEnv !== 'production' ? `"-X" "cloud_environment=${cloudEnv}" ` : '';
+};
+
+/**
+ * Returns the cloud environment args for JSON config files with proper indentation
+ * Used in: claude-code, claude-desktop, cline, cursor, gemini, manus, vscode, warp, windsurf
+ * @param indent - The indentation level (number of spaces)
+ * @returns Empty string for production, otherwise: '"-X",\n<indent>"cloud_environment=<env>",\n<indent>'
+ */
+export const getCloudEnvArgsForJson = (indent = 8) => {
+  const cloudEnv = getRpkCloudEnvironment();
+  const spaces = ' '.repeat(indent);
+  return cloudEnv !== 'production' ? `"-X",\n${spaces}"cloud_environment=${cloudEnv}",\n${spaces}` : '';
+};
+
+/**
+ * Returns the cloud environment args for TOML config files
+ * Used in: codex TOML config
+ * @returns Empty string for production, otherwise: '"-X","cloud_environment=<env>", '
+ */
+export const getCloudEnvArgsForToml = () => {
+  const cloudEnv = getRpkCloudEnvironment();
+  return cloudEnv !== 'production' ? `"-X","cloud_environment=${cloudEnv}", ` : '';
+};
+
+/**
+ * Returns the cloud environment args for inline JSON (single line)
+ * Used in: claude-code command's inline JSON
+ * @returns Empty string for production, otherwise: '"-X","cloud_environment=<env>",'
+ */
+export const getCloudEnvArgsForInlineJson = () => {
+  const cloudEnv = getRpkCloudEnvironment();
+  return cloudEnv !== 'production' ? `"-X","cloud_environment=${cloudEnv}",` : '';
+};
+
+export const AVAILABLE_CLIENTS = [
+  'claude-code',
+  'claude-desktop',
+  'vscode',
+  'cursor',
+  'windsurf',
+  'gemini',
+  'codex',
+  'warp',
+  'auggie',
+  'cline',
+  'manus',
+] as const;
+
+export type ClientType = (typeof AVAILABLE_CLIENTS)[number];
+
+interface ClientCommandParams {
+  mcpServerName: string;
+  clusterId?: string;
+  mcpServerId?: string;
+  isServerless?: boolean;
+  selectedScope?: string; // For claude-code and gemini
+}
+
+/**
+ * Returns the CLI command to add an MCP server for a given client
+ * Only applicable for clients that support CLI commands
+ */
+export const getClientCommand = (clientType: ClientType, params: ClientCommandParams): string => {
+  const { mcpServerName, clusterId = '', mcpServerId = '', isServerless = false, selectedScope = 'local' } = params;
+  const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
+
+  switch (clientType) {
+    case 'auggie':
+      return `auggie mcp add ${mcpServerName} \\
+--transport stdio \\
+--command rpk \\
+--args ${getCloudEnvArgsForShell()}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
+
+    case 'claude-code':
+      return `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
+'{"type":"stdio","command":"rpk","args":[
+${getCloudEnvArgsForInlineJson()}"cloud","mcp","proxy",
+"${clusterFlag}","${clusterId}",
+"--mcp-server-id","${mcpServerId}"]}'`;
+
+    case 'codex':
+      return `codex mcp add ${mcpServerName} -- rpk \\
+${getCloudEnvArgsForShell()}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
+
+    case 'gemini':
+      return `gemini mcp add ${mcpServerName} \\
+--scope ${selectedScope} \\
+--transport stdio rpk \\
+--args ${getCloudEnvArgsForShell()}\\
+"cloud" "mcp" "proxy" \\
+"${clusterFlag}" "${clusterId}" \\
+"--mcp-server-id" "${mcpServerId}"`;
+
+    case 'cursor':
+      // Cursor uses a button/link approach, command is less common
+      return '';
+
+    case 'vscode':
+      // VSCode uses a button/link approach, command is less common
+      return '';
+
+    default:
+      // Other clients don't have CLI commands
+      return '';
+  }
+};
+
+/**
+ * Returns the config file content for a given client
+ */
+export const getClientConfig = (clientType: ClientType, params: ClientCommandParams): string => {
+  const { mcpServerName, clusterId = '', mcpServerId = '', isServerless = false } = params;
+  const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
+
+  switch (clientType) {
+    case 'auggie':
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(8)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+
+    case 'claude-code':
+    case 'claude-desktop':
+    case 'vscode':
+      return `{
+  "mcp": {
+    "servers": {
+      "${mcpServerName}": {
+        "command": "rpk",
+        "args": [
+          ${getCloudEnvArgsForJson(10)}"cloud",
+          "mcp",
+          "proxy",
+          "${clusterFlag}",
+          "${clusterId}",
+          "--mcp-server-id",
+          "${mcpServerId}"
+        ]
+      }
+    }
+  }
+}`;
+
+    case 'cline':
+    case 'cursor':
+    case 'gemini':
+    case 'manus':
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(8)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+
+    case 'codex':
+      return `[mcp_servers.${mcpServerName}]
+command = "rpk"
+args = [${getCloudEnvArgsForToml()}"cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`;
+
+    case 'warp':
+    case 'windsurf':
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(6)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+  }
+};

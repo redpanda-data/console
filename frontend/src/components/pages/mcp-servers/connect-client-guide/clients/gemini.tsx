@@ -27,7 +27,7 @@ import GeminiLogo from '../../../../../assets/gemini.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientGeminiProps {
   mcpServer: MCPServer;
@@ -39,55 +39,21 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}" ` : '';
+  const geminiCommand = getClientCommand('gemini', {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+    selectedScope,
+  });
 
-  const geminiCommand = `gemini mcp add ${mcpServerName} \\
---scope ${selectedScope} \\
---transport stdio rpk \\
---args "-X" ${cloudEnvArg}\\
-"cloud" "mcp" "proxy" \\
-"${clusterFlag}" "${clusterId}" \\
-"--mcp-server-id" "${mcpServerId}"`;
-
-  const geminiConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "command": "rpk",
-      "args": [
-        "-X",
-        "cloud_environment=${getRpkCloudEnvironment()}",
-        "cloud",
-        "mcp",
-        "proxy",
-        "${clusterFlag}",
-        "${clusterId}",
-        "--mcp-server-id",
-        "${mcpServerId}"
-      ]
-    }
-  }
-}`
-    : `{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "command": "rpk",
-      "args": [
-        "-X",
-        "cloud",
-        "mcp",
-        "proxy",
-        "${clusterFlag}",
-        "${clusterId}",
-        "--mcp-server-id",
-        "${mcpServerId}"
-      ]
-    }
-  }
-}`;
+  const geminiConfigJson = getClientConfig('gemini', {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

@@ -19,7 +19,7 @@ import CursorLogo from '../../../../../assets/cursor.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientCursorProps {
   mcpServer: MCPServer;
@@ -45,45 +45,12 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
     window.open(cursorLink, '_blank');
   };
 
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-
-  const cursorConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "command": "rpk",
-      "args": [
-        "-X",
-        "cloud_environment=${getRpkCloudEnvironment()}",
-        "cloud",
-        "mcp",
-        "proxy",
-        "${clusterFlag}",
-        "${clusterId}",
-        "--mcp-server-id",
-        "${mcpServerId}"
-      ]
-    }
-  }
-}`
-    : `{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "command": "rpk",
-      "args": [
-        "-X",
-        "cloud",
-        "mcp",
-        "proxy",
-        "${clusterFlag}",
-        "${clusterId}",
-        "--mcp-server-id",
-        "${mcpServerId}"
-      ]
-    }
-  }
-}`;
+  const cursorConfigJson = getClientConfig('cursor', {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

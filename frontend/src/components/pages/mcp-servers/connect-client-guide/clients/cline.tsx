@@ -17,7 +17,7 @@ import ClineLogo from '../../../../../assets/cline.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientClineProps {
   mcpServer: MCPServer;
@@ -28,45 +28,12 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-
-  const clineConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "command": "rpk",
-      "args": [
-        "-X",
-        "cloud_environment=${getRpkCloudEnvironment()}",
-        "cloud",
-        "mcp",
-        "proxy",
-        "${clusterFlag}",
-        "${clusterId}",
-        "--mcp-server-id",
-        "${mcpServerId}"
-      ]
-    }
-  }
-}`
-    : `{
-  "mcpServers": {
-    "${mcpServerName}": {
-      "command": "rpk",
-      "args": [
-        "-X",
-        "cloud",
-        "mcp",
-        "proxy",
-        "${clusterFlag}",
-        "${clusterId}",
-        "--mcp-server-id",
-        "${mcpServerId}"
-      ]
-    }
-  }
-}`;
+  const clineConfigJson = getClientConfig('cline', {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

@@ -43,21 +43,7 @@ import { ClientManus } from './clients/manus';
 import { ClientVscode } from './clients/vscode';
 import { ClientWarp } from './clients/warp';
 import { ClientWindsurf } from './clients/windsurf';
-import type { MCPServer } from './utils';
-
-const AVAILABLE_CLIENTS = [
-  'claude-code',
-  'claude-desktop',
-  'vscode',
-  'cursor',
-  'windsurf',
-  'gemini',
-  'codex',
-  'warp',
-  'auggie',
-  'cline',
-  'manus',
-] as const;
+import { AVAILABLE_CLIENTS, type MCPServer } from './utils';
 
 type Client = (typeof AVAILABLE_CLIENTS)[number];
 
