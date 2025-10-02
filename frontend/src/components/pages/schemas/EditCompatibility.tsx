@@ -9,15 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from 'mobx-react';
-import { useState } from 'react';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { PageComponent, type PageInitHelper } from '../Page';
 import './Schema.List.scss';
 import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
+import {
+  useSchemaCompatibilityQuery,
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useUpdateGlobalCompatibilityMutation,
+  useUpdateSubjectCompatibilityMutation,
+} from '../../../react-query/api/schema';
 import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
+import { uiState } from '../../../state/uiState';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
@@ -44,83 +51,100 @@ function renderNotConfigured() {
   );
 }
 
-@observer
-class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }> {
-  initPage(p: PageInitHelper): void {
-    const subjectName = this.props.subjectName;
+const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
+  const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
 
-    p.title = 'Edit Schema Compatibility';
-    p.addBreadcrumb('Schema Registry', '/schema-registry');
+  const { data: schemaMode, isLoading: isModeLoading, refetch: refetchMode } = useSchemaModeQuery();
+  const {
+    data: schemaCompatibility,
+    isLoading: isCompatibilityLoading,
+    refetch: refetchCompatibility,
+  } = useSchemaCompatibilityQuery();
+  const {
+    data: schemaDetails,
+    isLoading: isDetailsLoading,
+    refetch: refetchDetails,
+  } = useSchemaDetailsQuery(subjectName || '', {
+    enabled: !!subjectName,
+  });
+
+  useEffect(() => {
+    uiState.pageTitle = 'Edit Schema Compatibility';
+    uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
+
     if (subjectName) {
-      p.addBreadcrumb(subjectName, `/schema-registry/subjects/${subjectName}`, undefined, {
+      uiState.pageBreadcrumbs.push({
+        title: subjectName,
+        linkTo: `/schema-registry/subjects/${subjectName}`,
         canBeTruncated: true,
       });
-      p.addBreadcrumb('Edit Compatibility', `/schema-registry/subjects/${subjectName}/edit-compatibility`);
+      uiState.pageBreadcrumbs.push({
+        title: 'Edit Compatibility',
+        linkTo: `/schema-registry/subjects/${subjectName}/edit-compatibility`,
+      });
     } else {
-      p.addBreadcrumb('Edit Compatibility', '/schema-registry/edit-compatibility');
-    }
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
-
-  refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
-    const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
-
-    if (subjectName) api.refreshSchemaDetails(subjectName, force);
-  }
-
-  render() {
-    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
-    if (!api.schemaMode) return DefaultSkeleton; // request in progress
-
-    if (!api.schemaDetails && !api.schemaCompatibility) {
-      return DefaultSkeleton;
+      uiState.pageBreadcrumbs.push({
+        title: 'Edit Compatibility',
+        linkTo: '/schema-registry/edit-compatibility',
+      });
     }
 
-    const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
+    appGlobal.onRefresh = () => {
+      refetchMode();
+      refetchCompatibility();
+      if (subjectName) refetchDetails();
+    };
+  }, [subjectName, refetchMode, refetchCompatibility, refetchDetails]);
 
-    return (
-      <PageContent key="b">
-        <EditSchemaCompatibility
-          subjectName={subjectName}
-          onClose={() => {
-            // Navigate back to the "caller" of the page, depending on what
-            // variant of the editCompatibility page we are on(can be global, or subject)
-            if (subjectName) appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
-            else appGlobal.historyReplace('/schema-registry');
-          }}
-        />
-      </PageContent>
-    );
-  }
-}
+  if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
+  if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) return DefaultSkeleton;
+
+  return (
+    <PageContent key="b">
+      <EditSchemaCompatibility
+        subjectName={subjectName}
+        schemaMode={schemaMode}
+        schemaCompatibility={schemaCompatibility}
+        schemaDetails={schemaDetails}
+        onClose={() => {
+          if (subjectName) appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+          else appGlobal.historyReplace('/schema-registry');
+        }}
+      />
+    </PageContent>
+  );
+};
+
 export default EditSchemaCompatibilityPage;
 
 function EditSchemaCompatibility(p: {
   subjectName?: string;
-  onClose: () => void; // called after save/cancel
+  schemaMode: string | null | undefined;
+  schemaCompatibility: string | null | undefined;
+  schemaDetails: any;
+  onClose: () => void;
 }) {
   const toast = useToast();
-  const { subjectName } = p;
-  const subject = subjectName ? api.schemaDetails.get(subjectName) : undefined;
-  const schema = subject?.schemas.first((x) => x.version === subject.latestActiveVersion);
+  const { subjectName, schemaDetails, schemaCompatibility } = p;
+  const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
+  const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
 
-  // type should be just "SchemaRegistryCompatibilityMode"
+  const schema = schemaDetails?.schemas.first((x: any) => x.version === schemaDetails.latestActiveVersion);
+
   const [configMode, setConfigMode] = useState<string>(
-    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT',
+    (subjectName ? schemaDetails?.compatibility : schemaCompatibility) ?? 'DEFAULT',
   );
 
   if (subjectName && !schema) return DefaultSkeleton;
 
   const onSave = () => {
-    const changeReq = subjectName
-      ? api.setSchemaRegistrySubjectCompatibilityMode(subjectName, configMode as SchemaRegistryCompatibilityMode)
-      : api.setSchemaRegistryCompatibilityMode(configMode as SchemaRegistryCompatibilityMode);
+    const mutation = subjectName ? updateSubjectMutation : updateGlobalMutation;
+    const mutationArgs = subjectName
+      ? { subjectName, mode: configMode as 'DEFAULT' | SchemaRegistryCompatibilityMode }
+      : (configMode as SchemaRegistryCompatibilityMode);
 
-    changeReq
-      .then(async () => {
+    mutation.mutate(mutationArgs as any, {
+      onSuccess: () => {
         toast({
           status: 'success',
           duration: 4000,
@@ -128,13 +152,9 @@ function EditSchemaCompatibility(p: {
           title: `Compatibility mode updated to ${configMode}`,
           position: 'top-right',
         });
-
-        if (subjectName) await api.refreshSchemaDetails(subjectName, true);
-        else await api.refreshSchemaCompatibilityConfig();
-
         p.onClose();
-      })
-      .catch((err) => {
+      },
+      onError: (err) => {
         toast({
           status: 'error',
           duration: null,
@@ -143,7 +163,8 @@ function EditSchemaCompatibility(p: {
           description: String(err),
           position: 'top-right',
         });
-      });
+      },
+    });
   };
 
   return (
@@ -162,7 +183,7 @@ function EditSchemaCompatibility(p: {
             options={[
               {
                 value: 'DEFAULT',
-                disabled: !subject,
+                disabled: !schemaDetails,
                 label: (
                   <Box>
                     <Text>Default</Text>
