@@ -7,7 +7,7 @@ import {
   DialogOverlay,
 } from 'components/redpanda-ui/components/dialog';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import { QuickAddSecrets } from 'components/secrets/quick-add-secrets';
+import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { AlertTriangle } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useState } from 'react';

@@ -26,7 +26,7 @@ import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled } from 'config';
-import { useSecretDetection } from 'hooks/use-secret-detection';
+import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';

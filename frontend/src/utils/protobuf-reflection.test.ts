@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from 'bun:test';
 import {
   KnowledgeBase_VectorDatabase_PostgresSchema,
   KnowledgeBaseSchema,
@@ -42,7 +43,7 @@ describe('Protobuf Field Reflection', () => {
   test('should detect field behaviors for KnowledgeBaseUpdate', () => {
     debugFieldBehaviors(KnowledgeBaseUpdateSchema);
 
-    const _metadata = getMessageFieldMetadata(KnowledgeBaseUpdateSchema);
+    getMessageFieldMetadata(KnowledgeBaseUpdateSchema);
 
     // KnowledgeBaseUpdate should not have id or retrieval_api_url fields
     expect(KnowledgeBaseUpdateSchema.fields.find((f) => f.name === 'id')).toBeUndefined();
@@ -56,7 +57,7 @@ describe('Protobuf Field Reflection', () => {
   test('should detect field behaviors for nested Postgres schema', () => {
     debugFieldBehaviors(KnowledgeBase_VectorDatabase_PostgresSchema);
 
-    const _metadata = getMessageFieldMetadata(KnowledgeBase_VectorDatabase_PostgresSchema);
+    getMessageFieldMetadata(KnowledgeBase_VectorDatabase_PostgresSchema);
 
     // Test PostgreSQL fields
     expect(isFieldRequired(KnowledgeBase_VectorDatabase_PostgresSchema, 'dsn')).toBe(true);
