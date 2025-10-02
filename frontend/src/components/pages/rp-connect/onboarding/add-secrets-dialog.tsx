@@ -61,7 +61,7 @@ export const AddSecretsDialog = ({
           <QuickAddSecrets
             requiredSecrets={missingSecrets}
             existingSecrets={existingSecrets}
-            scope={Scope.REDPANDA_CONNECT}
+            scopes={[Scope.REDPANDA_CONNECT]}
             defaultValues={defaultValues}
             onSecretsCreated={handleSecretsCreated}
             enableNewSecrets

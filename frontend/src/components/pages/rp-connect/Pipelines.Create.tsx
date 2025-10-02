@@ -49,7 +49,7 @@ import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
-import type { ConnectComponentType } from './types/rpcn-schema';
+import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, ConnectTilesFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
 
@@ -360,8 +360,12 @@ export const PipelineEditor = observer(
   }) => {
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
+    const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
     const [persistedFormData, _] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+
+    // Track actual editor content to keep sidebar in sync with editor's real state
+    const [actualEditorContent, setActualEditorContent] = useState<string>('');
 
     const persistedConnectComponentTemplate = useMemo(() => {
       if (!persistedFormData?.connectionName || !persistedFormData?.connectionType) {
@@ -421,6 +425,29 @@ export const PipelineEditor = observer(
       };
     }, [secretAutocomplete]);
 
+    // Sync actual editor content with editor instance
+    // This ensures sidebar always sees what's actually in the editor
+    useEffect(() => {
+      if (!editorInstance) return;
+
+      // Read actual content from editor after mount
+      const currentValue = editorInstance.getValue();
+      setActualEditorContent(currentValue);
+
+      // Also sync to parent if different
+      if (currentValue !== p.yaml) {
+        p.onChange?.(currentValue);
+      }
+
+      // Listen for content changes
+      const disposable = editorInstance.onDidChangeModelContent(() => {
+        const newValue = editorInstance.getValue();
+        setActualEditorContent(newValue);
+      });
+
+      return () => disposable.dispose();
+    }, [editorInstance, p.onChange, p.yaml]);
+
     return (
       <Tabs
         tabs={[
@@ -434,7 +461,7 @@ export const PipelineEditor = observer(
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
                     path="config.yaml"
-                    value={yaml}
+                    defaultValue={yaml}
                     onChange={(e) => {
                       if (e) p.onChange?.(e);
                     }}
@@ -442,9 +469,10 @@ export const PipelineEditor = observer(
                     options={{
                       readOnly: p.isDisabled,
                     }}
-                    onMount={async (editor, monaco) => {
+                    onMount={async (editor, monacoInstance) => {
                       setEditorInstance(editor);
-                      await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                      setMonaco(monacoInstance);
+                      await registerSecretsAutocomplete(monacoInstance, setSecretAutocomplete);
                     }}
                   />
 
@@ -457,17 +485,15 @@ export const PipelineEditor = observer(
                         existingSecrets={existingSecrets}
                         secretDefaultValues={secretDefaultValues}
                         onSecretsCreated={refetchSecrets}
+                        editorContent={actualEditorContent}
                       />
                     ) : (
                       <QuickActions
                         editorInstance={editorInstance}
                         resetAutocompleteSecrets={() => {
-                          if (secretAutocomplete) {
+                          if (secretAutocomplete && monaco) {
                             secretAutocomplete.dispose();
-                            registerSecretsAutocomplete(
-                              (editorInstance as any).getModel()?.getModeId() ? (window as any).monaco : undefined,
-                              setSecretAutocomplete,
-                            );
+                            registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                           }
                         }}
                       />

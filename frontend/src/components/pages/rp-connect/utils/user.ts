@@ -1,3 +1,4 @@
+import type { SaslMechanism } from 'utils/user';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -5,7 +6,6 @@ import {
   ACL_ResourceType,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import type { SaslMechanism } from '../types/wizard';
 
 export const saslMechanismToProto = (mechanism: SaslMechanism): SASLMechanism => {
   const mapping: Record<SaslMechanism, SASLMechanism> = {

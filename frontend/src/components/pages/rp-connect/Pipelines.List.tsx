@@ -35,7 +35,7 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 import { ConnectTiles } from './onboarding/connect-tiles';
-import type { ConnectComponentType } from './types/rpcn-schema';
+import type { ConnectComponentType } from './types/schema';
 import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();

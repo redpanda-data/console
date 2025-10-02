@@ -1,7 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import PageContent from 'components/misc/PageContent';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { isServerless } from 'config';
@@ -12,7 +11,7 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
-import type { ConnectComponentType } from '../types/rpcn-schema';
+import type { ConnectComponentType } from '../types/schema';
 import type { BaseStepRef, ConnectTilesFormData } from '../types/wizard';
 import { handleStepResult, WizardStep } from '../utils/wizard';
 import { AddTopicStep } from './add-topic-step';
@@ -98,7 +97,6 @@ export const ConnectOnboardingWizard = () => {
       <Stepper.Provider className="space-y-4" initialStep={initialStep}>
         {({ methods }) => (
           <div className="flex flex-col gap-8 relative">
-            <Toaster expand />
             <div className="flex flex-col gap-8 pt-6 h-full">
               <div className="flex flex-col space-y-2 text-center">
                 <Stepper.Navigation>

@@ -45,7 +45,7 @@ import { z } from 'zod';
 interface QuickAddSecretsProps {
   requiredSecrets: string[];
   existingSecrets: string[];
-  scope: Scope;
+  scopes: Scope[];
   defaultValues?: Record<string, string>;
   onSecretsCreated?: (secretNames: string[]) => void;
   enableNewSecrets?: boolean;
@@ -80,7 +80,7 @@ type NewSecretFormData = z.infer<typeof NewSecretFormSchema>;
 export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   requiredSecrets,
   existingSecrets,
-  scope,
+  scopes,
   defaultValues = {},
   onSecretsCreated,
   enableNewSecrets = false,
@@ -119,7 +119,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
           id: secretName,
           secretData: base64ToUInt8Array(encodeBase64(value)),
-          scopes: [scope],
+          scopes,
           labels: {},
         });
 
@@ -169,7 +169,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
         id: secretName,
         secretData: base64ToUInt8Array(encodeBase64(data.value)),
-        scopes: [scope],
+        scopes,
         labels: {},
       });
 

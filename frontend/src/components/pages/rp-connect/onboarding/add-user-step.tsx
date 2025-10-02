@@ -24,6 +24,7 @@ import { CircleAlert, RefreshCcw } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+import { SASL_MECHANISMS } from 'utils/user';
 import { CreateACLRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import {
   CreateUserRequestSchema,
@@ -32,7 +33,7 @@ import {
 import { useLegacyCreateACLMutation } from '../../../../react-query/api/acl';
 import { useCreateUserMutation } from '../../../../react-query/api/user';
 import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../types/wizard';
-import { type AddUserFormData, addUserFormSchema, saslMechanisms } from '../types/wizard';
+import { type AddUserFormData, addUserFormSchema } from '../types/wizard';
 import { createTopicSuperuserACLs, saslMechanismToProto } from '../utils/user';
 
 interface AddUserStepProps {
@@ -287,7 +288,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                             <SelectValue placeholder="Select a SASL Mechanism" />
                           </SelectTrigger>
                           <SelectContent>
-                            {saslMechanisms.map((mechanism) => (
+                            {SASL_MECHANISMS.map((mechanism) => (
                               <SelectItem key={mechanism} value={mechanism}>
                                 {mechanism}
                               </SelectItem>

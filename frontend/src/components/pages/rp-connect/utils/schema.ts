@@ -1,7 +1,7 @@
 import { parseDocument, stringify as yamlStringify } from 'yaml';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
-import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema-utils';
+import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema';
 import {
   CONNECT_COMPONENT_TYPE,
   type ConnectComponentSpec,
@@ -9,7 +9,7 @@ import {
   type ConnectFieldSpec,
   type ConnectNodeCategory,
   type ExtendedConnectComponentSpec,
-} from '../types/rpcn-schema';
+} from '../types/schema';
 import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
 import { getCategoryDisplayName, inferComponentCategory } from './categories';
 

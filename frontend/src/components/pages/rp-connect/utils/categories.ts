@@ -1,4 +1,4 @@
-import { COMPONENT_CATEGORIES } from '../types/rpcn-schema';
+import { COMPONENT_CATEGORIES } from '../types/schema';
 
 const displayNames: Record<string, string> = {
   // Component types

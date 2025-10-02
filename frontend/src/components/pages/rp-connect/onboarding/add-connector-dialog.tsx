@@ -6,7 +6,7 @@ import {
   DialogOverlay,
 } from 'components/redpanda-ui/components/dialog';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import type { ConnectComponentType } from '../types/rpcn-schema';
+import type { ConnectComponentType } from '../types/schema';
 import { ConnectTiles } from './connect-tiles';
 
 export const AddConnectorDialog = ({

@@ -21,7 +21,7 @@ export const handleStepResult = (result: StepSubmissionResult | undefined, onSuc
   if (result?.success) {
     // Show success toast if message provided
     if (result.message) {
-      toast.success(result.message, TOAST_CONFIG.SUCCESS);
+      toast.success(result.message);
     }
     // Execute success callback (navigation)
     onSuccess();
@@ -34,17 +34,6 @@ export const handleStepResult = (result: StepSubmissionResult | undefined, onSuc
   // - No global error handling - errors stay within their respective forms
   return false;
 };
-
-/**
- * Toast configuration for success-only feedback
- * Note: Errors are handled exclusively within each form component
- */
-export const TOAST_CONFIG = {
-  SUCCESS: {
-    position: 'bottom-left' as const,
-    duration: 4000,
-  },
-} as const;
 
 /**
  * Checks if a value is empty (null, undefined, or empty string)

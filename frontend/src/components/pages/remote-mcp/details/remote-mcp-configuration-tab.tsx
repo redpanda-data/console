@@ -769,7 +769,7 @@ export const RemoteMCPConfigurationTab = () => {
                 <QuickAddSecrets
                   requiredSecrets={detectedSecrets}
                   existingSecrets={existingSecrets.filter((id): id is string => Boolean(id))}
-                  scope={Scope.MCP_SERVER}
+                  scopes={[Scope.MCP_SERVER]}
                 />
               </div>
             </div>

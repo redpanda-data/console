@@ -31,8 +31,8 @@ import {
   Wrench,
   XCircle,
 } from 'lucide-react';
-import type { ComponentCategory, ConnectComponentStatus, ConnectComponentType } from '../types/rpcn-schema';
-import { getCategoryDisplayName } from './categories';
+import type { ComponentCategory, ConnectComponentStatus, ConnectComponentType } from '../types/schema';
+import { getCategoryDisplayName } from '../utils/categories';
 
 export type ConnectBadgeProps = {
   icon: React.ReactNode;
@@ -41,7 +41,7 @@ export type ConnectBadgeProps = {
   className: string;
 };
 
-export const getComponentTypeBadgeProps = (type: ConnectComponentType): ConnectBadgeProps => {
+export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectBadgeProps => {
   switch (type) {
     case 'input':
       return {
@@ -109,7 +109,7 @@ export const getComponentTypeBadgeProps = (type: ConnectComponentType): ConnectB
     default:
       return {
         icon: <HelpCircle className="h-3 w-3" />,
-        text: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
+        text: 'Unknown',
         variant: 'gray' as const,
         className: 'text-gray-800 dark:text-gray-300',
       };

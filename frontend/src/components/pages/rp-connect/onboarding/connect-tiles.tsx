@@ -19,24 +19,18 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import type {
   ComponentCategory,
   ConnectComponentSpec,
   ConnectComponentStatus,
   ConnectComponentType,
   ExtendedConnectComponentSpec,
-} from '../types/rpcn-schema';
-import { CONNECT_COMPONENT_TYPE } from '../types/rpcn-schema';
-import type { ConnectTilesFormData } from '../types/wizard';
-import { getCategoryBadgeProps, getComponentTypeBadgeProps, getStatusBadgeProps } from '../utils/badges';
-import { getAllCategories, getAllComponents } from '../utils/schemaParsers';
+} from '../types/schema';
+import { CONNECT_COMPONENT_TYPE } from '../types/schema';
+import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
+import { getAllCategories, getAllComponents } from '../utils/schema';
 import type { BaseStepRef } from '../utils/wizard';
-
-const connectTilesFormSchema = z.object({
-  connectionName: z.optional(z.string().min(1, { message: 'Please select a connection method.' })),
-  connectionType: z.optional(z.string()),
-});
+import { getCategoryBadgeProps, getConnectorTypeBadgeProps, getStatusBadgeProps } from './connector-badges';
 
 const searchComponents = (
   query: string,
@@ -222,7 +216,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                     Component Type
                     <SimpleMultiSelect
                       options={CONNECT_COMPONENT_TYPE.map((type) => {
-                        const { text, icon, variant } = getComponentTypeBadgeProps(type);
+                        const { text, icon, variant } = getConnectorTypeBadgeProps(type);
                         return {
                           value: type,
                           label: (
@@ -233,7 +227,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                         };
                       })}
                       value={componentTypeFilter}
-                      onValueChange={setComponentTypeFilter}
+                      onValueChange={(value) => setComponentTypeFilter(value as ConnectComponentType[])}
                       placeholder="Input, Output..."
                       maxDisplay={2}
                       width="full"
@@ -297,8 +291,8 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                     key={uniqueKey}
                                     onClick={() => {
                                       field.onChange(component.name);
-                                      form.setValue('connectionType', component.type);
-                                      onChange?.(component.name, component.type);
+                                      form.setValue('connectionType', component.type as ConnectComponentType);
+                                      onChange?.(component.name, component.type as ConnectComponentType);
                                     }}
                                   >
                                     <div className="flex flex-col gap-2">
@@ -318,10 +312,10 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                       <div className="flex gap-1 flex-wrap">
                                         {/* Component type badge */}
                                         <Badge
-                                          icon={getComponentTypeBadgeProps(component.type).icon}
-                                          variant={getComponentTypeBadgeProps(component.type).variant}
+                                          icon={getConnectorTypeBadgeProps(component.type).icon}
+                                          variant={getConnectorTypeBadgeProps(component.type).variant}
                                         >
-                                          {getComponentTypeBadgeProps(component.type).text}
+                                          {getConnectorTypeBadgeProps(component.type).text}
                                         </Badge>
                                         {/* Category badges */}
                                         {component.categories?.filter(Boolean).map((c) => {

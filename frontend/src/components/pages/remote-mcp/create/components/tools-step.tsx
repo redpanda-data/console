@@ -115,7 +115,7 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
               <QuickAddSecrets
                 requiredSecrets={detectedSecrets}
                 existingSecrets={existingSecrets}
-                scope={Scope.MCP_SERVER}
+                scopes={[Scope.MCP_SERVER]}
               />
             </div>
           </div>

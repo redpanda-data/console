@@ -64,7 +64,7 @@ import { RemoteMCPListPage } from './pages/remote-mcp/list/remote-mcp-list-page'
 import RoleCreatePage from './pages/roles/RoleCreatePage';
 import RoleDetailPage from './pages/roles/RoleDetailPage';
 import RoleUpdatePage from './pages/roles/RoleUpdatePage';
-import { ConnectOnboardingWizard } from './pages/rp-connect/onboarding/wizard';
+import { ConnectOnboardingWizard } from './pages/rp-connect/onboarding/onboarding-wizard';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';

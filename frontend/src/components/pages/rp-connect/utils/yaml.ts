@@ -1,4 +1,4 @@
-import { configToYaml, getAllComponents, mergeConnectConfigs, schemaToConfig } from './schemaParsers';
+import { configToYaml, getAllComponents, mergeConnectConfigs, schemaToConfig } from './schema';
 
 /**
  * generates a yaml string for a connect config based on the selected connectionName and connectionType

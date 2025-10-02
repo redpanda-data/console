@@ -76,7 +76,8 @@ export const CONNECT_COMPONENT_TYPE = [
   'scanner',
 ] as const;
 
-export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number] | (string & {}); // FieldType represents the data type of a configuration field.
+// Strict type for known component types (used in forms and strict type checking)
+export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number];
 
 export const CONNECT_FIELD_TYPE = [
   'string', // A textual string value. Example: "hello world"
