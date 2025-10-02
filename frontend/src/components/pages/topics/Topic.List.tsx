@@ -51,17 +51,13 @@ import { uiState } from '../../../state/uiState';
 import createAutoModal from '../../../utils/createAutoModal';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/queryHelper';
+import type { RetentionSizeUnit, RetentionTimeUnit } from '../../../utils/topicUtils';
 import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
-import {
-  CreateTopicModalContent,
-  type CreateTopicModalState,
-  type RetentionSizeUnit,
-  type RetentionTimeUnit,
-} from './CreateTopicModal/CreateTopicModal';
+import { CreateTopicModalContent, type CreateTopicModalState } from './CreateTopicModal/CreateTopicModal';
 
 const TopicList: FC = () => {
   useEffect(() => {

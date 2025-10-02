@@ -64,12 +64,12 @@ import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import RoleCreatePage from './pages/roles/RoleCreatePage';
 import RoleDetailPage from './pages/roles/RoleDetailPage';
 import RoleUpdatePage from './pages/roles/RoleUpdatePage';
+import { ConnectOnboardingWizard } from './pages/rp-connect/onboarding/onboarding-wizard';
 import RpConnectPipelinesCreate from './pages/rp-connect/Pipelines.Create';
 import RpConnectPipelinesDetails from './pages/rp-connect/Pipelines.Details';
 import RpConnectPipelinesEdit from './pages/rp-connect/Pipelines.Edit';
 import RpConnectSecretCreate from './pages/rp-connect/secrets/Secrets.Create';
 import RpConnectSecretUpdate from './pages/rp-connect/secrets/Secrets.Update';
-import { OnboardingWizard } from './pages/rp-connect/tiles/onboarding-wizard';
 import EditSchemaCompatibilityPage from './pages/schemas/EditCompatibility';
 import { SchemaAddVersionPage, SchemaCreatePage } from './pages/schemas/Schema.Create';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
@@ -480,7 +480,14 @@ export const APP_ROUTES: IRouteEntry[] = [
   // MakeRoute<{}>('/rp-connect', RpConnectPipelinesList, 'Connectors', LinkIcon, true),
   MakeRoute<{}>('/rp-connect/secrets/create', RpConnectSecretCreate, 'Connector-Secrets'),
   MakeRoute<{}>('/rp-connect/create', RpConnectPipelinesCreate, 'Connectors'),
-  MakeRoute<{}>('/rp-connect/wizard', OnboardingWizard, 'Connectors'),
+  MakeRoute<{}>(
+    '/rp-connect/wizard',
+    ConnectOnboardingWizard,
+    'Connectors',
+    undefined,
+    undefined,
+    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles')),
+  ),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
   MakeRoute<{ secretId: string }>('/rp-connect/secrets/:secretId/edit', RpConnectSecretUpdate, 'Connector-Secrets'),

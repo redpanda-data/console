@@ -6,7 +6,7 @@ import {
   DialogOverlay,
 } from 'components/redpanda-ui/components/dialog';
 import { Heading } from 'components/redpanda-ui/components/typography';
-import type { ConnectComponentType } from '../types/rpcn-schema';
+import type { ConnectComponentType } from '../types/schema';
 import { ConnectTiles } from './connect-tiles';
 
 export const AddConnectorDialog = ({
@@ -23,7 +23,7 @@ export const AddConnectorDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onCloseAddConnector}>
       <DialogOverlay />
-      <DialogContent size="full">
+      <DialogContent size="xl">
         <DialogHeader>
           <Heading level={2}>Add a Connector</Heading>
         </DialogHeader>
@@ -34,6 +34,8 @@ export const AddConnectorDialog = ({
             hideFilters
             onChange={onAddConnector}
             variant="ghost"
+            className="px-0 pt-0"
+            gridCols={3}
           />
         </DialogBody>
       </DialogContent>

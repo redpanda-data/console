@@ -45,6 +45,14 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault, type CreateUserRequest } from '../../../state/restInterfaces';
 import { Features } from '../../../state/supportedFeatures';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  SASL_MECHANISMS,
+  type SaslMechanism,
+  validatePassword,
+  validateUsername,
+} from '../../../utils/user';
 import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
@@ -71,7 +79,7 @@ export type CreateUserModalState = CreateUserRequest & {
 class UserCreatePage extends PageComponent<{}> {
   @observable username = '';
   @observable password: string = generatePassword(30, false);
-  @observable mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512' = 'SCRAM-SHA-256';
+  @observable mechanism: SaslMechanism = 'SCRAM-SHA-256';
 
   @observable isValidUsername = false;
   @observable isValidPassword = false;
@@ -108,8 +116,8 @@ class UserCreatePage extends PageComponent<{}> {
     // if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
     // if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
-    this.isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(this.username);
-    this.isValidPassword = Boolean(this.password) && this.password.length >= 4 && this.password.length <= 64;
+    this.isValidUsername = validateUsername(this.username);
+    this.isValidPassword = validatePassword(this.password);
 
     const onCancel = () => appGlobal.historyPush('/security/users');
 
@@ -172,10 +180,10 @@ const CreateUserModal = observer(
   (p: { state: CreateUserModalState; onCreateUser: () => Promise<boolean>; onCancel: () => void }) => {
     const state = p.state;
 
-    const isValidUsername = /^[a-zA-Z0-9._@-]+$/.test(state.username);
+    const isValidUsername = validateUsername(state.username);
     const users = api.serviceAccounts?.users ?? [];
     const userAlreadyExists = users.includes(state.username);
-    const isValidPassword = state.password && state.password.length >= 4 && state.password.length <= 64;
+    const isValidPassword = validatePassword(state.password);
 
     const errorText = useMemo(() => {
       if (!isValidUsername) {
@@ -210,7 +218,7 @@ const CreateUserModal = observer(
           </FormField>
 
           <FormField
-            description="Must be at least 4 characters and should not exceed 64 characters."
+            description={`Must be at least ${PASSWORD_MIN_LENGTH} characters and should not exceed ${PASSWORD_MAX_LENGTH} characters.`}
             showRequiredIndicator={true}
             label="Password"
             data-testid="create-user-password"
@@ -250,17 +258,11 @@ const CreateUserModal = observer(
           </FormField>
 
           <FormField label="SASL Mechanism" showRequiredIndicator>
-            <SingleSelect<'SCRAM-SHA-256' | 'SCRAM-SHA-512'>
-              options={[
-                {
-                  value: 'SCRAM-SHA-256',
-                  label: 'SCRAM-SHA-256',
-                },
-                {
-                  value: 'SCRAM-SHA-512',
-                  label: 'SCRAM-SHA-512',
-                },
-              ]}
+            <SingleSelect<SaslMechanism>
+              options={SASL_MECHANISMS.map((mechanism) => ({
+                value: mechanism,
+                label: mechanism,
+              }))}
               value={state.mechanism}
               onChange={(e) => {
                 state.mechanism = e;

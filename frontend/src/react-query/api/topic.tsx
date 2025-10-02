@@ -1,7 +1,11 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
-import { useQueryClient, useQuery as useTanstackQuery } from '@tanstack/react-query';
+import {
+  useQueryClient,
+  useMutation as useTanstackMutation,
+  useQuery as useTanstackQuery,
+} from '@tanstack/react-query';
 import { config } from 'config';
 import {
   type ListTopicsRequest,
@@ -12,8 +16,9 @@ import {
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import type { GetTopicsResponse } from 'state/restInterfaces';
+import type { GetTopicsResponse, TopicDescription } from 'state/restInterfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { api } from '../../state/backendApi';
 
 interface ListTopicsExtraOptions {
   hideInternalTopics?: boolean;
@@ -115,6 +120,54 @@ export const useCreateTopicMutation = () => {
         error,
         action: 'create',
         entity: 'topic',
+      });
+    },
+  });
+};
+
+/**
+ * React Query hook to fetch topic configuration
+ */
+export const useTopicConfigQuery = (topicName: string, enabled = true) => {
+  return useTanstackQuery<TopicDescription | null>({
+    queryKey: ['topicConfig', topicName],
+    queryFn: async () => {
+      await api.refreshTopicConfig(topicName, true);
+      return api.topicConfig.get(topicName) || null;
+    },
+    enabled: enabled && !!topicName,
+    staleTime: 30 * 1000, // 30 seconds
+    retry: (failureCount, error) => {
+      // Don't retry on authorization errors
+      if (error && typeof error === 'object' && 'statusText' in error) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+};
+
+/**
+ * Hook to manage topic configuration updates with React Query
+ */
+export const useUpdateTopicConfigMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useTanstackMutation({
+    mutationFn: async ({
+      topicName,
+      configs,
+    }: {
+      topicName: string;
+      configs: Array<{ key: string; op: 'SET' | 'DELETE'; value?: string }>;
+    }) => {
+      await api.changeTopicConfig(topicName, configs);
+      return { topicName, configs };
+    },
+    onSuccess: (data) => {
+      // Invalidate the specific topic config to refetch fresh data
+      queryClient.invalidateQueries({
+        queryKey: ['topicConfig', data.topicName],
       });
     },
   });

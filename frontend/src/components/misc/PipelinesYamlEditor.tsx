@@ -67,8 +67,8 @@ export const monacoYamlOptions = {
       // The following schema will be applied
       schema: {
         type: 'object',
-        definitions: benthosSchema,
-        properties: benthosSchema,
+        definitions: benthosSchema.definitions,
+        properties: benthosSchema.properties,
       },
 
       // And the URI will be linked to as the source.

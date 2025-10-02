@@ -18,6 +18,13 @@ import {
 } from '@redpanda-data/ui';
 import { isServerless } from '../../../../config';
 import { api } from '../../../../state/backendApi';
+import {
+  type RetentionSizeUnit,
+  type RetentionTimeUnit,
+  sizeFactors,
+  timeFactors,
+  validateReplicationFactor,
+} from '../../../../utils/topicUtils';
 import { SingleSelect } from '../../../misc/Select';
 import { Input as UIInput } from '../../../redpanda-ui/components/input';
 import { Label as UILabel } from '../../../redpanda-ui/components/label';
@@ -63,15 +70,9 @@ export class CreateTopicModalContent extends Component<Props> {
     const state = this.props.state;
 
     let replicationFactorError = '';
-    if (api.clusterOverview)
-      if (state.replicationFactor != null)
-        if (api.isRedpanda) {
-          // enforce odd numbers
-          const isOdd = state.replicationFactor % 2 === 1;
-          if (!isOdd) {
-            replicationFactorError = 'Replication factor must be an odd number';
-          }
-        }
+    if (api.clusterOverview && state.replicationFactor != null) {
+      replicationFactorError = validateReplicationFactor(state.replicationFactor, api.isRedpanda);
+    }
 
     return (
       <div className="createTopicModal">
@@ -251,20 +252,6 @@ export function NumInput(p: {
   );
 }
 
-export type RetentionTimeUnit = keyof typeof timeFactors;
-const timeFactors = {
-  default: -1,
-  infinite: Number.POSITIVE_INFINITY,
-
-  ms: 1,
-  seconds: 1000,
-  minutes: 1000 * 60,
-  hours: 1000 * 60 * 60,
-  days: 1000 * 60 * 60 * 24,
-  months: 1000 * 60 * 60 * 24 * (365 / 12),
-  years: 1000 * 60 * 60 * 24 * 365,
-} as const;
-
 function RetentionTimeSelect(p: {
   value: number;
   unit: RetentionTimeUnit;
@@ -336,18 +323,6 @@ function RetentionTimeSelect(p: {
     />
   );
 }
-
-export type RetentionSizeUnit = keyof typeof sizeFactors;
-const sizeFactors = {
-  default: -1,
-  infinite: Number.POSITIVE_INFINITY,
-
-  Bit: 1,
-  KiB: 1024,
-  MiB: 1024 * 1024,
-  GiB: 1024 * 1024 * 1024,
-  TiB: 1024 * 1024 * 1024 * 1024,
-} as const;
 
 function RetentionSizeSelect(p: {
   value: number;

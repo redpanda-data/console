@@ -103,6 +103,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
   }, [secretsData]);
 
+  // Use the built-in hook which watches the form
   const { detectedSecrets, hasSecretWarnings } = useSecretDetection(form, existingSecrets);
   const { isMetadataInvalid } = useMetadataValidation(form);
 

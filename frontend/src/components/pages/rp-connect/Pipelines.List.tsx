@@ -22,7 +22,7 @@ import { FaRegStopCircle } from 'react-icons/fa';
 import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
-import { CONNECT_TILE_STORAGE_KEY } from 'state/connect/state';
+import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -34,13 +34,16 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
-import { ConnectTiles } from './tiles/connect-tiles';
-import type { ConnectComponentType } from './types/rpcn-schema';
-import type { ConnectTilesFormData } from './types/wizard';
+import { ConnectTiles } from './onboarding/connect-tiles';
+import type { ConnectComponentType } from './types/schema';
+import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-const CreatePipelineButton = () => {
+/**
+ * Navigates to /rp-connect/create (legacy flow)
+ */
+const LegacyCreatePipelineButton = () => {
   return (
     <div>
       <NewButton as={Link} to="/rp-connect/create">
@@ -50,17 +53,24 @@ const CreatePipelineButton = () => {
   );
 };
 
-const NewCreatePipelineButton = () => {
+/**
+ * Navigates to wizard and clears session storage
+ */
+const WizardCreatePipelineButton = () => {
   const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
-    CONNECT_TILE_STORAGE_KEY,
+    CONNECT_WIZARD_CONNECTOR_KEY,
     {},
   );
+  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
+  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
   const navigate = useNavigate();
 
   const handleClick = useCallback(() => {
     setPersistedConnectionName({});
+    setPersistedTopic({});
+    setPersistedUser({});
     navigate('/rp-connect/wizard');
-  }, [setPersistedConnectionName, navigate]);
+  }, [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate]);
 
   return (
     <div>
@@ -69,16 +79,38 @@ const NewCreatePipelineButton = () => {
   );
 };
 
-const EmptyPlaceholder = () => {
-  const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_TILE_STORAGE_KEY, {});
+/**
+ * Shows image, text, and create button
+ */
+const LegacyEmptyState = () => {
+  return (
+    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
+      <Image src={EmptyConnectors} />
+      <Box>You have no Redpanda Connect pipelines.</Box>
+      <LegacyCreatePipelineButton />
+    </Flex>
+  );
+};
+
+/**
+ * Shows ConnectTiles and navigates to wizard with connector pre-selected
+ */
+const WizardEmptyState = () => {
+  const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
+    CONNECT_WIZARD_CONNECTOR_KEY,
+    {},
+  );
+  const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
+  const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
   const navigate = useNavigate();
-  const enableConnectTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
   const handleConnectionChange = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
       try {
         setPersistedConnectionName({ connectionName, connectionType });
-        navigate('/rp-connect/create');
+        setPersistedTopic({});
+        setPersistedUser({});
+        navigate('/rp-connect/wizard?step=add-topic');
       } catch (error) {
         toast({
           status: 'error',
@@ -89,22 +121,15 @@ const EmptyPlaceholder = () => {
         });
       }
     },
-    [setPersistedConnectionName, navigate],
+    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate],
   );
 
-  const oldUI = (
-    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
-      <Image src={EmptyConnectors} />
-      <Box>You have no Redpanda Connect pipelines.</Box>
-      <CreatePipelineButton />
-    </Flex>
-  );
+  return <ConnectTiles onChange={handleConnectionChange} componentTypeFilter={['input', 'output']} hideHeader />;
+};
 
-  return enableConnectTiles ? (
-    <ConnectTiles onChange={handleConnectionChange} componentTypeFilter={['input', 'output']} hideHeader />
-  ) : (
-    oldUI
-  );
+const EmptyPlaceholder = () => {
+  const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
+  return enableRpcnTiles ? <WizardEmptyState /> : <LegacyEmptyState />;
 };
 
 export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
@@ -235,11 +260,11 @@ class RpConnectPipelinesList extends PageComponent<{}> {
 
         {pipelinesApi.pipelines.length !== 0 && isFeatureFlagEnabled('enableRpcnTiles') ? (
           <div className="my-5">
-            <NewCreatePipelineButton />
+            <WizardCreatePipelineButton />
           </div>
         ) : pipelinesApi.pipelines.length !== 0 ? (
           <div className="flex flex-col gap-2 my-5">
-            <CreatePipelineButton />
+            <LegacyCreatePipelineButton />
             <SearchField
               width="350px"
               searchText={uiSettings.pipelinesList.quickSearch}

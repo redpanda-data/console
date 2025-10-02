@@ -22,6 +22,7 @@ export function Combobox({
   creatable,
   autocomplete = true,
   onCreateOption,
+  className,
 }: {
   options: ComboboxOption[];
   value?: string;
@@ -34,6 +35,7 @@ export function Combobox({
   creatable?: boolean;
   /** Callback function to create a new option */
   onCreateOption?: (value: string) => void;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(controlledValue ?? '');
@@ -63,10 +65,6 @@ export function Combobox({
     // Third priority: label starts with input (best for autocomplete)
     const startsWithMatch = options.find((option) => option.label.toLowerCase().startsWith(inputValue.toLowerCase()));
     if (startsWithMatch) return startsWithMatch;
-
-    // Last priority: label contains input
-    const containsMatch = options.find((option) => option.label.toLowerCase().includes(inputValue.toLowerCase()));
-    return containsMatch || null;
   }, [options, inputValue, autocomplete]);
 
   const displayContent = useMemo(() => {
@@ -166,6 +164,7 @@ export function Combobox({
           placeholder={placeholder}
           className="w-full shadow-none text-transparent placeholder:text-transparent caret-foreground relative selection:text-transparent"
           value={inputValue}
+          containerClassName={className}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onClick={handleInputClick}
