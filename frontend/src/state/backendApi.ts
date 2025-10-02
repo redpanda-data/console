@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+/*eslint block-scoped-var: "error"*/
+
 import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
