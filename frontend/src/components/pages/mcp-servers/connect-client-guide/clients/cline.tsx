@@ -17,7 +17,7 @@ import ClineLogo from '../../../../../assets/cline.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientClineProps {
   mcpServer: MCPServer;
@@ -28,7 +28,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const clineConfigJson = getClientConfig('cline', {
+  const clineConfigJson = getClientConfig(ClientType.CLINE, {
     mcpServerName,
     clusterId,
     mcpServerId,

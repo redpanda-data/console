@@ -19,7 +19,7 @@ import CursorLogo from '../../../../../assets/cursor.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientCursorProps {
   mcpServer: MCPServer;
@@ -45,7 +45,7 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
     window.open(cursorLink, '_blank');
   };
 
-  const cursorConfigJson = getClientConfig('cursor', {
+  const cursorConfigJson = getClientConfig(ClientType.CURSOR, {
     mcpServerName,
     clusterId,
     mcpServerId,

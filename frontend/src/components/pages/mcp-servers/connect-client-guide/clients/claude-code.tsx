@@ -27,7 +27,7 @@ import ClaudeCodeLogo from '../../../../../assets/claude-code.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientClaudeCodeProps {
   mcpServer: MCPServer;
@@ -40,7 +40,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const claudeCodeCommand = getClientCommand('claude-code', {
+  const claudeCodeCommand = getClientCommand(ClientType.CLAUDE_CODE, {
     mcpServerName,
     clusterId,
     mcpServerId,
@@ -48,7 +48,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
     selectedScope,
   });
 
-  const claudeCodeConfigJson = getClientConfig('claude-code', {
+  const claudeCodeConfigJson = getClientConfig(ClientType.CLAUDE_CODE, {
     mcpServerName,
     clusterId,
     mcpServerId,

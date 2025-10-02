@@ -27,7 +27,7 @@ import GeminiLogo from '../../../../../assets/gemini.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientGeminiProps {
   mcpServer: MCPServer;
@@ -40,7 +40,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const geminiCommand = getClientCommand('gemini', {
+  const geminiCommand = getClientCommand(ClientType.GEMINI, {
     mcpServerName,
     clusterId,
     mcpServerId,
@@ -48,7 +48,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
     selectedScope,
   });
 
-  const geminiConfigJson = getClientConfig('gemini', {
+  const geminiConfigJson = getClientConfig(ClientType.GEMINI, {
     mcpServerName,
     clusterId,
     mcpServerId,

@@ -18,7 +18,7 @@ import WindsurfLogo from '../../../../../assets/windsurf.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientWindsurfProps {
   mcpServer: MCPServer;
@@ -28,7 +28,7 @@ export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
   const clusterId = config?.clusterId;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const windsurfConfigJson = getClientConfig('windsurf', {
+  const windsurfConfigJson = getClientConfig(ClientType.WINDSURF, {
     mcpServerName,
     clusterId,
     mcpServerId: mcpServer?.id,

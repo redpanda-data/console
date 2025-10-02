@@ -141,21 +141,33 @@ export const getCloudEnvArgsForInlineJson = () => {
   return cloudEnv !== 'production' ? `"-X","cloud_environment=${cloudEnv}",` : '';
 };
 
-export const AVAILABLE_CLIENTS = [
-  'claude-code',
-  'claude-desktop',
-  'vscode',
-  'cursor',
-  'windsurf',
-  'gemini',
-  'codex',
-  'warp',
-  'auggie',
-  'cline',
-  'manus',
-] as const;
+export enum ClientType {
+  CLAUDE_CODE = 'claude-code',
+  CLAUDE_DESKTOP = 'claude-desktop',
+  VSCODE = 'vscode',
+  CURSOR = 'cursor',
+  WINDSURF = 'windsurf',
+  GEMINI = 'gemini',
+  CODEX = 'codex',
+  WARP = 'warp',
+  AUGGIE = 'auggie',
+  CLINE = 'cline',
+  MANUS = 'manus',
+}
 
-export type ClientType = (typeof AVAILABLE_CLIENTS)[number];
+export const AVAILABLE_CLIENTS = [
+  ClientType.CLAUDE_CODE,
+  ClientType.CLAUDE_DESKTOP,
+  ClientType.VSCODE,
+  ClientType.CURSOR,
+  ClientType.WINDSURF,
+  ClientType.GEMINI,
+  ClientType.CODEX,
+  ClientType.WARP,
+  ClientType.AUGGIE,
+  ClientType.CLINE,
+  ClientType.MANUS,
+] as const;
 
 interface ClientCommandParams {
   mcpServerName: string;
@@ -174,7 +186,7 @@ export const getClientCommand = (clientType: ClientType, params: ClientCommandPa
   const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   switch (clientType) {
-    case 'auggie':
+    case ClientType.AUGGIE:
       return `auggie mcp add ${mcpServerName} \\
 --transport stdio \\
 --command rpk \\
@@ -183,21 +195,21 @@ export const getClientCommand = (clientType: ClientType, params: ClientCommandPa
 "${clusterFlag}" "${clusterId}" \\
 "--mcp-server-id" "${mcpServerId}"`;
 
-    case 'claude-code':
+    case ClientType.CLAUDE_CODE:
       return `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
 '{"type":"stdio","command":"rpk","args":[
 ${getCloudEnvArgsForInlineJson()}"cloud","mcp","proxy",
 "${clusterFlag}","${clusterId}",
 "--mcp-server-id","${mcpServerId}"]}'`;
 
-    case 'codex':
+    case ClientType.CODEX:
       return `codex mcp add ${mcpServerName} -- rpk \\
 ${getCloudEnvArgsForShell()}\\
 "cloud" "mcp" "proxy" \\
 "${clusterFlag}" "${clusterId}" \\
 "--mcp-server-id" "${mcpServerId}"`;
 
-    case 'gemini':
+    case ClientType.GEMINI:
       return `gemini mcp add ${mcpServerName} \\
 --scope ${selectedScope} \\
 --transport stdio rpk \\
@@ -206,11 +218,11 @@ ${getCloudEnvArgsForShell()}\\
 "${clusterFlag}" "${clusterId}" \\
 "--mcp-server-id" "${mcpServerId}"`;
 
-    case 'cursor':
+    case ClientType.CURSOR:
       // Cursor uses a button/link approach, command is less common
       return '';
 
-    case 'vscode':
+    case ClientType.VSCODE:
       // VSCode uses a button/link approach, command is less common
       return '';
 
@@ -228,7 +240,7 @@ export const getClientConfig = (clientType: ClientType, params: ClientCommandPar
   const clusterFlag = isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
   switch (clientType) {
-    case 'auggie':
+    case ClientType.AUGGIE:
       return `{
   "mcpServers": {
     "${mcpServerName}": {
@@ -246,9 +258,9 @@ export const getClientConfig = (clientType: ClientType, params: ClientCommandPar
   }
 }`;
 
-    case 'claude-code':
-    case 'claude-desktop':
-    case 'vscode':
+    case ClientType.CLAUDE_CODE:
+    case ClientType.CLAUDE_DESKTOP:
+    case ClientType.VSCODE:
       return `{
   "mcp": {
     "servers": {
@@ -268,10 +280,10 @@ export const getClientConfig = (clientType: ClientType, params: ClientCommandPar
   }
 }`;
 
-    case 'cline':
-    case 'cursor':
-    case 'gemini':
-    case 'manus':
+    case ClientType.CLINE:
+    case ClientType.CURSOR:
+    case ClientType.GEMINI:
+    case ClientType.MANUS:
       return `{
   "mcpServers": {
     "${mcpServerName}": {
@@ -289,13 +301,13 @@ export const getClientConfig = (clientType: ClientType, params: ClientCommandPar
   }
 }`;
 
-    case 'codex':
+    case ClientType.CODEX:
       return `[mcp_servers.${mcpServerName}]
 command = "rpk"
 args = [${getCloudEnvArgsForToml()}"cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`;
 
-    case 'warp':
-    case 'windsurf':
+    case ClientType.WARP:
+    case ClientType.WINDSURF:
       return `{
   "mcpServers": {
     "${mcpServerName}": {

@@ -16,7 +16,7 @@ import ClaudeDesktopLogo from '../../../../../assets/claude-desktop.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientConfig, getMCPServerName, getRpkCommand, type MCPServer } from '../utils';
+import { ClientType, getClientConfig, getMCPServerName, getRpkCommand, type MCPServer } from '../utils';
 
 interface ClientClaudeDesktopProps {
   mcpServer: MCPServer;
@@ -34,7 +34,7 @@ export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => 
     isServerless: config.isServerless,
   });
 
-  const claudeDesktopConfigJson = getClientConfig('claude-desktop', {
+  const claudeDesktopConfigJson = getClientConfig(ClientType.CLAUDE_DESKTOP, {
     mcpServerName,
     clusterId,
     mcpServerId,

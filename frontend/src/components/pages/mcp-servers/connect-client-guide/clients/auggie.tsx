@@ -16,7 +16,7 @@ import AuggieLogo from '../../../../../assets/auggie.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientAuggieProps {
   mcpServer: MCPServer;
@@ -27,14 +27,14 @@ export const ClientAuggie = ({ mcpServer }: ClientAuggieProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const auggieCommand = getClientCommand('auggie', {
+  const auggieCommand = getClientCommand(ClientType.AUGGIE, {
     mcpServerName,
     clusterId,
     mcpServerId,
     isServerless: config.isServerless,
   });
 
-  const augmentCodeConfigJson = getClientConfig('auggie', {
+  const augmentCodeConfigJson = getClientConfig(ClientType.AUGGIE, {
     mcpServerName,
     clusterId,
     mcpServerId,

@@ -17,7 +17,7 @@ import VSCodeLogo from '../../../../../assets/vscode.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientVscodeProps {
   mcpServer: MCPServer;
@@ -53,7 +53,7 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
 }`
     : '';
 
-  const vscodeConfigJson = getClientConfig('vscode', {
+  const vscodeConfigJson = getClientConfig(ClientType.VSCODE, {
     mcpServerName,
     clusterId,
     mcpServerId,

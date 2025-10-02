@@ -16,7 +16,7 @@ import WarpLogo from '../../../../../assets/warp.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientWarpProps {
   mcpServer: MCPServer;
@@ -27,7 +27,7 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const warpConfigJson = getClientConfig('warp', {
+  const warpConfigJson = getClientConfig(ClientType.WARP, {
     mcpServerName,
     clusterId,
     mcpServerId,

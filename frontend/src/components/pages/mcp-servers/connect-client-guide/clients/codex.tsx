@@ -16,7 +16,7 @@ import CodexLogo from '../../../../../assets/codex.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientCodexProps {
   mcpServer: MCPServer;
@@ -27,14 +27,14 @@ export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
 
-  const codexMcpAddCommand = getClientCommand('codex', {
+  const codexMcpAddCommand = getClientCommand(ClientType.CODEX, {
     mcpServerName,
     clusterId,
     mcpServerId,
     isServerless: config.isServerless,
   });
 
-  const codexConfigToml = getClientConfig('codex', {
+  const codexConfigToml = getClientConfig(ClientType.CODEX, {
     mcpServerName,
     clusterId,
     mcpServerId,

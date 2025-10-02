@@ -16,7 +16,7 @@ import { Cable, FileJson, Plus, Send } from 'lucide-react';
 import ManusLogo from '../../../../../assets/manus.svg';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getClientConfig, getMCPServerName, type MCPServer } from '../utils';
+import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientManusProps {
   mcpServer: MCPServer;
@@ -27,7 +27,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
 
-  const manusConfigJson = getClientConfig('manus', {
+  const manusConfigJson = getClientConfig(ClientType.MANUS, {
     mcpServerName,
     clusterId,
     mcpServerId,
