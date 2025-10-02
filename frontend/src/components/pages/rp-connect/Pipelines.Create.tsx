@@ -25,8 +25,9 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
-import { isFeatureFlagEnabled } from 'config';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { isFeatureFlagEnabled } from 'config';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
@@ -40,7 +41,6 @@ import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
