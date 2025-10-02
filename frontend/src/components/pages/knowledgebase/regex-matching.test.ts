@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 
 // Test function for regex matching logic
 function getMatchingTopics(pattern: string, allTopics: string[]): string[] {
@@ -16,7 +16,7 @@ function getMatchingTopics(pattern: string, allTopics: string[]): string[] {
 describe('Topic Regex Matching', () => {
   const testTopics = ['confluence', 'incidents', '__redpanda.connect.logs'];
 
-  test('should match confluence with conf.*', () => {
+  it('should match confluence with conf.*', () => {
     const pattern = 'conf.*';
     const result = getMatchingTopics(pattern, testTopics);
 
@@ -25,7 +25,7 @@ describe('Topic Regex Matching', () => {
     expect(result[0]).toBe('confluence');
   });
 
-  test('should match multiple topics starting with conf', () => {
+  it('should match multiple topics starting with conf', () => {
     const topics = ['confluence', 'config', 'incidents', 'confirm'];
     const pattern = 'conf.*';
     const result = getMatchingTopics(pattern, topics);
@@ -36,7 +36,7 @@ describe('Topic Regex Matching', () => {
     expect(result).toHaveLength(3);
   });
 
-  test('should match topics containing conf with .*conf.*', () => {
+  it('should match topics containing conf with .*conf.*', () => {
     const pattern = '.*conf.*';
     const result = getMatchingTopics(pattern, testTopics);
 
@@ -44,7 +44,7 @@ describe('Topic Regex Matching', () => {
     expect(result).toHaveLength(1);
   });
 
-  test('should match exact topic names', () => {
+  it('should match exact topic names', () => {
     const pattern = 'incidents';
     const result = getMatchingTopics(pattern, testTopics);
 
@@ -52,7 +52,7 @@ describe('Topic Regex Matching', () => {
     expect(result).toHaveLength(1);
   });
 
-  test('should handle invalid regex by falling back to substring', () => {
+  it('should handle invalid regex by falling back to substring', () => {
     const pattern = '[invalid';
     const result = getMatchingTopics(pattern, testTopics);
 
@@ -60,12 +60,12 @@ describe('Topic Regex Matching', () => {
     expect(result).toHaveLength(0); // No topics contain '[invalid'
   });
 
-  test('should return empty array for empty pattern', () => {
+  it('should return empty array for empty pattern', () => {
     const result = getMatchingTopics('', testTopics);
     expect(result).toHaveLength(0);
   });
 
-  test('should handle complex regex patterns', () => {
+  it('should handle complex regex patterns', () => {
     const topics = ['test-topic-1', 'test-topic-2', 'prod-topic-1', 'dev-topic-1'];
     const pattern = 'test-topic-.*';
     const result = getMatchingTopics(pattern, topics);
@@ -76,7 +76,7 @@ describe('Topic Regex Matching', () => {
   });
 
   // Test the specific case from the original issue
-  test('should handle the exact case mentioned: conf.* matching confluence', () => {
+  it('should handle the exact case mentioned: conf.* matching confluence', () => {
     const topics = ['confluence', 'incidents', '__redpanda.connect.logs'];
     const pattern = 'conf.*';
 

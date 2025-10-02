@@ -16,8 +16,8 @@ import {
   resolveEnterpriseCTALink,
 } from './licenseUtils';
 import '../../utils/arrayExtensions';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test, vi } from 'bun:test';
 import { create } from '@bufbuild/protobuf';
+import { vi } from 'vitest';
 import { api } from '../../state/backendApi';
 import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './LicenseNotification';
@@ -33,40 +33,45 @@ const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
   return Math.floor(Date.now() / 1000) + daysOffset * 86400;
 };
 
-mock.module('../../state/backendApi', () => ({
-  api: {
-    get isAdminApiConfigured() {
-      return true;
+vi.mock('../../state/backendApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../state/backendApi')>();
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      get isAdminApiConfigured() {
+        return true;
+      },
+      enterpriseFeaturesUsed: [
+        { name: 'rbac', enabled: true },
+        { name: 'datalake_iceberg', enabled: false },
+        { name: 'audit_logging' },
+        { name: 'core_balancing_continuous' },
+        { name: 'schema_id_validation' },
+        { name: 'cloud_storage' },
+        { name: 'gssapi' },
+        { name: 'leadership_pinning' },
+        { name: 'partition_auto_balancing_continuous' },
+        { name: 'oidc' },
+        { name: 'fips' },
+      ],
+      licensesLoaded: true,
+      licenseViolation: false,
+      licenses: [
+        {
+          source: License_Source.REDPANDA_CORE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: undefined,
+        },
+        {
+          source: License_Source.REDPANDA_CONSOLE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: undefined,
+        },
+      ],
     },
-    enterpriseFeaturesUsed: [
-      { name: 'rbac', enabled: true },
-      { name: 'datalake_iceberg', enabled: false },
-      { name: 'audit_logging' },
-      { name: 'core_balancing_continuous' },
-      { name: 'schema_id_validation' },
-      { name: 'cloud_storage' },
-      { name: 'gssapi' },
-      { name: 'leadership_pinning' },
-      { name: 'partition_auto_balancing_continuous' },
-      { name: 'oidc' },
-      { name: 'fips' },
-    ],
-    licensesLoaded: true,
-    licenseViolation: false,
-    licenses: [
-      {
-        source: License_Source.REDPANDA_CORE,
-        type: License_Type.ENTERPRISE,
-        expiresAt: undefined,
-      },
-      {
-        source: License_Source.REDPANDA_CONSOLE,
-        type: License_Type.ENTERPRISE,
-        expiresAt: undefined,
-      },
-    ],
-  },
-}));
+  };
+});
 
 describe('licenseUtils', () => {
   const origDate = Date.prototype.toLocaleDateString;

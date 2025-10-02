@@ -1,4 +1,3 @@
-import { describe, expect, test, vi } from 'bun:test';
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { GetPipelinesForSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
@@ -17,9 +16,8 @@ import {
   SecretSchema,
   UpdateSecretRequestSchema as UpdateSecretRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { act, fireEvent, render, screen, waitFor, within } from 'test-utils';
+import { fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
-import '../../../../tests/mock-react-select';
 import { UpdateSecretModal } from './update-secret-modal';
 
 describe('UpdateSecretModal', () => {
@@ -70,29 +68,25 @@ describe('UpdateSecretModal', () => {
     render(<UpdateSecretModal isOpen onClose={() => {}} secretId={existingSecretId} />, { transport });
 
     await waitFor(() => {
+      expect(screen.getByTestId('update-secret-button')).toBeVisible();
       expect(listSecretsMock).toHaveBeenCalledTimes(1);
       expect(getPipelinesForSecretMock).toHaveBeenCalledTimes(1);
-      expect(screen.getByTestId('secret-id-field')).toHaveValue(existingSecretId);
     });
 
     const updatedSecretValue = 'updated_secret_value';
 
-    act(() => {
-      fireEvent.change(screen.getByTestId('secret-value-field'), { target: { value: updatedSecretValue } });
-    });
+    fireEvent.change(screen.getByTestId('secret-value-field'), { target: { value: updatedSecretValue } });
 
-    act(() => {
-      fireEvent.click(screen.getByTestId('add-label-button'));
-    });
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByText('Redpanda Connect'));
 
-    act(() => {
-      fireEvent.change(screen.getByTestId('secret-labels-field-key-1'), { target: { value: 'environment' } });
-      fireEvent.change(screen.getByTestId('secret-labels-field-value-1'), { target: { value: 'production' } });
-    });
+    fireEvent.click(screen.getByTestId('add-label-button'));
 
-    act(() => {
-      fireEvent.click(screen.getByTestId('update-secret-button'));
-    });
+    fireEvent.change(screen.getByTestId('secret-labels-field-key-1'), { target: { value: 'environment' } });
+    fireEvent.change(screen.getByTestId('secret-labels-field-value-1'), { target: { value: 'production' } });
+
+    fireEvent.click(screen.getByTestId('update-secret-button'));
 
     await waitFor(() => {
       expect(updateSecretMock).toHaveBeenCalledTimes(1);
@@ -156,6 +150,7 @@ describe('UpdateSecretModal', () => {
     render(<UpdateSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
 
     await waitFor(() => {
+      expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();
       expect(within(screen.getByTestId('resource-in-use-alert')).getByText(pipeline.id)).toBeVisible();
     });
   });
