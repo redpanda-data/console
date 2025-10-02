@@ -511,10 +511,10 @@ export const useUpdateAclMutation = () => {
   return { applyUpdates };
 };
 
-export function useGetAclsByPrincipal<T = AclDetail>(
+export const useGetAclsByPrincipal = <T = AclDetail>(
   principal: string,
   transformFn?: (aclList: ListACLsResponse) => T,
-) {
+) => {
   return useQuery(
     listACLs,
     {
@@ -526,7 +526,7 @@ export function useGetAclsByPrincipal<T = AclDetail>(
       select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
     },
   );
-}
+};
 
 export const useCreateAcls = () => {
   const { mutateAsync: createACLMutation } = useMutation(createACL);

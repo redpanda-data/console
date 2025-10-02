@@ -1,4 +1,3 @@
-import { describe, expect, test } from 'bun:test';
 import { render, screen } from '@testing-library/react';
 import type { ConfigEntryExtended } from '../../../state/restInterfaces';
 import ConfigurationEditor from './TopicConfiguration';
@@ -51,6 +50,6 @@ describe('TopicConfiguration', () => {
       'Compression',
       'Storage Internals',
       'Other',
-    ]).toEqual(Array.from(groups).map((g) => g.textContent || ''));
+    ]).toEqual(Array.from(groups).map((g) => g.textContent));
   });
 });

@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "types": ["bun-types", "@testing-library/jest-dom"],
+    "types": ["vitest/globals"],
     "emitDecoratorMetadata": true,
     "allowJs": true,
     "skipLibCheck": true,
@@ -26,8 +26,8 @@
     "noUnusedParameters": true,
     "noImplicitOverride": false
   },
-  "include": ["src", "./testing-library.ts", "./happydom.ts"],
-  "exclude": ["src/utils/interpreter/**", "node_modules", "src/protogen"],
+  "include": ["src", "./vitest.setup.ts"],
+  "exclude": ["src/utils/interpreter/**", "node_modules", "src/**/*.test.tsx", "src/**/*.test.ts", "src/protogen"],
 
   "watchOptions": {
     "watchFile": "useFsEvents",
