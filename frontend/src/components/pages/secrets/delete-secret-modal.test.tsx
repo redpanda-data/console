@@ -16,7 +16,7 @@ import { act, fireEvent, render, screen, waitFor, within } from 'test-utils';
 import { DeleteSecretModal } from './delete-secret-modal';
 
 describe('DeleteSecretModal', () => {
-  test.serial('should let the user delete a secret after entering confirmation text', async () => {
+  test('should let the user delete a secret after entering confirmation text', async () => {
     const secretId = 'SECRET_ID';
 
     const pipelinesForSecretResponse = create(GetPipelinesForSecretResponseSchema, {
@@ -73,7 +73,7 @@ describe('DeleteSecretModal', () => {
     });
   });
 
-  test.serial('should show a warning if the secret is in use', async () => {
+  test('should show a warning if the secret is in use', async () => {
     const secretId = 'SECRET_ID';
 
     const pipeline = create(PipelineSchema, {

@@ -23,7 +23,7 @@ import '../../../../tests/mock-react-select';
 import { UpdateSecretModal } from './update-secret-modal';
 
 describe('UpdateSecretModal', () => {
-  test.serial('should let the user update an existing secret with new value and labels', async () => {
+  test('should let the user update an existing secret with new value and labels', async () => {
     const existingSecretId = 'SECRET_ID';
     const existingLabels = {
       key: 'value',
@@ -114,7 +114,7 @@ describe('UpdateSecretModal', () => {
     });
   });
 
-  test.serial('should show a warning if the secret is in use', async () => {
+  test('should show a warning if the secret is in use', async () => {
     const secretId = 'SECRET_ID';
 
     const secret = create(SecretSchema, {
