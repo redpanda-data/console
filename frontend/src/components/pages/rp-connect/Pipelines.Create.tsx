@@ -26,7 +26,7 @@ import { Button as NewButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled } from 'config';
-import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
+import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { AlertCircle, PlusIcon } from 'lucide-react';
 import { action, makeObservable, observable } from 'mobx';
@@ -40,7 +40,7 @@ import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_
 import { appGlobal } from '../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { LintResults } from '../../lint-results';
+import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import PageContent from '../../misc/PageContent';
 import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
 import Tabs from '../../misc/tabs/Tabs';
@@ -194,7 +194,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
         {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
           <div className="mt-4">
-            <LintResults lintResults={this.lintResults} />
+            <LintHintList lintHints={this.lintResults} />
           </div>
         )}
 
@@ -389,7 +389,15 @@ export const PipelineEditor = observer(
       return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
     }, [secretsData]);
 
-    const { detectedSecrets } = useSecretDetection(yaml, existingSecrets);
+    const detectedSecrets = useMemo(() => {
+      try {
+        const secretRefs = extractSecretReferences(yaml);
+        return getUniqueSecretNames(secretRefs);
+      } catch {
+        return [];
+      }
+    }, [yaml]);
+
     const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
 
     const secretDefaultValues = useMemo(() => {

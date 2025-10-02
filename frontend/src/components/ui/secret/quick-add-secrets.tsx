@@ -38,6 +38,11 @@ interface QuickAddSecretsProps {
   requiredSecrets: string[];
   existingSecrets: string[];
   scopes: Scope[];
+  defaultValues?: Record<string, string>;
+  onSecretsCreated?: (secretNames: string[]) => void;
+  enableNewSecrets?: boolean;
+  hideHeader?: boolean;
+  onError?: (errors: string[]) => void;
 }
 
 const SecretFormSchema = z.record(
@@ -49,7 +54,15 @@ const SecretFormSchema = z.record(
 
 type SecretFormData = z.infer<typeof SecretFormSchema>;
 
-export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecrets, existingSecrets, scopes }) => {
+export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
+  requiredSecrets,
+  existingSecrets,
+  scopes,
+  defaultValues = {},
+  onSecretsCreated,
+  enableNewSecrets: _enableNewSecrets = false, // Reserved for future use
+  onError,
+}) => {
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
   const [createdSecrets, setCreatedSecrets] = useState<string[]>([]);
 
@@ -59,7 +72,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
 
   const form = useForm<SecretFormData>({
     resolver: zodResolver(SecretFormSchema),
-    defaultValues: Object.fromEntries(missingSecrets.map((secretName) => [secretName, { value: '' }])),
+    defaultValues: Object.fromEntries(
+      missingSecrets.map((secretName) => [secretName, { value: defaultValues[secretName] || '' }]),
+    ),
   });
 
   const handleCreateSecrets = async (data: SecretFormData) => {
@@ -95,12 +110,24 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({ requiredSecret
     // Update created secrets state
     if (successfulSecrets.length > 0) {
       setCreatedSecrets((prev) => [...prev, ...successfulSecrets]);
+      // Call onSecretsCreated callback
+      onSecretsCreated?.(successfulSecrets);
     }
 
-    // Display error toasts for failed secrets
-    errors.forEach(({ secretName, error }) => {
-      toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: `secret ${secretName}` }));
-    });
+    // Handle errors
+    if (errors.length > 0) {
+      const errorMessages = errors.map(({ secretName, error }) =>
+        formatToastErrorMessageGRPC({ error, action: 'create', entity: `secret ${secretName}` }),
+      );
+
+      if (onError) {
+        // Let parent handle error display
+        onError(errorMessages);
+      } else {
+        // Display error toasts
+        errorMessages.forEach((message) => toast.error(message));
+      }
+    }
   };
 
   if (requiredSecrets.length === 0) {

@@ -103,13 +103,8 @@ export const RemoteMCPCreatePage: React.FC = () => {
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
   }, [secretsData]);
 
-  // Watch form and extract all YAML configs for secret detection
-  const tools = form.watch('tools');
-  const allYamlContent = useMemo(() => {
-    return tools.map((tool) => tool.config || '').join('\n');
-  }, [tools]);
-
-  const { detectedSecrets, hasSecretWarnings } = useSecretDetection(allYamlContent, existingSecrets);
+  // Use the built-in hook which watches the form
+  const { detectedSecrets, hasSecretWarnings } = useSecretDetection(form, existingSecrets);
   const { isMetadataInvalid } = useMetadataValidation(form);
 
   // Check if there are any form errors
