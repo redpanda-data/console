@@ -16,7 +16,7 @@ import CodexLogo from '../../../../../assets/codex.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientCodexProps {
   mcpServer: MCPServer;
@@ -24,27 +24,22 @@ interface ClientCodexProps {
 
 export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
-
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}" ` : '';
+  const codexMcpAddCommand = getClientCommand(ClientType.CODEX, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
-  const codexMcpAddCommand = `codex mcp add ${mcpServerName} -- rpk \\
-"-X" ${cloudEnvArg}\\
-"cloud" "mcp" "proxy" \\
-"${clusterFlag}" "${clusterId}" \\
-"--mcp-server-id" "${mcpServerId}"`;
-
-  const codexConfigToml = showCloudEnvironmentFlag
-    ? `[mcp_servers.${mcpServerName}]
-command = "rpk"
-args = ["-X","cloud_environment=${getRpkCloudEnvironment()}", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`
-    : `[mcp_servers.${mcpServerName}]
-command = "rpk"
-args = ["-X", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-server-id", "${mcpServerId}"]`;
+  const codexConfigToml = getClientConfig(ClientType.CODEX, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

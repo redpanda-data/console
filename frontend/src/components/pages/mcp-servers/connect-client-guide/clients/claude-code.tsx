@@ -27,7 +27,7 @@ import ClaudeCodeLogo from '../../../../../assets/claude-code.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 interface ClientClaudeCodeProps {
   mcpServer: MCPServer;
@@ -39,57 +39,21 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
   const clusterId = config?.clusterId;
   const mcpServerId = mcpServer?.id;
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
 
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-  const cloudEnvArg = showCloudEnvironmentFlag ? `"cloud_environment=${getRpkCloudEnvironment()}",` : '';
+  const claudeCodeCommand = getClientCommand(ClientType.CLAUDE_CODE, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+    selectedScope,
+  });
 
-  const claudeCodeCommand = `claude mcp add-json ${mcpServerName} --scope ${selectedScope} \\
-'{"type":"stdio","command":"rpk","args":[
-"-X",${cloudEnvArg}"cloud","mcp","proxy",
-"${clusterFlag}","${clusterId}",
-"--mcp-server-id","${mcpServerId}"]}'`;
-
-  const claudeCodeConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud_environment=${getRpkCloudEnvironment()}",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`
-    : `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`;
+  const claudeCodeConfigJson = getClientConfig(ClientType.CLAUDE_CODE, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

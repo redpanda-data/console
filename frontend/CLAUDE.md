@@ -31,7 +31,7 @@ The dev server proxies API requests to `http://localhost:9090` for `/api`, `/red
 ### Testing
 
 ```bash
-bun run test             # Run unit and integration tests (Bun's built-in test runner)
+bun run test             # Run unit and integration tests (Vitest)
 bun run e2e-test         # Run E2E tests with Playwright
 bun run e2e-test:ui      # Run E2E tests with Playwright (UI mode)
 bun run install:chromium # Install Chromium for Playwright
@@ -39,7 +39,7 @@ bun run install:chromium # Install Chromium for Playwright
 
 **Testing Strategy:**
 
-1. **Bun Tests** (Unit + Integration) - Fast, cheap to run
+1. **Vitest Tests** (Unit + Integration) - Fast, cheap to run
    - Test CRUD operations and business logic
    - Verify gRPC Connect transport endpoints are called correctly
    - Test data fetching, mutations, and state management
@@ -58,7 +58,7 @@ bun run install:chromium # Install Chromium for Playwright
 
 **What to Test:**
 
-✅ **Integration Tests (Bun):**
+✅ **Integration Tests (Vitest):**
 - API calls are made with correct parameters
 - gRPC Connect transport endpoints are invoked
 - Data transformations and business logic
@@ -102,7 +102,7 @@ bun run analyze          # Build with bundle analyzer (RSDOCTOR=true)
 - **Class components** - Old React pattern
 - **Decorator pattern** - Old TypeScript pattern (`@observable`, `@action`, etc.)
 - **Yup** - Old validation library, use Zod or protovalidate-es instead
-- **Vitest/Jest** - Old test runner
+- **Jest** - Old test runner
 
 #### ✅ MODERN (Use for All New Code)
 
@@ -111,7 +111,7 @@ bun run analyze          # Build with bundle analyzer (RSDOCTOR=true)
 - **Functional components** - React 18.3 hooks pattern
 - **Local state** - `useState`, `useReducer` for component state
 - **Zustand** - For global state management (when needed)
-- **Bun test** - For unit and integration tests (CRUD, API calls)
+- **Vitest** - For unit and integration tests (CRUD, API calls)
 - **Playwright** - For E2E tests (complex browser scenarios)
 - **React Hook Form** - For form management (complex forms)
 - **AutoForm** - For simple forms without custom components
@@ -431,7 +431,7 @@ export const MCPServerPage = () => {
 4. **Minimize className usage** - delegate styling to UI components and layouts
 5. Add route definition in `src/components/routes.tsx`
 6. For state: use local state or Zustand (not MobX)
-7. Write integration tests with Bun (focus on CRUD and API calls, not component rendering)
+7. Write integration tests with Vitest (focus on CRUD and API calls, not component rendering)
 8. Write E2E tests with Playwright for complex user journeys
 
 **Example Structure:**
@@ -488,12 +488,12 @@ const { data, isLoading, error } = useQuery({
 
 **Testing:**
 ```tsx
-// ✅ GOOD - Integration test for API calls and business logic (Bun test)
-import { describe, test, expect, mock } from 'bun:test';
+// ✅ GOOD - Integration test for API calls and business logic (Vitest)
+import { describe, test, expect, vi } from 'vitest';
 
 describe('MCP Server CRUD', () => {
   test('should create MCP server with correct transport call', async () => {
-    const mockTransport = mock(() => Promise.resolve({ id: '123', name: 'test' }));
+    const mockTransport = vi.fn(() => Promise.resolve({ id: '123', name: 'test' }));
 
     const result = await createMCPServer({ name: 'test', url: 'http://example.com' });
 
@@ -506,7 +506,7 @@ describe('MCP Server CRUD', () => {
   });
 
   test('should handle server creation errors', async () => {
-    const mockTransport = mock(() => Promise.reject(new Error('Network error')));
+    const mockTransport = vi.fn(() => Promise.reject(new Error('Network error')));
 
     await expect(createMCPServer({ name: 'test' })).rejects.toThrow('Network error');
   });
@@ -663,7 +663,7 @@ Frontend config via `REACT_APP_` prefixed environment variables:
 - ✅ Use Redpanda UI registry components (Tailwind-based, NOT `@redpanda-data/ui`)
 - ✅ Use functional components with React hooks
 - ✅ Use local state or Zustand for state management
-- ✅ Use Bun test for unit and integration tests (CRUD, API calls, business logic)
+- ✅ Use Vitest for unit and integration tests (CRUD, API calls, business logic)
 - ✅ Focus integration tests on gRPC Connect transport calls, not component rendering
 - ✅ Use Playwright for E2E tests (complex browser scenarios and user journeys)
 - ✅ Use AutoForm for simple forms (no custom components)
@@ -679,7 +679,7 @@ Frontend config via `REACT_APP_` prefixed environment variables:
 - ❌ Create new class components
 - ❌ Use decorator pattern (`@observable`, `@action`, etc.)
 - ❌ Use Yup for validation
-- ❌ Use Vitest/Jest for tests
+- ❌ Use Jest for tests
 - ❌ Write tests that extensively test component rendering (tested in UI registry)
 - ❌ Test UI component behavior in integration tests (use Playwright for UI flows)
 - ❌ Expand legacy patterns in new code

@@ -1,0 +1,904 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`createMCPConfig > Integration with Cursor > creates config for Cursor with serverless cluster 1`] = `
+{
+  "args": [
+    "cloud",
+    "mcp",
+    "proxy",
+    "--serverless-cluster-id",
+    "serverless-456",
+    "--mcp-server-id",
+    "mcp-999",
+  ],
+  "command": "rpk",
+  "name": "cursor-serverless",
+}
+`;
+
+exports[`createMCPConfig > Integration with Cursor > creates config object compatible with Cursor IDE 1`] = `
+{
+  "args": [
+    "cloud",
+    "mcp",
+    "proxy",
+    "--cluster-id",
+    "cursor-cluster-123",
+    "--mcp-server-id",
+    "cursor-mcp-456",
+  ],
+  "command": "rpk",
+  "name": "cursor-test-server",
+}
+`;
+
+exports[`createMCPConfig > Integration with VSCode > creates config for VSCode with serverless cluster 1`] = `
+{
+  "args": [
+    "cloud",
+    "mcp",
+    "proxy",
+    "--serverless-cluster-id",
+    "serverless-123",
+    "--mcp-server-id",
+    "mcp-789",
+  ],
+  "command": "rpk",
+  "name": "vscode-serverless",
+}
+`;
+
+exports[`createMCPConfig > Integration with VSCode > creates config object compatible with VSCode extension 1`] = `
+{
+  "args": [
+    "cloud",
+    "mcp",
+    "proxy",
+    "--cluster-id",
+    "vscode-cluster-123",
+    "--mcp-server-id",
+    "vscode-mcp-456",
+  ],
+  "command": "rpk",
+  "name": "vscode-test-server",
+}
+`;
+
+exports[`createMCPConfig > Non-production environment (with -X cloud_environment flag) > includes environment flag for serverless cluster 1`] = `
+{
+  "args": [
+    "-X",
+    "cloud_environment=integration",
+    "cloud",
+    "mcp",
+    "proxy",
+    "--serverless-cluster-id",
+    "cluster-123",
+    "--mcp-server-id",
+    "mcp-456",
+  ],
+  "command": "rpk",
+  "name": "test-server",
+}
+`;
+
+exports[`createMCPConfig > Non-production environment for VSCode and Cursor > Cursor config includes environment flag 1`] = `
+{
+  "args": [
+    "-X",
+    "cloud_environment=integration",
+    "cloud",
+    "mcp",
+    "proxy",
+    "--cluster-id",
+    "dev-cluster",
+    "--mcp-server-id",
+    "dev-mcp",
+  ],
+  "command": "rpk",
+  "name": "cursor-dev-server",
+}
+`;
+
+exports[`createMCPConfig > Non-production environment for VSCode and Cursor > VSCode config includes environment flag 1`] = `
+{
+  "args": [
+    "-X",
+    "cloud_environment=integration",
+    "cloud",
+    "mcp",
+    "proxy",
+    "--cluster-id",
+    "dev-cluster",
+    "--mcp-server-id",
+    "dev-mcp",
+  ],
+  "command": "rpk",
+  "name": "vscode-dev-server",
+}
+`;
+
+exports[`createMCPConfig > Preprod environment > includes preprod environment flag in args 1`] = `
+{
+  "args": [
+    "-X",
+    "cloud_environment=preprod",
+    "cloud",
+    "mcp",
+    "proxy",
+    "--cluster-id",
+    "cluster-123",
+    "--mcp-server-id",
+    "mcp-456",
+  ],
+  "command": "rpk",
+  "name": "test-server",
+}
+`;
+
+exports[`createMCPConfig > Production environment (no -X cloud_environment flag) > creates config for serverless cluster 1`] = `
+{
+  "args": [
+    "cloud",
+    "mcp",
+    "proxy",
+    "--serverless-cluster-id",
+    "cluster-123",
+    "--mcp-server-id",
+    "mcp-456",
+  ],
+  "command": "rpk",
+  "name": "test-server",
+}
+`;
+
+exports[`createMCPConfig > Production environment (no -X cloud_environment flag) > creates config with empty strings for missing IDs 1`] = `
+{
+  "args": [
+    "cloud",
+    "mcp",
+    "proxy",
+    "--cluster-id",
+    "",
+    "--mcp-server-id",
+    "",
+  ],
+  "command": "rpk",
+  "name": "test-server",
+}
+`;
+
+exports[`getClientCommand > Default scope handling > claude-code command - defaults to "local" scope when not provided 1`] = `
+"claude mcp add-json test-server --scope local \\
+'{"type":"stdio","command":"rpk","args":[
+"cloud","mcp","proxy",
+"--cluster-id","cluster-123",
+"--mcp-server-id","mcp-456"]}'"
+`;
+
+exports[`getClientCommand > Default scope handling > gemini command - uses provided scope 1`] = `
+"gemini mcp add test-server \\
+--scope user \\
+--transport stdio rpk \\
+--args \\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Non-production environment (with -X cloud_environment flag) > 'auggie' command > returns command 1`] = `
+"auggie mcp add test-server \\
+--transport stdio \\
+--command rpk \\
+--args "-X" "cloud_environment=integration" \\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Non-production environment (with -X cloud_environment flag) > 'claude-code' command > returns command 1`] = `
+"claude mcp add-json test-server --scope local \\
+'{"type":"stdio","command":"rpk","args":[
+"-X","cloud_environment=integration","cloud","mcp","proxy",
+"--cluster-id","cluster-123",
+"--mcp-server-id","mcp-456"]}'"
+`;
+
+exports[`getClientCommand > Non-production environment (with -X cloud_environment flag) > 'codex' command > returns command 1`] = `
+"codex mcp add test-server -- rpk \\
+"-X" "cloud_environment=integration" \\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Non-production environment (with -X cloud_environment flag) > 'gemini' command > returns command 1`] = `
+"gemini mcp add test-server \\
+--scope local \\
+--transport stdio rpk \\
+--args "-X" "cloud_environment=integration" \\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Production environment (no -X cloud_environment flag) > 'auggie' command > returns command 1`] = `
+"auggie mcp add test-server \\
+--transport stdio \\
+--command rpk \\
+--args \\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Production environment (no -X cloud_environment flag) > 'claude-code' command > returns command 1`] = `
+"claude mcp add-json test-server --scope user \\
+'{"type":"stdio","command":"rpk","args":[
+"cloud","mcp","proxy",
+"--cluster-id","cluster-123",
+"--mcp-server-id","mcp-456"]}'"
+`;
+
+exports[`getClientCommand > Production environment (no -X cloud_environment flag) > 'codex' command > returns command 1`] = `
+"codex mcp add test-server -- rpk \\
+\\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Production environment (no -X cloud_environment flag) > 'gemini' command > returns command 1`] = `
+"gemini mcp add test-server \\
+--scope project \\
+--transport stdio rpk \\
+--args \\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Serverless cluster flag > auggie command - serverless cluster 1`] = `
+"auggie mcp add test-server \\
+--transport stdio \\
+--command rpk \\
+--args \\
+"cloud" "mcp" "proxy" \\
+"--serverless-cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientCommand > Serverless cluster flag > codex command - regular cluster 1`] = `
+"codex mcp add test-server -- rpk \\
+\\
+"cloud" "mcp" "proxy" \\
+"--cluster-id" "cluster-123" \\
+"--mcp-server-id" "mcp-456""
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'auggie' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud_environment=integration",
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'claude-code' config > returns config 1`] = `
+"{
+  "mcp": {
+    "servers": {
+      "test-server": {
+        "command": "rpk",
+        "args": [
+          "-X",
+          "cloud_environment=integration",
+          "cloud",
+          "mcp",
+          "proxy",
+          "--cluster-id",
+          "cluster-123",
+          "--mcp-server-id",
+          "mcp-456"
+        ]
+      }
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'claude-desktop' config > returns config 1`] = `
+"{
+  "mcp": {
+    "servers": {
+      "test-server": {
+        "command": "rpk",
+        "args": [
+          "-X",
+          "cloud_environment=integration",
+          "cloud",
+          "mcp",
+          "proxy",
+          "--cluster-id",
+          "cluster-123",
+          "--mcp-server-id",
+          "mcp-456"
+        ]
+      }
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'cline' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud_environment=integration",
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'codex' config > returns config 1`] = `
+"[mcp_servers.test-server]
+command = "rpk"
+args = ["-X","cloud_environment=integration", "cloud", "mcp", "proxy", "--cluster-id", "cluster-123", "--mcp-server-id", "mcp-456"]"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'cursor' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud_environment=integration",
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'gemini' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud_environment=integration",
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'manus' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+        "cloud_environment=integration",
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'vscode' config > returns config 1`] = `
+"{
+  "mcp": {
+    "servers": {
+      "test-server": {
+        "command": "rpk",
+        "args": [
+          "-X",
+          "cloud_environment=integration",
+          "cloud",
+          "mcp",
+          "proxy",
+          "--cluster-id",
+          "cluster-123",
+          "--mcp-server-id",
+          "mcp-456"
+        ]
+      }
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'warp' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+      "cloud_environment=integration",
+      "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Non-production environment (with -X cloud_environment flag) > 'windsurf' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "-X",
+      "cloud_environment=integration",
+      "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'auggie' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'claude-code' config > returns config 1`] = `
+"{
+  "mcp": {
+    "servers": {
+      "test-server": {
+        "command": "rpk",
+        "args": [
+          "cloud",
+          "mcp",
+          "proxy",
+          "--cluster-id",
+          "cluster-123",
+          "--mcp-server-id",
+          "mcp-456"
+        ]
+      }
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'claude-desktop' config > returns config 1`] = `
+"{
+  "mcp": {
+    "servers": {
+      "test-server": {
+        "command": "rpk",
+        "args": [
+          "cloud",
+          "mcp",
+          "proxy",
+          "--cluster-id",
+          "cluster-123",
+          "--mcp-server-id",
+          "mcp-456"
+        ]
+      }
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'cline' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'codex' config > returns config 1`] = `
+"[mcp_servers.test-server]
+command = "rpk"
+args = ["cloud", "mcp", "proxy", "--cluster-id", "cluster-123", "--mcp-server-id", "mcp-456"]"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'cursor' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'gemini' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'manus' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'vscode' config > returns config 1`] = `
+"{
+  "mcp": {
+    "servers": {
+      "test-server": {
+        "command": "rpk",
+        "args": [
+          "cloud",
+          "mcp",
+          "proxy",
+          "--cluster-id",
+          "cluster-123",
+          "--mcp-server-id",
+          "mcp-456"
+        ]
+      }
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'warp' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getClientConfig > Production environment (no -X flag) > 'windsurf' config > returns config 1`] = `
+"{
+  "mcpServers": {
+    "test-server": {
+      "command": "rpk",
+      "args": [
+        "cloud",
+        "mcp",
+        "proxy",
+        "--cluster-id",
+        "cluster-123",
+        "--mcp-server-id",
+        "mcp-456"
+      ]
+    }
+  }
+}"
+`;
+
+exports[`getRpkCommand > Default placeholders > uses placeholder when clusterId is not provided 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id YOUR_CLUSTER_ID \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Default placeholders > uses placeholder when mcpServerId is not provided 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id YOUR_MCP_SERVER_ID \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Default placeholders > uses serverless placeholder when clusterId is not provided for serverless 1`] = `
+"rpk cloud mcp proxy \\
+--serverless-cluster-id YOUR_SERVERLESS_CLUSTER_ID \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'auggie' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client auggie"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'claude-code' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'claude-desktop' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-desktop"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'cline' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client cline"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'codex' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client codex"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'cursor' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client cursor"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'gemini' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client gemini"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'manus' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client manus"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'vscode' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client vscode"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'warp' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client warp"
+`;
+
+exports[`getRpkCommand > Non-production environment (with -X cloud_environment flag) > clientType: 'windsurf' > generates correct command with environment flag 1`] = `
+"rpk -X cloud_environment=integration cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client windsurf"
+`;
+
+exports[`getRpkCommand > Preprod environment > includes preprod environment flag 1`] = `
+"rpk -X cloud_environment=preprod cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'auggie' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client auggie"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'claude-code' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'claude-desktop' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-desktop"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'cline' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client cline"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'codex' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client codex"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'cursor' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client cursor"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'gemini' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client gemini"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'manus' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client manus"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'vscode' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client vscode"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'warp' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client warp"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > clientType: 'windsurf' > generates correct command 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client windsurf"
+`;
+
+exports[`getRpkCommand > Production environment (no -X cloud_environment flag) > generates command without client type (uses placeholder) 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client YOUR_CLIENT_TYPE"
+`;
+
+exports[`getRpkCommand > Serverless cluster flag > uses --cluster-id for regular clusters 1`] = `
+"rpk cloud mcp proxy \\
+--cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
+
+exports[`getRpkCommand > Serverless cluster flag > uses --serverless-cluster-id for serverless clusters 1`] = `
+"rpk cloud mcp proxy \\
+--serverless-cluster-id cluster-123 \\
+--mcp-server-id mcp-456 \\
+--install --client claude-code"
+`;
