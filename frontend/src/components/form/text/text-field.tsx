@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface TextFieldProps extends Omit<InputProps, 'transform'> {
+export interface TextFieldProps extends Omit<InputProps, 'transform'> {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;

@@ -11,7 +11,7 @@ interface RadioGroupOption {
   invalid?: boolean;
 }
 
-interface RadioGroupFieldProps {
+export interface RadioGroupFieldProps {
   label?: ReactNode;
   helperText?: ReactNode;
   options: RadioGroupOption[];

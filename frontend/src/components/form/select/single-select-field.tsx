@@ -6,7 +6,7 @@ import { SingleSelect } from '../../misc/Select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface SingleSelectFieldProps {
+export interface SingleSelectFieldProps {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;

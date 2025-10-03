@@ -195,7 +195,7 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
-interface MenuItemState {
+export interface MenuItemState {
   visible: boolean;
   disabledReasons: DisabledReasons[];
 }

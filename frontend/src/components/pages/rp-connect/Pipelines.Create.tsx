@@ -377,7 +377,7 @@ export const PipelineEditor = observer(
         showOptionalFields: false,
       });
       return template;
-    }, [persistedFormData.connectionName, persistedFormData.connectionType]);
+    }, [persistedFormData]);
 
     const yaml = useMemo(() => {
       return enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;

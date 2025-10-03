@@ -16,7 +16,7 @@ import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface PasswordFieldProps extends InputProps {
+export interface PasswordFieldProps extends InputProps {
   label?: ReactNode;
   helperText?: ReactNode;
 }
