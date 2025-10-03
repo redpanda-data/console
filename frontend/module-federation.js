@@ -1,7 +1,6 @@
 const deps = require('./package.json').dependencies;
-const { FederatedTypesPlugin } = require('@module-federation/typescript');
 
-const federationConfig = {
+module.exports = {
   filename: 'embedded.js',
   name: 'rp_console',
 
@@ -32,7 +31,7 @@ const federationConfig = {
       singleton: true,
       requiredVersion: deps['@hookform/resolvers'],
     },
-    'zod': {
+    zod: {
       singleton: true,
       requiredVersion: deps.zod,
     },
@@ -49,13 +48,4 @@ const federationConfig = {
       requiredVersion: deps['tailwind-merge'],
     },
   },
-};
-
-module.exports = {
-  ...federationConfig,
-  plugins: [
-    new FederatedTypesPlugin({
-      federationConfig,
-    }),
-  ],
 };
