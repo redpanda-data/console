@@ -19,15 +19,8 @@ import {
   createStandaloneToast,
   DataTable,
   Divider,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
   Empty,
   Flex,
-  Heading,
   SearchField,
   Skeleton,
   Spinner,
@@ -57,11 +50,12 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { SmallStat } from '../../misc/SmallStat';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-function renderRequestErrors(requestErrors?: string[]) {
+const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
     return null;
   }
@@ -76,9 +70,9 @@ function renderRequestErrors(requestErrors?: string[]) {
       ))}
     </Section>
   );
-}
+};
 
-function renderNotConfigured() {
+const NotConfigured: FC = () => {
   return (
     <PageContent>
       <Section>
@@ -99,7 +93,7 @@ function renderNotConfigured() {
       </Section>
     </PageContent>
   );
-}
+};
 
 const SchemaList: FC = () => {
   const [isLoadingSchemaVersionMatches, setIsLoadingSchemaVersionMatches] = useState(false);
@@ -187,7 +181,7 @@ const SchemaList: FC = () => {
     return subjects;
   }, [schemaSubjects, quickSearch, showSoftDeleted]);
 
-  if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
+  if (api.schemaOverviewIsConfigured === false) return <NotConfigured />;
 
   return (
     <PageContent key="b">
@@ -213,7 +207,7 @@ const SchemaList: FC = () => {
         Edit compatibility
       </Button>
 
-      {renderRequestErrors()}
+      <RequestErrors />
 
       <Flex justifyContent="space-between" alignItems="center">
         <Flex alignItems="center" gap="4">
@@ -241,26 +235,39 @@ const SchemaList: FC = () => {
           Help with schema search
         </Button>
       </Flex>
-      <Drawer isOpen={isHelpSidebarOpen} placement="right" size="md" onClose={() => setIsHelpSidebarOpen(false)}>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader data-testid="schema-search-header">Schema Search Help</DrawerHeader>
+      <Drawer
+        open={isHelpSidebarOpen}
+        onOpenChange={setIsHelpSidebarOpen}
+        testId="schema-search-help-sheet"
+        direction="right"
+      >
+        <DrawerContent className="w-[600px] sm:max-w-[600px]" testId="schema-search-help-content">
+          <DrawerHeader className="border-b">
+            <DrawerTitle>Schema Search Help</DrawerTitle>
+          </DrawerHeader>
 
-          <DrawerBody>
-            <Heading size="md" mt={4}>
-              Filtering schemas
-            </Heading>
-            There are two ways to filter schemas, and they work a little differently.
-            <Heading size="md" mt={4}>
-              Schema ID
-            </Heading>
-            If a number matches a schema ID, the results include all subjects referencing that schema.
-            <Heading size="md" mt={4}>
-              Subject name
-            </Heading>
-            To search subject names, enter that specific name or a regex.
-          </DrawerBody>
+          <div className="space-y-8 p-4">
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">Filtering schemas</h3>
+              <p className="text-base text-gray-600 leading-relaxed">
+                There are two ways to filter schemas, and they work a little differently.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">Schema ID</h3>
+              <p className="text-base text-gray-600 leading-relaxed">
+                If a number matches a schema ID, the results include all subjects referencing that schema.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900">Subject name</h3>
+              <p className="text-base text-gray-600 leading-relaxed">
+                To search subject names, enter that specific name or a regex.
+              </p>
+            </div>
+          </div>
         </DrawerContent>
       </Drawer>
 
