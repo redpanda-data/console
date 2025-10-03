@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+// Icons
 import { ArchiveIcon, TrashIcon } from '@heroicons/react/outline';
+import { InfoIcon } from '@primer/octicons-react';
+// Redpanda UI (legacy)
 import {
   Alert,
   AlertIcon,
@@ -31,8 +34,11 @@ import {
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+// Routing and state management
 import { Link } from 'react-router-dom';
+// Custom hooks
 import { useQueryStateWithCallback } from '../../../hooks/useQueryStateWithCallback';
+// API hooks
 import {
   useDeleteSchemaMutation,
   useListSchemasQuery,
@@ -40,17 +46,22 @@ import {
   useSchemaDetailsQuery,
   useSchemaModeQuery,
 } from '../../../react-query/api/schema';
+// Global state
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
+// Utility components and functions
 import { Button, InlineSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
+// Layout components
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { SmallStat } from '../../misc/SmallStat';
+// Redpanda UI Registry components
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../redpanda-ui/components/drawer';
+// Local modals
 import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -209,31 +220,25 @@ const SchemaList: FC = () => {
 
       <RequestErrors />
 
-      <Flex justifyContent="space-between" alignItems="center">
-        <Flex alignItems="center" gap="4">
-          <SearchField
-            width="350px"
-            searchText={quickSearch}
-            setSearchText={setQuickSearch}
-            placeholderText="Filter by subject name or schema ID..."
-          />
-          <Spinner size="md" display={isLoadingSchemaVersionMatches ? undefined : 'none'} />
-        </Flex>
-
-        <Button
-          textDecoration="underline"
-          ml="auto"
-          cursor="pointer"
-          alignSelf="center"
-          mb=".5rem"
-          onClick={() => setIsHelpSidebarOpen(true)}
-          data-testid="schema-search-help"
-          variant="link"
-          paddingInline={0}
-          fontWeight={400}
-        >
-          Help with schema search
-        </Button>
+      <Flex alignItems="center" gap="2">
+        <SearchField
+          width="350px"
+          searchText={quickSearch ?? ''}
+          setSearchText={setQuickSearch}
+          placeholderText="Filter by subject name or schema ID..."
+        />
+        <Tooltip label="Help with schema search" hasArrow placement="top">
+          <Box
+            cursor="pointer"
+            onClick={() => setIsHelpSidebarOpen(true)}
+            data-testid="schema-search-help"
+            display="inline-flex"
+            alignItems="center"
+          >
+            <InfoIcon />
+          </Box>
+        </Tooltip>
+        <Spinner size="md" display={isLoadingSchemaVersionMatches ? undefined : 'none'} />
       </Flex>
       <Drawer
         open={isHelpSidebarOpen}
@@ -241,31 +246,44 @@ const SchemaList: FC = () => {
         testId="schema-search-help-sheet"
         direction="right"
       >
-        <DrawerContent className="w-[600px] sm:max-w-[600px]" testId="schema-search-help-content">
+        <DrawerContent
+          className="w-[600px] sm:max-w-[600px]"
+          testId="schema-search-help-content"
+          role="dialog"
+          aria-labelledby="schema-help-title"
+        >
           <DrawerHeader className="border-b">
-            <DrawerTitle>Schema Search Help</DrawerTitle>
+            <DrawerTitle id="schema-help-title">Schema Search Help</DrawerTitle>
           </DrawerHeader>
 
-          <div className="space-y-8 p-4">
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">Filtering schemas</h3>
+          <div className="space-y-6 p-4">
+            <section className="space-y-3" aria-labelledby="filtering-heading">
+              <h3 id="filtering-heading" className="font-semibold text-gray-900">
+                Filtering schemas
+              </h3>
               <p className="text-base text-gray-600 leading-relaxed">
                 There are two ways to filter schemas, and they work a little differently.
               </p>
-            </div>
+            </section>
 
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">Schema ID</h3>
-              <p className="text-base text-gray-600 leading-relaxed">
-                If a number matches a schema ID, the results include all subjects referencing that schema.
-              </p>
-            </div>
+            <div className="space-y-4 pl-4">
+              <section className="space-y-2" aria-labelledby="schema-id-heading">
+                <h3 id="schema-id-heading" className="text-base font-semibold text-gray-900">
+                  Schema ID
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  If a number matches a schema ID, the results include all subjects referencing that schema.
+                </p>
+              </section>
 
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">Subject name</h3>
-              <p className="text-base text-gray-600 leading-relaxed">
-                To search subject names, enter that specific name or a regex.
-              </p>
+              <section className="space-y-2" aria-labelledby="subject-name-heading">
+                <h3 id="subject-name-heading" className="text-base font-semibold text-gray-900">
+                  Subject name
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  To search subject names, enter that specific name or a regex.
+                </p>
+              </section>
             </div>
           </div>
         </DrawerContent>

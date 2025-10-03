@@ -28,7 +28,7 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
 
-function renderNotConfigured() {
+const SchemaNotConfiguredPage: FC = () => {
   return (
     <PageContent>
       <Section>
@@ -48,7 +48,7 @@ function renderNotConfigured() {
       </Section>
     </PageContent>
   );
-}
+};
 
 const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName: subjectNameEncoded }) => {
   const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
@@ -94,19 +94,24 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
     };
   }, [subjectName, refetchMode, refetchCompatibility, refetchDetails]);
 
-  if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
+  if (api.schemaOverviewIsConfigured === false) {
+    return <SchemaNotConfiguredPage />;
+  }
   if (isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading)) return DefaultSkeleton;
 
   return (
-    <PageContent key="b">
+    <PageContent>
       <EditSchemaCompatibility
         subjectName={subjectName}
         schemaMode={schemaMode}
         schemaCompatibility={schemaCompatibility}
         schemaDetails={schemaDetails}
         onClose={() => {
-          if (subjectName) appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
-          else appGlobal.historyReplace('/schema-registry');
+          if (subjectName) {
+            appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+          } else {
+            appGlobal.historyReplace('/schema-registry');
+          }
         }}
       />
     </PageContent>
