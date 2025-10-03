@@ -447,6 +447,7 @@ export class ACLPage {
   async validateListItem(host: string, principal: string) {
     await this.gotoList();
     // Validate that the ACL list item is visible with correct host and principal
+    await this.page.getByTestId('search-field-input').fill(principal);
     const listItem = this.page.getByTestId(`acl-list-item-${principal}-${host}`);
     await expect(listItem).toBeVisible({ timeout: 1000 });
   }
