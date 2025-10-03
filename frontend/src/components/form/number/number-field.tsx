@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface NumberFieldProps extends NumberInputProps {
+export interface NumberFieldProps extends NumberInputProps {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;

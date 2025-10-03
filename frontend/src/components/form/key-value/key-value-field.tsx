@@ -21,7 +21,7 @@ interface KeyValuePair {
   value: string;
 }
 
-interface KeyValueFieldProps extends InputProps {
+export interface KeyValueFieldProps extends InputProps {
   label: ReactNode;
   helperText?: ReactNode;
   showAddButton?: boolean;

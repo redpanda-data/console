@@ -72,7 +72,7 @@ const searchComponents = (
   });
 };
 
-type ConnectTilesProps = {
+export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
@@ -84,6 +84,7 @@ type ConnectTilesProps = {
   variant?: CardVariant;
   size?: CardSize;
   className?: string;
+  tileWrapperClassName?: string;
 };
 
 export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
@@ -100,6 +101,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       variant = 'default',
       size = 'full',
       className,
+      tileWrapperClassName,
     },
     ref,
   ) => {
@@ -260,7 +262,11 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             )}
 
             <div className="relative">
-              <div ref={scrollContainerRef} className="max-h-[50vh] overflow-y-auto py-4" onScroll={checkScrollable}>
+              <div
+                ref={scrollContainerRef}
+                className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
+                onScroll={checkScrollable}
+              >
                 <FormField
                   control={form.control}
                   name="connectionName"
