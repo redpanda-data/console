@@ -187,3 +187,135 @@ export const useUpdateSubjectCompatibilityMutation = () => {
     },
   });
 };
+
+export const useDeleteSchemaMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { subjectName: string; permanent: boolean }>({
+    mutationFn: async ({ subjectName, permanent }) => {
+      const { api } = await import('state/backendApi');
+      await api.deleteSchemaSubject(subjectName, permanent);
+    },
+    onSuccess: async () => {
+      // Only invalidate subjects list, not mode/compatibility
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
+    },
+  });
+};
+
+export const useSchemaTypesQuery = () => {
+  return useQuery<string[]>({
+    queryKey: ['schemaRegistry', 'types'],
+    queryFn: async () => {
+      const response = await fetch(`${config.restBasePath}/schema-registry/schemas/types`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${config.jwt}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch schema types');
+      }
+
+      const data = await response.json();
+      if (data.schemaTypes) {
+        return data.schemaTypes;
+      }
+
+      return [];
+    },
+    refetchOnMount: true,
+  });
+};
+
+export const useCreateSchemaMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { id: number },
+    Error,
+    {
+      subjectName: string;
+      schemaType: string;
+      schema: string;
+      references: { name: string; subject: string; version: number }[];
+    }
+  >({
+    mutationFn: async ({ subjectName, schemaType, schema, references }) => {
+      const response = await fetch(
+        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.jwt}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            schemaType,
+            schema,
+            references,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to create schema');
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, { subjectName }) => {
+      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
+      queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'] });
+    },
+  });
+};
+
+export const useValidateSchemaMutation = () => {
+  return useMutation<
+    {
+      isValid: boolean;
+      parsingError?: string;
+      compatibility: { isCompatible: boolean };
+    },
+    Error,
+    {
+      subjectName: string;
+      version: string;
+      schemaType: string;
+      schema: string;
+      references: { name: string; subject: string; version: number }[];
+    }
+  >({
+    mutationFn: async ({ subjectName, version, schemaType, schema, references }) => {
+      const response = await fetch(
+        `${config.restBasePath}/schema-registry/compatibility/subjects/${encodeURIComponent(subjectName)}/versions/${version}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.jwt}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            schemaType,
+            schema,
+            references,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        return {
+          compatibility: { isCompatible: false },
+          isValid: false,
+          parsingError: error,
+        };
+      }
+
+      return response.json();
+    },
+  });
+};

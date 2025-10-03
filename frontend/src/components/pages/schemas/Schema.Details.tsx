@@ -187,7 +187,6 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                         isClosable: false,
                         title: 'Subject permanently deleted',
                       });
-                      api.refreshSchemaSubjects(true);
                       appGlobal.historyPush('/schema-registry/');
                     })
                     .catch((err) => {

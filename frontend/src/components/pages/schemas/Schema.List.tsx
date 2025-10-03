@@ -14,6 +14,7 @@ import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryStateWithCallback } from '../../../hooks/useQueryStateWithCallback';
 import {
+  useDeleteSchemaMutation,
   useListSchemasQuery,
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -23,7 +24,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
-import { Button, DefaultSkeleton, InlineSkeleton } from '../../../utils/tsxUtils';
+import { Button, InlineSkeleton } from '../../../utils/tsxUtils';
 
 import './Schema.List.scss';
 import { ArchiveIcon, TrashIcon } from '@heroicons/react/outline';
@@ -125,6 +126,7 @@ const SchemaList: FC = () => {
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
+  const deleteSchemaMutation = useDeleteSchemaMutation();
 
   const refreshData = useCallback(() => {
     refetchMode();
@@ -142,30 +144,6 @@ const SchemaList: FC = () => {
     appGlobal.onRefresh = () => refreshData();
   }, [refreshData]);
 
-  const isFilterMatch = useCallback((filterString: string, subject: SchemaRegistrySubject) => {
-    // Find by schema ID
-    const filterAsNumber = Number(filterString.trim());
-    if (!Number.isNaN(filterAsNumber)) {
-      console.log('finding by num', { num: filterAsNumber });
-      // Filter is a number, lets see if we can find a matching schema(-version)
-      const schemas = api.schemaUsagesById.get(filterAsNumber);
-      const matches = schemas?.filter((s) => s.subject === subject.name);
-      if (matches && matches.length > 0) {
-        for (const m of matches) console.log(`found match: ${m.subject} v${m.version}`);
-        return true;
-      }
-    }
-
-    // Find by regex
-    try {
-      const quickSearchRegExp = new RegExp(filterString, 'i');
-      if (subject.name.match(quickSearchRegExp)) return true;
-    } catch {}
-
-    // Find by normal string matching
-    return subject.name.toLowerCase().includes(filterString.toLowerCase());
-  }, []);
-
   const triggerSearchBySchemaId = useCallback(() => {
     const trimmedValue = quickSearch.trim();
     const searchAsNum = Number(trimmedValue);
@@ -182,22 +160,38 @@ const SchemaList: FC = () => {
   }, [triggerSearchBySchemaId]);
 
   const filteredSubjects = useMemo(() => {
-    if (!schemaSubjects) return [];
+    let subjects = schemaSubjects ?? [];
 
-    let filtered = schemaSubjects;
-
-    if (quickSearch) {
-      filtered = filtered.filter((s) => isFilterMatch(quickSearch, s));
+    // Filter by soft-deleted status
+    if (!showSoftDeleted) {
+      subjects = subjects.filter((x) => !x.isSoftDeleted);
     }
 
-    filtered = filtered.filter((x) => showSoftDeleted || (!showSoftDeleted && !x.isSoftDeleted));
+    // Filter by search query
+    const searchQuery = quickSearch;
+    if (searchQuery) {
+      // Find by schema ID
+      const filterAsNumber = Number(searchQuery.trim());
+      if (!Number.isNaN(filterAsNumber)) {
+        const schemas = api.schemaUsagesById.get(filterAsNumber);
+        const matchingSubjectNames = new Set(schemas?.map((s) => s.subject) ?? []);
+        subjects = subjects.filter((subject) => matchingSubjectNames.has(subject.name));
+      } else {
+        // Find by regex or string matching
+        try {
+          const quickSearchRegExp = new RegExp(searchQuery, 'i');
+          subjects = subjects.filter((subject) => Boolean(subject.name.match(quickSearchRegExp)));
+        } catch (_e) {
+          const searchLower = searchQuery.toLowerCase();
+          subjects = subjects.filter((subject) => subject.name.toLowerCase().includes(searchLower));
+        }
+      }
+    }
 
-    return filtered;
-  }, [schemaSubjects, quickSearch, showSoftDeleted, isFilterMatch]);
+    return subjects;
+  }, [schemaSubjects, quickSearch, showSoftDeleted]);
 
   if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
-  if (isLoading) return DefaultSkeleton;
-  if (isError) return <div>Error loading schemas</div>;
 
   return (
     <PageContent key="b">
@@ -271,7 +265,19 @@ const SchemaList: FC = () => {
         </DrawerContent>
       </Drawer>
 
-      <Section>
+      {isLoading ? (
+        <Section>
+          <Skeleton height="400px" />
+        </Section>
+      ) : isError ? (
+        <Section>
+          <Alert status="error">
+            <AlertIcon />
+            Error loading schemas
+          </Alert>
+        </Section>
+      ) : (
+        <Section>
         <Flex justifyContent={'space-between'} pb={3}>
           <Button
             colorScheme="brand"
@@ -359,50 +365,53 @@ const SchemaList: FC = () => {
 
                     if (r.isSoftDeleted) {
                       openPermanentDeleteModal(r.name, () => {
-                        api
-                          .deleteSchemaSubject(r.name, true)
-                          .then(async () => {
-                            toast({
-                              status: 'success',
-                              duration: 4000,
-                              isClosable: false,
-                              title: 'Subject permanently deleted',
-                            });
-                            api.refreshSchemaSubjects(true);
-                            appGlobal.historyPush('/schema-registry/');
-                          })
-                          .catch((err) => {
-                            toast({
-                              status: 'error',
-                              duration: null,
-                              isClosable: true,
-                              title: 'Failed to permanently delete subject',
-                              description: String(err),
-                            });
-                          });
+                        deleteSchemaMutation.mutate(
+                          { subjectName: r.name, permanent: true },
+                          {
+                            onSuccess: () => {
+                              toast({
+                                status: 'success',
+                                duration: 4000,
+                                isClosable: false,
+                                title: 'Subject permanently deleted',
+                              });
+                            },
+                            onError: (err) => {
+                              toast({
+                                status: 'error',
+                                duration: null,
+                                isClosable: true,
+                                title: 'Failed to permanently delete subject',
+                                description: String(err),
+                              });
+                            },
+                          },
+                        );
                       });
                     } else {
                       openDeleteModal(r.name, () => {
-                        api
-                          .deleteSchemaSubject(r.name, false)
-                          .then(async () => {
-                            toast({
-                              status: 'success',
-                              duration: 4000,
-                              isClosable: false,
-                              title: 'Subject soft-deleted',
-                            });
-                            api.refreshSchemaSubjects(true);
-                          })
-                          .catch((err) => {
-                            toast({
-                              status: 'error',
-                              duration: null,
-                              isClosable: true,
-                              title: 'Failed to soft-delete subject',
-                              description: String(err),
-                            });
-                          });
+                        deleteSchemaMutation.mutate(
+                          { subjectName: r.name, permanent: false },
+                          {
+                            onSuccess: () => {
+                              toast({
+                                status: 'success',
+                                duration: 4000,
+                                isClosable: false,
+                                title: 'Subject soft-deleted',
+                              });
+                            },
+                            onError: (err) => {
+                              toast({
+                                status: 'error',
+                                duration: null,
+                                isClosable: true,
+                                title: 'Failed to soft-delete subject',
+                                description: String(err),
+                              });
+                            },
+                          },
+                        );
                       });
                     }
                   }}
@@ -415,6 +424,7 @@ const SchemaList: FC = () => {
           ]}
         />
       </Section>
+      )}
     </PageContent>
   );
 };
