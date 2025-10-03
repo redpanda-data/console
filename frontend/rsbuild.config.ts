@@ -27,7 +27,10 @@ export default defineConfig({
     pluginYaml(),
     pluginModuleFederation({
       ...moduleFederationConfig,
-      dts: false, // Disable DTS generation to avoid type resolution issues
+      dts: {
+        generateTypes: true,
+        consumeTypes: false,
+      },
     }),
   ],
   dev: {
