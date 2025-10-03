@@ -32,6 +32,8 @@ import { getAllCategories, getAllComponents } from '../utils/schema';
 import type { BaseStepRef } from '../utils/wizard';
 import { getCategoryBadgeProps, getConnectorTypeBadgeProps, getStatusBadgeProps } from './connector-badges';
 
+export type { ExtendedConnectComponentSpec, ConnectComponentType };
+
 const searchComponents = (
   query: string,
   filters?: {
