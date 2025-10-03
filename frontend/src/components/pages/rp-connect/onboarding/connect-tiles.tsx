@@ -72,7 +72,7 @@ const searchComponents = (
   });
 };
 
-type ConnectTilesProps = {
+export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
