@@ -1,6 +1,7 @@
 const deps = require('./package.json').dependencies;
+const { FederatedTypesPlugin } = require('@module-federation/typescript');
 
-module.exports = {
+const federationConfig = {
   filename: 'embedded.js',
   name: 'rp_console',
 
@@ -48,4 +49,13 @@ module.exports = {
       requiredVersion: deps['tailwind-merge'],
     },
   },
+};
+
+module.exports = {
+  ...federationConfig,
+  plugins: [
+    new FederatedTypesPlugin({
+      federationConfig,
+    }),
+  ],
 };
