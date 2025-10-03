@@ -283,7 +283,7 @@ export const useValidateSchemaMutation = () => {
     Error,
     {
       subjectName: string;
-      version: string;
+      version: string | number;
       schemaType: string;
       schema: string;
       references: { name: string; subject: string; version: number }[];
@@ -291,7 +291,7 @@ export const useValidateSchemaMutation = () => {
   >({
     mutationFn: async ({ subjectName, version, schemaType, schema, references }) => {
       const response = await fetch(
-        `${config.restBasePath}/schema-registry/compatibility/subjects/${encodeURIComponent(subjectName)}/versions/${version}`,
+        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`,
         {
           method: 'POST',
           headers: {
@@ -316,6 +316,73 @@ export const useValidateSchemaMutation = () => {
       }
 
       return response.json();
+    },
+  });
+};
+
+export const useSchemaReferencedByQuery = (subjectName: string, version: number, options?: { enabled?: boolean }) => {
+  return useQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
+    queryKey: ['schemaRegistry', 'subjects', subjectName, 'versions', version, 'referencedby'],
+    queryFn: async () => {
+      const response = await fetch(
+        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${config.jwt}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch schema references for ${subjectName} version ${version}`);
+      }
+
+      const data = await response.json();
+
+      // Filter out entries with errors
+      return data.filter((ref: { error?: string }) => {
+        if (ref.error) {
+          console.error('error in schema referenced by, reference entry has error', {
+            subjectName,
+            version,
+            ref,
+          });
+          return false;
+        }
+        return true;
+      });
+    },
+    staleTime: 30000,
+    refetchOnMount: true,
+    enabled: options?.enabled !== false,
+  });
+};
+
+export const useDeleteSchemaVersionMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { subjectName: string; version: 'latest' | number; permanent: boolean }>({
+    mutationFn: async ({ subjectName, version, permanent }) => {
+      const response = await fetch(
+        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${config.jwt}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to delete schema version');
+      }
+    },
+    onSuccess: async (_, { subjectName }) => {
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
+      await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'] });
     },
   });
 };

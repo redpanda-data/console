@@ -9,24 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
-import type { FC } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQueryStateWithCallback } from '../../../hooks/useQueryStateWithCallback';
-import {
-  useDeleteSchemaMutation,
-  useListSchemasQuery,
-  useSchemaCompatibilityQuery,
-  useSchemaDetailsQuery,
-  useSchemaModeQuery,
-} from '../../../react-query/api/schema';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import { uiState } from '../../../state/uiState';
-import { Button, InlineSkeleton } from '../../../utils/tsxUtils';
-
-import './Schema.List.scss';
 import { ArchiveIcon, TrashIcon } from '@heroicons/react/outline';
 import {
   Alert,
@@ -53,8 +35,24 @@ import {
   Tooltip,
   VStack,
 } from '@redpanda-data/ui';
+import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import type { FC } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryStateWithCallback } from '../../../hooks/useQueryStateWithCallback';
+import {
+  useDeleteSchemaMutation,
+  useListSchemasQuery,
+  useSchemaCompatibilityQuery,
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+} from '../../../react-query/api/schema';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
 import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { uiState } from '../../../state/uiState';
+import { Button, InlineSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
@@ -70,14 +68,12 @@ function renderRequestErrors(requestErrors?: string[]) {
 
   return (
     <Section>
-      <div className="SchemaList__error-card">
-        {requestErrors.map((errorMessage, idx) => (
-          <Alert key={idx} marginTop="1em" status="error">
-            <AlertIcon />
-            <div>{errorMessage}</div>
-          </Alert>
-        ))}
-      </div>
+      {requestErrors.map((errorMessage, idx) => (
+        <Alert key={idx} marginTop="1em" status="error">
+          <AlertIcon />
+          <div>{errorMessage}</div>
+        </Alert>
+      ))}
     </Section>
   );
 }
@@ -219,29 +215,32 @@ const SchemaList: FC = () => {
 
       {renderRequestErrors()}
 
-      <Flex alignItems="center" gap="4">
-        <SearchField
-          width="350px"
-          searchText={quickSearch}
-          setSearchText={setQuickSearch}
-          placeholderText="Filter by subject name or schema ID..."
-        />
-        <Spinner size="md" display={isLoadingSchemaVersionMatches ? undefined : 'none'} />
-      </Flex>
+      <Flex justifyContent="space-between" alignItems="center">
+        <Flex alignItems="center" gap="4">
+          <SearchField
+            width="350px"
+            searchText={quickSearch}
+            setSearchText={setQuickSearch}
+            placeholderText="Filter by subject name or schema ID..."
+          />
+          <Spinner size="md" display={isLoadingSchemaVersionMatches ? undefined : 'none'} />
+        </Flex>
 
-      <Button
-        textDecoration="underline"
-        mr="auto"
-        cursor="pointer"
-        mb=".5rem"
-        onClick={() => setIsHelpSidebarOpen(true)}
-        data-testid="schema-search-help"
-        variant="link"
-        paddingInline={0}
-        fontWeight={400}
-      >
-        Help with schema search
-      </Button>
+        <Button
+          textDecoration="underline"
+          ml="auto"
+          cursor="pointer"
+          alignSelf="center"
+          mb=".5rem"
+          onClick={() => setIsHelpSidebarOpen(true)}
+          data-testid="schema-search-help"
+          variant="link"
+          paddingInline={0}
+          fontWeight={400}
+        >
+          Help with schema search
+        </Button>
+      </Flex>
       <Drawer isOpen={isHelpSidebarOpen} placement="right" size="md" onClose={() => setIsHelpSidebarOpen(false)}>
         <DrawerOverlay />
         <DrawerContent>
@@ -278,152 +277,154 @@ const SchemaList: FC = () => {
         </Section>
       ) : (
         <Section>
-        <Flex justifyContent={'space-between'} pb={3}>
-          <Button
-            colorScheme="brand"
-            onClick={() => appGlobal.historyPush('/schema-registry/create')}
-            disabledReason={
-              api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
-            }
-          >
-            Create new schema
-          </Button>
-          <Checkbox
-            isChecked={showSoftDeleted}
-            onChange={(e) => {
-              setShowSoftDeleted(e.target.checked);
-            }}
-          >
-            Show soft-deleted
-          </Checkbox>
-        </Flex>
+          <Flex justifyContent={'space-between'} pb={3}>
+            <Button
+              colorScheme="brand"
+              onClick={() => appGlobal.historyPush('/schema-registry/create')}
+              disabledReason={
+                api.userData?.canCreateSchemas === false
+                  ? "You don't have the 'canCreateSchemas' permission"
+                  : undefined
+              }
+            >
+              Create new schema
+            </Button>
+            <Checkbox
+              isChecked={showSoftDeleted}
+              onChange={(e) => {
+                setShowSoftDeleted(e.target.checked);
+              }}
+            >
+              Show soft-deleted
+            </Checkbox>
+          </Flex>
 
-        <DataTable<SchemaRegistrySubject>
-          data={filteredSubjects}
-          pagination
-          sorting
-          rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
-          columns={[
-            {
-              header: 'Name',
-              accessorKey: 'name',
-              size: Number.POSITIVE_INFINITY,
-              cell: ({
-                row: {
-                  original: { name, isSoftDeleted },
-                },
-              }) => (
-                <Box wordBreak="break-word" whiteSpace="break-spaces">
-                  <Flex alignItems="center" gap={2}>
-                    <Link
-                      data-testid="schema-registry-table-name"
-                      to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
-                    >
-                      {name}
-                    </Link>
-                    {isSoftDeleted && (
-                      <Tooltip
-                        label="This subject has been soft-deleted. It can be restored or permanently deleted."
-                        hasArrow
+          <DataTable<SchemaRegistrySubject>
+            data={filteredSubjects}
+            pagination
+            sorting
+            rowClassName={(row) => (row.original.isSoftDeleted ? 'text-gray-400' : '')}
+            columns={[
+              {
+                header: 'Name',
+                accessorKey: 'name',
+                size: Number.POSITIVE_INFINITY,
+                cell: ({
+                  row: {
+                    original: { name, isSoftDeleted },
+                  },
+                }) => (
+                  <Box wordBreak="break-word" whiteSpace="break-spaces">
+                    <Flex alignItems="center" gap={2}>
+                      <Link
+                        data-testid="schema-registry-table-name"
+                        to={`/schema-registry/subjects/${encodeURIComponentPercents(name)}?version=latest`}
                       >
-                        <Box>
-                          <ArchiveIcon width={16} height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} />
-                        </Box>
-                      </Tooltip>
-                    )}
-                  </Flex>
-                </Box>
-              ),
-            },
-            { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
-            {
-              header: 'Compatibility',
-              cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
-              size: 100,
-            },
-            {
-              header: 'Latest Version',
-              cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
-              size: 100,
-            },
-            {
-              header: '',
-              id: 'actions',
-              cell: ({ row: { original: r } }) => (
-                <Button
-                  variant="icon"
-                  height="16px"
-                  color="gray.500"
-                  disabledReason={
-                    api.userData?.canDeleteSchemas === false
-                      ? "You don't have the 'canDeleteSchemas' permission"
-                      : undefined
-                  }
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    if (r.isSoftDeleted) {
-                      openPermanentDeleteModal(r.name, () => {
-                        deleteSchemaMutation.mutate(
-                          { subjectName: r.name, permanent: true },
-                          {
-                            onSuccess: () => {
-                              toast({
-                                status: 'success',
-                                duration: 4000,
-                                isClosable: false,
-                                title: 'Subject permanently deleted',
-                              });
-                            },
-                            onError: (err) => {
-                              toast({
-                                status: 'error',
-                                duration: null,
-                                isClosable: true,
-                                title: 'Failed to permanently delete subject',
-                                description: String(err),
-                              });
-                            },
-                          },
-                        );
-                      });
-                    } else {
-                      openDeleteModal(r.name, () => {
-                        deleteSchemaMutation.mutate(
-                          { subjectName: r.name, permanent: false },
-                          {
-                            onSuccess: () => {
-                              toast({
-                                status: 'success',
-                                duration: 4000,
-                                isClosable: false,
-                                title: 'Subject soft-deleted',
-                              });
-                            },
-                            onError: (err) => {
-                              toast({
-                                status: 'error',
-                                duration: null,
-                                isClosable: true,
-                                title: 'Failed to soft-delete subject',
-                                description: String(err),
-                              });
-                            },
-                          },
-                        );
-                      });
+                        {name}
+                      </Link>
+                      {isSoftDeleted && (
+                        <Tooltip
+                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
+                          hasArrow
+                        >
+                          <Box>
+                            <ArchiveIcon width={16} height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} />
+                          </Box>
+                        </Tooltip>
+                      )}
+                    </Flex>
+                  </Box>
+                ),
+              },
+              { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
+              {
+                header: 'Compatibility',
+                cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
+                size: 100,
+              },
+              {
+                header: 'Latest Version',
+                cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
+                size: 100,
+              },
+              {
+                header: '',
+                id: 'actions',
+                cell: ({ row: { original: r } }) => (
+                  <Button
+                    variant="icon"
+                    height="16px"
+                    color="gray.500"
+                    disabledReason={
+                      api.userData?.canDeleteSchemas === false
+                        ? "You don't have the 'canDeleteSchemas' permission"
+                        : undefined
                     }
-                  }}
-                >
-                  <TrashIcon />
-                </Button>
-              ),
-              size: 1,
-            },
-          ]}
-        />
-      </Section>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+
+                      if (r.isSoftDeleted) {
+                        openPermanentDeleteModal(r.name, () => {
+                          deleteSchemaMutation.mutate(
+                            { subjectName: r.name, permanent: true },
+                            {
+                              onSuccess: () => {
+                                toast({
+                                  status: 'success',
+                                  duration: 4000,
+                                  isClosable: false,
+                                  title: 'Subject permanently deleted',
+                                });
+                              },
+                              onError: (err) => {
+                                toast({
+                                  status: 'error',
+                                  duration: null,
+                                  isClosable: true,
+                                  title: 'Failed to permanently delete subject',
+                                  description: String(err),
+                                });
+                              },
+                            },
+                          );
+                        });
+                      } else {
+                        openDeleteModal(r.name, () => {
+                          deleteSchemaMutation.mutate(
+                            { subjectName: r.name, permanent: false },
+                            {
+                              onSuccess: () => {
+                                toast({
+                                  status: 'success',
+                                  duration: 4000,
+                                  isClosable: false,
+                                  title: 'Subject soft-deleted',
+                                });
+                              },
+                              onError: (err) => {
+                                toast({
+                                  status: 'error',
+                                  duration: null,
+                                  isClosable: true,
+                                  title: 'Failed to soft-delete subject',
+                                  description: String(err),
+                                });
+                              },
+                            },
+                          );
+                        });
+                      }
+                    }}
+                  >
+                    <TrashIcon />
+                  </Button>
+                ),
+                size: 1,
+              },
+            ]}
+          />
+        </Section>
       )}
     </PageContent>
   );

@@ -9,13 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
-import { appGlobal } from '../../../state/appGlobal';
-import { api } from '../../../state/backendApi';
-import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
-import './Schema.List.scss';
-import { Box, CodeBlock, Empty, Flex, Grid, GridItem, RadioGroup, Text, useToast, VStack } from '@redpanda-data/ui';
 import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -23,8 +19,11 @@ import {
   useUpdateGlobalCompatibilityMutation,
   useUpdateSubjectCompatibilityMutation,
 } from '../../../react-query/api/schema';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
 import type { SchemaRegistryCompatibilityMode } from '../../../state/restInterfaces';
 import { uiState } from '../../../state/uiState';
+import { Button, DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './Schema.Details';
@@ -76,7 +75,6 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string }> = ({ subjectName
       uiState.pageBreadcrumbs.push({
         title: subjectName,
         linkTo: `/schema-registry/subjects/${subjectName}`,
-        canBeTruncated: true,
       });
       uiState.pageBreadcrumbs.push({
         title: 'Edit Compatibility',
