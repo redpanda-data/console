@@ -16,126 +16,119 @@ import {
   Text,
   type ThemeTypings,
 } from '@redpanda-data/ui';
-import { observer } from 'mobx-react';
 import { type ReactNode, useState } from 'react';
 import { openModal } from '../../../utils/ModalContainer';
 
-const GenericModal = observer(
-  (p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: JSX.Element;
-    secondaryButtonContent: JSX.Element;
+const GenericModal = (p: {
+  title: JSX.Element;
+  body: JSX.Element;
+  primaryButtonContent: JSX.Element;
+  secondaryButtonContent: JSX.Element;
 
-    onPrimaryButton: (closeModal: () => void) => void;
-    onSecondaryButton: (closeModal: () => void) => void;
+  onPrimaryButton: (closeModal: () => void) => void;
+  onSecondaryButton: (closeModal: () => void) => void;
 
-    primaryColorScheme?: ThemeTypings['colorSchemes'];
+  primaryColorScheme?: ThemeTypings['colorSchemes'];
 
-    closeModal: () => void;
-  }) => {
-    return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{p.body}</ModalBody>
+  closeModal: () => void;
+}) => {
+  return (
+    <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>{p.body}</ModalBody>
 
-          <ModalFooter>
-            <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme={p.primaryColorScheme}>
-              {p.primaryButtonContent}
-            </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
-              {p.secondaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  },
-);
+        <ModalFooter>
+          <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme={p.primaryColorScheme}>
+            {p.primaryButtonContent}
+          </Button>
+          <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+            {p.secondaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
-const ExplicitConfirmModal = observer(
-  (p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: JSX.Element;
-    secondaryButtonContent: JSX.Element;
+const ExplicitConfirmModal = (p: {
+  title: JSX.Element;
+  body: JSX.Element;
+  primaryButtonContent: JSX.Element;
+  secondaryButtonContent: JSX.Element;
 
-    onPrimaryButton: (closeModal: () => void) => void;
-    onSecondaryButton: (closeModal: () => void) => void;
+  onPrimaryButton: (closeModal: () => void) => void;
+  onSecondaryButton: (closeModal: () => void) => void;
 
-    closeModal: () => void;
-  }) => {
-    const [confirmBoxText, setConfirmBoxText] = useState('');
-    const isConfirmEnabled = confirmBoxText === 'delete';
+  closeModal: () => void;
+}) => {
+  const [confirmBoxText, setConfirmBoxText] = useState('');
+  const isConfirmEnabled = confirmBoxText === 'delete';
 
-    return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {p.body}
+  return (
+    <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          {p.body}
 
-            <Box mt="4">
-              To confirm, enter "delete":
-              <Input onChange={(e) => setConfirmBoxText(e.target.value)} autoFocus />
-            </Box>
-          </ModalBody>
+          <Box mt="4">
+            To confirm, enter "delete":
+            <Input onChange={(e) => setConfirmBoxText(e.target.value)} autoFocus />
+          </Box>
+        </ModalBody>
 
-          <ModalFooter>
-            <Button
-              mr={3}
-              isDisabled={!isConfirmEnabled}
-              onClick={() => p.onPrimaryButton(p.closeModal)}
-              colorScheme="red"
-            >
-              {p.primaryButtonContent}
-            </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
-              {p.secondaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  },
-);
+        <ModalFooter>
+          <Button
+            mr={3}
+            isDisabled={!isConfirmEnabled}
+            onClick={() => p.onPrimaryButton(p.closeModal)}
+            colorScheme="red"
+          >
+            {p.primaryButtonContent}
+          </Button>
+          <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+            {p.secondaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
 // A type of modal that simply shows some stuff and only has an "ok" button
-const InfoModal = observer(
-  (p: {
-    title: JSX.Element;
-    body: JSX.Element;
-    primaryButtonContent: ReactNode;
-    onClose?: () => void;
-    closeModal: () => void;
-  }) => {
-    return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalBody>{p.body}</ModalBody>
-          <ModalFooter>
-            <Button
-              mr={3}
-              onClick={() => {
-                if (p.onClose) p.onClose();
-                p.closeModal();
-              }}
-            >
-              {p.primaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  },
-);
+const InfoModal = (p: {
+  title: JSX.Element;
+  body: JSX.Element;
+  primaryButtonContent: ReactNode;
+  onClose?: () => void;
+  closeModal: () => void;
+}) => {
+  return (
+    <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalBody>{p.body}</ModalBody>
+        <ModalFooter>
+          <Button
+            mr={3}
+            onClick={() => {
+              if (p.onClose) p.onClose();
+              p.closeModal();
+            }}
+          >
+            {p.primaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
 export function openInfoModal(p: {
   title: JSX.Element;
