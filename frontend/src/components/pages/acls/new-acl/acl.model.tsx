@@ -573,3 +573,7 @@ export const handleResponses = (toast: (op: UseToastOptions) => void, errors: Co
     });
   }
 };
+
+export const handleUrlWithHost = (baseUrl: string, host: string | undefined): string => {
+  return host ? `${baseUrl}?host=${encodeURIComponent(host)}` : baseUrl;
+};

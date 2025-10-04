@@ -10,17 +10,22 @@
  */
 
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { uiState } from 'state/ui-state';
-
-import { parsePrincipal } from './acl.model';
-import { ACLDetails } from './acl-details';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { uiState } from 'state/uiState';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { handleUrlWithHost } from './ACL.model';
+import { ACLDetails } from './ACLDetails';
+import { HostSelector } from './HostSelector';
 
 const AclDetailPage = () => {
   const { aclName = '' } = useParams<{ aclName: string }>();
   const navigate = useNavigate();
-  const { data } = useGetAclsByPrincipal(`User:${aclName}`);
+  const [searchParams] = useSearchParams();
+  const host = searchParams.get('host') || undefined;
+
+  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host);
+
+  const [acls, ...hosts] = data || [];
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [
@@ -31,16 +36,24 @@ const AclDetailPage = () => {
     ];
   }, [aclName]);
 
-  if (!data) {
+  if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (!acls || !data) {
+    return <div>No ACL data found</div>;
+  }
+
+  if (!!hosts && hosts.length > 0) {
+    return <HostSelector principalName={aclName} hosts={data} baseUrl={`/security/acls/${aclName}/details`} />;
   }
 
   return (
     <ACLDetails
+      sharedConfig={acls.sharedConfig}
+      rules={acls.rules}
+      onUpdateACL={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/update`, host))}
       isSimpleView={false}
-      onUpdateACL={() => navigate(`/security/acls/${parsePrincipal(data.sharedConfig.principal).name}/update`)}
-      rules={data.rules}
-      sharedConfig={data.sharedConfig}
     />
   );
 };
