@@ -11,11 +11,64 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { uiState } from 'state/ui-state';
+import { uiState } from 'state/uiState';
 
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
-import PageContent from '../../misc/page-content';
-import { ACLDetails } from '../acls/new-acl/acl-details';
+import PageContent from '../../misc/PageContent';
+import { ACLDetails } from '../acls/new-acl/ACLDetails';
+import { MatchingUsersCard } from './MatchingUsersCard';
+import { Card, CardContent, CardHeader } from '../../redpanda-ui/components/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
+import { Button } from '../../redpanda-ui/components/button';
+import { type AclDetail, handleUrlWithHost } from '../acls/new-acl/ACL.model';
+
+interface SecurityAclRulesTableProps {
+  data: AclDetail[];
+  roleName: string;
+}
+
+const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <Card size="full">
+      <CardHeader>
+        <h2 className="text-lg font-medium">Security ACL rules</h2>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Principal</TableHead>
+              <TableHead>Host</TableHead>
+              <TableHead>Count ACLs</TableHead>
+              <TableHead>{''}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((aclData) => (
+              <TableRow key={`table-item-${aclData.sharedConfig.principal}-${aclData.sharedConfig.host}`}>
+                <TableCell>{aclData.sharedConfig.principal}</TableCell>
+                <TableCell>{aclData.sharedConfig.host}</TableCell>
+                <TableCell>{aclData.rules.length}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, aclData.sharedConfig.host));
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
 
 const RoleDetailPage = () => {
   const { roleName = '' } = useParams<{ roleName: string }>();
@@ -31,9 +84,9 @@ const RoleDetailPage = () => {
   }, [roleName]);
 
   // Fetch ACLs for the role
-  const { data: aclData } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
+  const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
 
-  if (!aclData) {
+  if (isLoading) {
     return (
       <PageContent>
         <div className="flex h-96 items-center justify-center">
@@ -43,16 +96,36 @@ const RoleDetailPage = () => {
     );
   }
 
-  return (
-    <PageContent>
-      {aclData && (
+  if (!data) {
+    return (
+      <PageContent>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-gray-500">No Role data found.</div>
+        </div>
+      </PageContent>
+    );
+  }
+
+  const renderACLInformation = () => {
+    if (data.length === 1) {
+      const aclData = data[0];
+      return (
         <ACLDetails
           onUpdateACL={() => navigate(`/security/roles/${roleName}/update`)}
           rules={aclData.rules}
           sharedConfig={aclData.sharedConfig}
-          showMatchingUsers={true}
         />
-      )}
+      );
+    }
+    return <SecurityAclRulesTable data={data} roleName={roleName} />;
+  };
+
+  return (
+    <PageContent>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="col-span-2 w-full">{renderACLInformation()}</div>
+        <MatchingUsersCard principalType="RedpandaRole" principal={`Redpanda:${roleName}`} />
+      </div>
     </PageContent>
   );
 };
