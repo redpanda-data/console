@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Eye, Pencil } from 'lucide-react';
 import { uiState } from 'state/uiState';
 
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
@@ -27,6 +28,7 @@ interface SecurityAclRulesTableProps {
   roleName: string;
 }
 
+// Table to display multiple ACL rules for a role
 const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) => {
   const navigate = useNavigate();
 
@@ -52,14 +54,26 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                 <TableCell>{aclData.sharedConfig.host}</TableCell>
                 <TableCell>{aclData.rules.length}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, aclData.sharedConfig.host));
-                    }}
-                  >
-                    Edit
-                  </Button>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigate(handleUrlWithHost(`/security/roles/${roleName}/details`, aclData.sharedConfig.host));
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, aclData.sharedConfig.host));
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -73,6 +87,8 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
 const RoleDetailPage = () => {
   const { roleName = '' } = useParams<{ roleName: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const host = searchParams.get('host') ?? undefined;
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [
@@ -84,46 +100,44 @@ const RoleDetailPage = () => {
   }, [roleName]);
 
   // Fetch ACLs for the role
-  const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
+  const { data, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`, host);
+
+  const renderACLInformation = useMemo(() => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <div className="text-gray-500">No Role data found.</div>
+        </div>
+      );
+    }
+
+    if (data.length === 1) {
+      const acl = data[0];
+      return (
+        <ACLDetails
+          sharedConfig={acl.sharedConfig}
+          rules={acl.rules}
+          onUpdateACL={() => navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, host))}
+        />
+      );
+    }
+    return <SecurityAclRulesTable data={data} roleName={roleName} />;
+  }, [data, roleName, navigate, host]);
 
   if (isLoading) {
     return (
       <PageContent>
-        <div className="flex h-96 items-center justify-center">
+        <div className="flex items-center justify-center h-96">
           <div className="text-gray-500">Loading role details...</div>
         </div>
       </PageContent>
     );
   }
 
-  if (!data) {
-    return (
-      <PageContent>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-gray-500">No Role data found.</div>
-        </div>
-      </PageContent>
-    );
-  }
-
-  const renderACLInformation = () => {
-    if (data.length === 1) {
-      const aclData = data[0];
-      return (
-        <ACLDetails
-          onUpdateACL={() => navigate(`/security/roles/${roleName}/update`)}
-          rules={aclData.rules}
-          sharedConfig={aclData.sharedConfig}
-        />
-      );
-    }
-    return <SecurityAclRulesTable data={data} roleName={roleName} />;
-  };
-
   return (
     <PageContent>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 w-full">{renderACLInformation()}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="col-span-2 w-full">{renderACLInformation}</div>
         <MatchingUsersCard principalType="RedpandaRole" principal={`Redpanda:${roleName}`} />
       </div>
     </PageContent>
