@@ -11,7 +11,6 @@
 
 import { useToast } from '@redpanda-data/ui';
 import {
-  getAclFromAclListResponse,
   getOperationsForResourceType,
   handleResponses,
   handleUrlWithHost,
@@ -19,8 +18,8 @@ import {
   ModeDenyAll,
   OperationTypeAllow,
   OperationTypeDeny,
-  PrincipalTypeUser,
   parsePrincipal,
+  PrincipalTypeUser,
   type Rule,
   type SharedConfig,
 } from 'components/pages/acls/new-acl/ACL.model';
@@ -49,22 +48,11 @@ const AclUpdatePage = () => {
   }, [aclName]);
 
   // Fetch existing ACL data
-  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host, (response) => {
-    const possibleHosts = response.resources.reduce<Set<string>>((uniqueHosts, resource) => {
-      resource.acls.forEach((acl) => {
-        uniqueHosts.add(acl.host);
-      });
-      return uniqueHosts;
-    }, new Set<string>());
-
-    const aclDetails = getAclFromAclListResponse(response);
-    // When host filter is provided, we expect only one AclDetail in the array
-    return { acls: aclDetails[0], hosts: Array.from(possibleHosts) };
-  });
+  const { data, isLoading } = useGetAclsByPrincipal(`User:${aclName}`, host);
 
   const { applyUpdates } = useUpdateAclMutation();
 
-  const { acls, hosts } = data ?? { acls: undefined, hosts: [] };
+  const [acls, ...hosts] = data || [];
 
   const updateAclMutation =
     (actualRules: Rule[], sharedConfig: SharedConfig) => async (_: string, _2: string, rules: Rule[]) => {
@@ -75,7 +63,7 @@ const AclUpdatePage = () => {
       navigate(handleUrlWithHost(detailsPath, host));
     };
 
-  if (isLoading || !acls) {
+  if (isLoading) {
     return (
       <PageContent>
         <div className="flex h-96 items-center justify-center">
@@ -85,10 +73,14 @@ const AclUpdatePage = () => {
     );
   }
 
-  if (!!hosts && hosts.length > 1) {
+  if (!acls || !data) {
+    return <div>No ACL data found</div>;
+  }
+
+  if (hosts.length > 1) {
     return (
       <PageContent>
-        <HostSelector principalName={aclName} hosts={hosts} baseUrl={`/security/acls/${aclName}/update`} />
+        <HostSelector principalName={aclName} hosts={data} baseUrl={`/security/acls/${aclName}/update`} />
       </PageContent>
     );
   }
