@@ -326,84 +326,105 @@ function getOperationNameFromGRPC(grpcOp: ACL_Operation): string {
   }
 }
 
-// function to convert ACL List response to AclDetail
-export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail => {
-  // Extract principal and host from the first ACL entry (assuming all have the same host)
-  let principal = '';
-  let host = '*';
+// function to convert ACL List response to AclDetail array (one per host)
+export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail[] => {
+  // Extract all unique hosts and principal from the response
+  const hostsMap = new Map<string, { principal: string; rulesMap: Map<string, Rule>; ruleIdCounter: number }>();
 
-  if (aclList.resources.length > 0 && aclList.resources[0].acls.length > 0) {
-    principal = aclList.resources[0].acls[0].principal;
-    host = aclList.resources[0].acls[0].host;
-  }
+  // First pass: identify all unique hosts and initialize data structures
+  aclList.resources.forEach((resource) => {
+    resource.acls.forEach((acl) => {
+      if (!hostsMap.has(acl.host)) {
+        hostsMap.set(acl.host, {
+          principal: acl.principal,
+          rulesMap: new Map<string, Rule>(),
+          ruleIdCounter: 0,
+        });
+      }
+    });
+  });
 
-  // Transform resources into rules
-  const rulesMap = new Map<string, Rule>();
-  let ruleIdCounter = 0;
-
-  for (const resource of aclList.resources) {
+  // Second pass: process each resource and group by host
+  aclList.resources.forEach((resource) => {
     const resourceType = getResourceTypeFromGRPC(resource.resourceType);
     const selectorType = getResourcePatternTypeFromGRPC(resource.resourcePatternType);
     const selectorValue = resource.resourceName;
 
-    // Create a unique key for each resource configuration
-    const ruleKey = `${resourceType}-${selectorType}-${selectorValue}`;
+    // Process ACLs for each host separately
+    resource.acls.forEach((acl) => {
+      const hostData = hostsMap.get(acl.host);
+      if (!hostData) return;
 
-    if (!rulesMap.has(ruleKey)) {
-      rulesMap.set(ruleKey, {
-        id: ruleIdCounter++,
-        resourceType,
-        mode: ModeCustom,
-        selectorType,
-        selectorValue,
-        operations: {},
-      });
-    }
+      const { rulesMap } = hostData;
 
-    // biome-ignore lint/style/noNonNullAssertion: in the previous line we ensured the key exists
-    const rule = rulesMap.get(ruleKey)!;
+      // Create a unique key for each resource configuration
+      const ruleKey = `${resourceType}-${selectorType}-${selectorValue}`;
 
-    // Add operations from ACLs (assuming all ACLs have the same principal and host)
-    for (const acl of resource.acls) {
+      if (!rulesMap.has(ruleKey)) {
+        rulesMap.set(ruleKey, {
+          id: hostData.ruleIdCounter++,
+          resourceType,
+          mode: ModeCustom,
+          selectorType,
+          selectorValue,
+          operations: {},
+        });
+      }
+
+      // biome-ignore lint/style/noNonNullAssertion: in the previous lines we ensured the key exists
+      const rule = rulesMap.get(ruleKey)!;
+
+      // Add operation from this ACL
       const operationName = getOperationNameFromGRPC(acl.operation);
       const operationType = getOperationTypeFromGRPC(acl.permissionType);
 
       rule.operations[operationName] = operationType;
-    }
+    });
+  });
 
-    // Determine mode based on operations
-    const operationValues = Object.values(rule.operations);
-    const allOperationKeys = Object.keys(getOperationsForResourceType(resourceType));
+  // Third pass: determine mode for each rule and build final result
+  const results: AclDetail[] = [];
 
-    if (rule.operations.ALL) {
-      if (rule.operations.ALL === OperationTypeAllow) {
+  hostsMap.forEach((hostData, host) => {
+    const { principal, rulesMap } = hostData;
+
+    // Determine mode for each rule
+    rulesMap.forEach((rule) => {
+      const operationValues = Object.values(rule.operations);
+      const allOperationKeys = Object.keys(getOperationsForResourceType(rule.resourceType));
+
+      if (rule.operations.ALL) {
+        if (rule.operations.ALL === OperationTypeAllow) {
+          rule.mode = ModeAllowAll;
+        }
+        if (rule.operations.ALL === OperationTypeDeny) {
+          rule.mode = ModeDenyAll;
+        }
+      } else if (
+        allOperationKeys.length === operationValues.length &&
+        operationValues.every((op) => op === OperationTypeAllow)
+      ) {
         rule.mode = ModeAllowAll;
-      }
-      if (rule.operations.ALL === OperationTypeDeny) {
+      } else if (
+        allOperationKeys.length === operationValues.length &&
+        operationValues.every((op) => op === OperationTypeDeny)
+      ) {
         rule.mode = ModeDenyAll;
+      } else {
+        rule.mode = ModeCustom;
       }
-    } else if (
-      allOperationKeys.length === operationValues.length &&
-      operationValues.every((op) => op === OperationTypeAllow)
-    ) {
-      rule.mode = ModeAllowAll;
-    } else if (
-      allOperationKeys.length === operationValues.length &&
-      operationValues.every((op) => op === OperationTypeDeny)
-    ) {
-      rule.mode = ModeDenyAll;
-    } else {
-      rule.mode = ModeCustom;
-    }
-  }
+    });
 
-  return {
-    sharedConfig: {
-      principal,
-      host,
-    },
-    rules: Array.from(rulesMap.values()),
-  };
+    results.push({
+      sharedConfig: {
+        principal,
+        host,
+      },
+      rules: Array.from(rulesMap.values()),
+    });
+  });
+
+  return results;
 };
 
 export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> =>
@@ -552,20 +573,20 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
 
 export const handleResponses = (toast: (op: UseToastOptions) => void, errors: ConnectError[], created: boolean) => {
   if (errors.length > 0 && created) {
-    for (const er of errors) {
+    errors.forEach((er) => {
       toast({
         status: 'warning',
         title: 'Some ACLs were created, but there were errors',
         description: er.message,
       });
-    }
+    });
   } else if (errors.length > 0 && !created) {
-    for (const er of errors) {
+    errors.forEach((er) => {
       toast({
         status: 'error',
         description: er.message,
       });
-    }
+    });
   } else {
     toast({
       status: 'success',
@@ -574,6 +595,6 @@ export const handleResponses = (toast: (op: UseToastOptions) => void, errors: Co
   }
 };
 
-export const handleUrlWithHost = (baseUrl: string, host: string | undefined): string => {
+export const handleUrlWithHost = (baseUrl: string, host?: string): string => {
   return host ? `${baseUrl}?host=${encodeURIComponent(host)}` : baseUrl;
 };

@@ -524,7 +524,7 @@ export const useUpdateAclMutation = () => {
   return { applyUpdates };
 };
 
-export const useGetAclsByPrincipal = <T = AclDetail>(
+export const useGetAclsByPrincipal = <T = AclDetail[]>(
   principal: string,
   host?: string,
   transformFn?: (aclList: ListACLsResponse) => T,
