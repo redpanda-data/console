@@ -11,7 +11,6 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   formatLabel,
@@ -58,11 +57,10 @@ type ACLDetailsProps = {
     host: string;
   };
   rules: Rule[];
-  onUpdateACL: () => void;
   isSimpleView?: boolean; // this prop show SharedConfig, this is used for emmbedded this component on legacy user page
 };
 
-export function ACLDetails({ sharedConfig, rules, onUpdateACL, isSimpleView = false }: ACLDetailsProps) {
+export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDetailsProps) {
   const navigate = useNavigate();
 
   const getGoTo = (sc: SharedConfig) => {
@@ -84,29 +82,6 @@ export function ACLDetails({ sharedConfig, rules, onUpdateACL, isSimpleView = fa
 
   return (
     <div>
-      {/* Header */}
-      <div className={`${isSimpleView ? 'hidden' : ''}`}>
-        <div className="py-4">
-          <div className="mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="text-gray-600 text-sm">View the created ACL configuration</p>
-                </div>
-              </div>
-              <Button
-                className="bg-gray-900 text-white hover:bg-gray-800"
-                data-testid="update-acl-button"
-                onClick={onUpdateACL}
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <main>
         <div className="mx-auto">
@@ -246,22 +221,15 @@ export function ACLDetails({ sharedConfig, rules, onUpdateACL, isSimpleView = fa
 }
 
 const EmbeddedAclDetail = ({ principal }: { principal: string }) => {
-  const navigate = useNavigate();
-
   const { data } = useGetAclsByPrincipal(principal);
 
-  if (!data) {
+  if (!data || data.length === 0) {
     return <div>Loading...</div>;
   }
 
-  return (
-    <ACLDetails
-      isSimpleView={true}
-      onUpdateACL={() => navigate(`/security/acls/${parsePrincipal(data.sharedConfig.principal).name}/update`)}
-      rules={data.rules}
-      sharedConfig={data.sharedConfig}
-    />
-  );
+  const acl = data[0];
+
+  return <ACLDetails sharedConfig={acl.sharedConfig} rules={acl.rules} isSimpleView={true} />;
 };
 
 export { EmbeddedAclDetail };

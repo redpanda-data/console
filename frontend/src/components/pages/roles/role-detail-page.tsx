@@ -9,19 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
+import { Eye, Pencil } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Eye, Pencil } from 'lucide-react';
 import { uiState } from 'state/uiState';
 
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import PageContent from '../../misc/PageContent';
-import { ACLDetails } from '../acls/new-acl/ACLDetails';
-import { MatchingUsersCard } from './MatchingUsersCard';
+import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from '../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { Button } from '../../redpanda-ui/components/button';
+import { Text } from '../../redpanda-ui/components/typography';
 import { type AclDetail, handleUrlWithHost } from '../acls/new-acl/ACL.model';
+import { ACLDetails } from '../acls/new-acl/ACLDetails';
+import { MatchingUsersCard } from './MatchingUsersCard';
 
 interface SecurityAclRulesTableProps {
   data: AclDetail[];
@@ -113,16 +114,10 @@ const RoleDetailPage = () => {
 
     if (data.length === 1) {
       const acl = data[0];
-      return (
-        <ACLDetails
-          sharedConfig={acl.sharedConfig}
-          rules={acl.rules}
-          onUpdateACL={() => navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, host))}
-        />
-      );
+      return <ACLDetails sharedConfig={acl.sharedConfig} rules={acl.rules} />;
     }
     return <SecurityAclRulesTable data={data} roleName={roleName} />;
-  }, [data, roleName, navigate, host]);
+  }, [data, roleName]);
 
   if (isLoading) {
     return (
@@ -136,6 +131,24 @@ const RoleDetailPage = () => {
 
   return (
     <PageContent>
+      <div className="flex justify-between items-center">
+        <Text>
+          Viewing role <Text as="span">{roleName}</Text>{' '}
+        </Text>
+        {(!!host || data?.length === 1) && (
+          <div>
+            <Button
+              onClick={() => navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, host))}
+              data-testid="update-acl-button"
+              variant="secondary"
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit ACL
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="col-span-2 w-full">{renderACLInformation}</div>
         <MatchingUsersCard principalType="RedpandaRole" principal={`Redpanda:${roleName}`} />

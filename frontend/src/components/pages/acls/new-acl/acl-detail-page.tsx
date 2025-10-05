@@ -9,10 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { Button } from '../../../redpanda-ui/components/button';
+import { Text } from '../../../redpanda-ui/components/typography';
 import { handleUrlWithHost } from './ACL.model';
 import { ACLDetails } from './ACLDetails';
 import { HostSelector } from './HostSelector';
@@ -49,12 +52,22 @@ const AclDetailPage = () => {
   }
 
   return (
-    <ACLDetails
-      sharedConfig={acls.sharedConfig}
-      rules={acls.rules}
-      onUpdateACL={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/update`, host))}
-      isSimpleView={false}
-    />
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <Text>
+          ACL Configuration Details for <strong>{aclName}</strong>
+        </Text>
+        <Button
+          onClick={() => navigate(handleUrlWithHost(`/security/acls/${aclName}/update`, host))}
+          data-testid="update-acl-button"
+          variant="secondary"
+        >
+          <Pencil className="w-4 h-4 mr-2" />
+          Edit
+        </Button>
+      </div>
+      <ACLDetails sharedConfig={acls.sharedConfig} rules={acls.rules} isSimpleView={false} />
+    </div>
   );
 };
 
