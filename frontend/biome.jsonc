@@ -469,6 +469,18 @@
         // Avoid re-export all.
         "noReExportAll": "off"
       },
+      "security": {
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
+        // Disallow target="_blank" attribute without rel="noopener".
+        "noBlankTarget": "error",
+        // Prevent the usage of dangerous JSX props
+        "noDangerouslySetInnerHtml": "error",
+        // Report when a DOM element or a component uses both children and dangerouslySetInnerHTML prop.
+        "noDangerouslySetInnerHtmlWithChildren": "error",
+        // Disallow the use of global eval().
+        "noGlobalEval": "error"
+      },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
         "noParameterAssign": "off",
