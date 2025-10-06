@@ -446,6 +446,33 @@
         // Prevent import cycles. Hundreds of cycles exist across the codebase - fix incrementally during refactoring.
         "noImportCycles": "off"
       },
+      "performance": {
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
+        // Disallow the use of spread (...) syntax on accumulators.
+        "noAccumulatingSpread": "error",
+        // Disallow the use of barrel file.
+        "noBarrelFile": "error",
+        // Disallow the use of the delete operator.
+        "noDelete": "error",
+        // Disallow accessing namespace imports dynamically.
+        "noDynamicNamespaceImportAccess": "error",
+        // Prevent usage of <img> element in a Next.js project.
+        "noImgElement": "off", // We don't use Next.js
+        // Disallow the use of namespace imports.
+        "noNamespaceImport": "error",
+        // Prevent duplicate polyfills from Polyfill.io.
+        "noUnwantedPolyfillio": "error",
+        // Ensure the preconnect attribute is used when using Google Fonts.
+        "useGoogleFontPreconnect": "error",
+        // Require regex literals to be declared at the top level.
+        "useTopLevelRegex": "error",
+
+        // Disallow await inside loops.
+        "noAwaitInLoops": "off",
+        // Avoid re-export all.
+        "noReExportAll": "off"
+      },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
         "noParameterAssign": "off",
@@ -489,14 +516,6 @@
         "noParameterProperties": "off", // enable later
         // Enforce using single if instead of nested if clauses.
         "useCollapsedIf": "off" // enable later
-      },
-      "performance": {
-        // Prevent usage of <img> element in a Next.js project. We don't use Next.js
-        "noImgElement": "off",
-        // Require regex literals to be declared at the top level. Performance hit.
-        "useTopLevelRegex": "off", // enable later
-        // Disallow the use of namespace imports.
-        "noNamespaceImport": "error"
       }
     }
   },
