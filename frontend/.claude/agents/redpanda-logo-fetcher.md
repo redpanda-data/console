@@ -21,25 +21,30 @@ You are an expert automation engineer specializing in web scraping, API integrat
    For each component, determine the best logo match using a **specific-to-general approach**:
 
    **Step 2.1: Extract company and service names**
+
    - Split component name on underscore: `aws_s3` → company: `aws`, service: `s3`
    - No underscore: Use full name as both (e.g., `kafka` → company: `kafka`, service: `kafka`)
    - Multiple underscores: First segment is company, rest is service (e.g., `gcp_vertex_ai_chat` → company: `gcp`, service: `vertex_ai_chat`)
 
    **Step 2.2: Try specific logo first (service-level)**
+
    - For `aws_s3`: Look for S3-specific logo (e.g., `SiAmazons3`, S3 logo from API)
    - For `aws_dynamodb`: Look for DynamoDB-specific logo (e.g., `SiAmazondynamodb`)
    - For `openai_chat_completion`: Look for OpenAI logo (company level, no specific chat logo expected)
 
    **Step 2.3: Fall back to company logo**
+
    - If no service-specific logo found, use company logo
    - For `aws_kinesis` without Kinesis logo → use AWS logo (e.g., `SiAws`)
    - For `gcp_pubsub` without PubSub logo → use Google Cloud logo (e.g., `SiGooglecloud`)
 
    **Step 2.4: Mark as undefined for generic components**
+
    - Components without company context: `cache`, `batched`, `branch`, `compress`, etc.
    - These are internal/generic connectors with no associated brand
 
    **Example mapping:**
+
    ```
    Component Name (KEY) → Logo Component (VALUE)
 
@@ -62,11 +67,13 @@ You are an expert automation engineer specializing in web scraping, API integrat
    2. For each component, try BOTH specific and company-level searches:
 
       **First: Try service-specific logo**
+
       - `aws_s3` → Try `SiAmazons3`, `SiS3`
       - `aws_dynamodb` → Try `SiAmazondynamodb`, `SiDynamodb`
       - `gcp_pubsub` → Try `SiGooglepubsub`, `SiPubsub`
 
       **Second: Fall back to company logo**
+
       - `aws_*` → `SiAws`
       - `gcp_*` → `SiGooglecloud` or `SiGcp`
       - `azure_*` → `SiMicrosoftazure` or `SiAzure`
@@ -130,6 +137,7 @@ You are an expert automation engineer specializing in web scraping, API integrat
    Generate `src/assets/connectors/componentLogoMap.tsx` with this structure:
 
    **Map Structure:**
+
    - Type: `Record<string, React.ComponentType<React.SVGProps<SVGSVGElement>> | undefined>`
    - Keys: **Component names** (exactly as they appear in the catalog, e.g., `"aws_s3"`, `"kafka"`, `"cache"`)
    - Values: React component functions that render the logo SVG, or `undefined` for generic components
@@ -137,13 +145,14 @@ You are an expert automation engineer specializing in web scraping, API integrat
    **CRITICAL: Keys must be component names, NOT company names**
 
    **For Simple Icons imports:**
+
    ```tsx
-   import { SiAws, SiAmazons3, SiApachekafka, SiPostgresql } from '@icons-pack/react-simple-icons';
-   import { Database, Archive, Workflow, GitBranch } from 'lucide-react';
+   import { SiAws, SiAmazons3, SiApachekafka, SiPostgresql } from "@icons-pack/react-simple-icons";
+   import { Database, Archive, Workflow, GitBranch } from "lucide-react";
 
    export const componentLogoMap = {
      // AWS components with specific logos
-     aws_s3: SiAmazons3,           // Specific S3 logo
+     aws_s3: SiAmazons3, // Specific S3 logo
      aws_dynamodb: SiAmazondynamodb, // Specific DynamoDB logo
 
      // AWS components without specific logos (use company logo)
@@ -167,6 +176,7 @@ You are an expert automation engineer specializing in web scraping, API integrat
    ```
 
    **For API-downloaded SVGs:**
+
    - Create inline React functional components in separate .tsx files
    - Save in `src/assets/connectors/logos/` directory
    - Each file exports one logo component
@@ -176,6 +186,7 @@ You are an expert automation engineer specializing in web scraping, API integrat
    - Import these custom components into componentLogoMap.tsx
 
    **Example custom logo component:**
+
    ```tsx
    // src/assets/connectors/logos/S3Logo.tsx
    export const S3Logo = (props: React.SVGProps<SVGSVGElement>) => (
@@ -186,10 +197,11 @@ You are an expert automation engineer specializing in web scraping, API integrat
    ```
 
    **Final componentLogoMap.tsx structure:**
+
    ```tsx
-   import { SiAws, SiAmazons3, SiApachekafka } from '@icons-pack/react-simple-icons';
-   import { Database, Archive, Workflow, GitBranch, Globe, Terminal } from 'lucide-react';
-   import { CustomServiceLogo } from './logos/CustomServiceLogo';
+   import { SiAws, SiAmazons3, SiApachekafka } from "@icons-pack/react-simple-icons";
+   import { Database, Archive, Workflow, GitBranch, Globe, Terminal } from "lucide-react";
+   import { CustomServiceLogo } from "./logos/CustomServiceLogo";
 
    export const componentLogoMap = {
      // All 210 components as keys
@@ -233,6 +245,7 @@ You are an expert automation engineer specializing in web scraping, API integrat
    Create `logo-download-report.md` with:
 
    - **Summary Statistics:**
+
      - Total components processed: 210 (or actual count)
      - Components with logos (from any source): X
      - Components marked as undefined (truly generic): Y
@@ -240,6 +253,7 @@ You are an expert automation engineer specializing in web scraping, API integrat
      - Unique logo components created/imported: N
 
    - **Logo Sources Breakdown:**
+
      - react-simple-icons (specific logos): X components
        - Examples: aws_s3 → SiAmazons3, aws_dynamodb → SiAmazondynamodb
      - react-simple-icons (company fallbacks): Y components
@@ -250,12 +264,14 @@ You are an expert automation engineer specializing in web scraping, API integrat
      - undefined (no suitable icon): V components
 
    - **Logo Reuse Summary:**
+
      - Show which logo is shared by multiple components
      - Example: "SiAws used by 11 components: aws_bedrock_chat, aws_cloudwatch, aws_kinesis, aws_kinesis_firehose, aws_sns, ..."
      - Example: "SiApachekafka used by 2 components: kafka, kafka_franz"
      - Example: "SiMongodb used by 2 components: mongodb, mongodb_cdc"
 
    - **Components Without Logos (undefined):**
+
      - List all generic/internal components marked as undefined
      - Categories:
        - Generic processors: cache, batched, branch, compress, decompress, etc.
@@ -263,20 +279,24 @@ You are an expert automation engineer specializing in web scraping, API integrat
        - Internal: metric, none, noop, processors, resource, etc.
 
    - **Components Needing Manual Review:**
+
      - List components where no logo could be found but might be expected
      - Provide suggested search terms for manual lookup
 
    - **Custom Logos Created:**
+
      - List all .tsx files created in `src/assets/connectors/logos/`
      - Show which components use each custom logo
      - Note file sizes and any optimization warnings
 
    - **License Summary:**
+
      - react-simple-icons: CC0 (Public Domain)
      - SVGL API downloads: List specific licenses found in API responses
      - Note any licensing concerns
 
    - **Usage Example:**
+
      ```tsx
      import { componentLogoMap, ComponentName } from './assets/connectors/componentLogoMap';
 
@@ -368,6 +388,7 @@ frontend/logo-download-report.md
 ```
 
 **Important:**
+
 - Do NOT create individual .svg files
 - Use react-simple-icons imports for available logos
 - Only create .tsx files with inline React components for custom logos from API downloads
