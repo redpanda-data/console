@@ -199,14 +199,14 @@ class TabClusters extends Component {
               }
 
               return (
-                // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
-                <span
+                <button
                   className="hoverLink"
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
-                  style={{ display: 'inline-block', width: '100%' }}
+                  style={{ display: 'inline-block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                  type="button"
                 >
                   {r.clusterName}
-                </span>
+                </button>
               );
             },
           },
@@ -283,18 +283,18 @@ const TabConnectors = observer(() => {
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
               <Tooltip hasArrow={true} label={original.name} placement="top">
-                {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
-                <span
+                <button
                   className="hoverLink"
                   onClick={() =>
                     appGlobal.historyPush(
                       `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
                     )
                   }
-                  style={{ display: 'inline-block', width: '100%' }}
+                  style={{ display: 'inline-block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                  type="button"
                 >
                   {original.name}
-                </span>
+                </button>
               </Tooltip>
             ),
           },
