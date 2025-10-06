@@ -461,6 +461,8 @@
         "noNamespaceImport": "error",
         // Prevent duplicate polyfills from Polyfill.io.
         "noUnwantedPolyfillio": "error",
+        // Ensure the preconnect attribute is used when using Google Fonts.
+        "useGoogleFontPreconnect": "error",
         // Require regex literals to be declared at the top level. Performance hit.
         "useTopLevelRegex": "off" // enable later
       },
