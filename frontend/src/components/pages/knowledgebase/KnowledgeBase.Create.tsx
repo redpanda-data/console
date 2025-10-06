@@ -129,18 +129,18 @@ const SecretDropdownField = ({
   };
 
   return (
-    <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
+    <FormControl isInvalid={!!errorMessage} isRequired={isRequired}>
       <FormLabel fontWeight="medium">{label}</FormLabel>
       {helperText && (
-        <Text fontSize="sm" color="gray.500" mb={2}>
+        <Text color="gray.500" fontSize="sm" mb={2}>
           {helperText}
         </Text>
       )}
       <SingleSelect
-        value={value}
         onChange={handleChange}
         options={allOptions}
         placeholder={placeholder || 'Select a secret...'}
+        value={value}
       />
       {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
     </FormControl>
@@ -171,19 +171,19 @@ const UserDropdown = ({
     })) || [];
 
   return (
-    <FormControl isRequired={isRequired} isInvalid={!!errorMessage}>
+    <FormControl isInvalid={!!errorMessage} isRequired={isRequired}>
       <FormLabel fontWeight="medium">{label}</FormLabel>
       {helperText && (
-        <Text fontSize="sm" color="gray.500" mb={2}>
+        <Text color="gray.500" fontSize="sm" mb={2}>
           {helperText}
         </Text>
       )}
       <SingleSelect
-        value={value}
+        isLoading={isLoading}
         onChange={onChange}
         options={userOptions}
         placeholder={isLoading ? 'Loading users...' : 'Select a user...'}
-        isLoading={isLoading}
+        value={value}
       />
       {errorMessage && <FormErrorMessage>{errorMessage}</FormErrorMessage>}
     </FormControl>
@@ -264,7 +264,7 @@ const TopicSelector = ({
         <Box>
           <Text fontWeight="medium">
             {option.value}{' '}
-            <Text as="span" fontSize="xs" color="blue.600">
+            <Text as="span" color="blue.600" fontSize="xs">
               (matches: {searchTerm})
             </Text>
           </Text>
@@ -303,17 +303,18 @@ const TopicSelector = ({
   return (
     <FormControl isRequired>
       <FormLabel>Input Topics</FormLabel>
-      <Text fontSize="sm" color="gray.500" mb={2}>
+      <Text color="gray.500" fontSize="sm" mb={2}>
         Select topics or enter regex patterns (e.g., my-topics-prefix-.*) to index for this knowledge base.
       </Text>
 
       <Select
+        filterOption={() => true}
+        formatOptionLabel={formatOptionLabel}
+        inputValue={searchTerm}
+        isLoading={isLoading}
         isMulti
         isSearchable
-        isLoading={isLoading}
-        placeholder="Search topics or enter regex patterns..."
-        options={filteredOptions}
-        value={selectedValues}
+        noOptionsMessage={() => (searchTerm ? `Press Enter to add pattern: ${searchTerm}` : 'No topics found')}
         onChange={(selected) => {
           if (isMultiValue(selected)) {
             onTopicsChange(selected.map((item) => item.value));
@@ -325,10 +326,9 @@ const TopicSelector = ({
         }}
         onInputChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        formatOptionLabel={formatOptionLabel}
-        inputValue={searchTerm}
-        filterOption={() => true}
-        noOptionsMessage={() => (searchTerm ? `Press Enter to add pattern: ${searchTerm}` : 'No topics found')}
+        options={filteredOptions}
+        placeholder="Search topics or enter regex patterns..."
+        value={selectedValues}
       />
 
       {/* Show preview of what each selected item matches */}
@@ -340,7 +340,7 @@ const TopicSelector = ({
 
           {/* Show exact topics first */}
           {selectedTopics.filter((topic) => !isRegexPattern(topic)).length > 0 && (
-            <Box mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
+            <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" mb={2} p={2}>
               <Text fontSize="sm" fontWeight="medium" mb={1}>
                 Exact topics ({selectedTopics.filter((topic) => !isRegexPattern(topic)).length}):
               </Text>
@@ -348,7 +348,7 @@ const TopicSelector = ({
                 {selectedTopics
                   .filter((topic) => !isRegexPattern(topic))
                   .map((topic, idx) => (
-                    <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                    <Text color="gray.700" fontSize="xs" key={idx} pl={2}>
                       • {topic}
                     </Text>
                   ))}
@@ -363,28 +363,28 @@ const TopicSelector = ({
               const matchingTopics = getMatchingTopics(topic);
 
               return (
-                <Box key={index} mb={2} p={2} bg="gray.50" borderRadius="md" border="1px solid" borderColor="gray.200">
-                  <Text fontSize="sm" fontWeight="medium" color="blue.600">
+                <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" key={index} mb={2} p={2}>
+                  <Text color="blue.600" fontSize="sm" fontWeight="medium">
                     {topic}{' '}
-                    <Text as="span" fontSize="xs" color="gray.500">
+                    <Text as="span" color="gray.500" fontSize="xs">
                       (regex pattern)
                     </Text>
                   </Text>
                   {matchingTopics.length > 0 ? (
                     <Box mt={1}>
-                      <Text fontSize="xs" color="gray.600" mb={1}>
+                      <Text color="gray.600" fontSize="xs" mb={1}>
                         Matches {matchingTopics.length} topics:
                       </Text>
                       <Box maxH="100px" overflowY="auto">
                         {matchingTopics.map((matchedTopic, idx) => (
-                          <Text key={idx} fontSize="xs" color="gray.700" pl={2}>
+                          <Text color="gray.700" fontSize="xs" key={idx} pl={2}>
                             • {matchedTopic}
                           </Text>
                         ))}
                       </Box>
                     </Box>
                   ) : (
-                    <Text fontSize="xs" color="red.500" mt={1}>
+                    <Text color="red.500" fontSize="xs" mt={1}>
                       No topics match this pattern
                     </Text>
                   )}
@@ -929,16 +929,16 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
   renderBasicInfo = () => (
     <Box mb={6}>
-      <Heading size="md" mb={4}>
+      <Heading mb={4} size="md">
         Basic Information
       </Heading>
-      <VStack spacing={4} align="stretch">
-        <FormControl isRequired isInvalid={!!this.validationErrors.displayName}>
+      <VStack align="stretch" spacing={4}>
+        <FormControl isInvalid={!!this.validationErrors.displayName} isRequired>
           <FormLabel>Display Name</FormLabel>
           <Input
-            value={this.formData.displayName}
             onChange={(e) => this.updateFormData('displayName', e.target.value)}
             placeholder="Enter display name"
+            value={this.formData.displayName}
           />
           <FormErrorMessage>{this.validationErrors.displayName}</FormErrorMessage>
         </FormControl>
@@ -946,39 +946,39 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
         <FormControl>
           <FormLabel>Description</FormLabel>
           <Textarea
-            value={this.formData.description}
             onChange={(e) => this.updateFormData('description', e.target.value)}
             placeholder="Enter description"
             rows={3}
+            value={this.formData.description}
           />
         </FormControl>
 
         <FormControl>
           <FormLabel>Tags</FormLabel>
-          <Text fontSize="sm" color="gray.500" mb={2}>
+          <Text color="gray.500" fontSize="sm" mb={2}>
             Labels can help you organize your knowledge bases.
           </Text>
           {this.formData.tags.map((tag, index) => (
-            <Flex key={index} gap={2} mb={2}>
+            <Flex gap={2} key={index} mb={2}>
               <Input
+                flex={1}
+                onChange={(e) => this.updateTag(index, 'key', e.target.value)}
                 placeholder="Key"
                 value={tag.key}
-                onChange={(e) => this.updateTag(index, 'key', e.target.value)}
-                flex={1}
               />
               <Input
+                flex={1}
+                onChange={(e) => this.updateTag(index, 'value', e.target.value)}
                 placeholder="Value"
                 value={tag.value}
-                onChange={(e) => this.updateTag(index, 'value', e.target.value)}
-                flex={1}
               />
-              <Button variant="outline" size="sm" onClick={() => this.removeTag(index)}>
+              <Button onClick={() => this.removeTag(index)} size="sm" variant="outline">
                 <Icon as={AiOutlineDelete} />
               </Button>
             </Flex>
           ))}
           <ButtonGroup>
-            <Button variant="outline" size="sm" onClick={this.addTag} leftIcon={<span>+</span>} mt={2}>
+            <Button leftIcon={<span>+</span>} mt={2} onClick={this.addTag} size="sm" variant="outline">
               Add Tag
             </Button>
           </ButtonGroup>
@@ -989,33 +989,33 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
   renderVectorDatabase = () => (
     <Box mb={6}>
-      <Heading size="md" mb={4}>
+      <Heading mb={4} size="md">
         Vector Database
       </Heading>
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <FormControl>
           <FormLabel>Database Type</FormLabel>
           <Text>PostgreSQL</Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text color="gray.500" fontSize="sm">
             Only PostgreSQL is currently supported as a vector database.
           </Text>
         </FormControl>
 
         <SecretDropdownField
-          label="PostgreSQL DSN"
-          value={this.formData.postgresDsn}
-          onChange={(value) => this.updateFormData('postgresDsn', value)}
-          placeholder="postgresql://user:password@host:port/database"
-          onCreateNew={() => this.openAddSecret('postgresDsn')}
-          isRequired
           errorMessage={this.validationErrors.postgresDsn}
           helperText="All credentials are securely stored in your Secrets Store"
+          isRequired
+          label="PostgreSQL DSN"
+          onChange={(value) => this.updateFormData('postgresDsn', value)}
+          onCreateNew={() => this.openAddSecret('postgresDsn')}
+          placeholder="postgresql://user:password@host:port/database"
+          value={this.formData.postgresDsn}
         />
-        <FormControl isRequired isInvalid={!!this.validationErrors.postgresTable}>
+        <FormControl isInvalid={!!this.validationErrors.postgresTable} isRequired>
           <FormLabel>Table Name</FormLabel>
           <Input
-            value={this.formData.postgresTable}
             onChange={(e) => this.updateFormData('postgresTable', e.target.value)}
+            value={this.formData.postgresTable}
           />
           <FormErrorMessage>{this.validationErrors.postgresTable}</FormErrorMessage>
         </FormControl>
@@ -1025,36 +1025,36 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
   renderEmbeddingGenerator = () => (
     <Box mb={6}>
-      <Heading size="md" mb={4}>
+      <Heading mb={4} size="md">
         Embedding Generator
       </Heading>
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <FormControl>
           <FormLabel>Provider</FormLabel>
           <SingleSelect
-            value={this.formData.embeddingProvider}
             onChange={(value) => this.updateFormData('embeddingProvider', value)}
             options={[
               { value: 'openai', label: 'OpenAI' },
               { value: 'cohere', label: 'Cohere' },
             ]}
+            value={this.formData.embeddingProvider}
           />
         </FormControl>
 
-        <FormControl isRequired isInvalid={!!this.validationErrors.embeddingModel}>
+        <FormControl isInvalid={!!this.validationErrors.embeddingModel} isRequired>
           <FormLabel>Model</FormLabel>
           <Input
-            value={this.formData.embeddingModel}
             onChange={(e) => this.updateFormData('embeddingModel', e.target.value)}
             placeholder="text-embedding-ada-002"
+            value={this.formData.embeddingModel}
           />
           {this.formData.embeddingProvider === 'openai' && (
-            <Text fontSize="sm" color="gray.500" mt={1}>
+            <Text color="gray.500" fontSize="sm" mt={1}>
               See{' '}
               <Link
+                color="blue.500"
                 href="https://platform.openai.com/docs/guides/embeddings/embedding-models#embedding-models"
                 isExternal
-                color="blue.500"
               >
                 OpenAI embedding models
               </Link>{' '}
@@ -1062,9 +1062,9 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
             </Text>
           )}
           {this.formData.embeddingProvider === 'cohere' && (
-            <Text fontSize="sm" color="gray.500" mt={1}>
+            <Text color="gray.500" fontSize="sm" mt={1}>
               See{' '}
-              <Link href="https://docs.cohere.com/docs/cohere-embed" isExternal color="blue.500">
+              <Link color="blue.500" href="https://docs.cohere.com/docs/cohere-embed" isExternal>
                 Cohere embedding models
               </Link>{' '}
               for available models and dimensions.
@@ -1073,40 +1073,40 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
           <FormErrorMessage>{this.validationErrors.embeddingModel}</FormErrorMessage>
         </FormControl>
 
-        <FormControl isRequired isInvalid={!!this.validationErrors.embeddingDimensions}>
+        <FormControl isInvalid={!!this.validationErrors.embeddingDimensions} isRequired>
           <FormLabel>Dimensions</FormLabel>
           <Input
-            type="number"
-            value={this.formData.embeddingDimensions}
             onChange={(e) => this.updateFormData('embeddingDimensions', Number.parseInt(e.target.value, 10) || 1536)}
             placeholder="1536"
+            type="number"
+            value={this.formData.embeddingDimensions}
           />
           <FormErrorMessage>{this.validationErrors.embeddingDimensions}</FormErrorMessage>
         </FormControl>
 
         {this.formData.embeddingProvider === 'openai' && (
           <SecretDropdownField
-            label="OpenAI API Key"
-            value={this.formData.openaiApiKey}
-            onChange={(value) => this.updateFormData('openaiApiKey', value)}
-            placeholder="Select OpenAI API key from secrets"
-            onCreateNew={() => this.openAddSecret('openaiApiKey')}
-            isRequired
             errorMessage={this.validationErrors.openaiApiKey}
             helperText="All credentials are securely stored in your Secrets Store"
+            isRequired
+            label="OpenAI API Key"
+            onChange={(value) => this.updateFormData('openaiApiKey', value)}
+            onCreateNew={() => this.openAddSecret('openaiApiKey')}
+            placeholder="Select OpenAI API key from secrets"
+            value={this.formData.openaiApiKey}
           />
         )}
 
         {this.formData.embeddingProvider === 'cohere' && (
           <SecretDropdownField
-            label="Cohere API Key"
-            value={this.formData.cohereApiKey}
-            onChange={(value) => this.updateFormData('cohereApiKey', value)}
-            placeholder="Select Cohere API key from secrets"
-            onCreateNew={() => this.openAddSecret('cohereApiKey')}
-            isRequired
             errorMessage={this.validationErrors.cohereApiKey}
             helperText="All credentials are securely stored in your Secrets Store"
+            isRequired
+            label="Cohere API Key"
+            onChange={(value) => this.updateFormData('cohereApiKey', value)}
+            onCreateNew={() => this.openAddSecret('cohereApiKey')}
+            placeholder="Select Cohere API key from secrets"
+            value={this.formData.cohereApiKey}
           />
         )}
       </VStack>
@@ -1115,34 +1115,34 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
   renderIndexer = () => (
     <Box mb={6}>
-      <Heading size="md" mb={4}>
+      <Heading mb={4} size="md">
         Indexer
       </Heading>
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <Flex gap={4}>
-          <FormControl isRequired isInvalid={!!this.validationErrors.chunkSize}>
+          <FormControl isInvalid={!!this.validationErrors.chunkSize} isRequired>
             <FormLabel>Chunk Size</FormLabel>
             <Input
-              type="number"
-              value={this.formData.chunkSize}
               onChange={(e) => this.updateFormData('chunkSize', Number.parseInt(e.target.value, 10) || 512)}
               placeholder="512"
+              type="number"
+              value={this.formData.chunkSize}
             />
             <FormErrorMessage>{this.validationErrors.chunkSize}</FormErrorMessage>
           </FormControl>
-          <FormControl isRequired isInvalid={!!this.validationErrors.chunkOverlap}>
+          <FormControl isInvalid={!!this.validationErrors.chunkOverlap} isRequired>
             <FormLabel>Chunk Overlap</FormLabel>
             <Input
-              type="number"
-              value={this.formData.chunkOverlap}
               onChange={(e) => this.updateFormData('chunkOverlap', Number.parseInt(e.target.value, 10) || 100)}
               placeholder="100"
+              type="number"
+              value={this.formData.chunkOverlap}
             />
             <FormErrorMessage>{this.validationErrors.chunkOverlap}</FormErrorMessage>
           </FormControl>
         </Flex>
 
-        <TopicSelector selectedTopics={this.formData.inputTopics} onTopicsChange={this.updateInputTopics} />
+        <TopicSelector onTopicsChange={this.updateInputTopics} selectedTopics={this.formData.inputTopics} />
         {this.validationErrors.inputTopics && (
           <Text color="red.500" fontSize="sm" mt={1}>
             {this.validationErrors.inputTopics}
@@ -1152,10 +1152,9 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
         <FormControl>
           <FormLabel>Redpanda Credentials</FormLabel>
           <RadioGroup
-            name="credentialChoice"
             direction="column"
             isAttached={false}
-            value={this.formData.credentialChoice}
+            name="credentialChoice"
             onChange={(value) => this.updateFormData('credentialChoice', value)}
             options={[
               {
@@ -1163,7 +1162,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
                 label: (
                   <VStack align="start" spacing={1}>
                     <Text fontWeight="medium">Auto-generate credentials (Coming Soon)</Text>
-                    <Text fontSize="sm" color="gray.600">
+                    <Text color="gray.600" fontSize="sm">
                       We'll create a unique user and password for this knowledge base automatically
                     </Text>
                   </VStack>
@@ -1175,49 +1174,50 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
                 label: (
                   <VStack align="start" spacing={1}>
                     <Text fontWeight="medium">Provide your own credentials</Text>
-                    <Text fontSize="sm" color="gray.600">
+                    <Text color="gray.600" fontSize="sm">
                       Use existing Redpanda username and password
                     </Text>
                   </VStack>
                 ),
               },
             ]}
+            value={this.formData.credentialChoice}
           />
         </FormControl>
 
         {this.formData.credentialChoice === 'manual' && (
           <Flex gap={4}>
             <UserDropdown
-              label="Redpanda Username"
-              value={this.formData.redpandaUsername}
-              onChange={(value) => this.updateFormData('redpandaUsername', value)}
-              isRequired
               errorMessage={this.validationErrors.redpandaUsername}
               helperText="Select from existing Redpanda users"
+              isRequired
+              label="Redpanda Username"
+              onChange={(value) => this.updateFormData('redpandaUsername', value)}
+              value={this.formData.redpandaUsername}
             />
             <SecretDropdownField
-              label="Redpanda Password"
-              value={this.formData.redpandaPassword}
-              onChange={(value) => this.updateFormData('redpandaPassword', value)}
-              placeholder="Enter password or select from secrets"
-              onCreateNew={() => this.openAddSecret('redpandaPassword')}
-              isRequired
               errorMessage={this.validationErrors.redpandaPassword}
               helperText="All credentials are securely stored in your Secrets Store"
+              isRequired
+              label="Redpanda Password"
+              onChange={(value) => this.updateFormData('redpandaPassword', value)}
+              onCreateNew={() => this.openAddSecret('redpandaPassword')}
+              placeholder="Enter password or select from secrets"
+              value={this.formData.redpandaPassword}
             />
           </Flex>
         )}
 
         {this.formData.credentialChoice === 'manual' && (
-          <FormControl isRequired isInvalid={!!this.validationErrors.redpandaSaslMechanism}>
+          <FormControl isInvalid={!!this.validationErrors.redpandaSaslMechanism} isRequired>
             <FormLabel>SASL Mechanism</FormLabel>
             <SingleSelect
-              value={this.formData.redpandaSaslMechanism}
               onChange={(value) => this.updateFormData('redpandaSaslMechanism', value)}
               options={[
                 { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256, label: 'SCRAM-SHA-256' },
                 { value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512, label: 'SCRAM-SHA-512' },
               ]}
+              value={this.formData.redpandaSaslMechanism}
             />
             <FormErrorMessage>{this.validationErrors.redpandaSaslMechanism}</FormErrorMessage>
           </FormControl>
@@ -1228,10 +1228,10 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
   renderReranker = () => (
     <Box mb={6}>
-      <Heading size="md" mb={4}>
+      <Heading mb={4} size="md">
         Retrieval
       </Heading>
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <FormControl>
           <Flex alignItems="center" gap={2}>
             <Checkbox
@@ -1242,32 +1242,32 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
               Enable Reranker (Recommended)
             </FormLabel>
           </Flex>
-          <Text fontSize="sm" color="gray.500" mt={1}>
+          <Text color="gray.500" fontSize="sm" mt={1}>
             Reranker improves search quality by reordering retrieved documents based on relevance.
           </Text>
         </FormControl>
 
         {this.formData.rerankerEnabled && (
           <>
-            <FormControl isRequired isInvalid={!!this.validationErrors.rerankerModel}>
+            <FormControl isInvalid={!!this.validationErrors.rerankerModel} isRequired>
               <FormLabel>Model</FormLabel>
               <Input
-                value={this.formData.rerankerModel}
                 onChange={(e) => this.updateFormData('rerankerModel', e.target.value)}
                 placeholder="e.g., rerank-v3.5"
+                value={this.formData.rerankerModel}
               />
               <FormErrorMessage>{this.validationErrors.rerankerModel}</FormErrorMessage>
             </FormControl>
 
             <SecretDropdownField
-              label="API Key"
-              value={this.formData.rerankerApiKey}
-              onChange={(value) => this.updateFormData('rerankerApiKey', value)}
-              placeholder="Select Cohere API key from secrets"
-              onCreateNew={() => this.openAddSecret('rerankerApiKey')}
-              isRequired
               errorMessage={this.validationErrors.rerankerApiKey}
               helperText="All credentials are securely stored in your Secrets Store"
+              isRequired
+              label="API Key"
+              onChange={(value) => this.updateFormData('rerankerApiKey', value)}
+              onCreateNew={() => this.openAddSecret('rerankerApiKey')}
+              placeholder="Select Cohere API key from secrets"
+              value={this.formData.rerankerApiKey}
             />
           </>
         )}
@@ -1277,28 +1277,28 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
   renderGeneration = () => (
     <Box mb={6}>
-      <Heading size="md" mb={4}>
+      <Heading mb={4} size="md">
         Generation
       </Heading>
-      <VStack spacing={4} align="stretch">
+      <VStack align="stretch" spacing={4}>
         <FormControl>
           <FormLabel>Provider</FormLabel>
           <Text>OpenAI</Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text color="gray.500" fontSize="sm">
             Only OpenAI is currently supported as a generation provider.
           </Text>
         </FormControl>
 
-        <FormControl isRequired isInvalid={!!this.validationErrors.generationModel}>
+        <FormControl isInvalid={!!this.validationErrors.generationModel} isRequired>
           <FormLabel>Model</FormLabel>
           <Input
-            value={this.formData.generationModel}
             onChange={(e) => this.updateFormData('generationModel', e.target.value)}
             placeholder="Generation Model"
+            value={this.formData.generationModel}
           />
-          <Text fontSize="sm" color="gray.500" mt={1}>
+          <Text color="gray.500" fontSize="sm" mt={1}>
             See{' '}
-            <Link href="https://platform.openai.com/docs/models/overview" isExternal color="blue.500">
+            <Link color="blue.500" href="https://platform.openai.com/docs/models/overview" isExternal>
               OpenAI models
             </Link>{' '}
             for available models.
@@ -1307,14 +1307,14 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
         </FormControl>
 
         <SecretDropdownField
-          label="API Key"
-          value={this.formData.generationApiKey}
-          onChange={(value) => this.updateFormData('generationApiKey', value)}
-          placeholder="Select OpenAI API key from secrets"
-          onCreateNew={() => this.openAddSecret('generationApiKey')}
-          isRequired
           errorMessage={this.validationErrors.generationApiKey}
           helperText="All credentials are securely stored in your Secrets Store"
+          isRequired
+          label="API Key"
+          onChange={(value) => this.updateFormData('generationApiKey', value)}
+          onCreateNew={() => this.openAddSecret('generationApiKey')}
+          placeholder="Select OpenAI API key from secrets"
+          value={this.formData.generationApiKey}
         />
       </VStack>
     </Box>
@@ -1327,13 +1327,13 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
         <Box mb={4}>
           <RouterLink to="/knowledgebases">
-            <Button variant="ghost" size="sm">
+            <Button size="sm" variant="ghost">
               ← Back to Knowledge Bases
             </Button>
           </RouterLink>
         </Box>
 
-        <Heading size="lg" mb={6}>
+        <Heading mb={6} size="lg">
           Create Knowledge Base
         </Heading>
 
@@ -1344,16 +1344,16 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
         {this.renderReranker()}
         {this.renderGeneration()}
 
-        <Flex justifyContent="flex-end" gap={3}>
+        <Flex gap={3} justifyContent="flex-end">
           <RouterLink to="/knowledgebases">
             <Button variant="outline">Cancel</Button>
           </RouterLink>
           <Button
             colorScheme="darkblue"
-            onClick={this.handleSubmit}
+            isDisabled={!this.isFormValid && Object.keys(this.validationErrors).length > 0}
             isLoading={this.loading}
             loadingText="Creating..."
-            isDisabled={!this.isFormValid && Object.keys(this.validationErrors).length > 0}
+            onClick={this.handleSubmit}
           >
             Create
           </Button>
@@ -1361,8 +1361,8 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
 
         <SecretsQuickAdd
           isOpen={this.isAddSecretOpen}
-          onCloseAddSecret={this.closeAddSecret}
           onAdd={this.onAddSecret}
+          onCloseAddSecret={this.closeAddSecret}
         />
       </PageContent>
     );

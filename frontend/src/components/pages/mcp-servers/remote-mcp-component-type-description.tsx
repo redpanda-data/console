@@ -44,10 +44,10 @@ export const RemoteMCPComponentTypeDescription = ({ componentType }: RemoteMCPCo
       {getComponentTypeDescription(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}{' '}
       {componentType !== undefined && (
         <a
-          href={getComponentTypeDocumentationUrl(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}
-          target="_blank"
-          rel="noopener noreferrer"
           className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+          href={getComponentTypeDocumentationUrl(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}
+          rel="noopener noreferrer"
+          target="_blank"
         >
           Learn more <ExternalLink className="h-3 w-3" />
         </a>

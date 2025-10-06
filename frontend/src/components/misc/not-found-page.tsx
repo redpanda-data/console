@@ -7,19 +7,19 @@ export const NotFoundPage = () => {
   const navigate = useNavigate();
 
   return (
-    <Center h="80vh" data-testid="not-found-page">
+    <Center data-testid="not-found-page" h="80vh">
       <Stack spacing={4} textAlign="center">
-        <Image src={errorBananaSlip} alt="Error" height="180px" />
-        <Heading as="h1" variant="lg" fontSize={32}>
+        <Image alt="Error" height="180px" src={errorBananaSlip} />
+        <Heading as="h1" fontSize={32} variant="lg">
           Resource not found.
         </Heading>
         <Text
-          textDecoration="underline"
+          data-testid="return-to-home"
           fontSize={16}
           onClick={() => {
             navigate(-1);
           }}
-          data-testid="return-to-home"
+          textDecoration="underline"
         >
           Go back
         </Text>

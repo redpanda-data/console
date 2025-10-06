@@ -19,7 +19,7 @@ export interface SecretInputProps {
 }
 
 const EditButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
-  <Tooltip label="Edit secret value" placement="top" hasArrow={true}>
+  <Tooltip hasArrow={true} label="Edit secret value" placement="top">
     <Button onClick={onClick} variant="link">
       Edit
     </Button>
@@ -70,18 +70,18 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
     <Flex flexDirection="row" gap={2}>
       <InputGroup>
         <Input
-          value={localState.value}
           onChange={(e) => {
             localState.value = e.target.value;
             if (onChange) onChange(e.target.value);
           }}
-          type={visible ? 'text' : 'password'}
           readOnly={!localState.canEdit}
+          type={visible ? 'text' : 'password'}
+          value={localState.value}
         />
         {localState.canEdit && (
           <InputRightElement>
-            <Button variant="ghost" onClick={() => setVisible.toggle()}>
-              <Icon color="gray.500" as={visible ? EyeIcon : EyeOffIcon} />
+            <Button onClick={() => setVisible.toggle()} variant="ghost">
+              <Icon as={visible ? EyeIcon : EyeOffIcon} color="gray.500" />
             </Button>
           </InputRightElement>
         )}

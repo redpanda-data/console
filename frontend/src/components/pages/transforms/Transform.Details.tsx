@@ -89,7 +89,6 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
         <Box>
           {/* <Heading as="h2">{transformName}</Heading> */}
           <Button
-            variant="outline-delete"
             mt="2"
             onClick={() =>
               openDeleteModal(transformName, () => {
@@ -115,6 +114,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
                   });
               })
             }
+            variant="outline-delete"
           >
             Delete
           </Button>
@@ -175,7 +175,6 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
       </Box>
       <Box maxWidth="35rem">
         <DataTable<PartitionTransformStatus>
-          data={p.transform.statuses}
           columns={[
             { header: 'Partition', accessorKey: 'partitionId' },
             { header: 'Node', accessorKey: 'brokerId' },
@@ -187,6 +186,7 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
             },
             { header: 'Lag', accessorKey: 'lag' },
           ]}
+          data={p.transform.statuses}
         />
       </Box>
     </>
@@ -261,7 +261,7 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
         row: {
           original: { timestamp },
         },
-      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
       size: 30,
     },
     {
@@ -269,9 +269,9 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       accessorKey: 'value',
       cell: ({ row: { original } }) => (
         <MessagePreview
+          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
           msg={original}
           previewFields={() => []}
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
         />
       ),
       size: Number.MAX_SAFE_INTEGER,
@@ -290,33 +290,33 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       <Section minWidth="800px">
         <Flex mb="6">
           <SearchField
-            width="230px"
             searchText={uiSettings.connectorsDetails.logsQuickSearch}
             setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
+            width="230px"
           />
-          <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
+          <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
             Refresh logs
           </Button>
         </Flex>
 
         <DataTable<TopicMessage>
+          columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
-          columns={messageTableColumns}
-          sorting={uiSettings.connectorsDetails.sorting ?? []}
           onSortingChange={(sorting) => {
             uiSettings.connectorsDetails.sorting =
               typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
           }}
           pagination={paginationParams}
+          sorting={uiSettings.connectorsDetails.sorting ?? []}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
-              msg={original}
               loadLargeMessage={() =>
                 loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
               }
+              msg={original}
             />
           )}
         />

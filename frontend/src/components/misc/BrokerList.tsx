@@ -94,7 +94,7 @@ export class BrokerList extends Component<BrokerListProps> {
         );
 
       return (
-        <BrokerTooltip key={id} broker={broker} tooltipSuffix={additionalContent}>
+        <BrokerTooltip broker={broker} key={id} tooltipSuffix={additionalContent}>
           {tag}
         </BrokerTooltip>
       );
@@ -134,7 +134,7 @@ function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; toolt
   );
 
   return (
-    <Tooltip placement="top" label={tooltipContent} hasArrow>
+    <Tooltip hasArrow label={tooltipContent} placement="top">
       {p.children}
     </Tooltip>
   );

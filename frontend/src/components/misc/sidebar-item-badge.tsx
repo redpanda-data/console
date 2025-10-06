@@ -12,7 +12,6 @@ export interface SidebarItemBadgeProps {
  */
 export const SidebarItemBadge = ({ children }: SidebarItemBadgeProps) => (
   <Badge
-    variant="inverted"
     style={{
       display: 'inline-block',
       whiteSpace: 'nowrap',
@@ -30,6 +29,7 @@ export const SidebarItemBadge = ({ children }: SidebarItemBadgeProps) => (
       borderColor: 'var(--chakra-colors-gray-200)',
       color: 'var(--chakra-colors-gray-100)',
     }}
+    variant="inverted"
   >
     {children}
   </Badge>

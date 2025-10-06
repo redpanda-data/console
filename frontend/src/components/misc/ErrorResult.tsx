@@ -78,33 +78,33 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
 
   return (
     <HStack
-      p={4}
-      spacing={8}
       alignItems="center"
-      justifyContent="center"
-      w="full"
       flexWrap={{ base: 'wrap', md: 'nowrap' }}
       gap={8}
+      justifyContent="center"
+      p={4}
+      spacing={8}
+      w="full"
     >
-      <Stack spacing={4} maxW="700px" p={5}>
+      <Stack maxW="700px" p={5} spacing={4}>
         <Heading fontSize="2xl" lineHeight="short">
           {errorTitle}
         </Heading>
         <Text fontSize="lg">{capitalizeFirst(errorMessage)}</Text>
         {errorDetails && (
-          <CodeBlock codeString={errorDetails} language="json" theme="light" showCopyButton maxW="50vw" />
+          <CodeBlock codeString={errorDetails} language="json" maxW="50vw" showCopyButton theme="light" />
         )}
       </Stack>
-      <Box display="flex" alignItems="center" justifyContent="center" minW="300px">
+      <Box alignItems="center" display="flex" justifyContent="center" minW="300px">
         <Image
-          w="full"
-          maxW="300px"
-          h="auto"
-          display="block"
-          src={Avatars.errorBananaSlipSvg}
           alt="Dev Redpanda"
+          display="block"
           fallback={<Text color="gray.500">Error image not available</Text>}
+          h="auto"
+          maxW="300px"
           objectFit="contain"
+          src={Avatars.errorBananaSlipSvg}
+          w="full"
         />
       </Box>
     </HStack>

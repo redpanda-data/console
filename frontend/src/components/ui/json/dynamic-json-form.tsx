@@ -260,7 +260,7 @@ export const DynamicJSONForm = ({
       // Render as JSON editor when max depth is reached
       return (
         <JSONEditor
-          value={JSON.stringify(currentValue ?? (propSchema.type === 'array' ? [] : {}), null, 2)}
+          error={jsonError}
           onChange={(newValue) => {
             try {
               const parsed = JSON.parse(newValue);
@@ -270,7 +270,7 @@ export const DynamicJSONForm = ({
               setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
             }
           }}
-          error={jsonError}
+          value={JSON.stringify(currentValue ?? (propSchema.type === 'array' ? [] : {}), null, 2)}
         />
       );
     }
@@ -300,8 +300,7 @@ export const DynamicJSONForm = ({
 
           return (
             <Combobox
-              options={customFieldConfig.options}
-              value={effectiveValue ?? ''}
+              creatable
               onChange={(val) => {
                 if (!val && !isRequired) {
                   handleFieldChange(path, undefined);
@@ -309,8 +308,6 @@ export const DynamicJSONForm = ({
                   handleFieldChange(path, val);
                 }
               }}
-              placeholder={customFieldConfig.placeholder || 'Select an option...'}
-              creatable
               onCreateOption={(newValue) => {
                 if (customFieldConfig.onCreateOption) {
                   customFieldConfig.onCreateOption(newValue, path, handleFieldChange);
@@ -320,6 +317,9 @@ export const DynamicJSONForm = ({
                   handleFieldChange(path, newValue);
                 }
               }}
+              options={customFieldConfig.options}
+              placeholder={customFieldConfig.placeholder || 'Select an option...'}
+              value={effectiveValue ?? ''}
             />
           );
         }
@@ -332,8 +332,7 @@ export const DynamicJSONForm = ({
 
           return (
             <Combobox
-              options={oneOfOptions}
-              value={(currentValue as string) ?? ''}
+              creatable
               onChange={(val) => {
                 if (!val && !isRequired) {
                   handleFieldChange(path, undefined);
@@ -341,13 +340,14 @@ export const DynamicJSONForm = ({
                   handleFieldChange(path, val);
                 }
               }}
-              placeholder="Select an option..."
-              creatable
               onCreateOption={(newValue) => {
                 const newOption = { value: newValue, label: newValue };
                 oneOfOptions.push(newOption);
                 handleFieldChange(path, newValue);
               }}
+              options={oneOfOptions}
+              placeholder="Select an option..."
+              value={(currentValue as string) ?? ''}
             />
           );
         }
@@ -360,8 +360,7 @@ export const DynamicJSONForm = ({
 
           return (
             <Combobox
-              options={enumOptions}
-              value={(currentValue as string) ?? ''}
+              creatable
               onChange={(val) => {
                 if (!val && !isRequired) {
                   handleFieldChange(path, undefined);
@@ -369,13 +368,14 @@ export const DynamicJSONForm = ({
                   handleFieldChange(path, val);
                 }
               }}
-              placeholder="Select an option..."
-              creatable
               onCreateOption={(newValue) => {
                 const newOption = { value: newValue, label: newValue };
                 enumOptions.push(newOption);
                 handleFieldChange(path, newValue);
               }}
+              options={enumOptions}
+              placeholder="Select an option..."
+              value={(currentValue as string) ?? ''}
             />
           );
         }
@@ -401,18 +401,18 @@ export const DynamicJSONForm = ({
 
         return (
           <Input
-            type={inputType}
-            value={(currentValue as string) ?? ''}
+            maxLength={propSchema.maxLength}
+            minLength={propSchema.minLength}
             onChange={(e) => {
               const val = e.target.value;
               // Always allow setting string values, including empty strings
               handleFieldChange(path, val);
             }}
+            pattern={propSchema.pattern}
             placeholder={propSchema.description}
             required={isRequired}
-            minLength={propSchema.minLength}
-            maxLength={propSchema.maxLength}
-            pattern={propSchema.pattern}
+            type={inputType}
+            value={(currentValue as string) ?? ''}
           />
         );
       }
@@ -420,8 +420,8 @@ export const DynamicJSONForm = ({
       case 'number':
         return (
           <Input
-            type="number"
-            value={(currentValue as number)?.toString() ?? ''}
+            max={propSchema.maximum}
+            min={propSchema.minimum}
             onChange={(e) => {
               const val = e.target.value;
               if (!val && !isRequired) {
@@ -435,17 +435,16 @@ export const DynamicJSONForm = ({
             }}
             placeholder={propSchema.description}
             required={isRequired}
-            min={propSchema.minimum}
-            max={propSchema.maximum}
+            type="number"
+            value={(currentValue as number)?.toString() ?? ''}
           />
         );
 
       case 'integer':
         return (
           <Input
-            type="number"
-            step="1"
-            value={(currentValue as number)?.toString() ?? ''}
+            max={propSchema.maximum}
+            min={propSchema.minimum}
             onChange={(e) => {
               const val = e.target.value;
               if (!val && !isRequired) {
@@ -459,19 +458,20 @@ export const DynamicJSONForm = ({
             }}
             placeholder={propSchema.description}
             required={isRequired}
-            min={propSchema.minimum}
-            max={propSchema.maximum}
+            step="1"
+            type="number"
+            value={(currentValue as number)?.toString() ?? ''}
           />
         );
 
       case 'boolean':
         return (
           <Input
-            type="checkbox"
             checked={(currentValue as boolean) ?? false}
-            onChange={(e) => handleFieldChange(path, e.target.checked)}
             className="w-4 h-4"
+            onChange={(e) => handleFieldChange(path, e.target.checked)}
             required={isRequired}
+            type="checkbox"
           />
         );
       case 'null':
@@ -480,7 +480,7 @@ export const DynamicJSONForm = ({
         if (!propSchema.properties) {
           return (
             <JSONEditor
-              value={JSON.stringify(currentValue ?? {}, null, 2)}
+              error={jsonError}
               onChange={(newValue) => {
                 try {
                   const parsed = JSON.parse(newValue);
@@ -490,7 +490,7 @@ export const DynamicJSONForm = ({
                   setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
                 }
               }}
-              error={jsonError}
+              value={JSON.stringify(currentValue ?? {}, null, 2)}
             />
           );
         }
@@ -500,11 +500,11 @@ export const DynamicJSONForm = ({
             {Object.entries(propSchema.properties).map(([key, subSchema]) => (
               <div key={key}>
                 <div className="flex items-center gap-2 mb-1">
-                  <Text variant="label" className="text-sm">
+                  <Text className="text-sm" variant="label">
                     {key}
                     {propSchema.required?.includes(key) && <span className="text-red-500 ml-1">*</span>}
                   </Text>
-                  <Badge variant="outline" className="text-xs px-1 py-0">
+                  <Badge className="text-xs px-1 py-0" variant="outline">
                     {(subSchema as JSONSchemaType).type || 'unknown'}
                   </Badge>
                 </div>
@@ -535,7 +535,7 @@ export const DynamicJSONForm = ({
           return (
             <div className="space-y-4">
               {propSchema.description && (
-                <Text variant="small" className="text-muted-foreground">
+                <Text className="text-muted-foreground" variant="small">
                   {propSchema.description}
                 </Text>
               )}
@@ -551,21 +551,21 @@ export const DynamicJSONForm = ({
                   const itemDisplayName = itemTypeName.charAt(0).toUpperCase() + itemTypeName.slice(1);
 
                   return (
-                    <div key={index} className="border border-border rounded-lg p-4 bg-card">
+                    <div className="border border-border rounded-lg p-4 bg-card" key={index}>
                       <div className="flex items-center justify-between mb-3">
-                        <Heading level={4} className="text-sm">
+                        <Heading className="text-sm" level={4}>
                           {itemDisplayName} #{index + 1}
                         </Heading>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          className={arrayValue.length <= 1 ? 'invisible' : ''}
+                          disabled={arrayValue.length <= 1}
                           onClick={() => {
                             const newArray = [...arrayValue];
                             newArray.splice(index, 1);
                             handleFieldChange(path, newArray);
                           }}
-                          className={arrayValue.length <= 1 ? 'invisible' : ''}
-                          disabled={arrayValue.length <= 1}
+                          size="sm"
+                          variant="outline"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -573,12 +573,12 @@ export const DynamicJSONForm = ({
                       <div className="space-y-3">
                         {propSchema.items?.type === 'object' && propSchema.items.properties
                           ? Object.entries(propSchema.items.properties).map(([key, subSchema]) => (
-                              <div key={key} className="space-y-1">
+                              <div className="space-y-1" key={key}>
                                 <div className="flex items-center gap-2">
-                                  <Text variant="label" className="text-sm">
+                                  <Text className="text-sm" variant="label">
                                     {key}
                                   </Text>
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
+                                  <Badge className="text-xs px-1 py-0" variant="outline">
                                     {(subSchema as JSONSchemaType).type || 'unknown'}
                                   </Badge>
                                   {propSchema.items?.required?.includes(key) && (
@@ -606,13 +606,13 @@ export const DynamicJSONForm = ({
                   );
                 })}
                 <Button
-                  variant="dashed"
-                  size="sm"
+                  className="w-full"
                   onClick={() => {
                     const defaultValue = getArrayItemDefault(propSchema.items as JSONSchemaType);
                     handleFieldChange(path, [...arrayValue, defaultValue]);
                   }}
-                  className="w-full"
+                  size="sm"
+                  variant="dashed"
                 >
                   + Add{' '}
                   {propSchema.items?.title ||
@@ -628,7 +628,7 @@ export const DynamicJSONForm = ({
         // For complex arrays, fall back to JSON editor
         return (
           <JSONEditor
-            value={JSON.stringify(currentValue ?? [], null, 2)}
+            error={jsonError}
             onChange={(newValue) => {
               try {
                 const parsed = JSON.parse(newValue);
@@ -638,7 +638,7 @@ export const DynamicJSONForm = ({
                 setJSONError(err instanceof Error ? err.message : 'Invalid JSON');
               }
             }}
-            error={jsonError}
+            value={JSON.stringify(currentValue ?? [], null, 2)}
           />
         );
       }
@@ -725,18 +725,18 @@ export const DynamicJSONForm = ({
         {isJSONMode && (
           <>
             <CopyButton
-              variant="outline"
-              size="sm"
               content={JSON.stringify(value, null, 2)}
               onCopy={() =>
                 toast.success('JSON copied', {
                   description: 'The JSON data has been successfully copied to your clipboard.',
                 })
               }
+              size="sm"
+              variant="outline"
             >
               Copy JSON
             </CopyButton>
-            <Button type="button" variant="outline" size="sm" onClick={formatJSON}>
+            <Button onClick={formatJSON} size="sm" type="button" variant="outline">
               <SpellCheck className="h-4 w-4" />
               Format JSON
             </Button>
@@ -744,7 +744,7 @@ export const DynamicJSONForm = ({
         )}
 
         {!isOnlyJSON && (
-          <Button variant="outline" size="sm" onClick={handleSwitchToFormMode}>
+          <Button onClick={handleSwitchToFormMode} size="sm" variant="outline">
             {isJSONMode ? (
               <>
                 <FileEdit className="h-4 w-4" />
@@ -762,7 +762,7 @@ export const DynamicJSONForm = ({
 
       {isJSONMode ? (
         <JSONEditor
-          value={rawJSONValue}
+          error={jsonError}
           onChange={(newValue) => {
             // Always update local state
             setRawJSONValue(newValue);
@@ -770,7 +770,7 @@ export const DynamicJSONForm = ({
             // Use the debounced function to attempt parsing and updating parent
             debouncedUpdateParent(newValue);
           }}
-          error={jsonError}
+          value={rawJSONValue}
         />
       ) : (
         renderFormFields(schema, value)

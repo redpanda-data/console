@@ -28,15 +28,6 @@ export class AdminRoles extends Component<{}> {
 
     return (
       <DataTable<Role>
-        sorting
-        pagination
-        data={roles}
-        expandRowByClick
-        subComponent={({ row: { original: role } }) => (
-          <Box py={6} px={10}>
-            <RoleComponent role={role} />
-          </Box>
-        )}
         columns={[
           {
             accessorKey: 'name',
@@ -44,6 +35,15 @@ export class AdminRoles extends Component<{}> {
             size: Number.POSITIVE_INFINITY,
           },
         ]}
+        data={roles}
+        expandRowByClick
+        pagination
+        sorting
+        subComponent={({ row: { original: role } }) => (
+          <Box px={10} py={6}>
+            <RoleComponent role={role} />
+          </Box>
+        )}
       />
     );
   }
@@ -71,7 +71,7 @@ export class RoleComponent extends Component<{ role: Role; grantedBy?: RoleBindi
               <div className="roleTitle">Granted By</div>
               <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>
                 {this.props.grantedBy?.map((x) => (
-                  <RoleBindingComponent key={x.ephemeralId} binding={x} />
+                  <RoleBindingComponent binding={x} key={x.ephemeralId} />
                 ))}
               </div>
             </div>
@@ -91,7 +91,7 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
       [
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabel">Resource</span>,
-        <span key={p.resourceName} className="codeBox resourceName">
+        <span className="codeBox resourceName" key={p.resourceName}>
           {p.resourceName}
         </span>,
       ],
@@ -129,7 +129,7 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
 
 function stringsToBoxes(ar: string[], joiner?: ReactNode, wrapperClass?: string): ReactNode {
   let r = ar.map<ReactNode>((str, index) => (
-    <span key={index} className="codeBox">
+    <span className="codeBox" key={index}>
       {str}
     </span>
   ));

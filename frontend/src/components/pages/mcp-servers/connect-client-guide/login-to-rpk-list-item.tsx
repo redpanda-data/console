@@ -16,7 +16,7 @@ export const LoginToRpkListItem = () => {
   return (
     <ListItem>
       Login to Redpanda Cloud:
-      <DynamicCodeBlock lang="bash" code="rpk cloud login" />
+      <DynamicCodeBlock code="rpk cloud login" lang="bash" />
     </ListItem>
   );
 };

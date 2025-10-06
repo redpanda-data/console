@@ -64,7 +64,7 @@ export const McpServerStateBadge = () => {
 
   const config = getMCPServerStatus(mcpServerData?.mcpServer?.state);
   return (
-    <Badge variant={config.variant} icon={config.icon}>
+    <Badge icon={config.icon} variant={config.variant}>
       {config.text}
     </Badge>
   );

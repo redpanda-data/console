@@ -92,7 +92,7 @@ function renderNotConfigured() {
           </Text>
 
           {/* todo: fix link once we have a better guide */}
-          <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
             <Button variant="solid">Redpanda Console Config Documentation</Button>
           </a>
         </VStack>
@@ -186,22 +186,22 @@ class SchemaList extends PageComponent<{}> {
       <PageContent key="b">
         <ToastContainer />
         {/* Statistics Bar */}
-        <Flex gap="1rem" alignItems="center">
+        <Flex alignItems="center" gap="1rem">
           <SmallStat title="Mode">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
           <Divider height="2ch" orientation="vertical" />
           <SmallStat title="Compatibility">{api.schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
         </Flex>
 
         <Button
-          variant="outline"
-          mb="4"
-          width="fit-content"
-          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
               : undefined
           }
+          mb="4"
+          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
+          variant="outline"
+          width="fit-content"
         >
           Edit compatibility
         </Button>
@@ -210,35 +210,35 @@ class SchemaList extends PageComponent<{}> {
 
         <Flex alignItems="center" gap="4">
           <SearchField
-            width="350px"
+            placeholderText="Filter by subject name or schema ID..."
             searchText={uiSettings.schemaList.quickSearch}
             setSearchText={action((filterText) => {
               uiSettings.schemaList.quickSearch = filterText;
               this.triggerSearchBySchemaId();
             })}
-            placeholderText="Filter by subject name or schema ID..."
+            width="350px"
           />
-          <Spinner size="md" display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} />
+          <Spinner display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
         </Flex>
 
         <Button
-          textDecoration="underline"
-          mr="auto"
           cursor="pointer"
-          mb=".5rem"
-          onClick={() => (this.isHelpSidebarOpen = true)}
           data-testid="schema-search-help"
-          variant="link"
-          paddingInline={0}
           fontWeight={400}
+          mb=".5rem"
+          mr="auto"
+          onClick={() => (this.isHelpSidebarOpen = true)}
+          paddingInline={0}
+          textDecoration="underline"
+          variant="link"
         >
           Help with schema search
         </Button>
         <Drawer
           isOpen={this.isHelpSidebarOpen}
+          onClose={() => (this.isHelpSidebarOpen = false)}
           placement="right"
           size="md"
-          onClose={() => (this.isHelpSidebarOpen = false)}
         >
           <DrawerOverlay />
           <DrawerContent>
@@ -246,15 +246,15 @@ class SchemaList extends PageComponent<{}> {
             <DrawerHeader data-testid="schema-search-header">Schema Search Help</DrawerHeader>
 
             <DrawerBody>
-              <Heading size="md" mt={4}>
+              <Heading mt={4} size="md">
                 Filtering schemas
               </Heading>
               There are two ways to filter schemas, and they work a little differently.
-              <Heading size="md" mt={4}>
+              <Heading mt={4} size="md">
                 Schema ID
               </Heading>
               If a number matches a schema ID, the results include all subjects referencing that schema.
-              <Heading size="md" mt={4}>
+              <Heading mt={4} size="md">
                 Subject name
               </Heading>
               To search subject names, enter that specific name or a regex.
@@ -266,12 +266,12 @@ class SchemaList extends PageComponent<{}> {
           <Flex justifyContent={'space-between'} pb={3}>
             <Button
               colorScheme="brand"
-              onClick={() => appGlobal.historyPush('/schema-registry/create')}
               disabledReason={
                 api.userData?.canCreateSchemas === false
                   ? "You don't have the 'canCreateSchemas' permission"
                   : undefined
               }
+              onClick={() => appGlobal.historyPush('/schema-registry/create')}
             >
               Create new schema
             </Button>
@@ -284,10 +284,6 @@ class SchemaList extends PageComponent<{}> {
           </Flex>
 
           <DataTable<SchemaRegistrySubject>
-            data={filteredSubjects}
-            pagination
-            sorting
-            rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
             columns={[
               {
                 header: 'Name',
@@ -298,7 +294,7 @@ class SchemaList extends PageComponent<{}> {
                     original: { name, isSoftDeleted },
                   },
                 }) => (
-                  <Box wordBreak="break-word" whiteSpace="break-spaces">
+                  <Box whiteSpace="break-spaces" wordBreak="break-word">
                     <Flex alignItems="center" gap={2}>
                       <Link
                         data-testid="schema-registry-table-name"
@@ -308,11 +304,11 @@ class SchemaList extends PageComponent<{}> {
                       </Link>
                       {isSoftDeleted && (
                         <Tooltip
-                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
                           hasArrow
+                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
                         >
                           <Box>
-                            <ArchiveIcon width={16} height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} />
+                            <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
                           </Box>
                         </Tooltip>
                       )}
@@ -340,14 +336,13 @@ class SchemaList extends PageComponent<{}> {
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
                   <Button
-                    variant="icon"
-                    height="16px"
                     color="gray.500"
                     disabledReason={
                       api.userData?.canDeleteSchemas === false
                         ? "You don't have the 'canDeleteSchemas' permission"
                         : undefined
                     }
+                    height="16px"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -401,6 +396,7 @@ class SchemaList extends PageComponent<{}> {
                         });
                       }
                     }}
+                    variant="icon"
                   >
                     <TrashIcon />
                   </Button>
@@ -408,6 +404,10 @@ class SchemaList extends PageComponent<{}> {
                 size: 1,
               },
             ]}
+            data={filteredSubjects}
+            pagination
+            rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
+            sorting
           />
         </Section>
       </PageContent>

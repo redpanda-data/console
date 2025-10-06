@@ -99,16 +99,16 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
 
   return (
     <Editor
+      beforeMount={(monaco) => setMonacoOptions(monaco)}
+      defaultLanguage="yaml"
+      defaultValue={''}
       loading={<LoadingPlaceholder />}
+      options={options}
+      path={'new-connector.yaml'}
       wrapperProps={{
         className: 'kowlEditor',
         style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
       }}
-      defaultValue={''}
-      path={'new-connector.yaml'}
-      defaultLanguage="yaml"
-      options={options}
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
       {...rest}
     />
   );

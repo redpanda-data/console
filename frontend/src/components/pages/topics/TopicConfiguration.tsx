@@ -152,13 +152,13 @@ const ConfigEditorForm: FC<{
           <ModalBody>
             <Text mb={6}>{editedEntry.documentation}</Text>
 
-            <Flex gap={4} flexDirection="column">
+            <Flex flexDirection="column" gap={4}>
               <FormField label={editedEntry.name}>
                 <Controller
                   control={control}
                   name="valueType"
                   render={({ field: { onChange, value } }) => (
-                    <RadioGroup name="valueType" options={valueTypeOptions} value={value} onChange={onChange} />
+                    <RadioGroup name="valueType" onChange={onChange} options={valueTypeOptions} value={value} />
                   )}
                 />
               </FormField>
@@ -180,7 +180,7 @@ const ConfigEditorForm: FC<{
               {valueType === 'default' && defaultConfigSynonym && (
                 <Box>
                   The default value is{' '}
-                  <Text fontWeight="bold" display="inline">
+                  <Text display="inline" fontWeight="bold">
                     {/*{JSON.stringify(editedEntry)}*/}
                     {formatConfigValue(editedEntry.name, defaultConfigSynonym.value, 'friendly')}
                   </Text>
@@ -189,7 +189,7 @@ const ConfigEditorForm: FC<{
               )}
             </Flex>
             {globalError && (
-              <Alert status="error" my={2}>
+              <Alert my={2} status="error">
                 <AlertIcon />
                 {globalError}
               </Alert>
@@ -197,14 +197,14 @@ const ConfigEditorForm: FC<{
           </ModalBody>
           <ModalFooter display="flex" gap={2}>
             <Button
-              variant="ghost"
               onClick={() => {
                 onClose();
               }}
+              variant="ghost"
             >
               Cancel
             </Button>
-            <Button variant="solid" type="submit" isDisabled={isSubmitting}>
+            <Button isDisabled={isSubmitting} type="submit" variant="solid">
               Save changes
             </Button>
           </ModalFooter>
@@ -270,28 +270,28 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
     <Box pt={4}>
       {$state.editedEntry !== null && (
         <ConfigEditorForm
-          targetTopic={props.targetTopic}
           editedEntry={$state.editedEntry}
           onClose={() => ($state.editedEntry = null)}
           onSuccess={() => {
             props.onForceRefresh();
           }}
+          targetTopic={props.targetTopic}
         />
       )}
       <div className="configGroupTable" data-testid="config-group-table">
         <SearchField
-          searchText={$state.filter || ''}
-          placeholderText="Filter"
-          setSearchText={(value) => ($state.filter = value)}
           icon="filter"
+          placeholderText="Filter"
+          searchText={$state.filter || ''}
+          setSearchText={(value) => ($state.filter = value)}
         />
         {categories.map((x) => (
           <ConfigGroup
-            key={x.key}
-            groupName={x.key}
             entries={x.items}
-            onEditEntry={editConfig}
+            groupName={x.key}
             hasEditPermissions={hasEditPermissions}
+            key={x.key}
+            onEditEntry={editConfig}
           />
         ))}
       </div>
@@ -314,10 +314,10 @@ const ConfigGroup = observer(
         {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
         {p.entries.map((e) => (
           <ConfigEntryComponent
-            key={e.name}
             entry={e}
-            onEditEntry={p.onEditEntry}
             hasEditPermissions={p.hasEditPermissions}
+            key={e.name}
+            onEditEntry={p.onEditEntry}
           />
         ))}
       </>
@@ -347,7 +347,7 @@ const ConfigEntryComponent = observer(
         <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
 
         <span className="configButtons">
-          <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
+          <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
             {/** biome-ignore lint/a11y/noStaticElementInteractions: part of ConfigEntryComponent implementation */}
             <span
               className={`btnEdit${canEdit ? '' : ' disabled'}`}
@@ -360,8 +360,6 @@ const ConfigEntryComponent = observer(
           </Tooltip>
           {entry.documentation && (
             <Popover
-              hideCloseButton
-              size="lg"
               content={
                 <Flex flexDirection="column" gap={2}>
                   <Text fontSize="lg" fontWeight="bold">
@@ -371,6 +369,8 @@ const ConfigEntryComponent = observer(
                   <Text fontSize="sm">{getConfigDescription(entry.source)}</Text>
                 </Flex>
               }
+              hideCloseButton
+              size="lg"
             >
               <Box>
                 <Icon as={MdInfoOutline} />
@@ -422,27 +422,27 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
     case 'BOOLEAN':
       return (
         <SingleSelect<T>
+          onChange={onChange}
           options={[
             { value: 'false' as T, label: 'False' },
             { value: 'true' as T, label: 'True' },
           ]}
           value={value}
-          onChange={onChange}
         />
       );
 
     case 'SELECT':
       return (
         <SingleSelect
-          value={value}
-          onChange={onChange}
           className={p.className}
+          onChange={onChange}
           options={
             entry.enumValues?.map((value) => ({
               value: value as T,
               label: value,
             })) ?? []
           }
+          value={value}
         />
       );
 
@@ -450,32 +450,32 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
       return (
         <DataSizeSelect
           allowInfinite={false}
-          valueBytes={Number(value ?? 0)}
           onChange={(e) => onChange(Math.round(e) as T)}
+          valueBytes={Number(value ?? 0)}
         />
       );
     case 'DURATION':
       return (
         <DurationSelect
           allowInfinite={false}
-          valueMilliseconds={Number(value ?? 0)}
           onChange={(e) => onChange(Math.round(e) as T)}
+          valueMilliseconds={Number(value ?? 0)}
         />
       );
 
     case 'PASSWORD':
-      return <PasswordInput value={value ?? ''} onChange={(x) => onChange(x.target.value as T)} />;
+      return <PasswordInput onChange={(x) => onChange(x.target.value as T)} value={value ?? ''} />;
 
     case 'RATIO':
-      return <RatioInput value={Number(value || entry.value)} onChange={(x) => onChange(x as T)} />;
+      return <RatioInput onChange={(x) => onChange(x as T)} value={Number(value || entry.value)} />;
 
     case 'INTEGER':
-      return <NumInput value={Number(value)} onChange={(e) => onChange(Math.round(e ?? 0) as T)} />;
+      return <NumInput onChange={(e) => onChange(Math.round(e ?? 0) as T)} value={Number(value)} />;
 
     case 'DECIMAL':
-      return <NumInput value={Number(value)} onChange={(e) => onChange(e as T)} />;
+      return <NumInput onChange={(e) => onChange(e as T)} value={Number(value)} />;
     default:
-      return <Input value={String(value)} onChange={(e) => onChange(e.target.value as T)} />;
+      return <Input onChange={(e) => onChange(e.target.value as T)} value={String(value)} />;
   }
 };
 

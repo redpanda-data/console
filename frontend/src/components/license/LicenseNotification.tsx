@@ -59,8 +59,8 @@ export const LicenseNotification = observer(() => {
   return (
     <Box data-testid="license-notification">
       <Alert
-        mb={4}
         data-testid="license-alert"
+        mb={4}
         status={
           visibleExpiredLicenses.length > 0 ||
           api.licenseViolation ||
@@ -114,11 +114,11 @@ export const LicenseNotification = observer(() => {
 
           <Flex gap={2} my={2}>
             {api.isAdminApiConfigured && (
-              <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
+              <Button as={ReactRouterLink} size="sm" to="/upload-license" variant="outline">
                 Upload license
               </Button>
             )}
-            <Button variant="outline" size="sm" as="a" target="_blank" href="https://support.redpanda.com/">
+            <Button as="a" href="https://support.redpanda.com/" size="sm" target="_blank" variant="outline">
               Request a license
             </Button>
           </Flex>

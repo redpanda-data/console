@@ -148,7 +148,7 @@ describe('UpdateSecretModal', () => {
       rpc(updateSecret, updateSecretMock);
     });
 
-    render(<UpdateSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
+    render(<UpdateSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();

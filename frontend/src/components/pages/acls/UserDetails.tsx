@@ -95,18 +95,23 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           </div>
           <div className="flex gap-3">
             {Features.rolesApi && (
-              <Button variant="outline" onClick={() => (this.isChangeRolesModalOpen = true)} disabled={!canEdit}>
+              <Button disabled={!canEdit} onClick={() => (this.isChangeRolesModalOpen = true)} variant="outline">
                 Assign roles
               </Button>
             )}
             {api.isAdminApiConfigured && (
-              <Button variant="outline" onClick={() => (this.isChangePasswordModalOpen = true)} disabled={!canEdit}>
+              <Button disabled={!canEdit} onClick={() => (this.isChangePasswordModalOpen = true)} variant="outline">
                 Change password
               </Button>
             )}
             {/* todo: refactor delete user dialog into a "fire and forget" dialog and use it in the overview list (and here) */}
             {isServiceAccount && (
               <DeleteUserConfirmModal
+                buttonEl={
+                  <Button disabled={!isServiceAccount} variant="destructive">
+                    Delete
+                  </Button>
+                }
                 onConfirm={async () => {
                   await api.deleteServiceAccount(userName);
 
@@ -124,11 +129,6 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
                   await rolesApi.refreshRoleMembers();
                   appGlobal.historyPush('/security/users/');
                 }}
-                buttonEl={
-                  <Button variant="destructive" disabled={!isServiceAccount}>
-                    Delete
-                  </Button>
-                }
                 userName={userName}
               />
             )}
@@ -155,17 +155,17 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
         {/*Modals*/}
         {api.isAdminApiConfigured && (
           <ChangePasswordModal
-            userName={userName}
             isOpen={this.isChangePasswordModalOpen}
             setIsOpen={(value: boolean) => (this.isChangePasswordModalOpen = value)}
+            userName={userName}
           />
         )}
 
         {Features.rolesApi && (
           <ChangeRolesModal
-            userName={userName}
             isOpen={this.isChangeRolesModalOpen}
             setIsOpen={(value: boolean) => (this.isChangeRolesModalOpen = value)}
+            userName={userName}
           />
         )}
       </PageContent>
@@ -219,8 +219,8 @@ const UserPermissionDetailsContent = observer((p: { userName: string }) => {
       {roles.map((g) => {
         return (
           <EmbeddedAclDetail
-            principal={`${g.principalType}:${g.principalName}`}
             key={`key-${g.principalType}:${g.principalName}`}
+            principal={`${g.principalType}:${g.principalName}`}
           />
         );
       })}
@@ -344,7 +344,6 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
 
   return (
     <DataTable
-      data={entries}
       columns={[
         {
           header: 'Type',
@@ -386,6 +385,7 @@ export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrinci
           },
         },
       ]}
+      data={entries}
     />
   );
 });

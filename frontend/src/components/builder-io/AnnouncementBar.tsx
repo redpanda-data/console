@@ -27,10 +27,10 @@ export default function AnnouncementBar() {
   return shouldRenderBuilderContent
     ? content && (
         <Content
-          content={content}
-          model={MODEL_NAME}
           apiKey={BUILDER_API_KEY}
+          content={content}
           customComponents={builderCustomComponents}
+          model={MODEL_NAME}
         />
       )
     : null;

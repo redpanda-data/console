@@ -47,7 +47,7 @@ export const UserProfile = observer(() => {
         <PopoverTrigger>
           <div className="profile">
             <div className="avatar">
-              <Avatar name={user.displayName} src={user.avatarUrl} size="sm" />
+              <Avatar name={user.displayName} size="sm" src={user.avatarUrl} />
             </div>
             <div className="text">
               <div className="userName">{user.displayName}</div>
@@ -61,23 +61,23 @@ export const UserProfile = observer(() => {
           </PopoverHeader>
           <PopoverBody>
             <Button
-              w="full"
               justifyContent="start"
-              variant="ghost"
               onClick={() => {
                 setPreferencesOpen(true);
               }}
+              variant="ghost"
+              w="full"
             >
               Preferences
             </Button>
             <Button
-              w="full"
               justifyContent="start"
-              variant="ghost"
               onClick={async () => {
                 await api.logout();
                 window.location.reload();
               }}
+              variant="ghost"
+              w="full"
             >
               Logout
             </Button>

@@ -100,10 +100,10 @@ export class ActiveReassignments extends Component<{
             // RedPand cluster throttles as needed, the api does not support setting the throttle manually
             !api.isRedpanda && (
               <Button
-                variant="link"
+                onClick={() => (this.showThrottleDialog = true)}
                 size="sm"
                 style={{ fontSize: 'smaller', padding: '0px 8px' }}
-                onClick={() => (this.showThrottleDialog = true)}
+                variant="link"
               >
                 {throttleText}
               </Button>
@@ -113,13 +113,6 @@ export class ActiveReassignments extends Component<{
 
         {/* Table */}
         <DataTable<ReassignmentState>
-          data={currentReassignments}
-          pagination
-          defaultPageSize={10}
-          sorting={false}
-          onRow={(row) => {
-            this.reassignmentDetails = row.original;
-          }}
           columns={[
             {
               header: 'Topic',
@@ -142,22 +135,29 @@ export class ActiveReassignments extends Component<{
               cell: ({ row: { original } }) => <BrokersCol state={original} />,
             },
           ]}
+          data={currentReassignments}
+          defaultPageSize={10}
           emptyText="No reassignments currently in progress"
+          onRow={(row) => {
+            this.reassignmentDetails = row.original;
+          }}
+          pagination
+          sorting={false}
         />
 
-        <ReassignmentDetailsDialog state={this.reassignmentDetails} onClose={() => (this.reassignmentDetails = null)} />
+        <ReassignmentDetailsDialog onClose={() => (this.reassignmentDetails = null)} state={this.reassignmentDetails} />
         <ThrottleDialog
-          visible={this.showThrottleDialog}
           lastKnownMinThrottle={minThrottle}
           onClose={() => (this.showThrottleDialog = false)}
+          visible={this.showThrottleDialog}
         />
 
         {this.props.throttledTopics.length > 0 && (
           <Button
-            variant="link"
+            onClick={this.props.onRemoveThrottleFromTopics}
             size="sm"
             style={{ fontSize: 'smaller', padding: '0px 8px' }}
-            onClick={this.props.onRemoveThrottleFromTopics}
+            variant="link"
           >
             <span>
               There are <b>{this.props.throttledTopics.length}</b> throttled topics - click here to fix
@@ -271,31 +271,31 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
                   </ListItem>
                 </UnorderedList>
               </Box>
-              <BandwidthSlider value={throttleValue} onChange={(x) => ($state.newThrottleValue = x)} />
+              <BandwidthSlider onChange={(x) => ($state.newThrottleValue = x)} value={throttleValue} />
             </Flex>
           </ModalBody>
           <ModalFooter justifyContent="space-between">
             <Button
-              variant="outline"
               colorScheme="red"
               onClick={() => {
                 $state.newThrottleValue = null;
                 void applyBandwidthThrottle();
               }}
+              variant="outline"
             >
               Remove throttle
             </Button>
 
             <Flex gap={2}>
-              <Button style={{ marginLeft: 'auto' }} onClick={onClose}>
+              <Button onClick={onClose} style={{ marginLeft: 'auto' }}>
                 Close
               </Button>
               <Button
                 disabled={noChange}
-                variant="solid"
                 onClick={() => {
                   void applyBandwidthThrottle();
                 }}
+                variant="solid"
               >
                 Apply
               </Button>
@@ -310,9 +310,9 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
   const { isOpen, onToggle, onClose } = useDisclosure();
 
   return (
-    <Popover returnFocusOnClose={false} isOpen={isOpen} onClose={onClose} closeOnBlur={false}>
+    <Popover closeOnBlur={false} isOpen={isOpen} onClose={onClose} returnFocusOnClose={false}>
       <PopoverTrigger>
-        <Button onClick={onToggle} variant="outline" colorScheme="red">
+        <Button colorScheme="red" onClick={onToggle} variant="outline">
           Cancel Reassignment
         </Button>
       </PopoverTrigger>
@@ -403,7 +403,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
       </Flex>
     ) : (
-      <Skeleton mt={5} noOfLines={5} height={4} />
+      <Skeleton height={4} mt={5} noOfLines={5} />
     );
 
     return (
@@ -413,16 +413,16 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           <ModalHeader>Reassignment: {state.topicName}</ModalHeader>
           <ModalBody>{modalContent}</ModalBody>
           <ModalFooter gap={2}>
-            <Button variant="outline" onClick={this.props.onClose}>
+            <Button onClick={this.props.onClose} variant="outline">
               Close
             </Button>
             <Button
-              variant="solid"
               isDisabled={!topicConfig}
               onClick={() => {
                 this.applyBandwidthThrottle();
                 this.props.onClose();
               }}
+              variant="solid"
             >
               Apply &amp; Close
             </Button>
@@ -611,15 +611,14 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
     if (state.progressPercent === null) {
       // Starting
       progressBar = (
-        <ProgressBar percent={0} state="active" left="Starting..." right={prettyBytesOrNA(state.totalTransferSize)} />
+        <ProgressBar left="Starting..." percent={0} right={prettyBytesOrNA(state.totalTransferSize)} state="active" />
       );
     } else if (state.progressPercent < 100) {
       // Progressing
       progressBar = (
         <ProgressBar
-          percent={state.progressPercent}
-          state="active"
           left={<span>{`${state.progressPercent.toFixed(1)}%`}</span>}
+          percent={state.progressPercent}
           right={
             <>
               {state.estimateSpeed != null && (
@@ -630,12 +629,13 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
               </span>
             </>
           }
+          state="active"
         />
       );
     } else {
       // Completed
       progressBar = (
-        <ProgressBar percent={100} state="success" left="Complete" right={prettyBytesOrNA(state.totalTransferSize)} />
+        <ProgressBar left="Complete" percent={100} right={prettyBytesOrNA(state.totalTransferSize)} state="success" />
       );
     }
 
@@ -680,13 +680,13 @@ const ProgressBar = (p: {
   return (
     <>
       <Progress
-        value={percent}
         colorScheme={
           {
             success: 'success',
             active: 'brand',
           }[state]
         }
+        value={percent}
       />
       <div
         style={{

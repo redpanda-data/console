@@ -94,12 +94,12 @@ const RoleUpdatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={updateRoleAclMutation(data.rules, data.sharedConfig)}
+        edit={true}
         onCancel={() => navigate(`/security/roles/${roleName}/details`)}
+        onSubmit={updateRoleAclMutation(data.rules, data.sharedConfig)}
+        principalType={PrincipalTypeRedpandaRole}
         rules={rulesWithAllOperations}
         sharedConfig={data.sharedConfig}
-        edit={true}
-        principalType={PrincipalTypeRedpandaRole}
       />
     </PageContent>
   );

@@ -116,7 +116,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={closeModal} isCentered={true} size={'md'}>
+    <Modal isCentered={true} isOpen={isOpen} onClose={closeModal} size={'md'}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Select or add secret</ModalHeader>
@@ -124,22 +124,19 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           <Flex flexDirection="column" gap={5} w={300}>
             <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
             <FormField
-              label="Secret name"
-              errorText={isNameValid(id)}
-              isInvalid={!!isNameValid(id)}
               description={
                 isNewSecret
                   ? 'Creating new secret (stored in upper case)'
                   : 'Select existing or type new name to create'
               }
+              errorText={isNameValid(id)}
+              isInvalid={!!isNameValid(id)}
+              label="Secret name"
             >
               <Select<Secret>
-                placeholder="Select or create secret"
-                inputValue={searchValue}
-                onInputChange={setSearchValue}
-                isMulti={false}
-                options={availableSecrets}
                 creatable={true}
+                inputValue={searchValue}
+                isMulti={false}
                 onChange={(val, meta) => {
                   if (val && isSingleValue(val) && val.value) {
                     if (meta.action === 'create-option') {
@@ -156,19 +153,22 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                     setId(val.value.id);
                   }
                 }}
+                onInputChange={setSearchValue}
+                options={availableSecrets}
+                placeholder="Select or create secret"
               />
             </FormField>
             {isNewSecret && (
               <FormField label="Secret value">
                 <Flex alignItems="center">
                   <PasswordInput
-                    placeholder="Enter a secret value..."
                     data-testid="secretValue"
-                    isRequired
-                    value={secret}
-                    onChange={(x) => setSecret(x.target.value)}
-                    type="password"
                     isDisabled={false}
+                    isRequired
+                    onChange={(x) => setSecret(x.target.value)}
+                    placeholder="Enter a secret value..."
+                    type="password"
+                    value={secret}
                   />
                 </Flex>
               </FormField>
@@ -176,7 +176,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           </Flex>
         </ModalBody>
         <ModalFooter gap={2}>
-          <Button variant={'outline'} isDisabled={isCreating} onClick={() => closeModal()}>
+          <Button isDisabled={isCreating} onClick={() => closeModal()} variant={'outline'}>
             Cancel
           </Button>
           <Button

@@ -13,7 +13,6 @@ interface ChatMarkdownProps {
 export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkEmoji]}
       components={{
         // Basic text elements
         p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
@@ -40,10 +39,10 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         li: ({ children }) => <li className="mb-1">{children}</li>,
 
         // Media elements
-        img: ({ src, alt }) => <img src={src} alt={alt} className="mb-4 max-w-full h-auto rounded-lg" />,
+        img: ({ src, alt }) => <img alt={alt} className="mb-4 max-w-full h-auto rounded-lg" src={src} />,
         audio: ({ src, controls }) => (
-          <audio src={src} controls={controls} className="mb-4 w-full">
-            <track kind="captions" src="" label="English captions" />
+          <audio className="mb-4 w-full" controls={controls} src={src}>
+            <track kind="captions" label="English captions" src="" />
             Your browser does not support the audio element.
           </audio>
         ),
@@ -51,20 +50,20 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         // Links and text formatting
         a: ({ href, children }) => (
           <a
-            href={href}
             className={`${
               message.sender === 'user'
                 ? 'text-blue-100 hover:text-white underline'
                 : 'text-blue-600 hover:text-blue-800'
             }`}
-            target="_blank"
+            href={href}
             rel="noopener noreferrer"
+            target="_blank"
           >
             {children}
           </a>
         ),
         abbr: ({ title, children }) => (
-          <abbr title={title} className="cursor-help border-b border-dotted">
+          <abbr className="cursor-help border-b border-dotted" title={title}>
             {children}
           </abbr>
         ),
@@ -102,7 +101,7 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
 
         // Data elements
         data: ({ value, children }) => (
-          <data value={value} className="text-gray-600">
+          <data className="text-gray-600" value={value}>
             {children}
           </data>
         ),
@@ -110,8 +109,8 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         // Form elements (limited markdown support)
         button: ({ children }) => (
           <button
-            type="button"
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            type="button"
           >
             {children}
           </button>
@@ -126,11 +125,11 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
             return (
               <Box py={1}>
                 <ChatCodeBlock
-                  theme="light"
-                  language={match?.[1] ?? ''}
                   codeString={String(children).replace(/\n$/, '')}
-                  showLineNumbers={false}
+                  language={match?.[1] ?? ''}
                   showCopyButton
+                  showLineNumbers={false}
+                  theme="light"
                 />
               </Box>
             );
@@ -164,6 +163,7 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         head: () => null,
         html: ({ children }) => <div>{children}</div>,
       }}
+      remarkPlugins={[remarkGfm, remarkEmoji]}
     >
       {message.content}
     </ReactMarkdown>

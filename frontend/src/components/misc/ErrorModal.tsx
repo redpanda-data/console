@@ -67,7 +67,7 @@ class ErrorModal extends Component<ErrorModalProps> {
 
               {/* Content */}
               {this.content && (
-                <Box alignSelf="stretch" overflowY="auto" maxHeight="300px">
+                <Box alignSelf="stretch" maxHeight="300px" overflowY="auto">
                   {this.content}
                 </Box>
               )}

@@ -86,7 +86,7 @@ const encodingOptions: EncodingOption[] = [
 const protoBufInfoElement = (
   <Text>
     Protobuf schemas can define multiple types. Specify which type you want to use for this message.{' '}
-    <Link target="_blank" rel="noopener noreferrer" href="https://protobuf.dev/reference/protobuf/google.protobuf/">
+    <Link href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
       Learn more here.
     </Link>
   </Text>
@@ -328,15 +328,15 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <Grid width={['100%', '100%', 600]} gap={6} flexDirection="column">
-        <Flex gap={4} flexDirection="row">
+      <Grid flexDirection="column" gap={6} width={['100%', '100%', 600]}>
+        <Flex flexDirection="row" gap={4}>
           <Box flexGrow={1}>
             <Label text="Partition">
               <Controller
                 control={control}
                 name="partition"
                 render={({ field: { onChange, value } }) => (
-                  <SingleSelect<number> options={availablePartitions.get()} value={value} onChange={onChange} />
+                  <SingleSelect<number> onChange={onChange} options={availablePartitions.get()} value={value} />
                 )}
               />
             </Label>
@@ -347,7 +347,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 control={control}
                 name="compressionType"
                 render={({ field: { onChange, value } }) => (
-                  <SingleSelect<CompressionType> options={compressionTypes} value={value} onChange={onChange} />
+                  <SingleSelect<CompressionType> onChange={onChange} options={compressionTypes} value={value} />
                 )}
               />
             </Label>
@@ -356,7 +356,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         <Divider />
 
-        <Flex gap={4} flexDirection="column">
+        <Flex flexDirection="column" gap={4}>
           <SectionHeading>Headers</SectionHeading>
 
           {fields.map((field, index) => (
@@ -368,16 +368,16 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                 <Input {...register(`headers.${index}.value`)} placeholder="Value" />
               </FormControl>
               <IconButton
-                icon={<HiOutlineTrash />}
                 aria-label="Remove item"
-                variant="outline"
+                icon={<HiOutlineTrash />}
                 onClick={() => remove(index)}
+                variant="outline"
               />
             </HStack>
           ))}
 
           <Box>
-            <Button type="button" variant="outline" onClick={() => append({ key: '', value: '' })} size="sm">
+            <Button onClick={() => append({ key: '', value: '' })} size="sm" type="button" variant="outline">
               Add row
             </Button>
           </Box>
@@ -385,9 +385,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         <Divider />
 
-        <Flex gap={4} flexDirection="column">
+        <Flex flexDirection="column" gap={4}>
           <SectionHeading>Key</SectionHeading>
-          <Grid templateColumns="repeat(5, 1fr)" gap={2}>
+          <Grid gap={2} templateColumns="repeat(5, 1fr)">
             <GridItem colSpan={2}>
               <Label text="Type">
                 <Controller
@@ -395,9 +395,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                   name="key.encoding"
                   render={({ field: { onChange, value } }) => (
                     <SingleSelect<PayloadEncoding | 'base64'>
+                      onChange={onChange}
                       options={filteredEncodingOptions}
                       value={value}
-                      onChange={onChange}
                     />
                   )}
                 />
@@ -411,17 +411,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.schemaName"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<string | undefined>
-                        options={availableValues.map((value) => ({
-                          key: value.name,
-                          value: value.name,
-                        }))}
-                        value={value}
                         onChange={(newVal) => {
                           onChange(newVal);
 
                           const detail = availableValues.filter((value) => value.name === newVal).first();
                           setValue('key.schemaVersion', detail?.latestActiveVersion);
                         }}
+                        options={availableValues.map((value) => ({
+                          key: value.name,
+                          value: value.name,
+                        }))}
+                        value={value}
                       />
                     )}
                   />
@@ -436,6 +436,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.schemaVersion"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<number | undefined>
+                        onChange={onChange}
                         options={availableValues
                           .filter((value) => value.name === keySchemaName)
                           .flatMap((value) => value.versions)
@@ -445,7 +446,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                             value: version,
                           }))}
                         value={value}
-                        onChange={onChange}
                       />
                     )}
                   />
@@ -470,11 +470,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="key.data"
                     render={({ field: { onChange, value } }) => (
                       <KowlEditor
-                        onMount={setMonacoTheme}
                         height={300}
-                        value={value}
-                        onChange={onChange}
                         language={encodingToLanguage(keyPayloadOptions?.encoding)}
+                        onChange={onChange}
+                        onMount={setMonacoTheme}
+                        value={value}
                       />
                     )}
                   />
@@ -482,10 +482,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                   <Controller
                     control={control}
                     name="key.data"
-                    render={({ field: { onChange, value } }) => <Input value={value} onChange={onChange} />}
+                    render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
                   />
                 )}
-                <Button size="sm" variant="link" onClick={() => setKeyExpanded(!isKeyExpanded)} px={0} mt={1}>
+                <Button mt={1} onClick={() => setKeyExpanded(!isKeyExpanded)} px={0} size="sm" variant="link">
                   {isKeyExpanded ? 'Collapse' : 'Expand'}
                 </Button>
               </Box>
@@ -496,10 +496,10 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         <Divider />
 
-        <Flex gap={4} flexDirection="column">
+        <Flex flexDirection="column" gap={4}>
           <SectionHeading>Value</SectionHeading>
-          <Flex gap={2} flexDirection="column">
-            <Grid templateColumns="repeat(5, 1fr)" gap={2}>
+          <Flex flexDirection="column" gap={2}>
+            <Grid gap={2} templateColumns="repeat(5, 1fr)">
               <GridItem colSpan={2}>
                 <Label text="Type">
                   <Controller
@@ -507,9 +507,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     name="value.encoding"
                     render={({ field: { onChange, value } }) => (
                       <SingleSelect<PayloadEncoding | 'base64'>
+                        onChange={onChange}
                         options={filteredEncodingOptions}
                         value={value}
-                        onChange={onChange}
                       />
                     )}
                   />
@@ -523,17 +523,17 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       name="value.schemaName"
                       render={({ field: { onChange, value } }) => (
                         <SingleSelect<string | undefined>
-                          options={availableValues.map((value) => ({
-                            key: value.name,
-                            value: value.name,
-                          }))}
-                          value={value}
                           onChange={(newVal) => {
                             onChange(newVal);
 
                             const detail = availableValues.filter((value) => value.name === newVal).first();
                             setValue('value.schemaVersion', detail?.latestActiveVersion);
                           }}
+                          options={availableValues.map((value) => ({
+                            key: value.name,
+                            value: value.name,
+                          }))}
+                          value={value}
                         />
                       )}
                     />
@@ -548,6 +548,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                       name="value.schemaVersion"
                       render={({ field: { onChange, value } }) => (
                         <SingleSelect<number | undefined>
+                          onChange={onChange}
                           options={availableValues
                             .filter((value) => value.name === valueSchemaName)
                             .flatMap((value) => value.versions)
@@ -557,7 +558,6 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                               value: version,
                             }))}
                           value={value}
-                          onChange={onChange}
                         />
                       )}
                     />
@@ -582,11 +582,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
                     render={({ field: { onChange, value } }) => (
                       <KowlEditor
                         data-testid="produce-message-value"
-                        onMount={setMonacoTheme}
                         height={300}
-                        value={value}
-                        onChange={onChange}
                         language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                        onChange={onChange}
+                        onMount={setMonacoTheme}
+                        value={value}
                       />
                     )}
                   />
@@ -600,11 +600,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
         {!!errors?.root?.serverError && <Alert status="error">{errors.root.serverError.message}</Alert>}
 
-        <Flex gap={4} alignItems="center">
-          <Button type="submit" colorScheme="brand" isLoading={isSubmitting} data-testid="produce-button">
+        <Flex alignItems="center" gap={4}>
+          <Button colorScheme="brand" data-testid="produce-button" isLoading={isSubmitting} type="submit">
             Produce
           </Button>
-          <Link to={`/topics/${encodeURIComponent(topicName)}`} as={ReactRouterLink}>
+          <Link as={ReactRouterLink} to={`/topics/${encodeURIComponent(topicName)}`}>
             Go Back
           </Link>
         </Flex>

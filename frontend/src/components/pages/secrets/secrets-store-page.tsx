@@ -121,7 +121,7 @@ export const SecretsStorePage = () => {
   }, []);
 
   if (isSecretListError) {
-    return <ErrorResult error={secretListError} title="Error loading secrets" message="Please try again later." />;
+    return <ErrorResult error={secretListError} message="Please try again later." title="Error loading secrets" />;
   }
 
   return (
@@ -133,17 +133,17 @@ export const SecretsStorePage = () => {
             page and reference them when creating a new resource such as Redpanda Connect pipelines.
           </Text>
           <ButtonGroup>
-            <Button variant="outline" onClick={onCreateSecretModalOpen} data-testid="create-secret-button">
+            <Button data-testid="create-secret-button" onClick={onCreateSecretModalOpen} variant="outline">
               Create secret
             </Button>
           </ButtonGroup>
         </Stack>
 
         <SearchField
-          width="350px"
+          placeholderText="Filter secrets..."
           searchText={nameContains}
           setSearchText={setNameContains}
-          placeholderText="Filter secrets..."
+          width="350px"
         />
 
         {isSecretListLoading ? (
@@ -154,10 +154,6 @@ export const SecretsStorePage = () => {
           <Empty />
         ) : (
           <DataTable
-            data={secretList?.secrets ?? []}
-            pagination
-            defaultPageSize={10}
-            sorting
             columns={[
               {
                 header: 'ID',
@@ -178,11 +174,11 @@ export const SecretsStorePage = () => {
                     return <Text>No labels</Text>;
                   }
                   return (
-                    <Flex wrap="wrap" gap={2}>
+                    <Flex gap={2} wrap="wrap">
                       {Object.entries(labels)
                         .filter(([key, value]) => !(key === 'owner' && value === 'console'))
                         .map(([key, value]) => (
-                          <Badge variant="inverted" key={`${original?.id}-${key}`} borderRadius="full">
+                          <Badge borderRadius="full" key={`${original?.id}-${key}`} variant="inverted">
                             <Text>
                               {key}: {value}
                             </Text>
@@ -204,25 +200,29 @@ export const SecretsStorePage = () => {
                 header: '',
                 id: 'actions',
                 cell: ({ row: { original } }) => (
-                  <HStack spacing={4} justifyContent="flex-end" width="100%">
+                  <HStack justifyContent="flex-end" spacing={4} width="100%">
                     <Icon
-                      data-testid={`edit-secret-${original?.id}`}
-                      as={AiOutlineEdit}
-                      onClick={() => handleUpdateSecretModal(original?.id ?? '')}
-                      cursor="pointer"
                       aria-label="Edit secret"
+                      as={AiOutlineEdit}
+                      cursor="pointer"
+                      data-testid={`edit-secret-${original?.id}`}
+                      onClick={() => handleUpdateSecretModal(original?.id ?? '')}
                     />
                     <Icon
-                      data-testid={`delete-secret-${original?.id}`}
-                      as={AiOutlineDelete}
-                      onClick={() => handleDeleteSecretModal(original?.id ?? '')}
-                      cursor="pointer"
                       aria-label="Delete secret"
+                      as={AiOutlineDelete}
+                      cursor="pointer"
+                      data-testid={`delete-secret-${original?.id}`}
+                      onClick={() => handleDeleteSecretModal(original?.id ?? '')}
                     />
                   </HStack>
                 ),
               },
             ]}
+            data={secretList?.secrets ?? []}
+            defaultPageSize={10}
+            pagination
+            sorting
           />
         )}
       </Stack>

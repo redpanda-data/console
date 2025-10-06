@@ -383,7 +383,7 @@ export const RemoteMCPInspectorTab = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Left Panel - Tools */}
-      <Card size="full" className="px-0 py-0 h-fit">
+      <Card className="px-0 py-0 h-fit" size="full">
         <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
@@ -395,7 +395,7 @@ export const RemoteMCPInspectorTab = () => {
           {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING && (
             <div className="space-y-2">
               <div className="flex items-center justify-center py-4">
-                <Badge variant="outline" className="text-xs">
+                <Badge className="text-xs" variant="outline">
                   <Clock className="h-3 w-3 mr-1 animate-spin" />
                   Server starting...
                 </Badge>
@@ -413,7 +413,7 @@ export const RemoteMCPInspectorTab = () => {
             <div className="space-y-2">
               {(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge className="text-xs" variant="outline">
                     <Clock className="h-3 w-3 mr-1 animate-spin" />
                     {isRefetchingTools ? 'Refreshing tools...' : 'Loading tools...'}
                   </Badge>
@@ -421,7 +421,7 @@ export const RemoteMCPInspectorTab = () => {
               )}
               {toolsError && !isRefetchToolsError && (
                 <div className="flex items-center justify-center py-4">
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge className="text-xs" variant="destructive">
                     Failed to fetch tools
                   </Badge>
                 </div>
@@ -429,15 +429,15 @@ export const RemoteMCPInspectorTab = () => {
               {mcpServerTools?.tools?.length && mcpServerTools?.tools?.length > 0
                 ? mcpServerTools.tools.map((tool) => (
                     <RemoteMCPToolButton
-                      key={tool.name}
-                      id={tool.name}
-                      name={tool.name}
-                      description={tool.description || ''}
                       componentType={
                         mcpServerData?.mcpServer?.tools?.[tool.name]?.componentType ||
                         getComponentTypeFromToolName(tool.name)
                       }
+                      description={tool.description || ''}
+                      id={tool.name}
                       isSelected={selectedTool === tool.name}
+                      key={tool.name}
+                      name={tool.name}
                       onClick={() => {
                         // Cancel any pending request when switching tools
                         if (abortControllerRef.current) {
@@ -456,7 +456,7 @@ export const RemoteMCPInspectorTab = () => {
                 : !isLoadingTools &&
                   !isRefetchingTools &&
                   !toolsError && (
-                    <Text variant="small" className="text-muted-foreground py-8 text-center">
+                    <Text className="text-muted-foreground py-8 text-center" variant="small">
                       No tools available on this MCP server.
                     </Text>
                   )}
@@ -466,7 +466,7 @@ export const RemoteMCPInspectorTab = () => {
       </Card>
 
       {/* Right Panel - Selected Tool */}
-      <Card size="full" className="px-0 py-0 flex flex-col">
+      <Card className="px-0 py-0 flex flex-col" size="full">
         {selectedTool && mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING ? (
           <>
             <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
@@ -499,14 +499,6 @@ export const RemoteMCPInspectorTab = () => {
 
                         return (
                           <DynamicJSONForm
-                            schema={
-                              (selectedToolData?.inputSchema as JSONSchemaType) || {
-                                type: 'object',
-                              }
-                            }
-                            value={toolParameters}
-                            onChange={handleFormChange}
-                            showPlaceholder={true}
                             customFields={
                               (mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType ||
                                 getComponentTypeFromToolName(selectedTool)) === MCPServer_Tool_ComponentType.OUTPUT &&
@@ -553,6 +545,14 @@ export const RemoteMCPInspectorTab = () => {
                                   ]
                                 : []
                             }
+                            onChange={handleFormChange}
+                            schema={
+                              (selectedToolData?.inputSchema as JSONSchemaType) || {
+                                type: 'object',
+                              }
+                            }
+                            showPlaceholder={true}
+                            value={toolParameters}
                           />
                         );
                       })()}
@@ -562,11 +562,11 @@ export const RemoteMCPInspectorTab = () => {
                         <div className="space-y-2">
                           {Object.entries(validationErrors).map(([field, error]) => (
                             <div
-                              key={field}
                               className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md"
+                              key={field}
                             >
                               <div className="flex items-start">
-                                <Text variant="small" className="text-red-700 dark:text-red-400">
+                                <Text className="text-red-700 dark:text-red-400" variant="small">
                                   <Text as="span" className="font-medium">
                                     {field}:
                                   </Text>{' '}
@@ -596,10 +596,10 @@ export const RemoteMCPInspectorTab = () => {
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Response</Label>
                           <JSONView
-                            data={toolError ? toolError?.message : toolResponseData}
-                            isError={!!toolError}
-                            initialExpandDepth={3}
                             className="border-gray-200 dark:border-gray-800"
+                            data={toolError ? toolError?.message : toolResponseData}
+                            initialExpandDepth={3}
+                            isError={!!toolError}
                           />
                         </div>
                       )}
@@ -610,7 +610,7 @@ export const RemoteMCPInspectorTab = () => {
                       <div className="flex gap-2">
                         {isServerToolPending ? (
                           <>
-                            <Button onClick={executeToolRequest} disabled variant="secondary">
+                            <Button disabled onClick={executeToolRequest} variant="secondary">
                               <Clock className="w-4 h-4 animate-spin" />
                               Run Tool
                             </Button>
@@ -621,11 +621,11 @@ export const RemoteMCPInspectorTab = () => {
                           </>
                         ) : (
                           <Button
-                            onClick={executeToolRequest}
                             disabled={
                               !validateRequiredFields(selectedToolData?.inputSchema as JSONSchemaType, toolParameters)
                                 .isValid
                             }
+                            onClick={executeToolRequest}
                             variant="secondary"
                           >
                             <Send className="w-4 h-4" />
@@ -633,9 +633,9 @@ export const RemoteMCPInspectorTab = () => {
                           </Button>
                         )}
                         <CopyButton
-                          variant="outline"
                           content={JSON.stringify(toolParameters, null, 2)}
                           onCopy={() => toast.success('Input copied to clipboard')}
+                          variant="outline"
                         >
                           Copy Input
                         </CopyButton>

@@ -65,9 +65,6 @@ export default observer(({ acl }: AclListProps) => {
         resourcePatternType: AclStrResourcePatternType;
         acls: AclRule[];
       }>
-        data={resources}
-        pagination
-        sorting
         columns={[
           {
             size: 120,
@@ -102,6 +99,9 @@ export default observer(({ acl }: AclListProps) => {
             accessorKey: 'host',
           },
         ]}
+        data={resources}
+        pagination
+        sorting
       />
     </>
   );

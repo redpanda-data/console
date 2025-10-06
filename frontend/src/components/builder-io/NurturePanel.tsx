@@ -47,31 +47,31 @@ export default function NurturePanel() {
   if (isLoading) {
     return (
       <>
-        <Box display="flex" alignItems="flex-start">
+        <Box alignItems="flex-start" display="flex">
           {/* Left thumbnail placeholder */}
-          <Skeleton height="80px" width="120px" borderRadius="md" mr={4} />
+          <Skeleton borderRadius="md" height="80px" mr={4} width="120px" />
 
           {/* Right content */}
           <Box flex="1">
             {/* Heading */}
-            <Skeleton height={4} width="60%" mb={2} />
+            <Skeleton height={4} mb={2} width="60%" />
 
             {/* Paragraph */}
-            <Skeleton height={3} width="90%" mb={1} />
+            <Skeleton height={3} mb={1} width="90%" />
             <Skeleton height={3} width="75%" />
           </Box>
         </Box>
-        <Box display="flex" alignItems="flex-start">
+        <Box alignItems="flex-start" display="flex">
           {/* Left thumbnail placeholder */}
-          <Skeleton height="80px" width="120px" borderRadius="md" mr={4} />
+          <Skeleton borderRadius="md" height="80px" mr={4} width="120px" />
 
           {/* Right content */}
           <Box flex="1">
             {/* Heading */}
-            <Skeleton height={4} width="60%" mb={2} />
+            <Skeleton height={4} mb={2} width="60%" />
 
             {/* Paragraph */}
-            <Skeleton height={3} width="90%" mb={1} />
+            <Skeleton height={3} mb={1} width="90%" />
             <Skeleton height={3} width="75%" />
           </Box>
         </Box>
@@ -91,10 +91,10 @@ export default function NurturePanel() {
     <>
       {shouldRenderBuilderContent ? (
         <Content
-          content={content}
-          model={MODEL_NAME}
           apiKey={BUILDER_API_KEY}
+          content={content}
           customComponents={builderCustomComponents}
+          model={MODEL_NAME}
         />
       ) : null}
     </>

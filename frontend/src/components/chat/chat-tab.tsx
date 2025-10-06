@@ -69,7 +69,7 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
       <ChatNotification
         notification={
           <>
-            <Spinner size="sm" mr={2} />
+            <Spinner mr={2} size="sm" />
             <span>Chat is not available right now.</span>
           </>
         }
@@ -86,16 +86,16 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
       <div className="flex flex-col min-h-0">
         {messages?.length > 0 && <ChatClearButton onClear={handleClearChat} />}
         {!isLoadingMessages && (
-          <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
+          <ChatMessageContainer isTyping={isTyping} messages={messages} messagesEndRef={messagesEndRef} />
         )}
       </div>
       <ChatInput
-        setIsTyping={setIsTyping}
-        agentUrl={pipeline?.url}
         agentId={id}
+        agentUrl={pipeline?.url}
         initialValue={selectedQuestion ?? undefined}
-        onInputChange={() => setSelectedQuestion(null)}
         messagesEndRef={messagesEndRef}
+        onInputChange={() => setSelectedQuestion(null)}
+        setIsTyping={setIsTyping}
       />
       {messages?.length === 0 && <ChatBlankState onSelectQuestion={handleSelectQuestion} />}
     </div>

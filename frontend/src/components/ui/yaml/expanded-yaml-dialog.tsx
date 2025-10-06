@@ -45,8 +45,8 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
   const configError = form.formState.errors.tools?.[toolIndex]?.config;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="full" className="max-h-[95vh] h-[95vh] flex flex-col max-w-[95vw] w-[95vw]">
+    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
+      <DialogContent className="max-h-[95vh] h-[95vh] flex flex-col max-w-[95vw] w-[95vw]" size="full">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             YAML Configuration - Tool {toolIndex + 1}
@@ -57,17 +57,17 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
         <div className="flex-1 min-h-0 flex flex-col">
           <div className="flex-1 flex flex-col min-h-0">
             <YamlEditorCard
-              value={form.watch(`tools.${toolIndex}.config`)}
+              height="100%"
+              isLinting={isLintConfigPending}
               onChange={(val) =>
                 form.setValue(`tools.${toolIndex}.config`, val, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
               }
-              height="100%"
-              showLint
               onLint={onLint}
-              isLinting={isLintConfigPending}
+              showLint
+              value={form.watch(`tools.${toolIndex}.config`)}
             />
           </div>
 
@@ -80,7 +80,7 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
         </div>
 
         <DialogFooter className="flex-shrink-0">
-          <Button variant="outline" onClick={onClose}>
+          <Button onClick={onClose} variant="outline">
             Close
           </Button>
         </DialogFooter>

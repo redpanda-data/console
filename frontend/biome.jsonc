@@ -23,6 +23,7 @@
 	"assist": {
 		"actions": {
 			"source": {
+				// Provides a code action to sort the imports and exports in the file using a built-in or custom order.
 				"organizeImports": {
 					"level": "on",
 					"options": {
@@ -34,7 +35,11 @@
 							["./**"]
 						]
 					}
-				}
+				},
+				// Enforce attribute sorting in JSX elements.
+				"useSortedAttributes": "on",
+				// Enforce ordering of a JS object properties.
+				"useSortedKeys": "off"
 			}
 		}
 	},

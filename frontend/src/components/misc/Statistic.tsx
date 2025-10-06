@@ -13,13 +13,13 @@ export function Statistic(
   const { key, title, value, className, hint, ...rest } = p;
 
   return (
-    <Stat key={key} className={className} flexBasis="auto" flexGrow={0} marginRight="2rem" {...rest}>
+    <Stat className={className} flexBasis="auto" flexGrow={0} key={key} marginRight="2rem" {...rest}>
       <StatNumber>{value}</StatNumber>
       <StatLabel>
         <Flex gap={1}>
           {title}
           {hint && (
-            <Tooltip label={hint} hasArrow placement="right">
+            <Tooltip hasArrow label={hint} placement="right">
               <Box alignSelf="start">
                 <MdInfoOutline size={18} />
               </Box>

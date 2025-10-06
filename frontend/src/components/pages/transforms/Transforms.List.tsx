@@ -119,8 +119,8 @@ class TransformsList extends PageComponent<{}> {
           Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
           Redpanda.{' '}
           <ChakraLink
-            isExternal
             href="https://docs.redpanda.com/current/develop/data-transforms/how-transforms-work/"
+            isExternal
             style={{ textDecoration: 'underline solid 1px' }}
           >
             Learn more
@@ -132,7 +132,7 @@ class TransformsList extends PageComponent<{}> {
             <Button variant="outline">Create transform</Button>
           </ReactRouterLink>
 
-          <Button variant="outline" isDisabled>
+          <Button isDisabled variant="outline">
             Export metrics
           </Button>
         </Stack>
@@ -140,17 +140,14 @@ class TransformsList extends PageComponent<{}> {
         <Section>
           <Box mb="5">
             <SearchField
-              width="350px"
+              placeholderText="Enter search term / regex..."
               searchText={uiSettings.transformsList.quickSearch}
               setSearchText={(x) => (uiSettings.transformsList.quickSearch = x)}
-              placeholderText="Enter search term / regex..."
+              width="350px"
             />
           </Box>
 
           <DataTable<TransformMetadata>
-            data={filteredTransforms}
-            pagination
-            sorting
             columns={[
               {
                 header: 'Name',
@@ -158,7 +155,7 @@ class TransformsList extends PageComponent<{}> {
                 size: 300,
                 cell: ({ row: { original: r } }) => {
                   return (
-                    <Box wordBreak="break-word" whiteSpace="break-spaces">
+                    <Box whiteSpace="break-spaces" wordBreak="break-word">
                       <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
                     </Box>
                   );
@@ -206,10 +203,8 @@ class TransformsList extends PageComponent<{}> {
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
                   <Button
-                    variant="icon"
-                    height="16px"
                     color="gray.500"
-                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    height="16px"
                     onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -237,6 +232,8 @@ class TransformsList extends PageComponent<{}> {
                           });
                       });
                     }}
+                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    variant="icon"
                   >
                     <TrashIcon />
                   </Button>
@@ -244,6 +241,9 @@ class TransformsList extends PageComponent<{}> {
                 size: 1,
               },
             ]}
+            data={filteredTransforms}
+            pagination
+            sorting
           />
         </Section>
       </PageContent>

@@ -168,18 +168,18 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
           }
         }}
       >
-        <Flex gap={10} flexDirection="column">
+        <Flex flexDirection="column" gap={10}>
           <Flex flexDirection="row" gap={20}>
             <Box>
-              <FormField label="Role name" isInvalid={roleNameAlreadyExist} errorText="Role name already exist">
+              <FormField errorText="Role name already exist" isInvalid={roleNameAlreadyExist} label="Role name">
                 <Input
                   data-testid="create-role__role-name"
-                  pattern="^[^,=]+$"
-                  title="Please avoid using commas or equal signs."
                   isDisabled={editMode}
                   isRequired
-                  value={formState.roleName}
                   onChange={(v) => (formState.roleName = v.target.value)}
+                  pattern="^[^,=]+$"
+                  title="Please avoid using commas or equal signs."
+                  value={formState.roleName}
                   width={300}
                 />
               </FormField>
@@ -188,7 +188,6 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
             <Button
               alignSelf="self-end"
               data-testid="roles-allow-all-operations"
-              variant="outline"
               onClick={() => {
                 if (formState.topicACLs.length === 0) formState.topicACLs.push(createEmptyTopicAcl());
                 formState.topicACLs[0].selector = '*';
@@ -206,103 +205,104 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
 
                 formState.clusterACLs.all = 'Allow';
               }}
+              variant="outline"
             >
               Allow all operations
             </Button>
           </Flex>
 
           <FormField
-            label="Host"
             description="The host the user needs to connect from in order for the permissions to apply."
+            label="Host"
           >
-            <Input value={formState.host} onChange={(v) => (formState.host = v.target.value)} width={600} />
+            <Input onChange={(v) => (formState.host = v.target.value)} value={formState.host} width={600} />
           </FormField>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-topics-section">
+          <Flex data-testid="create-role-topics-section" flexDirection="column" gap={4}>
             <Heading>Topics</Heading>
             {formState.topicACLs.map((topicACL, index) => (
               <ResourceACLsEditor
                 key={index}
-                resourceType="Topic"
-                resource={topicACL}
-                setIsFormValid={setIsFormValid}
                 onDelete={() => {
                   formState.topicACLs.splice(index, 1);
                 }}
+                resource={topicACL}
+                resourceType="Topic"
+                setIsFormValid={setIsFormValid}
               />
             ))}
 
             <Box>
               <Button
-                variant="outline"
                 onClick={() => {
                   formState.topicACLs.push(createEmptyTopicAcl());
                 }}
+                variant="outline"
               >
                 Add Topic ACL
               </Button>
             </Box>
           </Flex>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-consumer-groups-section">
+          <Flex data-testid="create-role-consumer-groups-section" flexDirection="column" gap={4}>
             <Heading>Consumer Groups</Heading>
             {formState.consumerGroupsACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={index}
-                resourceType="Group"
-                resource={acl}
-                setIsFormValid={setIsFormValid}
                 onDelete={() => {
                   formState.consumerGroupsACLs.splice(index, 1);
                 }}
+                resource={acl}
+                resourceType="Group"
+                setIsFormValid={setIsFormValid}
               />
             ))}
 
             <Box>
               <Button
-                variant="outline"
                 onClick={() => {
                   formState.consumerGroupsACLs.push(createEmptyConsumerGroupAcl());
                 }}
+                variant="outline"
               >
                 Add consumer group ACL
               </Button>
             </Box>
           </Flex>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-transactional-ids-section">
+          <Flex data-testid="create-role-transactional-ids-section" flexDirection="column" gap={4}>
             <Heading>Transactional IDs</Heading>
             {formState.transactionalIDACLs.map((acl, index) => (
               <ResourceACLsEditor
                 key={index}
-                resourceType="TransactionalID"
-                resource={acl}
-                setIsFormValid={setIsFormValid}
                 onDelete={() => {
                   formState.transactionalIDACLs.splice(index, 1);
                 }}
+                resource={acl}
+                resourceType="TransactionalID"
+                setIsFormValid={setIsFormValid}
               />
             ))}
 
             <Box>
               <Button
-                variant="outline"
                 onClick={() => {
                   formState.transactionalIDACLs.push(createEmptyTransactionalIdAcl());
                 }}
+                variant="outline"
               >
                 Add Transactional ID ACL
               </Button>
             </Box>
           </Flex>
 
-          <Flex flexDirection="column" gap={4} data-testid="create-role-cluster-section">
+          <Flex data-testid="create-role-cluster-section" flexDirection="column" gap={4}>
             <Heading>Cluster</Heading>
             <HStack>
               <Box flexGrow={1}>
                 <ResourceACLsEditor
-                  resourceType="Cluster"
                   resource={formState.clusterACLs}
+                  resourceType="Cluster"
                   setIsFormValid={setIsFormValid}
                 />
               </Box>
@@ -311,7 +311,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
 
           <Flex flexDirection="column" gap={4}>
             <Heading>Principals</Heading>
-            <FormField label="Assign this role to principals" description="This can be edited later">
+            <FormField description="This can be edited later" label="Assign this role to principals">
               <PrincipalSelector state={formState.principals} />
             </FormField>
           </Flex>
@@ -321,39 +321,39 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
           {editMode ? (
             <Button
               colorScheme="brand"
-              type="submit"
-              loadingText="Editing..."
-              isLoading={isLoading}
               isDisabled={roleNameAlreadyExist || !isFormValid}
+              isLoading={isLoading}
+              loadingText="Editing..."
+              type="submit"
             >
               Update
             </Button>
           ) : (
             <Button
               colorScheme="brand"
-              type="submit"
-              loadingText="Creating..."
-              isLoading={isLoading}
               isDisabled={roleNameAlreadyExist || !isFormValid}
+              isLoading={isLoading}
+              loadingText="Creating..."
+              type="submit"
             >
               Create
             </Button>
           )}
           {editMode ? (
             <Button
-              variant="link"
               onClick={() => {
                 appGlobal.historyPush(`/security/roles/${encodeURIComponent(initialData?.roleName as string)}/details`);
               }}
+              variant="link"
             >
               Go back
             </Button>
           ) : (
             <Button
-              variant="link"
               onClick={() => {
                 appGlobal.historyPush('/security/roles/');
               }}
+              variant="link"
             >
               Go back
             </Button>
@@ -397,24 +397,24 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
     <Flex direction="column" gap={4}>
       <Box w={200}>
         <Select<string>
-          placeholder="Find users"
-          inputValue={searchValue}
-          onInputChange={setSearchValue}
-          isMulti={false}
-          options={availableUsers}
           creatable={true}
+          inputValue={searchValue}
+          isMulti={false}
           onChange={(val) => {
             if (val && isSingleValue(val) && val.value) {
               state.push({ name: val.value, principalType: 'User' });
               setSearchValue('');
             }
           }}
+          onInputChange={setSearchValue}
+          options={availableUsers}
+          placeholder="Find users"
         />
       </Box>
 
       <Flex gap={2}>
         {state.map((principal, idx) => (
-          <Tag key={idx} cursor="pointer">
+          <Tag cursor="pointer" key={idx}>
             <TagLabel>{principal.name}</TagLabel>
             <TagCloseButton onClick={() => state.remove(principal)} />
           </Tag>

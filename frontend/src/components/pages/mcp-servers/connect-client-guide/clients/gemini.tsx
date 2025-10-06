@@ -93,7 +93,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
@@ -101,14 +101,14 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
                 <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                  <img src={GeminiLogo} alt="Gemini" className="h-4 w-4" />
+                  <img alt="Gemini" className="h-4 w-4" src={GeminiLogo} />
                   Gemini
                 </Text>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
               <Label className="text-sm font-medium">Scope</Label>
               <div>
-                <Select value={selectedScope} onValueChange={setSelectedScope}>
+                <Select onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
@@ -121,7 +121,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              <Text variant="small" className="text-muted-foreground">
+              <Text className="text-muted-foreground" variant="small">
                 {selectedScope === 'user' && 'Configuration available across all your projects'}
                 {selectedScope === 'project' && 'Configuration shared with team via project settings'}
               </Text>
@@ -131,7 +131,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Run the following command to add the MCP server:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={geminiCommand} />
+            <DynamicCodeBlock code={geminiCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -139,19 +139,19 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
               <InlineCode className="whitespace-nowrap">~/.gemini/settings.json</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={geminiConfigJson} />
+            <DynamicCodeBlock code={geminiConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Restart Gemini and verify the MCP server is available:
-            <DynamicCodeBlock lang="bash" code="gemini mcp list" />
+            <DynamicCodeBlock code="gemini mcp list" lang="bash" />
             Or alternatively use:
-            <DynamicCodeBlock lang="bash" code="/mcp list" />
+            <DynamicCodeBlock code="/mcp list" lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#how-to-interact-with-your-mcp-server"
         clientName="Gemini"
+        documentationUrl="https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#how-to-interact-with-your-mcp-server"
       />
     </div>
   );

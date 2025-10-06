@@ -48,19 +48,19 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
           <div className="flex gap-1">
             {showLint && onLint && (
               <Button
+                className="h-7 px-2 text-xs gap-1"
+                disabled={isLinting}
+                onClick={onLint}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                onClick={onLint}
-                disabled={isLinting}
-                className="h-7 px-2 text-xs gap-1"
               >
                 <PencilRuler className="h-3 w-3" />
                 {isLinting ? 'Linting...' : 'Lint'}
               </Button>
             )}
             {showExpand && onExpand && (
-              <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs gap-1" onClick={onExpand}>
+              <Button className="h-7 px-2 text-xs gap-1" onClick={onExpand} size="sm" type="button" variant="outline">
                 <Maximize2 className="h-3 w-3" />
                 Expand
               </Button>
@@ -68,7 +68,7 @@ export const YamlEditorCard: React.FC<YamlEditorCardProps> = ({
           </div>
         </div>
         <div className="border-0 rounded-t-none overflow-hidden" style={{ height }}>
-          <YamlEditor value={value} onChange={(val) => onChange(val || '')} options={options} />
+          <YamlEditor onChange={(val) => onChange(val || '')} options={options} value={value} />
         </div>
       </div>
     </div>

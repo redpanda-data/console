@@ -93,15 +93,15 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
 
   return (
     <KowlEditor
-      value={value}
-      height={200}
-      width="100%"
-      onMount={handleOnMount}
-      onChange={handleValueChange}
       beforeMount={handleBeforeMount}
+      height={200}
       language="typescript"
-      theme="vs-light"
+      onChange={handleValueChange}
+      onMount={handleOnMount}
       options={options}
+      theme="vs-light"
+      value={value}
+      width="100%"
     />
   );
 };

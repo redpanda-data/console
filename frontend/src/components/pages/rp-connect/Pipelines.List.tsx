@@ -85,7 +85,7 @@ const WizardCreatePipelineButton = () => {
  */
 const LegacyEmptyState = () => {
   return (
-    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
+    <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
       <Image src={EmptyConnectors} />
       <Box>You have no Redpanda Connect pipelines.</Box>
       <LegacyCreatePipelineButton />
@@ -125,7 +125,7 @@ const WizardEmptyState = () => {
     [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate],
   );
 
-  return <ConnectTiles onChange={handleConnectionChange} componentTypeFilter={['input', 'output']} hideHeader />;
+  return <ConnectTiles componentTypeFilter={['input', 'output']} hideHeader onChange={handleConnectionChange} />;
 };
 
 const EmptyPlaceholder = () => {
@@ -138,49 +138,49 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
     case Pipeline_State.UNSPECIFIED:
       return (
         <Flex alignItems="center" gap="2">
-          <HiX fontSize="17px" width="auto" color="orange" /> Unspecified
+          <HiX color="orange" fontSize="17px" width="auto" /> Unspecified
         </Flex>
       );
     case Pipeline_State.STARTING:
       return (
         <Flex alignItems="center" gap="2">
-          <MdRefresh fontSize="17px" width="auto" color="#444" /> Starting
+          <MdRefresh color="#444" fontSize="17px" width="auto" /> Starting
         </Flex>
       );
     case Pipeline_State.RUNNING:
       return (
         <Flex alignItems="center" gap="2">
-          <CheckIcon fontSize="17px" width="auto" color="green" /> Running
+          <CheckIcon color="green" fontSize="17px" width="auto" /> Running
         </Flex>
       );
     case Pipeline_State.COMPLETED:
       return (
         <Flex alignItems="center" gap="2">
-          <CheckIcon fontSize="17px" width="auto" color="green" /> Completed
+          <CheckIcon color="green" fontSize="17px" width="auto" /> Completed
         </Flex>
       );
     case Pipeline_State.STOPPING:
       return (
         <Flex alignItems="center" gap="2">
-          <MdRefresh fontSize="17px" width="auto" color="#444" /> Stopping
+          <MdRefresh color="#444" fontSize="17px" width="auto" /> Stopping
         </Flex>
       );
     case Pipeline_State.STOPPED:
       return (
         <Flex alignItems="center" gap="2">
-          <FaRegStopCircle fontSize="17px" width="auto" color="#444" /> Stopped
+          <FaRegStopCircle color="#444" fontSize="17px" width="auto" /> Stopped
         </Flex>
       );
     case Pipeline_State.ERROR:
       return (
         <Flex alignItems="center" gap="2">
-          <HiX fontSize="17px" width="auto" color="red" /> Error
+          <HiX color="red" fontSize="17px" width="auto" /> Error
         </Flex>
       );
     default:
       return (
         <Flex alignItems="center" gap="2">
-          <MdOutlineQuestionMark fontSize="17px" width="auto" color="red" /> Unknown
+          <MdOutlineQuestionMark color="red" fontSize="17px" width="auto" /> Unknown
         </Flex>
       );
   }
@@ -267,10 +267,10 @@ class RpConnectPipelinesList extends PageComponent<{}> {
           <div className="flex flex-col gap-2 my-5">
             <LegacyCreatePipelineButton />
             <SearchField
-              width="350px"
+              placeholderText="Enter search term / regex..."
               searchText={uiSettings.pipelinesList.quickSearch}
               setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
-              placeholderText="Enter search term / regex..."
+              width="350px"
             />
           </div>
         ) : null}
@@ -279,10 +279,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
           <EmptyPlaceholder />
         ) : (
           <DataTable<Pipeline>
-            data={filteredPipelines}
-            pagination
-            defaultPageSize={10}
-            sorting
             columns={[
               {
                 header: 'ID',
@@ -297,7 +293,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 header: 'Pipeline Name',
                 cell: ({ row: { original } }) => (
                   <Link to={`/rp-connect/${encodeURIComponentPercents(original.id)}`}>
-                    <Text wordBreak="break-word" whiteSpace="break-spaces">
+                    <Text whiteSpace="break-spaces" wordBreak="break-word">
                       {original.displayName}
                     </Text>
                   </Link>
@@ -308,7 +304,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 header: 'Description',
                 accessorKey: 'description',
                 cell: ({ row: { original } }) => (
-                  <Text minWidth="200px" wordBreak="break-word" whiteSpace="break-spaces">
+                  <Text minWidth="200px" whiteSpace="break-spaces" wordBreak="break-word">
                     {original.description}
                   </Text>
                 ),
@@ -334,10 +330,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
                   <Button
-                    variant="icon"
-                    height="16px"
                     color="gray.500"
-                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    height="16px"
                     onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -365,6 +359,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                           });
                       });
                     }}
+                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    variant="icon"
                   >
                     <TrashIcon />
                   </Button>
@@ -372,7 +368,11 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 size: 1,
               },
             ]}
+            data={filteredPipelines}
+            defaultPageSize={10}
             emptyText=""
+            pagination
+            sorting
           />
         )}
       </PageContent>

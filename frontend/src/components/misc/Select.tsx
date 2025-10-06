@@ -23,8 +23,6 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
 
         return data.label ?? String(data.value);
       }}
-      options={p.options}
-      value={{ value: p.value }}
       onChange={(e) => {
         if (!e) return;
 
@@ -32,6 +30,8 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
           p.onChange(e.value);
         }
       }}
+      options={p.options}
+      value={{ value: p.value }}
     />
   );
 }

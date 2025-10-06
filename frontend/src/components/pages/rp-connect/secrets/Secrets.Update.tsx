@@ -93,11 +93,11 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           <FormField label="Secret name">
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a secret name..."
                 data-testid="secretId"
-                pattern="^[A-Z][A-Z0-9_]*$"
-                isRequired
                 disabled={true}
+                isRequired
+                pattern="^[A-Z][A-Z0-9_]*$"
+                placeholder="Enter a secret name..."
                 value={this.props.secretId}
                 width={500}
               />
@@ -107,28 +107,28 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           <FormField label="Secret value">
             <Flex alignItems="center" gap="2" width={500}>
               <PasswordInput
-                placeholder="Enter a new secret value..."
                 data-testid="secretValue"
-                isRequired
-                value={this.secret}
-                onChange={(x) => (this.secret = x.target.value)}
-                width={500}
-                type="password"
                 isDisabled={this.isUpdating}
+                isRequired
+                onChange={(x) => (this.secret = x.target.value)}
+                placeholder="Enter a new secret value..."
+                type="password"
+                value={this.secret}
+                width={500}
               />
             </Flex>
           </FormField>
 
           <ButtonGroup>
             <Button
-              isLoading={this.isUpdating}
               data-testid="submit-update-secret"
               isDisabled={isSecretEmpty}
+              isLoading={this.isUpdating}
               onClick={action(() => this.updateSecret())}
             >
               Update secret
             </Button>
-            <Button variant="link" disabled={this.isUpdating} onClick={action(() => this.cancel())}>
+            <Button disabled={this.isUpdating} onClick={action(() => this.cancel())} variant="link">
               Cancel
             </Button>
           </ButtonGroup>

@@ -41,10 +41,10 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
             <FormControl>
               <Input
                 {...field}
-                type="number"
-                showStepControls
                 disabled={isExistingTopic}
                 onChange={createNumberChangeHandler(field.onChange)}
+                showStepControls
+                type="number"
               />
             </FormControl>
             <FormMessage />
@@ -61,11 +61,11 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
             <FormControl>
               <Input
                 {...field}
+                disabled={isExistingTopic}
+                onChange={createNumberChangeHandler(field.onChange)}
+                readOnly
                 showStepControls
                 type="number"
-                readOnly
-                onChange={createNumberChangeHandler(field.onChange)}
-                disabled={isExistingTopic}
               />
             </FormControl>
             <FormMessage />
@@ -77,20 +77,20 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         form={form}
         isExistingTopic={isExistingTopic}
         label="Retention Time"
-        valueField="retentionTimeMs"
+        onChange={createFloatChangeHandler}
         unitField="retentionTimeUnit"
         units={retentionTimeUnits}
-        onChange={createFloatChangeHandler}
+        valueField="retentionTimeMs"
       />
 
       <RetentionInputGroup
         form={form}
         isExistingTopic={isExistingTopic}
         label="Retention Size"
-        valueField="retentionSize"
+        onChange={createFloatChangeHandler}
         unitField="retentionSizeUnit"
         units={retentionSizeUnits}
-        onChange={createFloatChangeHandler}
+        valueField="retentionSize"
       />
     </div>
   );
@@ -120,15 +120,15 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
         <Group attached>
           <FormField
             control={form.control}
-            name={valueField as 'retentionTimeMs' | 'retentionSize'}
             disabled={isRetentionDisabled}
+            name={valueField as 'retentionTimeMs' | 'retentionSize'}
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormControl>
                   <Input
-                    type="number"
                     min="0"
                     placeholder={field.value?.toString() || '0'}
+                    type="number"
                     {...field}
                     onChange={onChange(field.onChange)}
                   />
@@ -138,12 +138,12 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
           />
           <FormField
             control={form.control}
-            name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
             disabled={isExistingTopic}
+            name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select value={field.value} onValueChange={field.onChange} disabled={isExistingTopic}>
+                  <Select disabled={isExistingTopic} onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-32 bg-gray-200">
                       <SelectValue defaultValue={field.value} />
                     </SelectTrigger>

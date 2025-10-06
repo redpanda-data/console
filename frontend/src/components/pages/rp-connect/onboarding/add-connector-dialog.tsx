@@ -22,7 +22,7 @@ export const AddConnectorDialog = ({
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
 }) => {
   return (
-    <Dialog open={isOpen} onOpenChange={onCloseAddConnector}>
+    <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
       <DialogOverlay />
       <DialogContent size="xl">
         <DialogHeader>
@@ -30,13 +30,13 @@ export const AddConnectorDialog = ({
         </DialogHeader>
         <DialogBody>
           <ConnectTiles
+            className="px-0 pt-0"
             componentTypeFilter={connectorType ? [connectorType] : undefined}
-            hideHeader
+            gridCols={3}
             hideFilters
+            hideHeader
             onChange={onAddConnector}
             variant="ghost"
-            className="px-0 pt-0"
-            gridCols={3}
           />
         </DialogBody>
       </DialogContent>

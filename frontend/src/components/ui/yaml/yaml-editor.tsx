@@ -88,7 +88,10 @@ export const YamlEditor = (props: YamlEditorProps) => {
 
   return (
     <Editor
+      beforeMount={(monaco) => setMonacoOptions(monaco)}
+      defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
+      options={options}
       wrapperProps={{
         className: 'kowlEditor',
         style: {
@@ -99,9 +102,6 @@ export const YamlEditor = (props: YamlEditorProps) => {
           flexBasis: '100%',
         },
       }}
-      defaultLanguage="yaml"
-      options={options}
-      beforeMount={(monaco) => setMonacoOptions(monaco)}
       {...rest}
     />
   );

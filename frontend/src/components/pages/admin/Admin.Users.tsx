@@ -48,10 +48,6 @@ export class AdminUsers extends Component<{}> {
 
     const table = (
       <DataTable<UserDetails>
-        data={users}
-        pagination
-        sorting
-        expandRowByClick
         columns={[
           {
             size: 1,
@@ -61,9 +57,9 @@ export class AdminUsers extends Component<{}> {
               if (row.original.internalIdentifier === api.userData?.displayName) {
                 return (
                   <Flex gap={2}>
-                    <Tooltip label="You are currently logged in as this user" placement="top" hasArrow>
+                    <Tooltip hasArrow label="You are currently logged in as this user" placement="top">
                       <Box>
-                        <MdOutlinePermIdentity size={16} color="#ff9e3a" />
+                        <MdOutlinePermIdentity color="#ff9e3a" size={16} />
                       </Box>
                     </Tooltip>{' '}
                     <Text>{row.original.internalIdentifier}</Text>
@@ -82,13 +78,17 @@ export class AdminUsers extends Component<{}> {
           }, // can't sort
           { size: Number.POSITIVE_INFINITY, header: 'Login', accessorKey: 'loginProvider' },
         ]}
+        data={users}
+        expandRowByClick
+        pagination
+        sorting
         subComponent={({ row: { original: user } }) => (
-          <Box py={6} px={10}>
+          <Box px={10} py={6}>
             <Accordion
               defaultIndex={0}
               items={user.grantedRoles.map((r) => ({
                 heading: r.role.name,
-                description: <RoleComponent role={r.role} grantedBy={r.grantedBy} />,
+                description: <RoleComponent grantedBy={r.grantedBy} role={r.role} />,
               }))}
             />
           </Box>
@@ -100,10 +100,10 @@ export class AdminUsers extends Component<{}> {
       <MotionDiv>
         <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
           <SearchField
-            width="300px"
             placeholderText="Enter search term/regex"
             searchText={this.quickSearch}
             setSearchText={(x) => (this.quickSearch = x)}
+            width="300px"
           />
         </div>
 

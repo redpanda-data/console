@@ -177,7 +177,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     }));
 
     return (
-      <Card size={size} variant={variant} className={className}>
+      <Card className={className} size={size} variant={variant}>
         {!hideHeader && (
           <CardHeader className="mb-4">
             <CardTitle>
@@ -200,12 +200,12 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                   <Label className="flex-1">
                     Search for Connectors
                     <Input
-                      value={filter}
+                      className="flex-1"
                       onChange={(e) => {
                         setFilter(e.target.value);
                       }}
                       placeholder="Snowflake, S3..."
-                      className="flex-1"
+                      value={filter}
                     >
                       <InputStart>
                         <SearchIcon className="size-4" />
@@ -216,6 +216,8 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                   <Label className="flex-1">
                     Component Type
                     <SimpleMultiSelect
+                      maxDisplay={2}
+                      onValueChange={(value) => setComponentTypeFilter(value as ConnectComponentType[])}
                       options={CONNECT_COMPONENT_TYPE.map((type) => {
                         const { text, icon, variant } = getConnectorTypeBadgeProps(type);
                         return {
@@ -227,10 +229,8 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                           ),
                         };
                       })}
-                      value={componentTypeFilter}
-                      onValueChange={(value) => setComponentTypeFilter(value as ConnectComponentType[])}
                       placeholder="Input, Output..."
-                      maxDisplay={2}
+                      value={componentTypeFilter}
                       width="full"
                     />
                   </Label>
@@ -238,6 +238,8 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                   <Label className="flex-1">
                     Categories
                     <SimpleMultiSelect
+                      maxDisplay={3}
+                      onValueChange={setSelectedCategories}
                       options={categories.map((category) => {
                         const { icon, text, variant } = getCategoryBadgeProps(category.id);
                         return {
@@ -249,10 +251,8 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                           ),
                         };
                       })}
-                      value={selectedCategories}
-                      onValueChange={setSelectedCategories}
                       placeholder="Databases, Social..."
-                      maxDisplay={3}
+                      value={selectedCategories}
                       width="full"
                     />
                   </Label>
@@ -261,7 +261,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             )}
 
             <div className="relative">
-              <div ref={scrollContainerRef} className="max-h-[50vh] overflow-y-auto py-4" onScroll={checkScrollable}>
+              <div className="max-h-[50vh] overflow-y-auto py-4" onScroll={checkScrollable} ref={scrollContainerRef}>
                 <FormField
                   control={form.control}
                   name="connectionName"
@@ -284,7 +284,6 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
                                 return (
                                   <ChoiceboxItem
-                                    value={component.name}
                                     checked={
                                       field.value === component.name &&
                                       form.getValues('connectionType') === component.type
@@ -295,6 +294,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       onChange?.(component.name, component.type as ConnectComponentType);
                                     }}
+                                    value={component.name}
                                   >
                                     <div className="flex flex-col gap-2">
                                       <div className="flex items-center gap-2">
@@ -322,7 +322,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                         {component.categories?.filter(Boolean).map((c) => {
                                           const { icon, text, variant } = getCategoryBadgeProps(c);
                                           return (
-                                            <Badge icon={icon} variant={variant} key={`${c}-${text}`}>
+                                            <Badge icon={icon} key={`${c}-${text}`} variant={variant}>
                                               {text}
                                             </Badge>
                                           );

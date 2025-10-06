@@ -87,9 +87,9 @@ const RoleCreatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={createRoleAclMutation}
-        onCancel={() => navigate('/security/roles')}
         edit={false}
+        onCancel={() => navigate('/security/roles')}
+        onSubmit={createRoleAclMutation}
         principalType={PrincipalTypeRedpandaRole}
       />
     </PageContent>

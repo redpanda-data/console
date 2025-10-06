@@ -53,10 +53,10 @@ export default function KowlEditor(props: KowlEditorProps) {
 
   return (
     <Editor
-      loading={<LoadingPlaceholder />}
-      wrapperProps={{ className: 'kowlEditor' }}
       defaultValue={''}
+      loading={<LoadingPlaceholder />}
       options={options}
+      wrapperProps={{ className: 'kowlEditor' }}
       {...rest}
     />
   );
@@ -69,8 +69,8 @@ export function KowlDiffEditor(props: KowlDiffEditorProps) {
   return (
     <DiffEditor
       loading={<LoadingPlaceholder />}
-      wrapperProps={{ className: 'kowlEditor' }}
       options={options}
+      wrapperProps={{ className: 'kowlEditor' }}
       {...rest}
     />
   );

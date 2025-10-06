@@ -29,15 +29,15 @@ const JSONView = memo(
     return (
       <div className={clsx('p-4 border rounded relative', className)}>
         {withCopyButton && (
-          <CopyButton size="icon" variant="ghost" className="absolute top-2 right-2" content={copyContent} />
+          <CopyButton className="absolute top-2 right-2" content={copyContent} size="icon" variant="ghost" />
         )}
         <div className="font-mono text-sm transition-all duration-300">
           <JSONNode
             data={normalizedData as JSONValue}
-            name={name}
             depth={0}
             initialExpandDepth={initialExpandDepth}
             isError={isError}
+            name={name}
           />
         </div>
       </div>
@@ -126,18 +126,18 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
             <div className="pl-2 ml-4 border-l border-gray-200 dark:border-gray-800">
               {isArray
                 ? (items as JSONValue[]).map((item, index) => (
-                    <div key={index} className="my-1">
+                    <div className="my-1" key={index}>
                       <JSONNode
                         data={item}
-                        name={`${index}`}
                         depth={depth + 1}
                         initialExpandDepth={initialExpandDepth}
+                        name={`${index}`}
                       />
                     </div>
                   ))
                 : (items as [string, JSONValue][]).map(([key, value]) => (
-                    <div key={key} className="my-1">
-                      <JSONNode data={value} name={key} depth={depth + 1} initialExpandDepth={initialExpandDepth} />
+                    <div className="my-1" key={key}>
+                      <JSONNode data={value} depth={depth + 1} initialExpandDepth={initialExpandDepth} name={key} />
                     </div>
                   ))}
             </div>

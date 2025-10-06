@@ -57,10 +57,11 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
 
     return (
       <Slider
-        min={2}
         max={12.1}
-        step={0.1}
-        value={sliderValue}
+        mb="4"
+        min={2}
+        mt="6"
+        mx="4"
         onChange={(n: number) => {
           switch (true) {
             case n < 2.5:
@@ -73,11 +74,10 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
               return;
           }
         }}
-        mt="6"
-        mx="4"
-        mb="4"
         onMouseEnter={() => (this.isDragging = true)}
         onMouseLeave={() => (this.isDragging = false)}
+        step={0.1}
+        value={sliderValue}
       >
         <SliderMark value={2} {...labelStyles}>
           -
@@ -100,12 +100,12 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
         </SliderTrack>
 
         <Tooltip
-          hasArrow
           bg="hsl(0 0% 30%)"
           color="white"
-          placement="top"
+          hasArrow
           isOpen={this.isDragging}
           label={tipText(sliderValue)}
+          placement="top"
         >
           <SliderThumb />
         </Tooltip>

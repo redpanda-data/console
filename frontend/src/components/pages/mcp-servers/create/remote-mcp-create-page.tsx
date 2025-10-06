@@ -263,17 +263,17 @@ export const RemoteMCPCreatePage: React.FC = () => {
           <>
             <Stepper.Navigation>
               <Stepper.Step
+                disabled={hasFormErrors}
                 of="metadata"
                 onClick={hasFormErrors ? undefined : () => methods.goTo('metadata')}
-                disabled={hasFormErrors}
               >
                 <Stepper.Title>Metadata</Stepper.Title>
                 <Stepper.Description>Configure server information</Stepper.Description>
               </Stepper.Step>
               <Stepper.Step
+                disabled={!!isMetadataInvalid}
                 of="tools"
                 onClick={isMetadataInvalid ? undefined : () => methods.goTo('tools')}
-                disabled={!!isMetadataInvalid}
               >
                 <Stepper.Title>Tools</Stepper.Title>
                 <Stepper.Description>Define with YAML config</Stepper.Description>
@@ -285,11 +285,11 @@ export const RemoteMCPCreatePage: React.FC = () => {
               {methods.current.id === 'metadata' && (
                 <Stepper.Panel>
                   <MetadataStep
-                    form={form}
-                    tagFields={tagFields}
                     appendTag={appendTag}
-                    removeTag={removeTag}
+                    form={form}
                     onSubmit={onSubmit}
+                    removeTag={removeTag}
+                    tagFields={tagFields}
                   />
                 </Stepper.Panel>
               )}
@@ -298,33 +298,33 @@ export const RemoteMCPCreatePage: React.FC = () => {
               {methods.current.id === 'tools' && (
                 <Stepper.Panel>
                   <ToolsStep
-                    form={form}
-                    toolFields={toolFields}
                     appendTool={appendTool}
-                    removeTool={removeTool}
-                    lintHints={lintHints}
-                    isLintConfigPending={isLintConfigPending}
-                    hasSecretWarnings={hasSecretWarnings}
                     detectedSecrets={detectedSecrets}
                     existingSecrets={existingSecrets}
-                    onSubmit={onSubmit}
-                    onLintTool={handleLintTool}
+                    form={form}
+                    hasSecretWarnings={hasSecretWarnings}
+                    isLintConfigPending={isLintConfigPending}
+                    lintHints={lintHints}
                     onExpandTool={(index) => setExpandedTool({ index, isOpen: true })}
+                    onLintTool={handleLintTool}
+                    onSubmit={onSubmit}
+                    removeTool={removeTool}
+                    toolFields={toolFields}
                   />
                 </Stepper.Panel>
               )}
 
               <Stepper.Controls className={methods.isFirst ? 'flex justify-end' : 'flex justify-between'}>
                 {!methods.isFirst && (
-                  <Button variant="outline" onClick={methods.prev} disabled={isCreateMCPServerPending}>
+                  <Button disabled={isCreateMCPServerPending} onClick={methods.prev} variant="outline">
                     <ArrowLeft className="h-4 w-4" />
                     Previous
                   </Button>
                 )}
                 {methods.isLast ? (
                   <Button
-                    onClick={form.handleSubmit(onSubmit)}
                     disabled={isCreateMCPServerPending || hasFormErrors || hasLintingIssues || hasSecretWarnings}
+                    onClick={form.handleSubmit(onSubmit)}
                   >
                     {isCreateMCPServerPending ? (
                       <div className="flex items-center gap-2">
@@ -337,8 +337,8 @@ export const RemoteMCPCreatePage: React.FC = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
                     disabled={methods.current.id === 'metadata' ? !!isMetadataInvalid : false}
+                    onClick={() => handleNext(methods.current.id === 'metadata', methods.next)}
                   >
                     Next
                   </Button>
@@ -350,12 +350,12 @@ export const RemoteMCPCreatePage: React.FC = () => {
             {expandedTool && (
               <ExpandedYamlDialog
                 form={form}
-                toolIndex={expandedTool.index}
+                isLintConfigPending={isLintConfigPending}
                 isOpen={expandedTool.isOpen}
                 lintHints={lintHints[expandedTool.index] || {}}
-                isLintConfigPending={isLintConfigPending}
                 onClose={() => setExpandedTool(null)}
                 onLint={() => handleLintTool(expandedTool.index)}
+                toolIndex={expandedTool.index}
               />
             )}
           </>

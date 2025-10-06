@@ -31,18 +31,18 @@ export const TextAreaField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <Textarea
-        value={field.state.value}
+        isDisabled={isDisabled}
         onChange={(e) => {
           field.handleChange(transform ? transform(e.target.value) : e.target.value);
         }}
         placeholder={placeholder}
-        isDisabled={isDisabled}
+        value={field.state.value}
         {...rest}
       />
       <ErrorInfoField field={field} />

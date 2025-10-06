@@ -6,7 +6,7 @@ interface ChatClearButtonProps {
 
 export const ChatClearButton = ({ onClear }: ChatClearButtonProps) => (
   <div className="flex justify-end mb-2">
-    <Button size="xs" colorScheme="red" variant="ghost" onClick={onClear} aria-label="Clear chat history">
+    <Button aria-label="Clear chat history" colorScheme="red" onClick={onClear} size="xs" variant="ghost">
       Clear History
     </Button>
   </div>

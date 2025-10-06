@@ -19,15 +19,15 @@ export const SubscribeButton = ({
     <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
       {([canSubmit, isSubmitting]) => (
         <Button
-          variant={variant}
-          isLoading={isSubmitting}
           isDisabled={!canSubmit || isSubmitting}
+          isLoading={isSubmitting}
           loadingText={loadingText}
           onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
+          variant={variant}
           {...rest}
         >
           {label ?? 'Submit'}

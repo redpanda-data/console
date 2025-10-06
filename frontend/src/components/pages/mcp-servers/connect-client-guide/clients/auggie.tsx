@@ -81,18 +81,18 @@ export const ClientAuggie = ({ mcpServer }: ClientAuggieProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={AuggieLogo} alt="Auggie (Augment Code) CLI" className="h-4 w-4" /> Auggie (Augment Code CLI)
+                <img alt="Auggie (Augment Code) CLI" className="h-4 w-4" src={AuggieLogo} /> Auggie (Augment Code CLI)
               </Text>
               <span>and run the following command:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={auggieCommand} />
+            <DynamicCodeBlock code={auggieCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -100,19 +100,19 @@ export const ClientAuggie = ({ mcpServer }: ClientAuggieProps) => {
               <InlineCode className="whitespace-nowrap">~/.augment/mcp.json</InlineCode>
               <span>with the following MCP server configuration:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={augmentCodeConfigJson} />
+            <DynamicCodeBlock code={augmentCodeConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Verify the MCP server is available with:
-            <DynamicCodeBlock lang="bash" code="auggie mcp list" />
+            <DynamicCodeBlock code="auggie mcp list" lang="bash" />
             Or alternatively use:
-            <DynamicCodeBlock lang="bash" code="/mcp-status" />
+            <DynamicCodeBlock code="/mcp-status" lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.augmentcode.com/setup-augment/mcp#import-from-json"
         clientName="Auggie"
+        documentationUrl="https://docs.augmentcode.com/setup-augment/mcp#import-from-json"
       />
     </div>
   );

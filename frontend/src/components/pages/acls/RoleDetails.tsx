@@ -90,17 +90,17 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
       <PageContent>
         <Flex gap="4">
           <Button
-            variant="outline"
             onClick={() => {
               appGlobal.historyPush(`/security/roles/${this.props.roleName}/edit`);
             }}
+            variant="outline"
           >
             Edit
           </Button>
           <DeleteRoleConfirmModal
+            buttonEl={<Button variant="outline-delete">Delete</Button>}
             numberOfPrincipals={numberOfPrincipals}
             onConfirm={this.deleteRole}
-            buttonEl={<Button variant="outline-delete">Delete</Button>}
             roleName={this.roleName}
           />
         </Flex>
@@ -124,17 +124,13 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
           </Text>
           <Box my={2}>
             <SearchField
-              width="300px"
+              placeholderText="Filter by name"
               searchText={this.principalSearch}
               setSearchText={(x) => (this.principalSearch = x)}
-              placeholderText="Filter by name"
+              width="300px"
             />
           </Box>
           <DataTable<RolePrincipal>
-            data={members ?? []}
-            pagination
-            sorting
-            emptyText="No users found"
             columns={[
               {
                 id: 'name',
@@ -143,13 +139,17 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
                 },
               },
             ]}
+            data={members ?? []}
+            emptyText="No users found"
+            pagination
+            sorting
           />
         </Flex>
       </PageContent>

@@ -144,22 +144,22 @@ const TopicList: FC = () => {
       <Box pt={6}>
         <Flex gap={2}>
           <SearchField
-            width="350px"
             placeholderText="Enter search term/regex"
             searchText={localSearchValue}
             setSearchText={setLocalSearchValue}
+            width="350px"
           />
           <AnimatePresence>
             {localSearchValue && (
               <motion.div
-                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
+                initial={{ opacity: 0 }}
                 style={{ display: 'flex', alignItems: 'center' }}
+                transition={{ duration: 0.12 }}
               >
-                <Text ml={4} alignSelf="center" lineHeight="1" whiteSpace="nowrap">
-                  <Text fontWeight="bold" display="inline">
+                <Text alignSelf="center" lineHeight="1" ml={4} whiteSpace="nowrap">
+                  <Text display="inline" fontWeight="bold">
                     {topics.length}
                   </Text>{' '}
                   {topics.length === 1 ? 'result' : 'results'}
@@ -172,11 +172,11 @@ const TopicList: FC = () => {
       <Section>
         <div className="flex items-center justify-between gap-4">
           <Button
-            variant="solid"
-            colorScheme="brand"
-            onClick={() => showCreateTopicModal()}
             className="min-w-[160px]"
+            colorScheme="brand"
             data-testid="create-topic-button"
+            onClick={() => showCreateTopicModal()}
+            variant="solid"
           >
             Create topic
           </Button>
@@ -195,21 +195,21 @@ const TopicList: FC = () => {
         </div>
         <Box my={4}>
           <TopicsTable
-            topics={topics}
             onDelete={(record) => {
               setTopicToDelete(record);
             }}
+            topics={topics}
           />
         </Box>
       </Section>
 
       <ConfirmDeletionModal
-        topicToDelete={topicToDelete}
         onCancel={() => setTopicToDelete(null)}
         onFinish={async () => {
           setTopicToDelete(null);
           await refreshData();
         }}
+        topicToDelete={topicToDelete}
       />
     </PageContent>
   );
@@ -220,16 +220,6 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
 
   return (
     <DataTable<Topic>
-      data={topics}
-      sorting={true}
-      pagination={paginationParams}
-      onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-        uiSettings.topicList.pageSize = pageSize;
-        editQuery((query) => {
-          query.page = String(pageIndex);
-          query.pageSize = String(pageSize);
-        });
-      })}
       columns={[
         {
           header: 'Name',
@@ -243,27 +233,27 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
             )?.partitionIds;
 
             return (
-              <Flex wordBreak="break-word" whiteSpace="break-spaces" gap={2} alignItems="center">
+              <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
                 <Link to={`/topics/${encodeURIComponent(topic.topicName)}`}>{renderName(topic)}</Link>
                 {!!leaderLessPartitions && (
                   <Tooltip
-                    placement="top"
                     hasArrow
                     label={`This topic has ${leaderLessPartitions.length} ${leaderLessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+                    placement="top"
                   >
                     <Box>
-                      <MdError size={18} color={colors.brandError} />
+                      <MdError color={colors.brandError} size={18} />
                     </Box>
                   </Tooltip>
                 )}
                 {!!underReplicatedPartitions && (
                   <Tooltip
-                    placement="top"
                     hasArrow
                     label={`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+                    placement="top"
                   >
                     <Box>
-                      <MdOutlineWarning size={18} color={colors.brandWarning} />
+                      <MdOutlineWarning color={colors.brandWarning} size={18} />
                     </Box>
                   </Tooltip>
                 )}
@@ -298,12 +288,12 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
             <Flex gap={1}>
               <DeleteDisabledTooltip topic={record}>
                 <button
-                  type="button"
                   data-testid={`delete-topic-button-${record.topicName}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     onDelete(record);
                   }}
+                  type="button"
                 >
                   <Icon as={HiOutlineTrash} />
                 </button>
@@ -312,6 +302,16 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
           ),
         },
       ]}
+      data={topics}
+      onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
+        uiSettings.topicList.pageSize = pageSize;
+        editQuery((query) => {
+          query.page = String(pageIndex);
+          query.pageSize = String(pageSize);
+        });
+      })}
+      pagination={paginationParams}
+      sorting={true}
     />
   );
 };
@@ -368,8 +368,8 @@ const renderName = (topic: Topic) => {
   );
 
   return (
-    <Box wordBreak="break-word" whiteSpace="break-spaces">
-      <Popover content={popoverContent} placement="right" closeDelay={10} size="stretch" hideCloseButton>
+    <Box whiteSpace="break-spaces" wordBreak="break-word">
+      <Popover closeDelay={10} content={popoverContent} hideCloseButton placement="right" size="stretch">
         <span>
           {topic.topicName}
           {iconClosedEye}
@@ -426,13 +426,13 @@ function ConfirmDeletionModal({
 
           <AlertDialogBody>
             {error && (
-              <Alert status="error" mb={2}>
+              <Alert mb={2} status="error">
                 <AlertIcon />
                 {`An error occurred: ${typeof error === 'string' ? error : error.message}`}
               </Alert>
             )}
             {topicToDelete?.isInternal && (
-              <Alert status="error" mb={2}>
+              <Alert mb={2} status="error">
                 <AlertIcon />
                 This is an internal topic, deleting it might have unintended side-effects!
               </Alert>
@@ -444,13 +444,14 @@ function ConfirmDeletionModal({
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={cancel} variant="ghost">
+            <Button onClick={cancel} ref={cancelRef} variant="ghost">
               Cancel
             </Button>
             <Button
+              colorScheme="brand"
               data-testid="delete-topic-confirm-button"
               isLoading={deletionPending}
-              colorScheme="brand"
+              ml={3}
               onClick={() => {
                 if (topicToDelete?.topicName) {
                   setDeletionPending(true);
@@ -469,7 +470,6 @@ function ConfirmDeletionModal({
                     });
                 }
               }}
-              ml={3}
             >
               Delete
             </Button>
@@ -484,7 +484,7 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
   const deleteButton = props.children;
 
   const wrap = (button: JSX.Element, message: string) => (
-    <Tooltip placement="left" label={message} hasArrow>
+    <Tooltip hasArrow label={message} placement="left">
       {React.cloneElement(button, {
         disabled: true,
         className: `${button.props.className ?? ''} disabled`,
@@ -641,17 +641,17 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
 
       return (
         <Grid
-          templateColumns="auto auto"
-          justifyContent="center"
           alignItems="center"
-          justifyItems="flex-end"
           columnGap={2}
-          rowGap={1}
+          justifyContent="center"
+          justifyItems="flex-end"
           py={2}
+          rowGap={1}
+          templateColumns="auto auto"
         >
           <Text>Name:</Text>
-          <Flex justifySelf="start" gap={2} alignItems="center">
-            <Text wordBreak="break-word" whiteSpace="break-spaces" noOfLines={1}>
+          <Flex alignItems="center" gap={2} justifySelf="start">
+            <Text noOfLines={1} whiteSpace="break-spaces" wordBreak="break-word">
               {result.topicName}
             </Text>
             <CopyButton content={result.topicName} variant="ghost" />

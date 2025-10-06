@@ -54,18 +54,18 @@ const PatternHelpDrawer = () => {
   return (
     <>
       <button
-        type="button"
         onClick={onOpen}
         style={{
           margin: '0 2px',
           color: 'hsl(205deg, 100%, 50%)',
           textDecoration: 'underline dotted',
         }}
+        type="button"
       >
         <InfoIcon size={15} />
         &nbsp;glob patterns
       </button>
-      <Drawer isOpen={isOpen} placement="right" size="xl" onClose={onClose}>
+      <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="xl">
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -74,7 +74,7 @@ const PatternHelpDrawer = () => {
           <DrawerBody>{globHelp}</DrawerBody>
 
           <DrawerFooter>
-            <Button variant="outline" mr={3} onClick={onClose}>
+            <Button mr={3} onClick={onClose} variant="outline">
               Close
             </Button>
           </DrawerFooter>
@@ -155,7 +155,7 @@ const globHelp = (
       </Flex>
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
-        <img src={globExampleImg} alt="Examples for glob patterns" />
+        <img alt="Examples for glob patterns" src={globExampleImg} />
       </div>
     </Flex>
 
@@ -228,7 +228,7 @@ export class PreviewSettings extends Component<{
         <div>
           <span>
             When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
-            <Popover trigger={'click'} placement="bottom" content={globHelp} size="auto" hideCloseButton /> to this list
+            <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
             to show found values as previews.
           </span>
         </div>
@@ -239,15 +239,15 @@ export class PreviewSettings extends Component<{
               {(droppableProvided, _droppableSnapshot) => (
                 <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
                   {tags.map((tag, index) => (
-                    <Draggable key={tag.id} draggableId={tag.id} index={index}>
+                    <Draggable draggableId={tag.id} index={index} key={tag.id}>
                       {(draggableProvided, _draggableSnapshot) => (
                         <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                           <PreviewTagSettings
-                            tag={tag}
-                            index={index}
-                            draggableProvided={draggableProvided}
-                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
                             allCurrentKeys={currentKeys}
+                            draggableProvided={draggableProvided}
+                            index={index}
+                            onRemove={() => tags.removeAll((t) => t.id === tag.id)}
+                            tag={tag}
                           />
                         </div>
                       )}
@@ -255,7 +255,6 @@ export class PreviewSettings extends Component<{
                   ))}
                   {droppableProvided.placeholder}
                   <Button
-                    variant="outline"
                     onClick={() => {
                       const newTag: PreviewTagV2 = {
                         id: getFreeId(),
@@ -267,6 +266,7 @@ export class PreviewSettings extends Component<{
                       };
                       tags.push(newTag);
                     }}
+                    variant="outline"
                   >
                     Add entry...
                   </Button>
@@ -283,22 +283,22 @@ export class PreviewSettings extends Component<{
           <div className="previewTagsSettings">
             <OptionGroup<'caseSensitive' | 'ignoreCase'>
               label="Matching"
+              onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
               options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
               value={uiState.topicSettings.previewTagsCaseSensitive}
-              onChange={(e) => (uiState.topicSettings.previewTagsCaseSensitive = e)}
             />
             <OptionGroup
               label="Multiple Results"
+              onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
               options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
               value={uiState.topicSettings.previewMultiResultMode}
-              onChange={(e) => (uiState.topicSettings.previewMultiResultMode = e)}
             />
 
             <OptionGroup
               label="Wrapping"
+              onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
               options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
               value={uiState.topicSettings.previewDisplayMode}
-              onChange={(e) => (uiState.topicSettings.previewDisplayMode = e)}
             />
           </div>
         </div>
@@ -327,7 +327,7 @@ class PreviewTagSettings extends Component<{
     const { tag, onRemove, allCurrentKeys, draggableProvided } = this.props;
 
     return (
-      <Flex placeItems="center" gap={1} p={1} borderRadius={1} mb={1.5}>
+      <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
         {/* Move Handle */}
         <span className="moveHandle" {...draggableProvided.dragHandleProps}>
           <ThreeBarsIcon />
@@ -338,22 +338,18 @@ class PreviewTagSettings extends Component<{
 
         {/* Settings */}
         <Popover
-          trigger={'click'}
-          placement="bottom-start"
-          size="auto"
-          hideCloseButton
           content={
             <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
-              <Label text="Display Name" style={{ marginBottom: '.5em' }}>
+              <Label style={{ marginBottom: '.5em' }} text="Display Name">
                 <Input
-                  size="sm"
-                  flexGrow={1}
-                  flexBasis={50}
-                  value={tag.customName}
-                  onChange={(e) => (tag.customName = e.target.value)}
                   autoComplete={randomId()}
-                  spellCheck={false}
+                  flexBasis={50}
+                  flexGrow={1}
+                  onChange={(e) => (tag.customName = e.target.value)}
                   placeholder="Enter a display name..."
+                  size="sm"
+                  spellCheck={false}
+                  value={tag.customName}
                 />
               </Label>
 
@@ -375,6 +371,10 @@ class PreviewTagSettings extends Component<{
               </span>
             </div>
           }
+          hideCloseButton
+          placement="bottom-start"
+          size="auto"
+          trigger={'click'}
         >
           <span className="inlineButton">
             <GearIcon />
@@ -384,12 +384,12 @@ class PreviewTagSettings extends Component<{
         <Box w="full">
           <SingleSelect<string>
             creatable
-            placeholder="Pattern..."
-            value={tag.pattern}
             onChange={(value) => {
               tag.pattern = value;
             }}
             options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
+            placeholder="Pattern..."
+            value={tag.pattern}
           />
         </Box>
 

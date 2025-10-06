@@ -47,9 +47,9 @@ const RoleDetailPage = () => {
     <PageContent>
       {aclData && (
         <ACLDetails
-          sharedConfig={aclData.sharedConfig}
-          rules={aclData.rules}
           onUpdateACL={() => navigate(`/security/roles/${roleName}/update`)}
+          rules={aclData.rules}
+          sharedConfig={aclData.sharedConfig}
           showMatchingUsers={true}
         />
       )}

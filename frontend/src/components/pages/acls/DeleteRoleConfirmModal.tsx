@@ -21,12 +21,12 @@ export const DeleteRoleConfirmModal: FC<{
   return (
     <ConfirmItemDeleteModal
       heading={`Delete role ${roleName}`}
+      inputMatchText={roleName}
       itemType="role"
-      trigger={buttonEl}
+      onConfirm={onConfirm}
       primaryActionLabel="Delete"
       secondaryActionLabel="Cancel"
-      onConfirm={onConfirm}
-      inputMatchText={roleName}
+      trigger={buttonEl}
     >
       <Text>
         This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}. Deleting

@@ -50,12 +50,9 @@ export function AutocompleteInput({
   return (
     <div className="relative flex-1">
       <Input
-        testId={dataTestId}
-        type="text"
-        placeholder={placeholder}
-        value={inputValue}
-        onChange={handleInputChange}
+        className={className}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        onChange={handleInputChange}
         onFocus={() => {
           if (inputValue.length > 0 && suggestions.length > 0) {
             const filtered = suggestions.filter((suggestion) =>
@@ -65,7 +62,10 @@ export function AutocompleteInput({
             setShowSuggestions(filtered.length > 0);
           }
         }}
-        className={className}
+        placeholder={placeholder}
+        testId={dataTestId}
+        type="text"
+        value={inputValue}
       />
 
       {showSuggestions && filteredSuggestions.length > 0 && (
@@ -75,9 +75,9 @@ export function AutocompleteInput({
               <CommandGroup>
                 {filteredSuggestions.map((suggestion) => (
                   <CommandItem
+                    className="cursor-pointer"
                     key={suggestion}
                     onSelect={() => handleSelectSuggestion(suggestion)}
-                    className="cursor-pointer"
                   >
                     {suggestion}
                   </CommandItem>

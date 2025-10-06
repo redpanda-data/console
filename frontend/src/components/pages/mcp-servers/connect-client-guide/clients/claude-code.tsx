@@ -95,7 +95,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
@@ -103,14 +103,14 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
                 <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                  <img src={ClaudeCodeLogo} alt="Claude Code" className="h-4 w-4" />
+                  <img alt="Claude Code" className="h-4 w-4" src={ClaudeCodeLogo} />
                   Claude Code
                 </Text>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
               <Label className="text-sm font-medium">Scope</Label>
               <div>
-                <Select value={selectedScope} onValueChange={setSelectedScope}>
+                <Select onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
@@ -124,7 +124,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              <Text variant="small" className="text-muted-foreground">
+              <Text className="text-muted-foreground" variant="small">
                 {selectedScope === 'local' && 'Configuration stored locally for this project only'}
                 {selectedScope === 'project' && (
                   <Text as="span">
@@ -143,7 +143,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Run the following command to add the MCP server:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={claudeCodeCommand} />
+            <DynamicCodeBlock code={claudeCodeCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -153,19 +153,19 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
               {selectedScope === 'project' && <InlineCode className="whitespace-nowrap">.mcp.json</InlineCode>}
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={claudeCodeConfigJson} />
+            <DynamicCodeBlock code={claudeCodeConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Restart Claude Code and verify the MCP server is available:
-            <DynamicCodeBlock lang="bash" code="claude mcp list" />
+            <DynamicCodeBlock code="claude mcp list" lang="bash" />
             Or alternatively use:
-            <DynamicCodeBlock lang="bash" code="/mcp" />
+            <DynamicCodeBlock code="/mcp" lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.anthropic.com/en/docs/claude-code/mcp"
         clientName="Claude Code"
+        documentationUrl="https://docs.anthropic.com/en/docs/claude-code/mcp"
       />
     </div>
   );

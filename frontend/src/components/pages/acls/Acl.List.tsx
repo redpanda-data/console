@@ -253,28 +253,15 @@ const PermissionsListTab = observer(() => {
       </Box>
 
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.permissionsTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.permissionsTab.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
 
       <Section>
         <Box my={4}>
           <DataTable<UsersEntry>
-            data={usersFiltered}
-            pagination
-            sorting
-            emptyText="No principals yet"
-            emptyAction={
-              <Button
-                variant="outline"
-                {...getCreateUserButtonProps()}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-              >
-                Create user
-              </Button>
-            }
             columns={[
               {
                 id: 'name',
@@ -283,7 +270,7 @@ const PermissionsListTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
@@ -294,10 +281,23 @@ const PermissionsListTab = observer(() => {
                 header: 'Permissions',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return <UserRoleTags userName={entry.name} showMaxItems={2} />;
+                  return <UserRoleTags showMaxItems={2} userName={entry.name} />;
                 },
               },
             ]}
+            data={usersFiltered}
+            emptyAction={
+              <Button
+                variant="outline"
+                {...getCreateUserButtonProps()}
+                onClick={() => appGlobal.historyPush('/security/users/create')}
+              >
+                Create user
+              </Button>
+            }
+            emptyText="No principals yet"
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -334,22 +334,22 @@ const UsersTab = observer(() => {
       </Box>
 
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.usersTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.usersTab.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
 
       <Section>
         <Tooltip
+          hasArrow
           isDisabled={Features.createUser}
           label="The cluster does not support this feature"
           placement="top"
-          hasArrow
         >
           <Button
-            variant="outline"
             data-testid="create-user-button"
+            variant="outline"
             {...getCreateUserButtonProps()}
             onClick={() => appGlobal.historyPush('/security/users/create')}
           >
@@ -359,19 +359,6 @@ const UsersTab = observer(() => {
 
         <Box my={4}>
           <DataTable<UsersEntry>
-            data={usersFiltered}
-            pagination
-            sorting
-            emptyText="No users yet"
-            emptyAction={
-              <Button
-                variant="outline"
-                {...getCreateUserButtonProps()}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-              >
-                Create user
-              </Button>
-            }
             columns={[
               {
                 id: 'name',
@@ -380,7 +367,7 @@ const UsersTab = observer(() => {
                 cell: (ctx) => {
                   const entry = ctx.row.original;
                   return (
-                    <ChakraLink as={ReactRouterLink} to={`/security/users/${entry.name}/details`} textDecoration="none">
+                    <ChakraLink as={ReactRouterLink} textDecoration="none" to={`/security/users/${entry.name}/details`}>
                       {entry.name}
                     </ChakraLink>
                   );
@@ -391,7 +378,7 @@ const UsersTab = observer(() => {
                 header: 'Permissions',
                 cell: (ctx) => {
                   const entry = ctx.row.original;
-                  return <UserRoleTags userName={entry.name} showMaxItems={2} />;
+                  return <UserRoleTags showMaxItems={2} userName={entry.name} />;
                 },
               },
               {
@@ -404,6 +391,19 @@ const UsersTab = observer(() => {
                 },
               },
             ]}
+            data={usersFiltered}
+            emptyAction={
+              <Button
+                variant="outline"
+                {...getCreateUserButtonProps()}
+                onClick={() => appGlobal.historyPush('/security/users/create')}
+              >
+                Create user
+              </Button>
+            }
+            emptyText="No users yet"
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -437,17 +437,17 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
     <>
       {api.isAdminApiConfigured && (
         <ChangePasswordModal
-          userName={user.name}
           isOpen={isChangePasswordModalOpen}
           setIsOpen={setIsChangePasswordModalOpen}
+          userName={user.name}
         />
       )}
       {Features.rolesApi && (
-        <ChangeRolesModal userName={user.name} isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} />
+        <ChangeRolesModal isOpen={isChangeRolesModalOpen} setIsOpen={setIsChangeRolesModalOpen} userName={user.name} />
       )}
 
       <Menu>
-        <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+        <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
           <Icon as={BsThreeDots} />
         </MenuButton>
         <MenuList>
@@ -472,8 +472,8 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
             </MenuItem>
           )}
           <DeleteUserConfirmModal
-            onConfirm={onConfirmDelete}
             buttonEl={<MenuItem type="button">Delete</MenuItem>}
+            onConfirm={onConfirmDelete}
             userName={user.name}
           />
         </MenuList>
@@ -514,18 +514,17 @@ const RolesTab = observer(() => {
       </NullFallbackBoundary>
 
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.rolesTab.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.rolesTab.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
 
       <Section>
         <Button
           data-testid="create-role-button"
-          variant="outline"
-          onClick={() => appGlobal.historyPush('/security/roles/create')}
           isDisabled={api.userData?.canCreateRoles === false || !Features.rolesApi}
+          onClick={() => appGlobal.historyPush('/security/roles/create')}
           tooltip={[
             api.userData?.canCreateRoles === false &&
               'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
@@ -533,15 +532,13 @@ const RolesTab = observer(() => {
           ]
             .filter(Boolean)
             .join(' ')}
+          variant="outline"
         >
           Create role
         </Button>
 
         <Box my={4}>
           <DataTable
-            data={rolesWithMembers}
-            pagination
-            sorting
             columns={[
               {
                 id: 'name',
@@ -552,9 +549,9 @@ const RolesTab = observer(() => {
                   return (
                     <ChakraLink
                       as={ReactRouterLink}
-                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
-                      textDecoration="none"
                       data-testid={`role-list-item-${entry.name}`}
+                      textDecoration="none"
+                      to={`/security/roles/${encodeURIComponent(entry.name)}/details`}
                     >
                       {entry.name}
                     </ChakraLink>
@@ -577,25 +574,25 @@ const RolesTab = observer(() => {
                   return (
                     <Flex flexDirection="row" gap={4}>
                       <button
-                        type="button"
                         onClick={() => {
                           appGlobal.historyPush(`/security/roles/${entry.name}/edit`);
                         }}
+                        type="button"
                       >
                         <Icon as={PencilIcon} />
                       </button>
                       <DeleteRoleConfirmModal
+                        buttonEl={
+                          <button type="button">
+                            <Icon as={TrashIcon} />
+                          </button>
+                        }
                         numberOfPrincipals={entry.members.length}
                         onConfirm={async () => {
                           await rolesApi.deleteRole(entry.name, true);
                           await rolesApi.refreshRoles();
                           await rolesApi.refreshRoleMembers();
                         }}
-                        buttonEl={
-                          <button type="button">
-                            <Icon as={TrashIcon} />
-                          </button>
-                        }
                         roleName={entry.name}
                       />
                     </Flex>
@@ -603,6 +600,9 @@ const RolesTab = observer(() => {
                 },
               },
             ]}
+            data={rolesWithMembers}
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -671,21 +671,21 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         </Alert>
       )}
       <SearchField
-        width="300px"
+        placeholderText="Filter by name"
         searchText={uiSettings.aclList.configTable.quickSearch}
         setSearchText={(x) => (uiSettings.aclList.configTable.quickSearch = x)}
-        placeholderText="Filter by name"
+        width="300px"
       />
       <Section>
         {edittingPrincipalGroup && (
           <AclPrincipalGroupEditor
-            principalGroup={edittingPrincipalGroup}
-            type={editorType}
             onClose={() => {
               setEdittingPrincipalGroup(null);
               api.refreshAcls(AclRequestDefault, true);
               api.refreshServiceAccounts();
             }}
+            principalGroup={edittingPrincipalGroup}
+            type={editorType}
           />
         )}
 
@@ -693,7 +693,6 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
 
         <Button
           data-testid="create-acls"
-          variant="outline"
           onClick={() => {
             navigate('create');
             setEditorType('create');
@@ -710,6 +709,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
               }) as AclPrincipalGroup,
             );
           }}
+          variant="outline"
         >
           Create ACLs
         </Button>
@@ -721,9 +721,6 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
             principalType: string;
             principalName: string;
           }>
-            data={groups || []}
-            pagination
-            sorting
             columns={[
               {
                 size: Number.POSITIVE_INFINITY,
@@ -735,19 +732,19 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                   //     :record.principalType;
                   return (
                     <button
-                      type="button"
                       className="hoverLink"
                       onClick={() => {
                         navigate(`/security/acls/${record.principalName}/details`);
                       }}
+                      type="button"
                     >
                       <Flex>
                         {/* <Badge variant="subtle" mr="2">{principalType}</Badge> */}
                         <Text
                           as="span"
-                          wordBreak="break-word"
-                          whiteSpace="break-spaces"
                           data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+                          whiteSpace="break-spaces"
+                          wordBreak="break-word"
                         >
                           {record.principalName}
                         </Text>
@@ -804,7 +801,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
 
                   return (
                     <Menu>
-                      <MenuButton as={Button} variant="ghost" className="deleteButton" style={{ height: 'auto' }}>
+                      <MenuButton as={Button} className="deleteButton" style={{ height: 'auto' }} variant="ghost">
                         <Icon as={TrashIcon} />
                       </MenuButton>
                       <MenuList>
@@ -840,6 +837,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                 },
               },
             ]}
+            data={groups || []}
+            pagination
+            sorting
           />
         </Box>
       </Section>
@@ -856,7 +856,7 @@ const AlertDeleteFailed: FC<{
   if (!aclFailed) return null;
 
   return (
-    <Alert status="error" mb={4} ref={ref}>
+    <Alert mb={4} ref={ref} status="error">
       <AlertIcon />
       <AlertTitle>Failed to delete</AlertTitle>
       <AlertDescription>
@@ -868,7 +868,7 @@ const AlertDeleteFailed: FC<{
               : 'Unknown error'}
         </Text>
       </AlertDescription>
-      <CloseButton position="absolute" right="8px" top="8px" onClick={onClose} />
+      <CloseButton onClick={onClose} position="absolute" right="8px" top="8px" />
     </Alert>
   );
 };

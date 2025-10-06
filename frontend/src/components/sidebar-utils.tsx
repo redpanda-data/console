@@ -19,7 +19,7 @@ interface SidebarItemTitleProps {
 }
 
 export const getSidebarItemTitleWithBetaBadge = ({ route }: SidebarItemTitleProps) => (
-  <HStack spacing="12px" key={`${route.path}-title`}>
+  <HStack key={`${route.path}-title`} spacing="12px">
     <Text>{route.title}</Text>
     <SidebarItemBadge>beta</SidebarItemBadge>
   </HStack>

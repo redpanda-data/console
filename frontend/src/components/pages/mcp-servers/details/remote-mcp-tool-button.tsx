@@ -38,14 +38,13 @@ export const RemoteMCPToolButton = ({
 }: RemoteMCPToolButtonProps) => {
   return (
     <div
-      key={id}
-      role="button"
-      tabIndex={0}
+      aria-pressed={isSelected}
       className={`flex flex-col p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer text-left w-full ${
         isSelected
           ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
           : 'bg-card hover:bg-gray-50 dark:hover:bg-secondary border-border'
       }`}
+      key={id}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -53,30 +52,31 @@ export const RemoteMCPToolButton = ({
           onClick();
         }
       }}
-      aria-pressed={isSelected}
+      role="button"
+      tabIndex={0}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <RedpandaConnectComponentTypeBadge componentType={componentType} />
-          <Text className="text-sm truncate" title={name || 'Unnamed Tool'} as="span">
+          <Text as="span" className="text-sm truncate" title={name || 'Unnamed Tool'}>
             {name || 'Unnamed Tool'}
           </Text>
         </div>
         {isEditing && onRemove && (
           <Button
-            variant="outline"
-            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
             }}
+            size="sm"
+            variant="outline"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
       </div>
       <div className="flex-1">
-        <Text variant="muted" className="text-xs line-clamp-2" title={description}>
+        <Text className="text-xs line-clamp-2" title={description} variant="muted">
           {description}
         </Text>
       </div>

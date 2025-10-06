@@ -31,9 +31,9 @@ export const JSONEditor = ({ value, onChange, error: externalError }: JSONEditor
     <div className="relative">
       <div className={`border rounded-md ${displayError ? 'border-red-500' : 'border-gray-200 dark:border-gray-800'}`}>
         <Editor
-          value={editorContent}
-          onValueChange={handleEditorChange}
+          className="w-full"
           highlight={(code) => Prism.highlight(code, Prism.languages.json, 'json')}
+          onValueChange={handleEditorChange}
           padding={10}
           style={{
             fontFamily: '"Fira code", "Fira Mono", monospace',
@@ -41,11 +41,11 @@ export const JSONEditor = ({ value, onChange, error: externalError }: JSONEditor
             backgroundColor: 'transparent',
             minHeight: '100px',
           }}
-          className="w-full"
+          value={editorContent}
         />
       </div>
       {displayError && (
-        <Text variant="small" className="text-red-500 mt-1">
+        <Text className="text-red-500 mt-1" variant="small">
           {displayError}
         </Text>
       )}

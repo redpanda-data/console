@@ -82,10 +82,10 @@ class SearchBar<TItem> extends Component<{
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
         <SearchField
-          width="350px"
+          placeholderText={this.props.placeholderText}
           searchText={this.props.filterText}
           setSearchText={this.onChange}
-          placeholderText={this.props.placeholderText}
+          width="350px"
           // addonAfter={
           //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
           //         <Icon type='setting' style={{ color: '#0006' }} />

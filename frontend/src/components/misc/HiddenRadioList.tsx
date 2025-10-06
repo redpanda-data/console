@@ -44,11 +44,11 @@ export function HiddenRadioList<ValueType>({
           <li key={i}>
             <label>
               <input
-                type="radio"
-                name={name}
-                onChange={() => onChange(option.value)}
                 checked={checked}
                 disabled={disabled}
+                name={name}
+                onChange={() => onChange(option.value)}
+                type="radio"
               />
               {option.render({ ...option, checked, disabled })}
             </label>

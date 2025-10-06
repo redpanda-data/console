@@ -183,14 +183,14 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
           <p>
             Please report this at{' '}
             <a
-              style={{ textDecoration: 'underline', fontWeight: 'bold' }}
               href="https://github.com/redpanda-data/console/issues"
+              style={{ textDecoration: 'underline', fontWeight: 'bold' }}
             >
               our GitHub Repo
             </a>
           </p>
-          <Box mt={0} mb={2}>
-            <Button variant="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
+          <Box mb={2} mt={0}>
+            <Button onClick={() => this.dismiss()} size="large" style={{ width: '16rem' }} variant="primary">
               <Icon as={MdClose} />
               Dismiss
             </Button>
@@ -205,7 +205,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
         </div>
         <Flex flexDirection="column" width="100%">
           {this.infoItems.map((e) => (
-            <InfoItemDisplay key={e.name} data={e} />
+            <InfoItemDisplay data={e} key={e.name} />
           ))}
         </Flex>
       </Box>
@@ -234,8 +234,6 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
 
   return (
     <Button
-      variant="ghost"
-      size="large"
       disabled={disabled}
       isLoading={isLoading}
       onClick={() => {
@@ -249,6 +247,8 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
           })
           .catch(navigatorClipboardErrorHandler);
       }}
+      size="large"
+      variant="ghost"
     >
       <Icon as={MdOutlineCopyAll} />
       Copy Info

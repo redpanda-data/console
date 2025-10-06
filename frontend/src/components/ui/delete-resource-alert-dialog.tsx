@@ -58,7 +58,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   return (
     <AlertDialog onOpenChange={onOpenChange}>
       <AlertDialogTrigger asChild>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600">
+        <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(e) => e.preventDefault()}>
           {isDeleting ? (
             <div className="flex items-center gap-4">
               <Loader2 className="h-4 w-4 animate-spin" /> Deleting
@@ -79,19 +79,19 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
             </Text>
             <Text>This action will cause data loss. To confirm, type "delete" into the confirmation box below.</Text>
             <Input
-              placeholder='Type "delete" to confirm'
               className="mt-4"
-              value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
+              placeholder='Type "delete" to confirm'
+              value={confirmationText}
             />
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => setConfirmationText('')}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
-            disabled={!isDeleteConfirmed}
             className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!isDeleteConfirmed}
+            onClick={handleDelete}
           >
             Delete
           </AlertDialogAction>

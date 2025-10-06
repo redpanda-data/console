@@ -257,11 +257,11 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
                   <FormControl>
                     <Combobox
                       {...field}
-                      options={topicOptions}
+                      className="max-w-[300px]"
                       creatable
                       onCreateOption={handleCreateTopicOption}
+                      options={topicOptions}
                       placeholder="Select or create a topic..."
-                      className="max-w-[300px]"
                     />
                   </FormControl>
                   <FormMessage />
@@ -269,9 +269,9 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
               )}
             />
 
-            <Collapsible open={showAdvancedSettings} onOpenChange={setShowAdvancedSettings}>
+            <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-fit p-0">
+                <Button className="w-fit p-0" size="sm" variant="ghost">
                   <ChevronDown className="h-4 w-4" />
                   Show Advanced Settings
                 </Button>

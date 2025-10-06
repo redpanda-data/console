@@ -89,18 +89,18 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click the button below to add MCP server to</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={CursorLogo} alt="Cursor" className="h-4 w-4" /> Cursor
+                <img alt="Cursor" className="h-4 w-4" src={CursorLogo} /> Cursor
               </Text>
             </div>
-            <Button variant="outline" onClick={handleAddToCursor} className="mt-2">
-              <img src={CursorLogo} alt="Cursor" className="w-4 h-4" />
+            <Button className="mt-2" onClick={handleAddToCursor} variant="outline">
+              <img alt="Cursor" className="w-4 h-4" src={CursorLogo} />
               Add to Cursor
             </Button>
           </ListItem>
@@ -108,7 +108,7 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Alternatively, run the following command:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={cursorCommand} />
+            <DynamicCodeBlock code={cursorCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -130,7 +130,7 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
               <InlineCode className="whitespace-nowrap">~/.cursor/mcp.json</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={cursorConfigJson} />
+            <DynamicCodeBlock code={cursorConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -143,13 +143,13 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
           </ListItem>
           <ListItem>
             Finally, authenticate against the MCP server:
-            <DynamicCodeBlock lang="bash" code={`cursor-agent mcp login ${mcpServerName}`} />
+            <DynamicCodeBlock code={`cursor-agent mcp login ${mcpServerName}`} lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.cursor.com/en/context/mcp#using-mcp-json"
         clientName="Cursor"
+        documentationUrl="https://docs.cursor.com/en/context/mcp#using-mcp-json"
       />
     </div>
   );

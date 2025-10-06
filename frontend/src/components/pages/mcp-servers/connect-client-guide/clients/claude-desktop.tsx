@@ -82,19 +82,19 @@ export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={ClaudeDesktopLogo} alt="Claude Desktop" className="h-4 w-4" />
+                <img alt="Claude Desktop" className="h-4 w-4" src={ClaudeDesktopLogo} />
                 Claude Desktop
               </Text>
               <span>, run the following command to configure the MCP server:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={claudeDesktopCommand} />
+            <DynamicCodeBlock code={claudeDesktopCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -102,14 +102,14 @@ export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => 
               <InlineCode className="whitespace-nowrap">Claude/claude_desktop_config.json</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={claudeDesktopConfigJson} />
+            <DynamicCodeBlock code={claudeDesktopConfigJson} lang="json" />
           </ListItem>
           <ListItem>Restart Claude Desktop and verify the MCP server is available for use.</ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://support.anthropic.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop"
         clientName="Claude Desktop"
+        documentationUrl="https://support.anthropic.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop"
       />
     </div>
   );

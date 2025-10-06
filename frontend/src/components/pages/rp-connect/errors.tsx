@@ -104,7 +104,7 @@ export function formatPipelineError(err: any): any {
         <Text as="span">{genDesc}</Text>
         <ul>
           {details.map((d, idx) => (
-            <li style={{ listStylePosition: 'inside' }} key={idx}>
+            <li key={idx} style={{ listStylePosition: 'inside' }}>
               {d}
             </li>
           ))}

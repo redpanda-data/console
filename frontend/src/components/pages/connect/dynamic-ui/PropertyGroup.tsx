@@ -61,11 +61,11 @@ export const PropertyGroupComponent = observer(
                 ),
                 description: (
                   <PropertyGroupComponent
-                    group={subGroup}
                     allGroups={props.allGroups}
-                    showAdvancedOptions={props.showAdvancedOptions}
                     connectorType={props.connectorType}
                     context={props.context}
+                    group={subGroup}
+                    showAdvancedOptions={props.showAdvancedOptions}
                   />
                 ),
               }))}
@@ -78,7 +78,7 @@ export const PropertyGroupComponent = observer(
     return (
       <Box>
         {g.group.name && (
-          <Heading as="h3" size="md" mt="8" mb="4">
+          <Heading as="h3" mb="4" mt="8" size="md">
             {g.group.name}
           </Heading>
         )}
@@ -98,8 +98,8 @@ export const PropertyGroupComponent = observer(
         <div>
           {
             <TopicInput
-              properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
               connectorType={props.connectorType}
+              properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
             />
           }
           {filteredProperties

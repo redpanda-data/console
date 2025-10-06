@@ -86,20 +86,20 @@ export const UpdatePopup = observer(() => {
         <ModalBody>The page must be reloaded to apply the newest version of the frontend.</ModalBody>
         <ModalFooter gap={2}>
           <Button
-            variant="outline"
             colorScheme="red"
             onClick={() => {
               setUpdateDialogOpen(false);
             }}
+            variant="outline"
           >
             Cancel
           </Button>
           <Button
-            variant="solid"
             onClick={() => {
               setUpdateDialogOpen(false);
               window.location.reload();
             }}
+            variant="solid"
           >
             Reload
           </Button>

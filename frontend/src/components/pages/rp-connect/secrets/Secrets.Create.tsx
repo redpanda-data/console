@@ -109,23 +109,23 @@ class RpConnectSecretCreate extends PageComponent {
         <ToastContainer />
         <Flex flexDirection="column" gap={5}>
           <FormField
-            label="Secret name"
-            isInvalid={Boolean(this.isNameValid)}
-            errorText={this.isNameValid}
             description={'This secret name will be stored in upper case.'}
+            errorText={this.isNameValid}
+            isInvalid={Boolean(this.isNameValid)}
+            label="Secret name"
           >
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a secret name..."
                 data-testid="secretId"
-                pattern="^[A-Z][A-Z0-9_]*$"
-                min={1}
-                max={255}
-                isRequired
-                value={this.id}
-                onChange={(x) => (this.id = x.target.value)}
-                width={500}
                 disabled={this.isCreating}
+                isRequired
+                max={255}
+                min={1}
+                onChange={(x) => (this.id = x.target.value)}
+                pattern="^[A-Z][A-Z0-9_]*$"
+                placeholder="Enter a secret name..."
+                value={this.id}
+                width={500}
               />
             </Flex>
           </FormField>
@@ -133,32 +133,32 @@ class RpConnectSecretCreate extends PageComponent {
           <FormField label="Secret value">
             <Flex alignItems="center" width={500}>
               <PasswordInput
-                placeholder="Enter a secret value..."
                 data-testid="secretValue"
-                isRequired
-                value={this.secret}
-                onChange={(x) => (this.secret = x.target.value)}
-                width={500}
-                type="password"
                 isDisabled={this.isCreating}
+                isRequired
+                onChange={(x) => (this.secret = x.target.value)}
+                placeholder="Enter a secret value..."
+                type="password"
+                value={this.secret}
+                width={500}
               />
             </Flex>
           </FormField>
 
           <ButtonGroup>
             <Button
-              isLoading={this.isCreating}
-              isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)}
-              onClick={action(() => this.createSecret())}
               data-testid={'submit-create-rpcn-secret'}
+              isDisabled={isIdEmpty || isSecretEmpty || Boolean(this.isNameValid)}
+              isLoading={this.isCreating}
+              onClick={action(() => this.createSecret())}
             >
               Create secret
             </Button>
             <Button
-              variant="link"
+              data-testid={'cancel-create-rpcn-secret'}
               disabled={this.isCreating}
               onClick={action(() => this.cancel())}
-              data-testid={'cancel-create-rpcn-secret'}
+              variant="link"
             >
               Cancel
             </Button>

@@ -134,14 +134,14 @@ export const RemoteMCPLogsTab = observer(() => {
         row: {
           original: { timestamp },
         },
-      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
       size: 200,
     },
     {
       header: 'Value',
       accessorKey: 'value',
       cell: ({ row: { original } }) => (
-        <MessagePreview msg={original} previewFields={() => []} isCompactTopic={false} />
+        <MessagePreview isCompactTopic={false} msg={original} previewFields={() => []} />
       ),
       size: Number.MAX_SAFE_INTEGER,
     },
@@ -153,7 +153,7 @@ export const RemoteMCPLogsTab = observer(() => {
   });
 
   return (
-    <Card size="full" className="px-0 py-0">
+    <Card className="px-0 py-0" size="full">
       <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Logs className="h-4 w-4" />
@@ -167,15 +167,15 @@ export const RemoteMCPLogsTab = observer(() => {
           <div className="flex items-center gap-4 mb-6">
             <Input
               className="w-60"
-              placeholder="Filter logs..."
-              value={uiState.remoteMcpDetails.logsQuickSearch}
               onChange={(e) => {
                 runInAction(() => {
                   uiState.remoteMcpDetails.logsQuickSearch = e.target.value;
                 });
               }}
+              placeholder="Filter logs..."
+              value={uiState.remoteMcpDetails.logsQuickSearch}
             />
-            <Button variant="outline" className="ml-auto" onClick={() => setState(createLogsTabState())}>
+            <Button className="ml-auto" onClick={() => setState(createLogsTabState())} variant="outline">
               <div className="flex items-center gap-2">
                 <RefreshCcw className="h-4 w-4" />
                 Refresh logs
@@ -198,10 +198,9 @@ export const RemoteMCPLogsTab = observer(() => {
             </div>
           ) : (
             <DataTable<TopicMessage>
+              columns={messageTableColumns}
               data={filteredMessages}
               emptyText="No messages"
-              columns={messageTableColumns}
-              sorting={uiState.remoteMcpDetails.sorting ?? []}
               isLoading={!state.isComplete}
               loadingText="Loading... This can take several seconds."
               onSortingChange={(sorting) => {
@@ -210,12 +209,13 @@ export const RemoteMCPLogsTab = observer(() => {
                     typeof sorting === 'function' ? sorting(uiState.remoteMcpDetails.sorting) : sorting;
                 });
               }}
+              sorting={uiState.remoteMcpDetails.sorting ?? []}
               subComponent={({ row: { original } }) => (
                 <ExpandedMessage
-                  msg={original}
                   loadLargeMessage={
                     () => Promise.resolve() // No need to load large messages for this view
                   }
+                  msg={original}
                 />
               )}
             />

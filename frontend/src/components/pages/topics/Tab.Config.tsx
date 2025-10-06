@@ -45,11 +45,11 @@ export class TopicConfiguration extends Component<{
 
     return (
       <TopicConfigurationEditor
-        targetTopic={this.props.topic.topicName}
         entries={entries}
         onForceRefresh={() => {
           api.refreshTopicConfig(this.props.topic.topicName, true);
         }}
+        targetTopic={this.props.topic.topicName}
       />
     );
   }
@@ -90,26 +90,26 @@ export class TopicConfiguration extends Component<{
 
   renderKafkaError(topicName: string, error: KafkaError) {
     return (
-      <Flex my={8} flexDirection="column" alignItems="center">
+      <Flex alignItems="center" flexDirection="column" my={8}>
         <Flex flexDirection="column" maxWidth="4xl">
           <Result
             status="error"
-            title="Kafka Error"
             subTitle={
               <>
                 Redpanda Console received the following error while fetching the configuration for topic{' '}
                 <Code p={1}>{topicName}</Code> from Kafka:
               </>
             }
+            title="Kafka Error"
           />
           <Box m={8}>
-            <CodeBlock language="raw" codeString={toJson(error, 4)} />
+            <CodeBlock codeString={toJson(error, 4)} language="raw" />
           </Box>
           <Button
-            variant="solid"
-            size="lg"
             onClick={() => appGlobal.onRefresh()}
+            size="lg"
             style={{ width: '12em', margin: '0', alignSelf: 'center' }}
+            variant="solid"
           >
             Retry
           </Button>

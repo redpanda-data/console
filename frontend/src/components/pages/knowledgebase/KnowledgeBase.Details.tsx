@@ -186,7 +186,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       body: (
         <Box>
           <Text>Are you sure you want to delete the knowledge base "{this.knowledgeBase.displayName}"?</Text>
-          <Text mt={2} color="red.600" fontSize="sm">
+          <Text color="red.600" fontSize="sm" mt={2}>
             This action cannot be undone.
           </Text>
         </Box>
@@ -240,20 +240,20 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
 
     return (
       <Box>
-        <Flex justifyContent="space-between" alignItems="center" mb={6}>
+        <Flex alignItems="center" justifyContent="space-between" mb={6}>
           <Heading size="lg">{kb.displayName}</Heading>
           <Flex gap={2}>
             {this.isEditMode ? (
               <>
-                <Button variant="outline" onClick={this.handleCancelEdit}>
+                <Button onClick={this.handleCancelEdit} variant="outline">
                   Cancel
                 </Button>
                 <Button
                   colorScheme="darkblue"
-                  onClick={this.handleSave}
+                  isDisabled={!this.hasChanges}
                   isLoading={this.loading}
                   loadingText="Saving..."
-                  isDisabled={!this.hasChanges}
+                  onClick={this.handleSave}
                 >
                   Save Changes
                 </Button>
@@ -263,17 +263,17 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
                 Edit
               </Button>
             )}
-            <Button colorScheme="red" variant="outline" onClick={this.openDeleteKnowledgeBaseModal}>
+            <Button colorScheme="red" onClick={this.openDeleteKnowledgeBaseModal} variant="outline">
               Delete
             </Button>
           </Flex>
         </Flex>
 
         {/* Consumer Lag Section */}
-        <Box mb={6} p={4} bg="gray.50" borderRadius="md">
+        <Box bg="gray.50" borderRadius="md" mb={6} p={4}>
           <HStack spacing={6}>
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.600">
+              <Text color="gray.600" fontSize="sm" fontWeight="medium">
                 Indexer Status
               </Text>
               {this.consumerGroup ? (
@@ -281,36 +281,36 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
                   <Text fontSize="lg" fontWeight="semibold">
                     {this.consumerGroup.state}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text color="gray.500" fontSize="sm">
                     ({this.consumerGroup.members.length} members)
                   </Text>
                 </HStack>
               ) : this.consumerGroupLoadFailed ? (
-                <Text fontSize="lg" color="gray.500" title="Consumer group not yet available">
+                <Text color="gray.500" fontSize="lg" title="Consumer group not yet available">
                   Initializing...
                 </Text>
               ) : (
-                <Text fontSize="lg" color="gray.500">
+                <Text color="gray.500" fontSize="lg">
                   -
                 </Text>
               )}
             </Box>
 
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.600">
+              <Text color="gray.600" fontSize="sm" fontWeight="medium">
                 Consumer Lag
               </Text>
               {this.consumerGroup ? (
                 <HStack spacing={2}>
                   <Text fontSize="lg" fontWeight="semibold">
-                    <ShortNum value={this.consumerGroup.lagSum} tooltip={false} />
+                    <ShortNum tooltip={false} value={this.consumerGroup.lagSum} />
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text color="gray.500" fontSize="sm">
                     messages
                   </Text>
                 </HStack>
               ) : (
-                <Text fontSize="lg" color="gray.500">
+                <Text color="gray.500" fontSize="lg">
                   -
                 </Text>
               )}
@@ -319,12 +319,12 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
         </Box>
 
         <KnowledgeBaseEditTabs
-          ref={this.editTabsRef}
-          knowledgeBase={kb}
           isEditMode={this.isEditMode}
-          onSave={this.handleUpdate}
+          knowledgeBase={kb}
           onCancel={this.handleCancelEdit}
           onFormChange={this.onFormChange}
+          onSave={this.handleUpdate}
+          ref={this.editTabsRef}
         />
       </Box>
     );
@@ -339,7 +339,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
 
         <Box mb={4}>
           <RouterLink to="/knowledgebases">
-            <Button variant="ghost" size="sm">
+            <Button size="sm" variant="ghost">
               ← Back to Knowledge Bases
             </Button>
           </RouterLink>

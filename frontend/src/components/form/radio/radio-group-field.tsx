@@ -40,27 +40,27 @@ export const RadioGroupField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <Stack
+        alignItems={direction === 'column' ? 'flex-start' : undefined}
         direction={direction}
         spacing={2}
         width={direction === 'column' ? 'fit-content' : '100%'}
-        alignItems={direction === 'column' ? 'flex-start' : undefined}
       >
         {options.map((option) => (
           <RadioCard
-            key={`${id}-${option.value}`}
             id={`${id}-${option.value}`}
-            value={`${option.value}`}
-            isInvalid={option.invalid}
-            isDisabled={option.disabled}
             isChecked={option.value === field.state.value}
+            isDisabled={option.disabled}
+            isInvalid={option.invalid}
+            key={`${id}-${option.value}`}
             onChange={(e) => field.handleChange(e.target.value)}
             size={size}
+            value={`${option.value}`}
             {...rest}
           >
             {option.label}

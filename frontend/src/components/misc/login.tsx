@@ -136,20 +136,20 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
         <FormControl>
           <FormLabel>Username</FormLabel>
           <Input
-            value={formState.username}
             data-testid="auth-username-input"
             disabled={formState.isLoading}
             onChange={(e) => formState.setUsername(e.target.value)}
+            value={formState.username}
           />
         </FormControl>
         <FormControl>
           <FormLabel>Password</FormLabel>
           <Input
-            type="password"
             data-testid="auth-password-input"
             disabled={formState.isLoading}
-            value={formState.password}
             onChange={(e) => formState.setPassword(e.target.value)}
+            type="password"
+            value={formState.password}
           />
         </FormControl>
 
@@ -161,6 +161,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
                 ...provided,
               }),
             }}
+            onChange={(mechanism) => (formState.mechanism = mechanism)}
             options={[
               {
                 label: 'SCRAM-SHA-256',
@@ -172,7 +173,6 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
               },
             ]}
             value={formState.mechanism}
-            onChange={(mechanism) => (formState.mechanism = mechanism)}
           />
         </FormControl>
         {formState.error && (
@@ -181,8 +181,8 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
             <AlertDescription>{formState.error}</AlertDescription>
           </Alert>
         )}
-        <Button variant="brand" onClick={formState.handleSubmit} data-testid="auth-submit">
-          {formState.isLoading && <Spinner size="sm" mr="1" />}
+        <Button data-testid="auth-submit" onClick={formState.handleSubmit} variant="brand">
+          {formState.isLoading && <Spinner mr="1" size="sm" />}
           Log in
         </Button>
       </Flex>
@@ -190,7 +190,7 @@ const AUTH_ELEMENTS: Partial<Record<AuthenticationMethod, React.FC>> = {
   }),
   [AuthenticationMethod.OIDC]: () => (
     <div>
-      <Button variant="brand" as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} width="full">
+      <Button as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} variant="brand" width="full">
         Log in with OIDC
       </Button>
     </div>
@@ -206,7 +206,7 @@ const LoginPage = observer(() => {
   }, []);
 
   return (
-    <Flex width="full" minHeight="100vh">
+    <Flex minHeight="100vh" width="full">
       <Modal
         isOpen={uiState.loginError != null}
         onClose={() => {
@@ -231,9 +231,9 @@ const LoginPage = observer(() => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Box minWidth="400px" flex="8">
+      <Box flex="8" minWidth="400px">
         <Container maxWidth="350px" mt={50}>
-          <img src={SvgLogo} style={{ height: '30px' }} alt="Redpanda Console Logo" />
+          <img alt="Redpanda Console Logo" src={SvgLogo} style={{ height: '30px' }} />
           <Spacer height={10} />
           <Heading as="h1" size="lg">
             Log in
@@ -267,7 +267,7 @@ const LoginPage = observer(() => {
               const AuthComponent = AUTH_ELEMENTS[method];
               if (AuthComponent) {
                 if (index > 0) {
-                  acc.push(<TextDivider key={`divider-${index}`} text="OR" my={3} />);
+                  acc.push(<TextDivider key={`divider-${index}`} my={3} text="OR" />);
                 }
                 acc.push(
                   <div key={method}>
@@ -281,15 +281,15 @@ const LoginPage = observer(() => {
         </Container>
       </Box>
       <Flex
-        backgroundColor="brand.400"
-        background="linear-gradient(170deg, rgba(237,127,102,1) 58%, rgba(226,64,27,1) 58.2%);"
-        flex="5"
-        justifyContent="center"
         alignItems="center"
-        paddingTop="10%"
+        background="linear-gradient(170deg, rgba(237,127,102,1) 58%, rgba(226,64,27,1) 58.2%);"
+        backgroundColor="brand.400"
+        flex="5"
         hideBelow="md"
+        justifyContent="center"
+        paddingTop="10%"
       >
-        <Image height="300px" src={Avatars.wavingPandaSvg} alt="Waving Panda" />
+        <Image alt="Waving Panda" height="300px" src={Avatars.wavingPandaSvg} />
       </Flex>
     </Flex>
   );

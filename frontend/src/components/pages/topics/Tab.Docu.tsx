@@ -57,15 +57,15 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <SyntaxHighlighter
-          style={vs}
           customStyle={{
             'background-color': null,
             border: null,
             margin: null,
             padding: null,
           }}
-          PreTag="div"
           language={match[1]}
+          PreTag="div"
+          style={vs}
           {...props}
         >
           {String(children).replace(/\n$/, '')}
@@ -146,7 +146,7 @@ function renderDocuError(title: string, body: JSX.Element) {
       <VStack gap={4}>
         <Empty description={title} />
         {body}
-        <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+        <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
           <Button variant="solid">Redpanda Console Documentation</Button>
         </a>
       </VStack>

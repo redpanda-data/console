@@ -147,20 +147,20 @@ export const ChatInput = ({
       >
         <div className="relative">
           <textarea
-            ref={textareaRef}
-            id="chat-input"
+            aria-label="Type your message"
+            autoCapitalize="off"
+            autoCorrect="off"
             className="w-full rounded-md outline-none focus:outline-none focus:ring-0 border-none resize-none min-h-[80px] text-sm"
+            id="chat-input"
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message here..."
+            ref={textareaRef}
+            spellCheck="false"
             style={{
               resize: 'none',
             }}
-            placeholder="Type your message here..."
             value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            aria-label="Type your message"
-            spellCheck="false"
-            autoCorrect="off"
-            autoCapitalize="off"
           />
           <SendMessageButton inputValue={inputValue} isSending={isSending} onClick={handleSendMessage} />
         </div>

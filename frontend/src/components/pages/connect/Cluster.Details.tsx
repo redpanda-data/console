@@ -86,7 +86,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
           <div>
             <div style={{ display: 'flex', marginBottom: '.5em' }}>
               <Link to={`/connect-clusters/${clusterName}/create-connector`}>
-                <Button variant="solid" colorScheme="brand">
+                <Button colorScheme="brand" variant="solid">
                   Create connector
                 </Button>
               </Link>
@@ -94,22 +94,18 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
             <Box my={5}>
               <SearchBar<ClusterConnectorInfo>
-                placeholderText="Enter search term/regex"
                 dataSource={() => connectors ?? []}
-                isFilterMatch={this.isFilterMatch}
                 filterText={uiSettings.connectorsList.quickSearch}
-                onQueryChanged={(filterText) => (uiSettings.connectorsList.quickSearch = filterText)}
+                isFilterMatch={this.isFilterMatch}
                 onFilteredDataChanged={(data) => {
                   this.filteredResults = data;
                 }}
+                onQueryChanged={(filterText) => (uiSettings.connectorsList.quickSearch = filterText)}
+                placeholderText="Enter search term/regex"
               />
             </Box>
 
             <DataTable<ClusterConnectorInfo>
-              data={this.filteredResults}
-              pagination
-              defaultPageSize={10}
-              sorting
               columns={[
                 {
                   header: 'Connector',
@@ -118,7 +114,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                     <Link
                       to={`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(original.name)}`}
                     >
-                      <Text wordBreak="break-word" whiteSpace="break-spaces">
+                      <Text whiteSpace="break-spaces" wordBreak="break-word">
                         {original.name}
                       </Text>
                     </Link>
@@ -147,6 +143,10 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                   cell: ({ row: { original } }) => <TasksColumn observable={original} />,
                 },
               ]}
+              data={this.filteredResults}
+              defaultPageSize={10}
+              pagination
+              sorting
             />
           </div>
 
@@ -155,9 +155,6 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
             <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
-              data={additionalInfo?.plugins ?? []}
-              pagination
-              sorting
               columns={[
                 {
                   header: 'Class',
@@ -175,6 +172,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                   accessorKey: 'type',
                 },
               ]}
+              data={additionalInfo?.plugins ?? []}
+              pagination
+              sorting
             />
           </div>
         </Section>

@@ -41,30 +41,30 @@ const JavascriptFilterModal: FC<{
         <ModalHeader>JavaScript filtering</ModalHeader>
         <ModalBody>
           <Text mb={4}>Write JavaScript code to filter your records.</Text>
-          <Grid templateColumns={{ base: '1fr', md: '3fr 2fr' }} gap={6}>
+          <Grid gap={6} templateColumns={{ base: '1fr', md: '3fr 2fr' }}>
             <GridItem>
               <FormField label="Filter display name">
                 <Input
                   data-testid="add-javascript-filter-name"
-                  value={state.currentFilter.name}
                   onChange={(e) => {
                     state.currentFilter.name = e.target.value;
                   }}
                   placeholder="This name will appear in the filter bar"
+                  value={state.currentFilter.name}
                 />
               </FormField>
             </GridItem>
             <GridItem />
-            <GridItem display="flex" gap={4} flexDirection="column">
+            <GridItem display="flex" flexDirection="column" gap={4}>
               <FormField label="Filter code">
                 <Box borderRadius={20}>
                   <FilterEditor
                     data-testid="add-javascript-filter-code"
-                    value={state.currentFilter.code}
                     onValueChange={(code, transpiled) => {
                       state.currentFilter.code = code;
                       state.currentFilter.transpiledCode = transpiled;
                     }}
+                    value={state.currentFilter.code}
                   />
                 </Box>
               </FormField>
@@ -81,7 +81,7 @@ const JavascriptFilterModal: FC<{
             </GridItem>
             <GridItem>
               <Heading mb={6}>Examples</Heading>
-              <UnorderedList styleType="none" margin={0} spacing={4}>
+              <UnorderedList margin={0} spacing={4} styleType="none">
                 <ListItem>
                   <Code>value != null</Code> skips records without value
                 </ListItem>
@@ -95,7 +95,7 @@ const JavascriptFilterModal: FC<{
           </Grid>
         </ModalBody>
         <ModalFooter>
-          <Box display="flex" gap={2} alignItems="center" justifyContent="flex-end">
+          <Box alignItems="center" display="flex" gap={2} justifyContent="flex-end">
             <Button data-testid="add-javascript-filter-close" onClick={() => onClose()} variant="outline">
               Close
             </Button>

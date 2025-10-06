@@ -51,7 +51,7 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
             <Text variant="muted">Configure the basic information and resources for your MCP server.</Text>
           </div>
 
-          <FormContainer className="w-full" onSubmit={form.handleSubmit(onSubmit)} layout="default" width="full">
+          <FormContainer className="w-full" layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">
             <div className="space-y-6">
               <FormField
                 control={form.control}
@@ -81,7 +81,7 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
                 )}
               />
 
-              <TagsFieldList form={form} tagFields={tagFields} appendTag={appendTag} removeTag={removeTag} />
+              <TagsFieldList appendTag={appendTag} form={form} removeTag={removeTag} tagFields={tagFields} />
 
               <FormField
                 control={form.control}
@@ -89,7 +89,7 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Resources</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select resource tier" />

@@ -109,30 +109,30 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
             <ModalCloseButton />
             <ModalBody>
               <Stack spacing={4}>
-                <ResourceInUseAlert resource="secret" usedBy="pipelines" pipelines={matchingPipelines} />
+                <ResourceInUseAlert pipelines={matchingPipelines} resource="secret" usedBy="pipelines" />
 
                 <form.AppField name="id">
-                  {(field) => <field.TextField label="ID" isDisabled data-testid="secret-id-field" />}
+                  {(field) => <field.TextField data-testid="secret-id-field" isDisabled label="ID" />}
                 </form.AppField>
 
                 <form.AppField name="value">
-                  {(field) => <field.PasswordField label="Value" data-testid="secret-value-field" />}
+                  {(field) => <field.PasswordField data-testid="secret-value-field" label="Value" />}
                 </form.AppField>
 
                 <form.AppField name="scopes">
                   {({ state, handleChange, handleBlur }) => (
-                    <FormField label="Scopes" errorText=" " isInvalid={state.meta.errors?.length > 0}>
+                    <FormField errorText=" " isInvalid={state.meta.errors?.length > 0} label="Scopes">
                       <Select
-                        placeholder="Select scopes"
+                        defaultValue={scopeOptions.filter((so) => matchingSecret?.scopes?.some((s) => so.value === s))}
+                        isMulti
+                        onBlur={handleBlur}
                         onChange={(nextValue) => {
                           if (isMultiValue(nextValue) && nextValue) {
                             handleChange(nextValue.map(({ value }) => value));
                           }
                         }}
                         options={scopeOptions}
-                        defaultValue={scopeOptions.filter((so) => matchingSecret?.scopes?.some((s) => so.value === s))}
-                        isMulti
-                        onBlur={handleBlur}
+                        placeholder="Select scopes"
                       />
                       {
                         // Display error messages like tanstack/react-form fields.
@@ -152,12 +152,12 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
                   )}
                 </form.AppField>
 
-                <form.AppField name="labels" mode="array">
+                <form.AppField mode="array" name="labels">
                   {(field) => (
                     <field.KeyValueField
-                      label="Labels"
-                      helperText="Labels can help you to organize your secrets."
                       data-testid="secret-labels-field"
+                      helperText="Labels can help you to organize your secrets."
+                      label="Labels"
                     />
                   )}
                 </form.AppField>
@@ -166,12 +166,12 @@ export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretMod
             <ModalFooter>
               <ButtonGroup isDisabled={isUpdateSecretPending}>
                 <form.SubscribeButton
-                  label="Update"
-                  variant="brand"
                   data-testid="update-secret-button"
+                  label="Update"
                   loadingText="Updating"
+                  variant="brand"
                 />
-                <Button variant="ghost" data-testid="cancel-button" onClick={onClose}>
+                <Button data-testid="cancel-button" onClick={onClose} variant="ghost">
                   Cancel
                 </Button>
               </ButtonGroup>

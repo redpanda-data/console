@@ -107,15 +107,15 @@ export const ChatBlankState = ({ onSelectQuestion }: ChatBlankStateProps) => {
   ];
 
   return (
-    <Flex height="100%" width="100%" alignItems="center" justifyContent="center">
-      <VStack width="100%" spacing={8} px={{ base: 2, sm: 8 }} pt={8} animation={containerAnimation}>
+    <Flex alignItems="center" height="100%" justifyContent="center" width="100%">
+      <VStack animation={containerAnimation} pt={8} px={{ base: 2, sm: 8 }} spacing={8} width="100%">
         <VStack spacing={4} width="100%">
           <Center width="100%">
             <Heading size="lg">How can I help you?</Heading>
           </Center>
           <ButtonGroup display="flex" flexDirection="row" flexWrap="wrap" gap={5} justifyContent="center">
             {buttons.map((button) => (
-              <Button variant="outline" key={button.label} type="button" onClick={button.onClick}>
+              <Button key={button.label} onClick={button.onClick} type="button" variant="outline">
                 <HStack spacing={2}>
                   {button.icon}
                   <Text>{button.label}</Text>
@@ -125,16 +125,16 @@ export const ChatBlankState = ({ onSelectQuestion }: ChatBlankStateProps) => {
           </ButtonGroup>
         </VStack>
         <Box animation={questionsAnimation}>
-          <ButtonGroup width="100%" display="flex" flexDirection="column" spacing={0} mb={4}>
+          <ButtonGroup display="flex" flexDirection="column" mb={4} spacing={0} width="100%">
             {exampleQuestions.map((question, index) => (
               <Button
                 key={index}
-                variant="unstyled"
-                type="button"
                 onClick={() => handleQuestionClick(question)}
-                textAlign="left"
-                width="100%"
                 py={1}
+                textAlign="left"
+                type="button"
+                variant="unstyled"
+                width="100%"
               >
                 {question}
               </Button>

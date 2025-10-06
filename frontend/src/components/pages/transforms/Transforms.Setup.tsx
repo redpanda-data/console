@@ -28,15 +28,15 @@ export class TransformsSetup extends PageComponent<{}> {
 
   render() {
     return (
-      <Grid templateColumns="1fr 320px" gap={10}>
+      <Grid gap={10} templateColumns="1fr 320px">
         <Stack spacing={3}>
           <Heading as="h2">Data transforms</Heading>
           <Text>
             Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
             Redpanda.{' '}
             <ChakraLink
-              isExternal
               href="https://docs.redpanda.com/current/develop/data-transforms/build"
+              isExternal
               style={{ textDecoration: 'underline solid 1px' }}
             >
               Learn more
@@ -71,7 +71,7 @@ function TabGo(_p: {}) {
     <OrderedList display="flex" flexDirection="column" gap="0.5rem">
       <ListItem>
         <Text mt={3}>Create and initialize a data transforms project:</Text>
-        <CodeBlock language="bash" codeString={rpkInitTransform} />
+        <CodeBlock codeString={rpkInitTransform} language="bash" />
 
         <Text mt={3}>
           If you do not include the <code>--language</code> flag, the <code>transform init</code> command will prompt
@@ -79,7 +79,7 @@ function TabGo(_p: {}) {
         </Text>
 
         <Text mt={3}>A successful command generates project files in your current directory:</Text>
-        <CodeBlock language="text" codeString={exampleDir} />
+        <CodeBlock codeString={exampleDir} language="text" />
 
         <Text mt={3}>
           The <code>transform.go</code> file contains the transform logic, and the <code>transform.yaml</code> file

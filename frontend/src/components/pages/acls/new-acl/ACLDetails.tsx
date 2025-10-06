@@ -103,8 +103,8 @@ export function ACLDetails({
               </div>
               <Button
                 className="bg-gray-900 hover:bg-gray-800 text-white"
-                onClick={onUpdateACL}
                 data-testid="update-acl-button"
+                onClick={onUpdateACL}
               >
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
@@ -121,9 +121,9 @@ export function ACLDetails({
             {/* Left Column - Configuration Details */}
             <div className={`${showMatchingUsers ? 'lg:col-span-2' : ''} space-y-6`}>
               {/* Shared Configuration */}
-              <Card size="full" className={`${isSimpleView ? 'hidden' : ''}`}>
+              <Card className={`${isSimpleView ? 'hidden' : ''}`} size="full">
                 <CardHeader className="pb-4">
-                  <CardTitle data-testid={'share-config-title'} className="text-lg font-medium text-gray-900">
+                  <CardTitle className="text-lg font-medium text-gray-900" data-testid={'share-config-title'}>
                     Shared configuration
                   </CardTitle>
                 </CardHeader>
@@ -148,11 +148,11 @@ export function ACLDetails({
               </Card>
 
               {/* Rules */}
-              <Card size="full" variant={isSimpleView ? 'elevated' : undefined} className="border-gray-200">
+              <Card className="border-gray-200" size="full" variant={isSimpleView ? 'elevated' : undefined}>
                 <CardHeader>
-                  <CardTitle data-testid={'acl-rules-length'} className="text-lg font-medium text-gray-900">
+                  <CardTitle className="text-lg font-medium text-gray-900" data-testid={'acl-rules-length'}>
                     {isSimpleView ? (
-                      <Button variant="link" onClick={() => navigate(getGoTo(sharedConfig))}>
+                      <Button onClick={() => navigate(getGoTo(sharedConfig))} variant="link">
                         {sharedConfig.principal}
                       </Button>
                     ) : (
@@ -185,9 +185,9 @@ export function ACLDetails({
 
                       return (
                         <div
-                          key={rule.id}
                           className="border border-gray-200 rounded-lg p-4 space-y-3"
                           data-testid={`summary-card-${getRuleDataTestId(rule)}`}
+                          key={rule.id}
                         >
                           <div className="mb-3">
                             <div className="font-medium text-gray-900">
@@ -218,11 +218,11 @@ export function ACLDetails({
                                 ) : (
                                   enabledOperations.map((op) => (
                                     <span
-                                      key={op.name}
                                       className={`inline-flex items-center px-2 py-1 text-xs rounded-full font-medium ${
                                         op.value === 'allow' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                       }`}
                                       data-testid={`detail-item-op-${getIdFromRule(rule, op.originName, op.value)}`}
+                                      key={op.name}
                                     >
                                       {op.name}: {op.value}
                                     </span>
@@ -243,7 +243,7 @@ export function ACLDetails({
 
             {/* Right Column - Matching Users */}
             {showMatchingUsers && (
-              <MatchingUsersCard principalType={data.principalType} principal={sharedConfig.principal} />
+              <MatchingUsersCard principal={sharedConfig.principal} principalType={data.principalType} />
             )}
           </div>
         </div>
@@ -263,10 +263,10 @@ const EmbeddedAclDetail = ({ principal }: { principal: string }) => {
 
   return (
     <ACLDetails
-      sharedConfig={data.sharedConfig}
-      rules={data.rules}
-      onUpdateACL={() => navigate(`/security/acls/${parsePrincipal(data.sharedConfig.principal).name}/update`)}
       isSimpleView={true}
+      onUpdateACL={() => navigate(`/security/acls/${parsePrincipal(data.sharedConfig.principal).name}/update`)}
+      rules={data.rules}
+      sharedConfig={data.sharedConfig}
     />
   );
 };

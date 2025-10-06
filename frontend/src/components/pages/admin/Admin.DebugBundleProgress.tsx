@@ -64,7 +64,7 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box>
               <Flex gap={2}>
                 <Text fontWeight="bold">Debug bundle complete:</Text>
-                <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
+                <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
               </Flex>
             </Box>
           )}
@@ -77,7 +77,6 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
             <Box my={2}>
               {api.isDebugBundleInProgress ? (
                 <Button
-                  variant="outline"
                   onClick={() => {
                     for (const status of api.debugBundleStatuses) {
                       if (status.value.case === 'bundleStatus') {
@@ -85,11 +84,12 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                       }
                     }
                   }}
+                  variant="outline"
                 >
                   Stop
                 </Button>
               ) : (
-                <Button variant="outline" as={ReactRouterLink} to="/debug-bundle">
+                <Button as={ReactRouterLink} to="/debug-bundle" variant="outline">
                   {api.isDebugBundleError ? 'Try again' : 'Done'}
                 </Button>
               )}

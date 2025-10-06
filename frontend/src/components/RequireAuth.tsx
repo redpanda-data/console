@@ -22,10 +22,10 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
         <HistorySetter />
         <Routes>
           {/* Login (and callbacks) */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/login/callbacks/:provider" element={<LoginCompletePage />} />
+          <Route element={<LoginPage />} path="/login" />
+          <Route element={<LoginCompletePage />} path="/login/callbacks/:provider" />
           {/* Default View */}
-          <Route path="*" element={this.props.children} />
+          <Route element={this.props.children} path="*" />
         </Routes>
         <FeatureErrorCheck />
       </>

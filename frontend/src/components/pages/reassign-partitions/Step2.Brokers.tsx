@@ -51,11 +51,9 @@ export class StepSelectBrokers extends Component<{
           </p>
         </div>
 
-        <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
+        <SelectionInfoBar margin="1em" partitionSelection={this.props.partitionSelection} />
 
         <DataTable<Broker>
-          data={this.brokers}
-          pagination={true}
           columns={[
             {
               id: 'check',
@@ -65,8 +63,8 @@ export class StepSelectBrokers extends Component<{
                 const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
                 return (
                   <Checkbox
-                    isIndeterminate={!allIsSelected && selectedSet.size > 0}
                     isChecked={allIsSelected}
+                    isIndeterminate={!allIsSelected && selectedSet.size > 0}
                     onChange={() => {
                       if (!allIsSelected) {
                         transaction(() => {
@@ -105,6 +103,8 @@ export class StepSelectBrokers extends Component<{
               cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
             },
           ]}
+          data={this.brokers}
+          pagination={true}
         />
       </>
     );

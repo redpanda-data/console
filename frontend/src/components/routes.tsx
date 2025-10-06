@@ -160,12 +160,12 @@ export const RouteView = () => (
   <AnimatePresence mode="wait">
     <Routes>
       {/* Index */}
-      <Route path="/" element={<Navigate to="/overview" replace />} />
+      <Route element={<Navigate replace to="/overview" />} path="/" />
 
       {/* Emit all <Route/> elements */}
       {EmitRouteViews(APP_ROUTES)}
 
-      <Route path="*" element={<NotFound />} />
+      <Route element={<NotFound />} path="*" />
     </Routes>
   </AnimatePresence>
 );
@@ -271,8 +271,6 @@ function MakeRoute<TRouteParams>(
   // Create the route element after routeData is defined
   const routeElement = (
     <Route
-      path={`${path}${exact ? '' : '/*'}`}
-      key={path}
       element={
         <ProtectedRoute path={path}>
           <NuqsAdapter>
@@ -280,6 +278,8 @@ function MakeRoute<TRouteParams>(
           </NuqsAdapter>
         </ProtectedRoute>
       }
+      key={path}
+      path={`${path}${exact ? '' : '/*'}`}
     />
   );
   route.routeJsx = routeElement;

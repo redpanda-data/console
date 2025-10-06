@@ -101,7 +101,7 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
                   }}
                 >
                   {(field) => (
-                    <field.TextField label="Name" placeholder="Enter topic name" data-testid="topic-name-field" />
+                    <field.TextField data-testid="topic-name-field" label="Name" placeholder="Enter topic name" />
                   )}
                 </form.AppField>
               </Stack>
@@ -110,18 +110,18 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
             <ModalFooter>
               <ButtonGroup isDisabled={isCreateTopicPending}>
                 <form.SubscribeButton
-                  label="Create"
-                  variant="brand"
                   data-testid="create-topic-button"
+                  label="Create"
                   loadingText="Creating"
+                  variant="brand"
                 />
 
                 <Button
-                  variant="ghost"
                   data-testid="cancel-button"
                   onClick={() => {
                     onClose(undefined);
                   }}
+                  variant="ghost"
                 >
                   Cancel
                 </Button>

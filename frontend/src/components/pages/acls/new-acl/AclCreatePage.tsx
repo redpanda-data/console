@@ -50,10 +50,10 @@ const AclCreatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={createAclMutation}
         edit={false}
-        principalType={PrincipalTypeUser}
         onCancel={() => navigate('/security/acls')}
+        onSubmit={createAclMutation}
+        principalType={PrincipalTypeUser}
       />
     </PageContent>
   );

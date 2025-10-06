@@ -173,11 +173,10 @@ export class EditOffsetsModal extends Component<{
 
     return (
       <Flex flexDirection="column" gap={4}>
-        <Flex maxW={300} gap={2} flexDirection="column">
+        <Flex flexDirection="column" gap={2} maxW={300}>
           <Box>
             <FormLabel>Topic</FormLabel>
             <SingleSelect<string | null>
-              value={this.selectedTopic}
               onChange={action((v) => {
                 this.selectedTopic = v;
               })}
@@ -191,12 +190,16 @@ export class EditOffsetsModal extends Component<{
                   label: x,
                 })),
               ]}
+              value={this.selectedTopic}
             />
           </Box>
           {this.selectedTopic !== null && (
             <Box>
               <FormLabel>Partition</FormLabel>
               <SingleSelect
+                onChange={action((v: number | null) => {
+                  this.selectedPartition = v;
+                })}
                 options={[
                   {
                     value: null,
@@ -211,9 +214,6 @@ export class EditOffsetsModal extends Component<{
                     })) ?? []),
                 ]}
                 value={this.selectedPartition}
-                onChange={action((v: number | null) => {
-                  this.selectedPartition = v;
-                })}
               />
             </Box>
           )}
@@ -221,7 +221,6 @@ export class EditOffsetsModal extends Component<{
             <FormLabel>Strategy</FormLabel>
             <SingleSelect
               isDisabled={this.isLoadingTimestamps}
-              value={this.selectedOption}
               onChange={(v) => (this.selectedOption = v as EditOptions)}
               options={[
                 {
@@ -245,6 +244,7 @@ export class EditOffsetsModal extends Component<{
                   label: 'Other Consumer Group',
                 },
               ]}
+              value={this.selectedOption}
             />
           </Box>
         </Flex>
@@ -267,9 +267,9 @@ export class EditOffsetsModal extends Component<{
           <Box mt={2}>
             <FormLabel>Timestamp</FormLabel>
             <KowlTimePicker
-              valueUtcMs={this.timestampUtcMs}
-              onChange={(t) => (this.timestampUtcMs = t)}
               disabled={this.isLoadingTimestamps}
+              onChange={(t) => (this.timestampUtcMs = t)}
+              valueUtcMs={this.timestampUtcMs}
             />
           </Box>
         )}
@@ -278,7 +278,12 @@ export class EditOffsetsModal extends Component<{
           <Box mt={2}>
             <FormLabel>Shift by</FormLabel>
             <NumberInput
-              value={this.offsetShiftByValueAsString}
+              onBlur={() => {
+                if (Number.isNaN(this.offsetShiftByValue)) {
+                  this.offsetShiftByValueAsString = '0';
+                  this.offsetShiftByValue = 0;
+                }
+              }}
               onChange={(valueAsString, valueAsNumber) => {
                 // entering '-' or '.' without any digits will set the value to -Number.MAX_SAFE_INTEGER
                 // we want to prevent this and set the value to 0 instead in onBlur
@@ -287,12 +292,7 @@ export class EditOffsetsModal extends Component<{
                   this.offsetShiftByValue = valueAsNumber;
                 }
               }}
-              onBlur={() => {
-                if (Number.isNaN(this.offsetShiftByValue)) {
-                  this.offsetShiftByValueAsString = '0';
-                  this.offsetShiftByValue = 0;
-                }
-              }}
+              value={this.offsetShiftByValueAsString}
             />
           </Box>
         )}
@@ -309,37 +309,37 @@ export class EditOffsetsModal extends Component<{
               }}
             >
               <SingleSelect
+                isDisabled={this.isLoadingTimestamps}
+                onChange={(x) => (this.selectedGroup = x)}
                 options={this.otherConsumerGroups.map((g) => ({ value: g.groupId, label: g.groupId }))}
                 value={this.selectedGroup}
-                onChange={(x) => (this.selectedGroup = x)}
-                isDisabled={this.isLoadingTimestamps}
               />
 
               <Radio
-                value="onlyExisting"
                 isChecked={this.otherGroupCopyMode === 'onlyExisting'}
                 onClick={() => {
                   this.otherGroupCopyMode = 'onlyExisting';
                 }}
+                value="onlyExisting"
               >
                 <InfoText
-                  tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored."
                   maxWidth="450px"
+                  tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored."
                 >
                   Copy matching offsets
                 </InfoText>
               </Radio>
 
               <Radio
-                value="all"
                 isChecked={this.otherGroupCopyMode === 'all'}
                 onClick={() => {
                   this.otherGroupCopyMode = 'all';
                 }}
+                value="all"
               >
                 <InfoText
-                  tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway."
                   maxWidth="450px"
+                  tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway."
                 >
                   Full Copy
                 </InfoText>
@@ -360,9 +360,9 @@ export class EditOffsetsModal extends Component<{
             .filter(({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic)
             .map(({ topicName, items }) => ({
               heading: (
-                <Flex alignItems="center" gap={1} fontWeight={600} whiteSpace="nowrap">
+                <Flex alignItems="center" fontWeight={600} gap={1} whiteSpace="nowrap">
                   {/* Title */}
-                  <Text textOverflow="ellipsis" overflow="hidden" pr={8}>
+                  <Text overflow="hidden" pr={8} textOverflow="ellipsis">
                     {topicName}
                   </Text>
                   <Text display="inline-block" ml="auto" padding="0 1rem">
@@ -372,11 +372,6 @@ export class EditOffsetsModal extends Component<{
               ),
               description: (
                 <DataTable<GroupOffset>
-                  size="sm"
-                  pagination
-                  defaultPageSize={100}
-                  sorting
-                  data={items}
                   columns={[
                     {
                       size: 130,
@@ -394,10 +389,10 @@ export class EditOffsetsModal extends Component<{
                       }) =>
                         offset == null ? (
                           <Tooltip
+                            hasArrow
                             label="The group does not have an offset for this partition yet"
                             openDelay={1}
                             placement="top"
-                            hasArrow
                           >
                             <span style={{ opacity: 0.66, marginLeft: '2px' }}>
                               <SkipIcon />
@@ -412,10 +407,15 @@ export class EditOffsetsModal extends Component<{
                       id: 'offsetAfter',
                       size: Number.POSITIVE_INFINITY,
                       cell: ({ row: { original } }) => (
-                        <ColAfter selectedTime={this.timestampUtcMs} record={original} />
+                        <ColAfter record={original} selectedTime={this.timestampUtcMs} />
                       ),
                     },
                   ]}
+                  data={items}
+                  defaultPageSize={100}
+                  pagination
+                  size="sm"
+                  sorting
                 />
               ),
             }))}
@@ -575,11 +575,11 @@ export class EditOffsetsModal extends Component<{
           </Button>
 
           <Button
-            key="next"
-            variant="solid"
-            onClick={() => this.setPage(1)}
             isDisabled={disableContinue || disableNav}
             isLoading={this.isLoadingTimestamps}
+            key="next"
+            onClick={() => this.setPage(1)}
+            variant="solid"
           >
             <span>Review</span>
             <span>
@@ -591,18 +591,18 @@ export class EditOffsetsModal extends Component<{
 
     return (
       <Flex gap={2}>
-        <Button key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }} isDisabled={disableNav}>
+        <Button isDisabled={disableNav} key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}>
           <span>
             <ChevronLeftIcon />
           </span>
           <span>Back</span>
         </Button>
 
-        <Button key="cancel" style={{ marginLeft: 'auto' }} onClick={this.props.onClose}>
+        <Button key="cancel" onClick={this.props.onClose} style={{ marginLeft: 'auto' }}>
           Cancel
         </Button>
 
-        <Button key="next" variant="solid" isDisabled={disableNav} onClick={() => this.onApplyEdit()}>
+        <Button isDisabled={disableNav} key="next" onClick={() => this.onApplyEdit()} variant="solid">
           <span>Apply</span>
         </Button>
       </Flex>
@@ -716,7 +716,7 @@ class ColAfter extends Component<{
     // No change
     if (val == null) {
       return (
-        <Tooltip label="Offset will not be changed" openDelay={1} placement="top" hasArrow>
+        <Tooltip hasArrow label="Offset will not be changed" openDelay={1} placement="top">
           <span style={{ opacity: 0.66, marginLeft: '2px' }}>
             <SkipIcon />
           </span>
@@ -758,6 +758,10 @@ class ColAfter extends Component<{
         return (
           <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
             <InfoText
+              icon={<MdOutlineWarningAmber size={14} />}
+              iconColor="orangered"
+              iconSize="18px"
+              maxWidth="350px"
               tooltip={
                 <div>
                   There is no offset for this partition at or after the given timestamp (
@@ -765,10 +769,6 @@ class ColAfter extends Component<{
                   offset in that partition will be used.
                 </div>
               }
-              icon={<MdOutlineWarningAmber size={14} />}
-              iconSize="18px"
-              iconColor="orangered"
-              maxWidth="350px"
             >
               <span>{numberToThousandsString(partition?.waterMarkHigh ?? -1)}</span>
             </InfoText>

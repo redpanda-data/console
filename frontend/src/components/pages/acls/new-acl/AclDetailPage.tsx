@@ -37,10 +37,10 @@ const AclDetailPage = () => {
 
   return (
     <ACLDetails
-      sharedConfig={data.sharedConfig}
-      rules={data.rules}
-      onUpdateACL={() => navigate(`/security/acls/${parsePrincipal(data.sharedConfig.principal).name}/update`)}
       isSimpleView={false}
+      onUpdateACL={() => navigate(`/security/acls/${parsePrincipal(data.sharedConfig.principal).name}/update`)}
+      rules={data.rules}
+      sharedConfig={data.sharedConfig}
     />
   );
 };

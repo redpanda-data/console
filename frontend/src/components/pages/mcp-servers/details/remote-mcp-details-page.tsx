@@ -95,24 +95,24 @@ export const RemoteMCPDetailsPage = () => {
     <div className="flex flex-col gap-4">
       <RemoteMCPDetailsHeader />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs onValueChange={handleTabChange} value={activeTab}>
         <TabsList>
-          <TabsTrigger value="configuration" className="gap-2">
+          <TabsTrigger className="gap-2" value="configuration">
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Configuration
             </div>
           </TabsTrigger>
-          <TabsTrigger value="connection" className="gap-2">
+          <TabsTrigger className="gap-2" value="connection">
             <Link className="h-4 w-4" />
             Connection
           </TabsTrigger>
-          <TabsTrigger value="logs" className="gap-2">
+          <TabsTrigger className="gap-2" value="logs">
             <Logs className="h-4 w-4" />
             Logs
           </TabsTrigger>
           {isRemoteMcpInspectorFeatureEnabled && (
-            <TabsTrigger value="inspector" className="gap-2">
+            <TabsTrigger className="gap-2" value="inspector">
               <Search className="h-4 w-4" />
               MCP Inspector
             </TabsTrigger>

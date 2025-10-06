@@ -164,7 +164,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
             tabs[0].content
           )
         ) : (
-          <Tabs tabs={tabs} defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} />
+          <Tabs defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} tabs={tabs} />
         )}
       </PageContent>
     );
@@ -183,9 +183,6 @@ class TabClusters extends Component {
 
     return (
       <DataTable<ClusterConnectors>
-        data={clusters}
-        sorting={false}
-        pagination
         columns={[
           {
             header: 'Cluster',
@@ -194,7 +191,7 @@ class TabClusters extends Component {
             cell: ({ row: { original: r } }) => {
               if (r.error) {
                 return (
-                  <Tooltip label={r.error} placement="top" hasArrow={true}>
+                  <Tooltip hasArrow={true} label={r.error} placement="top">
                     <span style={mr05}>{errIcon}</span>
                     {r.clusterName}
                   </Tooltip>
@@ -205,8 +202,8 @@ class TabClusters extends Component {
                 // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
                 <span
                   className="hoverLink"
-                  style={{ display: 'inline-block', width: '100%' }}
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
+                  style={{ display: 'inline-block', width: '100%' }}
                 >
                   {r.clusterName}
                 </span>
@@ -231,6 +228,9 @@ class TabClusters extends Component {
             cell: ({ row: { original } }) => <TasksColumn observable={original} />,
           },
         ]}
+        data={clusters}
+        pagination
+        sorting={false}
       />
     );
   }
@@ -264,37 +264,34 @@ const TabConnectors = observer(() => {
   return (
     <Box>
       <SearchBar<ConnectorType>
-        isFilterMatch={isFilterMatch}
-        filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
-        onQueryChanged={(x) => {
-          uiSettings.clusterOverview.connectorsList.quickSearch = x;
-        }}
         dataSource={() => allConnectors}
-        placeholderText="Enter search term/regex"
+        filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
+        isFilterMatch={isFilterMatch}
         onFilteredDataChanged={(data) => {
           state.filteredResults = data;
         }}
+        onQueryChanged={(x) => {
+          uiSettings.clusterOverview.connectorsList.quickSearch = x;
+        }}
+        placeholderText="Enter search term/regex"
       />
       <DataTable<ConnectorType>
-        data={state.filteredResults}
-        pagination
-        sorting={false}
         columns={[
           {
             header: 'Connector',
             accessorKey: 'name',
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
-              <Tooltip placement="top" label={original.name} hasArrow={true}>
+              <Tooltip hasArrow={true} label={original.name} placement="top">
                 {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
                 <span
                   className="hoverLink"
-                  style={{ display: 'inline-block', width: '100%' }}
                   onClick={() =>
                     appGlobal.historyPush(
                       `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`,
                     )
                   }
+                  style={{ display: 'inline-block', width: '100%' }}
                 >
                   {original.name}
                 </span>
@@ -327,6 +324,9 @@ const TabConnectors = observer(() => {
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },
         ]}
+        data={state.filteredResults}
+        pagination
+        sorting={false}
       />
     </Box>
   );
@@ -358,23 +358,20 @@ class TabTasks extends Component {
 
     return (
       <DataTable<TaskType>
-        data={allTasks}
-        pagination
-        sorting
         columns={[
           {
             header: 'Connector',
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
               <Text
-                wordBreak="break-word"
-                whiteSpace="break-spaces"
                 className="hoverLink"
                 onClick={() =>
                   appGlobal.historyPush(
                     `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`,
                   )
                 }
+                whiteSpace="break-spaces"
+                wordBreak="break-word"
               >
                 {original.connectorName}
               </Text>
@@ -400,6 +397,9 @@ class TabTasks extends Component {
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },
         ]}
+        data={allTasks}
+        pagination
+        sorting
       />
     );
   }
@@ -419,7 +419,7 @@ const TabKafkaConnect = observer((_p: {}) => {
       <OverviewStatisticsCard />
 
       <Section>
-        <Tabs tabs={connectTabs} onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} />
+        <Tabs onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} tabs={connectTabs} />
       </Section>
     </Stack>
   );

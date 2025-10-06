@@ -94,9 +94,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   renderTopics(group: GroupDescription) {
     return (
       <>
-        <Flex mb={6} gap={4} alignItems="center">
+        <Flex alignItems="center" gap={4} mb={6}>
           <SearchField
-            width={300}
             placeholderText="Filter by member"
             searchText={this.quickSearch}
             setSearchText={(filterText) => {
@@ -106,6 +105,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 query.q = q;
               });
             }}
+            width={300}
           />
           <Checkbox
             isChecked={this.showWithLagOnly}
@@ -122,7 +122,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         <GroupByTopics
           group={group}
-          onlyShowPartitionsWithLag={this.showWithLagOnly}
+          onDeleteOffsets={(offsets, mode) => {
+            this.deletingMode = mode;
+            this.deletingOffsets = offsets;
+          }}
           onEditOffsets={(g) => {
             this.editGroup();
             this.editedTopic = g[0].topicName;
@@ -132,11 +135,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
               this.editedPartition = null;
             }
           }}
+          onlyShowPartitionsWithLag={this.showWithLagOnly}
           quickSearch={this.quickSearch}
-          onDeleteOffsets={(offsets, mode) => {
-            this.deletingMode = mode;
-            this.deletingOffsets = offsets;
-          }}
         />
       </>
     );
@@ -154,10 +154,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     return (
       <PageContent className="groupDetails">
         <Flex gap={2}>
-          <Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
+          <Button disabledReason={cannotEditGroupReason(group)} onClick={() => this.editGroup()} variant="outline">
             Edit Group
           </Button>
-          <Button variant="outline" onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
+          <Button disabledReason={cannotDeleteGroupReason(group)} onClick={() => this.deleteGroup()} variant="outline">
             Delete Group
           </Button>
         </Flex>
@@ -189,7 +189,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
           {/* View Buttons */}
           <Tabs
             isFitted
-            variant="fitted"
             items={[
               {
                 key: 'topics',
@@ -202,25 +201,26 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 component: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />,
               },
             ]}
+            variant="fitted"
           />
         </Section>
 
         {/* Modals */}
         <EditOffsetsModal
-          key={`${this.editedTopic ?? ''}-${this.editedPartition ?? ''}`}
           group={group}
+          initialPartition={this.editedPartition}
+          initialTopic={this.editedTopic}
+          key={`${this.editedTopic ?? ''}-${this.editedPartition ?? ''}`}
           offsets={this.edittingOffsets}
           onClose={() => (this.edittingOffsets = null)}
-          initialTopic={this.editedTopic}
-          initialPartition={this.editedPartition}
         />
         <DeleteOffsetsModal
+          disabledReason={cannotDeleteGroupReason(group)}
           group={group}
           mode={this.deletingMode}
           offsets={this.deletingOffsets}
           onClose={() => (this.deletingOffsets = null)}
           onInit={() => this.deleteGroup()}
-          disabledReason={cannotDeleteGroupReason(group)}
         />
       </PageContent>
     );
@@ -322,38 +322,38 @@ const GroupByTopics = observer(function GroupByTopics(props: {
         <Flex flexDirection="column" gap={4}>
           <Flex gap={2}>
             {/* Title */}
-            <Text fontWeight={600} fontSize="lg">
+            <Text fontSize="lg" fontWeight={600}>
               {g.topicName}
             </Text>
 
             <Flex gap={2}>
               <IconButton
+                disabledReason={cannotEditGroupReason(props.group)}
                 onClick={(e) => {
                   p.onEditOffsets(g.partitions);
                   e.stopPropagation();
                 }}
-                disabledReason={cannotEditGroupReason(props.group)}
               >
                 <PencilIcon />
               </IconButton>
               <IconButton
+                disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
                 onClick={(e) => {
                   p.onDeleteOffsets(g.partitions, 'topic');
                   e.stopPropagation();
                 }}
-                disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
               >
                 <TrashIcon />
               </IconButton>
             </Flex>
           </Flex>
-          <Flex gap={4} fontSize="sm" alignItems="center" fontWeight="normal" color="gray.600">
+          <Flex alignItems="center" color="gray.600" fontSize="sm" fontWeight="normal" gap={4}>
             <span>Lag: {numberToThousandsString(totalLagAll)}</span>
             <span>Assigned partitions: {partitionsAssigned}</span>
             <Button
-              variant="link"
-              size="sm"
               onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(g.topicName)}`)}
+              size="sm"
+              variant="link"
             >
               Go to topic
             </Button>
@@ -372,9 +372,6 @@ const GroupByTopics = observer(function GroupByTopics(props: {
           clientId: string | undefined;
           host: string | undefined;
         }>
-          pagination
-          sorting
-          data={g.partitions}
           columns={[
             {
               size: 100,
@@ -435,16 +432,16 @@ const GroupByTopics = observer(function GroupByTopics(props: {
               header: '',
               id: 'action',
               cell: ({ row: { original } }) => (
-                <Flex pr={2} gap={1}>
+                <Flex gap={1} pr={2}>
                   <IconButton
-                    onClick={() => p.onEditOffsets([original])}
                     disabledReason={cannotEditGroupReason(props.group)}
+                    onClick={() => p.onEditOffsets([original])}
                   >
                     <PencilIcon />
                   </IconButton>
                   <IconButton
-                    onClick={() => p.onDeleteOffsets([original], 'partition')}
                     disabledReason={cannotDeleteGroupOffsetsReason(props.group)}
+                    onClick={() => p.onDeleteOffsets([original], 'partition')}
                   >
                     <TrashIcon />
                   </IconButton>
@@ -452,6 +449,9 @@ const GroupByTopics = observer(function GroupByTopics(props: {
               ),
             },
           ]}
+          data={g.partitions}
+          pagination
+          sorting
         />
       ),
     };
@@ -477,7 +477,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
     );
   }
 
-  return <Accordion allowToggle items={topicEntries.filterNull()} defaultIndex={defaultExpand} />;
+  return <Accordion allowToggle defaultIndex={defaultExpand} items={topicEntries.filterNull()} />;
 });
 
 const renderMergedID = (id?: string, clientId?: string) => {
@@ -503,11 +503,11 @@ const renderMergedID = (id?: string, clientId?: string) => {
 type StateIcon = 'stable' | 'completingrebalance' | 'preparingrebalance' | 'empty' | 'dead' | 'unknown';
 
 const stateIcons = new Map<StateIcon, JSX.Element>([
-  ['stable', <MdCheckCircleOutline key="stable" size={16} color="#52c41a" />],
-  ['completingrebalance', <MdHourglassBottom key="completingrebalance" size={16} color="#52c41a" />],
-  ['preparingrebalance', <MdHourglassEmpty key="preparingrebalance" size={16} color="orange" />],
-  ['empty', <MdOutlineWarningAmber key="empty" size={16} color="orange" />],
-  ['dead', <MdLocalFireDepartment key="dead" size={16} color="orangered" />],
+  ['stable', <MdCheckCircleOutline color="#52c41a" key="stable" size={16} />],
+  ['completingrebalance', <MdHourglassBottom color="#52c41a" key="completingrebalance" size={16} />],
+  ['preparingrebalance', <MdHourglassEmpty color="orange" key="preparingrebalance" size={16} />],
+  ['empty', <MdOutlineWarningAmber color="orange" key="empty" size={16} />],
+  ['dead', <MdLocalFireDepartment color="orangered" key="dead" size={16} />],
   ['unknown', <MdOutlineQuiz key="unknown" size={16} />],
 ]);
 
@@ -530,11 +530,11 @@ const stateIconDescriptions: Record<StateIcon, string> = {
 };
 
 const consumerGroupStateTable = (
-  <Grid templateColumns="auto 300px" gap={4}>
+  <Grid gap={4} templateColumns="auto 300px">
     {Array.from(stateIcons.entries()).map(([key, icon]) => (
       <React.Fragment key={key}>
         {/* Icon column */}
-        <GridItem display="flex" alignItems="center" gap={2}>
+        <GridItem alignItems="center" display="flex" gap={2}>
           {icon} <strong>{stateIconNames[key]}</strong>
         </GridItem>
 
@@ -550,8 +550,8 @@ export const GroupState = (p: { group: GroupDescription }) => {
   const icon = stateIcons.get(state as StateIcon);
 
   return (
-    <Popover isInPortal trigger="hover" size="auto" placement="right" hideCloseButton content={consumerGroupStateTable}>
-      <Flex gap={2} alignItems="center">
+    <Popover content={consumerGroupStateTable} hideCloseButton isInPortal placement="right" size="auto" trigger="hover">
+      <Flex alignItems="center" gap={2}>
         {icon}
         <span> {p.group.state}</span>
       </Flex>

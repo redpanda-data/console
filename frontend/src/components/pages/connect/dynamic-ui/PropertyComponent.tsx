@@ -31,7 +31,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
       <div>
         "{p.name}" (unknown type "{def.type}")
       </div>
-      <div style={{ fontSize: 'smaller' }} className="codeBox">
+      <div className="codeBox" style={{ fontSize: 'smaller' }}>
         {JSON.stringify(p.entry, undefined, 4)}
       </div>
     </div>
@@ -50,10 +50,10 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             : recValues.map((v) => ({ value: v, label: String(v).toUpperCase() }));
         inputComp = (
           <RadioGroup
-            value={String(v || def.default_value)}
+            name={p.name}
             onChange={(e) => (p.value = e)}
             options={options}
-            name={p.name}
+            value={String(v || def.default_value)}
           />
         );
         break;
@@ -64,18 +64,18 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         const options = recValues.map((x: string) => ({ label: x, value: x }));
         inputComp = (
           <Box maxWidth={260}>
-            <SingleSelect value={v} onChange={(e) => (p.value = e)} options={options} />
+            <SingleSelect onChange={(e) => (p.value = e)} options={options} value={v} />
           </Box>
         );
       } else {
         // Input
         inputComp = (
           <Input
-            value={String(v)}
-            onChange={(e) => (p.value = e.target.value)}
             defaultValue={def.default_value ?? undefined}
-            spellCheck={false}
             isDisabled={props.property.isDisabled}
+            onChange={(e) => (p.value = e.target.value)}
+            spellCheck={false}
+            value={String(v)}
           />
         );
       }
@@ -85,11 +85,11 @@ export const PropertyComponent = observer((props: { property: Property }) => {
     case 'PASSWORD':
       inputComp = (
         <SecretInput
-          value={String(v ?? '')}
-          updating={p.crud === 'update'}
           onChange={(e) => {
             p.value = e;
           }}
+          updating={p.crud === 'update'}
+          value={String(v ?? '')}
         />
       );
       break;
@@ -98,7 +98,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
     case 'SHORT':
     case 'DOUBLE':
     case 'FLOAT':
-      inputComp = <NumberInput value={Number(v)} onChange={(e) => (p.value = e)} />;
+      inputComp = <NumberInput onChange={(e) => (p.value = e)} value={Number(v)} />;
       break;
 
     case 'BOOLEAN':
@@ -111,9 +111,9 @@ export const PropertyComponent = observer((props: { property: Property }) => {
       } else {
         inputComp = (
           <Input
-            value={String(v)}
-            onChange={(e) => (p.value = e.target.value)}
             defaultValue={def.default_value ?? undefined}
+            onChange={(e) => (p.value = e.target.value)}
+            value={String(v)}
           />
         );
       }
@@ -121,7 +121,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
       break;
   }
 
-  inputComp = <ErrorWrapper property={p} input={inputComp} />;
+  inputComp = <ErrorWrapper input={inputComp} property={p} />;
   // Wrap name and input element
   return (
     <Box className={inputSizeToClass[def.width]} mt="6">

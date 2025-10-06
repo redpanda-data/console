@@ -61,16 +61,16 @@ export const SingleSelectField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <SingleSelect
-        options={selectOptions}
-        onChange={handleChange}
-        placeholder={placeholder}
         isDisabled={isDisabled}
+        onChange={handleChange}
+        options={selectOptions}
+        placeholder={placeholder}
         value={field.state.value}
       />
 

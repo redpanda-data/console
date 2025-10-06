@@ -106,7 +106,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
             <ModalBody>
               <Stack spacing={2}>
                 {createSecretError && (
-                  <Alert status="error" variant="subtle" data-testid="create-secret-error">
+                  <Alert data-testid="create-secret-error" status="error" variant="subtle">
                     <AlertIcon />
                     {createSecretError.message}
                   </Alert>
@@ -124,25 +124,26 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                 >
                   {(field) => (
                     <field.TextField
-                      label="ID"
+                      data-testid="secret-id-field"
                       helperText="ID must use uppercase letters, numbers, and underscores only."
+                      label="ID"
                       placeholder="SECRET_ID"
                       transform={(value: string) => value.toUpperCase()}
-                      data-testid="secret-id-field"
                     />
                   )}
                 </form.AppField>
                 <form.AppField name="value">
                   {(field) => (
-                    <field.PasswordField label="Value" data-testid="secret-value-field" helperText={helperText} />
+                    <field.PasswordField data-testid="secret-value-field" helperText={helperText} label="Value" />
                   )}
                 </form.AppField>
                 <form.AppField name="scopes">
                   {({ state, handleChange, handleBlur }) => (
-                    <FormField label="Scopes" errorText=" " isInvalid={state.meta.errors?.length > 0}>
+                    <FormField errorText=" " isInvalid={state.meta.errors?.length > 0} label="Scopes">
                       <Select
-                        placeholder="Select scopes"
                         data-testid="secret-scopes-field"
+                        isMulti
+                        onBlur={handleBlur}
                         onChange={(nextValue) => {
                           if (isMultiValue(nextValue) && nextValue) {
                             handleChange(nextValue.map(({ value }) => value));
@@ -160,8 +161,7 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                           { label: 'MCP Server', value: Scope.MCP_SERVER },
                           { label: 'AI Agent', value: Scope.AI_AGENT },
                         ]}
-                        isMulti
-                        onBlur={handleBlur}
+                        placeholder="Select scopes"
                       />
                       {
                         // Display error messages like tanstack/react-form fields.
@@ -181,12 +181,12 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                   )}
                 </form.AppField>
                 {/* @ts-ignore - labels is a valid field name, @tanstack/form needs updating to infer deeply nested form field types */}
-                <form.AppField name="labels" mode="array">
+                <form.AppField mode="array" name="labels">
                   {(field) => (
                     <field.KeyValueField
-                      label="Labels"
-                      helperText="Labels can help you to organize your secrets."
                       data-testid="secret-labels-field"
+                      helperText="Labels can help you to organize your secrets."
+                      label="Labels"
                     />
                   )}
                 </form.AppField>
@@ -196,18 +196,18 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
             <ModalFooter>
               <ButtonGroup isDisabled={isCreateSecretPending}>
                 <form.SubscribeButton
-                  label="Create"
-                  variant="brand"
                   data-testid="create-secret-button"
+                  label="Create"
                   loadingText="Creating"
+                  variant="brand"
                 />
 
                 <Button
-                  variant="ghost"
                   data-testid="cancel-button"
                   onClick={() => {
                     handleClose();
                   }}
+                  variant="ghost"
                 >
                   Cancel
                 </Button>

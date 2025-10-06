@@ -11,7 +11,7 @@ interface ChatMessageContainerProps {
 
 export const ChatMessageContainer = ({ messages, isTyping, messagesEndRef }: ChatMessageContainerProps) => {
   return (
-    <div className="mb-4" aria-label="Chat messages" role="log">
+    <div aria-label="Chat messages" className="mb-4" role="log">
       <div className="flex flex-col space-y-4">
         {messages.map((message: ChatMessage) => (
           <ChatMessageView key={message.id} message={message} />

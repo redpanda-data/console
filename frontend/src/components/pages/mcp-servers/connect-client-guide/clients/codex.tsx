@@ -50,19 +50,19 @@ args = ["-X", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={CodexLogo} alt="Codex" className="h-4 w-4" />
+                <img alt="Codex" className="h-4 w-4" src={CodexLogo} />
                 Codex
               </Text>
               <span>, add the MCP server using the following command:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={codexMcpAddCommand} />
+            <DynamicCodeBlock code={codexMcpAddCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -70,7 +70,7 @@ args = ["-X", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-
               <InlineCode className="whitespace-nowrap">~/.codex/config.toml</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="toml" code={codexConfigToml} />
+            <DynamicCodeBlock code={codexConfigToml} lang="toml" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -82,8 +82,8 @@ args = ["-X", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers"
         clientName="Codex"
+        documentationUrl="https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers"
       />
     </div>
   );

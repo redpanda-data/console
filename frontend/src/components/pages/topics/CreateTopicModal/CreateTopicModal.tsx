@@ -82,36 +82,36 @@ export class CreateTopicModalContent extends Component<Props> {
         <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
           <Label text="Topic Name">
             <Input
-              data-testid="topic-name"
-              value={state.topicName}
-              onChange={(e) => (state.topicName = e.target.value)}
-              width="100%"
               autoFocus
+              data-testid="topic-name"
+              onChange={(e) => (state.topicName = e.target.value)}
+              value={state.topicName}
+              width="100%"
             />
           </Label>
 
           <div style={{ display: 'flex', gap: '2em' }}>
-            <Label text="Partitions" style={{ flexBasis: '160px' }}>
+            <Label style={{ flexBasis: '160px' }} text="Partitions">
               <NumInput
-                value={state.partitions}
+                min={1}
                 onChange={(e) => (state.partitions = e)}
                 placeholder={state.defaults.partitions}
-                min={1}
+                value={state.partitions}
               />
             </Label>
-            <Label text="Replication Factor" style={{ flexBasis: '160px' }}>
+            <Label style={{ flexBasis: '160px' }} text="Replication Factor">
               <Box>
                 <NumInput
-                  value={state.replicationFactor}
-                  onChange={(e) => (state.replicationFactor = e)}
-                  min={1}
-                  placeholder={state.defaults.replicationFactor}
                   disabled={isServerless()}
+                  min={1}
+                  onChange={(e) => (state.replicationFactor = e)}
+                  placeholder={state.defaults.replicationFactor}
+                  value={state.replicationFactor}
                 />
                 <Box
                   color="red.500"
-                  fontWeight={500}
                   fontSize="12px"
+                  fontWeight={500}
                   visibility={replicationFactorError ? undefined : 'hidden'}
                 >
                   {replicationFactorError}
@@ -120,12 +120,12 @@ export class CreateTopicModalContent extends Component<Props> {
             </Label>
 
             {!api.isRedpanda && (
-              <Label text="Min In-Sync Replicas" style={{ flexBasis: '160px' }}>
+              <Label style={{ flexBasis: '160px' }} text="Min In-Sync Replicas">
                 <NumInput
-                  value={state.minInSyncReplicas}
-                  onChange={(e) => (state.minInSyncReplicas = e)}
                   min={1}
+                  onChange={(e) => (state.minInSyncReplicas = e)}
                   placeholder={state.defaults.minInSyncReplicas}
+                  value={state.minInSyncReplicas}
                 />
               </Label>
             )}
@@ -133,35 +133,35 @@ export class CreateTopicModalContent extends Component<Props> {
 
           <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
             {!isServerless() && (
-              <Label text="Cleanup Policy" style={{ flexBasis: '160px' }}>
+              <Label style={{ flexBasis: '160px' }} text="Cleanup Policy">
                 <SingleSelect<CleanupPolicyType>
+                  isReadOnly={isServerless()}
+                  onChange={(e) => (state.cleanupPolicy = e)}
                   options={[
                     { value: 'delete', label: 'delete' },
                     { value: 'compact', label: 'compact' },
                     { value: 'compact,delete', label: 'compact,delete' },
                   ]}
-                  isReadOnly={isServerless()}
                   value={state.cleanupPolicy}
-                  onChange={(e) => (state.cleanupPolicy = e)}
                 />
               </Label>
             )}
-            <Label text="Retention Time" style={{ flexBasis: '220px', flexGrow: 1 }}>
+            <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Time">
               <RetentionTimeSelect
-                value={state.retentionTimeMs}
+                defaultConfigValue={state.defaults.retentionTime}
+                onChangeUnit={(x) => (state.retentionTimeUnit = x)}
                 onChangeValue={(x) => (state.retentionTimeMs = x)}
                 unit={state.retentionTimeUnit}
-                onChangeUnit={(x) => (state.retentionTimeUnit = x)}
-                defaultConfigValue={state.defaults.retentionTime}
+                value={state.retentionTimeMs}
               />
             </Label>
-            <Label text="Retention Size" style={{ flexBasis: '220px', flexGrow: 1 }}>
+            <Label style={{ flexBasis: '220px', flexGrow: 1 }} text="Retention Size">
               <RetentionSizeSelect
-                value={state.retentionSize}
+                defaultConfigValue={state.defaults.retentionBytes}
+                onChangeUnit={(x) => (state.retentionSizeUnit = x)}
                 onChangeValue={(x) => (state.retentionSize = x)}
                 unit={state.retentionSizeUnit}
-                onChangeUnit={(x) => (state.retentionSizeUnit = x)}
-                defaultConfigValue={state.defaults.retentionBytes}
+                value={state.retentionSize}
               />
             </Label>
           </div>
@@ -218,18 +218,7 @@ export function NumInput(p: {
 
       <Input
         className={`numericInput ${p.className ?? ''}`}
-        style={{ minWidth: '120px', width: '100%' }}
-        spellCheck={false}
-        placeholder={p.placeholder}
         disabled={p.disabled}
-        value={p.disabled && p.placeholder && p.value == null ? undefined : editValue}
-        onChange={(e) => {
-          setEditValue(e.target.value);
-          const n = Number(e.target.value);
-          if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
-          else p.onChange?.(undefined);
-        }}
-        onWheel={(e) => changeBy(-Math.sign(e.deltaY))}
         onBlur={() => {
           const s = editValue;
 
@@ -248,6 +237,17 @@ export function NumInput(p: {
           }
           commit(n);
         }}
+        onChange={(e) => {
+          setEditValue(e.target.value);
+          const n = Number(e.target.value);
+          if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
+          else p.onChange?.(undefined);
+        }}
+        onWheel={(e) => changeBy(-Math.sign(e.deltaY))}
+        placeholder={p.placeholder}
+        spellCheck={false}
+        style={{ minWidth: '120px', width: '100%' }}
+        value={p.disabled && p.placeholder && p.value == null ? undefined : editValue}
       />
 
       {p.addonAfter && <InputRightAddon p="0">{p.addonAfter}</InputRightAddon>}
@@ -280,17 +280,11 @@ function RetentionTimeSelect(p: {
 
   return (
     <NumInput
-      value={numDisabled ? undefined : value}
-      onChange={(x) => p.onChangeValue(x ?? 0)}
-      min={0}
-      placeholder={placeholder}
-      disabled={numDisabled}
       addonAfter={
         <Box minWidth="130px">
           <Select<RetentionTimeUnit>
             // style={{ minWidth: '90px', background: 'transparent' }}
             // bordered={false}
-            value={{ value: unit }}
             onChange={(arg) => {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
@@ -320,9 +314,15 @@ function RetentionTimeSelect(p: {
                 // style: isSpecial ? { fontStyle: 'italic' } : undefined,
               };
             })}
+            value={{ value: unit }}
           />
         </Box>
       }
+      disabled={numDisabled}
+      min={0}
+      onChange={(x) => p.onChangeValue(x ?? 0)}
+      placeholder={placeholder}
+      value={numDisabled ? undefined : value}
     />
   );
 }
@@ -349,17 +349,11 @@ function RetentionSizeSelect(p: {
 
   return (
     <NumInput
-      value={numDisabled ? undefined : value}
-      onChange={(x) => p.onChangeValue(x ?? -1)}
-      min={0}
-      placeholder={placeholder}
-      disabled={numDisabled}
       addonAfter={
         <Box minWidth="130px">
           <Select<RetentionSizeUnit>
             // style={{ minWidth: '90px', background: 'transparent' }}
             // bordered={false}
-            value={{ value: unit }}
             onChange={(arg) => {
               if (isSingleValue(arg) && arg && arg.value) {
                 const u = arg.value;
@@ -389,9 +383,15 @@ function RetentionSizeSelect(p: {
                 // style: isSpecial ? { fontStyle: 'italic' } : undefined,
               };
             })}
+            value={{ value: unit }}
           />
         </Box>
       }
+      disabled={numDisabled}
+      min={0}
+      onChange={(x) => p.onChangeValue(x ?? -1)}
+      placeholder={placeholder}
+      value={numDisabled ? undefined : value}
     />
   );
 }
@@ -400,16 +400,16 @@ const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
   return (
     <div className="keyValuePairEditor">
       {p.entries.map((x, i) => (
-        <KeyValuePair key={String(i)} entries={p.entries} entry={x} />
+        <KeyValuePair entries={p.entries} entry={x} key={String(i)} />
       ))}
 
       <Button
-        variant="outline"
-        size="sm"
         className="addButton"
         onClick={() => {
           p.entries.push({ name: '', value: '' });
         }}
+        size="sm"
+        variant="outline"
       >
         <PlusIcon />
         Add Entry
@@ -422,28 +422,28 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicCon
   const { entry } = p;
 
   return (
-    <Box className="inputGroup" width="100%" display="flex">
+    <Box className="inputGroup" display="flex" width="100%">
       <Input
-        placeholder="Property Name..."
-        style={{ flexBasis: '30%' }}
-        spellCheck={false}
-        value={entry.name}
         onChange={(e) => (entry.name = e.target.value)}
+        placeholder="Property Name..."
+        spellCheck={false}
+        style={{ flexBasis: '30%' }}
+        value={entry.name}
       />
       <Input
-        placeholder="Property Value..."
-        style={{ flexBasis: '60%' }}
-        spellCheck={false}
-        value={entry.value}
         onChange={(e) => (p.entry.value = e.target.value)}
+        placeholder="Property Value..."
+        spellCheck={false}
+        style={{ flexBasis: '60%' }}
+        value={entry.value}
       />
       <Button
-        variant="outline"
         className="iconButton deleteButton"
         onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
           event.stopPropagation();
           p.entries.remove(p.entry);
         }}
+        variant="outline"
       >
         <XIcon />
       </Button>
@@ -543,25 +543,9 @@ class UnitSelect<UnitType extends string> extends Component<{
 
     return (
       <NumInput
-        className={this.props.className}
-        value={numDisabled ? undefined : unitValue}
-        onChange={(x) => {
-          if (x === undefined) {
-            this.props.onChange(0);
-            return;
-          }
-
-          const factor = unitFactors[this.unit];
-          const bytes = x * factor;
-          this.props.onChange(bytes);
-        }}
-        min={0}
-        placeholder={placeholder}
-        disabled={numDisabled}
         addonAfter={
           <Select<UnitType>
             // style={{ minWidth: '90px' }}
-            value={{ value: unit }}
             onChange={(arg) => {
               if (isSingleValue(arg) && arg) {
                 const u = arg.value as UnitType;
@@ -580,8 +564,24 @@ class UnitSelect<UnitType extends string> extends Component<{
               }
             }}
             options={selectOptions}
+            value={{ value: unit }}
           />
         }
+        className={this.props.className}
+        disabled={numDisabled}
+        min={0}
+        onChange={(x) => {
+          if (x === undefined) {
+            this.props.onChange(0);
+            return;
+          }
+
+          const factor = unitFactors[this.unit];
+          const bytes = x * factor;
+          this.props.onChange(bytes);
+        }}
+        placeholder={placeholder}
+        value={numDisabled ? undefined : unitValue}
       />
     );
   }
@@ -595,11 +595,11 @@ export function DataSizeSelect(p: {
 }) {
   return (
     <UnitSelect
-      baseValue={p.valueBytes}
-      onChange={p.onChange}
       allowInfinite={p.allowInfinite}
-      unitFactors={dataSizeFactors}
+      baseValue={p.valueBytes}
       className={p.className}
+      onChange={p.onChange}
+      unitFactors={dataSizeFactors}
     />
   );
 }
@@ -612,11 +612,11 @@ export function DurationSelect(p: {
 }) {
   return (
     <UnitSelect
-      baseValue={p.valueMilliseconds}
-      onChange={p.onChange}
       allowInfinite={p.allowInfinite}
-      unitFactors={durationFactors}
+      baseValue={p.valueMilliseconds}
       className={p.className}
+      onChange={p.onChange}
+      unitFactors={durationFactors}
     />
   );
 }
@@ -644,30 +644,30 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
       <div className="space-y-2">
         <UILabel className="text-sm font-medium text-muted-foreground">Percentage ({percentageValue}%)</UILabel>
         <UISlider
-          min={0}
+          aria-label="Percentage slider"
+          className="w-full"
           max={100}
+          min={0}
+          onValueChange={handleSliderChange}
           step={1}
           value={[percentageValue]}
-          onValueChange={handleSliderChange}
-          className="w-full"
-          aria-label="Percentage slider"
         />
       </div>
       <div className="flex items-center gap-2">
-        <UILabel htmlFor="ratio-input" className="text-sm font-medium whitespace-nowrap">
+        <UILabel className="text-sm font-medium whitespace-nowrap" htmlFor="ratio-input">
           Precise value:
         </UILabel>
         <div className="relative flex-shrink-0">
           {/* biome-ignore lint/correctness/useUniqueElementIds: legacy, needs refactor */}
           <UIInput
-            id="ratio-input"
-            type="number"
-            min={0}
-            max={100}
-            value={percentageValue}
-            onChange={handleInputChange}
-            className="w-20 pr-6 text-right"
             aria-label="Percentage input"
+            className="w-20 pr-6 text-right"
+            id="ratio-input"
+            max={100}
+            min={0}
+            onChange={handleInputChange}
+            type="number"
+            value={percentageValue}
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
             %

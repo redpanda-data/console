@@ -50,7 +50,7 @@ class QuotasList extends PageComponent {
 
     const warning =
       api.Quotas === null ? (
-        <Alert variant="solid" status="warning" style={{ marginBottom: '1em' }}>
+        <Alert status="warning" style={{ marginBottom: '1em' }} variant="solid">
           <AlertIcon />
           You do not have the necessary permissions to view Quotas
         </Alert>
@@ -85,7 +85,6 @@ class QuotasList extends PageComponent {
             entityName?: string | undefined;
             settings: QuotaResponseSetting[];
           }>
-            data={resources}
             columns={[
               {
                 size: 100, // Assuming '100px' translates to '100'
@@ -123,6 +122,7 @@ class QuotasList extends PageComponent {
                   formatRate(original.settings.first((k) => k.key === QuotaType.CONTROLLER_MUTATION_RATE)?.value),
               },
             ]}
+            data={resources}
           />
         </Section>
       </PageContent>
@@ -142,19 +142,19 @@ const PermissionDenied = (
     <PageContent key="quotasNoPerms">
       <Section>
         <Result
-          title="Forbidden"
+          extra={
+            <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+              <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
+            </a>
+          }
           status={403}
+          title="Forbidden"
           userMessage={
             <p>
               You are not allowed to view this page.
               <br />
               Contact the administrator if you think this is an error.
             </p>
-          }
-          extra={
-            <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-              <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
-            </a>
           }
         />
       </Section>

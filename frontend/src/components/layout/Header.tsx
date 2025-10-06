@@ -47,26 +47,26 @@ const AppPageHeader = observer(() => {
   return (
     <Box>
       {/* we need to refactor out #mainLayout > div rule, for now I've added this box as a workaround */}
-      <Flex mb={5} alignItems="center" justifyContent="space-between">
+      <Flex alignItems="center" justifyContent="space-between" mb={5}>
         {!isEmbedded() && (
           <Breadcrumbs
-            showHomeIcon={false}
             items={breadcrumbItems.map((x) => ({
               name: x.title,
               heading: x.heading,
               to: x.linkTo,
             }))}
+            showHomeIcon={false}
           />
         )}
       </Flex>
 
-      <Flex pb={2} alignItems="center" justifyContent="space-between">
+      <Flex alignItems="center" justifyContent="space-between" pb={2}>
         <Flex alignItems="center">
           {lastBreadcrumb && (
             <Text
-              fontWeight={700}
               as="span"
               fontSize="xl"
+              fontWeight={700}
               mr={2}
               {...(lastBreadcrumb.options?.canBeTruncated
                 ? {
@@ -91,12 +91,12 @@ const AppPageHeader = observer(() => {
           {!isEmbedded() && api.isRedpanda && (
             <Button
               as={ReactRouterLink}
-              to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
-              variant="ghost"
               isDisabled={!api.userData?.canViewDebugBundle}
+              to={api.userData?.canViewDebugBundle ? '/debug-bundle' : undefined}
               tooltip={
                 !api.userData?.canViewDebugBundle ? 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission' : null
               }
+              variant="ghost"
             >
               Debug bundle
             </Button>

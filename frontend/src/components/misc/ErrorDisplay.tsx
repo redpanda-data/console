@@ -37,22 +37,22 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children
         </Box>
       ) : (
         <Result
-          status={500}
-          title="Backend API Error"
-          userMessage="Something went wrong while pulling data from the backend server"
           extra={
             <Button alignSelf="center" onClick={clearErrors}>
               Retry
             </Button>
           }
+          status={500}
+          title="Backend API Error"
+          userMessage="Something went wrong while pulling data from the backend server"
         />
       )}
 
       <Section>
         <List spacing={3}>
           {api.errors.map((e, i) => (
-            <ListItem key={i} display="flex">
-              <ListIcon as={WarningIcon} color="red.500" alignSelf="center" />
+            <ListItem display="flex" key={i}>
+              <ListIcon alignSelf="center" as={WarningIcon} color="red.500" />
               {formatError(e)}
             </ListItem>
           ))}

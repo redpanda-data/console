@@ -71,14 +71,14 @@ redpanda:
   const options = Object.keys(installInstructions).map((x) => ({ value: x as typeof selectedInstall }));
 
   return (
-    <Grid templateColumns="1fr 320px" gap={10}>
+    <Grid gap={10} templateColumns="1fr 320px">
       <Stack spacing={3}>
         <Heading as="h2">Using Redpanda Connect</Heading>
         <Text>
           Redpanda Connect is a declarative data streaming service with wide range of{' '}
           <ChakraLink
-            isExternal
             href="https://docs.redpanda.com/redpanda-connect/about#components"
+            isExternal
             style={{ textDecoration: 'underline solid 1px' }}
           >
             connectors and processors
@@ -94,13 +94,13 @@ redpanda:
                 <Text fontWeight="bold">Choose your install method</Text>
                 <Box width="275px">
                   <SingleSelect<typeof selectedInstall>
+                    onChange={setSelectedInstall}
                     options={options}
                     value={selectedInstall}
-                    onChange={setSelectedInstall}
                   />
                 </Box>
                 <Box>
-                  <CodeBlock language="bash" codeString={installInstructions[selectedInstall]} />
+                  <CodeBlock codeString={installInstructions[selectedInstall]} language="bash" />
                 </Box>
               </Stack>
             </Box>
@@ -111,23 +111,23 @@ redpanda:
               Build your first pipeline. Start from the Redpanda data generator example below. Explore the components
               using autocomplete (CTRL/CMD+Space). For other examples and use cases, see{' '}
               <ChakraLink
-                isExternal
                 href="https://docs.redpanda.com/redpanda-connect/cookbooks/custom_metrics"
+                isExternal
                 style={{ textDecoration: 'underline solid 1px' }}
               >
                 our documentation
               </ChakraLink>
               .
             </Text>
-            <Flex ml="-1rem" mt={3} minHeight="550px" minWidth="500px">
+            <Flex minHeight="550px" minWidth="500px" ml="-1rem" mt={3}>
               <PipelinesYamlEditor
                 defaultPath="config.yaml"
-                path="config.yaml"
-                value={editorText}
+                language="yaml"
                 onChange={(e) => {
                   if (e) setEditorText(e);
                 }}
-                language="yaml"
+                path="config.yaml"
+                value={editorText}
               />
             </Flex>
           </ListItem>
@@ -136,16 +136,16 @@ redpanda:
             <Text mt={3}>
               Set up your connection to Redpanda for data in the{' '}
               <ChakraLink
-                isExternal
                 href="https://docs.redpanda.com/redpanda-connect/components/outputs/kafka_franz"
+                isExternal
                 style={{ textDecoration: 'underline solid 1px' }}
               >
                 kafka_franz
               </ChakraLink>{' '}
               component and{' '}
               <ChakraLink
-                isExternal
                 href="https://docs.redpanda.com/redpanda-connect/components/redpanda/about"
+                isExternal
                 style={{ textDecoration: 'underline solid 1px' }}
               >
                 logs
@@ -167,8 +167,8 @@ redpanda:
 
           <ListItem>
             <Text mt={3}>Test the config by executing it:</Text>
-            <Box maxWidth="400px" marginBlock={3}>
-              <CodeBlock language="sh" codeString="rpk connect run ./config.yaml" />
+            <Box marginBlock={3} maxWidth="400px">
+              <CodeBlock codeString="rpk connect run ./config.yaml" language="sh" />
               <Text mt={3}>Anything you write to stdin will be written unchanged to stdout.</Text>
             </Box>
           </ListItem>
@@ -176,7 +176,7 @@ redpanda:
           <ListItem>
             <Text mt={3}>
               Go to the{' '}
-              <ChakraLink as={ReactRouterLink} to="/topics" style={{ textDecoration: 'underline solid 1px' }}>
+              <ChakraLink as={ReactRouterLink} style={{ textDecoration: 'underline solid 1px' }} to="/topics">
                 Topics
               </ChakraLink>{' '}
               page to read the logs and your output topic.{' '}
@@ -185,8 +185,8 @@ redpanda:
         </OrderedList>
       </Stack>
 
-      <Stack spacing={8} mt={12}>
-        <Image src={RedpandaConnectLogo} alt="redpanda bot icon" />
+      <Stack mt={12} spacing={8}>
+        <Image alt="redpanda bot icon" src={RedpandaConnectLogo} />
 
         <Alert status="info">
           <AlertIcon />

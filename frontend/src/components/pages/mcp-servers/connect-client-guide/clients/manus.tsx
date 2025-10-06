@@ -71,14 +71,14 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
   return (
     <div>
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={ManusLogo} alt="Manus" className="h-4 w-4" />
+                <img alt="Manus" className="h-4 w-4" src={ManusLogo} />
                 Manus
               </Text>
             </div>
@@ -121,7 +121,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Copy and paste the following configuration:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={manusConfigJson} />
+            <DynamicCodeBlock code={manusConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             <div className="flex items-center gap-2">
@@ -141,19 +141,19 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           </ListItem>
           <ListItem>
             Authenticate by running this command in your terminal:
-            <DynamicCodeBlock lang="bash" code="rpk cloud login --no-browser" />
+            <DynamicCodeBlock code="rpk cloud login --no-browser" lang="bash" />
           </ListItem>
           <ListItem>
             Finally, test the connection by listing available tools:
-            <DynamicCodeBlock lang="bash" code={`manus-mcp-cli tool list --server ${mcpServerName}`} />
+            <DynamicCodeBlock code={`manus-mcp-cli tool list --server ${mcpServerName}`} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Alternatively, you can use a prompt:</span>
             </div>
             <DynamicCodeBlock
-              lang="text"
               code={`Help me test the ${mcpServerName} connector and show me how to use its feature (e.g. show any data you fetched with it). Do not forget to rpk cloud login initially. Give me a brief about its capabilities.`}
+              lang="text"
             />
           </ListItem>
         </List>

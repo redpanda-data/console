@@ -36,7 +36,7 @@ describe('DeleteSecretModal', () => {
       rpc(deleteSecret, deleteSecretMock);
     });
 
-    render(<DeleteSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
+    render(<DeleteSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('delete-secret-button')).toBeVisible();
@@ -98,7 +98,7 @@ describe('DeleteSecretModal', () => {
       rpc(deleteSecret, deleteSecretMock);
     });
 
-    render(<DeleteSecretModal secretId={secretId} isOpen onClose={() => {}} />, { transport });
+    render(<DeleteSecretModal isOpen onClose={() => {}} secretId={secretId} />, { transport });
 
     await waitFor(() => {
       expect(screen.getByTestId('resource-in-use-alert')).toBeVisible();

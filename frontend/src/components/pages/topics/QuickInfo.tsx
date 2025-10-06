@@ -69,8 +69,8 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
       </Box>
       <Flex gap={2}>
         <Tooltip
-          label="The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages."
           hasArrow
+          label="The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages."
           placement="bottom"
         >
           <Flex alignItems="flex-end">

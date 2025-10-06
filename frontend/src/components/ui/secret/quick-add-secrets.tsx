@@ -232,24 +232,24 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleCreateSecrets)} className="space-y-3">
+                  <form className="space-y-3" onSubmit={form.handleSubmit(handleCreateSecrets)}>
                     {missingSecrets.map((secretName) => (
                       <FormField
-                        key={secretName}
                         control={form.control}
+                        key={secretName}
                         name={`${secretName}.value` as keyof SecretFormData}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="font-mono text-sm font-medium">{secretName}</FormLabel>
                             <FormControl>
                               <Input
-                                type="password"
-                                placeholder={`Enter value for ${secretName}...`}
-                                value={typeof field.value === 'string' ? field.value : field.value?.value || ''}
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
                                 name={field.name}
+                                onBlur={field.onBlur}
+                                onChange={field.onChange}
+                                placeholder={`Enter value for ${secretName}...`}
                                 ref={field.ref}
+                                type="password"
+                                value={typeof field.value === 'string' ? field.value : field.value?.value || ''}
                               />
                             </FormControl>
                             <FormMessage />
@@ -259,10 +259,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     ))}
 
                     <Button
+                      className="w-full"
+                      disabled={isCreateSecretPending || !form.formState.isValid}
                       type="submit"
                       variant="dashed"
-                      disabled={isCreateSecretPending || !form.formState.isValid}
-                      className="w-full"
                     >
                       {isCreateSecretPending ? (
                         <div className="flex items-center gap-2">
@@ -299,7 +299,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                 <Text className="text-sm font-medium text-muted-foreground">Created Secrets:</Text>
                 <div className="space-y-2">
                   {newlyCreatedSecrets.map((secretName) => (
-                    <Input key={secretName} value={secretName} readOnly disabled className="font-mono">
+                    <Input className="font-mono" disabled key={secretName} readOnly value={secretName}>
                       <InputEnd>
                         <Check className="h-4 w-4 text-green-600" />
                       </InputEnd>
@@ -312,7 +312,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             {/* Form to add new secrets */}
             <div className="flex flex-col gap-2">
               <Form {...newSecretForm}>
-                <form onSubmit={newSecretForm.handleSubmit(handleCreateNewSecret)} className="space-y-3">
+                <form className="space-y-3" onSubmit={newSecretForm.handleSubmit(handleCreateNewSecret)}>
                   <FormField
                     control={newSecretForm.control}
                     name="name"
@@ -335,7 +335,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                       <FormItem>
                         <FormLabel className="text-sm font-medium">Secret Value</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Enter secret value..." {...field} />
+                          <Input placeholder="Enter secret value..." type="password" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -343,10 +343,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                   />
 
                   <Button
+                    className="w-full"
+                    disabled={isCreateSecretPending || !newSecretForm.formState.isValid}
                     type="submit"
                     variant="dashed"
-                    disabled={isCreateSecretPending || !newSecretForm.formState.isValid}
-                    className="w-full"
                   >
                     {isCreateSecretPending ? (
                       <div className="flex items-center gap-2">

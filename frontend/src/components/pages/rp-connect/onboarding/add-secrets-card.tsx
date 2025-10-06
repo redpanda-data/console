@@ -77,17 +77,17 @@ export const AddSecretsCard = ({
               <div className="flex flex-wrap gap-2">
                 {/* Used secrets - green with check icon */}
                 {categorizedSecrets.used.map((secret) => (
-                  <Badge key={secret} variant="green" className="font-mono" icon={<Check />}>
+                  <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
                     {`\${secrets.${secret}}`}
                   </Badge>
                 ))}
                 {/* Unused secrets - clickable, secondary variant */}
                 {categorizedSecrets.unused.map((secret) => (
                   <Badge
-                    key={secret}
-                    variant="secondary"
                     className="font-mono cursor-pointer hover:opacity-80"
+                    key={secret}
                     onClick={() => handleSecretClick(secret)}
+                    variant="secondary"
                   >
                     {`\${secrets.${secret}}`}
                   </Badge>
@@ -102,7 +102,7 @@ export const AddSecretsCard = ({
               <Text className="text-sm font-medium text-destructive">Missing Secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {missingSecrets.map((secret) => (
-                  <Button key={secret} variant="destructive" size="sm" onClick={onOpenDialog}>
+                  <Button key={secret} onClick={onOpenDialog} size="sm" variant="destructive">
                     <AlertCircle className="h-3 w-3" />
                     Create {secret}
                   </Button>
@@ -120,7 +120,7 @@ export const AddSecretsCard = ({
           )}
 
           {/* Add button - always show */}
-          <Button variant="outline" size={existingSecrets.length > 0 ? 'sm' : 'default'} onClick={onOpenDialog}>
+          <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
             <PlusIcon className="h-4 w-4" />
             {existingSecrets.length > 0 ? 'Add More Secrets' : 'Add Secret'}
           </Button>

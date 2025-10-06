@@ -391,21 +391,21 @@ export const SERVERLESS_LINK = 'https://www.redpanda.com/product/serverless';
 
 export const UploadLicenseButton = () =>
   api.isAdminApiConfigured ? (
-    <Button variant="outline" size="sm" as={ReactRouterLink} to="/upload-license">
+    <Button as={ReactRouterLink} size="sm" to="/upload-license" variant="outline">
       Upload license
     </Button>
   ) : null;
 
 export const UpgradeButton = () => (
   <Button
-    variant="outline"
-    size="sm"
     as={Link}
-    target="_blank"
     href={getEnterpriseCTALink('upgrade')}
+    size="sm"
     style={{
       textDecoration: 'none',
     }}
+    target="_blank"
+    variant="outline"
   >
     Upgrade
   </Button>
@@ -413,11 +413,11 @@ export const UpgradeButton = () => (
 
 export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: () => void }) =>
   api.isAdminApiConfigured ? (
-    <Button variant="outline" size="sm" onClick={onRegisterModalOpen}>
+    <Button onClick={onRegisterModalOpen} size="sm" variant="outline">
       Register
     </Button>
   ) : (
-    <Button variant="outline" size="sm" as={Link} target="_blank" href={getEnterpriseCTALink('tryEnterprise')}>
+    <Button as={Link} href={getEnterpriseCTALink('tryEnterprise')} size="sm" target="_blank" variant="outline">
       Register
     </Button>
   );

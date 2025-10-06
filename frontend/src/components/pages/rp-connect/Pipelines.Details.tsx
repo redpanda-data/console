@@ -103,13 +103,12 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
           )}
         </Box>
 
-        <Flex mb="4" gap="4">
+        <Flex gap="4" mb="4">
           <Link to={`/rp-connect/${pipelineId}/edit`}>
             <Button variant="solid">Edit</Button>
           </Link>
 
           <Button
-            variant="outline"
             isDisabled={this.isChangingPauseState || isTransitioningState}
             isLoading={this.isChangingPauseState}
             onClick={() => {
@@ -159,11 +158,11 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                 })
                 .finally(() => (this.isChangingPauseState = false));
             }}
+            variant="outline"
           >
             {isStopped ? 'Start' : 'Stop'}
           </Button>
           <Button
-            variant="outline-delete"
             onClick={() => {
               openDeleteModal(pipeline.displayName, () => {
                 pipelinesApi
@@ -189,6 +188,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                   });
               });
             }}
+            variant="outline-delete"
           >
             Delete
           </Button>
@@ -230,12 +230,12 @@ const PipelineEditor = observer((p: { pipeline: Pipeline }) => {
       <Flex height="400px" mt="4">
         <PipelinesYamlEditor
           defaultPath="config.yaml"
-          path="config.yaml"
-          value={pipeline.configYaml}
+          language="yaml"
           options={{
             readOnly: true,
           }}
-          language="yaml"
+          path="config.yaml"
+          value={pipeline.configYaml}
         />
       </Flex>
     </Box>
@@ -310,7 +310,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
         row: {
           original: { timestamp },
         },
-      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
       size: 30,
     },
     {
@@ -318,9 +318,9 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       accessorKey: 'value',
       cell: ({ row: { original } }) => (
         <MessagePreview
+          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
           msg={original}
           previewFields={() => []}
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
         />
       ),
       size: Number.MAX_SAFE_INTEGER,
@@ -339,33 +339,33 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       <Section minWidth="800px">
         <Flex mb="6">
           <SearchField
-            width="230px"
             searchText={uiSettings.pipelinesDetails.logsQuickSearch}
             setSearchText={(x) => (uiSettings.pipelinesDetails.logsQuickSearch = x)}
+            width="230px"
           />
-          <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
+          <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
             Refresh logs
           </Button>
         </Flex>
 
         <DataTable<TopicMessage>
+          columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
-          columns={messageTableColumns}
-          sorting={uiSettings.pipelinesDetails.sorting ?? []}
           onSortingChange={(sorting) => {
             uiSettings.pipelinesDetails.sorting =
               typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
           }}
           pagination={paginationParams}
+          sorting={uiSettings.pipelinesDetails.sorting ?? []}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
-              msg={original}
               loadLargeMessage={() =>
                 loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
               }
+              msg={original}
             />
           )}
         />

@@ -242,8 +242,8 @@ class ReassignPartitions extends PageComponent {
             {/* Active Reassignments */}
             <Section id="activeReassignments">
               <ActiveReassignments
-                throttledTopics={this.topicsWithThrottle}
                 onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
+                throttledTopics={this.topicsWithThrottle}
               />
             </Section>
 
@@ -251,11 +251,11 @@ class ReassignPartitions extends PageComponent {
             <Section id="wizard">
               {/* Steps */}
               <div style={{ margin: '.75em 1em 1em 1em' }}>
-                <Stepper index={this.currentStep} colorScheme="brand">
+                <Stepper colorScheme="brand" index={this.currentStep}>
                   {steps.map((item, index) => (
                     <Step key={index} title={item.title}>
                       <StepIndicator>
-                        <StepStatus complete={<StepIcon />} incomplete={<StepNumber />} active={<StepNumber />} />
+                        <StepStatus active={<StepNumber />} complete={<StepIcon />} incomplete={<StepNumber />} />
                       </StepIndicator>
                       <Box>{item.title}</Box>
                       <StepSeparator />
@@ -286,11 +286,11 @@ class ReassignPartitions extends PageComponent {
                     case 2:
                       return (
                         <StepReview
-                          partitionSelection={this.partitionSelection}
-                          topicsWithMoves={this.topicsWithMoves}
                           // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                           assignments={this.reassignmentRequest!}
+                          partitionSelection={this.partitionSelection}
                           reassignPartitions={this}
+                          topicsWithMoves={this.topicsWithMoves}
                         />
                       );
                   }
@@ -309,8 +309,8 @@ class ReassignPartitions extends PageComponent {
                 {/* Back */}
                 {step.backButton && (
                   <Button
-                    onClick={this.onPreviousPage}
                     isDisabled={this.currentStep <= 0 || this.requestInProgress}
+                    onClick={this.onPreviousPage}
                     style={{ minWidth: '14em' }}
                   >
                     <span>
@@ -324,11 +324,11 @@ class ReassignPartitions extends PageComponent {
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
                   <div>{nextButtonHelp}</div>
                   <Button
-                    variant="solid"
-                    style={{ minWidth: '14em', marginLeft: 'auto' }}
+                    autoFocus={true}
                     isDisabled={!nextButtonEnabled || this.requestInProgress}
                     onClick={this.onNextPage}
-                    autoFocus={true}
+                    style={{ minWidth: '14em', marginLeft: 'auto' }}
+                    variant="solid"
                   >
                     <span>{step.nextButton.text}</span>
                     <span>
@@ -348,7 +348,7 @@ class ReassignPartitions extends PageComponent {
             <ModalOverlay />
             <ModalContent minW="5xl">
               <ModalHeader>
-                <Flex gap={2} alignItems="center">
+                <Flex alignItems="center" gap={2}>
                   <MdOutlineErrorOutline size={18} />
                   Remove throttle config from topics
                 </Flex>
@@ -388,14 +388,15 @@ class ReassignPartitions extends PageComponent {
               </ModalBody>
               <ModalFooter gap={2}>
                 <Button
-                  variant="outline"
                   onClick={() => {
                     this.removeThrottleFromTopicsContent = null;
                   }}
+                  variant="outline"
                 >
                   Cancel
                 </Button>
                 <Button
+                  colorScheme="red"
                   onClick={async () => {
                     if (this.removeThrottleFromTopicsContent === null) {
                       return;
@@ -428,7 +429,6 @@ class ReassignPartitions extends PageComponent {
 
                     this.refreshTopicConfigs();
                   }}
-                  colorScheme="red"
                 >
                   Remove throttle
                 </Button>

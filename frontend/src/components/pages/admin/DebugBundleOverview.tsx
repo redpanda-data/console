@@ -37,13 +37,13 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
       <List>
         {statuses.map((status, idx) => (
           <ListItem key={idx}>
-            <Flex gap={3} alignItems="center" mb={3}>
+            <Flex alignItems="center" gap={3} mb={3}>
               {status.value.case === 'bundleStatus' && (
                 <>
                   {StatusIcons[status.value.value.status]}
                   <Stack spacing={0.5}>
                     <Box>
-                      <Text fontWeight="bold" display="inline">
+                      <Text display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
                       <Text display="inline">
@@ -63,7 +63,7 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                   {StatusIcons[DebugBundleStatus_Status.ERROR]}
                   <Stack spacing={0.5}>
                     <Box>
-                      <Text fontWeight="bold" display="inline">
+                      <Text display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
                     </Box>

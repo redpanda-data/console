@@ -108,7 +108,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
       <BrowserRouter basename={basePath}>
         <HistorySetter />
-        <ChakraProvider theme={redpandaTheme} toastOptions={redpandaToastOptions} resetCSS={false}>
+        <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
           <TransportProvider transport={transport}>
             <QueryClientProvider client={queryClient}>
               <ErrorBoundary>

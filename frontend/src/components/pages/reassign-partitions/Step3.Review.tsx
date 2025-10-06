@@ -69,7 +69,6 @@ export class StepReview extends Component<{
         </div>
 
         <DataTable<TopicWithMoves>
-          data={this.props.topicsWithMoves}
           columns={[
             {
               header: 'Topic',
@@ -101,7 +100,7 @@ export class StepReview extends Component<{
               id: 'numAddedBrokers',
               size: 100,
               header: () => (
-                <InfoText tooltip="The number of replicas that will be moved to a different broker." maxWidth="180px">
+                <InfoText maxWidth="180px" tooltip="The number of replicas that will be moved to a different broker.">
                   Reassignments
                 </InfoText>
               ),
@@ -114,14 +113,15 @@ export class StepReview extends Component<{
                 prettyBytesOrNA(topic.selectedPartitions.sum((p) => p.numAddedBrokers * p.replicaSize)),
             },
           ]}
+          data={this.props.topicsWithMoves}
           subComponent={({ row: { original: topic } }) => (
-            <Box py={6} px={10}>
+            <Box px={10} py={6}>
               {topic.selectedPartitions ? (
                 <ReviewPartitionTable
-                  topic={topic.topic}
-                  topicPartitions={topic.selectedPartitions}
                   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                   assignments={this.props.assignments.topics.first((t) => t.topicName === topic.topicName)!}
+                  topic={topic.topic}
+                  topicPartitions={topic.selectedPartitions}
                 />
               ) : (
                 'Error loading partitions'
@@ -256,7 +256,6 @@ const ReviewPartitionTable = observer(
   (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
     <Box py={2} width="full">
       <DataTable<Partition>
-        data={props.topicPartitions}
         columns={[
           {
             header: 'Partition',
@@ -279,6 +278,7 @@ const ReviewPartitionTable = observer(
             },
           },
         ]}
+        data={props.topicPartitions}
       />
     </Box>
   ),

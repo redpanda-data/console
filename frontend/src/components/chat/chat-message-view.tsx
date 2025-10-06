@@ -8,13 +8,13 @@ interface ChatMessageViewProps {
 
 export const ChatMessageView = ({ message }: ChatMessageViewProps) => {
   return (
-    <div key={message.id} className={`flex p-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex p-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`} key={message.id}>
       <div
+        aria-label={`${message.sender} message`}
         className={`p-4 rounded-xl max-w-[85%] shadow-sm ${
           message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-white text-slate-900 border border-slate-200'
         }`}
         role="article"
-        aria-label={`${message.sender} message`}
       >
         <div className="text-sm leading-relaxed space-y-4">
           <ChatMarkdown message={message} />

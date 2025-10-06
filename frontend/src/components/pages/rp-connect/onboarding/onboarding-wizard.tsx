@@ -112,9 +112,9 @@ export const ConnectOnboardingWizard = () => {
                 [WizardStep.ADD_CONNECTOR]: () => (
                   <ConnectTiles
                     componentTypeFilter={['input', 'output']}
-                    onChange={handleConnectorChange}
                     defaultConnectionName={persistedConnector.connectionName}
                     defaultConnectionType={persistedConnector.connectionType}
+                    onChange={handleConnectorChange}
                     ref={addConnectorStepRef}
                   />
                 ),
@@ -125,12 +125,12 @@ export const ConnectOnboardingWizard = () => {
             </div>
             <Stepper.Controls className={cn(!methods.isFirst && 'justify-between')}>
               {!methods.isFirst && (
-                <Button type="button" variant="secondary" onClick={methods.prev}>
+                <Button onClick={methods.prev} type="button" variant="secondary">
                   Previous
                 </Button>
               )}
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={handleSkip}>
+                <Button onClick={handleSkip} type="button" variant="outline">
                   Skip
                 </Button>
 

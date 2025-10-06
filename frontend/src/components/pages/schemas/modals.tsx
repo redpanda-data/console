@@ -36,7 +36,7 @@ const GenericModal = observer(
     closeModal: () => void;
   }) => {
     return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader mr="4">{p.title}</ModalHeader>
@@ -44,10 +44,10 @@ const GenericModal = observer(
           <ModalBody>{p.body}</ModalBody>
 
           <ModalFooter>
-            <Button mr={3} onClick={() => p.onPrimaryButton(p.closeModal)} colorScheme={p.primaryColorScheme}>
+            <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
               {p.primaryButtonContent}
             </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+            <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
               {p.secondaryButtonContent}
             </Button>
           </ModalFooter>
@@ -73,7 +73,7 @@ const ExplicitConfirmModal = observer(
     const isConfirmEnabled = confirmBoxText === 'delete';
 
     return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader mr="4">{p.title}</ModalHeader>
@@ -83,20 +83,20 @@ const ExplicitConfirmModal = observer(
 
             <Box mt="4">
               To confirm, enter "delete":
-              <Input onChange={(e) => setConfirmBoxText(e.target.value)} autoFocus />
+              <Input autoFocus onChange={(e) => setConfirmBoxText(e.target.value)} />
             </Box>
           </ModalBody>
 
           <ModalFooter>
             <Button
-              mr={3}
-              isDisabled={!isConfirmEnabled}
-              onClick={() => p.onPrimaryButton(p.closeModal)}
               colorScheme="red"
+              isDisabled={!isConfirmEnabled}
+              mr={3}
+              onClick={() => p.onPrimaryButton(p.closeModal)}
             >
               {p.primaryButtonContent}
             </Button>
-            <Button variant="outline" onClick={() => p.onSecondaryButton(p.closeModal)}>
+            <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
               {p.secondaryButtonContent}
             </Button>
           </ModalFooter>
@@ -116,7 +116,7 @@ const InfoModal = observer(
     closeModal: () => void;
   }) => {
     return (
-      <Modal isOpen onClose={p.closeModal} isCentered size="2xl">
+      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader mr="4">{p.title}</ModalHeader>
@@ -174,7 +174,7 @@ export function openValidationErrorsModal(result: {
 
   const errDetailsBox = errorDetails ? (
     <Box>
-      <Box maxHeight="400px" overflowY="auto" p="6" background="gray.100" fontFamily="monospace" letterSpacing="-0.5px">
+      <Box background="gray.100" fontFamily="monospace" letterSpacing="-0.5px" maxHeight="400px" overflowY="auto" p="6">
         {errorDetails?.trim()}
       </Box>
     </Box>
@@ -183,7 +183,7 @@ export function openValidationErrorsModal(result: {
   openInfoModal({
     title: (
       <>
-        <Text color="red.500" display="flex" alignItems="center">
+        <Text alignItems="center" color="red.500" display="flex">
           <WarningIcon fontSize="1.18em" mr="3" />
           Schema validation error
         </Text>

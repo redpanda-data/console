@@ -30,7 +30,7 @@ export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, a
       <Text variant="label">Tags</Text>
       <Text variant="muted">Key-value pairs for organizing and categorizing</Text>
       {tagFields.map((f, idx) => (
-        <div key={f.id} className="flex items-center gap-2">
+        <div className="flex items-center gap-2" key={f.id}>
           <FormField
             control={form.control}
             name={`tags.${idx}.key` as const}
@@ -55,12 +55,12 @@ export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, a
               </FormItem>
             )}
           />
-          <Button type="button" variant="outline" size="icon" onClick={() => removeTag(idx)}>
+          <Button onClick={() => removeTag(idx)} size="icon" type="button" variant="outline">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ))}
-      <Button type="button" variant="dashed" onClick={() => appendTag({ key: '', value: '' })}>
+      <Button onClick={() => appendTag({ key: '', value: '' })} type="button" variant="dashed">
         <Plus className="h-4 w-4" /> Add Tag
       </Button>
       {/* Array-level message for duplicate keys */}

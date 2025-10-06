@@ -28,7 +28,7 @@ const OptionContent: FC<{
   children: ReactNode;
   icon: ReactElement;
 }> = ({ children, icon }) => (
-  <Flex gap={2} alignItems="center" pointerEvents="none">
+  <Flex alignItems="center" gap={2} pointerEvents="none">
     {icon}
     <span>{children}</span>
   </Flex>
@@ -52,6 +52,8 @@ export const Operation = observer(
           components={{
             DropdownIndicator: null,
           }}
+          isDisabled={disabled}
+          onChange={p.onChange}
           options={[
             {
               value: 'Any',
@@ -67,8 +69,6 @@ export const Operation = observer(
             },
           ]}
           value={p.value}
-          onChange={p.onChange}
-          isDisabled={disabled}
         />
       </Label>
     );

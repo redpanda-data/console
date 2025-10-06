@@ -58,7 +58,7 @@ export const RedpandaConnectComponentTypeBadge = ({ componentType }: RedpandaCon
   const config = getComponentTypeConfig(componentType);
 
   return (
-    <Badge variant={config.variant} icon={config.icon}>
+    <Badge icon={config.icon} variant={config.variant}>
       {config.text}
     </Badge>
   );

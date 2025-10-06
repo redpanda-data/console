@@ -106,7 +106,7 @@ class TopicTab {
 }
 
 const mkDocuTip = (text: string, icon?: JSX.Element) => (
-  <Tooltip label={text} placement="left" hasArrow>
+  <Tooltip hasArrow label={text} placement="left">
     <span>{icon ?? null}Documentation</span>
   </Tooltip>
 );
@@ -230,7 +230,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         'messages',
         'viewMessages',
         'Messages',
-        (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />,
+        (t) => <TopicMessageView refreshTopicData={(force: boolean) => this.refreshData(force)} topic={t} />,
       ),
       new TopicTab(
         () => topic,
@@ -247,23 +247,23 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
           Partitions
           {!!leaderLessPartitionIds && (
             <Tooltip
-              placement="top"
               hasArrow
               label={`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
+              placement="top"
             >
               <Box>
-                <MdError size={18} color={colors.brandError} />
+                <MdError color={colors.brandError} size={18} />
               </Box>
             </Tooltip>
           )}
           {!!underReplicatedPartitionIds && (
             <Tooltip
-              placement="top"
               hasArrow
               label={`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
+              placement="top"
             >
               <Box>
-                <MdOutlineWarning size={18} color={colors.brandWarning} />
+                <MdOutlineWarning color={colors.brandWarning} size={18} />
               </Box>
             </Tooltip>
           )}
@@ -325,12 +325,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         <PageContent key={'b'}>
           {uiSettings.topicDetailsShowStatisticsBar && <TopicQuickInfoStatistic topic={topic} />}
 
-          <Flex mb={4} gap={2}>
+          <Flex gap={2} mb={4}>
             <Button
-              variant="outline"
               onClick={() => {
                 appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
               }}
+              variant="outline"
             >
               Produce Record
             </Button>
@@ -343,28 +343,28 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
           <Section>
             <Tabs
               isFitted
+              onChange={this.setTabPage}
+              selectedTabKey={this.selectedTabId}
               tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
                 key: id,
                 disabled: isDisabled,
                 title,
                 content,
               }))}
-              onChange={this.setTabPage}
-              selectedTabKey={this.selectedTabId}
             />
           </Section>
         </PageContent>
         {this.deleteRecordsModalAlive && (
           <DeleteRecordsModal
-            topic={topic}
-            visible
+            afterClose={() => (this.deleteRecordsModalAlive = false)}
             onCancel={() => (this.deleteRecordsModalAlive = false)}
             onFinish={() => {
               this.deleteRecordsModalAlive = false;
               this.refreshData(true);
               appGlobal.searchMessagesFunc?.('manual');
             }}
-            afterClose={() => (this.deleteRecordsModalAlive = false)}
+            topic={topic}
+            visible
           />
         )}
       </>
@@ -403,17 +403,17 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     const name = this.props.topicName;
     return (
       <Result
+        extra={
+          <Button onClick={() => appGlobal.historyPush('/topics')} variant="solid">
+            Go Back
+          </Button>
+        }
         status={404}
         title="404"
         userMessage={
           <div>
             The topic <Code>{name}</Code> does not exist.
           </div>
-        }
-        extra={
-          <Button variant="solid" onClick={() => appGlobal.historyPush('/topics')}>
-            Go Back
-          </Button>
         }
       />
     );

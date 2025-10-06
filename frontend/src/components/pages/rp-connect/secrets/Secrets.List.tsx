@@ -34,7 +34,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 const CreateSecretButton = () => {
   return (
     <Flex marginBottom={'.5em'}>
-      <Button as={ReactRouterLink} to={'/rp-connect/secrets/create'} data-testid="create-rpcn-secret-button">
+      <Button as={ReactRouterLink} data-testid="create-rpcn-secret-button" to={'/rp-connect/secrets/create'}>
         Create secret
       </Button>
     </Flex>
@@ -43,7 +43,7 @@ const CreateSecretButton = () => {
 
 const EmptyPlaceholder = () => {
   return (
-    <Flex alignItems="center" justifyContent="center" flexDirection="column" gap="4" mb="4">
+    <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
       <Image src={SittingPanda} width={200} />
       <Box>You have no Redpanda Connect secrets.</Box>
       <CreateSecretButton />
@@ -106,13 +106,13 @@ class RpConnectSecretsList extends PageComponent {
           <ToastContainer />
 
           {rpcnSecretManagerApi.secrets?.length !== 0 && (
-            <Flex my={5} flexDir={'column'} gap={2}>
+            <Flex flexDir={'column'} gap={2} my={5}>
               <CreateSecretButton />
               <SearchField
-                width="350px"
+                placeholderText="Enter search term / regex..."
                 searchText={uiSettings.rpcnSecretList.quickSearch}
                 setSearchText={(x) => (uiSettings.rpcnSecretList.quickSearch = x)}
-                placeholderText="Enter search term / regex..."
+                width="350px"
               />
             </Flex>
           )}
@@ -121,10 +121,6 @@ class RpConnectSecretsList extends PageComponent {
             <EmptyPlaceholder />
           ) : (
             <DataTable<Secret>
-              data={filteredSecrets}
-              pagination
-              defaultPageSize={10}
-              sorting
               columns={[
                 {
                   header: 'Secret name',
@@ -138,12 +134,12 @@ class RpConnectSecretsList extends PageComponent {
                   cell: ({ row: { original } }) => (
                     <Box>
                       <Code>
-                        <Text wordBreak="break-word" whiteSpace="break-spaces">
+                        <Text whiteSpace="break-spaces" wordBreak="break-word">
                           {`secrets.${original.id}`}
                         </Text>
                       </Code>
-                      <Tooltip label="Copy" hasArrow>
-                        <CopyButton content={`secrets.${original.id}`} variant="ghost" colorScheme="gray" size="sm" />
+                      <Tooltip hasArrow label="Copy">
+                        <CopyButton colorScheme="gray" content={`secrets.${original.id}`} size="sm" variant="ghost" />
                       </Tooltip>
                     </Box>
                   ),
@@ -152,16 +148,16 @@ class RpConnectSecretsList extends PageComponent {
                 {
                   header: 'Pipelines',
                   cell: ({ row: { original } }) => (
-                    <Flex whiteSpace="break-spaces" flexWrap={'wrap'} alignContent={'stretch'}>
+                    <Flex alignContent={'stretch'} flexWrap={'wrap'} whiteSpace="break-spaces">
                       {rpcnSecretManagerApi.secretsByPipeline
                         ?.find((x) => x.secretId === original.id)
                         ?.pipelines?.map(({ id, displayName }, index, array) => (
                           <ChakraLink
                             as={ReactRouterLink}
-                            wordBreak="break-word"
                             key={`pipeline-${id}`}
-                            to={`/rp-connect/${id}`}
                             textDecoration={'initial'}
+                            to={`/rp-connect/${id}`}
+                            wordBreak="break-word"
                           >
                             {displayName} {index !== array.length - 1 ? ', ' : ''}
                           </ChakraLink>
@@ -177,30 +173,30 @@ class RpConnectSecretsList extends PageComponent {
                     <Flex justifyContent={'flex-end'}>
                       <ButtonGroup>
                         <Button
-                          data-testid={`edit-secret-${r.id}`}
-                          variant="icon"
-                          height="16px"
                           color="gray.500"
+                          data-testid={`edit-secret-${r.id}`}
+                          height="16px"
                           onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                             e.stopPropagation();
                             e.preventDefault();
                             appGlobal.historyPush(`/rp-connect/secrets/${r.id}/edit`);
                           }}
+                          variant="icon"
                         >
                           <PencilIcon />
                         </Button>
                         <ConfirmItemDeleteModal
-                          trigger={
-                            <Button variant="icon" height="16px" color="gray.500" data-testid={`delete-secret-${r.id}`}>
-                              <TrashIcon />
-                            </Button>
-                          }
+                          inputMatchText={r.id}
                           itemType={'Secret'}
                           onConfirm={async (dismiss) => {
                             await this.deleteSecret(r.id);
                             dismiss();
                           }}
-                          inputMatchText={r.id}
+                          trigger={
+                            <Button color="gray.500" data-testid={`delete-secret-${r.id}`} height="16px" variant="icon">
+                              <TrashIcon />
+                            </Button>
+                          }
                         >
                           <Flex flexDirection={'column'}>
                             <Text>
@@ -218,7 +214,11 @@ class RpConnectSecretsList extends PageComponent {
                   size: 10,
                 },
               ]}
+              data={filteredSecrets}
+              defaultPageSize={10}
               emptyText=""
+              pagination
+              sorting
             />
           )}
         </Section>

@@ -102,9 +102,9 @@ class Overview extends PageComponent {
       return (
         <Flex alignItems="flex-start" gap={4}>
           {text}
-          <Tooltip label="This broker is the current controller of the cluster" placement="right" hasArrow>
+          <Tooltip hasArrow label="This broker is the current controller of the cluster" placement="right">
             <Box>
-              <FaCrown size={16} color="#0008" />
+              <FaCrown color="#0008" size={16} />
             </Box>
           </Tooltip>
         </Flex>
@@ -120,12 +120,12 @@ class Overview extends PageComponent {
         </NullFallbackBoundary>
 
         <PageContent className="overviewGrid">
-          <Section py={5} my={4}>
+          <Section my={4} py={5}>
             <Flex>
               <Statistic
+                className={`status-bar ${clusterStatus.className}`}
                 title="Cluster Status"
                 value={clusterStatus.displayText}
-                className={`status-bar ${clusterStatus.className}`}
               />
               <Statistic title="Cluster Storage Size" value={brokerSize} />
               <Statistic title="Cluster Version" value={version} />
@@ -138,10 +138,10 @@ class Overview extends PageComponent {
             </Flex>
           </Section>
 
-          <Grid gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }} gap={6}>
+          <Grid gap={6} gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }}>
             <GridItem display="flex" flexDirection="column" gap={6}>
               {api.clusterHealth?.isHealthy === false && (
-                <Section py={4} gridArea="debugInfo">
+                <Section gridArea="debugInfo" py={4}>
                   <Heading as="h3">Cluster Health Debug</Heading>
                   <ClusterHealthOverview />
                 </Section>
@@ -150,10 +150,6 @@ class Overview extends PageComponent {
               <Section py={4}>
                 <Heading as="h3">Broker Details</Heading>
                 <DataTable<BrokerWithConfigAndStorage>
-                  data={brokers}
-                  sorting={false}
-                  defaultPageSize={10}
-                  pagination
                   columns={[
                     {
                       size: 80,
@@ -167,12 +163,12 @@ class Overview extends PageComponent {
                         <Flex gap={2}>
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
-                              <MdError size={18} color={colors.brandError} />
+                              <MdError color={colors.brandError} size={18} />
                               Down
                             </>
                           ) : (
                             <>
-                              <MdCheck size={18} color={colors.green} />
+                              <MdCheck color={colors.green} size={18} />
                               Running
                             </>
                           )}
@@ -197,9 +193,9 @@ class Overview extends PageComponent {
                       cell: ({ row: { original: broker } }) => {
                         return (
                           <Button
+                            onClick={() => appGlobal.historyPush(`/overview/${broker.brokerId}`)}
                             size="sm"
                             variant="ghost"
-                            onClick={() => appGlobal.historyPush(`/overview/${broker.brokerId}`)}
                           >
                             View
                           </Button>
@@ -217,6 +213,10 @@ class Overview extends PageComponent {
                         ]
                       : []),
                   ]}
+                  data={brokers}
+                  defaultPageSize={10}
+                  pagination
+                  sorting={false}
                 />
               </Section>
 
@@ -256,18 +256,18 @@ const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => {
       <GridItem colSpan={{ base: 1, lg: 3 }}>
         <Heading
           as="h4"
+          color="gray.500"
           fontSize={10}
           fontWeight={600}
-          color="gray.500"
-          textTransform="uppercase"
           letterSpacing={0.8}
           mb={1}
+          textTransform="uppercase"
         >
           {title}
         </Heading>
       </GridItem>
       {children}
-      <GridItem colSpan={{ base: 1, lg: 3 }} height={0.25} my={4} bg="#ddd" />
+      <GridItem bg="#ddd" colSpan={{ base: 1, lg: 3 }} height={0.25} my={4} />
     </>
   );
 };
@@ -301,7 +301,7 @@ function ClusterDetails() {
   const licenses = api.licenses;
 
   if (!overview || !brokers) {
-    return <Skeleton mt={5} noOfLines={13} height={4} speed={0} />;
+    return <Skeleton height={4} mt={5} noOfLines={13} speed={0} />;
   }
 
   const totalStorageBytes = brokers.sum((x) => x.totalLogDirSizeBytes ?? 0);
@@ -321,7 +321,7 @@ function ClusterDetails() {
     let status = <div>{titleCase(StatusType[overviewStatus.status])}</div>;
     if (overviewStatus.statusReason)
       status = (
-        <Tooltip label={overviewStatus.statusReason} hasArrow>
+        <Tooltip hasArrow label={overviewStatus.statusReason}>
           {status}
         </Tooltip>
       );
@@ -338,14 +338,13 @@ function ClusterDetails() {
   });
 
   return (
-    <Grid w="full" templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }} gap={2} alignItems="center">
+    <Grid alignItems="center" gap={2} templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }} w="full">
       <DetailsBlock title="Services">
         <Details
-          title="Kafka Connect"
           content={hasConnect ? clusterLines.map((c) => [c.name, c.status]) : [['Not configured']]}
+          title="Kafka Connect"
         />
         <Details
-          title="Schema Registry"
           content={
             overview.schemaRegistry !== null
               ? [
@@ -358,48 +357,48 @@ function ClusterDetails() {
                 ]
               : [['Not configured']]
           }
+          title="Schema Registry"
         />
       </DetailsBlock>
 
       <DetailsBlock title="Storage">
-        <Details title="Total Bytes" content={[[prettyBytesOrNA(totalStorageBytes)]]} />
+        <Details content={[[prettyBytesOrNA(totalStorageBytes)]]} title="Total Bytes" />
 
-        <Details title="Primary" content={[[prettyBytesOrNA(totalPrimaryStorageBytes)]]} />
+        <Details content={[[prettyBytesOrNA(totalPrimaryStorageBytes)]]} title="Primary" />
 
-        <Details title="Replicated" content={[[prettyBytesOrNA(totalReplicatedStorageBytes)]]} />
+        <Details content={[[prettyBytesOrNA(totalReplicatedStorageBytes)]]} title="Replicated" />
       </DetailsBlock>
 
       <DetailsBlock title="Security">
         <Details
-          title="Service Accounts"
           content={[
             [
-              <Link key={0} as={ReactRouterLink} to="/security/users/">
+              <Link as={ReactRouterLink} key={0} to="/security/users/">
                 {serviceAccounts}
               </Link>,
             ],
           ]}
+          title="Service Accounts"
         />
 
         <Details
-          title="ACLs"
           content={[
             [
-              <Link key={0} as={ReactRouterLink} to="/security/acls/" wordBreak="break-word">
+              <Link as={ReactRouterLink} key={0} to="/security/acls/" wordBreak="break-word">
                 {aclCount}
               </Link>,
             ],
           ]}
+          title="ACLs"
         />
       </DetailsBlock>
 
       <Details
-        title="Licensing"
         content={
           api.licensesLoaded === 'failed'
             ? [
                 [
-                  <Flex key="error" gap={1} alignItems="center">
+                  <Flex alignItems="center" gap={1} key="error">
                     <MdOutlineError color={colors.brandError} size={16} /> Failed to load license info
                   </Flex>,
                 ],
@@ -408,7 +407,7 @@ function ClusterDetails() {
                 ...licensesToSimplifiedPreview(licenses).map(
                   ({ name, expiresAt, isExpired }) =>
                     [
-                      <Text key={0} data-testid="overview-license-name">
+                      <Text data-testid="overview-license-name" key={0}>
                         {name}
                       </Text>,
                       expiresAt.length > 0 ? `(${isExpired ? 'expired' : 'expiring'} ${expiresAt})` : '',
@@ -416,6 +415,7 @@ function ClusterDetails() {
                 ),
               ]
         }
+        title="Licensing"
       />
 
       {api.licensesLoaded === 'loaded' && !api.licenses.some(isLicenseWithEnterpriseAccess) && (

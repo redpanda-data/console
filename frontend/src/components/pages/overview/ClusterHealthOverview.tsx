@@ -24,8 +24,8 @@ const ClusterHealthOverview = () => {
       <List spacing={3}>
         <ListItem>
           <Grid
-            templateColumns={{ sm: '1fr', md: '1fr 1fr' }} // Single column on mobile, two columns on larger screens
-            gap={4}
+            gap={4} // Single column on mobile, two columns on larger screens
+            templateColumns={{ sm: '1fr', md: '1fr 1fr' }}
           >
             <Box fontWeight="bold">Reason</Box>
             <Box>
@@ -38,7 +38,7 @@ const ClusterHealthOverview = () => {
           </Grid>
         </ListItem>
         <ListItem>
-          <Grid templateColumns={{ sm: '1fr', md: '1fr 1fr' }} gap={4}>
+          <Grid gap={4} templateColumns={{ sm: '1fr', md: '1fr 1fr' }}>
             <Box fontWeight="bold">Unreachable brokers</Box>
             <Flex gap={1}>
               {api.clusterHealth?.offlineBrokerIds && api.clusterHealth?.offlineBrokerIds.length > 0 && (
@@ -50,7 +50,7 @@ const ClusterHealthOverview = () => {
         </ListItem>
         {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.LEADERLESS_PARTITIONS) && (
           <ListItem>
-            <Grid templateColumns={{ sm: '1fr', md: '1fr 1fr' }} gap={4}>
+            <Grid gap={4} templateColumns={{ sm: '1fr', md: '1fr 1fr' }}>
               <Box fontWeight="bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.LEADERLESS_PARTITIONS]}</Box>
               <Flex gap={2}>
                 <Flex gap={1}>
@@ -66,7 +66,7 @@ const ClusterHealthOverview = () => {
         )}
         {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.UNDER_REPLICATED_PARTITIONS) && (
           <ListItem>
-            <Grid templateColumns={{ sm: '1fr', md: '1fr 1fr' }} gap={4}>
+            <Grid gap={4} templateColumns={{ sm: '1fr', md: '1fr 1fr' }}>
               <Box fontWeight="bold">
                 {HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.UNDER_REPLICATED_PARTITIONS]}
               </Box>
@@ -84,24 +84,24 @@ const ClusterHealthOverview = () => {
         )}
         {api.userData?.canViewDebugBundle && Features.debugBundle && (
           <ListItem>
-            <Grid templateColumns={{ sm: '1fr', md: '1fr 1fr' }} gap={4}>
+            <Grid gap={4} templateColumns={{ sm: '1fr', md: '1fr 1fr' }}>
               <Box fontWeight="bold">Debug bundle</Box>
               <Flex gap={2}>
                 {api.isDebugBundleInProgress && (
                   <Button
-                    px={0}
                     as={ReactRouterLink}
-                    variant="link"
+                    px={0}
                     to={`/debug-bundle/progress/${api.debugBundleStatus?.jobId}`}
+                    variant="link"
                   >
                     Bundle generation in progress...
                   </Button>
                 )}
                 {api.canDownloadDebugBundle && (
-                  <DebugBundleLink statuses={api.debugBundleStatuses} showDatetime={false} />
+                  <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
                 {!api.isDebugBundleInProgress && (
-                  <Button px={0} as={ReactRouterLink} variant="link" to="/debug-bundle/">
+                  <Button as={ReactRouterLink} px={0} to="/debug-bundle/" variant="link">
                     Generate new
                   </Button>
                 )}

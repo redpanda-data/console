@@ -48,7 +48,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
   let warning: JSX.Element = <></>;
   if (topic.cleanupPolicy.toLowerCase() === 'compact')
     warning = (
-      <Alert status="warning" marginBottom="1em">
+      <Alert marginBottom="1em" status="warning">
         <AlertIcon />
         Topic cleanupPolicy is 'compact'. Message Count is an estimate!
       </Alert>
@@ -58,18 +58,6 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
     <>
       {warning}
       <DataTable<Partition>
-        pagination={paginationParams}
-        onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-          uiState.topicSettings.partitionPageSize = pageSize;
-          editQuery((query) => {
-            query.page = String(pageIndex);
-            query.pageSize = String(pageSize);
-          });
-        })}
-        sorting
-        // @ts-expect-error - we need to get rid of this enum in DataTable
-        defaultPageSize={uiState.topicSettings.partitionPageSize}
-        data={partitions}
         columns={[
           {
             header: 'Partition ID',
@@ -127,6 +115,18 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
             cell: ({ row: { original: partition } }) => <BrokerList partition={partition} />,
           },
         ]}
+        data={partitions}
+        defaultPageSize={uiState.topicSettings.partitionPageSize}
+        // @ts-expect-error - we need to get rid of this enum in DataTable
+        onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
+          uiState.topicSettings.partitionPageSize = pageSize;
+          editQuery((query) => {
+            query.page = String(pageIndex);
+            query.pageSize = String(pageSize);
+          });
+        })}
+        pagination={paginationParams}
+        sorting
       />
     </>
   );
@@ -139,16 +139,16 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
 
   return (
     <Popover
-      title="Partition Error"
-      placement="right-start"
-      size="auto"
-      hideCloseButton
       content={
-        <Flex maxWidth={500} whiteSpace="pre-wrap" flexDirection="column" gap={2}>
+        <Flex flexDirection="column" gap={2} maxWidth={500} whiteSpace="pre-wrap">
           {partition.partitionError && <Text>{partition.partitionError}</Text>}
           {partition.waterMarksError && <Text>{partition.waterMarksError}</Text>}
         </Flex>
       }
+      hideCloseButton
+      placement="right-start"
+      size="auto"
+      title="Partition Error"
     >
       <Box>
         <MdOutlineWarningAmber color="orange" size={20} />

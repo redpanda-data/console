@@ -222,9 +222,9 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                   <FormControl>
                     <Combobox
                       {...field}
-                      options={userOptions}
                       creatable
                       onCreateOption={handleCreateUserOption}
+                      options={userOptions}
                       placeholder="Select or create a user..."
                     />
                   </FormControl>
@@ -254,8 +254,8 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                       <FormControl>
                         <Group>
                           <Input type="password" {...field} />
-                          <CopyButton size="icon" content={field.value} variant="outline" />
-                          <Button type="button" size="icon" variant="outline" onClick={generateNewPassword}>
+                          <CopyButton content={field.value} size="icon" variant="outline" />
+                          <Button onClick={generateNewPassword} size="icon" type="button" variant="outline">
                             <RefreshCcw size={15} />
                           </Button>
                         </Group>
@@ -329,10 +329,10 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                                 <AlertDescription>
                                   You can configure custom ACLs to connect your data to Redpanda{' '}
                                   <a
-                                    href="/security/acls"
                                     className="text-blue-600 hover:text-blue-800 underline"
-                                    target="_blank"
+                                    href="/security/acls"
                                     rel="noopener noreferrer"
+                                    target="_blank"
                                   >
                                     here
                                   </a>

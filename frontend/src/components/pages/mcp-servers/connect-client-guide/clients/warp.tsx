@@ -67,14 +67,14 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={WarpLogo} alt="Warp" className="h-4 w-4" /> Warp
+                <img alt="Warp" className="h-4 w-4" src={WarpLogo} /> Warp
               </Text>
               <span>and go to</span>
               <Text as="span" className="font-bold whitespace-nowrap">
@@ -93,17 +93,17 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Copy and paste the following configuration:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={warpConfigJson} />
+            <DynamicCodeBlock code={warpConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Verify the MCP server is available with:
-            <DynamicCodeBlock lang="bash" code="/view-mcp" />
+            <DynamicCodeBlock code="/view-mcp" lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.warp.dev/knowledge-and-collaboration/mcp"
         clientName="Warp"
+        documentationUrl="https://docs.warp.dev/knowledge-and-collaboration/mcp"
       />
     </div>
   );

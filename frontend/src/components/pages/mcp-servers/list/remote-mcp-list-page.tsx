@@ -147,7 +147,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => (
-      <Text variant="default" className="font-medium">
+      <Text className="font-medium" variant="default">
         {row.getValue('name')}
       </Text>
     ),
@@ -161,8 +161,8 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
         <div className="flex flex-wrap gap-1">
           {tools.map((tool) => (
             <span
-              key={tool}
               className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+              key={tool}
             >
               {tool}
             </span>
@@ -188,7 +188,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Text variant="small" className="font-mono text-muted-foreground cursor-help">
+            <Text className="font-mono text-muted-foreground cursor-help" variant="small">
               {truncatedUrl}
             </Text>
           </TooltipTrigger>
@@ -238,7 +238,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
         <div data-actions-column>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="data-[state=open]:bg-muted h-8 w-8">
+              <Button className="data-[state=open]:bg-muted h-8 w-8" size="icon" variant="ghost">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -278,12 +278,12 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
               )}
               {(canStart || canStop) && <DropdownMenuSeparator />}
               <DeleteResourceAlertDialog
+                isDeleting={isDeleting}
+                onDelete={handleDelete}
+                onOpenChange={setIsDeleteDialogOpen}
                 resourceId={server.id}
                 resourceName={server.name}
                 resourceType="Remote MCP Server"
-                onDelete={handleDelete}
-                onOpenChange={setIsDeleteDialogOpen}
-                isDeleting={isDeleting}
               />
             </DropdownMenuContent>
           </DropdownMenu>
@@ -301,18 +301,18 @@ function MCPDataTableToolbar({ table }: { table: TanstackTable<MCPServer> }) {
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center gap-1">
         <Input
-          placeholder="Filter servers..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+          className="h-8 w-[125px]"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
             table.getColumn('name')?.setFilterValue(event.target.value)
           }
-          className="h-8 w-[125px]"
+          placeholder="Filter servers..."
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
         />
         {table.getColumn('state') && (
-          <DataTableFacetedFilter column={table.getColumn('state')} title="Status" options={statusOptions} />
+          <DataTableFacetedFilter column={table.getColumn('state')} options={statusOptions} title="Status" />
         )}
         {isFiltered && (
-          <Button variant="ghost" size="sm" onClick={() => table.resetColumnFilters()}>
+          <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
             <X className="ml-2 h-4 w-4" />
           </Button>
@@ -401,7 +401,7 @@ export const RemoteMCPListPage = () => {
         <MCPDataTableToolbar table={table} />
         <div className="flex items-center justify-between">
           <DataTableViewOptions table={table} />
-          <Button size="sm" variant="secondary" onClick={() => navigate('/mcp-servers/create')}>
+          <Button onClick={() => navigate('/mcp-servers/create')} size="sm" variant="secondary">
             <Plus className="h-4 w-4" />
             Create MCP Server
           </Button>
@@ -423,7 +423,7 @@ export const RemoteMCPListPage = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
                   <div className="flex items-center gap-2 justify-center">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Loading MCP servers...
@@ -432,7 +432,7 @@ export const RemoteMCPListPage = () => {
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
                   <div className="flex items-center gap-2 justify-center text-red-600">
                     <AlertCircle className="h-4 w-4" />
                     Error loading MCP servers: {error.message}
@@ -442,9 +442,9 @@ export const RemoteMCPListPage = () => {
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
                   className="cursor-pointer hover:bg-muted/50"
+                  data-state={row.getIsSelected() && 'selected'}
+                  key={row.id}
                   onClick={(event) => handleRowClick(row.original.id, event)}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -454,7 +454,7 @@ export const RemoteMCPListPage = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
                   No MCP servers found.
                 </TableCell>
               </TableRow>

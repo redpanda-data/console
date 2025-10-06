@@ -16,10 +16,10 @@ export const RemoteMCPConnectDocsAlert = ({ documentationUrl, clientName }: Remo
         <div className="flex flex-wrap items-center gap-1">
           <span>Read the documentation for {clientName}</span>
           <Link
-            href={documentationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center gap-1"
+            href={documentationUrl}
+            rel="noopener noreferrer"
+            target="_blank"
           >
             here <ExternalLink className="h-3 w-3" />
           </Link>

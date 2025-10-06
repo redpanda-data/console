@@ -41,20 +41,20 @@ const ErrorPage = observer(() => {
   return (
     <PageContent>
       <Flex
-        grow={1}
-        shrink={1}
-        h="calc(100vh - 120px)"
-        minH="480px"
         alignItems="center"
+        grow={1}
+        h="calc(100vh - 120px)"
         justifyContent="center"
+        minH="480px"
+        shrink={1}
         textAlign="left"
       >
-        <HStack spacing={12} maxW="container.md">
-          <VStack spacing={4} display="flex" alignItems="flex-start">
-            <SectionHeading as="h1" size="xl" fontWeight="medium">
+        <HStack maxW="container.md" spacing={12}>
+          <VStack alignItems="flex-start" display="flex" spacing={4}>
+            <SectionHeading as="h1" fontWeight="medium" size="xl">
               401 Unauthorized
             </SectionHeading>
-            <SectionSubheading as="h2" size="md" fontWeight="medium">
+            <SectionSubheading as="h2" fontWeight="medium" size="md">
               <Text>You don't have permission to access this resource</Text>
             </SectionSubheading>
             <Box margin={0} padding={0}>
@@ -64,11 +64,11 @@ const ErrorPage = observer(() => {
                 clusters. Try again in 15 minutes and if the error persists{' '}
                 <Button
                   as={Link}
+                  href="https://support.redpanda.com/hc/en-us/requests/new"
+                  isExternal={true}
                   margin={0}
                   padding={0}
                   variant="link"
-                  isExternal={true}
-                  href="https://support.redpanda.com/hc/en-us/requests/new"
                 >
                   contact support
                 </Button>
@@ -77,7 +77,7 @@ const ErrorPage = observer(() => {
             </Box>
           </VStack>
           <Hide below="sm">
-            <Image boxSize="sm" src={Avatars.errorBananaSlipSvg} alt="error-401" />
+            <Image alt="error-401" boxSize="sm" src={Avatars.errorBananaSlipSvg} />
           </Hide>
         </HStack>
       </Flex>

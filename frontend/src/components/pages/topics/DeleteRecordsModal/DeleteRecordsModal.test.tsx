@@ -33,11 +33,11 @@ describe('DeleteRecordsModal', () => {
   test('renders all expected elements in step 1', () => {
     render(
       <DeleteRecordsModal
-        topic={testTopic}
-        visible={true}
+        afterClose={vi.fn()}
         onCancel={vi.fn()}
         onFinish={vi.fn()}
-        afterClose={vi.fn()}
+        topic={testTopic}
+        visible={true}
       />,
     );
 

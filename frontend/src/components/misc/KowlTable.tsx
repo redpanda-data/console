@@ -68,7 +68,6 @@ export class SearchTitle extends Component<{
           }}
         >
           <Input
-            ref={this.inputRef}
             onBlur={(e) => {
               const inputWrapper = e.target.parentElement;
               const focusInside = inputWrapper?.contains(e.relatedTarget as HTMLElement);
@@ -81,13 +80,14 @@ export class SearchTitle extends Component<{
                 setTimeout(this.hideSearchBar);
               }
             }}
-            onKeyDown={this.onKeyDown}
-            placeholder="Enter search term/regex"
-            value={props.observableSettings.quickSearch}
             onChange={(e) => {
               props.observableSettings.quickSearch = e.target.value;
             }}
+            onKeyDown={this.onKeyDown}
+            placeholder="Enter search term/regex"
+            ref={this.inputRef}
             spellCheck={false}
+            value={props.observableSettings.quickSearch}
           />
         </Box>
       </span>

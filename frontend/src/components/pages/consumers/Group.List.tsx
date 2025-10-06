@@ -93,7 +93,7 @@ class GroupList extends PageComponent {
               }}
             />
             {stateGroups.map((g) => (
-              <Statistic key={g.key} title={g.key} value={g.items.length} marginRight={'1.5rem'} />
+              <Statistic key={g.key} marginRight={'1.5rem'} title={g.key} value={g.items.length} />
             ))}
           </Flex>
         </Section>
@@ -122,9 +122,6 @@ class GroupList extends PageComponent {
           </div>
           {/* Content */}
           <DataTable<GroupDescription>
-            data={groups}
-            pagination
-            sorting
             columns={[
               {
                 header: 'State',
@@ -165,6 +162,9 @@ class GroupList extends PageComponent {
                 cell: ({ row: { original } }) => ShortNum({ value: original.lagSum }),
               },
             ]}
+            data={groups}
+            pagination
+            sorting
           />
         </Section>
       </PageContent>
@@ -174,10 +174,10 @@ class GroupList extends PageComponent {
   SearchBar = observer(() => {
     return (
       <SearchField
-        width="350px"
         placeholderText="Enter search term/regex"
         searchText={uiSettings.consumerGroupList.quickSearch}
         setSearchText={(x) => (uiSettings.consumerGroupList.quickSearch = x)}
+        width="350px"
       />
     );
   });
@@ -186,7 +186,7 @@ class GroupList extends PageComponent {
     const protocol = p.group.protocolType;
 
     const groupIdEl = (
-      <Text wordBreak="break-word" whiteSpace="break-spaces">
+      <Text whiteSpace="break-spaces" wordBreak="break-word">
         {p.group.groupId}
       </Text>
     );
@@ -196,7 +196,7 @@ class GroupList extends PageComponent {
     }
 
     return (
-      <Grid templateColumns="auto 1fr" alignItems="center" gap={2}>
+      <Grid alignItems="center" gap={2} templateColumns="auto 1fr">
         <Tag>Protocol: {protocol}</Tag>
         {groupIdEl}
       </Grid>

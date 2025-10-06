@@ -50,45 +50,45 @@ export const CreateUserConfirmationModal = ({
               <Text>You will not be able to view this password again. Make sure that it is copied and saved.</Text>
             </Alert>
             <Grid
-              templateColumns="max-content 1fr"
-              gridRowGap={2}
-              gridColumnGap={6}
               alignItems="center"
+              gridColumnGap={6}
+              gridRowGap={2}
               maxWidth="460px"
+              templateColumns="max-content 1fr"
             >
-              <Box fontWeight="bold" data-testid="username">
+              <Box data-testid="username" fontWeight="bold">
                 Username
               </Box>
               <Box>
                 <Flex alignItems="center" gap={2}>
-                  <Text wordBreak="break-all" overflow="hidden">
+                  <Text overflow="hidden" wordBreak="break-all">
                     {username}
                   </Text>
 
-                  <Tooltip label={'Copy username'} placement="top" hasArrow>
+                  <Tooltip hasArrow label={'Copy username'} placement="top">
                     <CopyButton content={username} variant="ghost" />
                   </Tooltip>
                 </Flex>
               </Box>
 
-              <Box fontWeight="bold" data-testid="password">
+              <Box data-testid="password" fontWeight="bold">
                 Password
               </Box>
               <Box>
                 <Flex alignItems="center" gap={2}>
-                  <PasswordInput name="test" value={password} isDisabled={true} isReadOnly={true} />
+                  <PasswordInput isDisabled={true} isReadOnly={true} name="test" value={password} />
 
-                  <Tooltip label={'Copy password'} placement="top" hasArrow>
+                  <Tooltip hasArrow label={'Copy password'} placement="top">
                     <CopyButton content={password} variant="ghost" />
                   </Tooltip>
                 </Flex>
               </Box>
 
-              <Box fontWeight="bold" data-testid="mechanism">
+              <Box data-testid="mechanism" fontWeight="bold">
                 Mechanism
               </Box>
               <Box>
-                <Text textOverflow="ellipsis" whiteSpace="nowrap" overflow="hidden" isTruncated={true}>
+                <Text isTruncated={true} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                   {saslMechanism}
                 </Text>
               </Box>
@@ -98,12 +98,12 @@ export const CreateUserConfirmationModal = ({
         <ModalFooter>
           <ButtonGroup>
             <Button variant="link">
-              <Link as={ReactRouterLink} to="/security/acls" target="_blank" rel="noopener noreferrer">
+              <Link as={ReactRouterLink} rel="noopener noreferrer" target="_blank" to="/security/acls">
                 Create ACLs
               </Link>
             </Button>
 
-            <Button variant="ghost" onClick={onClose}>
+            <Button onClick={onClose} variant="ghost">
               Close
             </Button>
           </ButtonGroup>

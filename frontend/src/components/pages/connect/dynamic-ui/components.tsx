@@ -38,7 +38,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
     );
 
   if (connectorStore.initPending) {
-    return <Skeleton mt={5} noOfLines={20} height={4} />;
+    return <Skeleton height={4} mt={5} noOfLines={20} />;
   }
 
   if (connectorStore.allGroups.length === 0) return <div>debug: no groups</div>;
@@ -59,12 +59,12 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
       <Box mb="8">
         <RadioGroup
           name="settingsMode"
-          value={connectorStore.viewMode}
           onChange={(x) => (connectorStore.viewMode = x)}
           options={[
             { value: 'form', label: <Box mx="4">Form</Box> },
             { value: 'json', label: <Box mx="4">JSON</Box> },
           ]}
+          value={connectorStore.viewMode}
         />
       </Box>
 
@@ -80,13 +80,13 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
           {steps.map(({ step, groups }) => {
             return (
               <ConnectorStepComponent
-                key={step.stepIndex}
-                step={step}
-                groups={groups}
                 allGroups={connectorStore.allGroups}
-                showAdvancedOptions={connectorStore.showAdvancedOptions}
                 connectorType={connectorStore.connectorType}
                 context={context}
+                groups={groups}
+                key={step.stepIndex}
+                showAdvancedOptions={connectorStore.showAdvancedOptions}
+                step={step}
               />
             );
           })}
@@ -138,9 +138,8 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
 
   return (
     <KowlEditor
-      language="json"
-      value={jsonText}
       height="600px"
+      language="json"
       onChange={(x) => {
         if (!x) return;
         setJsonText(x);
@@ -149,6 +148,7 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
       options={{
         readOnly: isEmbedded() && p.context === 'EDIT',
       }}
+      value={jsonText}
     />
   );
 }

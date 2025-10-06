@@ -85,32 +85,32 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
       <ModalContent minW="2xl">
         <ModalHeader>{`Change ${userName} password`}</ModalHeader>
         <ModalBody>
-          <Flex gap={4} flexDirection="column">
+          <Flex flexDirection="column" gap={4}>
             <FormField
-              description="Must be at least 4 characters and should not exceed 64 characters."
-              showRequiredIndicator={true}
-              label="Password"
               data-testid="create-user-password"
+              description="Must be at least 4 characters and should not exceed 64 characters."
+              label="Password"
+              showRequiredIndicator={true}
             >
               <Flex direction="column" gap="2">
                 <Flex alignItems="center" gap="2">
                   <PasswordInput
-                    name="test"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     isInvalid={!isValidPassword}
+                    name="test"
+                    onChange={(e) => setPassword(e.target.value)}
+                    value={password}
                   />
 
-                  <Tooltip label={'Generate new random password'} placement="top" hasArrow>
+                  <Tooltip hasArrow label={'Generate new random password'} placement="top">
                     <IconButton
+                      aria-label="Refresh"
+                      display="inline-flex"
+                      icon={<MdRefresh size={16} />}
                       onClick={() => setPassword(generatePassword(30, generateWithSpecialChars))}
                       variant="ghost"
-                      aria-label="Refresh"
-                      icon={<MdRefresh size={16} />}
-                      display="inline-flex"
                     />
                   </Tooltip>
-                  <Tooltip label={'Copy password'} placement="top" hasArrow>
+                  <Tooltip hasArrow label={'Copy password'} placement="top">
                     <CopyButton content={password} variant="ghost" />
                   </Tooltip>
                 </Flex>
@@ -127,6 +127,9 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
             </FormField>
             <FormField label="SASL mechanism" showRequiredIndicator>
               <SingleSelect<SASLMechanism | undefined>
+                onChange={(e) => {
+                  setMechanism(e);
+                }}
                 options={[
                   {
                     value: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
@@ -138,28 +141,25 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                   },
                 ]}
                 value={mechanism}
-                onChange={(e) => {
-                  setMechanism(e);
-                }}
               />
             </FormField>
           </Flex>
         </ModalBody>
         <ModalFooter display="flex" gap={2}>
           <Button
-            variant="ghost"
             isDisabled={isUpdateUserPending}
             onClick={() => {
               setIsOpen(false);
             }}
+            variant="ghost"
           >
             Cancel
           </Button>
           <Button
-            variant="solid"
-            type="submit"
-            onClick={onSavePassword}
             isDisabled={!isValidPassword || mechanism === undefined || isUpdateUserPending}
+            onClick={onSavePassword}
+            type="submit"
+            variant="solid"
           >
             Save changes
           </Button>
@@ -249,29 +249,29 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
         <ModalHeader>{`Change ${userName} roles`}</ModalHeader>
         <ModalBody>
           <FormField
+            description="Assign roles to this user. This is optional and can be changed later."
             isDisabled={!Features.rolesApi}
             label="Assign roles"
-            description="Assign roles to this user. This is optional and can be changed later."
           >
             <StateRoleSelector roles={selectedRoles || []} setRoles={setSelectedRoles} />
           </FormField>
         </ModalBody>
         <ModalFooter display="flex" gap={2}>
           <Button
-            variant="ghost"
             isDisabled={isUpdateMembershipPending}
             onClick={() => {
               setIsOpen(false);
             }}
+            variant="ghost"
           >
             Cancel
           </Button>
           <Button
-            variant="solid"
-            type="submit"
-            onClick={onSaveRoles}
             isDisabled={isUpdateMembershipPending}
             isLoading={isUpdateMembershipPending}
+            onClick={onSaveRoles}
+            type="submit"
+            variant="solid"
           >
             Save changes
           </Button>

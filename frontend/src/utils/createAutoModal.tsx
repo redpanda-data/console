@@ -148,29 +148,29 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
       content = <div style={codeBoxStyle}>{toJson(err, 4)}</div>;
     }
 
-    return <Result title={title} extra={content} status="error" />;
+    return <Result extra={content} status="error" title={title} />;
   };
 
   const renderSuccess = (response: JSX.Element | null | undefined) => (
     <Result
-      status="success"
-      title={options.modalProps.successTitle ?? 'Success'}
       extra={
         <VStack>
           <Box>{response}</Box>
           <Button
-            variant="solid"
             colorScheme="brand"
-            size="lg"
-            style={{ width: '16rem' }}
             onClick={() => {
               state.modalProps?.afterClose?.();
             }}
+            size="lg"
+            style={{ width: '16rem' }}
+            variant="solid"
           >
             Close
           </Button>
         </VStack>
       }
+      status="success"
+      title={options.modalProps.successTitle ?? 'Success'}
     />
   );
 
@@ -215,23 +215,23 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
               <Flex gap={2}>
                 {modalState === 'normal' && (
                   <Button
-                    variant="ghost"
                     onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       state.modalProps?.onCancel?.(e);
                     }}
+                    variant="ghost"
                   >
                     Cancel
                   </Button>
                 )}
                 <Button
                   data-testid="onOk-button"
-                  variant="solid"
-                  isLoading={state.loading}
                   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
                   isDisabled={!options.isOkEnabled?.(userState!)}
+                  isLoading={state.loading}
                   onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                     state.modalProps?.onOk?.(e);
                   }}
+                  variant="solid"
                 >
                   {modalState === 'error' ? 'Back' : state.modalProps.okText}
                 </Button>

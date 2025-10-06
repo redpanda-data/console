@@ -62,7 +62,7 @@ const UploadLicenseForm: FC<{
       <Flex flexDirection="column" gap={2} my={4}>
         {state.showFileUpload && (
           <Box>
-            <Box border="1px dashed" borderColor="gray.200" padding="4" borderRadius="md">
+            <Box border="1px dashed" borderColor="gray.200" borderRadius="md" padding="4">
               <Dropzone
                 setRawString={(value) => {
                   state.setLicenseFile(value);
@@ -71,10 +71,10 @@ const UploadLicenseForm: FC<{
             </Box>
             or
             <Button
-              variant="link"
               onClick={() => {
                 state.showFileUpload = false;
               }}
+              variant="link"
             >
               import text directly
             </Button>
@@ -85,21 +85,21 @@ const UploadLicenseForm: FC<{
           <Box>
             <FormField label="License content">
               <Textarea
-                rows={10}
+                autoComplete="off"
                 data-testid="license"
                 onChange={(e) => state.setLicense(e.target.value)}
+                rows={10}
                 spellCheck={false}
-                autoComplete="off"
               >
                 {state.license}
               </Textarea>
             </FormField>
             or
             <Button
-              variant="link"
               onClick={() => {
                 state.showFileUpload = true;
               }}
+              variant="link"
             >
               upload file
             </Button>
@@ -113,7 +113,7 @@ const UploadLicenseForm: FC<{
           </Alert>
         )}
         <Flex gap={2} mt={2}>
-          <Button type="submit" data-testid="upload-license">
+          <Button data-testid="upload-license" type="submit">
             Upload
           </Button>
           <Button
@@ -152,7 +152,6 @@ export default class UploadLicensePage extends PageComponent<{}> {
           <Box mb={20}>
             <Result
               status="success"
-              title="License uploaded successfully"
               subTitle={
                 <Flex flexDirection="column" gap={4}>
                   <Box>
@@ -179,6 +178,7 @@ export default class UploadLicensePage extends PageComponent<{}> {
                   </Box>
                 </Flex>
               }
+              title="License uploaded successfully"
             />
           </Box>
         ) : (
@@ -206,13 +206,13 @@ export default class UploadLicensePage extends PageComponent<{}> {
             </Text>
             <Box width={{ sm: '100%', md: '600px' }}>
               <UploadLicenseForm
+                onSuccess={() => {
+                  this.success = true;
+                }}
                 onUploadLicense={async (license) => {
                   return await api.uploadLicense({
                     license,
                   } as SetLicenseRequest);
-                }}
-                onSuccess={() => {
-                  this.success = true;
                 }}
               />
             </Box>

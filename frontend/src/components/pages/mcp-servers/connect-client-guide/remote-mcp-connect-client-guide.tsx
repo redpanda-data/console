@@ -121,7 +121,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
     <div className="space-y-2">
       <Label className="text-sm font-medium">Connect to your client</Label>
       <div>
-        <Select value={client} onValueChange={(value) => setClient(value as Client)}>
+        <Select onValueChange={(value) => setClient(value as Client)} value={client}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a client" />
           </SelectTrigger>
@@ -133,7 +133,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
                 return (
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
-                      <img src={client.logo} alt={client.alt} className="w-4 h-4" />
+                      <img alt={client.alt} className="w-4 h-4" src={client.logo} />
                       <Text>{client.name}</Text>
                     </div>
                   </SelectItem>

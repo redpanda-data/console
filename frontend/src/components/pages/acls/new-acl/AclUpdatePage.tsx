@@ -95,12 +95,12 @@ const AclUpdatePage = () => {
   return (
     <PageContent>
       <CreateACL
-        onSubmit={updateAclMutation(data.rules, data.sharedConfig)}
+        edit={true}
         onCancel={() => navigate(`/security/acls/${aclName}/details`)}
+        onSubmit={updateAclMutation(data.rules, data.sharedConfig)}
+        principalType={PrincipalTypeUser}
         rules={rulesWithAllOperations}
         sharedConfig={data.sharedConfig}
-        edit={true}
-        principalType={PrincipalTypeUser}
       />
     </PageContent>
   );

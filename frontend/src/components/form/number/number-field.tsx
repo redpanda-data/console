@@ -32,13 +32,15 @@ export const NumberField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mt={0} mb={1}>
+          <FormHelperText mb={1} mt={0}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <NumberInput
-        value={field.state.value}
+        isDisabled={isDisabled}
+        max={max}
+        min={min}
         onChange={(_valueAsString, valueAsNumber) => {
           if (Number.isNaN(valueAsNumber)) {
             field.handleChange(min ?? 0);
@@ -47,9 +49,7 @@ export const NumberField = ({
           }
         }}
         placeholder={placeholder}
-        isDisabled={isDisabled}
-        min={min}
-        max={max}
+        value={field.state.value}
         {...rest}
       />
       <ErrorInfoField field={field} />

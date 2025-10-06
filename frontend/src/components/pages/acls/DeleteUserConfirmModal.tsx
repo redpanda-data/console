@@ -20,12 +20,12 @@ export const DeleteUserConfirmModal: FC<{
   return (
     <ConfirmItemDeleteModal
       heading={`Delete user ${userName}`}
+      inputMatchText={userName}
       itemType="user"
-      trigger={buttonEl}
+      onConfirm={onConfirm}
       primaryActionLabel="Delete"
       secondaryActionLabel="Cancel"
-      onConfirm={onConfirm}
-      inputMatchText={userName}
+      trigger={buttonEl}
     >
       <Text>
         This user has roles and ACLs assigned to it. Those roles and ACLs will not be deleted, but the user will need to

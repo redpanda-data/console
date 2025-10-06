@@ -72,14 +72,14 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
               <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={ClineLogo} alt="Cline" className="h-4 w-4" />
+                <img alt="Cline" className="h-4 w-4" src={ClineLogo} />
                 Cline extension
               </Text>
             </div>
@@ -108,7 +108,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
               <span>Add the following configuration to your</span>
               <InlineCode className="whitespace-nowrap">cline_mcp_settings.json</InlineCode>
             </div>
-            <DynamicCodeBlock lang="json" code={clineConfigJson} />
+            <DynamicCodeBlock code={clineConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Press{' '}
@@ -123,7 +123,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
           </ListItem>
         </List>
       </div>
-      <RemoteMCPConnectDocsAlert documentationUrl="https://docs.cline.bot/mcp/mcp-overview" clientName="Cline" />
+      <RemoteMCPConnectDocsAlert clientName="Cline" documentationUrl="https://docs.cline.bot/mcp/mcp-overview" />
     </div>
   );
 };

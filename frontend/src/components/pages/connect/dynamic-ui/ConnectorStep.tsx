@@ -34,24 +34,24 @@ export const ConnectorStepComponent = observer(
 
     return (
       <Box>
-        <Heading as="h3" size="md" mt="8" mb="4">
+        <Heading as="h3" mb="4" mt="8" size="md">
           {step.name}
         </Heading>
 
         {step.description && (
-          <Text size="sm" mb="4">
+          <Text mb="4" size="sm">
             {step.description}
           </Text>
         )}
 
         {groups.map((g, i) => (
           <PropertyGroupComponent
-            key={i}
-            group={g}
             allGroups={props.allGroups}
-            showAdvancedOptions={props.showAdvancedOptions}
             connectorType={props.connectorType}
             context={props.context}
+            group={g}
+            key={i}
+            showAdvancedOptions={props.showAdvancedOptions}
           />
         ))}
       </Box>

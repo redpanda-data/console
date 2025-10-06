@@ -62,28 +62,28 @@ export const CreatePipelineSidebar = memo(
       <div className="flex gap-3 flex-col">
         <AddSecretsCard
           detectedSecrets={detectedSecrets}
-          missingSecrets={missingSecrets}
-          existingSecrets={existingSecrets}
           editorInstance={editorInstance}
+          existingSecrets={existingSecrets}
+          missingSecrets={missingSecrets}
           onOpenDialog={() => setIsSecretsDialogOpen(true)}
         />
 
         <AddSecretsDialog
-          isOpen={isSecretsDialogOpen}
-          onClose={() => setIsSecretsDialogOpen(false)}
-          missingSecrets={missingSecrets}
-          existingSecrets={existingSecrets}
           defaultValues={secretDefaultValues}
+          existingSecrets={existingSecrets}
+          isOpen={isSecretsDialogOpen}
+          missingSecrets={missingSecrets}
+          onClose={() => setIsSecretsDialogOpen(false)}
           onSecretsCreated={handleSecretsCreated}
         />
 
-        <AddConnectorsCard onAddConnector={handleConnectorTypeChange} hasInput={hasInput} hasOutput={hasOutput} />
+        <AddConnectorsCard hasInput={hasInput} hasOutput={hasOutput} onAddConnector={handleConnectorTypeChange} />
 
         <AddConnectorDialog
-          isOpen={isAddConnectorOpen}
-          onCloseAddConnector={closeAddConnector}
-          onAddConnector={handleAddConnector}
           connectorType={selectedConnector}
+          isOpen={isAddConnectorOpen}
+          onAddConnector={handleAddConnector}
+          onCloseAddConnector={closeAddConnector}
         />
       </div>
     );

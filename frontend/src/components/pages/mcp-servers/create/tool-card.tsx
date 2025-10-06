@@ -85,7 +85,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
           <div className="flex items-center justify-between">
             <Text>Tool {toolIndex + 1}</Text>
             {canRemove && (
-              <Button type="button" variant="outline" onClick={onRemove}>
+              <Button onClick={onRemove} type="button" variant="outline">
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
@@ -100,7 +100,6 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                   <FormLabel>Component Type</FormLabel>
                   <FormControl>
                     <Select
-                      value={String(field.value)}
                       onValueChange={(v) => {
                         const numericValue = Number(v);
                         field.onChange(numericValue);
@@ -110,6 +109,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                           shouldValidate: false,
                         });
                       }}
+                      value={String(field.value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select component type" />
@@ -153,7 +153,6 @@ export const ToolCard: React.FC<ToolCardProps> = ({
             <FormItem>
               <FormLabel>Template (Optional)</FormLabel>
               <Select
-                value={templateSelectionValue}
                 onValueChange={(value) => {
                   const tpl = templates.find((x) => x.name === value);
                   if (tpl) {
@@ -165,6 +164,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                     });
                   }
                 }}
+                value={templateSelectionValue}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose template (optional)">
@@ -192,7 +192,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                           <RedpandaConnectComponentTypeBadge componentType={tpl.componentType} />
                           <span className="font-medium text-sm">{tpl.name}</span>
                         </div>
-                        <Text variant="muted" className="text-xs leading-tight">
+                        <Text className="text-xs leading-tight" variant="muted">
                           {tpl.description}
                         </Text>
                       </div>
@@ -216,14 +216,14 @@ export const ToolCard: React.FC<ToolCardProps> = ({
 
           <div className="space-y-2">
             <YamlEditorCard
-              value={form.watch(`tools.${toolIndex}.config`)}
-              onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val, { shouldDirty: true })}
               height="500px"
-              showLint
-              showExpand
-              onLint={onLint}
-              onExpand={onExpand}
               isLinting={isLintConfigPending}
+              onChange={(val) => form.setValue(`tools.${toolIndex}.config`, val, { shouldDirty: true })}
+              onExpand={onExpand}
+              onLint={onLint}
+              showExpand
+              showLint
+              value={form.watch(`tools.${toolIndex}.config`)}
             />
             <FormMessage />
             <LintHintList lintHints={lintHints} />

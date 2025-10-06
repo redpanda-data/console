@@ -110,11 +110,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
       return (
         <Button
-          variant="solid"
           isDisabled={alreadyExists || isNameEmpty || this.isCreating}
-          loadingText="Creating..."
           isLoading={this.isCreating}
+          loadingText="Creating..."
           onClick={action(() => this.createPipeline(enableRpcnTiles ? undefined : toast))}
+          variant="solid"
         >
           Create
         </Button>
@@ -130,7 +130,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
               <>
                 {' '}
                 try the{' '}
-                <UILink as={Link} to="/rp-connect/wizard" onClick={this.handleWizardClick}>
+                <UILink as={Link} onClick={this.handleWizardClick} to="/rp-connect/wizard">
                   wizard
                 </UILink>
                 ,{' '}
@@ -153,15 +153,15 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
         </div>
 
         <Flex flexDirection="column" gap={3}>
-          <FormField label="Pipeline name" isInvalid={alreadyExists} errorText="Pipeline name is already in use">
+          <FormField errorText="Pipeline name is already in use" isInvalid={alreadyExists} label="Pipeline name">
             <Flex alignItems="center" gap="2">
               <Input
-                placeholder="Enter a config name..."
                 data-testid="pipelineName"
-                pattern="[a-zA-Z0-9_\-]+"
                 isRequired
-                value={this.fileName}
                 onChange={(x) => (this.fileName = x.target.value)}
+                pattern="[a-zA-Z0-9_\-]+"
+                placeholder="Enter a config name..."
+                value={this.fileName}
                 width={500}
               />
             </Flex>
@@ -169,28 +169,28 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           <FormField label="Description">
             <Input
               data-testid="pipelineDescription"
-              value={this.description}
               onChange={(x) => (this.description = x.target.value)}
+              value={this.description}
               width={500}
             />
           </FormField>
           <FormField
-            label="Compute Units"
             description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
+            label="Compute Units"
             w={500}
           >
             <NumberInput
-              value={this.tasks}
-              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
-              min={MIN_TASKS}
               max={MAX_TASKS}
               maxWidth={150}
+              min={MIN_TASKS}
+              onChange={(e) => (this.tasks = Number(e ?? MIN_TASKS))}
+              value={this.tasks}
             />
           </FormField>
         </Flex>
 
         <div className="mt-4">
-          <PipelineEditor yaml={this.editorContent} onChange={(x) => (this.editorContent = x)} secrets={this.secrets} />
+          <PipelineEditor onChange={(x) => (this.editorContent = x)} secrets={this.secrets} yaml={this.editorContent} />
         </div>
 
         {isFeatureFlagEnabled('enableRpcnTiles') && this.lintResults && Object.keys(this.lintResults).length > 0 && (
@@ -310,13 +310,13 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
           <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>
         </CardHeader>
         <CardContent>
-          <NewButton variant="secondary" onClick={openAddSecret}>
+          <NewButton onClick={openAddSecret} variant="secondary">
             <PlusIcon className="size-4" color="white" />
             Add Secrets
           </NewButton>
         </CardContent>
       </Card>
-      <SecretsQuickAdd isOpen={isAddSecretOpen} onCloseAddSecret={closeAddSecret} onAdd={onAddSecret} />
+      <SecretsQuickAdd isOpen={isAddSecretOpen} onAdd={onAddSecret} onCloseAddSecret={closeAddSecret} />
     </div>
   );
 };
@@ -469,32 +469,32 @@ export const PipelineEditor = observer(
                 <div className="min-h-[400px] flex gap-7">
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
-                    path="config.yaml"
                     defaultValue={yaml}
+                    language="yaml"
                     onChange={(e) => {
                       if (e) p.onChange?.(e);
-                    }}
-                    language="yaml"
-                    options={{
-                      readOnly: p.isDisabled,
                     }}
                     onMount={async (editor, monacoInstance) => {
                       setEditorInstance(editor);
                       setMonaco(monacoInstance);
                       await registerSecretsAutocomplete(monacoInstance, setSecretAutocomplete);
                     }}
+                    options={{
+                      readOnly: p.isDisabled,
+                    }}
+                    path="config.yaml"
                   />
 
                   {!p.isDisabled &&
                     (enableRpcnTiles ? (
                       <CreatePipelineSidebar
-                        editorInstance={editorInstance}
-                        onAddConnector={handleAddConnector}
                         detectedSecrets={detectedSecrets}
-                        existingSecrets={existingSecrets}
-                        secretDefaultValues={secretDefaultValues}
-                        onSecretsCreated={refetchSecrets}
                         editorContent={actualEditorContent}
+                        editorInstance={editorInstance}
+                        existingSecrets={existingSecrets}
+                        onAddConnector={handleAddConnector}
+                        onSecretsCreated={refetchSecrets}
+                        secretDefaultValues={secretDefaultValues}
                       />
                     ) : (
                       <QuickActions
@@ -516,8 +516,8 @@ export const PipelineEditor = observer(
                       <UIText>
                         This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
                         <UILink
-                          target="_blank"
                           href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                          target="_blank"
                         >
                           see our quickstart documentation
                         </UILink>

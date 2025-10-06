@@ -20,10 +20,10 @@ export default class LicenseExpiredPage extends PageComponent {
   render() {
     return (
       <Flex align="center" justify="center" p={4}>
-        <Box position="fixed" top={0} left={0} width="100vw" height="100vh" bg="white" opacity={0.5} zIndex={1000} />
-        <Box textAlign="center" p={8} maxW="600px" mx="auto" zIndex={1001}>
+        <Box bg="white" height="100vh" left={0} opacity={0.5} position="fixed" top={0} width="100vw" zIndex={1000} />
+        <Box maxW="600px" mx="auto" p={8} textAlign="center" zIndex={1001}>
           <VStack spacing={6}>
-            <Image w={300} src={Avatars.devPandaFrontViewSvg} alt="Dev Redpanda" />
+            <Image alt="Dev Redpanda" src={Avatars.devPandaFrontViewSvg} w={300} />
 
             {/* Main Heading */}
             <Text fontSize="2xl" fontWeight="bold">
