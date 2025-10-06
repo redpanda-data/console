@@ -73,8 +73,85 @@
         "noConsole": "off" // enable later
       },
       "a11y": {
-        "useKeyWithClickEvents": "off",
-        "useSemanticElements": "off"
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
+        // Enforce that the accessKey attribute is not used on any HTML element.
+        "noAccessKey": "error",
+        // Enforce that aria-hidden="true" is not set on focusable elements.
+        "noAriaHiddenOnFocusable": "error",
+        // Enforce that elements that do not support ARIA roles, states, and properties do not have those attributes.
+        "noAriaUnsupportedElements": "error",
+        // Enforces that no distracting elements are used.
+        "noDistractingElements": "error",
+        // The scope prop should be used only on <th> elements.
+        "noHeaderScope": "error",
+        // Enforce that non-interactive ARIA roles are not assigned to interactive HTML elements.
+        "noInteractiveElementToNoninteractiveRole": "error",
+        // Enforce that a label element or component has a text label and an associated input.
+        "noLabelWithoutControl": "error",
+        // Disallow use event handlers on non-interactive elements.
+        "noNoninteractiveElementInteractions": "error",
+        // Enforce that interactive ARIA roles are not assigned to non-interactive HTML elements.
+        "noNoninteractiveElementToInteractiveRole": "error",
+        // Enforce that tabIndex is not assigned to non-interactive HTML elements.
+        "noNoninteractiveTabindex": "error",
+        // Prevent the usage of positive integers on tabIndex property.
+        "noPositiveTabindex": "error",
+        // Enforce img alt prop does not contain the word "image", "picture", or "photo".
+        "noRedundantAlt": "error",
+        // Enforce explicit role property is not the same as implicit/default role property on an element.
+        "noRedundantRoles": "error",
+        // Enforce that static, visible elements (such as <div>) that have click handlers use the valid role attribute.
+        "noStaticElementInteractions": "error",
+        // Enforces the usage of the title element for the svg element.
+        "noSvgWithoutTitle": "error",
+        // Enforce that all elements that require alternative text have meaningful information to relay back to the end user.
+        "useAltText": "error",
+        // Enforce that anchors have content and that the content is accessible to screen readers.
+        "useAnchorContent": "error",
+        // Enforce that tabIndex is assigned to non-interactive HTML elements with aria-activedescendant.
+        "useAriaActivedescendantWithTabindex": "error",
+        // Enforce that elements with ARIA roles must have all required ARIA attributes for that role.
+        "useAriaPropsForRole": "error",
+        // Enforce that ARIA properties are valid for the roles that are supported by the element.
+        "useAriaPropsSupportedByRole": "error",
+        // Enforces the usage of the attribute type for the element button.
+        "useButtonType": "error",
+        // Elements with an interactive role and interaction handlers must be focusable.
+        "useFocusableInteractive": "error",
+        // Enforce that heading elements (h1, h2, etc.) have content and that the content is accessible to screen readers. Accessible means that it is not hidden using the aria-hidden prop.
+        "useHeadingContent": "error",
+        // Enforce that html element has lang attribute.
+        "useHtmlLang": "error",
+        // Enforces the usage of the attribute title for the element iframe.
+        "useIframeTitle": "error",
+        // Enforce onClick is accompanied by at least one of the following: onKeyUp, onKeyDown, onKeyPress.
+        "useKeyWithClickEvents": "error",
+        // Enforce onMouseOver / onMouseOut are accompanied by onFocus / onBlur.
+        "useKeyWithMouseEvents": "error",
+        // Enforces that audio and video elements must have a track for captions.
+        "useMediaCaption": "error",
+        // It detects the use of role attributes in JSX elements and suggests using semantic elements instead.
+        "useSemanticElements": "error",
+        // Enforce that all anchors are valid, and they are navigable elements.
+        "useValidAnchor": "error",
+        // Ensures that ARIA properties aria-* are all valid.
+        "useValidAriaProps": "error",
+        // Elements with ARIA roles must use a valid, non-abstract ARIA role.
+        "useValidAriaRole": "error",
+        // Enforce that ARIA state and property values are valid.
+        "useValidAriaValues": "error",
+        // Use valid values for the autocomplete attribute on input elements.
+        "useValidAutocomplete": "error",
+        // Ensure that the attribute passed to the lang attribute is a correct ISO language and/or country.
+        "useValidLang": "error",
+
+        // Enforce that autoFocus prop is not used on elements.
+        "noAutofocus": "off",
+
+        /** ------------------------ CSS Rules ------------------------ **/
+        // Disallow a missing generic family keyword within font families.
+        "useGenericFontNames": "error"
       },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
