@@ -52,26 +52,6 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "suspicious": {
-        // Disallow the any type usage.
-        "noExplicitAny": "off",
-        // Discourage the usage of Array index in keys. We use them a lot with string interpolation though. In the future we may rely on React.useId().
-        "noArrayIndexKey": "off",
-        // Disallow assignments in expressions.
-        "noAssignInExpressions": "off",
-        // Disallow variables from evolving into any type through reassignments.
-        "noEvolvingTypes": "off", // enable later
-        // Require for-in loops to include an if statement.
-        "useGuardForIn": "off", // enable later
-        // Disallow empty block statements and static blocks.
-        "noEmptyBlockStatements": "off", // enable later
-        // Ensure async functions utilize await.
-        "useAwait": "off", // enable later
-        // Enforce get methods to always return a value.
-        "useGetterReturn": "off", // enable later
-        // Disallow the use of console. This will help us clean up the browser console.
-        "noConsole": "off" // enable later
-      },
       "a11y": {
         /** ------------------------ JavaScript Rules ------------------------ **/
 
@@ -524,6 +504,201 @@
         "noParameterProperties": "off", // enable later
         // Enforce using single if instead of nested if clauses.
         "useCollapsedIf": "off" // enable later
+      },
+      "suspicious": {
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
+        // Disallow the use of alert, confirm, and prompt.
+        "noAlert": "error",
+        // Use standard constants instead of approximated literals.
+        "noApproximativeNumericConstant": "error",
+        // Discourage the usage of Array index in keys.
+        "noArrayIndexKey": "error",
+        // Disallow assignments in expressions.
+        "noAssignInExpressions": "error",
+        // Disallows using an async function as a Promise executor.
+        "noAsyncPromiseExecutor": "error",
+        // Prevents the use of the ! pattern in the first position of files.includes in the configuration file.
+        "noBiomeFirstException": "error",
+        // Disallow bitwise operators.
+        "noBitwiseOperators": "error",
+        // Disallow expressions where the operation doesn't affect the value
+        "noConstantBinaryExpressions": "error",
+        // Disallow reassigning exceptions in catch clauses.
+        "noCatchAssign": "error",
+        // Disallow reassigning class members.
+        "noClassAssign": "error",
+        // Prevent comments from being inserted as text nodes.
+        "noCommentText": "error",
+        // Disallow comparing against -0.
+        "noCompareNegZero": "error",
+        // Disallow labeled statements that are not loops.
+        "noConfusingLabels": "error",
+        // Disallow void type outside of generic or return types.
+        "noConfusingVoidType": "error",
+        // Disallow the use of console.
+        "noConsole": "error",
+        // Disallow TypeScript const enum.
+        "noConstEnum": "error",
+        // Prevents from having control characters and some escape sequences that match control characters in regular expression literals.
+        "noControlCharactersInRegex": "error",
+        // Disallow the use of debugger
+        "noDebugger": "error",
+        // Disallow direct assignments to document.cookie.
+        "noDocumentCookie": "error",
+        // Prevents importing next/document outside of pages/_document.jsx in Next.js projects.
+        "noDocumentImportInPage": "error",
+        // Require the use of === and !==.
+        "noDoubleEquals": "error",
+        // Disallow duplicate case labels.
+        "noDuplicateCase": "error",
+        // Disallow duplicate class members.
+        "noDuplicateClassMembers": "error",
+        // Disallow duplicate conditions in if-else-if chains.
+        "noDuplicateElseIf": "error",
+        // Disallow duplicated fields in GraphQL operations.
+        "noDuplicateFields": "error",
+        // Prevents JSX properties to be assigned multiple times.
+        "noDuplicateJsxProps": "error",
+        // Disallow two keys with the same name inside objects.
+        "noDuplicateObjectKeys": "error",
+        // Disallow duplicate function parameter name.
+        "noDuplicateParameters": "error",
+        // A describe block should not contain duplicate hooks.
+        "noDuplicateTestHooks": "error",
+        // Disallow empty block statements and static blocks.
+        "noEmptyBlockStatements": "error",
+        // Disallow the declaration of empty interfaces.
+        "noEmptyInterface": "error",
+        // Disallow variables from evolving into any type through reassignments.
+        "noEvolvingTypes": "error",
+        // Disallow the any type usage.
+        "noExplicitAny": "error",
+        // Disallow using export or module.exports in files containing tests.
+        "noExportsInTest": "error",
+        // Prevents the wrong usage of the non-null assertion operator (!) in TypeScript files.
+        "noExtraNonNullAssertion": "error",
+        // Disallow fallthrough of switch clauses.
+        "noFallthroughSwitchClause": "error",
+        // Disallow focused tests.
+        "noFocusedTests": "error",
+        // Disallow reassigning function declarations.
+        "noFunctionAssign": "error",
+        // Disallow assignments to native objects and read-only global variables.
+        "noGlobalAssign": "error",
+        // Use Number.isFinite instead of global isFinite.
+        "noGlobalIsFinite": "error",
+        // Use Number.isNaN instead of global isNaN.
+        "noGlobalIsNan": "error",
+        // Prevent using the next/head module in pages/_document.js on Next.js projects.
+        "noHeadImportInDocument": "error",
+        // Disallow use of implicit any type on variable declarations.
+        "noImplicitAnyLet": "error",
+        // Disallow assigning to imported bindings
+        "noImportAssign": "error",
+        // Disallows the use of irregular whitespace characters.
+        "noIrregularWhitespace": "error",
+        // Disallow labels that share a name with a variable.
+        "noLabelVar": "error",
+        // Disallow characters made with multiple code points in character class syntax.
+        "noMisleadingCharacterClass": "error",
+        // Enforce proper usage of new and constructor.
+        "noMisleadingInstantiator": "error",
+        // Checks that the assertion function, for example expect, is placed inside an it() function call.
+        "noMisplacedAssertion": "error",
+        // Disallow shorthand assign when variable appears on both sides.
+        "noMisrefactoredShorthandAssign": "error",
+        // Disallow octal escape sequences in string literals
+        "noOctalEscape": "error",
+        // Disallow direct use of Object.prototype builtins.
+        "noPrototypeBuiltins": "error",
+        // Disallow the use if quickfix.biome inside editor settings file.
+        "noQuickfixBiome": "error",
+        // Disallow variable, function, class, and type redeclarations in the same scope.
+        "noRedeclare": "error",
+        // Prevents from having redundant "use strict".
+        "noRedundantUseStrict": "error",
+        // Disallow comparisons where both sides are exactly the same.
+        "noSelfCompare": "error",
+        // Disallow identifiers from shadowing restricted names.
+        "noShadowRestrictedNames": "error",
+        // Disallow disabled tests.
+        "noSkippedTests": "error",
+        // Prevents the use of sparse arrays (arrays with holes).
+        "noSparseArray": "error",
+        // It detects possible "wrong" semicolons inside JSX elements.
+        "noSuspiciousSemicolonInJsx": "error",
+        // Disallow template literal placeholder syntax in regular strings.
+        "noTemplateCurlyInString": "error",
+        // Disallow then property.
+        "noThenProperty": "error",
+        // Prevents the use of the TypeScript directive @ts-ignore.
+        "noTsIgnore": "error",
+        // Disallow let or var variables that are read but never assigned.
+        "noUnassignedVariables": "error",
+        // Disallow unsafe declaration merging between interfaces and classes.
+        "noUnsafeDeclarationMerging": "error",
+        // Disallow using unsafe negation.
+        "noUnsafeNegation": "error",
+        // Disallow unnecessary escapes in string literals.
+        "noUselessEscapeInString": "error",
+        // Disallow useless backreferences in regular expression literals that always match an empty string.
+        "noUselessRegexBackrefs": "error",
+        // Disallow the use of var.
+        "noVar": "error",
+        // Disallow with statements in non-strict contexts.
+        "noWith": "error",
+        // Disallow the use of overload signatures that are not next to each other.
+        "useAdjacentOverloadSignatures": "error",
+        // Ensure async functions utilize await.
+        "useAwait": "error",
+        // Promotes the correct usage for ignoring folders in the configuration file.
+        "useBiomeIgnoreFolder": "error",
+        // Enforce consistent return values in iterable callbacks.
+        "useIterableCallbackReturn": "error",
+        // Enforce default clauses in switch statements to be last
+        "useDefaultSwitchClauseLast": "error",
+        // Enforce passing a message value when creating a built-in error.
+        "useErrorMessage": "error",
+        // Enforce get methods to always return a value.
+        "useGetterReturn": "error",
+        // Enforces the use of a recommended display strategy with Google Fonts.
+        "useGoogleFontDisplay": "error",
+        // Require for-in loops to include an if statement.
+        "useGuardForIn": "error",
+        // Use Array.isArray() instead of instanceof Array.
+        "useIsArray": "error",
+        // Require using the namespace keyword over the module keyword to declare TypeScript namespaces.
+        "useNamespaceKeyword": "error",
+        // Enforce using the digits argument with Number#toFixed().
+        "useNumberToFixedDigitsArgument": "error",
+        // Use static Response methods instead of new Response() constructor when possible.
+        "useStaticResponseMethods": "error",
+        // Enforce the use of the directive "use strict" in script files.
+        "useStrictMode": "error",
+
+        // Prevents React-specific JSX properties from being used.
+        "noReactSpecificProps": "off",
+
+        /** ------------------------ CSS Rules ------------------------ **/
+        // Disallow duplicate @import rules.
+        "noDuplicateAtImportRules": "error",
+        // Disallow duplicate custom properties within declaration blocks.
+        "noDuplicateCustomProperties": "error",
+        // Disallow duplicate names within font families.
+        "noDuplicateFontNames": "error",
+        // Disallow duplicate properties within declaration blocks.
+        "noDuplicateProperties": "error",
+        // Disallow duplicate selectors within keyframe blocks.
+        "noDuplicateSelectorsKeyframeBlock": "error",
+        // Disallow CSS empty blocks.
+        "noEmptyBlock": "error",
+        // Disallow invalid !important within keyframe declarations
+        "noImportantInKeyframe": "error",
+        // Disallow shorthand properties that override related longhand properties.
+        "noShorthandPropertyOverrides": "error",
+        // Disallow unknown at-rules.
+        "noUnknownAtRules": "error"
       }
     }
   },
