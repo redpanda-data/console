@@ -651,7 +651,7 @@
         // Disallow the use of overload signatures that are not next to each other.
         "useAdjacentOverloadSignatures": "error",
         // Ensure async functions utilize await.
-        "useAwait": "off", // Enable later - many violations
+        "useAwait": "error",
         // Promotes the correct usage for ignoring folders in the configuration file.
         "useBiomeIgnoreFolder": "error",
         // Enforce consistent return values in iterable callbacks.

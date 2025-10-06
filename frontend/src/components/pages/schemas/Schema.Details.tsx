@@ -180,7 +180,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 openPermanentDeleteModal(this.subjectNameRaw, () => {
                   api
                     .deleteSchemaSubject(this.subjectNameRaw, true)
-                    .then(async () => {
+                    .then(() => {
                       toast({
                         status: 'success',
                         duration: 4000,
@@ -204,7 +204,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 openDeleteModal(this.subjectNameRaw, () => {
                   api
                     .deleteSchemaSubject(this.subjectNameRaw, false)
-                    .then(async () => {
+                    .then(() => {
                       toast({
                         status: 'success',
                         duration: 4000,

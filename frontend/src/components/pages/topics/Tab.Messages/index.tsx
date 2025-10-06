@@ -1151,7 +1151,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       this.expandedKeys.push(key);
   }
 
-  async executeMessageSearch(): Promise<TopicMessage[]> {
+  executeMessageSearch(): Promise<TopicMessage[]> {
     const canUseFilters =
       (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -1190,7 +1190,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
     } as MessageSearchRequest;
 
-    return transaction(async () => {
+    return transaction(() => {
       try {
         this.fetchError = null;
         return this.messageSearch.startSearch(request).catch((err) => {
@@ -1202,7 +1202,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       } catch (error: any) {
         console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
         this.fetchError = error;
-        return [];
+        return Promise.resolve([]);
       }
     });
   }
@@ -1279,7 +1279,7 @@ class SaveMessagesDialog extends Component<{
     );
   }
 
-  async saveMessages() {
+  saveMessages() {
     const messages = this.props.messages;
     if (!messages) return;
 

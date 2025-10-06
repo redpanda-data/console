@@ -1,4 +1,4 @@
-import { Page, test, expect } from '@playwright/test';
+import { type Page, test, expect } from '@playwright/test';
 
 export const createTopic = async (page: Page, { topicName }: { topicName: string }) => {
   return await test.step('Create topic', async () => {

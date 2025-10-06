@@ -44,7 +44,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
     appGlobal.historyPush(returnSecretTab);
   }
 
-  async updateSecret() {
+  updateSecret() {
     this.isUpdating = true;
 
     rpcnSecretManagerApi
@@ -56,7 +56,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           scopes: [Scope.REDPANDA_CONNECT],
         })
       )
-      .then(async () => {
+      .then(() => {
         toast({
           status: 'success',
           duration: 4000,
@@ -64,7 +64,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
           title: 'Secret updated',
           id: 'secret-update-success',
         });
-        await pipelinesApi.refreshPipelines(true);
+        pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(returnSecretTab);
       })
       .catch((err) => {

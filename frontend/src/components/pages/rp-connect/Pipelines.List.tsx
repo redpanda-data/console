@@ -333,7 +333,7 @@ class RpConnectPipelinesList extends PageComponent {
                       openDeleteModal(r.displayName, () => {
                         pipelinesApi
                           .deletePipeline(r.id)
-                          .then(async () => {
+                          .then(() => {
                             toast({
                               status: 'success',
                               duration: 4000,

@@ -167,7 +167,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
               openDeleteModal(pipeline.displayName, () => {
                 pipelinesApi
                   .deletePipeline(pipeline.id)
-                  .then(async () => {
+                  .then(() => {
                     toast({
                       status: 'success',
                       duration: 4000,
@@ -382,7 +382,7 @@ function isFilterMatch(str: string, m: TopicMessage) {
   return false;
 }
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, pipelineId: string) {
   const filterCode: string = `return key == "${pipelineId}";`;
 
   const lastXHours = 5;
@@ -405,16 +405,16 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, pi
 
   // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
   // so any changes in phase, messages, error, etc can be used immediately in the ui
-  return runInAction(async () => {
+  return runInAction(() => {
     try {
-      search.startSearch(request).catch((err) => {
+      return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
         console.error(`error in pipelineLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
       console.error(`error in pipelineLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return Promise.resolve([]);
     }
   });
 }

@@ -167,7 +167,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     );
   }
 
-  async updatePipeline(toast: CreateToastFnReturn) {
+  updatePipeline(toast: CreateToastFnReturn) {
     this.isUpdating = true;
     const pipelineId = this.props.pipelineId;
 

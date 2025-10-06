@@ -415,7 +415,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const isTimestamp = offsetOption === 'timestamp';
 
   // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
-  const handleFinish = async (responseData: void | DeleteRecordsResponseData | null | undefined) => {
+  const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
     if (responseData == null) {
       setErrors(['You are not allowed to delete records on this topic. Please contact your Kafka administrator.']);
       return;
@@ -452,6 +452,10 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   };
 
   const onOk = () => {
+    if (!topic) return;
+
+    const topicName = topic.topicName;
+
     if (hasErrors) {
       onFinish();
     }
@@ -464,24 +468,24 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     setOkButtonLoading(true);
 
     if (isAllPartitions && isHighWatermark) {
-      api.deleteTopicRecordsFromAllPartitionsHighWatermark(topic.topicName).then(handleFinish);
+      api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName)?.then(handleFinish);
     } else if (isSpecficPartition && isManualOffset) {
       // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-      api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(handleFinish);
+      api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(handleFinish);
     } else if (isTimestamp && timestamp != null) {
-      api.getTopicOffsetsByTimestamp([topic.topicName], timestamp).then((topicOffsets) => {
+      api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
         if (isAllPartitions) {
           const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
             partitionId,
             offset,
           }));
-          api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topic.topicName, pairs).then(handleFinish);
+          api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs)?.then(handleFinish);
         } else if (isSpecficPartition) {
           const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
           if (partitionOffset != null) {
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-            api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(handleFinish);
+            api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
           } else {
             setErrors([
               'No partition offset was specified, this should not happen. Please contact your administrator.',

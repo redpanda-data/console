@@ -253,7 +253,7 @@ export const RemoteMCPInspectorTab = () => {
     }
   }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
 
-  const executeToolRequest = async () => {
+  const executeToolRequest = () => {
     if (!(selectedTool && mcpServerData?.mcpServer?.url)) return;
 
     // Cancel any existing request

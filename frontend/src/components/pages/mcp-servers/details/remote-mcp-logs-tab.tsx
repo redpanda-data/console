@@ -52,7 +52,7 @@ const isFilterMatch = (filter: string, message: TopicMessage): boolean => {
   return false;
 };
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, remoteMcpId: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, remoteMcpId: string) {
   const filterCode = `return key == "${remoteMcpId}";`;
 
   const lastXHours = 5;
@@ -74,16 +74,16 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, re
   };
 
   // Start the search with the configured parameters
-  return runInAction(async () => {
+  return runInAction(() => {
     try {
-      await search.startSearch(request).catch((err) => {
+      return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
         console.error(`error in remoteMcpLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: unknown) {
       console.error(`error in remoteMcpLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return Promise.resolve([]);
     }
   });
 }

@@ -47,7 +47,7 @@ class RpConnectSecretCreate extends PageComponent {
     appGlobal.historyPush(returnSecretTab);
   }
 
-  async createSecret() {
+  createSecret() {
     this.isCreating = true;
     this.id = this.id.toUpperCase();
     rpcnSecretManagerApi
@@ -58,14 +58,14 @@ class RpConnectSecretCreate extends PageComponent {
           scopes: [Scope.REDPANDA_CONNECT],
         })
       )
-      .then(async () => {
+      .then(() => {
         toast({
           status: 'success',
           duration: 4000,
           isClosable: false,
           title: 'Secret created',
         });
-        await pipelinesApi.refreshPipelines(true);
+        pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(returnSecretTab);
       })
       .catch((err) => {

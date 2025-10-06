@@ -619,7 +619,7 @@ const apiStore = {
     }, addError);
   },
 
-  async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
+  refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
     const promise = cachedApiRequest<TopicConfigResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`,
       force
@@ -673,7 +673,7 @@ const apiStore = {
     return parseOrUnwrap<any>(response, null);
   },
 
-  async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
+  deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
     const partitions =
       partitionId !== undefined
         ? [{ partitionId, offset }]
@@ -687,7 +687,7 @@ const apiStore = {
     return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
   },
 
-  async deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
+  deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
     const partitions = this.topicPartitions?.get(topicName)?.map(({ waterMarkHigh, id }) => ({
       partitionId: id,
       offset: waterMarkHigh,
@@ -701,7 +701,7 @@ const apiStore = {
     return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
   },
 
-  async deleteTopicRecordsFromMultiplePartitionOffsetPairs(
+  deleteTopicRecordsFromMultiplePartitionOffsetPairs(
     topicName: string,
     pairs: Array<{ partitionId: number; offset: number }>
   ) {
@@ -2025,7 +2025,7 @@ const apiStore = {
     });
   },
 
-  async refreshClusterHealth() {
+  refreshClusterHealth() {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
@@ -2033,7 +2033,7 @@ const apiStore = {
       throw new Error('Debug bundle client is not initialized');
     }
 
-    client.getClusterHealth({}).then((response) => {
+    return client.getClusterHealth({}).then((response) => {
       this.clusterHealth = response;
     });
   },

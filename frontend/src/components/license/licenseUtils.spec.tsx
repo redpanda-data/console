@@ -288,7 +288,7 @@ describe('licenseUtils', () => {
   });
 
   describe('LicenseNotification Banner', () => {
-    test('render null on routes related to licensing', async () => {
+    test('render null on routes related to licensing', () => {
       const uploadLicenseScreen = renderWithRouter(<LicenseNotification />, {
         route: '/admin/upload-license',
       });

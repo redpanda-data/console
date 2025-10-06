@@ -760,7 +760,7 @@ class ReassignPartitions extends PageComponent {
     }
   }
 
-  async removeThrottleFromTopics() {
+  removeThrottleFromTopics() {
     this.removeThrottleFromTopicsContent = clone(this.topicsWithThrottle);
   }
 

@@ -82,7 +82,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
     [yaml]
   );
 
-  const setMonacoOptions = useCallback(async (monaco: Monaco) => {
+  const setMonacoOptions = useCallback((monaco: Monaco) => {
     const yaml = configureMonacoYaml(monaco, monacoYamlOptions);
     setYaml(yaml);
   }, []);

@@ -208,7 +208,7 @@ class TransformsList extends PageComponent {
                       openDeleteModal(r.name, () => {
                         transformsApi
                           .deleteTransform(r.name)
-                          .then(async () => {
+                          .then(() => {
                             toast({
                               status: 'success',
                               duration: 4000,

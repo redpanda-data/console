@@ -331,13 +331,13 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           )}
         </>
       ),
-      transitionConditionMet: async () => {
+      transitionConditionMet: () => {
         if (selectedPlugin) {
           connectClusterStore.getConnector(selectedPlugin.class, null, undefined)?.getConfigObject();
           setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class, null, undefined)?.jsonText ?? '');
-          return { conditionMet: true };
+          return Promise.resolve({ conditionMet: true });
         }
-        return { conditionMet: false };
+        return Promise.resolve({ conditionMet: false });
       },
       postConditionMet: () => true,
     },

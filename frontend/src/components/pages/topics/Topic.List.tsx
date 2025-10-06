@@ -89,7 +89,7 @@ const TopicList: FC = () => {
     [createTopic]
   );
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(() => {
     api.refreshClusterOverview();
     api.refreshClusterHealth().catch(() => {
       // Error handling managed by API layer

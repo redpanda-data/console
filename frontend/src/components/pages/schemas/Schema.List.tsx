@@ -351,7 +351,7 @@ class SchemaList extends PageComponent {
                         openPermanentDeleteModal(r.name, () => {
                           api
                             .deleteSchemaSubject(r.name, true)
-                            .then(async () => {
+                            .then(() => {
                               toast({
                                 status: 'success',
                                 duration: 4000,
@@ -375,7 +375,7 @@ class SchemaList extends PageComponent {
                         openDeleteModal(r.name, () => {
                           api
                             .deleteSchemaSubject(r.name, false)
-                            .then(async () => {
+                            .then(() => {
                               toast({
                                 status: 'success',
                                 duration: 4000,

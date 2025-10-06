@@ -314,7 +314,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   loader.config({ monaco });
 
   // Ensure yaml workers are being loaded locally as well
-  loader.init().then(async () => {
+  loader.init().then(() => {
     window.MonacoEnvironment = {
       getWorkerUrl(_, label: string): string {
         switch (label) {

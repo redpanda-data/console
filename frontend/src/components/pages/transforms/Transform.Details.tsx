@@ -94,7 +94,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
               openDeleteModal(transformName, () => {
                 transformsApi
                   .deleteTransform(transformName)
-                  .then(async () => {
+                  .then(() => {
                     toast({
                       status: 'success',
                       duration: 4000,
@@ -331,7 +331,7 @@ function isFilterMatch(str: string, m: TopicMessage) {
   return false;
 }
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, transformName: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, transformName: string) {
   const filterCode: string = `return key == "${transformName}";`;
 
   const lastXHours = 5;
@@ -354,16 +354,16 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, tr
 
   // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
   // so any changes in phase, messages, error, etc can be used immediately in the ui
-  return runInAction(async () => {
+  return runInAction(() => {
     try {
-      search.startSearch(request).catch((err) => {
+      return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
         console.error(`error in transformLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
       console.error(`error in transformLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return Promise.resolve([]);
     }
   });
 }

@@ -221,7 +221,7 @@ class RpConnectPipelinesCreate extends PageComponent {
     );
   }
 
-  async createPipeline(toast?: CreateToastFnReturn) {
+  createPipeline(toast?: CreateToastFnReturn) {
     this.isCreating = true;
 
     pipelinesApi
