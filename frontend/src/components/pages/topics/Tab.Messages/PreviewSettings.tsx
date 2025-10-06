@@ -394,10 +394,9 @@ class PreviewTagSettings extends Component<{
         </Box>
 
         {/* Remove */}
-        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of PreviewTagSettings implementation */}
-        <span className="inlineButton" onClick={onRemove}>
+        <button className="inlineButton" onClick={onRemove} type="button">
           <XIcon />
-        </span>
+        </button>
       </Flex>
     );
   }
