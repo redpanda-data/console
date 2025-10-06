@@ -776,8 +776,10 @@ class ReassignPartitions extends PageComponent {
   @computed get maximumSelectedReplicationFactor(): number {
     let maxRf = 0;
     for (const topicName in this.partitionSelection) {
-      const topic = api.topics?.first((x) => x.topicName === topicName);
-      if (topic) if (topic.replicationFactor > maxRf) maxRf = topic.replicationFactor;
+      if (Object.hasOwn(this.partitionSelection, topicName)) {
+        const topic = api.topics?.first((x) => x.topicName === topicName);
+        if (topic) if (topic.replicationFactor > maxRf) maxRf = topic.replicationFactor;
+      }
     }
     return maxRf;
   }

@@ -1171,15 +1171,18 @@ const apiStore = {
           console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
 
         user.grantedRoles = [];
-        for (const roleName in user.audits)
-          user.grantedRoles.push({
-            // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-            role: info.roles.first((r) => r.name === roleName)!,
-            grantedBy: user.audits[roleName].map(
+        for (const roleName in user.audits) {
+          if (Object.hasOwn(user.audits, roleName)) {
+            user.grantedRoles.push({
               // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-              (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!
-            ),
-          });
+              role: info.roles.first((r) => r.name === roleName)!,
+              grantedBy: user.audits[roleName].map(
+                // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
+                (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!
+              ),
+            });
+          }
+        }
       }
 
       this.adminInfo = info;

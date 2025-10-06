@@ -80,7 +80,11 @@ const addProp = (key: string, value: any) => {
   envVarDebugAr.push({ name: key, value: value });
 };
 // - add env vars
-for (const k in env) addProp(k, (env as any)[k]);
+for (const k in env) {
+  if (Object.hasOwn(env, k)) {
+    addProp(k, (env as any)[k]);
+  }
+}
 
 // - print
 console.log(toJson(envVarDebugObj));

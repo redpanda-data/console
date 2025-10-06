@@ -345,7 +345,11 @@ export { uiSettings };
 
 export function clearSettings() {
   transaction(() => {
-    for (const k in uiSettings) delete (uiSettings as any)[k];
+    for (const k in uiSettings) {
+      if (Object.hasOwn(uiSettings, k)) {
+        delete (uiSettings as any)[k];
+      }
+    }
     assignDeep(uiSettings, clone(defaultUiSettings));
   });
 }

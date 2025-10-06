@@ -236,25 +236,27 @@ export function collectElements(
 
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
   for (const key in obj) {
-    const value = obj[key];
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
 
-    // property match?
-    const isMatch = ctx.isMatch(key, ctx.currentPath, value);
+      // property match?
+      const isMatch = ctx.isMatch(key, ctx.currentPath, value);
 
-    if (isMatch) {
-      const clonedPath = Object.assign([], ctx.currentPath);
-      ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+      if (isMatch) {
+        const clonedPath = Object.assign([], ctx.currentPath);
+        ctx.results.push({ propertyName: key, path: clonedPath, value: value });
 
-      if (ctx.returnFirstResult) return 'abort';
-    }
+        if (ctx.returnFirstResult) return 'abort';
+      }
 
-    // descend into object
-    if (typeof value === 'object') {
-      ctx.currentPath.push(key);
-      const childResult = collectElementsRecursive(ctx, value);
-      ctx.currentPath.pop();
+      // descend into object
+      if (typeof value === 'object') {
+        ctx.currentPath.push(key);
+        const childResult = collectElementsRecursive(ctx, value);
+        ctx.currentPath.pop();
 
-      if (childResult === 'abort') return 'abort';
+        if (childResult === 'abort') return 'abort';
+      }
     }
   }
 
@@ -311,28 +313,32 @@ export function collectElements2(
         case '*':
           // Explore all properties
           for (const key in currentObj) {
-            const value = currentObj[key];
-            if (value == null || typeof value === 'function') continue;
+            if (Object.hasOwn(currentObj, key)) {
+              const value = currentObj[key];
+              if (value == null || typeof value === 'function') continue;
 
-            targetList.push({
-              path: [...foundProp.path, key],
-              value: value,
-            });
+              targetList.push({
+                path: [...foundProp.path, key],
+                value: value,
+              });
+            }
           }
           break;
 
         default:
           // Some user defined string
           for (const key in currentObj) {
-            const value = currentObj[key];
-            if (value == null || typeof value === 'function') continue;
+            if (Object.hasOwn(currentObj, key)) {
+              const value = currentObj[key];
+              if (value == null || typeof value === 'function') continue;
 
-            const match = isMatch(segment, key, value);
-            if (match) {
-              targetList.push({
-                path: [...foundProp.path, key],
-                value: value,
-              });
+              const match = isMatch(segment, key, value);
+              if (match) {
+                targetList.push({
+                  path: [...foundProp.path, key],
+                  value: value,
+                });
+              }
             }
           }
           break;
@@ -391,39 +397,41 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
   const pathToHere = ctx.currentFullPath;
 
   for (const key in obj) {
-    const value = obj[key];
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
 
-    ctx.currentPath.push(key);
-    const currentFullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
-    ctx.currentFullPath = currentFullPath;
+      ctx.currentPath.push(key);
+      const currentFullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
+      ctx.currentFullPath = currentFullPath;
 
-    if (!isArray) {
-      // add result, but only for object properties
-      const isNewPath = !ctx.existingPaths.has(currentFullPath);
-      if (isNewPath) {
-        // and only if its a new path
-        ctx.existingPaths.add(currentFullPath);
+      if (!isArray) {
+        // add result, but only for object properties
+        const isNewPath = !ctx.existingPaths.has(currentFullPath);
+        if (isNewPath) {
+          // and only if its a new path
+          ctx.existingPaths.add(currentFullPath);
 
-        const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({
-          propertyName: key,
-          path: clonedPath, // all the keys
-          fullPath: currentFullPath,
-        });
+          const clonedPath = Object.assign([], ctx.currentPath);
+          ctx.results.push({
+            propertyName: key,
+            path: clonedPath, // all the keys
+            fullPath: currentFullPath,
+          });
+        }
       }
+
+      // descend into object
+      if (typeof value === 'object' && value != null) {
+        const childResult = getAllKeysRecursive(ctx, value);
+
+        if (childResult === 'abort') result = 'abort';
+      }
+
+      ctx.currentPath.pop();
+      ctx.currentFullPath = currentFullPath;
+
+      if (result === 'abort') break;
     }
-
-    // descend into object
-    if (typeof value === 'object' && value != null) {
-      const childResult = getAllKeysRecursive(ctx, value);
-
-      if (childResult === 'abort') result = 'abort';
-    }
-
-    ctx.currentPath.pop();
-    ctx.currentFullPath = currentFullPath;
-
-    if (result === 'abort') break;
   }
 
   ctx.currentFullPath = pathToHere;

@@ -23,19 +23,21 @@ export function partitionSelectionToTopicPartitions(
   const ar: TopicPartitions[] = [];
 
   for (const topicName in partitionSelection) {
-    const topic = apiTopics.first((x) => x.topicName === topicName);
-    if (!topic) return; // topic not available
+    if (Object.hasOwn(partitionSelection, topicName)) {
+      const topic = apiTopics.first((x) => x.topicName === topicName);
+      if (!topic) return; // topic not available
 
-    const allPartitions = apiTopicPartitions.get(topicName);
-    if (!allPartitions) return; // partitions for topic not available
+      const allPartitions = apiTopicPartitions.get(topicName);
+      if (!allPartitions) return; // partitions for topic not available
 
-    const partitionIds = partitionSelection[topicName];
-    const relevantPartitions = partitionIds.map((id) => allPartitions.first((p) => p.id === id));
-    if (relevantPartitions.any((p) => p == null)) return; // at least one selected partition not available
+      const partitionIds = partitionSelection[topicName];
+      const relevantPartitions = partitionIds.map((id) => allPartitions.first((p) => p.id === id));
+      if (relevantPartitions.any((p) => p == null)) return; // at least one selected partition not available
 
-    // we've checked that there can't be any falsy partitions
-    // so we assert that 'relevantPartitions' is the right type
-    ar.push({ topic: topic, partitions: relevantPartitions as Partition[] });
+      // we've checked that there can't be any falsy partitions
+      // so we assert that 'relevantPartitions' is the right type
+      ar.push({ topic: topic, partitions: relevantPartitions as Partition[] });
+    }
   }
 
   return ar;
@@ -109,6 +111,7 @@ export function computeMovedReplicas(
 /**
  * Returns a clone of topicAssignments with redundant reassignments removed
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity increased due to for-in guards, refactor later
 export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
   topicAssignments = clone(topicAssignments);
 
@@ -116,45 +119,49 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
   let totalRemovedPartitions = 0;
   const emptyTopics: string[] = [];
   for (const t in topicAssignments) {
-    const topicAssignment = topicAssignments[t];
-    const curTopicPartitions = apiData.topicPartitions.get(t);
-    if (!curTopicPartitions) continue;
+    if (Object.hasOwn(topicAssignments, t)) {
+      const topicAssignment = topicAssignments[t];
+      const curTopicPartitions = apiData.topicPartitions.get(t);
+      if (!curTopicPartitions) continue;
 
-    const partitionIdsToRemove: string[] = [];
-    let originalReassignedPartitionsCount = 0;
-    for (const partitionId in topicAssignment) {
-      originalReassignedPartitionsCount++;
-      const a = topicAssignment[partitionId];
-      const brokersBefore = curTopicPartitions.first((p) => p.id === Number(partitionId))?.replicas;
-      if (!brokersBefore) continue;
-      const brokersAfter = a.brokers;
+      const partitionIdsToRemove: string[] = [];
+      let originalReassignedPartitionsCount = 0;
+      for (const partitionId in topicAssignment) {
+        if (Object.hasOwn(topicAssignment, partitionId)) {
+          originalReassignedPartitionsCount++;
+          const a = topicAssignment[partitionId];
+          const brokersBefore = curTopicPartitions.first((p) => p.id === Number(partitionId))?.replicas;
+          if (!brokersBefore) continue;
+          const brokersAfter = a.brokers;
 
-      if (brokersBefore.length !== brokersAfter.length) {
-        console.warn('remove empty reassignments: brokersBefore.length != brokersAfter.length');
-        continue;
-      }
+          if (brokersBefore.length !== brokersAfter.length) {
+            console.warn('remove empty reassignments: brokersBefore.length != brokersAfter.length');
+            continue;
+          }
 
-      let sameBrokers = true;
-      for (let i = 0; i < brokersBefore.length; i++) {
-        if (brokersBefore[i] !== brokersAfter[i].brokerId) {
-          sameBrokers = false;
-          break;
+          let sameBrokers = true;
+          for (let i = 0; i < brokersBefore.length; i++) {
+            if (brokersBefore[i] !== brokersAfter[i].brokerId) {
+              sameBrokers = false;
+              break;
+            }
+          }
+
+          if (sameBrokers) partitionIdsToRemove.push(partitionId);
         }
       }
 
-      if (sameBrokers) partitionIdsToRemove.push(partitionId);
-    }
+      totalRemovedPartitions += partitionIdsToRemove.length;
 
-    totalRemovedPartitions += partitionIdsToRemove.length;
-
-    if (partitionIdsToRemove.length === originalReassignedPartitionsCount) {
-      // All partition reassignments for this topic have are redundant, remove the whole topic
-      emptyTopics.push(t);
-    } else if (partitionIdsToRemove.length > 0) {
-      // Only some of the reassignments need to be removed
-      for (const r of partitionIdsToRemove) delete topicAssignment[Number(r)];
-    } else {
-      // All are required
+      if (partitionIdsToRemove.length === originalReassignedPartitionsCount) {
+        // All partition reassignments for this topic have are redundant, remove the whole topic
+        emptyTopics.push(t);
+      } else if (partitionIdsToRemove.length > 0) {
+        // Only some of the reassignments need to be removed
+        for (const r of partitionIdsToRemove) delete topicAssignment[Number(r)];
+      } else {
+        // All are required
+      }
     }
   }
 
@@ -177,15 +184,20 @@ export function topicAssignmentsToReassignmentRequest(
   // Construct reassignment request from topicAssignments
   const topics = [];
   for (const t in topicAssignments) {
-    const topicAssignment = topicAssignments[t];
-    const partitions: { partitionId: number; replicas: number[] | null }[] = [];
-    for (const partitionId in topicAssignment)
-      partitions.push({
-        partitionId: Number(partitionId),
-        replicas: topicAssignment[partitionId].brokers.map((b) => b.brokerId),
-      });
+    if (Object.hasOwn(topicAssignments, t)) {
+      const topicAssignment = topicAssignments[t];
+      const partitions: { partitionId: number; replicas: number[] | null }[] = [];
+      for (const partitionId in topicAssignment) {
+        if (Object.hasOwn(topicAssignment, partitionId)) {
+          partitions.push({
+            partitionId: Number(partitionId),
+            replicas: topicAssignment[partitionId].brokers.map((b) => b.brokerId),
+          });
+        }
+      }
 
-    topics.push({ topicName: t, partitions: partitions });
+      topics.push({ topicName: t, partitions: partitions });
+    }
   }
 
   return { topics: topics };

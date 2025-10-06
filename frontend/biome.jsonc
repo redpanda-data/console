@@ -665,7 +665,7 @@
         // Enforces the use of a recommended display strategy with Google Fonts.
         "useGoogleFontDisplay": "error",
         // Require for-in loops to include an if statement.
-        "useGuardForIn": "off", // Enable later - some violations
+        "useGuardForIn": "error",
         // Use Array.isArray() instead of instanceof Array.
         "useIsArray": "error",
         // Require using the namespace keyword over the module keyword to declare TypeScript namespaces.
