@@ -12,7 +12,7 @@
 export {};
 
 declare global {
-  type Number = {
+  interface Number {
     /**
      * linear interpolation to another number
      * @param to number to interpolate to
@@ -21,7 +21,7 @@ declare global {
     lerp(this: number, to: number, t: number): number;
 
     clamp(this: number, min: number | undefined, max: number | undefined): number;
-  };
+  }
 }
 
 Number.prototype.lerp = function (this: number, to: number, t: number): number {

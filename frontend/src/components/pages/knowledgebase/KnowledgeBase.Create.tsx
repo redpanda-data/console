@@ -544,8 +544,10 @@ class KnowledgeBaseCreate extends PageComponent {
     if (field === 'credentialChoice') {
       // Clear username/password errors when switching to auto mode
       if (value === 'auto') {
-        this.validationErrors.redpandaUsername = undefined;
-        this.validationErrors.redpandaPassword = undefined;
+        // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
+        delete this.validationErrors.redpandaUsername;
+        // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
+        delete this.validationErrors.redpandaPassword;
       }
     }
   };
@@ -571,7 +573,8 @@ class KnowledgeBaseCreate extends PageComponent {
 
     // Clear validation error for input topics when user makes changes
     if (this.validationErrors.inputTopics) {
-      this.validationErrors.inputTopics = undefined;
+      // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
+      delete this.validationErrors.inputTopics;
     }
   };
 

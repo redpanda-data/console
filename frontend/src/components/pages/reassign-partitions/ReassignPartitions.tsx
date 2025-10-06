@@ -854,6 +854,8 @@ const steps: WizardStep[] = [
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }
+        // biome-ignore lint/nursery/noUselessUndefined: TypeScript requires explicit return type
+        return undefined;
       },
     },
   },

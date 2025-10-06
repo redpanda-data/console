@@ -218,7 +218,8 @@
         // Disallow initializing variables to undefined.
         "noUselessUndefinedInitialization": "error",
         // Disallow the use of void operators, which is not a familiar operator.
-        "noVoid": "error",
+        // Disabled because void is needed for floating promise handling
+        "noVoid": "off",
         // Use arrow functions over function expressions.
         "useArrowFunction": "error",
         // Use Date.now() to get the number of milliseconds since the Unix Epoch.
@@ -404,12 +405,8 @@
         // Enforce consistent arrow function bodies.
         "useConsistentArrowReturn": "error",
         //Enforce type definitions to consistently use either interface or type.
-        "useConsistentTypeDefinitions": {
-          "level": "error",
-          "options": {
-            "style": "type"
-          }
-        },
+        // Disabled because TypeScript requires interface for global declaration merging
+        "useConsistentTypeDefinitions": "off",
         // Require switch-case statements to be exhaustive.
         "useExhaustiveSwitchCases": "error",
         // Enforces that <img> elements have both width and height attributes.
@@ -447,6 +444,8 @@
         "noImportCycles": "off"
       },
       "performance": {
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
         // Disallow the use of spread (...) syntax on accumulators.
         "noAccumulatingSpread": "error",
         // Disallow the use of barrel file.
@@ -464,7 +463,11 @@
         // Ensure the preconnect attribute is used when using Google Fonts.
         "useGoogleFontPreconnect": "error",
         // Require regex literals to be declared at the top level.
-        "useTopLevelRegex": "error"
+        "useTopLevelRegex": "error",
+        // Disallow await inside loops.
+        "noAwaitInLoops": "off",
+        // Avoid re-export all.
+        "noReExportAll": "off"
       },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.

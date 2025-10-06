@@ -179,7 +179,7 @@ export class ConnectClusterStore {
     pluginClass: string,
     updatedConfig: Record<string, any> = {}
   ) {
-    const connector = this.getConnector(pluginClass);
+    const connector = this.getConnector(pluginClass, null, undefined);
     const secrets = connector?.secrets;
     if (secrets) {
       try {

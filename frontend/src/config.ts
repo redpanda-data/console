@@ -45,9 +45,9 @@ import { AppFeatures, getBasePath } from './utils/env';
 declare const __webpack_public_path__: string;
 
 declare global {
-  type Window = {
+  interface Window {
     MonacoEnvironment?: monaco.Environment;
-  };
+  }
 }
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;

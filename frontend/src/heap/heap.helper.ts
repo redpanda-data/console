@@ -22,9 +22,9 @@ type HeapUserData = {
 };
 
 declare global {
-  type Window = {
+  interface Window {
     heap: any;
-  };
+  }
 }
 
 /**

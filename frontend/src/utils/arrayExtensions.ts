@@ -12,7 +12,7 @@
 export {};
 
 declare global {
-  type Array<T> = {
+  interface Array<T> {
     remove(obj: T): boolean;
     removeAll(selector: (x: T) => boolean): number;
 
@@ -77,7 +77,7 @@ declare global {
     isEqual(this: string[], other: string[]): boolean;
 
     orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[];
-  };
+  }
 }
 
 Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {

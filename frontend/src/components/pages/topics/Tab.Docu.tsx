@@ -41,9 +41,6 @@ My nonsuspious link
 
 const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
-// Regex for checking printable ASCII characters
-const _PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
-
 function sanitizeUrl(uri: string): string {
   const baseTransformed = baseUriTransformer(uri);
   console.log('baseTransformed', baseTransformed);

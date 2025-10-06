@@ -320,8 +320,11 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
           {selectedPlugin ? (
             <Box maxWidth="800px">
-              {/* biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex */}
-              <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)!} context="CREATE" />
+              <ConfigPage
+                // biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex
+                connectorStore={connectClusterStore.getConnector(selectedPlugin.class, null, undefined)!}
+                context="CREATE"
+              />
             </Box>
           ) : (
             <div>no cluster or plugin selected</div>
@@ -330,8 +333,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       ),
       transitionConditionMet: async () => {
         if (selectedPlugin) {
-          connectClusterStore.getConnector(selectedPlugin.class)?.getConfigObject();
-          setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class)?.jsonText ?? '');
+          connectClusterStore.getConnector(selectedPlugin.class, null, undefined)?.getConfigObject();
+          setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class, null, undefined)?.jsonText ?? '');
           return { conditionMet: true };
         }
         return { conditionMet: false };
@@ -360,7 +363,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
         clearErrors();
         setLoading(true);
-        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '');
+        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '', null, undefined);
 
         if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef?.getConfigObject())) {
           connectorRef?.updateProperties(parsedUpdatedConfig);

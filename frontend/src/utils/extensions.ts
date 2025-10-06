@@ -12,10 +12,10 @@
 export {};
 
 declare global {
-  type String = {
+  interface String {
     removePrefix(this: string, prefix: string): string;
     removeSuffix(this: string, suffix: string): string;
-  };
+  }
 }
 
 String.prototype.removePrefix = function (this: string, prefix: string) {

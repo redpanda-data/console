@@ -91,15 +91,12 @@ export class ReassignmentTracker {
     );
 
     // Broker status
-    this.clusterTimer = window.setInterval(
-      () => api.refreshCluster(true).catch(console.error),
-      refreshIntervals.cluster
-    );
+    this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
     // Immediately refresh as well
     setTimeout(() => {
-      this.refreshReassignments().catch(console.error);
-      api.refreshCluster(true).catch(console.error);
+      void this.refreshReassignments();
+      api.refreshCluster(true);
     });
   }
 
