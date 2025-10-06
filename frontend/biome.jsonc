@@ -677,7 +677,7 @@
         // Enforce the use of the directive "use strict" in script files.
         "useStrictMode": "error",
 
-        // Prevents React-specific JSX properties from being used.
+        // Prevents React-specific JSX properties from being used. (off because this is a React app)
         "noReactSpecificProps": "off",
 
         /** ------------------------ CSS Rules ------------------------ **/
