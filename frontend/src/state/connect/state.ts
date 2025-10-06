@@ -442,6 +442,7 @@ export class ConnectorPropertiesStore {
 
   connectorStepDefinitions: ConnectorStep[] = [];
 
+  // biome-ignore lint/nursery/useMaxParams: Legacy MobX class with multiple constructor parameters
   constructor(
     public clusterName: string,
     public pluginClassName: string,

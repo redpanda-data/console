@@ -251,6 +251,7 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
   return children;
 };
 
+// biome-ignore lint/nursery/useMaxParams: Route definition helper with multiple configuration parameters
 function MakeRoute<TRouteParams>(
   path: string,
   page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,

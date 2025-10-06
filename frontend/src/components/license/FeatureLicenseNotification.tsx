@@ -25,6 +25,7 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backendApi';
 
+// biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
 const getLicenseAlertContentForFeature = (
   _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,

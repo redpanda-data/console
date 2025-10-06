@@ -45,6 +45,7 @@ export type TopicTabId = (typeof TopicTabIds)[number];
 
 // A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
 class TopicTab {
+  // biome-ignore lint/nursery/useMaxParams: Legacy class with many constructor parameters
   constructor(
     public readonly topicGetter: () => Topic | undefined | null,
     public id: TopicTabId,

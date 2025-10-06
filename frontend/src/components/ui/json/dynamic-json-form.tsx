@@ -249,6 +249,7 @@ export const DynamicJSONForm = ({
     }
   };
 
+  // biome-ignore lint/nursery/useMaxParams: Complex form rendering function with many context parameters
   const renderFormFields = (
     propSchema: JSONSchemaType,
     currentValue: JSONValue,
