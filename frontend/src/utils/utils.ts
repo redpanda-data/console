@@ -756,7 +756,7 @@ export function retrier<T>(
   operation: () => Promise<T>,
   { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
 ): Promise<T> {
-  return new Promise<T>((resolve, reject) =>
+  return new Promise<T>((resolve, reject) => {
     operation()
       .then(resolve)
       .catch((reason: unknown) => {
@@ -767,8 +767,8 @@ export function retrier<T>(
             .catch(reject);
         }
         reject(reason);
-      })
-  );
+      });
+  });
 }
 
 /**
