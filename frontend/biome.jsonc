@@ -413,7 +413,7 @@
         // Require switch-case statements to be exhaustive.
         "useExhaustiveSwitchCases": "error",
         // Enforces that <img> elements have both width and height attributes.
-        "useImageSize": "error",
+        "useImageSize": "off",
         // Enforce a maximum number of parameters in function definitions.
         "useMaxParams": "error",
         // Enforce that components are defined as functions and never as classes.
