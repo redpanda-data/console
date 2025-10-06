@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/componentLogoMap';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import {
   Card,
@@ -16,7 +17,7 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { CameraIcon, SearchIcon } from 'lucide-react';
+import { SearchIcon, Waypoints } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type {
@@ -29,6 +30,7 @@ import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wiza
 import { getAllCategories, getAllComponents } from '../utils/schema';
 import type { BaseStepRef } from '../utils/wizard';
 import { getCategoryBadgeProps } from './connector-badges';
+import { ConnectorLogo } from './connector-logo';
 
 const searchComponents = (
   query: string,
@@ -38,31 +40,33 @@ const searchComponents = (
   },
   additionalComponents?: ExtendedConnectComponentSpec[],
 ): ConnectComponentSpec[] => {
-  return getAllComponents(additionalComponents).filter((component) => {
-    // First, filter by component type
-    if (filters?.types?.length && !filters.types.includes(component.type)) {
-      return false;
-    }
-
-    // Then, filter by search text if provided
-    if (query.trim()) {
-      const searchLower = query.toLowerCase();
-      const matchesName = component.name.toLowerCase().includes(searchLower);
-      const matchesDescription = component.description?.toLowerCase().includes(searchLower);
-
-      if (!matchesName && !matchesDescription) {
+  return getAllComponents(additionalComponents)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter((component) => {
+      // First, filter by component type
+      if (filters?.types?.length && !filters.types.includes(component.type)) {
         return false;
       }
-    }
 
-    // Filter by categories
-    if (filters?.categories?.length) {
-      const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
-      if (!hasMatchingCategory) return false;
-    }
+      // Then, filter by search text if provided
+      if (query.trim()) {
+        const searchLower = query.toLowerCase();
+        const matchesName = component.name.toLowerCase().includes(searchLower);
+        const matchesDescription = component.description?.toLowerCase().includes(searchLower);
 
-    return true;
-  });
+        if (!matchesName && !matchesDescription) {
+          return false;
+        }
+      }
+
+      // Filter by categories
+      if (filters?.categories?.length) {
+        const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
+        if (!hasMatchingCategory) return false;
+      }
+
+      return true;
+    });
 };
 
 export type ConnectTilesProps = {
@@ -215,10 +219,10 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             </CardDescription>
           </CardHeader>
         )}
-        <CardContent id="rp-connect-onboarding-wizard" className="mt-4">
+        <CardContent id="rp-connect-onboarding-wizard" className="mt-2">
           <Form {...form}>
             {!hideFilters && (
-              <div className="flex flex-col gap-4 sticky top-0 bg-background z-10 border-b-2 pb-6 mb-0 pt-4">
+              <div className="flex flex-col gap-4 sticky top-0 bg-background z-10 border-b-2 pb-4 mb-0 pt-2">
                 <div className="flex justify-between gap-4">
                   <Label className="w-[240px]">
                     Search for Connectors
@@ -313,9 +317,18 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                           <ChoiceboxItemIndicator className="absolute right-2 top-2" />
                                         )}
                                       {component?.logoUrl ? (
-                                        <img src={component.logoUrl} alt={component.name} className="size-8" />
+                                        <img
+                                          src={component.logoUrl}
+                                          alt={component.name}
+                                          className="size-6 grayscale"
+                                        />
+                                      ) : componentLogoMap[component.name as ComponentName] ? (
+                                        <ConnectorLogo
+                                          name={component.name as ComponentName}
+                                          className="size-6 text-muted-foreground"
+                                        />
                                       ) : (
-                                        <CameraIcon className="size-8" />
+                                        <Waypoints className="size-6 text-muted-foreground" />
                                       )}
                                     </div>
                                   </ChoiceboxItem>
