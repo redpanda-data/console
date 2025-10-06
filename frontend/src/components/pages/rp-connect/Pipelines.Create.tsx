@@ -50,7 +50,7 @@ import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/schema';
-import type { AddUserFormData, ConnectTilesFormData } from './types/wizard';
+import type { AddUserFormData, WizardFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
 
 const exampleContent = `
@@ -361,22 +361,32 @@ export const PipelineEditor = observer(
     const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
     const [secretAutocomplete, setSecretAutocomplete] = useState<IDisposable | undefined>(undefined);
     const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
-    const [persistedFormData, _] = useSessionStorage<Partial<ConnectTilesFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
+    const [persistedFormData, _] = useSessionStorage<Partial<WizardFormData>>(CONNECT_WIZARD_CONNECTOR_KEY, {});
     const enableRpcnTiles = isFeatureFlagEnabled('enableRpcnTiles');
 
     // Track actual editor content to keep sidebar in sync with editor's real state
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
 
     const persistedConnectComponentTemplate = useMemo(() => {
-      if (!persistedFormData?.connectionName || !persistedFormData?.connectionType) {
+      const persistedInput = persistedFormData?.input;
+      const persistedOutput = persistedFormData?.output;
+      if (!persistedInput?.connectionName || !persistedInput?.connectionType) {
         return undefined;
       }
-      const template = getConnectTemplate({
-        connectionName: persistedFormData?.connectionName,
-        connectionType: persistedFormData?.connectionType,
+      const inputTemplate = getConnectTemplate({
+        connectionName: persistedInput.connectionName,
+        connectionType: persistedInput.connectionType,
         showOptionalFields: false,
       });
-      return template;
+      if (persistedOutput?.connectionName && persistedOutput?.connectionType) {
+        const outputTemplate = getConnectTemplate({
+          connectionName: persistedOutput.connectionName,
+          connectionType: persistedOutput.connectionType,
+          showOptionalFields: false,
+        });
+        return `${inputTemplate}\n${outputTemplate}`;
+      }
+      return inputTemplate;
     }, [persistedFormData]);
 
     const yaml = useMemo(() => {

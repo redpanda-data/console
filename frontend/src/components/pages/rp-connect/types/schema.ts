@@ -525,6 +525,9 @@ export interface ConnectComponentSpec {
 
   // Version is the Benthos version this component was introduced.
   version?: string;
+
+  // A URL to the component's logo.
+  logoUrl?: string;
 }
 
 export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {

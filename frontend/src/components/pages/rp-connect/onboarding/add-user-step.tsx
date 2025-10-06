@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { CircleAlert, RefreshCcw } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
@@ -55,6 +55,8 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
   const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
   const createUserMutation = useCreateUserMutation();
   const createACLMutation = useLegacyCreateACLMutation();
+
+  const isLoading = createUserMutation.isPending || createACLMutation.isPending;
 
   // Initialize password based on persisted settings or defaults
   const initialSpecialChars = useMemo(
@@ -194,7 +196,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         error: 'Form validation failed',
       };
     },
-    isLoading: createUserMutation.isPending || createACLMutation.isPending,
+    isLoading,
   }));
 
   return (
@@ -215,6 +217,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
             <FormField
               control={form.control}
               name="username"
+              disabled={isLoading}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Username</FormLabel>
@@ -232,12 +235,16 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
               )}
             />
 
-            {existingUserBeingEdited && (
+            {existingUserBeingEdited && !isLoading && (
               <Alert>
                 <CircleAlert className="h-4 w-4" />
                 <AlertTitle>Existing User Selected</AlertTitle>
                 <AlertDescription>
-                  This user already exists. To change permissions or password, please create a new user.
+                  <Text>
+                    This user already exists. To enable topic-specific permissions automatically, please create a new
+                    user. You can see if this existing user already has permissions{' '}
+                    <Link href={`/security/users/${existingUserBeingEdited.name}/details`}>here</Link>.
+                  </Text>
                 </AlertDescription>
               </Alert>
             )}
@@ -247,6 +254,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 <FormField
                   control={form.control}
                   name="password"
+                  disabled={isLoading}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
@@ -261,6 +269,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                       </FormControl>
                       <FormMessage />
                       <FormField
+                        {...field}
                         control={form.control}
                         name="specialCharactersEnabled"
                         render={({ field: specialCharsField }) => (
@@ -279,6 +288,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 <FormField
                   control={form.control}
                   name="saslMechanism"
+                  disabled={isLoading}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>SASL Mechanism</FormLabel>
@@ -305,12 +315,17 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                   <FormField
                     control={form.control}
                     name="superuser"
+                    disabled={isLoading}
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center space-x-3">
                             <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                              <Checkbox
+                                disabled={field.disabled}
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                             <FormLabel className="text-sm font-medium">
                               Enable topic-specific permissions for this user for "{topicData.topicName}"
@@ -326,15 +341,12 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                                   Want custom User Permissions?
                                 </AlertTitle>
                                 <AlertDescription>
-                                  You can configure custom ACLs to connect your data to Redpanda{' '}
-                                  <a
-                                    href="/security/acls"
-                                    className="text-blue-600 hover:text-blue-800 underline"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    here
-                                  </a>
+                                  <Text>
+                                    You can configure custom ACLs to connect your data to Redpanda{' '}
+                                    <Link href="/security/acls" target="_blank" rel="noopener noreferrer">
+                                      here
+                                    </Link>
+                                  </Text>
                                 </AlertDescription>
                               </Alert>
                             )}

@@ -100,7 +100,7 @@ function DialogContent({
   );
 }
 
-const dialogHeaderVariants = cva('flex flex-col', {
+const dialogHeaderVariants = cva('flex flex-col gap-2', {
   variants: {
     align: {
       left: 'text-left',

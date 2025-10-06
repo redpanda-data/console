@@ -3,10 +3,10 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogDescription,
   DialogHeader,
-  DialogOverlay,
+  DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { AlertTriangle } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -40,10 +40,10 @@ export const AddSecretsDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogOverlay />
       <DialogContent size="xl">
         <DialogHeader>
-          <Heading level={2}>Add Secrets</Heading>
+          <DialogTitle>Add Secrets</DialogTitle>
+          <DialogDescription>Add secrets to your pipeline.</DialogDescription>
         </DialogHeader>
         <DialogBody>
           {errorMessages.length > 0 && (
