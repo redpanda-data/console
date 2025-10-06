@@ -411,7 +411,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
   // used to fetch 'showWaitingText' (so mobx triggers a re-render).
   // we could just store the value in a local as well, but that might be opimized out.
-  mobxSink: any | undefined = undefined;
+  mobxSink: any | undefined;
 
   constructor(p: any) {
     super(p);

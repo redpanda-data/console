@@ -55,6 +55,6 @@ class AppGlobal {
     // intended for pages to set
   };
 
-  searchMessagesFunc?: (source: 'auto' | 'manual') => void = undefined;
+  searchMessagesFunc?: (source: 'auto' | 'manual') => void;
 }
 export const appGlobal = new AppGlobal();

@@ -29,7 +29,7 @@ class SearchBar<TItem> extends Component<{
   placeholderText?: string;
 }> {
   private filteredSource = {} as FilterableDataSource<TItem>;
-  reactionDisposer: IReactionDisposer | undefined = undefined;
+  reactionDisposer: IReactionDisposer | undefined;
 
   /*
         todo: autocomplete:
