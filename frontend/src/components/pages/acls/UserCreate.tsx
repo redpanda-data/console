@@ -102,8 +102,8 @@ class UserCreatePage extends PageComponent {
     p.addBreadcrumb('Access control', '/security');
     p.addBreadcrumb('Create user', '/security/users/create');
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData(true).catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {

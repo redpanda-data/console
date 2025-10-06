@@ -41,8 +41,8 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
       `/security/roles/${encodeURIComponent(this.props.roleName)}`
     );
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData(true).catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {

@@ -43,8 +43,8 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb(decodeURIComponent(this.props.roleName), `/security/roles/${this.props.roleName}`);
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData(true).catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {

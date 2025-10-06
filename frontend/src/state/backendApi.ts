@@ -897,10 +897,12 @@ const apiStore = {
       resourceType: 'Topic',
       resourceName: topicName,
     });
-    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force).then((v) => {
-      if (v) normalizeAcls(v.aclResources);
-      this.topicAcls.set(topicName, v);
-    });
+    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
+      .then((v) => {
+        if (v) normalizeAcls(v.aclResources);
+        this.topicAcls.set(topicName, v);
+      })
+      .catch(console.error);
   },
 
   refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -1078,12 +1080,14 @@ const apiStore = {
       resourceType: 'Group',
       resourceName: groupName,
     });
-    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force).then((v) => {
-      if (v) {
-        normalizeAcls(v.aclResources);
-      }
-      this.consumerGroupAcls.set(groupName, v);
-    });
+    cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
+      .then((v) => {
+        if (v) {
+          normalizeAcls(v.aclResources);
+        }
+        this.consumerGroupAcls.set(groupName, v);
+      })
+      .catch(console.error);
   },
 
   async editConsumerGroupOffsets(
@@ -2106,7 +2110,7 @@ const apiStore = {
     }
 
     return await client.createDebugBundle(request).finally(() => {
-      this.refreshDebugBundleStatuses();
+      this.refreshDebugBundleStatuses().catch(console.error);
     });
   },
 
@@ -2123,7 +2127,7 @@ const apiStore = {
         jobId,
       })
       .finally(() => {
-        this.refreshDebugBundleStatuses();
+        this.refreshDebugBundleStatuses().catch(console.error);
       });
   },
 
@@ -2139,7 +2143,7 @@ const apiStore = {
         deleteAll: true,
       })
       .finally(() => {
-        this.refreshDebugBundleStatuses();
+        this.refreshDebugBundleStatuses().catch(console.error);
       });
   },
 };

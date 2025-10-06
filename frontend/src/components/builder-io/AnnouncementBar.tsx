@@ -15,11 +15,15 @@ export default function AnnouncementBar() {
       userAttributes: {
         urlPath: window.location.pathname,
       },
-    }).then((content) => {
-      if (content) {
-        setContent(content);
-      }
-    });
+    })
+      .then((content) => {
+        if (content) {
+          setContent(content);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch announcement bar content:', error);
+      });
   }, []);
 
   const shouldRenderBuilderContent = content || isPreviewing();

@@ -145,7 +145,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                     title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`,
                   });
 
-                  watchPipelineUpdates();
+                  watchPipelineUpdates().catch(console.error);
                 })
                 .catch((err) => {
                   toast({

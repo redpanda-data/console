@@ -131,7 +131,7 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e);
+      handleSendMessage(e).catch(console.error);
     }
   };
 
@@ -141,7 +141,7 @@ export const ChatInput = ({
         className="space-y-2"
         onSubmit={(e) => {
           if (agentUrl) {
-            handleSendMessage(e);
+            handleSendMessage(e).catch(console.error);
           }
         }}
       >

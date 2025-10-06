@@ -85,15 +85,21 @@ export class ReassignmentTracker {
     if (alreadyStarted) return;
 
     // Active reassignments
-    this.reassignTimer = window.setInterval(() => this.refreshReassignments(), refreshIntervals.reassignments);
+    this.reassignTimer = window.setInterval(
+      () => this.refreshReassignments().catch(console.error),
+      refreshIntervals.reassignments
+    );
 
     // Broker status
-    this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
+    this.clusterTimer = window.setInterval(
+      () => api.refreshCluster(true).catch(console.error),
+      refreshIntervals.cluster
+    );
 
     // Immediately refresh as well
     setTimeout(() => {
-      this.refreshReassignments();
-      api.refreshCluster(true);
+      this.refreshReassignments().catch(console.error);
+      api.refreshCluster(true).catch(console.error);
     });
   }
 

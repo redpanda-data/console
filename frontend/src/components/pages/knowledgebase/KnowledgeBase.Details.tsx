@@ -80,7 +80,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       .then(([kb]) => {
         this.knowledgeBase = kb;
         // Load consumer group data after knowledge base is loaded
-        this.loadConsumerGroupData();
+        this.loadConsumerGroupData().catch(console.error);
       })
       .catch((err) => {
         toast({
@@ -197,7 +197,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       requiredText: this.knowledgeBase.displayName.trim(),
 
       onPrimaryButton: (closeModal) => {
-        this.handleDeleteConfirmed();
+        this.handleDeleteConfirmed().catch(console.error);
         closeModal();
       },
 

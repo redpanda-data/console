@@ -765,11 +765,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       // Start new search
       this.currentSearchRun = searchParams;
       try {
-        this.executeMessageSearch().finally(() => {
-          untracked(() => {
-            this.currentSearchRun = null;
+        this.executeMessageSearch()
+          .catch(console.error)
+          .finally(() => {
+            untracked(() => {
+              this.currentSearchRun = null;
+            });
           });
-        });
       } catch (err) {
         console.error('error in message search', { error: err });
       }

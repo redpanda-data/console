@@ -24,6 +24,7 @@ import {
   VStack,
 } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+import { useEffect } from 'react';
 
 import PageContent from './PageContent';
 import { config } from '../../config';
@@ -31,12 +32,16 @@ import { appGlobal } from '../../state/appGlobal';
 import fetchWithTimeout from '../../utils/fetchWithTimeout';
 
 const ErrorPage = observer(() => {
-  fetchWithTimeout(`${config.restBasePath}/console/endpoints`, 5 * 1000).then((r) => {
-    if (r.ok) {
-      appGlobal.historyReplace('/overview');
-      window.location.reload();
-    }
-  });
+  useEffect(() => {
+    fetchWithTimeout(`${config.restBasePath}/console/endpoints`, 5 * 1000)
+      .then((r) => {
+        if (r.ok) {
+          appGlobal.historyReplace('/overview');
+          window.location.reload();
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <PageContent>

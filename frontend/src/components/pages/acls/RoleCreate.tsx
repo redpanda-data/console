@@ -27,8 +27,8 @@ class RoleCreatePage extends PageComponent {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb('Create role', '/security/roles/create');
 
-    this.refreshData();
-    appGlobal.onRefresh = () => this.refreshData();
+    this.refreshData().catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData().catch(console.error);
   }
 
   async refreshData() {

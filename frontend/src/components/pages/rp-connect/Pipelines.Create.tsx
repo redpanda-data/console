@@ -503,7 +503,7 @@ export const PipelineEditor = observer(
                         resetAutocompleteSecrets={() => {
                           if (secretAutocomplete && monaco) {
                             secretAutocomplete.dispose();
-                            registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                            registerSecretsAutocomplete(monaco, setSecretAutocomplete).catch(console.error);
                           }
                         }}
                       />

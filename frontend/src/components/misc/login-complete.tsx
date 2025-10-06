@@ -23,7 +23,7 @@ import { queryToObj } from '../../utils/queryHelper';
 
 class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {
-    this.completeLogin(this.props.provider, window.location);
+    this.completeLogin(this.props.provider, window.location).catch(console.error);
   }
 
   async completeLogin(provider: string, location: Location) {

@@ -95,7 +95,7 @@ const KafkaConnectorMain = observer(
       const init = async () => {
         await connectClusterStore.setup();
       };
-      init();
+      init().catch(console.error);
     }, [connectClusterStore]);
 
     const $state = useLocalObservable<LocalConnectorState>(() => ({
@@ -512,8 +512,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         canBeCopied: true,
       }
     );
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData(true).catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean): Promise<void> {

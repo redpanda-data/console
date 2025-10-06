@@ -255,7 +255,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     const init = async () => {
       await connectClusterStore.setup();
     };
-    init();
+    init().catch(console.error);
   }, [connectClusterStore]);
 
   useEffect(() => {

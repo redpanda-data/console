@@ -459,7 +459,7 @@ export class ConnectorPropertiesStore {
     if (features?.editing) this.crud = 'update';
 
     this.fallbackGroupName = removeNamespace(this.pluginClassName);
-    this.initConfig();
+    this.initConfig().catch(console.error);
   }
 
   createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]) {
@@ -606,7 +606,7 @@ export class ConnectorPropertiesStore {
         reaction(
           () => this.getConfigObject(),
           (config) => {
-            this.validate(config);
+            this.validate(config).catch(console.error);
           },
           { delay: 300, fireImmediately: true, equals: comparer.structural }
         )

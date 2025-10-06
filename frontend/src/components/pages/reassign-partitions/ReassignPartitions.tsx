@@ -145,7 +145,7 @@ class ReassignPartitions extends PageComponent {
     this.stopRefreshingTopicConfigs = this.stopRefreshingTopicConfigs.bind(this);
 
     this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
-    this.refreshTopicConfigs();
+    this.refreshTopicConfigs().catch(console.error);
     this.startRefreshingTopicConfigs();
 
     this.autoScrollReactionDisposer = autorun(() => {
@@ -427,7 +427,7 @@ class ReassignPartitions extends PageComponent {
                       console.error('errors in removeThrottleFromTopics', errors);
                     }
 
-                    this.refreshTopicConfigs();
+                    await this.refreshTopicConfigs();
                   }}
                 >
                   Remove throttle

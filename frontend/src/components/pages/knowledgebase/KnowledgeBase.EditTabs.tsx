@@ -1662,7 +1662,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
-                    this.callRetrievalAPI();
+                    this.callRetrievalAPI().catch(console.error);
                   }
                 }}
                 placeholder="Enter your query here... (e.g., 'which redpanda tiers exist? Show a table')"
@@ -1765,7 +1765,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
-                    this.callChatAPI();
+                    this.callChatAPI().catch(console.error);
                   }
                 }}
                 placeholder="Ask a question about your knowledge base... (e.g., 'What are the different redpanda tiers and their features?')"

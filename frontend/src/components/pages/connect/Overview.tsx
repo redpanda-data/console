@@ -85,9 +85,9 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    this.checkRPCNSecretEnable();
-    this.refreshData();
-    appGlobal.onRefresh = () => this.refreshData();
+    this.checkRPCNSecretEnable().catch(console.error);
+    this.refreshData().catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData().catch(console.error);
   }
 
   async checkRPCNSecretEnable() {

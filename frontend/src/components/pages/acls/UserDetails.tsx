@@ -59,8 +59,8 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
     p.addBreadcrumb('Users', '/security/users');
     p.addBreadcrumb(this.props.userName, '/security/users/');
 
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+    this.refreshData(true).catch(console.error);
+    appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
   async refreshData(force: boolean) {

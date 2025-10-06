@@ -440,10 +440,10 @@
 
         /** ------ These rules should be enabled but Scanner makes them too slow ------ **/
         // Require Promise-like statements to be handled appropriately.
-        "noFloatingPromises": "off",
-        // Warn when importing non-existing exports.
+        "noFloatingPromises": "error",
+        // Warn when importing non-existing exports. Does not work well with TypeScript.
         "noUnresolvedImports": "off",
-        // Prevent import cycles.
+        // Prevent import cycles. Hundreds of cycles exist across the codebase - fix incrementally during refactoring.
         "noImportCycles": "off"
       },
       "style": {
