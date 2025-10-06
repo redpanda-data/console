@@ -8,7 +8,18 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!**/protogen", "!**/*.css", "!**/components/redpanda-ui"]
+		"includes": [
+			"**/*",
+			"!**/protogen",
+			"!**/protogen/**/*",
+			"!**/dist/**/*",
+			"!**/build/**/*",
+			"!**/out/**/*",
+			"!**/coverage/**/*",
+			"!**/.nyc_output/**/*",
+			"!**/*.css",
+			"!**/components/redpanda-ui"
+		]
 	},
 	"formatter": {
 		"enabled": true,
