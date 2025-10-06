@@ -50,10 +50,15 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
           </TableHeader>
           <TableBody>
             {data.map((aclData) => (
-              <TableRow key={`table-item-${aclData.sharedConfig.principal}-${aclData.sharedConfig.host}`}>
-                <TableCell>{aclData.sharedConfig.principal}</TableCell>
-                <TableCell>{aclData.sharedConfig.host}</TableCell>
-                <TableCell>{aclData.rules.length}</TableCell>
+              <TableRow
+                key={`table-item-${aclData.sharedConfig.principal}-${aclData.sharedConfig.host}`}
+                data-testid={`role-acl-table-row-${aclData.sharedConfig.host}`}
+              >
+                <TableCell testId={`role-acl-principal-${aclData.sharedConfig.host}`}>
+                  {aclData.sharedConfig.principal}
+                </TableCell>
+                <TableCell testId={`role-acl-host-${aclData.sharedConfig.host}`}>{aclData.sharedConfig.host}</TableCell>
+                <TableCell testId={`role-acl-count-${aclData.sharedConfig.host}`}>{aclData.rules.length}</TableCell>
                 <TableCell>
                   <div className="flex gap-2 justify-end">
                     <Button
@@ -62,6 +67,7 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                       onClick={() => {
                         navigate(handleUrlWithHost(`/security/roles/${roleName}/details`, aclData.sharedConfig.host));
                       }}
+                      testId={`view-role-acl-${aclData.sharedConfig.host}`}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -71,6 +77,7 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
                       onClick={() => {
                         navigate(handleUrlWithHost(`/security/roles/${roleName}/update`, aclData.sharedConfig.host));
                       }}
+                      testId={`edit-role-acl-${aclData.sharedConfig.host}`}
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
