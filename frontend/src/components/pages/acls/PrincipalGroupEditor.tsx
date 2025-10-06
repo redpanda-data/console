@@ -81,7 +81,7 @@ export const AclPrincipalGroupEditor = observer(
         if (allToCreate.length === 0) {
           if (p.type === 'create') {
             throw new Error(
-              'Creating an ACL group requires at least one resource to be targeted. Topic/Group targets with an empty selector are not valid.',
+              'Creating an ACL group requires at least one resource to be targeted. Topic/Group targets with an empty selector are not valid.'
             );
           }
           throw new Error('No targeted resources. You can delete this ACL group from the list view.');
@@ -115,7 +115,7 @@ export const AclPrincipalGroupEditor = observer(
             resourcePatternType: x.resourcePatternType as unknown as 'Literal' | 'Prefixed',
             operation: x.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
             permissionType: x.permissionType as unknown as 'Allow' | 'Deny',
-          }),
+          })
         );
 
         const results = await Promise.allSettled(requests);
@@ -365,7 +365,7 @@ export const AclPrincipalGroupEditor = observer(
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 export const ResourceACLsEditor = observer(
@@ -483,5 +483,5 @@ export const ResourceACLsEditor = observer(
         )}
       </Flex>
     );
-  },
+  }
 );

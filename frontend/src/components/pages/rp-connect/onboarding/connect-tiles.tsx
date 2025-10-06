@@ -40,7 +40,7 @@ const searchComponents = (
     categories?: (ComponentCategory | string)[];
     status?: ConnectComponentStatus[];
   },
-  additionalComponents?: ExtendedConnectComponentSpec[],
+  additionalComponents?: ExtendedConnectComponentSpec[]
 ): ConnectComponentSpec[] => {
   return getAllComponents(additionalComponents).filter((component) => {
     // Filter by search text
@@ -102,7 +102,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       size = 'full',
       className,
     },
-    ref,
+    ref
   ) => {
     const [filter, setFilter] = useState<string>('');
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -111,7 +111,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
 
     // Default to showing all component types if no default provided, otherwise respect the prop
     const [componentTypeFilter, setComponentTypeFilter] = useState<ConnectComponentType[]>(
-      defaultComponentTypeFilter ? defaultComponentTypeFilter : [],
+      defaultComponentTypeFilter ? defaultComponentTypeFilter : []
     );
 
     // Check if content is scrollable and update gradient visibility
@@ -146,7 +146,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
           types: componentTypeFilter,
           categories: selectedCategories,
         },
-        additionalComponents,
+        additionalComponents
       );
     }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
 
@@ -356,5 +356,5 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
         </CardContent>
       </Card>
     );
-  },
+  }
 );

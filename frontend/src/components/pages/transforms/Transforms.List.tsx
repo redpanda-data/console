@@ -172,7 +172,7 @@ class TransformsList extends PageComponent<{}> {
                     );
                   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
                   const partitionTransformStatus = r.statuses.first(
-                    (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+                    (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
                   )!;
 
                   return (

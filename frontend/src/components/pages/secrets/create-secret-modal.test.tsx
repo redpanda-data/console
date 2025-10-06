@@ -35,7 +35,7 @@ describe('CreateSecretModal', () => {
     const createSecretMock = vi.fn().mockReturnValue(
       create(CreateSecretResponseSchema, {
         secret,
-      }),
+      })
     );
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -87,7 +87,7 @@ describe('CreateSecretModal', () => {
             },
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });

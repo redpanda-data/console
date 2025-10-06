@@ -24,7 +24,7 @@ import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useGetClusterHealthQuery = (
-  options?: QueryOptions<GenMessage<GetClusterHealthRequest>, GetClusterHealthResponse>,
+  options?: QueryOptions<GenMessage<GetClusterHealthRequest>, GetClusterHealthResponse>
 ) => {
   const getClusterHealthRequest = create(GetClusterHealthRequestSchema, {});
 
@@ -58,7 +58,7 @@ export const useCreateDebugBundleMutation = () => {
 
 export const useGetDebugBundleStatusQuery = (
   input?: MessageInit<GetDebugBundleStatusRequest>,
-  options?: QueryOptions<GenMessage<GetDebugBundleStatusRequest>, GetDebugBundleStatusResponse>,
+  options?: QueryOptions<GenMessage<GetDebugBundleStatusRequest>, GetDebugBundleStatusResponse>
 ) => {
   const getDebugBundleStatusRequest = create(GetDebugBundleStatusRequestSchema, {
     brokerIds: input?.brokerIds ?? [],

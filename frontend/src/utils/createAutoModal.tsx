@@ -79,7 +79,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
       result: null,
     },
     undefined,
-    { defaultDecorator: observable.ref },
+    { defaultDecorator: observable.ref }
   );
 
   // Called by user to create a new modal instance

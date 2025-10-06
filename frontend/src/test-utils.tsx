@@ -54,7 +54,7 @@ const connectQueryWrapper = (
   config?: QueryClientConfig,
   transport = createConnectTransport({
     baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
-  }),
+  })
 ): {
   wrapper: JSXElementConstructor<PropsWithChildren>;
   queryClient: QueryClient;

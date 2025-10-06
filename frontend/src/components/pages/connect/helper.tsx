@@ -808,7 +808,7 @@ export const TaskState = observer(
         {errModal}
       </div>
     );
-  },
+  }
 );
 
 export const okIcon = <MdCheckCircleOutline color="#52c41a" />;

@@ -57,7 +57,7 @@ describe('UpdateSecretModal', () => {
             ],
           }),
         }),
-      }),
+      })
     );
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -104,7 +104,7 @@ describe('UpdateSecretModal', () => {
             },
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });

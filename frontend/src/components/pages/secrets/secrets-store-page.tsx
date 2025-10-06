@@ -101,7 +101,7 @@ export const SecretsStorePage = () => {
       filter: create(ListSecretsFilterSchema, {
         nameContains,
       }),
-    }),
+    })
   );
 
   // Handle opening edit modal for a specific secret

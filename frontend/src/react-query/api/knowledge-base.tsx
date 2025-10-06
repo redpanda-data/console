@@ -19,7 +19,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListKnowledgeBasesQuery = (
   input?: MessageInit<ListKnowledgeBasesRequest>,
-  options?: QueryOptions<GenMessage<ListKnowledgeBasesRequest>, ListKnowledgeBasesResponse>,
+  options?: QueryOptions<GenMessage<ListKnowledgeBasesRequest>, ListKnowledgeBasesResponse>
 ) => {
   const listKnowledgeBasesRequest = create(ListKnowledgeBasesRequestSchema, {
     ...input,

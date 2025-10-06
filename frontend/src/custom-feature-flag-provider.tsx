@@ -39,7 +39,7 @@ export const CustomFeatureFlagProvider = ({
     (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => {
       return flags[key] !== undefined ? flags[key] : defaultValue;
     },
-    [flags],
+    [flags]
   );
 
   const contextValue = useMemo(
@@ -48,7 +48,7 @@ export const CustomFeatureFlagProvider = ({
       setFlag,
       getBooleanFlagValue,
     }),
-    [flags, setFlag, getBooleanFlagValue],
+    [flags, setFlag, getBooleanFlagValue]
   );
 
   return <FeatureFlagContext.Provider value={contextValue}>{children}</FeatureFlagContext.Provider>;

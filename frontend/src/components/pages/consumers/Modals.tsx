@@ -438,7 +438,7 @@ export class EditOffsetsModal extends Component<{
 
       // filter selected offsets to be edited
       const selectedOffsets = this.props.offsets.filter(
-        (x) => this.selectedPartition === null || x.partitionId === this.selectedPartition,
+        (x) => this.selectedPartition === null || x.partitionId === this.selectedPartition
       );
 
       if (op === 'startOffset') {
@@ -491,7 +491,7 @@ export class EditOffsetsModal extends Component<{
                 Could not lookup offsets for given timestamp{' '}
                 <span className="codeBox">{new Date(this.timestampUtcMs).toUTCString()}</span>.
               </span>,
-              toJson({ errors: err, request: requiredTopics }, 4),
+              toJson({ errors: err, request: requiredTopics }, 4)
             );
             toast.update(toastRef, {
               status: 'error',
@@ -535,7 +535,7 @@ export class EditOffsetsModal extends Component<{
                 topicName: x.topic,
                 partitionId: p.partitionId,
                 offset: p.groupOffset,
-              })),
+              }))
             );
 
             for (const o of otherFlat)
@@ -554,7 +554,7 @@ export class EditOffsetsModal extends Component<{
             <span>
               Could not find a consumer group named <span className="codeBox">{this.selectedGroup}</span> to compute new
               offsets.
-            </span>,
+            </span>
           );
         }
       }
@@ -626,7 +626,7 @@ export class EditOffsetsModal extends Component<{
 
         this.autorunDisposer = autorun(() => {
           this.otherConsumerGroups = [...api.consumerGroups.values()].filter(
-            (g) => g.groupId !== this.props.group.groupId,
+            (g) => g.groupId !== this.props.group.groupId
           );
         });
 
@@ -653,7 +653,7 @@ export class EditOffsetsModal extends Component<{
     const offsets = this.props.offsets!.filter(
       ({ topicName, partitionId }) =>
         (this.selectedTopic === null || topicName === this.selectedTopic) &&
-        (this.selectedPartition === null || partitionId === this.selectedPartition),
+        (this.selectedPartition === null || partitionId === this.selectedPartition)
     );
 
     this.isApplyingEdit = true;
@@ -694,7 +694,7 @@ export class EditOffsetsModal extends Component<{
         <span>
           Could not apply offsets for consumer group <span className="codeBox">{group.groupId}</span>.
         </span>,
-        toJson(err, 4),
+        toJson(err, 4)
       );
     } finally {
       this.isApplyingEdit = false;

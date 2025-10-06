@@ -60,7 +60,7 @@ export const AddSecretsCard = ({
 
       editorInstance.focus();
     },
-    [editorInstance],
+    [editorInstance]
   );
   return (
     <Card>

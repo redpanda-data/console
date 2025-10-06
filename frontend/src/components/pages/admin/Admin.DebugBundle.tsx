@@ -336,7 +336,7 @@ const NewDebugBundleForm: FC<{
             labelSelector: formState.labelSelectors.map((x) => create(LabelSelectorSchema, x)),
             partitions: formState.partitions,
           })
-        : create(CreateDebugBundleRequestSchema),
+        : create(CreateDebugBundleRequestSchema)
     );
   };
 

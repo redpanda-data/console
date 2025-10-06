@@ -114,5 +114,5 @@ export const PropertyGroupComponent = observer(
         <Divider my={10} />
       </Box>
     );
-  },
+  }
 );

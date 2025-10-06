@@ -55,7 +55,7 @@ export type JsonSchemaType = {
 export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,
-  parentSchema?: JsonSchemaType,
+  parentSchema?: JsonSchemaType
 ): JsonValue {
   if ('default' in schema && schema.default !== undefined) {
     return schema.default;

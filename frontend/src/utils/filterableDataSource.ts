@@ -35,7 +35,7 @@ export class FilterableDataSource<T> {
   constructor(
     private dataSource: () => T[] | undefined,
     private filter: (filterText: string, item: T) => boolean,
-    debounceMilliseconds?: number,
+    debounceMilliseconds?: number
   ) {
     if (!debounceMilliseconds) debounceMilliseconds = 100;
     this.reactionDisposer = autorun(this.update.bind(this), {

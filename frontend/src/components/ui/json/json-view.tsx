@@ -42,7 +42,7 @@ const JSONView = memo(
         </div>
       </div>
     );
-  },
+  }
 );
 
 JSONView.displayName = 'JSONView';
@@ -173,7 +173,7 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
         <pre
           className={clsx(
             isError ? typeStyleMap.error : typeStyleMap.string,
-            'cursor-pointer break-all whitespace-pre-wrap',
+            'cursor-pointer break-all whitespace-pre-wrap'
           )}
           onClick={() => setIsExpanded(!isExpanded)}
           title={isExpanded ? 'Click to collapse' : 'Click to expand'}

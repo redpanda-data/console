@@ -62,7 +62,7 @@ export function numberToThousandsString(n: number): JSX.Element {
       result.push(
         <span className="noSelect nbspSeparator" key={`${i}.`}>
           {separator}
-        </span>,
+        </span>
       );
   }
 
@@ -124,7 +124,7 @@ export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX
 
 export function QuickTable(
   data: { key: any; value: any }[] | { [key: string]: any } | [any, any][],
-  options?: QuickTableOptions,
+  options?: QuickTableOptions
 ): JSX.Element {
   let entries: { key: any; value: any }[];
 

@@ -257,7 +257,7 @@ function MakeRoute<TRouteParams>(
   title: string,
   icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
   exact = true,
-  showCallback?: () => MenuItemState,
+  showCallback?: () => MenuItemState
 ): PageDefinition<TRouteParams> {
   const route: PageDefinition<TRouteParams> = {
     title,
@@ -291,7 +291,7 @@ function routeVisibility(
   visible: boolean | (() => boolean),
   requiredFeatures?: FeatureEntry[],
   requiredPermissions?: UserPermissions[],
-  requiredAppFeatures?: AppFeature[],
+  requiredAppFeatures?: AppFeature[]
 ): () => MenuItemState {
   return () => {
     let v = typeof visible === 'boolean' ? visible : visible();
@@ -350,18 +350,18 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/add-version',
     SchemaAddVersionPage,
-    'Add version',
+    'Add version'
   ),
   MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/edit-compatibility',
     EditSchemaCompatibilityPage,
-    'Edit Schema Compatibility',
+    'Edit Schema Compatibility'
   ),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/edit-compatibility',
     EditSchemaCompatibilityPage,
-    'Edit Schema Compatibility',
+    'Edit Schema Compatibility'
   ),
 
   MakeRoute<{}>(
@@ -370,7 +370,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Consumer Groups',
     FilterIcon,
     undefined,
-    routeVisibility(true, [Feature.ConsumerGroups]),
+    routeVisibility(true, [Feature.ConsumerGroups])
   ),
   MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
@@ -380,7 +380,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Secrets Store',
     MdKey,
     true,
-    routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService]) // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
 
   MakeRoute<{}>(
@@ -394,14 +394,14 @@ export const APP_ROUTES: IRouteEntry[] = [
       () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi') && !isServerless(), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
-      [],
-    ),
+      []
+    )
   ),
   MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreate, 'Create Knowledge Base'),
   MakeRoute<{ knowledgebaseId: string }>(
     '/knowledgebases/:knowledgebaseId',
     KnowledgeBaseDetails,
-    'Knowledge Base Details',
+    'Knowledge Base Details'
   ),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
@@ -424,7 +424,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Quotas',
     ScaleIcon,
     true,
-    routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
+    routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
   ),
 
   MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
@@ -452,12 +452,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Create Connector',
     undefined,
     undefined,
-    routeVisibility(false),
+    routeVisibility(false)
   ),
   MakeRoute<{ clusterName: string; connector: string }>(
     '/connect-clusters/:clusterName/:connector',
     KafkaConnectorDetails,
-    'Connector Details',
+    'Connector Details'
   ),
 
   MakeRoute<{}>(
@@ -466,7 +466,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Transforms',
     undefined,
     true,
-    routeVisibility(true, [Feature.TransformsService]),
+    routeVisibility(true, [Feature.TransformsService])
   ),
   MakeRoute<{}>(
     '/transforms',
@@ -474,7 +474,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Transforms',
     MdOutlineSmartToy,
     true,
-    routeVisibility(true, [Feature.TransformsService]),
+    routeVisibility(true, [Feature.TransformsService])
   ),
   MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
@@ -487,7 +487,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Connectors',
     undefined,
     undefined,
-    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles')),
+    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles'))
   ),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
@@ -503,8 +503,8 @@ export const APP_ROUTES: IRouteEntry[] = [
       true,
       [Feature.GetReassignments, Feature.PatchReassignments],
       ['canPatchConfigs', 'canReassignPartitions'],
-      ['REASSIGN_PARTITIONS'],
-    ),
+      ['REASSIGN_PARTITIONS']
+    )
   ),
 
   MakeRoute<{}>(
@@ -513,7 +513,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Debug Bundle',
     undefined,
     true,
-    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle'])
   ),
   MakeRoute<{}>(
     '/debug-bundle/progress/:jobId',
@@ -521,7 +521,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Debug Bundle Progress',
     undefined,
     true,
-    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle'])
   ),
 
   MakeRoute<{}>(
@@ -530,7 +530,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Upload License',
     undefined,
     false,
-    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ['canManageLicense']),
+    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ['canManageLicense'])
   ),
 
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
@@ -541,7 +541,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Remote MCP',
     MCPIcon,
     true,
-    routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode with feature flag
+    routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')) // show only in embedded mode with feature flag
   ),
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),

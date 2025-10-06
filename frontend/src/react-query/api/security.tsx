@@ -28,7 +28,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListRolesQuery = (
   input?: MessageInit<ListRolesRequest>,
-  options?: QueryOptions<GenMessage<ListRolesRequest>, ListRolesResponse>,
+  options?: QueryOptions<GenMessage<ListRolesRequest>, ListRolesResponse>
 ) => {
   const listRolesRequest: ListRolesRequest = create(ListRolesRequestSchema, {
     pageToken: '',
@@ -54,7 +54,7 @@ export const useListRolesQuery = (
 
 export const useListRoleMembersQuery = (
   input?: MessageInit<ListRoleMembersRequest>,
-  options?: QueryOptions<GenMessage<ListRoleMembersRequest>, ListRoleMembersResponse>,
+  options?: QueryOptions<GenMessage<ListRoleMembersRequest>, ListRoleMembersResponse>
 ) => {
   const listRoleMembersRequest = create(ListRoleMembersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
@@ -103,7 +103,7 @@ export const useCreateRoleMutation = () => {
 
 export const useGetRoleQuery = (
   input: MessageInit<GetRoleRequest>,
-  options?: QueryOptions<GenMessage<GetRoleRequest>, GetRoleResponse>,
+  options?: QueryOptions<GenMessage<GetRoleRequest>, GetRoleResponse>
 ) => {
   const getRoleRequest = create(GetRoleRequestSchema, input);
 

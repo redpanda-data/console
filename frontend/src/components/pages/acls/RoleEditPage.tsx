@@ -38,7 +38,7 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb(
       decodeURIComponent(this.props.roleName),
-      `/security/roles/${encodeURIComponent(this.props.roleName)}`,
+      `/security/roles/${encodeURIComponent(this.props.roleName)}`
     );
 
     this.refreshData(true);
@@ -62,7 +62,7 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
     if (!this.allDataLoaded) return DefaultSkeleton;
 
     const aclPrincipalGroup = principalGroupsView.principalGroups.find(
-      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.props.roleName,
+      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.props.roleName
     );
 
     const principals = rolesApi.roleMembers.get(this.props.roleName);

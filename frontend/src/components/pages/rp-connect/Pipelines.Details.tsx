@@ -99,7 +99,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
               { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
               pipeline.url && { key: 'URL', value: pipeline.url },
             ],
-            { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } },
+            { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
           )}
         </Box>
 
@@ -292,7 +292,7 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
           messages,
         });
         throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {

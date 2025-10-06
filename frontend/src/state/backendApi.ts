@@ -622,7 +622,7 @@ const apiStore = {
   async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
     const promise = cachedApiRequest<TopicConfigResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`,
-      force,
+      force
     ).then((v) => {
       if (!v) {
         this.topicConfig.delete(topicName);
@@ -658,7 +658,7 @@ const apiStore = {
   refreshTopicDocumentation(topicName: string, force?: boolean) {
     cachedApiRequest<TopicDocumentationResponse>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/documentation`,
-      force,
+      force
     ).then((v) => {
       const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
       v.documentation.text = text;
@@ -703,7 +703,7 @@ const apiStore = {
 
   async deleteTopicRecordsFromMultiplePartitionOffsetPairs(
     topicName: string,
-    pairs: Array<{ partitionId: number; offset: number }>,
+    pairs: Array<{ partitionId: number; offset: number }>
   ) {
     return rest<DeleteRecordsResponseData>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/records`,
@@ -711,7 +711,7 @@ const apiStore = {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify({ partitions: pairs }),
-      },
+      }
     ).catch(addError);
   },
 
@@ -795,7 +795,7 @@ const apiStore = {
   refreshPartitionsForTopic(topicName: string, force?: boolean) {
     cachedApiRequest<GetPartitionsResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/partitions`,
-      force,
+      force
     ).then((response) => {
       if (response?.partitions) {
         const partitionErrors: Array<{ id: number; partitionError: string }> = [];
@@ -833,7 +833,7 @@ const apiStore = {
           this.topicPartitionErrors.set(topicName, partitionErrors);
           this.topicWatermarksErrors.set(topicName, waterMarksErrors);
           console.error(
-            `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`,
+            `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`
           );
         }
       } else {
@@ -868,7 +868,7 @@ const apiStore = {
 
       if (partitionErrors > 0 || waterMarkErrors > 0)
         console.warn(
-          `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`,
+          `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`
         );
     }, addError);
   },
@@ -903,7 +903,7 @@ const apiStore = {
   refreshTopicConsumers(topicName: string, force?: boolean) {
     cachedApiRequest<GetTopicConsumersResponse>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/consumers`,
-      force,
+      force
     ).then((v) => this.topicConsumers.set(topicName, v.topicConsumers), addError);
   },
 
@@ -918,14 +918,14 @@ const apiStore = {
           this.ACLs = null;
         }
       },
-      addError,
+      addError
     );
   },
 
   refreshQuotas(force?: boolean) {
     cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force).then(
       (v) => (this.Quotas = v ?? null),
-      addError,
+      addError
     );
   },
 
@@ -973,7 +973,7 @@ const apiStore = {
         client.getSchemaRegistryInfo({}).catch((e) => {
           console.error(e);
           return null;
-        }),
+        })
       );
     }
 
@@ -1048,7 +1048,7 @@ const apiStore = {
   refreshConsumerGroup(groupId: string, force?: boolean) {
     cachedApiRequest<GetConsumerGroupResponse>(
       `${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`,
-      force,
+      force
     ).then((v) => {
       addFrontendFieldsForConsumerGroup(v.consumerGroup);
       this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
@@ -1085,7 +1085,7 @@ const apiStore = {
 
   async editConsumerGroupOffsets(
     groupId: string,
-    topics: EditConsumerGroupOffsetsTopic[],
+    topics: EditConsumerGroupOffsetsTopic[]
   ): Promise<EditConsumerGroupOffsetsResponseTopic[]> {
     const request: EditConsumerGroupOffsetsRequest = {
       groupId: groupId,
@@ -1104,7 +1104,7 @@ const apiStore = {
 
   async deleteConsumerGroupOffsets(
     groupId: string,
-    topics: DeleteConsumerGroupOffsetsTopic[],
+    topics: DeleteConsumerGroupOffsetsTopic[]
   ): Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
     const request: DeleteConsumerGroupOffsetsRequest = {
       groupId: groupId,
@@ -1117,7 +1117,7 @@ const apiStore = {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
         body: toJson(request),
-      },
+      }
     );
 
     const r = await parseOrUnwrap<DeleteConsumerGroupOffsetsResponse>(response, null);
@@ -1170,7 +1170,7 @@ const apiStore = {
             role: info.roles.first((r) => r.name === roleName)!,
             grantedBy: user.audits[roleName].map(
               // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-              (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!,
+              (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!
             ),
           });
       }
@@ -1230,14 +1230,14 @@ const apiStore = {
           this.schemaSubjects = subjects;
         }
       },
-      addError,
+      addError
     );
   },
 
   refreshSchemaTypes(force?: boolean) {
     cachedApiRequest<SchemaRegistrySchemaTypesResponse>(
       `${appConfig.restBasePath}/schema-registry/schemas/types`,
-      force,
+      force
     )
       .then((types) => {
         // could also be a "not configured" response
@@ -1257,7 +1257,7 @@ const apiStore = {
     const version = 'all';
     const rq = cachedApiRequest(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`,
-      force,
+      force
     ) as Promise<SchemaRegistrySubjectDetails>;
 
     return rq
@@ -1270,7 +1270,7 @@ const apiStore = {
   refreshSchemaReferencedBy(subjectName: string, version: number, force?: boolean) {
     const rq = cachedApiRequest<SchemaReferencedByEntry[]>(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/referencedby`,
-      force,
+      force
     );
 
     return rq
@@ -1310,7 +1310,7 @@ const apiStore = {
 
     await cachedApiRequest<SchemaVersion[] | { isConfigured: false }>(
       `${appConfig.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`,
-      force,
+      force
     ).then(
       (r) => {
         if (isSchemaVersionArray(r)) {
@@ -1326,12 +1326,12 @@ const apiStore = {
           }
         }
         throw err;
-      },
+      }
     );
   },
 
   async setSchemaRegistryCompatibilityMode(
-    mode: SchemaRegistryCompatibilityMode,
+    mode: SchemaRegistryCompatibilityMode
   ): Promise<SchemaRegistryConfigResponse> {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
       method: 'PUT',
@@ -1345,14 +1345,14 @@ const apiStore = {
 
   async setSchemaRegistrySubjectCompatibilityMode(
     subjectName: string,
-    mode: 'DEFAULT' | SchemaRegistryCompatibilityMode,
+    mode: 'DEFAULT' | SchemaRegistryCompatibilityMode
   ): Promise<SchemaRegistryConfigResponse> {
     if (mode === 'DEFAULT') {
       const response = await appConfig.fetch(
         `${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
         {
           method: 'DELETE',
-        },
+        }
       );
       return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
     }
@@ -1364,7 +1364,7 @@ const apiStore = {
         body: JSON.stringify({
           compatibility: mode,
         } as SchemaRegistrySetCompatibilityModeRequest),
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
@@ -1372,7 +1372,7 @@ const apiStore = {
   async validateSchema(
     subjectName: string,
     version: number | 'latest',
-    request: SchemaRegistryCreateSchema,
+    request: SchemaRegistryCreateSchema
   ): Promise<SchemaRegistryValidateSchemaResponse> {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`,
@@ -1380,13 +1380,13 @@ const apiStore = {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify(request),
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryValidateSchemaResponse>(response, null);
   },
   async createSchema(
     subjectName: string,
-    request: SchemaRegistryCreateSchema,
+    request: SchemaRegistryCreateSchema
   ): Promise<SchemaRegistryCreateSchemaResponse> {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`,
@@ -1394,7 +1394,7 @@ const apiStore = {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify(request),
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryCreateSchemaResponse>(response, null);
   },
@@ -1405,7 +1405,7 @@ const apiStore = {
       {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryDeleteSubjectResponse>(response, null);
   },
@@ -1413,14 +1413,14 @@ const apiStore = {
   async deleteSchemaSubjectVersion(
     subjectName: string,
     version: 'latest' | number,
-    permanent: boolean,
+    permanent: boolean
   ): Promise<SchemaRegistryDeleteSubjectVersionResponse> {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`,
       {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<SchemaRegistryDeleteSubjectVersionResponse>(response, null);
   },
@@ -1428,7 +1428,7 @@ const apiStore = {
   refreshPartitionReassignments(force?: boolean): Promise<void> {
     return cachedApiRequest<PartitionReassignmentsResponse | null>(
       `${appConfig.restBasePath}/operations/reassign-partitions`,
-      force,
+      force
     ).then((v) => {
       if (v === null) this.partitionReassignments = null;
       else this.partitionReassignments = v.topics;
@@ -1436,7 +1436,7 @@ const apiStore = {
   },
 
   async startPartitionReassignment(
-    request: PartitionReassignmentRequest,
+    request: PartitionReassignmentRequest
   ): Promise<AlterPartitionReassignmentsResponse> {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/reassign-partitions`, {
       method: 'PATCH',
@@ -1478,7 +1478,7 @@ const apiStore = {
       topicName: string;
       leaderReplicas: { brokerId: number; partitionId: number }[];
       followerReplicas: { brokerId: number; partitionId: number }[];
-    }[],
+    }[]
   ): Promise<PatchConfigsResponse> {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
@@ -1608,7 +1608,7 @@ const apiStore = {
       },
       (error: WrappedApiError) => {
         this.connectConnectorsError = error;
-      },
+      }
     );
   },
 
@@ -1631,7 +1631,7 @@ const apiStore = {
   refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<void> {
     return cachedApiRequest<ClusterAdditionalInfo | null>(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`,
-      force,
+      force
     ).then((v) => {
       if (!v) {
         this.connectAdditionalClusterInfo.delete(clusterName);
@@ -1716,7 +1716,7 @@ const apiStore = {
       {
         method: 'DELETE',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1728,7 +1728,7 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1740,7 +1740,7 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1752,7 +1752,7 @@ const apiStore = {
       {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1765,7 +1765,7 @@ const apiStore = {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify({ config: config }),
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1777,7 +1777,7 @@ const apiStore = {
       {
         method: 'POST',
         headers: [['Content-Type', 'application/json']],
-      },
+      }
     );
 
     return parseOrUnwrap<void>(response, null);
@@ -1786,7 +1786,7 @@ const apiStore = {
   async validateConnectorConfig(
     clusterName: string,
     pluginClassName: string,
-    config: object,
+    config: object
   ): Promise<ConnectorValidationResult> {
     // PUT "/kafka-connect/clusters/{clusterName}/connector-plugins/{pluginClassName}/config/validate"
     const response = await appConfig.fetch(
@@ -1795,7 +1795,7 @@ const apiStore = {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
         body: JSON.stringify(config),
-      },
+      }
     );
     const result = await parseOrUnwrap<ConnectorValidationResult>(response, null);
 
@@ -1810,7 +1810,7 @@ const apiStore = {
     clusterName: string,
     connectorName: string,
     _pluginClassName: string, // needs to be kept to avoid larger refactor despite not being used.
-    config: object,
+    config: object
   ): Promise<void> {
     // POST "/kafka-connect/clusters/{clusterName}/connectors"
     const response = await appConfig.fetch(
@@ -1822,7 +1822,7 @@ const apiStore = {
           connectorName: connectorName,
           config: config,
         }),
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -1930,7 +1930,7 @@ const apiStore = {
             component: 'connectors',
           },
         }),
-      },
+      }
     );
     return parseOrUnwrap<any>(response, null);
   },
@@ -1944,7 +1944,7 @@ const apiStore = {
         body: JSON.stringify({
           secretData: secretValue,
         }),
-      },
+      }
     );
     return parseOrUnwrap<any>(response, null);
   },
@@ -1954,7 +1954,7 @@ const apiStore = {
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`,
       {
         method: 'DELETE',
-      },
+      }
     );
     return parseOrUnwrap<void>(response, null);
   },
@@ -2058,7 +2058,7 @@ const apiStore = {
       this.isDebugBundleReady &&
       this.debugBundleStatuses.some(
         (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS,
+          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS
       )
     );
   },
@@ -2067,8 +2067,7 @@ const apiStore = {
     return (
       this.isDebugBundleReady &&
       this.debugBundleStatuses.all(
-        (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR,
+        (status) => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR
       )
     );
   },
@@ -2078,15 +2077,14 @@ const apiStore = {
       this.isDebugBundleReady &&
       this.debugBundleStatuses.some(
         (status) =>
-          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED,
+          status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED
       )
     );
   },
 
   get isDebugBundleInProgress() {
     return this.debugBundleStatuses.some(
-      (status) =>
-        status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING,
+      (status) => status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
     );
   },
 
@@ -2929,7 +2927,7 @@ export const brokerMap = computed(
 
     return map;
   },
-  { name: 'brokerMap', equals: comparer.structural },
+  { name: 'brokerMap', equals: comparer.structural }
 );
 
 // 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
@@ -2992,7 +2990,7 @@ export function aclRequestToQuery(request: GetAclsRequest): string {
 
 export async function partialTopicConfigs(
   configKeys: string[],
-  topics?: string[],
+  topics?: string[]
 ): Promise<PartialTopicConfigsResponse> {
   const keys = configKeys.map((k) => encodeURIComponent(k)).join(',');
   const topicNames = topics?.map((t) => encodeURIComponent(t)).join(',');

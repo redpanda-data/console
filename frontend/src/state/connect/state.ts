@@ -174,7 +174,7 @@ export class ConnectClusterStore {
   createConnector = flow(function* (
     this: ConnectClusterStore,
     pluginClass: string,
-    updatedConfig: Record<string, any> = {},
+    updatedConfig: Record<string, any> = {}
   ) {
     const connector = this.getConnector(pluginClass);
     const secrets = connector?.secrets;
@@ -187,7 +187,7 @@ export class ConnectClusterStore {
           const createSecretResponse = (yield api.createSecret(
             this.clusterName,
             connectorName.value as string,
-            secret.serialized,
+            secret.serialized
           )) as CreateSecretResponse;
           const property = connector?.propsByName.get(key);
 
@@ -235,8 +235,8 @@ export class ConnectClusterStore {
     if (secrets) {
       yield Promise.all(
         secrets.ids.map((secretId) =>
-          retrier(() => api.deleteSecret(this.clusterName, secretId), { attempts: 3, delayTime: 200 }),
-        ),
+          retrier(() => api.deleteSecret(this.clusterName, secretId), { attempts: 3, delayTime: 200 })
+        )
       );
     }
   });
@@ -273,7 +273,7 @@ export class ConnectClusterStore {
   getConnector(
     pluginClassName: string,
     connectorName: string | null = null,
-    initialConfig: Record<string, any> | undefined = undefined,
+    initialConfig: Record<string, any> | undefined = undefined
   ) {
     const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
     let connectorStore = this.connectors.get(identifier);
@@ -369,7 +369,7 @@ export class SecretsStore {
 
   get ids(): string[] {
     return Array.from(this.secrets, ([_key, secret]) => secret.id).filter((secret): secret is string =>
-      Boolean(secret),
+      Boolean(secret)
     );
   }
 
@@ -451,7 +451,7 @@ export class ConnectorPropertiesStore {
     public pluginClassName: string,
     public connectorType: 'sink' | 'source',
     private appliedConfig: Record<string, any> | undefined,
-    features?: ConnectorClusterFeatures,
+    features?: ConnectorClusterFeatures
   ) {
     makeAutoObservable(this, {
       fallbackGroupName: false,
@@ -544,7 +544,7 @@ export class ConnectorPropertiesStore {
       const validationResult = await api.validateConnectorConfig(
         clusterName,
         pluginClassName,
-        this.appliedConfig ?? basicConfig,
+        this.appliedConfig ?? basicConfig
       );
       const allProps = this.createCustomProperties(validationResult.configs);
 
@@ -602,8 +602,8 @@ export class ConnectorPropertiesStore {
           (config) => {
             this.jsonText = JSON.stringify(config, undefined, 4);
           },
-          { delay: 100, fireImmediately: true, equals: comparer.structural },
-        ),
+          { delay: 100, fireImmediately: true, equals: comparer.structural }
+        )
       );
 
       // Validate on changes
@@ -615,8 +615,8 @@ export class ConnectorPropertiesStore {
           (config) => {
             this.validate(config);
           },
-          { delay: 300, fireImmediately: true, equals: comparer.structural },
-        ),
+          { delay: 300, fireImmediately: true, equals: comparer.structural }
+        )
       );
     } catch (err: any) {
       console.error('error in initConfig', err);

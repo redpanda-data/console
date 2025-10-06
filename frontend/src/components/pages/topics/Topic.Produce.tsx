@@ -224,11 +224,11 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     return autorun(() => {
       const filteredSoftDeletedSchemaSubjects =
         api.schemaSubjects?.filter(
-          (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
+          (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted)
         ) ?? [];
 
       const formattedSchemaSubjects = filteredSoftDeletedSchemaSubjects?.filter((x) =>
-        x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase()),
+        x.name.toLowerCase().includes(uiSettings.schemaList.quickSearch.toLowerCase())
       );
 
       for (const schemaSubject of formattedSchemaSubjects) {

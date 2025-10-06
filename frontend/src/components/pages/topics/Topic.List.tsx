@@ -77,7 +77,7 @@ const TopicList: FC = () => {
       },
     },
     'showInternal',
-    parseAsBoolean,
+    parseAsBoolean
   );
 
   const { data, isLoading, isError, refetch: refetchTopics } = useLegacyListTopicsQuery();
@@ -85,7 +85,7 @@ const TopicList: FC = () => {
   const { mutateAsync: createTopic } = useCreateTopicMutation();
   const { Component: CreateTopicModal, show: showCreateTopicModal } = useMemo(
     () => makeCreateTopicModal(createTopic),
-    [createTopic],
+    [createTopic]
   );
 
   const refreshData = useCallback(async () => {
@@ -226,10 +226,10 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
           accessorKey: 'topicName',
           cell: ({ row: { original: topic } }) => {
             const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-              ({ topicName }) => topicName === topic.topicName,
+              ({ topicName }) => topicName === topic.topicName
             )?.partitionIds;
             const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-              ({ topicName }) => topicName === topic.topicName,
+              ({ topicName }) => topicName === topic.topicName
             )?.partitionIds;
 
             return (
@@ -362,7 +362,7 @@ const renderName = (topic: Topic) => {
           keyAlign: 'right',
           keyStyle: { fontSize: '86%', fontWeight: 700, textTransform: 'capitalize' },
           tableStyle: { margin: 'auto' },
-        },
+        }
       )}
     </div>
   );

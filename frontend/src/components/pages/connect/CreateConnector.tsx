@@ -189,7 +189,7 @@ const ConnectorType = observer(
         )}
       </>
     );
-  },
+  }
 );
 
 @observer
@@ -385,7 +385,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           const validationResult = await api.validateConnectorConfig(
             activeCluster,
             selectedPlugin?.class ?? '',
-            propertiesObject ?? {},
+            propertiesObject ?? {}
           );
 
           const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
@@ -426,7 +426,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             if (connector) {
               // Success
               appGlobal.historyPush(
-                `/connect-clusters/${encodeURIComponent(activeCluster)}/${encodeURIComponent(connectorName)}`,
+                `/connect-clusters/${encodeURIComponent(activeCluster)}/${encodeURIComponent(connectorName)}`
               );
               break;
             }

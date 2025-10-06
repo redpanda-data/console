@@ -20,7 +20,7 @@ interface CustomFieldConfig {
   onCreateOption?: (
     newValue: string,
     path: string[],
-    handleFieldChange: (path: string[], value: JSONValue) => void,
+    handleFieldChange: (path: string[], value: JSONValue) => void
   ) => Promise<void>;
 }
 
@@ -193,7 +193,7 @@ export const DynamicJSONForm = ({
         }
       }, 300);
     },
-    [onChange],
+    [onChange]
   );
 
   // Update rawJSONValue when value prop changes
@@ -254,7 +254,7 @@ export const DynamicJSONForm = ({
     path: string[] = [],
     depth = 0,
     parentSchema?: JSONSchemaType,
-    propertyName?: string,
+    propertyName?: string
   ) => {
     if (depth >= maxDepth && (propSchema.type === 'object' || propSchema.type === 'array')) {
       // Render as JSON editor when max depth is reached
@@ -514,7 +514,7 @@ export const DynamicJSONForm = ({
                   [...path, key],
                   depth + 1,
                   propSchema,
-                  key,
+                  key
                 )}
               </div>
             ))}
@@ -591,7 +591,7 @@ export const DynamicJSONForm = ({
                                   [...path, index.toString(), key],
                                   depth + 1,
                                   propSchema.items,
-                                  key,
+                                  key
                                 )}
                               </div>
                             ))
@@ -599,7 +599,7 @@ export const DynamicJSONForm = ({
                               propSchema.items as JSONSchemaType,
                               item,
                               [...path, index.toString()],
-                              depth + 1,
+                              depth + 1
                             )}
                       </div>
                     </div>

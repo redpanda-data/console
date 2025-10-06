@@ -19,7 +19,7 @@ const DebugBundleLink = ({
   showDatetime?: boolean;
 }) => {
   const statusWithFilename = statuses.find(
-    (status) => status.value.case === 'bundleStatus' && status.value.value.filename,
+    (status) => status.value.case === 'bundleStatus' && status.value.value.filename
   )?.value.value as DebugBundleStatus | undefined;
   const downloadFilename = 'debug-bundle.zip';
 

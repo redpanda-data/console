@@ -51,7 +51,7 @@ class TopicTab {
     private requiredPermission: TopicAction,
     public titleText: React.ReactNode,
     private contentFunc: (topic: Topic) => React.ReactNode,
-    private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[],
+    private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
   ) {}
 
   @computed get isEnabled(): boolean {
@@ -218,10 +218,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     setTimeout(() => topicConfig && this.addBaseFavs(topicConfig));
 
     const leaderLessPartitionIds = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-      ({ topicName }) => topicName === this.props.topicName,
+      ({ topicName }) => topicName === this.props.topicName
     )?.partitionIds;
     const underReplicatedPartitionIds = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-      ({ topicName }) => topicName === this.props.topicName,
+      ({ topicName }) => topicName === this.props.topicName
     )?.partitionIds;
 
     this.topicTabs = [
@@ -230,14 +230,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         'messages',
         'viewMessages',
         'Messages',
-        (t) => <TopicMessageView refreshTopicData={(force: boolean) => this.refreshData(force)} topic={t} />,
+        (t) => <TopicMessageView refreshTopicData={(force: boolean) => this.refreshData(force)} topic={t} />
       ),
       new TopicTab(
         () => topic,
         'consumers',
         'viewConsumers',
         'Consumers',
-        (t) => <TopicConsumers topic={t} />,
+        (t) => <TopicConsumers topic={t} />
       ),
       new TopicTab(
         () => topic,
@@ -268,14 +268,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             </Tooltip>
           )}
         </Flex>,
-        (t) => <TopicPartitions topic={t} />,
+        (t) => <TopicPartitions topic={t} />
       ),
       new TopicTab(
         () => topic,
         'configuration',
         'viewConfig',
         'Configuration',
-        (t) => <TopicConfiguration topic={t} />,
+        (t) => <TopicConfiguration topic={t} />
       ),
       new TopicTab(
         () => topic,
@@ -302,7 +302,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 );
             return undefined;
           },
-        ],
+        ]
       ),
       new TopicTab(
         () => topic,
@@ -316,7 +316,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             t.documentation === 'NOT_EXISTENT'
               ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
               : null,
-        ],
+        ]
       ),
     ];
 

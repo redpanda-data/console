@@ -39,10 +39,10 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
   }
 
   const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName,
+    ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
   const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName,
+    ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
 
   let warning: JSX.Element = <></>;

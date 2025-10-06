@@ -251,7 +251,7 @@ setTimeout(() => {
           to: r.path,
           icon: r.icon,
           order: i,
-        }) as SidebarItem,
+        }) as SidebarItem
     );
 
     setSidebarItems(sidebarItems);
@@ -352,7 +352,7 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
           api.refreshSupportedEndpoints();
           api.listLicenses();
         });
-      },
+      }
     );
   }
 });

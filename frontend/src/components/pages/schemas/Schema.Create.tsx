@@ -196,7 +196,7 @@ const SchemaPageButtons = observer(
               console.log('schema created', { response: r });
               console.log('navigating to details', { subjectName, latestVersion });
               appGlobal.historyReplace(
-                `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`,
+                `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`
               );
             } catch (err) {
               // error: open modal
@@ -251,7 +251,7 @@ const SchemaPageButtons = observer(
         </Button>
       </Flex>
     );
-  },
+  }
 );
 
 async function validateSchema(state: SchemaEditorStateHelper): Promise<{

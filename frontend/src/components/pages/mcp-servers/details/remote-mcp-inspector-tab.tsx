@@ -232,7 +232,7 @@ export const RemoteMCPInspectorTab = () => {
           updatedParams = {
             ...updatedParams,
             messages: updatedParams.messages.map((msg: any) =>
-              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg,
+              !msg?.topic_name ? { ...msg, topic_name: availableTopic } : msg
             ),
           };
         } else {
@@ -285,7 +285,7 @@ export const RemoteMCPInspectorTab = () => {
             abortControllerRef.current = null;
           }
         },
-      },
+      }
     );
   };
 
@@ -298,7 +298,7 @@ export const RemoteMCPInspectorTab = () => {
 
   const validateRequiredFields = (
     schema: JSONSchemaType | undefined,
-    values: JSONValue,
+    values: JSONValue
   ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 
@@ -492,7 +492,7 @@ export const RemoteMCPInspectorTab = () => {
                           // Update validation errors when parameters change
                           const validation = validateRequiredFields(
                             selectedToolData?.inputSchema as JSONSchemaType,
-                            newValue,
+                            newValue
                           );
                           setValidationErrors(validation.errors);
                         };
@@ -514,7 +514,7 @@ export const RemoteMCPInspectorTab = () => {
                                       onCreateOption: async (
                                         newTopicName: string,
                                         path: string[],
-                                        handleFieldChange: (path: string[], value: JSONValue) => void,
+                                        handleFieldChange: (path: string[], value: JSONValue) => void
                                       ) => {
                                         try {
                                           const request = create(CreateTopicRequestSchema, {

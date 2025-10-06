@@ -226,7 +226,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
             ...this.tags,
             __redpanda_cloud_pipeline_type: 'pipeline',
           },
-        }),
+        })
       )
       .then(
         action(async (r) => {
@@ -255,7 +255,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
           await pipelinesApi.refreshPipelines(true);
           appGlobal.historyPush('/connect-clusters');
-        }),
+        })
       )
       .catch(
         action((err) => {
@@ -270,7 +270,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
           } else {
             this.lintResults = extractLintHintsFromError(err);
           }
-        }),
+        })
       )
       .finally(() => {
         this.isCreating = false;
@@ -323,7 +323,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
 
 const registerSecretsAutocomplete = async (
   monaco: Monaco,
-  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>,
+  setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
 ) => {
   await rpcnSecretManagerApi.refreshSecrets(true);
   const secrets = rpcnSecretManagerApi.secrets || [];
@@ -538,7 +538,7 @@ export const PipelineEditor = observer(
         ]}
       />
     );
-  },
+  }
 );
 
 /**

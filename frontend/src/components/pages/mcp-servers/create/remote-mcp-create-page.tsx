@@ -55,7 +55,7 @@ const { Stepper } = defineStepper(
     title: 'Tools',
     description: 'Define with YAML config',
     icon: <Hammer className="h-4 w-4" />,
-  },
+  }
 );
 
 export const RemoteMCPCreatePage: React.FC = () => {
@@ -136,7 +136,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     const response = await lintConfig(
       create(LintMCPConfigRequestSchema, {
         tools: toolsMap,
-      }),
+      })
     );
 
     // Update lint hints for this tool
@@ -243,7 +243,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             navigate(`/mcp-servers/${data.mcpServer.id}`);
           }
         },
-      },
+      }
     );
   };
 

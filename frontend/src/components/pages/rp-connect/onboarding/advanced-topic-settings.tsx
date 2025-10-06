@@ -163,7 +163,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
         <FormMessage />
       </div>
     );
-  },
+  }
 );
 
 RetentionInputGroup.displayName = 'RetentionInputGroup';

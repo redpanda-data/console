@@ -118,7 +118,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                         {Object.values(MCPServer_Tool_ComponentType)
                           .filter(
                             (type): type is MCPServer_Tool_ComponentType =>
-                              typeof type === 'number' && type !== MCPServer_Tool_ComponentType.UNSPECIFIED,
+                              typeof type === 'number' && type !== MCPServer_Tool_ComponentType.UNSPECIFIED
                           )
                           .map((componentType) => (
                             <SelectItem key={componentType} value={String(componentType)}>

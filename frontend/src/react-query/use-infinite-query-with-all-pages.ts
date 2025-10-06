@@ -45,7 +45,7 @@ export function useInfiniteQueryWithAllPages<
 >(
   schema: DescMethodUnary<I, O>,
   input: SkipToken | (MessageInitShape<I> & Required<Pick<MessageInitShape<I>, ParamKey>>),
-  options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>,
+  options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>
 ): UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError> {
   // Use the standard ConnectRPC useInfiniteQuery hook
   const queryResult = useInfiniteQuery(schema, input, options);

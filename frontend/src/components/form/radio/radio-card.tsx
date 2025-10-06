@@ -34,7 +34,7 @@ export const RadioCard = ({ size = 'md', ...radioProps }: RadioCardProps) => {
         borderColor: 'white !important',
         outlineColor: 'white',
         boxShadow: '4px 4px 0px 0px var(--chakra-colors-whiteAlpha-300)',
-      },
+      }
     ),
   };
 
@@ -44,7 +44,7 @@ export const RadioCard = ({ size = 'md', ...radioProps }: RadioCardProps) => {
     },
     {
       borderColor: 'whiteAlpha.500',
-    },
+    }
   );
 
   const sizes = {

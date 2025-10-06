@@ -101,7 +101,7 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
 
 export const parseTopicConfigFromExisting = (
   topic: { topicName: string; partitionCount?: number; replicationFactor?: number },
-  config: { configEntries?: Array<{ name: string; value: string | null }> },
+  config: { configEntries?: Array<{ name: string; value: string | null }> }
 ) => {
   const retentionMs = config?.configEntries?.find((entry) => entry.name === 'retention.ms');
   const retentionBytes = config?.configEntries?.find((entry) => entry.name === 'retention.bytes');

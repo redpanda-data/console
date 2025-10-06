@@ -30,7 +30,7 @@ const getLicenseAlertContentForFeature = (
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
-  onRegisterModalOpen: () => void,
+  onRegisterModalOpen: () => void
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (license === undefined) {
     return null;
@@ -196,7 +196,7 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
       bakedInTrial,
       () => {
         setIsRegisterModalOpen(true);
-      },
+      }
     );
 
     // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
@@ -224,5 +224,5 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
         <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
       </Box>
     );
-  },
+  }
 );

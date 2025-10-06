@@ -139,7 +139,7 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
   else {
     // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
     const partitionTransformStatus = p.transform.statuses.first(
-      (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+      (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
     )!;
     overallStatus = <PartitionStatus status={partitionTransformStatus.status} />;
   }
@@ -170,7 +170,7 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
             keyAlign: 'left',
             gapHeight: '.5rem',
             gapWidth: '4rem',
-          },
+          }
         )}
       </Box>
       <Box maxWidth="35rem">
@@ -243,7 +243,7 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
           messages,
         });
         throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {

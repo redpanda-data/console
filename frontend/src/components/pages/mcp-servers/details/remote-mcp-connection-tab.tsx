@@ -146,7 +146,7 @@ export const RemoteMCPConnectionTab = () => {
                           {selectedLanguage === language && codeSnippetData
                             ? codeSnippetData.replaceAll(
                                 '<mcp-server-url>',
-                                mcpServerData?.mcpServer?.url || '<mcp-server-url>',
+                                mcpServerData?.mcpServer?.url || '<mcp-server-url>'
                               )
                             : `# ${language.charAt(0).toUpperCase() + language.slice(1)} connection code\n# Please select this language to load the snippet...`}
                         </Markdown>

@@ -63,7 +63,7 @@ export interface QueryOptions<O extends DescMessage, SelectOutData = MessageShap
     | number
     | false
     | ((
-        query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey<O>>,
+        query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey<O>>
       ) => number | false | undefined);
   refetchIntervalInBackground?: boolean;
 }

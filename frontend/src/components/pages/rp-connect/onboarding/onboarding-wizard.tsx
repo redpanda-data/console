@@ -33,7 +33,7 @@ const { Stepper } = defineStepper(...stepDefinitions);
 export const ConnectOnboardingWizard = () => {
   const [persistedConnector, setPersistedConnector] = useSessionStorage<Partial<ConnectTilesFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
-    {},
+    {}
   );
 
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ export const ConnectOnboardingWizard = () => {
     (connectionName: string, connectionType: ConnectComponentType) => {
       setPersistedConnector({ connectionName, connectionType });
     },
-    [setPersistedConnector],
+    [setPersistedConnector]
   );
 
   const handleNext = async (methods: { current: { id: WizardStep }; next: () => void }) => {

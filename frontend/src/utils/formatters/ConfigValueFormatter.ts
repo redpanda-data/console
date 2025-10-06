@@ -26,7 +26,7 @@ export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => {
 export function formatConfigValue(
   name: string,
   value: string | null | undefined,
-  formatType: 'friendly' | 'raw' | 'both',
+  formatType: 'friendly' | 'raw' | 'both'
 ): string {
   let suffix: string;
 

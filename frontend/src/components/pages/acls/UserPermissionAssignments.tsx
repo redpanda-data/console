@@ -47,12 +47,12 @@ export const UserRoleTags = observer(
         select: (response) => {
           return response.resources.length > 0;
         },
-      },
+      }
     );
 
     if (hasAcls) {
       elements.push(
-        <TagsValue onClick={() => navigate(`/security/acls/${userName}/details`)}>{`User:${userName}`}</TagsValue>,
+        <TagsValue onClick={() => navigate(`/security/acls/${userName}/details`)}>{`User:${userName}`}</TagsValue>
       );
     }
 
@@ -77,7 +77,7 @@ export const UserRoleTags = observer(
               key={r}
               onClick={() => navigate(`/security/roles/${r}/details`)}
             >{`RedpandaRole:${r}`}</TagsValue>
-          </div>,
+          </div>
         );
       }
 
@@ -86,5 +86,5 @@ export const UserRoleTags = observer(
     }
 
     return <div className={!verticalView ? '' : 'flex'}>{elements}</div>;
-  },
+  }
 );

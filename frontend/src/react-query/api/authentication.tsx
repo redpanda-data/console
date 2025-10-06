@@ -48,7 +48,7 @@ export const useLoginSaslScramMutation = () => {
 
 export const useListAuthenticationMethodsQuery = (
   input?: MessageInit<ListAuthenticationMethodsRequest>,
-  options?: QueryOptions<GenMessage<ListAuthenticationMethodsRequest>, ListAuthenticationMethodsResponse>,
+  options?: QueryOptions<GenMessage<ListAuthenticationMethodsRequest>, ListAuthenticationMethodsResponse>
 ) => {
   const listAuthenticationMethodsRequest = create(ListAuthenticationMethodsRequestSchema, {
     ...input,
@@ -61,7 +61,7 @@ export const useListAuthenticationMethodsQuery = (
 
 export const useGetIdentityQuery = (
   input?: MessageInit<GetIdentityRequest>,
-  options?: QueryOptions<GenMessage<GetIdentityRequest>, GetIdentityResponse>,
+  options?: QueryOptions<GenMessage<GetIdentityRequest>, GetIdentityResponse>
 ) => {
   const getIdentityRequest = create(GetIdentityRequestSchema, {
     ...input,
@@ -74,7 +74,7 @@ export const useGetIdentityQuery = (
 
 export const useListConsoleUsersQuery = (
   input?: MessageInit<ListConsoleUsersRequest>,
-  options?: QueryOptions<GenMessage<ListConsoleUsersRequest>, ListConsoleUsersResponse>,
+  options?: QueryOptions<GenMessage<ListConsoleUsersRequest>, ListConsoleUsersResponse>
 ) => {
   const listConsoleUsersRequest = create(ListConsoleUsersRequestSchema, {
     ...input,

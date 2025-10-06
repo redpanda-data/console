@@ -38,7 +38,7 @@ const MCP_SERVER_MAX_PAGE_SIZE = 50;
 
 export const useListMCPServersQuery = (
   input?: MessageInit<ListMCPServersRequest>,
-  options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>,
+  options?: QueryOptions<GenMessage<ListMCPServersRequest>, ListMCPServersResponse>
 ) => {
   const listMCPServersRequest = create(ListMCPServersRequestSchema, {
     pageToken: '',
@@ -76,7 +76,7 @@ export const useCheckMCPServerNameUniqueness = () => {
     if (!servers?.mcpServers || isLoading) return true;
 
     return !servers.mcpServers.some(
-      (server) => server.displayName.toLowerCase() === displayName.toLowerCase() && server.id !== excludeId,
+      (server) => server.displayName.toLowerCase() === displayName.toLowerCase() && server.id !== excludeId
     );
   };
 
@@ -252,7 +252,7 @@ export const useLintMCPConfigMutation = () => {
 // Shared function to create MCP client with session management
 export const createMCPClientWithSession = async (
   serverUrl: string,
-  clientName: string,
+  clientName: string
 ): Promise<{
   client: InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>;
   transport: InstanceType<
@@ -272,7 +272,7 @@ export const createMCPClientWithSession = async (
       capabilities: {
         tools: {},
       },
-    },
+    }
   );
 
   // Create StreamableHTTP transport for HTTP endpoints
@@ -321,7 +321,7 @@ export const useCallMCPServerToolMutation = () => {
           arguments: parameters,
         },
         undefined,
-        { signal },
+        { signal }
       );
     },
     onError: (error) => {

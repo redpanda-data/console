@@ -46,7 +46,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
   const { data: membersData, isLoading } = useListRoleMembersQuery(
     create(ListRoleMembersRequestSchema, {
       roleName,
-    }),
+    })
   );
 
   // Fetch all users for the combobox
@@ -71,7 +71,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           add: [{ principal: `User:${newUserName.trim()}` }],
           remove: [],
           create: true,
-        }),
+        })
       );
       toast({
         status: 'success',
@@ -95,7 +95,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           add: [],
           remove: [{ principal: userPrincipal }],
           create: false,
-        }),
+        })
       );
 
       toast({

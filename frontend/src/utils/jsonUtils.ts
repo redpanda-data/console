@@ -46,7 +46,7 @@ export function toJson(obj: any, space?: string | number | undefined): string {
 
         return value;
       },
-      space,
+      space
     );
   } finally {
     seen.clear();

@@ -47,7 +47,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         value: topic.topicName,
         label: topic.topicName,
       })) ?? [],
-    [topicList],
+    [topicList]
   );
 
   const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
@@ -74,7 +74,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
       retentionSize: persistedTopicData?.retentionSize || TOPIC_FORM_DEFAULTS.retentionSize,
       retentionSizeUnit: persistedTopicData?.retentionSizeUnit || TOPIC_FORM_DEFAULTS.retentionSizeUnit,
     }),
-    [persistedTopicData],
+    [persistedTopicData]
   );
 
   const form = useForm<AddTopicFormData>({
@@ -86,7 +86,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   const watchedTopicName = form.watch('topicName');
   const matchingTopicNameForFormValue = useMemo(
     () => topicList?.find((topic) => topic.topicName === watchedTopicName)?.topicName,
-    [topicList, watchedTopicName],
+    [topicList, watchedTopicName]
   );
 
   // prioritize form value topic, then persisted topic
@@ -96,7 +96,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
 
   const { data: topicConfig } = useTopicConfigQuery(
     existingTopicBeingEdited?.topicName || '',
-    hasValue(existingTopicBeingEdited?.topicName),
+    hasValue(existingTopicBeingEdited?.topicName)
   );
 
   useEffect(() => {
@@ -181,7 +181,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
             create(CreateTopicRequest_Topic_ConfigSchema, {
               name: 'retention.bytes',
               value: retentionBytes.toString(),
-            }),
+            })
           );
         }
 
@@ -209,7 +209,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         };
       }
     },
-    [existingTopicBeingEdited, setTopicFormData, updateTopicConfigMutation, createTopicMutation],
+    [existingTopicBeingEdited, setTopicFormData, updateTopicConfigMutation, createTopicMutation]
   );
 
   const handleCreateTopicOption = useCallback((value: string) => {

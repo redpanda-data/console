@@ -179,7 +179,7 @@ class SchemaList extends PageComponent<{}> {
       filteredSubjects = filteredSubjects.filter((s) => this.isFilterMatch(uiSettings.schemaList.quickSearch, s));
     }
     filteredSubjects = filteredSubjects.filter(
-      (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
+      (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted)
     );
 
     return (

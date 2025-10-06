@@ -111,7 +111,7 @@ function EditSchemaCompatibility(p: {
 
   // type should be just "SchemaRegistryCompatibilityMode"
   const [configMode, setConfigMode] = useState<string>(
-    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT',
+    (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT'
   );
 
   if (subjectName && !schema) return DefaultSkeleton;

@@ -56,7 +56,7 @@ export function AutocompleteInput({
         onFocus={() => {
           if (inputValue.length > 0 && suggestions.length > 0) {
             const filtered = suggestions.filter((suggestion) =>
-              suggestion.toLowerCase().includes(inputValue.toLowerCase()),
+              suggestion.toLowerCase().includes(inputValue.toLowerCase())
             );
             setFilteredSuggestions(filtered);
             setShowSuggestions(filtered.length > 0);

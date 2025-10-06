@@ -1,9 +1,9 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
 	"vcs": {
-		"enabled": false,
+		"enabled": true,
 		"clientKind": "git",
-		"useIgnoreFile": false,
+		"useIgnoreFile": true,
 		"defaultBranch": "master"
 	},
 	"files": {
@@ -25,7 +25,7 @@
 			"source": {
 				// Provides a code action to sort the imports and exports in the file using a built-in or custom order.
 				"organizeImports": {
-					"level": "on",
+				"level": "on",
 					"options": {
 						"groups": [
 							":PACKAGE:",
@@ -144,14 +144,117 @@
 	},
 	"javascript": {
 		"formatter": {
-			"quoteStyle": "single"
+			"arrowParentheses": "always",
+			"bracketSameLine": false,
+			"quoteStyle": "single",
+			"quoteProperties": "asNeeded",
+			"semicolons": "always",
+		  	"trailingCommas": "es5"
 		},
 		"jsxRuntime": "reactClassic"
 	},
 	"json": {
+		"assist": {
+			"enabled": false
+		},
 		"formatter": {
+			"enabled": true,
 			"indentStyle": "space",
-			"indentWidth": 2
+			"indentWidth": 2,
+			"lineEnding": "lf",
+			"lineWidth": 120,
+			"trailingCommas": "none"
+		},
+		"parser": {
+			"allowComments": false,
+			"allowTrailingCommas": false
 		}
-	}
+	},
+	  "css": {
+		"formatter": {
+		  "lineEnding": "lf",
+		  "lineWidth": 120,
+		  "quoteStyle": "single"
+		},
+		"parser": {
+		  "allowWrongLineComments": false,
+		  "cssModules": false
+		}
+	  },
+	  "overrides": [
+		{
+		  // Test files
+		  "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*"],
+		  "linter": {
+			"rules": {
+			  "complexity": {
+				"noExcessiveCognitiveComplexity": "off"
+			  },
+			  "suspicious": {
+				"noConsole": "off",
+				"noExplicitAny": "off"
+			  }
+			}
+		  }
+		},
+		{
+		  // Scripts and CLI tools
+		  "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs"],
+		  "linter": {
+			"rules": {
+			  "suspicious": {
+				"noConsole": "off"
+			  },
+			  "style": {
+				"noProcessEnv": "off"
+			  }
+			}
+		  }
+		},
+		{
+		  // Environment and type definition files
+		  "includes": ["**/*.d.ts", "**/{env,global,types}.d.ts"],
+		  "linter": {
+			"rules": {
+			  "correctness": {
+				"noUnusedVariables": "off",
+				"noUndeclaredVariables": "off"
+			  }
+			}
+		  }
+		},
+		{
+		  // Files that should not be processed (build output, generated files, non-JS files)
+		  "includes": [
+			"**/dist/**/*",
+			"**/build/**/*",
+			"**/out/**/*",
+			"**/coverage/**/*",
+			".env",
+			".env.*"
+		  ],
+		  "formatter": {
+			"enabled": false
+		  },
+		  "linter": {
+			"enabled": false
+		  }
+		},
+		{
+		  // Package.json and similar JSON config files
+		  "includes": [
+			"package.json",
+			"{tsconfig,jsconfig}.json",
+			"tsconfig.*.json",
+			".vscode/*.json",
+			".github/**/*.json"
+		  ],
+		  "json": {
+			"parser": {
+			  "allowComments": true,
+			  "allowTrailingCommas": true
+			}
+		  }
+		}
+	  ]
 }

@@ -51,7 +51,7 @@ class SearchBar<TItem> extends Component<{
       () => this.filteredSource.data,
       (filteredData) => {
         this.props.onFilteredDataChanged(filteredData);
-      },
+      }
     );
   }
 
@@ -114,7 +114,7 @@ class SearchBar<TItem> extends Component<{
           )}
         </AnimatePresence>
       );
-    }).bind(this),
+    }).bind(this)
   );
 
   computeFilterSummary(): { identity: string; node: React.ReactNode } | null {

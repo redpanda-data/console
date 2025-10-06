@@ -46,7 +46,7 @@ export const useGetPipelineQuery = (
     refetchInterval?: number | false;
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
-  },
+  }
 ) => {
   const getPipelineRequestDataPlane = create(GetPipelineRequestSchemaDataPlane, { id });
   const getPipelineRequest = create(GetPipelineRequestSchema, { request: getPipelineRequestDataPlane });
@@ -60,7 +60,7 @@ export const useGetPipelineQuery = (
 
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>,
+  options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse>
 ) => {
   const listPipelinesRequestDataPlane = create(ListPipelinesRequestSchemaDataPlane, {
     pageSize: MAX_PAGE_SIZE,

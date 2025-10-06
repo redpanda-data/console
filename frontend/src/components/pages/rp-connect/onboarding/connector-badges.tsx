@@ -118,7 +118,7 @@ export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectB
 };
 
 export const getCategoryBadgeProps = (
-  category: ComponentCategory | ConnectComponentType | string,
+  category: ComponentCategory | ConnectComponentType | string
 ): ConnectBadgeProps => {
   // Handle null/undefined categories
   if (!category) {

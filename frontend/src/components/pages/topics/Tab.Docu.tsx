@@ -111,7 +111,7 @@ const errorNotConfigured = renderDocuError(
       Provide the connection credentials in the Redpanda Console config, to fetch and display docmentation for the
       topics.
     </p>
-  </>,
+  </>
 );
 const errorNotFound = renderDocuError(
   'Not Found',
@@ -124,7 +124,7 @@ const errorNotFound = renderDocuError(
       </li>
       <li>Ensure that a markdown file (named just like the topic) exists in the repository.</li>
     </ul>
-  </>,
+  </>
 );
 const errorEmpty = renderDocuError(
   'Empty',
@@ -135,7 +135,7 @@ const errorEmpty = renderDocuError(
       <br />
       periodically check the documentation repo for changes (every minute by default).
     </p>
-  </>,
+  </>
 );
 
 // todo: use common renderError function everywhere

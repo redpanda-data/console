@@ -154,7 +154,7 @@ const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
     acc[pair.value] = pair.label;
     return acc;
   },
-  {} as Record<PayloadEncoding, string>,
+  {} as Record<PayloadEncoding, string>
 );
 
 interface TopicMessageViewProps {
@@ -314,7 +314,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   messageSource = new FilterableDataSource<TopicMessage>(
     () => this.messageSearch.messages,
     (filterText, m) => this.isFilterMatch(filterText, m),
-    100, // Increased debounce time to match default
+    100 // Increased debounce time to match default
   );
 
   autoSearchReaction: IReactionDisposer | null = null;
@@ -350,7 +350,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           this.currentParams = urlParams;
         });
       },
-      { name: 'sync url parameters' },
+      { name: 'sync url parameters' }
     );
 
     // Auto search when parameters change
@@ -366,7 +366,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         // Also update the local storage value to keep it in sync
         uiState.topicSettings.quickSearch = this.currentParams.quickSearch;
       },
-      { name: 'update query string' },
+      { name: 'update query string' }
     );
 
     appGlobal.searchMessagesFunc = this.searchFunc;
@@ -550,14 +550,14 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             range(0, topic.partitionCount).map((i) => ({
                               value: i,
                               label: String(i),
-                            })),
+                            }))
                           )}
                           value={this.currentParams.partitionID}
                         />
                       </RemovableFilter>
                     </Label>
                   ),
-                })[filter],
+                })[filter]
             )}
 
             <Flex alignItems="flex-end">
@@ -810,7 +810,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       // We must update the old message (that still says "payload too large")
       // So we just find its index and replace it in the array we are currently displaying
       const indexOfOldMessage = this.messageSearch.messages.findIndex(
-        (x) => x.partitionID === partitionID && x.offset === offset,
+        (x) => x.partitionID === partitionID && x.offset === offset
       );
       if (indexOfOldMessage > -1) {
         this.messageSearch.messages[indexOfOldMessage] = messages[0];
@@ -820,7 +820,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           messages,
         });
         throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {
@@ -839,7 +839,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const breakpoint = useBreakpoint({ ssr: false });
     const paginationParams = usePaginationParams(
       this.messageSource.data.length,
-      uiState.topicSettings.searchParams.pageSize,
+      uiState.topicSettings.searchParams.pageSize
     );
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
@@ -1158,7 +1158,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       const functions: string[] = [];
 
       const filteredSearchParams = uiState.topicSettings.searchParams.filters.filter(
-        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode,
+        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
       );
 
       for (const searchParam of filteredSearchParams) {
@@ -1332,7 +1332,7 @@ class SaveMessagesDialog extends Component<{
             values.push(
               typeof keyValue === 'object'
                 ? JSON.stringify(keyValue).replace(/,/g, ';')
-                : String(keyValue).replace(/,/g, ';'),
+                : String(keyValue).replace(/,/g, ';')
             );
           } else {
             values.push('');
@@ -1343,7 +1343,7 @@ class SaveMessagesDialog extends Component<{
             values.push(
               typeof valuePayload === 'object'
                 ? JSON.stringify(valuePayload).replace(/,/g, ';')
-                : String(valuePayload).replace(/,/g, ';'),
+                : String(valuePayload).replace(/,/g, ';')
             );
           } else {
             values.push('');
@@ -1705,7 +1705,7 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
                 toast({
                   status: 'error',
                   description: err instanceof Error ? err.message : String(err),
-                }),
+                })
               )
               .finally(() => setLoadingLargeMessage(false));
           }}
@@ -2108,7 +2108,7 @@ const ColumnSettings: FC<{
                         });
                       } else {
                         const idxToRemove = uiState.topicSettings.previewColumnFields.findIndex(
-                          (x) => x.dataIndex === dataIndex,
+                          (x) => x.dataIndex === dataIndex
                         );
                         uiState.topicSettings.previewColumnFields.splice(idxToRemove, 1);
                       }
@@ -2333,7 +2333,7 @@ function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction> | undefine
 export function DeleteRecordsMenuItem(
   isCompacted: boolean,
   allowedActions: Array<TopicAction> | undefined,
-  onClick: () => void,
+  onClick: () => void
 ) {
   const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 

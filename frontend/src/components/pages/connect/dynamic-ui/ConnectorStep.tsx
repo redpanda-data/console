@@ -56,5 +56,5 @@ export const ConnectorStepComponent = observer(
         ))}
       </Box>
     );
-  },
+  }
 );

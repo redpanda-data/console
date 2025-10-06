@@ -32,7 +32,7 @@ interface ListTopicsExtraOptions {
  */
 export const useLegacyListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
-  { hideInternalTopics = false }: ListTopicsExtraOptions = {},
+  { hideInternalTopics = false }: ListTopicsExtraOptions = {}
 ) => {
   const listTopicsRequest = create(ListTopicsRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
@@ -75,7 +75,7 @@ export const useLegacyListTopicsQuery = (
 export const useListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
   options?: QueryOptions<GenMessage<ListTopicsRequest>, ListTopicsResponse>,
-  { hideInternalTopics = false }: ListTopicsExtraOptions = {},
+  { hideInternalTopics = false }: ListTopicsExtraOptions = {}
 ) => {
   const listTopicsRequest = create(ListTopicsRequestSchema, {
     pageSize: MAX_PAGE_SIZE,

@@ -322,7 +322,7 @@ const ConfigGroup = observer(
         ))}
       </>
     );
-  },
+  }
 );
 
 const ConfigEntryComponent = observer(
@@ -380,12 +380,12 @@ const ConfigEntryComponent = observer(
         </span>
       </>
     );
-  },
+  }
 );
 
 function isTopicConfigEdittable(
   entry: ConfigEntryExtended,
-  hasEditPermissions: boolean,
+  hasEditPermissions: boolean
 ): { canEdit: boolean; reason?: string } {
   if (!hasEditPermissions)
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };

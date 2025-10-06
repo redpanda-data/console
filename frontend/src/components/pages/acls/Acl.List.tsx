@@ -706,7 +706,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                 transactionalIdAcls: [createEmptyTransactionalIdAcl()],
                 clusterAcls: createEmptyClusterAcl(),
                 sourceEntries: [],
-              }) as AclPrincipalGroup,
+              }) as AclPrincipalGroup
             );
           }}
           variant="outline"

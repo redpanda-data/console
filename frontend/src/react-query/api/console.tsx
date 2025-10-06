@@ -32,7 +32,7 @@ export const createPublishMessageRequest = (
   value?: MessageInit<PublishMessagePayloadOptions>,
   headers: { key: string; value: Uint8Array }[] = [],
   useTransactions = false,
-  compression = 0,
+  compression = 0
 ): MessageInit<PublishMessageRequest> => {
   const request = create(PublishMessageRequestSchema, {
     topic,

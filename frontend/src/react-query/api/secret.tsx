@@ -29,7 +29,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListSecretsQuery = (
   input?: MessageInit<ListSecretsRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListSecretsRequest>, ListSecretsResponse>,
+  options?: QueryOptions<GenMessage<ListSecretsRequest>, ListSecretsResponse>
 ) => {
   const listSecretsRequestDataPlane = create(ListSecretsRequestSchemaDataPlane, {
     pageToken: '',

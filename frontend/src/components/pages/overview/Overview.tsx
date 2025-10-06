@@ -411,7 +411,7 @@ function ClusterDetails() {
                         {name}
                       </Text>,
                       expiresAt.length > 0 ? `(${isExpired ? 'expired' : 'expiring'} ${expiresAt})` : '',
-                    ] as [left: ReactNode, right: ReactNode],
+                    ] as [left: ReactNode, right: ReactNode]
                 ),
               ]
         }

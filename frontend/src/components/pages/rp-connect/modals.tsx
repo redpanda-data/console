@@ -65,7 +65,7 @@ export const ExplicitConfirmModal = observer(
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 export function openDeleteModal(pipelineId: string, onConfirm: () => void) {

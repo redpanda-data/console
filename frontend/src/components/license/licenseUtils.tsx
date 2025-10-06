@@ -88,7 +88,7 @@ export const licenseSoonToExpire = (
   offsetInDays: Partial<Record<License_Type, number>> = {
     [License_Type.TRIAL]: 15,
     [License_Type.ENTERPRISE]: 30,
-  },
+  }
 ): boolean => {
   const daysToExpire: number | undefined = offsetInDays[license.type];
 
@@ -329,7 +329,7 @@ export const getLatestExpiringLicense = (licenses: License[]): License | undefin
  * ```
  */
 export const licensesToSimplifiedPreview = (
-  licenses: License[],
+  licenses: License[]
 ): Array<{
   name: string;
   expiresAt: string;
@@ -362,7 +362,7 @@ type EnterpriseLinkType = 'tryEnterprise' | 'upgrade';
 export const resolveEnterpriseCTALink = (
   type: EnterpriseLinkType,
   cluster_uuid: string | undefined,
-  isRedpanda: boolean,
+  isRedpanda: boolean
 ) => {
   const urls: Record<EnterpriseLinkType, string> = {
     tryEnterprise: TRY_ENTERPRISE_LINK,

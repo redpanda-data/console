@@ -402,7 +402,7 @@ autorun(
     localStorage.setItem(settingsName, json);
     //console.log('settings: ' + json);
   },
-  { delay: 2000 },
+  { delay: 2000 }
 );
 
 // Auto save (on exit)

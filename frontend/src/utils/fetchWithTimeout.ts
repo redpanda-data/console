@@ -21,7 +21,7 @@ export class RestTimeoutError extends Error {
 export default function fetchWithTimeout(
   url: RequestInfo,
   timeoutMs: number,
-  options?: RequestInit,
+  options?: RequestInit
 ): Promise<Response> {
   return new Promise<Response>((resolve, reject) => {
     let hasSettled = false;
@@ -33,7 +33,7 @@ export default function fetchWithTimeout(
       (err) => {
         hasSettled = true;
         reject(err);
-      },
+      }
     );
 
     setTimeout(() => {

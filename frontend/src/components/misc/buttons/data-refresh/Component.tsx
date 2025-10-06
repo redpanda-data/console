@@ -69,7 +69,7 @@ const autoRefresh = observable(
     },
   },
   undefined,
-  { autoBind: true },
+  { autoBind: true }
 );
 
 autorun(() => {

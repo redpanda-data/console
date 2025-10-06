@@ -461,7 +461,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
         numeric: true,
         ignorePunctuation: false,
         sensitivity: 'base',
-      },
+      }
     );
   });
 
@@ -475,7 +475,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
       <span className="previewTag">
         <span className="path">{displayName}</span>
         <span>{toSafeString(r.prop.value)}</span>
-      </span>,
+      </span>
     );
   }
 
@@ -638,7 +638,7 @@ if (IsDev) {
 
     if (hasError)
       throw new Error(
-        `Error in parseJsonPath test:\nTest: ${JSON.stringify(test)}\nActual Result: ${JSON.stringify(result)}`,
+        `Error in parseJsonPath test:\nTest: ${JSON.stringify(test)}\nActual Result: ${JSON.stringify(result)}`
       );
   }
 }

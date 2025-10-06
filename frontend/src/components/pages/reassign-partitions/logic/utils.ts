@@ -18,7 +18,7 @@ import type { PartitionWithMoves, TopicWithMoves } from '../Step3.Review';
 export function partitionSelectionToTopicPartitions(
   partitionSelection: PartitionSelection,
   apiTopicPartitions: Map<string, Partition[] | null>,
-  apiTopics: Topic[],
+  apiTopics: Topic[]
 ): TopicPartitions[] | undefined {
   const ar: TopicPartitions[] = [];
 
@@ -45,7 +45,7 @@ export function computeMovedReplicas(
   partitionSelection: PartitionSelection,
   assignments: PartitionReassignmentRequest,
   apiTopics: Topic[],
-  apiTopicPartitions: Map<string, Partition[] | null>,
+  apiTopicPartitions: Map<string, Partition[] | null>
 ): TopicWithMoves[] {
   const ar = [];
   // For each partition in each topic:
@@ -171,7 +171,7 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
 }
 
 export function topicAssignmentsToReassignmentRequest(
-  topicAssignments: TopicAssignments,
+  topicAssignments: TopicAssignments
 ): PartitionReassignmentRequest {
   // Construct reassignment request from topicAssignments
   const topics = [];

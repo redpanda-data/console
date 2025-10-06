@@ -18,7 +18,7 @@ interface RedpandaConnectComponentTypeBadgeProps {
 }
 
 const getComponentTypeConfig = (
-  componentType: MCPServer_Tool_ComponentType,
+  componentType: MCPServer_Tool_ComponentType
 ): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (componentType) {
     case MCPServer_Tool_ComponentType.PROCESSOR:

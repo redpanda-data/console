@@ -57,7 +57,7 @@ declare global {
     toMap<TItem, TKey, TValue>(
       this: TItem[],
       computeKey: (item: TItem) => TKey,
-      computeValue: (item: TItem) => TValue,
+      computeValue: (item: TItem) => TValue
     ): Map<TKey, TValue>;
 
     filterNull<T>(this: (T | null | undefined)[]): T[];
@@ -294,7 +294,7 @@ Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
 
 Array.prototype.genericJoin = function genericJoin<T>(
   this: T[],
-  getSeparator: (last: T, current: T, index: number) => T,
+  getSeparator: (last: T, current: T, index: number) => T
 ): T[] {
   const ar = [];
   for (let i = 1; i < this.length; i++) {
@@ -316,7 +316,7 @@ Array.prototype.genericJoin = function genericJoin<T>(
 Array.prototype.toMap = function toMap<TItem, TKey, TValue>(
   this: TItem[],
   computeKey: (item: TItem) => TKey,
-  computeValue: (item: TItem) => TValue,
+  computeValue: (item: TItem) => TValue
 ): Map<TKey, TValue> {
   const map = new Map<TKey, TValue>();
 

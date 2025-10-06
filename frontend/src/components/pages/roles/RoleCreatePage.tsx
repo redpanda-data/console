@@ -62,7 +62,7 @@ const RoleCreatePage = () => {
           role: {
             name: roleName,
           },
-        }),
+        })
       );
 
       toast({

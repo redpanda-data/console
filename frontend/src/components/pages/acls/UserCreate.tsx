@@ -298,7 +298,7 @@ const CreateUserModal = observer(
         </Flex>
       </Box>
     );
-  },
+  }
 );
 
 const CreateUserConfirmationModal = observer((p: { state: CreateUserModalState; closeModal: () => void }) => {

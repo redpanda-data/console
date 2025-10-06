@@ -85,7 +85,7 @@ function findByName(obj: any, propertyName: string, caseSensitive: boolean, retu
 function findByCallback(
   obj: any,
   isMatch: (object: any, key: string | number) => boolean,
-  returnFirstResult: boolean,
+  returnFirstResult: boolean
 ): any[] {
   const ctx: PropertySearchContext = {
     isMatch: isMatch,

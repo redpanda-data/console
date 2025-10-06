@@ -441,7 +441,7 @@ export const principalGroupsView = observable(
   undefined,
   {
     equals: comparer.structural,
-  },
+  }
 );
 
 /*

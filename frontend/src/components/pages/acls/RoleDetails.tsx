@@ -73,7 +73,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
 
     const aclPrincipalGroup = principalGroupsView.principalGroups.find(
-      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.roleName,
+      ({ principalType, principalName }) => principalType === 'RedpandaRole' && principalName === this.roleName
     );
 
     let members = rolesApi.roleMembers.get(this.roleName) ?? [];

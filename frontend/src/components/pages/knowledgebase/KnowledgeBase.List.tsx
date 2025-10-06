@@ -116,7 +116,7 @@ export const KnowledgeBaseList = () => {
     {},
     {
       enabled: Features.pipelinesApi,
-    },
+    }
   );
 
   const deleteMutation = useDeleteKnowledgeBaseMutation();

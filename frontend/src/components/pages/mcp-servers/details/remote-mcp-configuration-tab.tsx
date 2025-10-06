@@ -179,7 +179,7 @@ export const RemoteMCPConfigurationTab = () => {
             tags: tagsMap,
             resources: {
               memoryShares: convertToApiMemoryFormat(
-                getResourceTierByName(currentData.resources.tier)?.memory || '512M',
+                getResourceTierByName(currentData.resources.tier)?.memory || '512M'
               ),
               cpuShares: getResourceTierByName(currentData.resources.tier)?.cpu || '200m',
             },
@@ -192,7 +192,7 @@ export const RemoteMCPConfigurationTab = () => {
           onError: (error) => {
             toast.error(formatToastErrorMessageGRPC({ error, action: 'update', entity: 'MCP server' }));
           },
-        },
+        }
       );
       setIsEditing(false);
       setEditedServerData(null);
@@ -667,7 +667,7 @@ export const RemoteMCPConfigurationTab = () => {
                                 {Object.values(MCPServer_Tool_ComponentType)
                                   .filter(
                                     (value) =>
-                                      typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED,
+                                      typeof value === 'number' && value !== MCPServer_Tool_ComponentType.UNSPECIFIED
                                   )
                                   .map((componentType) => (
                                     <SelectItem key={componentType} value={componentType.toString()}>

@@ -281,5 +281,5 @@ const ReviewPartitionTable = observer(
         data={props.topicPartitions}
       />
     </Box>
-  ),
+  )
 );

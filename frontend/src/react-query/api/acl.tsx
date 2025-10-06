@@ -126,7 +126,7 @@ const getACLResourcePatternTypeLegacy = (resourcePatternType: AclStrResourcePatt
  */
 export const useLegacyListACLsQuery = (
   input?: MessageInit<ListACLsRequest>,
-  options?: QueryOptions<GenMessage<ListACLsRequest>, ListACLsResponse>,
+  options?: QueryOptions<GenMessage<ListACLsRequest>, ListACLsResponse>
 ) => {
   const listACLsRequest = create(ListACLsRequestSchema, {
     ...input,
@@ -168,9 +168,9 @@ export const useLegacyListACLsQuery = (
             principal: acl.principal,
             host: acl.host,
             operation: getACLOperationLegacy(acl.operation),
-          }),
+          })
         ),
-      }),
+      })
     ) ?? [];
 
   return {
@@ -187,7 +187,7 @@ export const useLegacyListACLsQuery = (
  */
 export const useListACLsQuery = (
   input?: MessageInit<ListACLsRequest>,
-  options?: QueryOptions<GenMessage<ListACLsRequest>, ListACLsResponse>,
+  options?: QueryOptions<GenMessage<ListACLsRequest>, ListACLsResponse>
 ) => {
   const listACLsRequest = create(ListACLsRequestSchema, {
     ...input,
@@ -445,7 +445,7 @@ const useInvalidateAclsList = () => {
 };
 
 export const useDeleteAclMutation = (
-  transportOptions?: UseMutationOptions<typeof DeleteACLsRequestSchema, typeof DeleteACLsResponseSchema>,
+  transportOptions?: UseMutationOptions<typeof DeleteACLsRequestSchema, typeof DeleteACLsResponseSchema>
 ) => {
   const { invalid } = useInvalidateAclsList();
   return useMutation(deleteACLs, {
@@ -467,7 +467,7 @@ export const useUpdateAclMutation = () => {
     const currentRules: ACLWithId[] = convertRulesToCreateACLRequests(
       actualRules,
       sharedConfig.principal,
-      sharedConfig.host,
+      sharedConfig.host
     ).map((r) => ({
       ...r,
       id: getIdFromCreateACLRequest(r),
@@ -476,7 +476,7 @@ export const useUpdateAclMutation = () => {
       (r) => ({
         ...r,
         id: getIdFromCreateACLRequest(r),
-      }),
+      })
     );
 
     const { toCreate, toDelete } = calculateACLDifference(currentRules, newRules);
@@ -494,8 +494,8 @@ export const useUpdateAclMutation = () => {
             permissionType: r.permissionType,
             resourcePatternType: r.resourcePatternType,
           },
-        }),
-      ),
+        })
+      )
     );
 
     const allResults = await Promise.allSettled([...createResults, ...deleteResults]);
@@ -514,7 +514,7 @@ export const useUpdateAclMutation = () => {
 
 export const useGetAclsByPrincipal = <T = AclDetail>(
   principal: string,
-  transformFn?: (aclList: ListACLsResponse) => T,
+  transformFn?: (aclList: ListACLsResponse) => T
 ) => {
   return useQuery(
     listACLs,
@@ -525,7 +525,7 @@ export const useGetAclsByPrincipal = <T = AclDetail>(
     } as ListACLsRequest,
     {
       select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
-    },
+    }
   );
 };
 

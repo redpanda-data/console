@@ -221,7 +221,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
       filter: {
         nameContains: '', // Get all topics for regex matching
       },
-    }),
+    })
   );
 
   const allTopics = (topicsData?.topics || [])
@@ -232,7 +232,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
         !name.startsWith('__redpanda') &&
         !name.startsWith('_internal') &&
         !name.startsWith('_redpanda') &&
-        name !== '_schemas',
+        name !== '_schemas'
     );
 
   // Check if a string is a regex pattern (contains regex special characters)

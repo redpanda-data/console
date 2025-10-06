@@ -8,7 +8,7 @@ export function Statistic(
     value: React.ReactNode;
     hint?: string;
     className?: string;
-  } & SpaceProps,
+  } & SpaceProps
 ) {
   const { key, title, value, className, hint, ...rest } = p;
 

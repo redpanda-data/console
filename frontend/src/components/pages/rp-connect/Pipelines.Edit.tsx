@@ -185,7 +185,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
           tags: {
             ...this.tags,
           },
-        }),
+        })
       )
       .then(async (r) => {
         toast({

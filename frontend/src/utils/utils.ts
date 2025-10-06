@@ -222,7 +222,7 @@ type PropertySearchExContext = {
 export function collectElements(
   obj: any,
   isMatch: (propertyName: string, path: string[], value: any) => boolean,
-  returnFirstMatch: boolean,
+  returnFirstMatch: boolean
 ): FoundProperty[] {
   const ctx: PropertySearchExContext = {
     isMatch: isMatch,
@@ -271,7 +271,7 @@ export function collectElements2(
   // "*" collects all current properties
   // anything else is passed to "isMatch"
   path: string[],
-  isMatch: IsMatchFunc,
+  isMatch: IsMatchFunc
 ): CollectedProperty[] {
   // Explore set
   let currentExplore: CollectedProperty[] = [{ path: [], value: targetObject }];
@@ -294,7 +294,7 @@ export function collectElements2(
             (_key, _path, value) => {
               return typeof value === 'object';
             },
-            false,
+            false
           );
 
           for (const n of allNested) {
@@ -537,7 +537,7 @@ export const prettyBytes = (n: number | string | null | undefined, options?: Pre
 
 export const prettyMilliseconds = (
   n: number | string,
-  options?: prettyMillisecondsOriginal.Options & PrettyValueOptions,
+  options?: prettyMillisecondsOriginal.Options & PrettyValueOptions
 ) => {
   if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
@@ -759,7 +759,7 @@ export function setHeader(init: RequestInit, name: string, value: string) {
 // very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
 export function retrier<T>(
   operation: () => Promise<T>,
-  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 },
+  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     return operation()

@@ -7,7 +7,7 @@ export const secretSchema = (customValueSchema?: z.ZodTypeAny) =>
       .min(1, 'ID is required')
       .regex(
         /^[A-Z][A-Z0-9_]*$/,
-        'ID must use uppercase letters, numbers, and underscores only, starting with a letter',
+        'ID must use uppercase letters, numbers, and underscores only, starting with a letter'
       ),
     value: customValueSchema ? customValueSchema : z.string().min(1, 'Value is required'),
     labels: z
@@ -15,7 +15,7 @@ export const secretSchema = (customValueSchema?: z.ZodTypeAny) =>
         z.object({
           key: z.string(),
           value: z.string(),
-        }),
+        })
       )
       .optional()
       .default([])

@@ -58,14 +58,14 @@ export type ApiData = { brokers: Broker[]; topics: Topic[]; topicPartitions: Map
 function computeReassignments(
   apiData: ApiData,
   selectedTopicPartitions: TopicPartitions[],
-  targetBrokers: Broker[],
+  targetBrokers: Broker[]
 ): TopicAssignments {
   checkArguments(apiData, selectedTopicPartitions, targetBrokers);
 
   // Track information like used disk space per broker, so we extend each broker with some metadata
   const allExBrokers = apiData.brokers.map((b) => new ExBroker(b));
   const targetExBrokers = allExBrokers.filter(
-    (exb) => targetBrokers.find((b) => exb.brokerId === b.brokerId) !== undefined,
+    (exb) => targetBrokers.find((b) => exb.brokerId === b.brokerId) !== undefined
   );
   const getExBroker = (brokerId: number): ExBroker => {
     const exBroker = allExBrokers.find((x) => x.brokerId === brokerId);
@@ -96,7 +96,7 @@ function computeReassignments(
       topicPartitions,
       targetExBrokers,
       allExBrokers,
-      resultAssignments[topicPartitions.topic.topicName],
+      resultAssignments[topicPartitions.topic.topicName]
     );
   }
 
@@ -147,7 +147,7 @@ function computeReassignments(
 const untrackedCompute = (
   apiData: ApiData,
   selectedTopicPartitions: TopicPartitions[],
-  targetBrokers: Broker[],
+  targetBrokers: Broker[]
 ): TopicAssignments => untracked(() => computeReassignments(apiData, selectedTopicPartitions, targetBrokers));
 export { untrackedCompute as computeReassignments };
 
@@ -156,7 +156,7 @@ function computeTopicAssignments(
   topicPartitions: TopicPartitions,
   targetBrokers: ExBroker[],
   allBrokers: ExBroker[],
-  resultAssignments: { [partitionId: number]: PartitionAssignments },
+  resultAssignments: { [partitionId: number]: PartitionAssignments }
 ) {
   const { topic, partitions } = topicPartitions;
 
@@ -193,14 +193,14 @@ function computeReplicaAssignments(
   partition: Partition,
   replicas: number,
   brokerReplicaCount: BrokerReplicaCount[],
-  allBrokers: ExBroker[],
+  allBrokers: ExBroker[]
 ): ExBroker[] {
   const resultBrokers: ExBroker[] = []; // result
   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
   const sourceBrokers = partition.replicas.map((id) => allBrokers.first((b) => b.brokerId === id)!);
   if (sourceBrokers.any((x) => x == null))
     throw new Error(
-      `replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map((b) => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`,
+      `replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map((b) => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`
     );
   const sourceRacks = sourceBrokers.map((b) => b.rack).distinct();
 
@@ -292,7 +292,7 @@ function balanceLeaders(
   selectedTopicPartitions: TopicPartitions[],
   resultAssignments: TopicAssignments,
   allExBrokers: ExBroker[],
-  apiData: ApiData,
+  apiData: ApiData
 ) {
   let leaderSwitchCount = 0;
   for (const t of selectedTopicPartitions) {
@@ -300,7 +300,7 @@ function balanceLeaders(
       // map plain brokers to extended brokers (those with attached tracking data)
       const newBrokers = resultAssignments[t.topic.topicName][p.id].brokers.map(
         // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-        (b) => allExBrokers.first((e) => e.brokerId === b.brokerId)!,
+        (b) => allExBrokers.first((e) => e.brokerId === b.brokerId)!
       );
       const plannedLeader = newBrokers[0];
 
@@ -332,7 +332,7 @@ function balanceLeaders(
         // mapping our extendedBrokers back to the "simple" brokers
         resultAssignments[t.topic.topicName][p.id].brokers = newBrokers.map(
           // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-          (exBroker) => apiData.brokers.first((b) => b.brokerId === exBroker.brokerId)!,
+          (exBroker) => apiData.brokers.first((b) => b.brokerId === exBroker.brokerId)!
         );
 
         leaderSwitchCount++;
@@ -354,7 +354,7 @@ function findRiskyPartitions(
   targetBrokers: ExBroker[],
   selectedTopicPartitions: TopicPartitions[],
   resultAssignments: TopicAssignments,
-  getExBroker: (id: number) => ExBroker,
+  getExBroker: (id: number) => ExBroker
 ): RiskyPartition[] {
   const targetRacks = targetBrokers.map((b) => b.rack).distinct();
 
@@ -472,13 +472,13 @@ class ExBroker implements Broker {
 
     if (apiData.topicPartitions == null)
       throw new Error(
-        `cannot recompute actual usage of broker '${this.brokerId}' because 'api.topicPartitions == null' (no permissions?)`,
+        `cannot recompute actual usage of broker '${this.brokerId}' because 'api.topicPartitions == null' (no permissions?)`
       );
 
     for (const [topic, partitions] of apiData.topicPartitions) {
       if (partitions == null)
         throw new Error(
-          `cannot recompute actual usage of broker '${this.brokerId}' for topic '${topic}', because 'partitions == null' (no permissions?)`,
+          `cannot recompute actual usage of broker '${this.brokerId}' for topic '${topic}', because 'partitions == null' (no permissions?)`
         );
 
       for (const p of partitions) {
@@ -543,7 +543,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
   const topicsMissingPartitionData = apiData.topics.filter((t) => apiData.topicPartitions.get(t.topicName) == null);
   if (topicsMissingPartitionData.length > 0)
     throw new Error(
-      `apiData is missing topicPartitions for these topics: ${topicsMissingPartitionData.map((t) => t.topicName).join(', ')}`,
+      `apiData is missing topicPartitions for these topics: ${topicsMissingPartitionData.map((t) => t.topicName).join(', ')}`
     );
 
   // Require at least one selected partition
@@ -555,7 +555,7 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
     .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
   if (maxRf.key > targetBrokers.length)
     throw new Error(
-      `You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map((t) => t.topic.topicName))}`,
+      `You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map((t) => t.topic.topicName))}`
     );
 }
 
@@ -571,7 +571,7 @@ function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
 
 function calcRange<T>(
   ar: T[],
-  selector: (item: T) => number,
+  selector: (item: T) => number
 ): {
   range: number;
   min: T | undefined;
@@ -633,6 +633,6 @@ function _dumpBrokerInfo(title: string, brokers: ExBroker[]) {
         ...x,
       },
     })),
-    ['address', 'actualLeader', 'plannedLeader', 'actualReplicas', 'plannedReplicas', 'actualSize', 'plannedSize'],
+    ['address', 'actualLeader', 'plannedLeader', 'actualReplicas', 'plannedReplicas', 'actualSize', 'plannedSize']
   );
 }

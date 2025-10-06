@@ -259,7 +259,7 @@ export class StepSelectPartitions extends Component<{
     const current = api.partitionReassignments ?? [];
     return current.toMap(
       (x) => x.topicName,
-      (x) => x.partitions,
+      (x) => x.partitions
     );
   }
 }
@@ -302,7 +302,7 @@ export class SelectPartitionTable extends Component<{
                 <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
               ) : (
                 renderPartitionError(partition)
-              ),
+              )
             ),
           },
           {

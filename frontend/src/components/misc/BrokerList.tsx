@@ -78,19 +78,19 @@ export class BrokerList extends Component<BrokerListProps> {
           <div key="leader" style={{ marginTop: '5px' }}>
             <ChevronRightIcon className="svgCenter" height="15px" style={{ marginLeft: '-4px', marginRight: '-2px' }} />
             This broker is the leader for this partition
-          </div>,
+          </div>
         );
       if (isAdding)
         additionalContent.push(
           <div key="added" style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>
             Partitions are currently being transferred to this broker.
-          </div>,
+          </div>
         );
       if (isRemoving)
         additionalContent.push(
           <div key="removed" style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>
             Once the assignment completes, the partitions of the reassignment will be removed from the broker.
-          </div>,
+          </div>
         );
 
       return (

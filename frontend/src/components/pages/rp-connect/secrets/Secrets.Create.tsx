@@ -55,7 +55,7 @@ class RpConnectSecretCreate extends PageComponent {
           id: this.id,
           secretData: base64ToUInt8Array(encodeBase64(this.secret)),
           scopes: [Scope.REDPANDA_CONNECT],
-        }),
+        })
       )
       .then(async () => {
         toast({

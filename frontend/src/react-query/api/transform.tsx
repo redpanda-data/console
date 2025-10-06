@@ -28,7 +28,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListTransformsQuery = (
   input?: MessageInit<ListTransformsRequestDataPlane>,
-  options?: QueryOptions<GenMessage<ListTransformsRequest>, ListTransformsResponse>,
+  options?: QueryOptions<GenMessage<ListTransformsRequest>, ListTransformsResponse>
 ) => {
   const listTransformsRequestDataPlane = create(ListTransformsRequestSchemaDataPlane, {
     pageSize: MAX_PAGE_SIZE,
@@ -64,7 +64,7 @@ export const useListTransformsQuery = (
 
 export const useGetTransformQuery = (
   input?: MessageInit<GetTransformRequestDataPlane>,
-  options?: QueryOptions<GenMessage<GetTransformRequest>, GetTransformResponse>,
+  options?: QueryOptions<GenMessage<GetTransformRequest>, GetTransformResponse>
 ) => {
   const getTransformRequestDataPlane = create(GetTransformRequestSchemaDataPlane, {
     name: input?.name,

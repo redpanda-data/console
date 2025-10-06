@@ -25,7 +25,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
  */
 export const useLegacyListUsersQuery = (
   _input?: MessageInit<ListUsersRequest>,
-  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>,
+  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>
 ) => {
   const listUsersRequest = create(ListUsersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
@@ -61,7 +61,7 @@ export const useLegacyListUsersQuery = (
       create(ListUsersResponse_UserSchema, {
         name: user,
         mechanism: undefined, // Not reported by legacy API
-      }),
+      })
     ) ?? [];
 
   return {
@@ -77,7 +77,7 @@ export const useLegacyListUsersQuery = (
  */
 export const useListUsersQuery = (
   input?: MessageInit<ListUsersRequest>,
-  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>,
+  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>
 ) => {
   const listUsersRequest = create(ListUsersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,

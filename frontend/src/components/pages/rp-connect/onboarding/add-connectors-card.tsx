@@ -59,5 +59,5 @@ export const AddConnectorsCard = memo(
         </CardContent>
       </Card>
     );
-  },
+  }
 );

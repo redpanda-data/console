@@ -83,7 +83,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
 
   const originalUsernames = useMemo(
     () => initialData?.principals?.map(({ name }) => name) ?? [],
-    [initialData?.principals],
+    [initialData?.principals]
   );
   const currentUsernames = formState.principals.map(({ name }) => name) ?? [];
   const editMode: boolean = Boolean(initialData?.roleName);
@@ -129,7 +129,7 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
               formState.roleName,
               formState.principals.map((x) => x.name),
               usersToRemove,
-              true,
+              true
             );
 
             if (newRole.response) {

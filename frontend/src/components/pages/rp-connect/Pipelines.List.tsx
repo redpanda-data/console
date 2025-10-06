@@ -60,7 +60,7 @@ const LegacyCreatePipelineButton = () => {
 const WizardCreatePipelineButton = () => {
   const [_, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
-    {},
+    {}
   );
   const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
   const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
@@ -99,7 +99,7 @@ const LegacyEmptyState = () => {
 const WizardEmptyState = () => {
   const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
-    {},
+    {}
   );
   const [, setPersistedTopic] = useSessionStorage<Partial<AddTopicFormData>>(CONNECT_WIZARD_TOPIC_KEY, {});
   const [, setPersistedUser] = useSessionStorage<Partial<AddUserFormData>>(CONNECT_WIZARD_USER_KEY, {});
@@ -122,7 +122,7 @@ const WizardEmptyState = () => {
         });
       }
     },
-    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate],
+    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate]
   );
 
   return <ConnectTiles componentTypeFilter={['input', 'output']} hideHeader onChange={handleConnectionChange} />;

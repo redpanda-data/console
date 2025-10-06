@@ -71,7 +71,7 @@ class GroupList extends PageComponent {
       const quickSearchRegExp = new RegExp(uiSettings.consumerGroupList.quickSearch, 'i');
       groups = groups.filter(
         (groupDescription) =>
-          groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp),
+          groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp)
       );
     } catch (_e) {
       console.warn('Invalid expression');

@@ -51,7 +51,7 @@ export const useSetLicenseMutation = () => {
 };
 
 export const useListEnterpriseFeaturesQuery = (
-  options?: QueryOptions<GenMessage<ListEnterpriseFeaturesRequest>, ListEnterpriseFeaturesResponse>,
+  options?: QueryOptions<GenMessage<ListEnterpriseFeaturesRequest>, ListEnterpriseFeaturesResponse>
 ) => {
   const listEnterpriseFeaturesRequest = create(ListEnterpriseFeaturesRequestSchema);
 

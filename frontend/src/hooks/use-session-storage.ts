@@ -25,7 +25,7 @@ export const useSessionStorage = <T>(key: string, initialValue?: T) => {
         console.warn(`Error setting sessionStorage key "${key}":`, error);
       }
     },
-    [key, storedValue],
+    [key, storedValue]
   );
 
   return [storedValue, setValue] as const;

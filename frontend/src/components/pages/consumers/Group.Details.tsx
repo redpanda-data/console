@@ -285,7 +285,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
   const lagsFlat = topicLags.flatMap((topicLag) =>
     topicLag.partitionOffsets.map((partLag) => {
       const assignedMember = allAssignments.find(
-        (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId),
+        (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
       );
 
       return {
@@ -300,7 +300,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
         clientId: assignedMember?.member.clientId,
         host: assignedMember?.member.clientHost,
       };
-    }),
+    })
   );
 
   const lagGroupsByTopic = lagsFlat

@@ -322,7 +322,7 @@ const ManualOffsetContent = observer(
         />
       </Flex>
     );
-  },
+  }
 );
 
 function getMarks(partition: Partition) {
@@ -364,7 +364,7 @@ function formatMarks(marks: number[]) {
       acc[key] = value;
       return acc;
     },
-    {} as { [index: string]: string },
+    {} as { [index: string]: string }
   );
 }
 

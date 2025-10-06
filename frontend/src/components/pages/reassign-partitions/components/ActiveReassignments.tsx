@@ -460,7 +460,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // ...and check if this broker-partition combo is being throttled
         const hasThrottle = leaderThrottleEntries.any(
-          (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId),
+          (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId)
         );
 
         if (hasThrottle) return true;
@@ -469,7 +469,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
     // partitionId:brokerId, ...
     const followerThrottleValue = config.configEntries.first(
-      (e) => e.name === 'follower.replication.throttled.replicas',
+      (e) => e.name === 'follower.replication.throttled.replicas'
     );
     const followerThrottleEntries = followerThrottleValue?.value
       ?.split(',')
@@ -487,7 +487,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // ...and check if this broker-partition combo is being throttled
         const hasThrottle = followerThrottleEntries.any(
-          (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId),
+          (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId)
         );
 
         if (hasThrottle) return true;
@@ -515,7 +515,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         if (brokersOld == null || brokersNew == null) {
           console.warn(
             "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
-            { state: state },
+            { state: state }
           );
           continue;
         }

@@ -58,7 +58,7 @@ const SecretFormSchema = z.record(
   z.string(),
   z.object({
     value: z.string().min(1, 'Secret value is required'),
-  }),
+  })
 );
 
 type SecretFormData = z.infer<typeof SecretFormSchema>;
@@ -71,7 +71,7 @@ const NewSecretFormSchema = z.object({
     .max(255, 'Secret name must be fewer than 255 characters')
     .regex(
       /^[A-Za-z][A-Za-z0-9_]*$/,
-      'Secret name must start with a letter and contain only letters, numbers, and underscores',
+      'Secret name must start with a letter and contain only letters, numbers, and underscores'
     ),
   value: z.string().min(1, 'Secret value is required'),
 });
@@ -92,13 +92,13 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<string[]>([]);
 
   const missingSecrets = requiredSecrets.filter(
-    (secret) => !existingSecrets.includes(secret) && !createdSecrets.includes(secret),
+    (secret) => !existingSecrets.includes(secret) && !createdSecrets.includes(secret)
   );
 
   const form = useForm<SecretFormData>({
     resolver: zodResolver(SecretFormSchema),
     defaultValues: Object.fromEntries(
-      missingSecrets.map((secretName) => [secretName, { value: defaultValues[secretName] || '' }]),
+      missingSecrets.map((secretName) => [secretName, { value: defaultValues[secretName] || '' }])
     ),
   });
 
@@ -135,9 +135,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             onError: (error) => {
               errors.push({ secretName, error });
             },
-          },
+          }
         );
-      }),
+      })
     );
 
     // Update created secrets state
@@ -150,7 +150,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
     // Handle errors
     if (errors.length > 0) {
       const errorMessages = errors.map(({ secretName, error }) =>
-        formatToastErrorMessageGRPC({ error, action: 'create', entity: `secret ${secretName}` }),
+        formatToastErrorMessageGRPC({ error, action: 'create', entity: `secret ${secretName}` })
       );
 
       if (onError) {
@@ -179,7 +179,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       await createSecret(
         create(CreateSecretRequestSchema, {
           request: dataPlaneRequest,
-        }),
+        })
       );
 
       // Update created secrets state

@@ -81,9 +81,9 @@ export const LicenseNotification = observer(() => {
                 visibleSoonToExpireLicenses
                   .map(
                     (license) =>
-                      `your ${prettyLicenseType(license, true)} license will expire in ${getPrettyTimeToExpiration(license)}`,
+                      `your ${prettyLicenseType(license, true)} license will expire in ${getPrettyTimeToExpiration(license)}`
                   )
-                  .join(' and '),
+                  .join(' and ')
               )}
               .{' '}
             </Fragment>
@@ -94,7 +94,7 @@ export const LicenseNotification = observer(() => {
               {capitalizeFirst(
                 visibleExpiredLicenses
                   .map((license) => `your ${prettyLicenseType(license, true)} license has expired`)
-                  .join(' and '),
+                  .join(' and ')
               )}
               .{' '}
             </Fragment>

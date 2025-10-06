@@ -438,7 +438,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       const updatedDetails = api.schemaDetails.get(subject.name);
                       if (updatedDetails)
                         appGlobal.historyPush(
-                          `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`,
+                          `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`
                         );
                     })
                     .catch((err) => {
@@ -705,7 +705,7 @@ const SchemaReferences = observer(
         )}
       </>
     );
-  },
+  }
 );
 
 export default SchemaDetailsView;

@@ -40,7 +40,7 @@ export class AdminUsers extends Component<{}> {
     try {
       const quickSearchRegExp = new RegExp(this.quickSearch, 'i');
       users = users.filter(
-        (u) => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp),
+        (u) => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)
       );
     } catch (_e) {
       console.warn('Invalid expression');

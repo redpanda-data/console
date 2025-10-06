@@ -353,7 +353,7 @@ const KafkaConnectorMain = observer(
         />
       </>
     );
-  },
+  }
 );
 
 const ConfigOverviewTab = observer(
@@ -451,7 +451,7 @@ const ConfigOverviewTab = observer(
         </Section>
       </Grid>
     );
-  },
+  }
 );
 
 const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
@@ -510,7 +510,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
       {
         canBeTruncated: true,
         canBeCopied: true,
-      },
+      }
     );
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
@@ -606,7 +606,7 @@ const ConnectorDetails = observer(
         ))}
       </Grid>
     );
-  },
+  }
 );
 
 const LogsTab = observer(
@@ -662,7 +662,7 @@ const LogsTab = observer(
             messages,
           });
           throw new Error(
-            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+            'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
           );
         }
       } else {
@@ -740,7 +740,7 @@ const LogsTab = observer(
         </Section>
       </>
     );
-  },
+  }
 );
 
 function isFilterMatch(str: string, m: TopicMessage) {

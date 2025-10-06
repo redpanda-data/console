@@ -1,4 +1,11 @@
 import {
+  License_Source,
+  License_Type,
+  LicenseSchema,
+  type ListEnterpriseFeaturesResponse_Feature,
+  ListEnterpriseFeaturesResponse_FeatureSchema,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import {
   coreHasEnterpriseFeatures,
   getPrettyTimeToExpiration,
   licenseIsExpired,
@@ -8,20 +15,12 @@ import {
   prettyLicenseType,
   resolveEnterpriseCTALink,
 } from './licenseUtils';
-import {
-  License_Source,
-  License_Type,
-  LicenseSchema,
-  type ListEnterpriseFeaturesResponse_Feature,
-  ListEnterpriseFeaturesResponse_FeatureSchema,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import '../../utils/arrayExtensions';
 import { create } from '@bufbuild/protobuf';
 import { vi } from 'vitest';
-
-import { LicenseNotification } from './LicenseNotification';
 import { api } from '../../state/backendApi';
 import { renderWithRouter } from '../../test-utils';
+import { LicenseNotification } from './LicenseNotification';
 
 /**
  * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
@@ -352,11 +351,11 @@ describe('licenseUtils', () => {
       // Check for CTAs
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Request a license')).toHaveAttribute(
         'href',
-        'https://support.redpanda.com/',
+        'https://support.redpanda.com/'
       );
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Upload license')).toHaveAttribute(
         'href',
-        '/upload-license',
+        '/upload-license'
       );
     });
   });

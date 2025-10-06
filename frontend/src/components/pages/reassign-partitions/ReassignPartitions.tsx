@@ -691,7 +691,7 @@ class ReassignPartitions extends PageComponent {
     errors: {
       topicName: string;
       partitions: AlterPartitionReassignmentsPartitionResponse[];
-    }[],
+    }[]
   ) {
     showErrorModal(
       'Reassign Partitions',
@@ -711,7 +711,7 @@ class ReassignPartitions extends PageComponent {
             </div>
           </div>
         ))}
-      </div>,
+      </div>
     );
   }
 

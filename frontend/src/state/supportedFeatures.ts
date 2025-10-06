@@ -86,7 +86,7 @@ export function isSupported(f: FeatureEntry): boolean {
   if (f.endpoint.includes('.SecurityService')) return false;
 
   featureErrors.push(
-    `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`,
+    `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`
   );
   return false;
 }

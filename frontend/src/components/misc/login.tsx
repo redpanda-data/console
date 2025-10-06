@@ -272,7 +272,7 @@ const LoginPage = observer(() => {
                 acc.push(
                   <div key={method}>
                     <AuthComponent />
-                  </div>,
+                  </div>
                 );
               }
               return acc;

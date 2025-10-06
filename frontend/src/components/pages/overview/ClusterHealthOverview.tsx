@@ -32,7 +32,7 @@ const ClusterHealthOverview = () => {
               {titleCase(
                 api.clusterHealth?.unhealthyReasons
                   ?.map((x) => HUMAN_READABLE_UNHEALTHY_REASONS[x].toLowerCase() ?? x)
-                  .join(', ') ?? '',
+                  .join(', ') ?? ''
               )}
             </Box>
           </Grid>

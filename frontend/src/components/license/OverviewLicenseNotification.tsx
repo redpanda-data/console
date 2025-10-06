@@ -23,7 +23,7 @@ import { api } from '../../state/backendApi';
 
 const getLicenseAlertContent = (
   licenses: License[],
-  onRegisterModalOpen: () => void,
+  onRegisterModalOpen: () => void
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (licenses.length === 0) {
     return null;

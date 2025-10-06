@@ -288,7 +288,7 @@ const TabConnectors = observer(() => {
                   className="hoverLink"
                   onClick={() =>
                     appGlobal.historyPush(
-                      `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`,
+                      `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
                     )
                   }
                   style={{ display: 'inline-block', width: '100%' }}
@@ -353,7 +353,7 @@ class TabTasks extends Component {
 
           connectorName: con.name,
         };
-      }),
+      })
     );
 
     return (
@@ -367,7 +367,7 @@ class TabTasks extends Component {
                 className="hoverLink"
                 onClick={() =>
                   appGlobal.historyPush(
-                    `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`,
+                    `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
                   )
                 }
                 whiteSpace="break-spaces"

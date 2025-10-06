@@ -68,7 +68,7 @@ describe('DeleteSecretModal', () => {
             id: secretId,
           }),
         }),
-        expect.anything(),
+        expect.anything()
       );
     });
   });

@@ -89,7 +89,7 @@ export const createMCPConfig = ({
     isServerless ? '--serverless-cluster-id' : '--cluster-id',
     clusterId || '',
     '--mcp-server-id',
-    mcpServerId || '',
+    mcpServerId || ''
   );
 
   return {

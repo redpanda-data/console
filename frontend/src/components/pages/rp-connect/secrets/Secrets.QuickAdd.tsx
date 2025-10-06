@@ -58,7 +58,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
             id: id,
             secretData: base64ToUInt8Array(encodeBase64(secret)),
             scopes: [Scope.REDPANDA_CONNECT],
-          }),
+          })
         )
         .then(async () => {
           toast({

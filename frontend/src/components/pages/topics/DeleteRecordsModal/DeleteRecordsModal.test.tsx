@@ -32,13 +32,7 @@ const testTopic: Topic = {
 describe('DeleteRecordsModal', () => {
   test('renders all expected elements in step 1', () => {
     render(
-      <DeleteRecordsModal
-        afterClose={vi.fn()}
-        onCancel={vi.fn()}
-        onFinish={vi.fn()}
-        topic={testTopic}
-        visible={true}
-      />,
+      <DeleteRecordsModal afterClose={vi.fn()} onCancel={vi.fn()} onFinish={vi.fn()} topic={testTopic} visible={true} />
     );
 
     expect(screen.getByText('Delete records in topic')).toBeInTheDocument();

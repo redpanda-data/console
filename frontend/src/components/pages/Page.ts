@@ -44,5 +44,5 @@ export abstract class PageComponent<TRouteParams = Record<string, unknown>> exte
   abstract initPage(p: PageInitHelper): void;
 }
 export type PageComponentType<TRouteParams = Record<string, unknown>> = new (
-  props: PageProps<TRouteParams>,
+  props: PageProps<TRouteParams>
 ) => PageComponent<PageProps<TRouteParams>>;

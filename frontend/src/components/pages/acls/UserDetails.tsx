@@ -204,7 +204,7 @@ const UserPermissionDetailsContent = observer((p: { userName: string }) => {
       select: (response) => {
         return response.resources.length > 0;
       },
-    },
+    }
   );
 
   if (hasAcls) {

@@ -54,7 +54,7 @@ const GenericModal = observer(
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 const ExplicitConfirmModal = observer(
@@ -103,7 +103,7 @@ const ExplicitConfirmModal = observer(
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 // A type of modal that simply shows some stuff and only has an "ok" button
@@ -135,7 +135,7 @@ const InfoModal = observer(
         </ModalContent>
       </Modal>
     );
-  },
+  }
 );
 
 export function openInfoModal(p: {

@@ -197,7 +197,7 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
 export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: ReturnType<typeof schemaToConfig>,
-  componentSpec: ConnectComponentSpec,
+  componentSpec: ConnectComponentSpec
 ) => {
   // If no existing YAML, return new config object
   if (!existingYaml.trim()) {
