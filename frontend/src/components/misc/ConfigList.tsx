@@ -133,8 +133,8 @@ export function ConfigList({
         return (
           <Box px={10} py={6}>
             <DataTable<ConfigEntry>
-              // @ts-expect-error TODO - we need to fix types here and find a shared interface
               columns={tableColumns}
+              // @ts-expect-error TODO - we need to fix types here and find a shared interface
               data={row.original.synonyms.filter((x) => x.source !== row.original.source)}
             />
           </Box>

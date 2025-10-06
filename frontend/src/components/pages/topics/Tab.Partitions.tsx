@@ -116,8 +116,8 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
           },
         ]}
         data={partitions}
-        defaultPageSize={uiState.topicSettings.partitionPageSize}
         // @ts-expect-error - we need to get rid of this enum in DataTable
+        defaultPageSize={uiState.topicSettings.partitionPageSize}
         onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
           uiState.topicSettings.partitionPageSize = pageSize;
           editQuery((query) => {
