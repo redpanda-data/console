@@ -716,12 +716,12 @@ class ReassignPartitions extends PageComponent {
   }
 
   startRefreshingTopicConfigs() {
-    if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
+    if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error('Stack trace').stack });
     if (this.refreshTopicConfigsTimer == null)
       this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
   }
   stopRefreshingTopicConfigs() {
-    if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error().stack });
+    if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error('Stack trace').stack });
     if (this.refreshTopicConfigsTimer) {
       window.clearInterval(this.refreshTopicConfigsTimer);
       this.refreshTopicConfigsTimer = null;

@@ -195,7 +195,7 @@ describe('licenseUtils', () => {
   });
 
   describe('prettyExpirationDate', () => {
-    test.skip('should return a formatted expiration date for an expiring license', () => {
+    test('should return a formatted expiration date for an expiring license', () => {
       expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX); // MM/DD/YYYY format
     });
 

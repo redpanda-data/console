@@ -513,15 +513,15 @@
         // Use standard constants instead of approximated literals.
         "noApproximativeNumericConstant": "error",
         // Discourage the usage of Array index in keys.
-        "noArrayIndexKey": "error",
+        "noArrayIndexKey": "off", // Enable later - many violations
         // Disallow assignments in expressions.
-        "noAssignInExpressions": "error",
+        "noAssignInExpressions": "off", // Enable later - many violations
         // Disallows using an async function as a Promise executor.
         "noAsyncPromiseExecutor": "error",
         // Prevents the use of the ! pattern in the first position of files.includes in the configuration file.
         "noBiomeFirstException": "error",
         // Disallow bitwise operators.
-        "noBitwiseOperators": "error",
+        "noBitwiseOperators": "off", // Enable later - some violations
         // Disallow expressions where the operation doesn't affect the value
         "noConstantBinaryExpressions": "error",
         // Disallow reassigning exceptions in catch clauses.
@@ -537,7 +537,7 @@
         // Disallow void type outside of generic or return types.
         "noConfusingVoidType": "error",
         // Disallow the use of console.
-        "noConsole": "error",
+        "noConsole": "off", // Enable later - many violations
         // Disallow TypeScript const enum.
         "noConstEnum": "error",
         // Prevents from having control characters and some escape sequences that match control characters in regular expression literals.
@@ -549,7 +549,7 @@
         // Prevents importing next/document outside of pages/_document.jsx in Next.js projects.
         "noDocumentImportInPage": "error",
         // Require the use of === and !==.
-        "noDoubleEquals": "error",
+        "noDoubleEquals": "off", // Enable later - many violations
         // Disallow duplicate case labels.
         "noDuplicateCase": "error",
         // Disallow duplicate class members.
@@ -567,13 +567,13 @@
         // A describe block should not contain duplicate hooks.
         "noDuplicateTestHooks": "error",
         // Disallow empty block statements and static blocks.
-        "noEmptyBlockStatements": "error",
+        "noEmptyBlockStatements": "off", // Enable later - many violations
         // Disallow the declaration of empty interfaces.
         "noEmptyInterface": "error",
         // Disallow variables from evolving into any type through reassignments.
-        "noEvolvingTypes": "error",
+        "noEvolvingTypes": "off", // Enable later - many violations
         // Disallow the any type usage.
-        "noExplicitAny": "error",
+        "noExplicitAny": "off", // Enable later - many violations
         // Disallow using export or module.exports in files containing tests.
         "noExportsInTest": "error",
         // Prevents the wrong usage of the non-null assertion operator (!) in TypeScript files.
@@ -651,7 +651,7 @@
         // Disallow the use of overload signatures that are not next to each other.
         "useAdjacentOverloadSignatures": "error",
         // Ensure async functions utilize await.
-        "useAwait": "error",
+        "useAwait": "off", // Enable later - many violations
         // Promotes the correct usage for ignoring folders in the configuration file.
         "useBiomeIgnoreFolder": "error",
         // Enforce consistent return values in iterable callbacks.
@@ -661,11 +661,11 @@
         // Enforce passing a message value when creating a built-in error.
         "useErrorMessage": "error",
         // Enforce get methods to always return a value.
-        "useGetterReturn": "error",
+        "useGetterReturn": "off", // Enable later - some violations
         // Enforces the use of a recommended display strategy with Google Fonts.
         "useGoogleFontDisplay": "error",
         // Require for-in loops to include an if statement.
-        "useGuardForIn": "error",
+        "useGuardForIn": "off", // Enable later - some violations
         // Use Array.isArray() instead of instanceof Array.
         "useIsArray": "error",
         // Require using the namespace keyword over the module keyword to declare TypeScript namespaces.

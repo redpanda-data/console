@@ -86,16 +86,14 @@ class TopicTab {
     }
 
     return (
-      1 && (
-        <Popover
-          content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}
-          hideCloseButton={true}
-        >
-          <div>
-            <LockIcon size={16} /> {this.titleText}
-          </div>
-        </Popover>
-      )
+      <Popover
+        content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}
+        hideCloseButton={true}
+      >
+        <div>
+          <LockIcon size={16} /> {this.titleText}
+        </div>
+      </Popover>
     );
   }
 
