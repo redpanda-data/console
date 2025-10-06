@@ -1009,3 +1009,301 @@ test.describe('Allow all operations', () => {
     });
   });
 });
+
+test.describe('Multiples ACLs to same principal', () => {
+  const firstHost = '*';
+  const secondHost = '1.1.1.1';
+
+  const firstACLRules: Rule[] = [
+    {
+      id: 0,
+      resourceType: ResourceTypeCluster,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: 'kafka-cluster',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        CREATE: OperationTypeAllow,
+        ALTER: OperationTypeDeny,
+        CLUSTER_ACTION: OperationTypeAllow,
+      },
+    },
+    {
+      id: 1,
+      resourceType: ResourceTypeTopic,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: 'events-topic',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        READ: OperationTypeAllow,
+        WRITE: OperationTypeAllow,
+        CREATE: OperationTypeAllow,
+        DELETE: OperationTypeDeny,
+      },
+    },
+    {
+      id: 2,
+      resourceType: ResourceTypeTransactionalId,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: '*',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+      },
+    },
+  ];
+
+  const secondACLRules: Rule[] = [
+    {
+      id: 0,
+      resourceType: ResourceTypeTopic,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypeLiteral,
+      selectorValue: 'payments-topic',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        READ: OperationTypeAllow,
+        WRITE: OperationTypeAllow,
+      },
+    },
+    {
+      id: 1,
+      resourceType: ResourceTypeTopic,
+      mode: ModeCustom,
+      selectorType: ResourcePatternTypePrefix,
+      selectorValue: 'logs-',
+      operations: {
+        DESCRIBE: OperationTypeAllow,
+        READ: OperationTypeAllow,
+      },
+    },
+  ];
+
+  const principal = generatePrincipalName();
+
+  test('Create 2 ACLs with same principal, 1 with host * and 1 with host 1.1.1.1', async ({ page }) => {
+    await test.step('Create first ACL host *', async () => {
+      const aclPage = new ACLPage(page);
+      await aclPage.goto();
+
+      await test.step('Set principal and host', async () => {
+        await aclPage.setPrincipal(principal);
+        await aclPage.setHost(firstHost);
+      });
+
+      await test.step('Configure all rules', async () => {
+        await aclPage.configureRules(firstACLRules);
+      });
+
+      await test.step('Verify the summary shows the correct operations', async () => {
+        await aclPage.validateAllSummaryRules(firstACLRules);
+      });
+
+      await test.step('Submit the form', async () => {
+        await aclPage.submitForm();
+      });
+
+      await test.step('Wait for navigation to detail page', async () => {
+        await aclPage.waitForDetailPage();
+      });
+    });
+    await test.step('Create second ACL host 1.1.1.1', async () => {
+      const aclPage = new ACLPage(page);
+      await aclPage.goto();
+
+      await test.step('Set principal and host', async () => {
+        await aclPage.setPrincipal(principal);
+        await aclPage.setHost(secondHost);
+      });
+
+      await test.step('Configure topic rules', async () => {
+        await aclPage.configureRules(secondACLRules);
+      });
+
+      await test.step('Verify the summary shows the correct operations', async () => {
+        await aclPage.validateAllSummaryRules(secondACLRules);
+      });
+
+      await test.step('Submit the form', async () => {
+        await aclPage.submitForm();
+      });
+
+      await test.step('Wait for navigation to detail page', async () => {
+        await aclPage.waitForDetailPage();
+      });
+    });
+    await test.step('Validate both ACLs appear in the list with correct details', async () => {
+      const aclPage = new ACLPage(page);
+      await aclPage.gotoList();
+
+      // Verify first ACL with host='*' appears in the list
+      const firstAclListItem = page.getByTestId(`acl-list-item-${principal}-${firstHost}`);
+      await expect(firstAclListItem).toBeVisible({ timeout: 1000 });
+
+      // Verify second ACL with host='1.1.1.1' appears in the list
+      const secondAclListItem = page.getByTestId(`acl-list-item-${principal}-${secondHost}`);
+      await expect(secondAclListItem).toBeVisible({ timeout: 1000 });
+    });
+    await test.step('Validate detail pages for both ACLs from list ACL page', async () => {
+      const aclPage = new ACLPage(page);
+
+      await aclPage.gotoList();
+
+      // Click on first ACL with host='*'
+      await test.step('Click first ACL (host=*) and validate rules', async () => {
+        const firstAclListItem = page.getByTestId(`acl-list-item-${principal}-${firstHost}`);
+        await firstAclListItem.click();
+
+        await aclPage.waitForDetailPage();
+
+        // Verify URL does not have host query param (or has host=*)
+        const url = page.url();
+        expect(url).toContain(
+          `/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
+        );
+
+        // Validate all rules from first ACL are present
+        await aclPage.validateAllDetailRules(firstACLRules, principal, firstHost);
+      });
+
+      // Navigate back to ACL list
+      await test.step('Navigate back to ACL list', async () => {
+        await aclPage.gotoList();
+      });
+
+      // Click on second ACL with host='1.1.1.1'
+      await test.step('Click second ACL (host=1.1.1.1) and validate rules', async () => {
+        const secondAclListItem = page.getByTestId(`acl-list-item-${principal}-${secondHost}`);
+        await secondAclListItem.click();
+
+        await aclPage.waitForDetailPage();
+
+        // Verify URL contains host query parameter
+        await page.waitForURL(
+          `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`,
+        );
+        const url = page.url();
+        expect(url).toContain(`host=${encodeURIComponent(secondHost)}`);
+
+        // Validate all rules from second ACL are present
+        await aclPage.validateAllDetailRules(secondACLRules, principal, secondHost);
+      });
+    });
+
+    await test.step('Navigate directly to detail page without host parameter', async () => {
+      // Navigate directly to the ACL detail page without specifying host
+      await page.goto(`/security/acls/${encodeURIComponent(principal)}/details`);
+
+      // Verify that HostSelector is displayed
+      const hostSelectorDescription = page.getByTestId('host-selector-description');
+      await expect(hostSelectorDescription).toBeVisible();
+
+      // Verify the title shows "Multiple Hosts Found"
+      await expect(page.getByText('Multiple Hosts Found')).toBeVisible();
+
+      // Verify both host options are shown
+      const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);
+      await expect(firstHostRow).toBeVisible();
+
+      const secondHostRow = page.getByTestId(`host-selector-row-${secondHost}`);
+      await expect(secondHostRow).toBeVisible();
+    });
+    await test.step('Select first host and verify navigation', async () => {
+      const aclPage = new ACLPage(page);
+
+      // Click on the first host row
+      const firstHostRow = page.getByTestId(`host-selector-row-${firstHost}`);
+      await firstHostRow.click();
+
+      // Verify navigation to detail page with host parameter
+      await page.waitForURL(
+        `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`,
+      );
+
+      // Verify URL contains the host parameter
+      const url = page.url();
+      expect(url).toContain(`host=${encodeURIComponent(firstHost)}`);
+
+      // Verify ACL details are shown (not the host selector anymore)
+      await aclPage.validateAllDetailRules(firstACLRules, principal, firstHost);
+    });
+    await test.step('Navigate back without host parameter and select second host', async () => {
+      const aclPage = new ACLPage(page);
+
+      // Navigate back to the detail page without host parameter
+      await page.goto(`/security/acls/${encodeURIComponent(principal)}/details`);
+
+      // Verify HostSelector is shown again
+      await expect(page.getByText('Multiple Hosts Found')).toBeVisible();
+
+      // Click on the second host row
+      const secondHostRow = page.getByTestId(`host-selector-row-${secondHost}`);
+      await secondHostRow.click();
+
+      // Verify navigation to detail page with second host parameter
+      await page.waitForURL(
+        `**/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`,
+      );
+
+      // Verify URL contains the second host parameter
+      const url = page.url();
+      expect(url).toContain(`host=${encodeURIComponent(secondHost)}`);
+
+      // Verify ACL details for second host are shown
+      await aclPage.validateAllDetailRules(secondACLRules, principal, secondHost);
+    });
+
+    await test.step('Validate if customer need to update one ACL the other one is not affected', async () => {
+      const aclPage = new ACLPage(page);
+
+      // Navigate to first ACL detail page
+      await page.goto(`/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(firstHost)}`);
+      await aclPage.waitForDetailPage();
+
+      // Click update button to navigate to update page
+      await aclPage.clickUpdateButtonFromDetailPage();
+      await aclPage.waitForUpdatePage();
+
+      // Create modified rules with one operation changed (DESCRIBE from allow to deny in cluster rule)
+      const modifiedFirstACLRules: Rule[] = [
+        {
+          ...firstACLRules[0],
+          operations: {
+            ...firstACLRules[0].operations,
+            DESCRIBE: OperationTypeDeny, // Changed from allow to deny
+          },
+        },
+        firstACLRules[1], // Topic rule unchanged
+        firstACLRules[2], // TransactionalId rule unchanged
+      ];
+
+      // Apply the update
+      await aclPage.updateRules(modifiedFirstACLRules);
+
+      // Submit the form
+      await aclPage.submitForm();
+
+      // Wait for navigation back to detail page
+      await aclPage.waitForDetailPage();
+
+      // Verify URL contains the correct host parameter
+      let url = page.url();
+      expect(url).toContain(`host=${encodeURIComponent(firstHost)}`);
+
+      // Validate the updated rules
+      await aclPage.validateAllDetailRules(modifiedFirstACLRules, principal, firstHost);
+
+      // Now verify the second ACL (host 1.1.1.1) was not affected
+      await page.goto(`/security/acls/${encodeURIComponent(principal)}/details?host=${encodeURIComponent(secondHost)}`);
+      await aclPage.waitForDetailPage();
+
+      // Verify URL contains the second host parameter
+      url = page.url();
+      expect(url).toContain(`host=${encodeURIComponent(secondHost)}`);
+
+      // Verify second ACL's rules remain unchanged
+      await aclPage.validateAllDetailRules(secondACLRules, principal, secondHost);
+    });
+  });
+});
