@@ -57,7 +57,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
         <SyntaxHighlighter
           style={vs}
           customStyle={{
-            'background-color': null,
+            backgroundColor: null,
             border: null,
             margin: null,
             padding: null,

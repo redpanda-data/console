@@ -14,6 +14,9 @@ import type { ReactNode } from 'react';
 
 // Note: this component is intended to be temporary until all components are migrated @redpanda-data/ui
 function Section(props: { children: ReactNode; id?: string } & ChakraProps) {
+  // Filter out non-DOM props that shouldn't be passed to the section element
+  const { isInPortal, ...validProps } = props as any;
+
   return (
     <ChakraSection
       px={6}
@@ -21,7 +24,7 @@ function Section(props: { children: ReactNode; id?: string } & ChakraProps) {
       boxShadow="4px 4px 0px 0px rgb(0 0 0 / 10%)"
       border="1px solid #C5CBD2"
       borderRadius="8px"
-      {...props}
+      {...validProps}
     />
   );
 }

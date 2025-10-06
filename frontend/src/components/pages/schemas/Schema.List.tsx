@@ -45,6 +45,7 @@ import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
   useSchemaModeQuery,
+  useSchemaUsagesByIdQuery,
 } from '../../../react-query/api/schema';
 // Global state
 import { appGlobal } from '../../../state/appGlobal';
@@ -107,7 +108,6 @@ const NotConfigured: FC = () => {
 };
 
 const SchemaList: FC = () => {
-  const [isLoadingSchemaVersionMatches, setIsLoadingSchemaVersionMatches] = useState(false);
   const [isHelpSidebarOpen, setIsHelpSidebarOpen] = useState(false);
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
@@ -129,36 +129,26 @@ const SchemaList: FC = () => {
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaMutation();
 
+  // Parse schema ID from search query
+  const schemaIdSearch = useMemo(() => {
+    const trimmedValue = quickSearch.trim();
+    const searchAsNum = Number(trimmedValue);
+    return trimmedValue.length && !Number.isNaN(searchAsNum) ? searchAsNum : null;
+  }, [quickSearch]);
+
+  const { data: schemaUsages, isLoading: isLoadingSchemaVersionMatches } = useSchemaUsagesByIdQuery(schemaIdSearch);
+
   const refreshData = useCallback(() => {
     refetchMode();
     refetchCompatibility();
     api.refreshSchemaTypes();
     refetchSchemas();
-
-    // Forcing a refresh means clearing cached information
-    // For all the above calls this happens automatically, but schema usages are a cached map
-    api.schemaUsagesById.clear();
   }, [refetchSchemas, refetchMode, refetchCompatibility]);
 
   useEffect(() => {
     uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
     appGlobal.onRefresh = () => refreshData();
   }, [refreshData]);
-
-  const triggerSearchBySchemaId = useCallback(() => {
-    const trimmedValue = quickSearch.trim();
-    const searchAsNum = Number(trimmedValue);
-    if (trimmedValue.length && !Number.isNaN(searchAsNum)) {
-      // Keep calling it to keep the list updated
-      // Extra calls (even when we already have data) will be automatically caught by caching
-      setIsLoadingSchemaVersionMatches(true);
-      api.refreshSchemaUsagesById(searchAsNum).finally(() => setIsLoadingSchemaVersionMatches(false));
-    }
-  }, [quickSearch]);
-
-  useEffect(() => {
-    triggerSearchBySchemaId();
-  }, [triggerSearchBySchemaId]);
 
   const filteredSubjects = useMemo(() => {
     let subjects = schemaSubjects ?? [];
@@ -174,8 +164,7 @@ const SchemaList: FC = () => {
       // Find by schema ID
       const filterAsNumber = Number(searchQuery.trim());
       if (!Number.isNaN(filterAsNumber)) {
-        const schemas = api.schemaUsagesById.get(filterAsNumber);
-        const matchingSubjectNames = new Set(schemas?.map((s) => s.subject) ?? []);
+        const matchingSubjectNames = new Set(schemaUsages?.map((s) => s.subject) ?? []);
         subjects = subjects.filter((subject) => matchingSubjectNames.has(subject.name));
       } else {
         // Find by regex or string matching
@@ -190,7 +179,7 @@ const SchemaList: FC = () => {
     }
 
     return subjects;
-  }, [schemaSubjects, quickSearch, showSoftDeleted]);
+  }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages]);
 
   if (api.schemaOverviewIsConfigured === false) return <NotConfigured />;
 

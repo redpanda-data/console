@@ -5,6 +5,7 @@ import type {
   SchemaRegistryConfigResponse,
   SchemaRegistrySubject,
   SchemaRegistrySubjectDetails,
+  SchemaVersion,
 } from 'state/restInterfaces';
 
 export const useListSchemasQuery = () => {
@@ -384,5 +385,42 @@ export const useDeleteSchemaVersionMutation = () => {
       await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'] });
       await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'] });
     },
+  });
+};
+
+export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
+  return useQuery<SchemaVersion[]>({
+    queryKey: ['schemaRegistry', 'schemas', 'ids', schemaId, 'versions'],
+    queryFn: async () => {
+      if (schemaId === null) {
+        return [];
+      }
+
+      const response = await fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${config.jwt}`,
+        },
+      });
+
+      if (!response.ok) {
+        // 404 means the schema ID doesn't exist, return empty array
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`Failed to fetch schema usages for schema ID ${schemaId}`);
+      }
+
+      const data = await response.json();
+
+      // Handle "not configured" response
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    enabled: schemaId !== null,
   });
 };

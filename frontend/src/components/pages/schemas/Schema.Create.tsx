@@ -32,6 +32,7 @@ import {
   useSchemaTypesQuery,
   useValidateSchemaMutation,
 } from '../../../react-query/api/schema';
+import { useLegacyListTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { SchemaType } from '../../../state/restInterfaces';
@@ -45,20 +46,16 @@ import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals
 export const SchemaCreatePage = () => {
   const schemaSubjects = useListSchemasQuery();
   const schemaTypes = useSchemaTypesQuery();
-
-  // Fetch topics from MobX (temporary until topics are migrated to React Query)
-  useEffect(() => {
-    api.refreshTopics(true);
-  }, []);
+  const topics = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
 
   const editorState = useSchemaEditorState();
 
   useEffect(() => {
     appGlobal.onRefresh = () => {
       schemaSubjects.refetch();
-      api.refreshTopics(true);
+      topics.refetch();
     };
-  }, [schemaSubjects]);
+  }, [schemaSubjects, topics]);
 
   return (
     <PageContent key="b">
@@ -68,7 +65,7 @@ export const SchemaCreatePage = () => {
         state={editorState}
         mode="CREATE"
         schemaTypes={schemaTypes.data}
-        topics={api.topics?.filter((x) => !x.topicName.startsWith('_')).map((x) => x.topicName) ?? []}
+        topics={topics.data?.topics?.map((x) => x.topicName) ?? []}
         schemaSubjects={schemaSubjects.data?.filter((x) => !x.isSoftDeleted).map((x) => x.name) ?? []}
       />
 
