@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Card,
@@ -21,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Features } from 'state/supportedFeatures';
+
 import {
   type AclRulesProps,
   getIdFromRule,

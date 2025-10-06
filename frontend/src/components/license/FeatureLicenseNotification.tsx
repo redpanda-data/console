@@ -1,12 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
-import {
-  type License,
-  License_Type,
-  type ListEnterpriseFeaturesResponse_Feature,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api } from '../../state/backendApi';
+
 import {
   coreHasEnterpriseFeatures,
   ENTERPRISE_FEATURES_DOCS_LINK,
@@ -23,6 +18,12 @@ import {
   UploadLicenseButton,
 } from './licenseUtils';
 import { RegisterModal } from './RegisterModal';
+import {
+  type License,
+  License_Type,
+  type ListEnterpriseFeaturesResponse_Feature,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
 
 const getLicenseAlertContentForFeature = (
   _featureName: 'rbac' | 'reassignPartitions',

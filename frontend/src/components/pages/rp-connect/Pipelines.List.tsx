@@ -23,6 +23,11 @@ import { HiX } from 'react-icons/hi';
 import { MdOutlineQuestionMark, MdRefresh } from 'react-icons/md';
 import { Link, useNavigate } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
+
+import { openDeleteModal } from './modals';
+import { ConnectTiles } from './onboarding/connect-tiles';
+import type { ConnectComponentType } from './types/schema';
+import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData } from './types/wizard';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -33,10 +38,6 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { openDeleteModal } from './modals';
-import { ConnectTiles } from './onboarding/connect-tiles';
-import type { ConnectComponentType } from './types/schema';
-import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();
 

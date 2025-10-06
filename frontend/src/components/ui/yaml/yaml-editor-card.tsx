@@ -11,6 +11,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Code, Maximize2, PencilRuler } from 'lucide-react';
 import type { editor } from 'monaco-editor';
+
 import { YamlEditor } from './yaml-editor';
 
 interface YamlEditorCardProps {

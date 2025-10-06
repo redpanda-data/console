@@ -22,6 +22,7 @@ import { AlertCircle, Code, Link } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
+
 import GoLogo from '../../../../assets/go.svg';
 import JavaLogo from '../../../../assets/java.svg';
 import NodeLogo from '../../../../assets/node.svg';

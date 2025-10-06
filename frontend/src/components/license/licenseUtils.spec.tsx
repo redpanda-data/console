@@ -1,11 +1,4 @@
 import {
-  License_Source,
-  License_Type,
-  LicenseSchema,
-  type ListEnterpriseFeaturesResponse_Feature,
-  ListEnterpriseFeaturesResponse_FeatureSchema,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import {
   coreHasEnterpriseFeatures,
   getPrettyTimeToExpiration,
   licenseIsExpired,
@@ -15,12 +8,20 @@ import {
   prettyLicenseType,
   resolveEnterpriseCTALink,
 } from './licenseUtils';
+import {
+  License_Source,
+  License_Type,
+  LicenseSchema,
+  type ListEnterpriseFeaturesResponse_Feature,
+  ListEnterpriseFeaturesResponse_FeatureSchema,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import '../../utils/arrayExtensions';
 import { create } from '@bufbuild/protobuf';
 import { vi } from 'vitest';
+
+import { LicenseNotification } from './LicenseNotification';
 import { api } from '../../state/backendApi';
 import { renderWithRouter } from '../../test-utils';
-import { LicenseNotification } from './LicenseNotification';
 
 /**
  * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
@@ -313,7 +314,10 @@ describe('licenseUtils', () => {
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'core_balancing_continuous', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'core_balancing_continuous',
+          enabled: false,
+        }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'schema_id_validation', enabled: false }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'cloud_storage', enabled: false }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'gssapi', enabled: false }),

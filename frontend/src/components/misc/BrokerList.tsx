@@ -13,6 +13,7 @@ import { ChevronRightIcon } from '@heroicons/react/solid';
 import { Tooltip } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
+
 import { api, brokerMap } from '../../state/backendApi';
 import type { Broker, Partition } from '../../state/restInterfaces';
 

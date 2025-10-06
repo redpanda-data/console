@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import type { ConfigEntryExtended } from '../../../state/restInterfaces';
+
 import ConfigurationEditor from './TopicConfiguration';
+import type { ConfigEntryExtended } from '../../../state/restInterfaces';
 
 describe('TopicConfiguration', () => {
   test('renders groups in the correct order', () => {

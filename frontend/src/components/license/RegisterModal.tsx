@@ -24,6 +24,7 @@ import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { capitalizeFirst } from 'utils/utils';
+
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backendApi';
 

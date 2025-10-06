@@ -13,6 +13,7 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Server, Settings } from 'lucide-react';
+
 import ClineLogo from '../../../../../assets/cline.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';

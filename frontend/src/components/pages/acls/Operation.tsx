@@ -13,6 +13,7 @@ import { CheckIcon, CloseIcon, MinusIcon } from '@chakra-ui/icons';
 import { Flex } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { CSSProperties, FC, ReactElement, ReactNode } from 'react';
+
 import { AclOperation, type AclStrPermission } from '../../../state/restInterfaces';
 import { Label } from '../../../utils/tsxUtils';
 import { SingleSelect } from '../../misc/Select';

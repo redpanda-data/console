@@ -51,19 +51,7 @@ import {
 import { type FC, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
-import ErrorResult from '../../../components/misc/ErrorResult';
-import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
-import { appGlobal } from '../../../state/appGlobal';
-import { api, rolesApi } from '../../../state/backendApi';
-import { AclRequestDefault } from '../../../state/restInterfaces';
-import { Features } from '../../../state/supportedFeatures';
-import { uiSettings } from '../../../state/ui';
-import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
-import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
-import { PageComponent, type PageInitHelper } from '../Page';
+
 import { DeleteRoleConfirmModal } from './DeleteRoleConfirmModal';
 import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
 import type { AclPrincipalGroup } from './Models';
@@ -77,6 +65,19 @@ import {
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
 import { UserRoleTags } from './UserPermissionAssignments';
+import ErrorResult from '../../../components/misc/ErrorResult';
+import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../react-query/api/acl';
+import { appGlobal } from '../../../state/appGlobal';
+import { api, rolesApi } from '../../../state/backendApi';
+import { AclRequestDefault } from '../../../state/restInterfaces';
+import { Features } from '../../../state/supportedFeatures';
+import { uiSettings } from '../../../state/ui';
+import { Code as CodeEl, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { FeatureLicenseNotification } from '../../license/FeatureLicenseNotification';
+import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -211,7 +212,10 @@ export default AclList;
 
 type UsersEntry = { name: string; type: 'SERVICE_ACCOUNT' | 'PRINCIPAL' };
 const PermissionsListTab = observer(() => {
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
+    name: u,
+    type: 'SERVICE_ACCOUNT',
+  }));
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
   for (const g of principalGroupsView.principalGroups)
@@ -302,7 +306,10 @@ const PermissionsListTab = observer(() => {
 });
 
 const UsersTab = observer(() => {
-  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({ name: u, type: 'SERVICE_ACCOUNT' }));
+  const users: UsersEntry[] = (api.serviceAccounts?.users ?? []).map((u) => ({
+    name: u,
+    type: 'SERVICE_ACCOUNT',
+  }));
 
   const usersFiltered = users.filter((u) => {
     const filter = uiSettings.aclList.usersTab.quickSearch;
@@ -486,7 +493,7 @@ const RolesTab = observer(() => {
       return false;
     }
   });
-  // @ts-ignore perhaps required for MobX?
+  // @ts-expect-error perhaps required for MobX?
   const _isLoading = rolesApi.roles == null;
 
   const rolesWithMembers = roles.map((r) => {
@@ -672,7 +679,6 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
       <Section>
         {edittingPrincipalGroup && (
           <AclPrincipalGroupEditor
-            // @ts-ignore
             principalGroup={edittingPrincipalGroup}
             type={editorType}
             onClose={() => {
@@ -709,7 +715,12 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
         </Button>
 
         <Box py={4}>
-          <DataTable<{ principal: string; host: string; principalType: string; principalName: string }>
+          <DataTable<{
+            principal: string;
+            host: string;
+            principalType: string;
+            principalName: string;
+          }>
             data={groups || []}
             pagination
             sorting
@@ -836,7 +847,10 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
   );
 });
 
-const AlertDeleteFailed: FC<{ aclFailed: { err: unknown } | null; onClose: () => void }> = ({ aclFailed, onClose }) => {
+const AlertDeleteFailed: FC<{
+  aclFailed: { err: unknown } | null;
+  onClose: () => void;
+}> = ({ aclFailed, onClose }) => {
   const ref = useRef(null);
 
   if (!aclFailed) return null;

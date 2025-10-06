@@ -43,6 +43,7 @@ import {
   MdOutlinePauseCircle,
   MdOutlineWarningAmber,
 } from 'react-icons/md';
+
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';
@@ -765,7 +766,13 @@ export const TaskState = observer(
           colorScheme="red"
           variant="outline"
           onClick={() => showErr(task.trace)}
-          style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}
+          style={{
+            padding: '0px 12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            height: '30px',
+            gap: '5px',
+          }}
         >
           {stateContent}
           <span>(Show Error)</span>

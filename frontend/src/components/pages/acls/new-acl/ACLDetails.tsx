@@ -13,8 +13,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
-import { MatchingUsersCard } from '../../roles/MatchingUsersCard';
+
 import {
   formatLabel,
   getIdFromRule,
@@ -24,6 +23,8 @@ import {
   type Rule,
   type SharedConfig,
 } from './ACL.model';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+import { MatchingUsersCard } from '../../roles/MatchingUsersCard';
 
 // Helper function to get resource name
 const getResourceName = (resourceType: string): string => {

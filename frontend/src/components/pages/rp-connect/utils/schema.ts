@@ -1,4 +1,6 @@
 import { parseDocument, stringify as yamlStringify } from 'yaml';
+
+import { getCategoryDisplayName, inferComponentCategory } from './categories';
 import benthosSchema from '../../../../assets/rp-connect-schema.json';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
 import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema';
@@ -11,7 +13,6 @@ import {
   type ExtendedConnectComponentSpec,
 } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
-import { getCategoryDisplayName, inferComponentCategory } from './categories';
 
 /**
  * Extracts lightweight metadata from JSON Schema component variants

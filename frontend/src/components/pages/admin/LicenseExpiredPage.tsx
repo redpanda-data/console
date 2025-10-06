@@ -1,5 +1,6 @@
 import { Avatars, Box, Flex, Image, Link, Text, VStack } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/licenseUtils';

@@ -26,13 +26,7 @@ import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
-import { api } from '../state/backendApi';
-import type { UserPermissions } from '../state/restInterfaces';
-import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
-import { uiState } from '../state/uiState';
-import { AnimatePresence } from '../utils/animationProps';
-import { type AppFeature, AppFeatures } from '../utils/env';
+
 import { Section } from './misc/common';
 import AclList, { type AclListTab } from './pages/acls/Acl.List';
 import AclCreatePage from './pages/acls/new-acl/AclCreatePage';
@@ -83,6 +77,13 @@ import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 import { MCPIcon } from './redpanda-ui/components/icons';
 import { getSidebarItemTitleWithBetaBadge } from './sidebar-utils';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
+import { api } from '../state/backendApi';
+import type { UserPermissions } from '../state/restInterfaces';
+import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
+import { uiState } from '../state/uiState';
+import { AnimatePresence } from '../utils/animationProps';
+import { type AppFeature, AppFeatures } from '../utils/env';
 
 //
 //	Route Types

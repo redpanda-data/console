@@ -12,9 +12,10 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
-import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
+
 import { parsePrincipal } from './ACL.model';
 import { ACLDetails } from './ACLDetails';
+import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 
 const AclDetailPage = () => {
   const { aclName = '' } = useParams<{ aclName: string }>();

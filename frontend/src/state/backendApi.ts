@@ -25,67 +25,7 @@ import {
 import { comparer, computed, observable, runInAction, transaction } from 'mobx';
 import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
-import { config as appConfig, isEmbedded } from '../config';
-import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
-import { trackHubspotUser } from '../hubspot/hubspot.helper';
-import {
-  AuthenticationMethod,
-  type GetIdentityResponse,
-  KafkaAclOperation,
-  RedpandaCapability,
-  SchemaRegistryCapability,
-} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import {
-  PayloadEncoding,
-  PayloadEncodingSchema,
-  CompressionType as ProtoCompressionType,
-} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import {
-  type CreateDebugBundleRequest,
-  type CreateDebugBundleResponse,
-  type DebugBundleStatus,
-  DebugBundleStatus_Status,
-  type GetClusterHealthResponse,
-  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
-} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import type {
-  License,
-  ListEnterpriseFeaturesResponse_Feature,
-  SetLicenseRequest,
-  SetLicenseResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import type {
-  PublishMessageRequest,
-  PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
-import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
-import {
-  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
-  type Pipeline,
-  type PipelineCreate,
-  type PipelineUpdate,
-} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import {
-  type CreateSecretRequest,
-  type DeleteSecretRequest,
-  type ListSecretScopesRequest,
-  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
-  Scope,
-  type Secret,
-  type UpdateSecretRequest,
-} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
-import type {
-  KnowledgeBase,
-  KnowledgeBaseCreate,
-  KnowledgeBaseUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import { getBasePath, getBuildDate } from '../utils/env';
-import fetchWithTimeout from '../utils/fetchWithTimeout';
-import { toJson } from '../utils/jsonUtils';
-import { LazyMap } from '../utils/LazyMap';
-import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
+
 import { appGlobal } from './appGlobal';
 import {
   AclRequestDefault,
@@ -178,6 +118,67 @@ import {
 import { Features } from './supportedFeatures';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './uiState';
+import { config as appConfig, isEmbedded } from '../config';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
+import { trackHubspotUser } from '../hubspot/hubspot.helper';
+import {
+  AuthenticationMethod,
+  type GetIdentityResponse,
+  KafkaAclOperation,
+  RedpandaCapability,
+  SchemaRegistryCapability,
+} from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
+import {
+  PayloadEncoding,
+  PayloadEncodingSchema,
+  CompressionType as ProtoCompressionType,
+} from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import {
+  type CreateDebugBundleRequest,
+  type CreateDebugBundleResponse,
+  type DebugBundleStatus,
+  DebugBundleStatus_Status,
+  type GetClusterHealthResponse,
+  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
+} from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import type {
+  License,
+  ListEnterpriseFeaturesResponse_Feature,
+  SetLicenseRequest,
+  SetLicenseResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/license_pb';
+import type {
+  PublishMessageRequest,
+  PublishMessageResponse,
+} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
+import {
+  GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
+  type Pipeline,
+  type PipelineCreate,
+  type PipelineUpdate,
+} from '../protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import {
+  type CreateSecretRequest,
+  type DeleteSecretRequest,
+  type ListSecretScopesRequest,
+  ListSecretsRequestSchema as ListSecretsRequestSchemaDataPlane,
+  Scope,
+  type Secret,
+  type UpdateSecretRequest,
+} from '../protogen/redpanda/api/dataplane/v1/secret_pb';
+import type {
+  KnowledgeBase,
+  KnowledgeBaseCreate,
+  KnowledgeBaseUpdate,
+} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import { getBasePath, getBuildDate } from '../utils/env';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import { toJson } from '../utils/jsonUtils';
+import { LazyMap } from '../utils/LazyMap';
+import { ObjToKv } from '../utils/tsxUtils';
+import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -748,11 +749,17 @@ const apiStore = {
 
             let partitionHasError = false;
             if (p.partitionError) {
-              partitionErrors.push({ partitionId: p.id, error: p.partitionError });
+              partitionErrors.push({
+                partitionId: p.id,
+                error: p.partitionError,
+              });
               partitionHasError = true;
             }
             if (p.waterMarksError) {
-              waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
+              waterMarkErrors.push({
+                partitionId: p.id,
+                error: p.waterMarksError,
+              });
               partitionHasError = true;
             }
             if (partitionHasError) {
@@ -799,8 +806,16 @@ const apiStore = {
           // topicName
           p.topicName = topicName;
 
-          if (p.partitionError) partitionErrors.push({ id: p.id, partitionError: p.partitionError });
-          if (p.waterMarksError) waterMarksErrors.push({ id: p.id, waterMarksError: p.waterMarksError });
+          if (p.partitionError)
+            partitionErrors.push({
+              id: p.id,
+              partitionError: p.partitionError,
+            });
+          if (p.waterMarksError)
+            waterMarksErrors.push({
+              id: p.id,
+              waterMarksError: p.waterMarksError,
+            });
           if (partitionErrors.length || waterMarksErrors.length) continue;
 
           // replicaSize
@@ -1276,7 +1291,6 @@ const apiStore = {
 
         let subjectVersions = this.schemaReferencedBy.get(subjectName);
         if (!subjectVersions) {
-          // @ts-ignore MobX does not play nice with TypeScript 5: Type 'ObservableMap<number, SchemaReferencedByEntry[]>' is not assignable to type 'Map<number, SchemaReferencedByEntry[]>'.
           subjectVersions = observable(new Map<number, SchemaReferencedByEntry[]>());
           if (subjectVersions) {
             this.schemaReferencedBy.set(subjectName, subjectVersions);
@@ -1322,7 +1336,9 @@ const apiStore = {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
       method: 'PUT',
       headers: [['Content-Type', 'application/json']],
-      body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+      body: JSON.stringify({
+        compatibility: mode,
+      } as SchemaRegistrySetCompatibilityModeRequest),
     });
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
@@ -1345,7 +1361,9 @@ const apiStore = {
       {
         method: 'PUT',
         headers: [['Content-Type', 'application/json']],
-        body: JSON.stringify({ compatibility: mode } as SchemaRegistrySetCompatibilityModeRequest),
+        body: JSON.stringify({
+          compatibility: mode,
+        } as SchemaRegistrySetCompatibilityModeRequest),
       },
     );
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
@@ -1438,7 +1456,11 @@ const apiStore = {
         resourceType: ConfigResourceType.Broker,
         resourceName: String(b),
         configs: [
-          { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+          {
+            name: 'leader.replication.throttled.rate',
+            op: AlterConfigOperation.Set,
+            value: String(maxBytesPerSecond),
+          },
           {
             name: 'follower.replication.throttled.rate',
             op: AlterConfigOperation.Set,
@@ -1497,8 +1519,14 @@ const apiStore = {
         resourceType: ConfigResourceType.Topic,
         resourceName: t,
         configs: [
-          { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
-          { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+          {
+            name: 'leader.replication.throttled.replicas',
+            op: AlterConfigOperation.Delete,
+          },
+          {
+            name: 'follower.replication.throttled.replicas',
+            op: AlterConfigOperation.Delete,
+          },
         ],
       });
     }
@@ -1528,8 +1556,14 @@ const apiStore = {
         resourceType: ConfigResourceType.Broker,
         resourceName: String(b),
         configs: [
-          { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-          { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+          {
+            name: 'leader.replication.throttled.rate',
+            op: AlterConfigOperation.Delete,
+          },
+          {
+            name: 'follower.replication.throttled.rate',
+            op: AlterConfigOperation.Delete,
+          },
         ],
       });
     }
@@ -2173,14 +2207,20 @@ export const rolesApi = observable({
         .map((x) => {
           const principalParts = x.principal.split(':');
           if (principalParts.length !== 2) {
-            console.error('failed to split principal of role', { roleName, principal: x.principal });
+            console.error('failed to split principal of role', {
+              roleName,
+              principal: x.principal,
+            });
             return null;
           }
           const principalType = principalParts[0];
           const name = principalParts[1];
 
           if (principalType !== 'User') {
-            console.error('unexpected principal type in refreshRoleMembers', { roleName, principal: x.principal });
+            console.error('unexpected principal type in refreshRoleMembers', {
+              roleName,
+              principal: x.principal,
+            });
           }
 
           return { principalType, name } as RolePrincipal;
@@ -2419,7 +2459,9 @@ export const rpcnSecretManagerApi = observable({
     const client = appConfig.rpcnSecretsClient;
     if (!client) throw new Error('redpanda connect secret client is not initialized');
 
-    const res = await client.listSecretScopes({ request: listSecretScopesRequest });
+    const res = await client.listSecretScopes({
+      request: listSecretScopesRequest,
+    });
 
     if (!res.response) {
       this.isEnable = false;
@@ -2458,7 +2500,9 @@ export const transformsApi = observable({
     while (true) {
       let res: ListTransformsResponse;
       try {
-        res = await client.listTransforms({ request: { pageSize: 500, pageToken: nextPageToken } });
+        res = await client.listTransforms({
+          request: { pageSize: 500, pageToken: nextPageToken },
+        });
       } catch (_err) {
         break;
       }
@@ -2575,7 +2619,10 @@ export function createMessageSearch() {
       }
 
       try {
-        for await (const res of client.listMessages(req, { signal: messageSearchAbortController.signal, timeoutMs })) {
+        for await (const res of client.listMessages(req, {
+          signal: messageSearchAbortController.signal,
+          timeoutMs,
+        })) {
           if (messageSearchAbortController.signal.aborted) break;
 
           try {

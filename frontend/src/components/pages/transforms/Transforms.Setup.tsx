@@ -13,6 +13,7 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 

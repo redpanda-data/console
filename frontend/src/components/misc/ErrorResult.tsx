@@ -3,6 +3,7 @@ import { Code } from '@connectrpc/connect';
 import { Avatars, Box, CodeBlock, Heading, HStack, Image, Stack, Text } from '@redpanda-data/ui';
 import React from 'react';
 import { capitalizeFirst } from 'utils/utils';
+
 import type { WrappedApiError } from '../../state/restInterfaces';
 
 interface ErrorResultProps {

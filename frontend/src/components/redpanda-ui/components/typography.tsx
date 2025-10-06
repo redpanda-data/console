@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React, { forwardRef } from 'react';
-import { Link as ReactRouterLink, To } from 'react-router-dom';
+import { Link as ReactRouterLink, type To } from 'react-router-dom';
 
 import { cn } from '../lib/utils';
 
@@ -173,18 +173,20 @@ type BaseLinkProps = {
   children: React.ReactNode;
   testId?: string;
   className?: string;
-}
+};
 
 // Discriminated union for link types
-type LinkProps = 
-  | (BaseLinkProps & React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-      as?: never; // Default to anchor - don't allow 'as' when using anchor
-      href: string;
-    })
-  | (BaseLinkProps & React.ComponentProps<typeof ReactRouterLink> & {
-      as: typeof ReactRouterLink;
-      to: To;
-    });
+type LinkProps =
+  | (BaseLinkProps &
+      React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+        as?: never; // Default to anchor - don't allow 'as' when using anchor
+        href: string;
+      })
+  | (BaseLinkProps &
+      React.ComponentProps<typeof ReactRouterLink> & {
+        as: typeof ReactRouterLink;
+        to: To;
+      });
 
 export function Link({ className, children, testId, ...props }: LinkProps) {
   if ('as' in props && props.as === ReactRouterLink) {
@@ -199,19 +201,18 @@ export function Link({ className, children, testId, ...props }: LinkProps) {
         {children}
       </ReactRouterLink>
     );
-  } else {
-    // Render as anchor tag (default)
-    
-    return (
-      <a
-        className={cn('font-medium text-primary underline underline-offset-4', className)}
-        data-testid={testId}
-        {...props}
-      >
-        {children}
-      </a>
-    );
   }
+  // Render as anchor tag (default)
+
+  return (
+    <a
+      className={cn('font-medium text-primary underline underline-offset-4', className)}
+      data-testid={testId}
+      {...props}
+    >
+      {children}
+    </a>
+  );
 }
 
 // Preformatted Code Block Component

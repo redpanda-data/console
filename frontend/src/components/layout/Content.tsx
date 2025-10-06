@@ -12,6 +12,7 @@
 import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { observer } from 'mobx-react';
+
 import { ModalContainer } from '../../utils/ModalContainer';
 import AppFooter from '../layout/Footer';
 import AppPageHeader from '../layout/Header';
@@ -22,6 +23,7 @@ import { NullFallbackBoundary } from '../misc/NullFallbackBoundary';
 import { RouteView } from '../routes';
 
 export const AppContent = observer(() => (
+  // biome-ignore lint/correctness/useUniqueElementIds: legacy layout
   <div id="mainLayout">
     <TooltipProvider>
       {/* Page */}

@@ -39,6 +39,7 @@ import { action, autorun, type IReactionDisposer, makeObservable, observable, tr
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type {
@@ -738,7 +739,14 @@ class ColAfter extends Component<{
           return (
             <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
               <span>{numberToThousandsString(val.offset)}</span>
-              <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>
+              <span
+                style={{
+                  fontSize: 'smaller',
+                  color: 'hsl(0deg 0% 67%)',
+                  userSelect: 'none',
+                  cursor: 'default',
+                }}
+              >
                 ({new Date(val.timestamp).toLocaleString()})
               </span>
             </div>
@@ -785,7 +793,14 @@ class ColAfter extends Component<{
       return (
         <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
           <span>{typeof content.offset === 'number' ? numberToThousandsString(content.offset) : content.offset}</span>
-          <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>
+          <span
+            style={{
+              fontSize: 'smaller',
+              color: 'hsl(0deg 0% 67%)',
+              userSelect: 'none',
+              cursor: 'default',
+            }}
+          >
             ({content.name})
           </span>
         </div>

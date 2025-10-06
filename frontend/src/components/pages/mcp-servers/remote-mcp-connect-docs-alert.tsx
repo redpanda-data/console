@@ -1,6 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Link } from 'components/redpanda-ui/components/typography';
-
 import { ExternalLink, Info } from 'lucide-react';
 
 interface RemoteMCPConnectDocsAlertProps {

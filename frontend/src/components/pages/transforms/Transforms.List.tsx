@@ -26,6 +26,8 @@ import {
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link, Link as ReactRouterLink } from 'react-router-dom';
+
+import { openDeleteModal } from './modals';
 import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
@@ -38,7 +40,6 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { openDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 

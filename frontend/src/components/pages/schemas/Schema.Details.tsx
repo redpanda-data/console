@@ -32,6 +32,8 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
@@ -44,7 +46,6 @@ import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { SmallStat } from '../../misc/SmallStat';
 import { PageComponent } from '../Page';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 

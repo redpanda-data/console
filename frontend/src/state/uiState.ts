@@ -12,9 +12,10 @@
 import type { SortingState } from '@tanstack/react-table';
 import { computed, makeObservable, observable } from 'mobx';
 import React from 'react';
-import type { PageDefinition } from '../components/routes';
+
 import { api } from './backendApi';
 import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
+import type { PageDefinition } from '../components/routes';
 
 export interface BreadcrumbOptions {
   canBeTruncated?: boolean;

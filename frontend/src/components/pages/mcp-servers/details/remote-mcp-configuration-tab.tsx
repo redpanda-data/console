@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import { create } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
@@ -43,9 +44,10 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { parse, stringify } from 'yaml';
+
+import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../templates/remote-mcp-templates';
-import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 interface LocalTool {
   id: string;
@@ -477,7 +479,10 @@ export const RemoteMCPConfigurationTab = () => {
                           onChange={(e) => {
                             const currentData = getCurrentData();
                             if (!currentData) return;
-                            setEditedServerData({ ...currentData, displayName: e.target.value });
+                            setEditedServerData({
+                              ...currentData,
+                              displayName: e.target.value,
+                            });
                           }}
                         />
                       </div>
@@ -490,7 +495,10 @@ export const RemoteMCPConfigurationTab = () => {
                           onChange={(e) => {
                             const currentData = getCurrentData();
                             if (!currentData) return;
-                            setEditedServerData({ ...currentData, description: e.target.value });
+                            setEditedServerData({
+                              ...currentData,
+                              description: e.target.value,
+                            });
                           }}
                         />
                       </div>
@@ -521,7 +529,10 @@ export const RemoteMCPConfigurationTab = () => {
                           onValueChange={(value) => {
                             const currentData = getCurrentData();
                             if (!currentData) return;
-                            setEditedServerData({ ...currentData, resources: { tier: value } });
+                            setEditedServerData({
+                              ...currentData,
+                              resources: { tier: value },
+                            });
                           }}
                         >
                           <SelectTrigger>
@@ -643,7 +654,7 @@ export const RemoteMCPConfigurationTab = () => {
                             <Select
                               value={selectedTool.componentType.toString()}
                               onValueChange={(value) => {
-                                const componentType = Number.parseInt(value) as MCPServer_Tool_ComponentType;
+                                const componentType = Number.parseInt(value, 10) as MCPServer_Tool_ComponentType;
                                 handleUpdateTool(selectedTool.id, { componentType });
                               }}
                             >
@@ -673,7 +684,11 @@ export const RemoteMCPConfigurationTab = () => {
                             <Input
                               value={selectedTool.name}
                               placeholder="e.g., search-posts (must be filename-compatible)"
-                              onChange={(e) => handleUpdateTool(selectedTool.id, { name: e.target.value })}
+                              onChange={(e) =>
+                                handleUpdateTool(selectedTool.id, {
+                                  name: e.target.value,
+                                })
+                              }
                             />
                           </div>
                           <div className="space-y-2">

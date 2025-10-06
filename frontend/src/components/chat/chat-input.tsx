@@ -1,6 +1,8 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 import { type ChatMessage, chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
+
 import { SendMessageButton } from './send-message-button';
 import { sendMessageToApi } from './send-message-to-api';
 

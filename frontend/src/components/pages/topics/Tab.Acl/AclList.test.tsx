@@ -12,13 +12,14 @@
 import { render, screen } from '@testing-library/react';
 import { observable } from 'mobx';
 import React from 'react';
+
+import AclList from './AclList';
 import type {
   AclStrOperation,
   AclStrPermission,
   AclStrResourceType,
   GetAclOverviewResponse,
 } from '../../../../state/restInterfaces';
-import AclList from './AclList';
 
 describe('AclList', () => {
   test('renders an empty table when no data is present', () => {

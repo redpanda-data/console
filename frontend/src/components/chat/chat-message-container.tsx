@@ -1,4 +1,5 @@
 import type { ChatMessage } from 'database/chat-db';
+
 import { ChatMessageView } from './chat-message-view';
 import { ChatTypingIndicator } from './chat-typing-indicator';
 

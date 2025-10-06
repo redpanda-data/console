@@ -16,6 +16,9 @@ import { observer } from 'mobx-react';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+
+import { SelectionInfoBar } from './components/StatisticsBar';
+import type { PartitionSelection } from './ReassignPartitions';
 import { api } from '../../../state/backendApi';
 import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -24,8 +27,6 @@ import { prettyBytesOrNA } from '../../../utils/utils';
 import { BrokerList } from '../../misc/BrokerList';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
 import { SearchTitle } from '../../misc/KowlTable';
-import { SelectionInfoBar } from './components/StatisticsBar';
-import type { PartitionSelection } from './ReassignPartitions';
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];

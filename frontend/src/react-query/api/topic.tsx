@@ -18,6 +18,7 @@ import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import type { GetTopicsResponse, TopicDescription } from 'state/restInterfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+
 import { api } from '../../state/backendApi';
 
 interface ListTopicsExtraOptions {

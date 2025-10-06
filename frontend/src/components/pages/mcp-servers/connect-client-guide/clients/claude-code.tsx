@@ -23,6 +23,7 @@ import {
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useState } from 'react';
+
 import ClaudeCodeLogo from '../../../../../assets/claude-code.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';

@@ -10,11 +10,6 @@
  */
 
 import {
-  KnowledgeBase_VectorDatabase_PostgresSchema,
-  KnowledgeBaseSchema,
-  KnowledgeBaseUpdateSchema,
-} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
-import {
   debugFieldBehaviors,
   getMessageFieldMetadata,
   isFieldEditable,
@@ -22,6 +17,11 @@ import {
   isFieldOutputOnly,
   isFieldRequired,
 } from './protobuf-reflection';
+import {
+  KnowledgeBase_VectorDatabase_PostgresSchema,
+  KnowledgeBaseSchema,
+  KnowledgeBaseUpdateSchema,
+} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 
 describe('Protobuf Field Reflection', () => {
   test('should detect field behaviors for KnowledgeBase', () => {

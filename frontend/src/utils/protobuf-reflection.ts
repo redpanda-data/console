@@ -10,6 +10,7 @@
  */
 
 import { type DescMessage, getOption } from '@bufbuild/protobuf';
+
 import { FieldBehavior, field_behavior } from '../protogen/google/api/field_behavior_pb';
 
 /**

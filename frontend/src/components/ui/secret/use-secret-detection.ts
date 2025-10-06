@@ -11,6 +11,7 @@
 import type { FormValues } from 'components/pages/mcp-servers/create/schemas';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
+
 import { extractSecretReferences, getUniqueSecretNames } from './secret-detection';
 
 export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecrets: string[]) {

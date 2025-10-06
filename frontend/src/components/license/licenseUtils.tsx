@@ -1,6 +1,7 @@
 import { Button, Link } from '@redpanda-data/ui';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import { prettyMilliseconds } from 'utils/utils';
+
 import {
   type License,
   License_Source,

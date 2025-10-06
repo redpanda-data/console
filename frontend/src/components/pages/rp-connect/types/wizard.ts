@@ -8,6 +8,7 @@ import {
   USERNAME_REGEX,
 } from 'utils/user';
 import { z } from 'zod';
+
 import { CONNECT_COMPONENT_TYPE } from './schema';
 
 export const connectTilesFormSchema = z.object({

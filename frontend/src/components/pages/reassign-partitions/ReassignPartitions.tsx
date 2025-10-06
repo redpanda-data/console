@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import {
@@ -35,6 +36,18 @@ import { motion } from 'framer-motion';
 import { autorun, computed, type IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { MdOutlineErrorOutline } from 'react-icons/md';
+
+import { ActiveReassignments } from './components/ActiveReassignments';
+import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassignLogic';
+import { ReassignmentTracker } from './logic/reassignmentTracker';
+import {
+  computeMovedReplicas,
+  partitionSelectionToTopicPartitions,
+  topicAssignmentsToReassignmentRequest,
+} from './logic/utils';
+import { StepSelectPartitions } from './Step1.Partitions';
+import { StepSelectBrokers } from './Step2.Brokers';
+import { StepReview, type TopicWithMoves } from './Step3.Review';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import type {
@@ -57,17 +70,6 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ActiveReassignments } from './components/ActiveReassignments';
-import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassignLogic';
-import { ReassignmentTracker } from './logic/reassignmentTracker';
-import {
-  computeMovedReplicas,
-  partitionSelectionToTopicPartitions,
-  topicAssignmentsToReassignmentRequest,
-} from './logic/utils';
-import { StepSelectPartitions } from './Step1.Partitions';
-import { StepSelectBrokers } from './Step2.Brokers';
-import { StepReview, type TopicWithMoves } from './Step3.Review';
 
 export interface PartitionSelection {
   // Which partitions are selected?
@@ -746,7 +748,7 @@ class ReassignPartitions extends PageComponent {
       newThrottledTopics.removeAll((t) => inProgress.includes(t));
 
       // Update observable
-      // @ts-ignore perhaps this is needed later on?
+      // @ts-expect-error perhaps this is needed later on?
       const _changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
       // if (changes.added || changes.removed)
       //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
@@ -846,7 +848,7 @@ const steps: WizardStep[] = [
         if (selectedRacks.length === 1 && allRacks.length >= 2) {
           let selectedRack = selectedRacks[0];
           if (!selectedRack || selectedRack.length === 0) selectedRack = '(empty)';
-          // @ts-ignore perhaps this is needed later on?
+          // @ts-expect-error perhaps this is needed later on?
           const _msgStart =
             selectedBrokers.length === 1
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `

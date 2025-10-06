@@ -26,6 +26,7 @@ import type { ReactNode } from 'react';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import type { z } from 'zod';
+
 import { secretSchema } from './form/secret-schema';
 
 interface CreateSecretModalProps {
@@ -82,7 +83,6 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
 
       const request = create(CreateSecretRequestSchema, {
         id: value.id,
-        // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
         secretData: base64ToUInt8Array(encodeBase64(value.value)),
         scopes: value.scopes || [],
         labels: labelsMap,
@@ -149,8 +149,14 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
                           }
                         }}
                         options={[
-                          { label: 'Redpanda Connect', value: Scope.REDPANDA_CONNECT },
-                          { label: 'Redpanda Cluster', value: Scope.REDPANDA_CLUSTER },
+                          {
+                            label: 'Redpanda Connect',
+                            value: Scope.REDPANDA_CONNECT,
+                          },
+                          {
+                            label: 'Redpanda Cluster',
+                            value: Scope.REDPANDA_CLUSTER,
+                          },
                           { label: 'MCP Server', value: Scope.MCP_SERVER },
                           { label: 'AI Agent', value: Scope.AI_AGENT },
                         ]}

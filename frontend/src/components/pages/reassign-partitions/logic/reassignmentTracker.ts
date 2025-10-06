@@ -14,6 +14,7 @@
 // - tracks progress history for each reassignment to estimate speed and ETA
 
 import { observable, transaction } from 'mobx';
+
 import { api } from '../../../../state/backendApi';
 import type { PartitionReassignments } from '../../../../state/restInterfaces';
 import { IsDev } from '../../../../utils/env';
@@ -101,7 +102,10 @@ export class ReassignmentTracker {
 
     // Save current state, refresh, save new state
     await api.refreshPartitionReassignments(true);
-    const liveReassignments = (clone(api.partitionReassignments) ?? []).map((r) => ({ id: this.computeId(r), ...r }));
+    const liveReassignments = (clone(api.partitionReassignments) ?? []).map((r) => ({
+      id: this.computeId(r),
+      ...r,
+    }));
 
     // Update relevant topic-partitions
     const topics = liveReassignments.map((r) => r.topicName);

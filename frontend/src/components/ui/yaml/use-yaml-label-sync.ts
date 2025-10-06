@@ -40,7 +40,10 @@ export function useYamlLabelSync(form: UseFormReturn<FormValues>) {
             (doc as any).label = tool.name ?? '';
             const updated = stringify(doc);
             if (updated !== tool.config) {
-              form.setValue(`tools.${index}.config`, updated, { shouldValidate: false, shouldDirty: true });
+              form.setValue(`tools.${index}.config`, updated, {
+                shouldValidate: false,
+                shouldDirty: true,
+              });
             }
           }
         } catch {

@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+/** biome-ignore-all lint/correctness/useUniqueElementIds: no need to do this for SVGs */
 
 export default (
   <svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">

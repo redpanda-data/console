@@ -1,11 +1,12 @@
 import { useDisclosure } from '@redpanda-data/ui';
 import type { editor } from 'monaco-editor';
 import { memo, useMemo, useState } from 'react';
-import type { ConnectComponentType } from '../types/schema';
+
 import { AddConnectorDialog } from './add-connector-dialog';
 import { AddConnectorsCard } from './add-connectors-card';
 import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
+import type { ConnectComponentType } from '../types/schema';
 
 interface CreatePipelineSidebarProps {
   editorInstance: editor.IStandaloneCodeEditor | null;

@@ -19,6 +19,8 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+
+import { getCategoryBadgeProps, getConnectorTypeBadgeProps, getStatusBadgeProps } from './connector-badges';
 import type {
   ComponentCategory,
   ConnectComponentSpec,
@@ -30,7 +32,6 @@ import { CONNECT_COMPONENT_TYPE } from '../types/schema';
 import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
 import { getAllCategories, getAllComponents } from '../utils/schema';
 import type { BaseStepRef } from '../utils/wizard';
-import { getCategoryBadgeProps, getConnectorTypeBadgeProps, getStatusBadgeProps } from './connector-badges';
 
 const searchComponents = (
   query: string,

@@ -11,12 +11,13 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useLegacyListUsersQuery } from 'react-query/api/user';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY } from 'state/connect/state';
-import type { ConnectComponentType } from '../types/schema';
-import type { BaseStepRef, ConnectTilesFormData } from '../types/wizard';
-import { handleStepResult, WizardStep } from '../utils/wizard';
+
 import { AddTopicStep } from './add-topic-step';
 import { AddUserStep } from './add-user-step';
 import { ConnectTiles } from './connect-tiles';
+import type { ConnectComponentType } from '../types/schema';
+import type { BaseStepRef, ConnectTilesFormData } from '../types/wizard';
+import { handleStepResult, WizardStep } from '../utils/wizard';
 
 const stepDefinitions = [
   {

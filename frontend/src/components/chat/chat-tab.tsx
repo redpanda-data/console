@@ -3,6 +3,7 @@ import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
+
 import { ChatBlankState } from './chat-blank-state';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';

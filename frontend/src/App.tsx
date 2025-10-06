@@ -22,9 +22,9 @@ import './assets/fonts/inter.css';
 
 /* start tailwind styles */
 import './globals.css';
+
 /* end tailwind styles */
 
-import queryClient from 'queryClient';
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -42,6 +42,7 @@ import { observer } from 'mobx-react';
 import { protobufRegistry } from 'protobuf-registry';
 import { BrowserRouter } from 'react-router-dom';
 import { getBasePath } from 'utils/env';
+
 import AppContent from './components/layout/Content';
 import { ErrorBoundary } from './components/misc/ErrorBoundary';
 import HistorySetter from './components/misc/HistorySetter';
@@ -56,6 +57,7 @@ import {
   setup,
 } from './config';
 import { uiSettings } from './state/ui';
+import queryClient from 'queryClient';
 
 const AppSidebar = observer(() => {
   const sidebarItems = createVisibleSidebarItems(APP_ROUTES);

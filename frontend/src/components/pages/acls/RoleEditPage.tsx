@@ -11,14 +11,15 @@
 
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
+import { principalGroupsView } from './Models';
+import { RoleForm } from './RoleForm';
 import { appGlobal } from '../../../state/appGlobal';
 import { api, rolesApi } from '../../../state/backendApi';
 import { AclRequestDefault } from '../../../state/restInterfaces';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { principalGroupsView } from './Models';
-import { RoleForm } from './RoleForm';
 
 @observer
 class RoleEditPage extends PageComponent<{ roleName: string }> {

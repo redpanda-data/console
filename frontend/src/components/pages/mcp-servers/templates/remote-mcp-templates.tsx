@@ -10,6 +10,7 @@
  */
 
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+
 import memoryCacheTemplate from './cache/memory.yaml';
 import redpandaCacheTemplate from './cache/redpanda.yaml';
 import generateInputTemplate from './input/generate.yaml';

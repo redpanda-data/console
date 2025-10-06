@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
+
 import { RemoteMCPConfigurationTab } from './remote-mcp-configuration-tab';
 import { RemoteMCPConnectionTab } from './remote-mcp-connection-tab';
 import { RemoteMCPDetailsHeader } from './remote-mcp-details-header';

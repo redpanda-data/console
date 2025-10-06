@@ -13,6 +13,7 @@ import { SearchField } from '@redpanda-data/ui';
 import { type IReactionDisposer, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
+
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 
@@ -66,7 +67,15 @@ class SearchBar<TItem> extends Component<{
 
   render() {
     return (
-      <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: '.5rem',
+          padding: '0',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
         {/* <AutoComplete placeholder='Quick Search' size='large'
                 style={{ width: 'auto', padding: '0' }}
                 onChange={v => this.filteredSource.filterText = String(v)}

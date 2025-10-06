@@ -20,6 +20,7 @@ import {
   Select,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
+
 import { api } from '../../../../../state/backendApi';
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';

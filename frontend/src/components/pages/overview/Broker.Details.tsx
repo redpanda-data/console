@@ -13,6 +13,7 @@ import { Flex } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { ConfigEntry } from '../../../state/restInterfaces';

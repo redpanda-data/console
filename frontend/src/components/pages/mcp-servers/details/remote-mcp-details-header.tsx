@@ -12,8 +12,9 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { McpServerStateBadge } from 'components/ui/mcp-server-state-badge';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
+import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
 export const RemoteMCPDetailsHeader = () => {
   const { id } = useParams<{ id: string }>();

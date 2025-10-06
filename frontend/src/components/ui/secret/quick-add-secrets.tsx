@@ -34,7 +34,8 @@ import {
   CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
   type Scope,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -157,7 +158,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         onError(errorMessages);
       } else {
         // Display error toasts
-        errorMessages.forEach((message) => toast.error(message));
+        errorMessages.forEach((message) => {
+          toast.error(message);
+        });
       }
     }
   };
@@ -269,7 +272,8 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                       ) : (
                         <>
                           <Plus className="h-4 w-4" />
-                          Create {missingSecrets.length} Secret{missingSecrets.length > 1 ? 's' : ''}
+                          Create {missingSecrets.length} Secret
+                          {missingSecrets.length > 1 ? 's' : ''}
                         </>
                       )}
                     </Button>

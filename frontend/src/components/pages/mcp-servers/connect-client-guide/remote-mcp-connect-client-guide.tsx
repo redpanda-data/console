@@ -21,17 +21,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
-import AuggieLogo from '../../../../assets/auggie.svg';
-import ClaudeCodeLogo from '../../../../assets/claude-code.svg';
-import ClaudeDesktopLogo from '../../../../assets/claude-desktop.svg';
-import ClineLogo from '../../../../assets/cline.svg';
-import CodexLogo from '../../../../assets/codex.svg';
-import CursorLogo from '../../../../assets/cursor.svg';
-import GeminiLogo from '../../../../assets/gemini.svg';
-import ManusLogo from '../../../../assets/manus.svg';
-import VSCodeLogo from '../../../../assets/vscode.svg';
-import WarpLogo from '../../../../assets/warp.svg';
-import WindsurfLogo from '../../../../assets/windsurf.svg';
+
 import { ClientAuggie } from './clients/auggie';
 import { ClientClaudeCode } from './clients/claude-code';
 import { ClientClaudeDesktop } from './clients/claude-desktop';
@@ -44,6 +34,17 @@ import { ClientVscode } from './clients/vscode';
 import { ClientWarp } from './clients/warp';
 import { ClientWindsurf } from './clients/windsurf';
 import type { MCPServer } from './utils';
+import AuggieLogo from '../../../../assets/auggie.svg';
+import ClaudeCodeLogo from '../../../../assets/claude-code.svg';
+import ClaudeDesktopLogo from '../../../../assets/claude-desktop.svg';
+import ClineLogo from '../../../../assets/cline.svg';
+import CodexLogo from '../../../../assets/codex.svg';
+import CursorLogo from '../../../../assets/cursor.svg';
+import GeminiLogo from '../../../../assets/gemini.svg';
+import ManusLogo from '../../../../assets/manus.svg';
+import VSCodeLogo from '../../../../assets/vscode.svg';
+import WarpLogo from '../../../../assets/warp.svg';
+import WindsurfLogo from '../../../../assets/windsurf.svg';
 
 const AVAILABLE_CLIENTS = [
   'claude-code',

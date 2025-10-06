@@ -12,6 +12,7 @@
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
 import { api } from '../../../../state/backendApi';
 import type { Broker, Partition } from '../../../../state/restInterfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';
@@ -54,7 +55,10 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
       { title: 'Involved Topics', value: this.selectedPartitions.length },
       { title: 'Involved Brokers', value: brokers?.length ?? '...' },
       { title: 'Involved Racks', value: brokers?.map((b) => b.rack).distinct().length ?? '...' },
-      { title: 'Size', value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)) },
+      {
+        title: 'Size',
+        value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
+      },
     ];
 
     return (

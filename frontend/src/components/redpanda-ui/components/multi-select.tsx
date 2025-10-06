@@ -227,7 +227,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
               maxItemLength && typeof content === 'string' && content.length > maxItemLength
                 ? `${content.slice(0, maxItemLength)}...`
                 : content;
-            
+
             // Determine if we should show a tooltip - only for truncated strings
             const shouldShowTooltip = maxItemLength && typeof content === 'string' && content.length > maxItemLength;
 

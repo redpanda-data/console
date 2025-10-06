@@ -34,12 +34,13 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+
 import { getTierById } from './form-helpers';
 import { MetadataStep } from './metadata-step';
 import { FormSchema, type FormValues, initialValues } from './schemas';
 import { ToolsStep } from './tools-step';
 import { useMetadataValidation } from './use-metadata-validation';
+import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
 // Stepper definition
 const { Stepper } = defineStepper(

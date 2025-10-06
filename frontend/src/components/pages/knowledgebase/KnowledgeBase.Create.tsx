@@ -38,6 +38,7 @@ import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { AiOutlineDelete, AiOutlinePlus } from 'react-icons/ai';
 import { Link as RouterLink } from 'react-router-dom';
+
 import { config as appConfig } from '../../../config';
 import { CreateSecretRequestSchema, Scope } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -1077,7 +1078,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
           <Input
             type="number"
             value={this.formData.embeddingDimensions}
-            onChange={(e) => this.updateFormData('embeddingDimensions', Number.parseInt(e.target.value) || 1536)}
+            onChange={(e) => this.updateFormData('embeddingDimensions', Number.parseInt(e.target.value, 10) || 1536)}
             placeholder="1536"
           />
           <FormErrorMessage>{this.validationErrors.embeddingDimensions}</FormErrorMessage>
@@ -1124,7 +1125,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
             <Input
               type="number"
               value={this.formData.chunkSize}
-              onChange={(e) => this.updateFormData('chunkSize', Number.parseInt(e.target.value) || 512)}
+              onChange={(e) => this.updateFormData('chunkSize', Number.parseInt(e.target.value, 10) || 512)}
               placeholder="512"
             />
             <FormErrorMessage>{this.validationErrors.chunkSize}</FormErrorMessage>
@@ -1134,7 +1135,7 @@ class KnowledgeBaseCreate extends PageComponent<{}> {
             <Input
               type="number"
               value={this.formData.chunkOverlap}
-              onChange={(e) => this.updateFormData('chunkOverlap', Number.parseInt(e.target.value) || 100)}
+              onChange={(e) => this.updateFormData('chunkOverlap', Number.parseInt(e.target.value, 10) || 100)}
               placeholder="100"
             />
             <FormErrorMessage>{this.validationErrors.chunkOverlap}</FormErrorMessage>

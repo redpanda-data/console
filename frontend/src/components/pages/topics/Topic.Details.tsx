@@ -12,6 +12,7 @@
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { ConfigEntry, Topic, TopicAction } from '../../../state/restInterfaces';
@@ -21,14 +22,7 @@ import '../../../utils/arrayExtensions';
 import { LockIcon } from '@primer/octicons-react';
 import { Box, Button, Code, Flex, Popover, Result, Tooltip } from '@redpanda-data/ui';
 import { MdError, MdOutlineWarning, MdOutlineWarningAmber } from 'react-icons/md';
-import colors from '../../../colors';
-import { isServerless } from '../../../config';
-import { AppFeatures } from '../../../utils/env';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import Section from '../../misc/Section';
-import Tabs from '../../misc/tabs/Tabs';
-import { PageComponent, type PageInitHelper } from '../Page';
+
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { TopicQuickInfoStatistic } from './QuickInfo';
 import AclList from './Tab.Acl/AclList';
@@ -37,6 +31,14 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { DeleteRecordsMenuItem, TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
+import colors from '../../../colors';
+import { isServerless } from '../../../config';
+import { AppFeatures } from '../../../utils/env';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import Section from '../../misc/Section';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];

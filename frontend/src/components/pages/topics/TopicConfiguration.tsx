@@ -26,15 +26,17 @@ import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
+
+import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import type { ConfigEntryExtended } from '../../../state/restInterfaces';
 import {
   entryHasInfiniteValue,
   formatConfigValue,
   getInfiniteValueForEntry,
 } from '../../../utils/formatters/ConfigValueFormatter';
-import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
 import { MdInfoOutline } from 'react-icons/md';
+
 import { isServerless } from '../../../config';
 import { api } from '../../../state/backendApi';
 import { SingleSelect } from '../../misc/Select';

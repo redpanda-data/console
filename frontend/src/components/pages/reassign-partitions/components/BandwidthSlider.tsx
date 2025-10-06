@@ -10,6 +10,7 @@
  */
 
 import { Component } from 'react';
+
 import type { uiSettings } from '../../../../state/ui';
 import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/numberExtensions';

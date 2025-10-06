@@ -11,6 +11,7 @@
 
 import { makeAutoObservable } from 'mobx';
 import React from 'react';
+
 import { type BreadcrumbOptions, uiState } from '../../state/uiState';
 
 //

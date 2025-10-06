@@ -18,8 +18,9 @@ import { formOptions } from '@tanstack/react-form';
 import { useAppForm } from 'components/form/form';
 import { useGetPipelinesForSecretQuery } from 'react-query/api/pipeline';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
-import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
+
 import { deleteSecretSchema } from './form/delete-secret-schema';
+import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 
 export interface DeleteSecretModalProps {
   secretId: string;
@@ -94,6 +95,7 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
             <ModalFooter>
               <Box alignSelf="end">
                 <ButtonGroup isDisabled={isDeleteSecretPending}>
+                  {/** biome-ignore lint/correctness/useUniqueElementIds: legacy, needs refactor */}
                   <form.SubscribeButton
                     label="Delete"
                     variant="delete"

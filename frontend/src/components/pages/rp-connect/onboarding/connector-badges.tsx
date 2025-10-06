@@ -31,6 +31,7 @@ import {
   Wrench,
   XCircle,
 } from 'lucide-react';
+
 import type { ComponentCategory, ConnectComponentStatus, ConnectComponentType } from '../types/schema';
 import { getCategoryDisplayName } from '../utils/categories';
 

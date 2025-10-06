@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ApiData, TopicAssignments, TopicPartitions } from './reassignLogic';
 import type { Partition, PartitionReassignmentRequest, Topic } from '../../../../state/restInterfaces';
 import { clone } from '../../../../utils/jsonUtils';
 import type { PartitionSelection } from '../ReassignPartitions';
 import type { PartitionWithMoves, TopicWithMoves } from '../Step3.Review';
-import type { ApiData, TopicAssignments, TopicPartitions } from './reassignLogic';
 
 export function partitionSelectionToTopicPartitions(
   partitionSelection: PartitionSelection,

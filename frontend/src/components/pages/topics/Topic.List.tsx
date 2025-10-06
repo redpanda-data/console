@@ -42,6 +42,8 @@ import { HiOutlineTrash } from 'react-icons/hi';
 import { MdError, MdOutlineWarning } from 'react-icons/md';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { Link } from 'react-router-dom';
+
+import { CreateTopicModalContent, type CreateTopicModalState } from './CreateTopicModal/CreateTopicModal';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { api } from '../../../state/backendApi';
@@ -57,7 +59,6 @@ import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
-import { CreateTopicModalContent, type CreateTopicModalState } from './CreateTopicModal/CreateTopicModal';
 
 const TopicList: FC = () => {
   useEffect(() => {

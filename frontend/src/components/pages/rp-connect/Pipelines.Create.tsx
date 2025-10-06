@@ -38,13 +38,7 @@ import React, { type Dispatch, type SetStateAction, useEffect, useMemo, useState
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { Link } from 'react-router-dom';
 import { CONNECT_WIZARD_CONNECTOR_KEY, CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
-import { appGlobal } from '../../../state/appGlobal';
-import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
-import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import PageContent from '../../misc/PageContent';
-import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
-import Tabs from '../../misc/tabs/Tabs';
-import { PageComponent, type PageInitHelper } from '../Page';
+
 import { extractLintHintsFromError, formatPipelineError } from './errors';
 import { CreatePipelineSidebar } from './onboarding/create-pipeline-sidebar';
 import { SecretsQuickAdd } from './secrets/Secrets.QuickAdd';
@@ -52,6 +46,13 @@ import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, ConnectTilesFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
+import { appGlobal } from '../../../state/appGlobal';
+import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backendApi';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import PageContent from '../../misc/PageContent';
+import PipelinesYamlEditor from '../../misc/PipelinesYamlEditor';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, type PageInitHelper } from '../Page';
 
 const exampleContent = `
 `;

@@ -13,6 +13,7 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Cable, FileJson, Plus, Send } from 'lucide-react';
+
 import ManusLogo from '../../../../../assets/manus.svg';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';

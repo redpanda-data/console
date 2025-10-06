@@ -12,6 +12,7 @@
 import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
 import { useParams } from 'react-router-dom';
+
 import { appGlobal } from '../../state/appGlobal';
 import { api } from '../../state/backendApi';
 import type { ApiError, UserData } from '../../state/restInterfaces';
@@ -41,7 +42,11 @@ class LoginCompletePage extends Component<{ provider: string }> {
     const url = `./auth/callbacks/${provider}${query}`;
 
     try {
-      const response = await fetchWithTimeout(url, 10 * 1000, { method: 'GET', cache: 'no-cache', mode: 'no-cors' });
+      const response = await fetchWithTimeout(url, 10 * 1000, {
+        method: 'GET',
+        cache: 'no-cache',
+        mode: 'no-cors',
+      });
       const text = await response.text();
       const obj = JSON.parse(text);
       // console.log('complete login response: ' + text);

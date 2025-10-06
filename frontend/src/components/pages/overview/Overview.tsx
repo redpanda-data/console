@@ -11,6 +11,7 @@
 
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { BrokerWithConfigAndStorage } from '../../../state/restInterfaces';
@@ -39,6 +40,8 @@ import React, { type FC, type ReactNode } from 'react';
 import { FaCrown } from 'react-icons/fa';
 import { MdCheck, MdError, MdOutlineError } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import ClusterHealthOverview from './ClusterHealthOverview';
 import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/NurturePanel';
@@ -50,7 +53,6 @@ import {
 import { OverviewLicenseNotification } from '../../license/OverviewLicenseNotification';
 import { NullFallbackBoundary } from '../../misc/NullFallbackBoundary';
 import { Statistic } from '../../misc/Statistic';
-import ClusterHealthOverview from './ClusterHealthOverview';
 
 @observer
 class Overview extends PageComponent {

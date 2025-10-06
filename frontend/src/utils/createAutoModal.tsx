@@ -25,6 +25,7 @@ import {
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { type CSSProperties, type ReactElement, type ReactNode } from 'react';
+
 import { toJson } from './jsonUtils';
 
 export type AutoModalProps = {
@@ -125,7 +126,12 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
   const renderError = (err: any): ReactElement => {
     let content: ReactNode;
     let title = 'Error';
-    const codeBoxStyle = { fontSize: '12px', fontFamily: 'monospace', color: 'hsl(0deg 0% 25%)', margin: '0em 1em' };
+    const codeBoxStyle = {
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      color: 'hsl(0deg 0% 25%)',
+      margin: '0em 1em',
+    };
 
     if (React.isValidElement(err))
       // JSX

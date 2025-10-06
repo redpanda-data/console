@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/appGlobal';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backendApi';
@@ -51,7 +52,6 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
         this.props.secretId,
         create(UpdateSecretRequestSchema, {
           id: this.props.secretId,
-          // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
           secretData: base64ToUInt8Array(encodeBase64(this.secret)),
           scopes: [Scope.REDPANDA_CONNECT],
         }),

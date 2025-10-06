@@ -34,10 +34,11 @@ import { Trash2 } from 'lucide-react';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import type { UseFormReturn } from 'react-hook-form';
-import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
-import { templates } from '../templates/remote-mcp-templates';
+
 import { applyTemplateToTool } from './form-helpers';
 import type { FormValues } from './schemas';
+import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
+import { templates } from '../templates/remote-mcp-templates';
 
 interface ToolCardProps {
   form: UseFormReturn<FormValues>;

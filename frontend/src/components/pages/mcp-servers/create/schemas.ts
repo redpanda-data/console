@@ -11,6 +11,7 @@
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { parse } from 'yaml';
 import { z } from 'zod';
+
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 
 // Zod schema for tags

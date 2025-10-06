@@ -8,6 +8,7 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Braces, FileEdit, SpellCheck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
 import { JSONEditor } from './json-editor';
 import type { JSONSchemaType, JSONValue } from './json-utils';
 import { updateValueAtPath } from './json-utils';

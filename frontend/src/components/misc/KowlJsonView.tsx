@@ -12,6 +12,7 @@
 import { Box } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { CSSProperties } from 'react';
+
 import KowlEditor from './KowlEditor';
 
 export const KowlJsonView = observer((props: { srcObj: object | string | null | undefined; style?: CSSProperties }) => {

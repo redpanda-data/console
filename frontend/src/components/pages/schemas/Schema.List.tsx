@@ -12,6 +12,7 @@
 import { observer } from 'mobx-react';
 import type { RefObject } from 'react';
 import React from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -47,13 +48,14 @@ import {
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { Link } from 'react-router-dom';
+
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import type SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
 import { SmallStat } from '../../misc/SmallStat';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -318,7 +320,11 @@ class SchemaList extends PageComponent<{}> {
                   </Box>
                 ),
               },
-              { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
+              {
+                header: 'Type',
+                cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />,
+                size: 100,
+              },
               {
                 header: 'Compatibility',
                 cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,

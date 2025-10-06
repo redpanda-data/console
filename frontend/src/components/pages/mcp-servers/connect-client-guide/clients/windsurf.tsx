@@ -14,6 +14,7 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Command } from 'lucide-react';
+
 import WindsurfLogo from '../../../../../assets/windsurf.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';

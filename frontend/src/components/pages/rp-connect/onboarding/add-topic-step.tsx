@@ -12,6 +12,8 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY } from 'state/connect/state';
 import type { Topic } from 'state/restInterfaces';
+
+import { AdvancedTopicSettings } from './advanced-topic-settings';
 import {
   CreateTopicRequest_Topic_ConfigSchema,
   CreateTopicRequest_TopicSchema,
@@ -31,7 +33,6 @@ import {
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 import { hasValue } from '../utils/wizard';
-import { AdvancedTopicSettings } from './advanced-topic-settings';
 
 interface AddTopicStepProps {
   topicList: Topic[] | undefined;

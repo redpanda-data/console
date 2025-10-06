@@ -4,8 +4,9 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
-import { CONNECT_COMPONENT_TYPE, type ConnectComponentType } from '../types/schema';
+
 import { getConnectorTypeBadgeProps } from './connector-badges';
+import { CONNECT_COMPONENT_TYPE, type ConnectComponentType } from '../types/schema';
 
 // Derive processor types from CONNECT_COMPONENT_TYPE (all types except input/output)
 const processorTypes = CONNECT_COMPONENT_TYPE.filter((t) => t !== 'input' && t !== 'output');

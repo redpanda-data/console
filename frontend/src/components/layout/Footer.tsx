@@ -10,6 +10,7 @@
  */
 
 import { FaGithub, FaLinkedin, FaSlack, FaTwitter } from 'react-icons/fa';
+
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
 

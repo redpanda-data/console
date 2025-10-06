@@ -35,6 +35,7 @@ import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerToo
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 
 const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
@@ -498,7 +499,11 @@ export const RemoteMCPInspectorTab = () => {
 
                         return (
                           <DynamicJSONForm
-                            schema={(selectedToolData?.inputSchema as JSONSchemaType) || { type: 'object' }}
+                            schema={
+                              (selectedToolData?.inputSchema as JSONSchemaType) || {
+                                type: 'object',
+                              }
+                            }
                             value={toolParameters}
                             onChange={handleFormChange}
                             showPlaceholder={true}

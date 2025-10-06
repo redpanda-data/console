@@ -16,6 +16,11 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
+
+import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
+import type { AclPrincipalGroup } from './Models';
+import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
+import { UserRoleTags } from './UserPermissionAssignments';
 import type { ListACLsRequest } from '../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { appGlobal } from '../../../state/appGlobal';
@@ -25,10 +30,6 @@ import { Features } from '../../../state/supportedFeatures';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { DeleteUserConfirmModal } from './DeleteUserConfirmModal';
-import type { AclPrincipalGroup } from './Models';
-import { ChangePasswordModal, ChangeRolesModal } from './UserEditModals';
-import { UserRoleTags } from './UserPermissionAssignments';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
