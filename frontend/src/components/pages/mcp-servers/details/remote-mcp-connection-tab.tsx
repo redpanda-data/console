@@ -58,10 +58,10 @@ export const RemoteMCPConnectionTab = () => {
   if (!mcpServerData?.mcpServer) return null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Left Panel - Client Setup Guide */}
       <Card className="px-0 py-0" size="full">
-        <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+        <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <MCPIcon className="h-4 w-4" />
             <Text className="font-semibold">Client Setup Guide</Text>
@@ -78,7 +78,7 @@ export const RemoteMCPConnectionTab = () => {
       <div className="space-y-4">
         {/* Connection Information Panel */}
         <Card className="px-0 py-0" size="full">
-          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+          <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
             <CardTitle className="flex items-center gap-2">
               <Link className="h-4 w-4" />
               <Text className="font-semibold">Connection Information</Text>
@@ -87,18 +87,18 @@ export const RemoteMCPConnectionTab = () => {
           <CardContent className="px-4 pb-4">
             <div className="space-y-4">
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Server URL</Label>
+                <Label className="font-medium text-sm">Server URL</Label>
                 <div className="w-full">
                   <DynamicCodeBlock code={mcpServerData?.mcpServer?.url || ''} lang="text" />
                 </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+                <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400" />
                     <div className="space-y-2 text-sm">
-                      <Text className="text-blue-800 dark:text-blue-200 font-medium">Authentication Required</Text>
+                      <Text className="font-medium text-blue-800 dark:text-blue-200">Authentication Required</Text>
                       <Text className="text-blue-700 dark:text-blue-300">
                         This server requires a Redpanda Cloud M2M token for authentication.
-                        <a className="underline hover:no-underline ml-1" href="/organization-iam?tab=service-accounts">
+                        <a className="ml-1 underline hover:no-underline" href="/organization-iam?tab=service-accounts">
                           Create an M2M token here.
                         </a>
                         &nbsp;You can test the server directly using the MCP Inspector tab without setting up a client.
@@ -113,7 +113,7 @@ export const RemoteMCPConnectionTab = () => {
 
         {/* Code Examples Panel */}
         <Card className="px-0 py-0" size="full">
-          <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+          <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
             <CardTitle className="flex items-center gap-2">
               <Code className="h-4 w-4" />
               <Text className="font-semibold">Code Examples</Text>
@@ -125,14 +125,14 @@ export const RemoteMCPConnectionTab = () => {
                 <Sheet key={language}>
                   <SheetTrigger asChild>
                     <Button
-                      className="flex flex-col items-center justify-center mt-2 hover:bg-muted/50 flex-shrink-1 h-16"
+                      className="mt-2 flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
                       onClick={() => setSelectedLanguage(language)}
                       variant="outline"
                     >
                       <img alt={language} src={getLanguageIcon(language)} />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" side="right">
+                  <SheetContent className="w-full overflow-y-auto sm:max-w-2xl" side="right">
                     <SheetHeader>
                       <SheetTitle>{language.charAt(0).toUpperCase() + language.slice(1)} Connection Code</SheetTitle>
                     </SheetHeader>

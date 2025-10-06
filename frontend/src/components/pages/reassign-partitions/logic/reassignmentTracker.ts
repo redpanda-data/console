@@ -26,7 +26,7 @@ const refreshIntervals = {
   // partitions = automatic, same as reassignment
 } as const;
 
-export interface ReassignmentState {
+export type ReassignmentState = {
   id: string; // used to match instances of 'ReassignmentState' and 'PartitionReassignments'
 
   topicName: string;
@@ -63,7 +63,7 @@ export interface ReassignmentState {
 
   // set when a reassignment has completed
   actualTimeCompleted: Date | null;
-}
+};
 
 export class ReassignmentTracker {
   clusterTimer: number | null = null;

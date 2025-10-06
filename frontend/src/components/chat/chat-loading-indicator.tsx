@@ -1,7 +1,5 @@
-export const ChatLoadingIndicator = () => {
-  return (
-    <div className="flex justify-center items-center h-[calc(100vh-200px)]">
-      <div className="animate-pulse text-slate-500">Loading messages...</div>
-    </div>
-  );
-};
+export const ChatLoadingIndicator = () => (
+  <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+    <div className="animate-pulse text-slate-500">Loading messages...</div>
+  </div>
+);

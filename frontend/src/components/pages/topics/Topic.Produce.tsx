@@ -97,7 +97,7 @@ function encodingToLanguage(encoding: PayloadEncoding) {
   if (encoding === PayloadEncoding.JSON) return 'json';
   if (encoding === PayloadEncoding.PROTOBUF) return 'protobuf';
   if (encoding === PayloadEncoding.BINARY) return 'plaintext';
-  return undefined;
+  return;
 }
 
 type PayloadOptions = {

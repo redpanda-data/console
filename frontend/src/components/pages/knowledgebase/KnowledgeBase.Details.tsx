@@ -32,9 +32,9 @@ import { ExplicitConfirmModal } from '../rp-connect/modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-interface KnowledgeBaseDetailsProps {
+type KnowledgeBaseDetailsProps = {
   knowledgebaseId: string;
-}
+};
 
 @observer
 class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {

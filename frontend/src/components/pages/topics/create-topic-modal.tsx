@@ -31,10 +31,10 @@ export const topicSchema = z.object({
     .regex(/^[a-z0-9._-]+$/, 'Topic name must only contain lowercase letters, numbers, dots, underscores, and hyphens'),
 });
 
-interface CreateTopicModalProps {
+type CreateTopicModalProps = {
   isOpen: boolean;
   onClose: (createdTopicLabel?: string) => void;
-}
+};
 
 export const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 export const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;

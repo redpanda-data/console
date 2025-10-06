@@ -396,27 +396,25 @@ function RetentionSizeSelect(p: {
   );
 }
 
-const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
-  return (
-    <div className="keyValuePairEditor">
-      {p.entries.map((x, i) => (
-        <KeyValuePair entries={p.entries} entry={x} key={String(i)} />
-      ))}
+const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => (
+  <div className="keyValuePairEditor">
+    {p.entries.map((x, i) => (
+      <KeyValuePair entries={p.entries} entry={x} key={String(i)} />
+    ))}
 
-      <Button
-        className="addButton"
-        onClick={() => {
-          p.entries.push({ name: '', value: '' });
-        }}
-        size="sm"
-        variant="outline"
-      >
-        <PlusIcon />
-        Add Entry
-      </Button>
-    </div>
-  );
-});
+    <Button
+      className="addButton"
+      onClick={() => {
+        p.entries.push({ name: '', value: '' });
+      }}
+      size="sm"
+      variant="outline"
+    >
+      <PlusIcon />
+      Add Entry
+    </Button>
+  </div>
+));
 
 const KeyValuePair = observer((p: { entries: TopicConfigEntry[]; entry: TopicConfigEntry }) => {
   const { entry } = p;
@@ -642,7 +640,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <UILabel className="text-sm font-medium text-muted-foreground">Percentage ({percentageValue}%)</UILabel>
+        <UILabel className="font-medium text-muted-foreground text-sm">Percentage ({percentageValue}%)</UILabel>
         <UISlider
           aria-label="Percentage slider"
           className="w-full"
@@ -654,7 +652,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
         />
       </div>
       <div className="flex items-center gap-2">
-        <UILabel className="text-sm font-medium whitespace-nowrap" htmlFor="ratio-input">
+        <UILabel className="whitespace-nowrap font-medium text-sm" htmlFor="ratio-input">
           Precise value:
         </UILabel>
         <div className="relative flex-shrink-0">
@@ -668,7 +666,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
             type="number"
             value={percentageValue}
           />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+          <span className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-2 text-muted-foreground text-sm">
             %
           </span>
         </div>

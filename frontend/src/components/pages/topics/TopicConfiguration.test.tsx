@@ -18,21 +18,19 @@ describe('TopicConfiguration', () => {
       'Message Handling',
       'Write Caching',
       'Schema Registry and Validation',
-    ].map((category) => {
-      return {
-        name: 'test.option',
-        category: category,
-        value: '',
-        source: '',
-        type: 'STRING',
-        isExplicitlySet: false,
-        isDefaultValue: false,
-        isReadOnly: false,
-        isSensitive: false,
-        synonyms: [],
-        currentValue: '',
-      };
-    });
+    ].map((category) => ({
+      name: 'test.option',
+      category: category,
+      value: '',
+      source: '',
+      type: 'STRING',
+      isExplicitlySet: false,
+      isDefaultValue: false,
+      isReadOnly: false,
+      isSensitive: false,
+      synonyms: [],
+      currentValue: '',
+    }));
 
     const { container } = render(<ConfigurationEditor entries={entries} onForceRefresh={() => {}} targetTopic="" />);
     expect(screen.getByTestId('config-group-table')).toBeVisible();

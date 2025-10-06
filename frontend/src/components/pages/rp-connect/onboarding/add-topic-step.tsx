@@ -34,9 +34,9 @@ import {
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 import { hasValue } from '../utils/wizard';
 
-interface AddTopicStepProps {
+type AddTopicStepProps = {
   topicList: Topic[] | undefined;
-}
+};
 
 export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicList }, ref) => {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -90,9 +90,10 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   );
 
   // prioritize form value topic, then persisted topic
-  const existingTopicBeingEdited = useMemo(() => {
-    return topicList?.find((topic) => topic.topicName === matchingTopicNameForFormValue);
-  }, [matchingTopicNameForFormValue, topicList]);
+  const existingTopicBeingEdited = useMemo(
+    () => topicList?.find((topic) => topic.topicName === matchingTopicNameForFormValue),
+    [matchingTopicNameForFormValue, topicList]
+  );
 
   const { data: topicConfig } = useTopicConfigQuery(
     existingTopicBeingEdited?.topicName || '',
@@ -247,7 +248,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-6 max-w-2xl">
+          <div className="max-w-2xl space-y-6">
             <FormField
               control={form.control}
               name="topicName"
@@ -276,7 +277,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
                   Show Advanced Settings
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-6 mt-4">
+              <CollapsibleContent className="mt-4 space-y-6">
                 <AdvancedTopicSettings form={form} isExistingTopic={Boolean(existingTopicBeingEdited)} />
               </CollapsibleContent>
             </Collapsible>

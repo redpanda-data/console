@@ -30,7 +30,7 @@ function find(this: any | undefined, arg1: any, arg2: any): any {
   const results = findGeneric(self, arg1, arg2, true);
 
   if (results.length > 0) return results[0];
-  return undefined;
+  return;
 }
 
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];

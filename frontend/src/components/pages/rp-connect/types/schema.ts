@@ -122,7 +122,7 @@ export const CONNECT_FIELD_KIND = [
 
 export type ConnectFieldKind = (typeof CONNECT_FIELD_KIND)[number] | (string & {}); // AnnotatedExample provides a documented, illustrative configuration snippet for a component.
 
-export interface ConnectAnnotatedExample {
+export type ConnectAnnotatedExample = {
   // A concise title for the example, summarizing its purpose.
   // Example: "Reading JSON from Kafka and Writing to S3"
   title: string;
@@ -132,9 +132,9 @@ export interface ConnectAnnotatedExample {
 
   // A YAML or JSON configuration snippet showcasing the component's usage in this example.
   config: string;
-} // FieldSpec describes the specification for a single field within a Benthos component's configuration.
+}; // FieldSpec describes the specification for a single field within a Benthos component's configuration.
 
-export interface ConnectFieldSpec<T = unknown> {
+export type ConnectFieldSpec<T = unknown> = {
   // The name of the field as it appears in the configuration (e.g., `address`, `batch_policy`).
   name: string;
 
@@ -216,10 +216,10 @@ export interface ConnectFieldSpec<T = unknown> {
   // Raw JSON Schema reference for on-demand YAML generation
   // This allows us to avoid complex upfront transformation and generate YAML directly from JSON Schema
   _jsonSchema?: any;
-} // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
+}; // Describes a Bloblang function, which is a named operation that can be called within a Bloblang mapping.
 // Example functions: `batch_index()`, `env("VAR_NAME")`, `uuid_v4()`.
 
-export interface BloblangFunctionSpec {
+export type BloblangFunctionSpec = {
   // The release status of the function, indicating its stability and readiness for use.
   status: ConnectComponentStatus;
 
@@ -248,7 +248,7 @@ export interface BloblangFunctionSpec {
 
   // Version is the Benthos version this component was introduced.
   version?: string;
-} // ValueType specifies the data type of a Bloblang value, typically for function/method parameters or results.
+}; // ValueType specifies the data type of a Bloblang value, typically for function/method parameters or results.
 
 export const CONNECT_VALUE_TYPE = [
   'string', // A textual string.
@@ -269,7 +269,7 @@ export const CONNECT_VALUE_TYPE = [
 
 export type ConnectValueType = (typeof CONNECT_VALUE_TYPE)[number] | (string & {}); // Describes a single named parameter for a Bloblang function or method.
 
-export interface BloblangParam {
+export type BloblangParam = {
   // The identifier for the parameter as used in named parameter calls (e.g., `path`, `min`, `max`).
   name: string;
 
@@ -297,9 +297,9 @@ export interface BloblangParam {
   // The type of this `default` value should be consistent with the parameter's `type`.
   // If absent, there is no default value.
   default?: unknown;
-} // BloblangParams defines the expected arguments of a function or method.
+}; // BloblangParams defines the expected arguments of a function or method.
 
-export interface BloblangParams {
+export type BloblangParams = {
   // If true, this function/method accepts an arbitrary number of unnamed arguments (variadic).
   // Example: `foo(1, "bar", true)` where `foo` is variadic.
   variadic?: boolean;
@@ -309,10 +309,10 @@ export interface BloblangParams {
   // exist, or positionally if only one.
   // Example: `foo(name: "bar", age: 7)` or `bar("single_arg")`.
   named?: BloblangParam[];
-} // Describes a Bloblang method (e.g. “map_each”, “join”, “upper_case”).
+}; // Describes a Bloblang method (e.g. “map_each”, “join”, “upper_case”).
 // Methods are invoked on a value (e.g. `this.some_field.uppercase()`).
 
-export interface BloblangMethodSpec {
+export type BloblangMethodSpec = {
   // The release status of the function.
   status: ConnectComponentStatus;
 
@@ -338,20 +338,20 @@ export interface BloblangMethodSpec {
 
   // Version is the Benthos version this component was introduced.
   version?: string;
-} // MethodCatSpec describes how a Bloblang method behaves in the context of a specific
+}; // MethodCatSpec describes how a Bloblang method behaves in the context of a specific
 // data type category (e.g., when the method is called on a string, an array, or a number).
 
-export interface MethodCatSpec {
+export type MethodCatSpec = {
   // The name of the data type category this specification applies to (e.g., "Strings", "Arrays", "Numbers").
   category: string;
   // A description of how the method functions and what it returns when applied to values of this category.
   description: string;
   // Examples specific to this method's usage within this particular data type category.
   examples?: ExampleSpec[];
-} // ExampleSpec provides a general example for a Bloblang function or method,
+}; // ExampleSpec provides a general example for a Bloblang function or method,
 // showing input, the mapping/expression, and the expected output.
 
-export interface ExampleSpec {
+export type ExampleSpec = {
   // An example input value that would be provided to the Bloblang mapping, function, or method.
   input?: unknown;
 
@@ -364,14 +364,14 @@ export interface ExampleSpec {
 
   // An optional description of what this specific example aims to illustrate or highlight.
   description?: string;
-} /**
+}; /**
  * PipelineRoot represents the root structure of the Benthos (Redpanda Connect) documentation manifest.
  * This manifest contains all specifications for components, Bloblang features,
  * and global configuration fields for a specific Benthos version. It serves as a comprehensive
  * schema for understanding and validating Benthos configurations.
  */
 
-export interface PipelineRoot {
+export type PipelineRoot = {
   // The Benthos version this manifest corresponds to. Example: `4.55.1`.
   version: string;
   // The UTC date and time when this manifest was generated. Example: `2025-05-19T16:27:47Z`.
@@ -479,9 +479,9 @@ export interface PipelineRoot {
    * Note: The key in the source JSON is "bloblang-methods".
    */
   'bloblang-methods'?: BloblangMethodSpec[];
-} // ComponentSpec describes the full specification of a Benthos component (e.g., an input, processor, output).
+}; // ComponentSpec describes the full specification of a Benthos component (e.g., an input, processor, output).
 
-export interface ConnectComponentSpec {
+export type ConnectComponentSpec = {
   // The unique, machine-readable name of the component (e.g., `aws_s3`, `kafka`, `json_parser`).
   // This name is used in the configuration file to specify the component type.
   name: string;
@@ -525,7 +525,7 @@ export interface ConnectComponentSpec {
 
   // Version is the Benthos version this component was introduced.
   version?: string;
-}
+};
 
 export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
   // External documentation URLs and metadata for components from external sources
@@ -541,7 +541,7 @@ export interface ExtendedConnectComponentSpec extends ConnectComponentSpec {
  * Represents a semantic category for grouping components in the UI
  * Used for the category filter dropdown in connect-tiles.tsx
  */
-export interface ConnectNodeCategory {
+export type ConnectNodeCategory = {
   id: string;
   name: string;
-}
+};

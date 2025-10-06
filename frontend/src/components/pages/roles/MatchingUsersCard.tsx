@@ -26,10 +26,10 @@ import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../
 import { useListUsersQuery } from '../../../react-query/api/user';
 import { AutocompleteInput } from '../acls/new-acl/AutocompleteInput';
 
-interface MatchingUsersCardProps {
+type MatchingUsersCardProps = {
   principalType: string;
   principal: string;
-}
+};
 
 export function MatchingUsersCard({ principalType, principal }: MatchingUsersCardProps) {
   // Extract role name from principal (format: "RedpandaRole:roleName")
@@ -127,7 +127,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
           <div className="flex flex-col gap-1">
             {/* Loading state */}
             {isLoading && principalType === 'RedpandaRole' && (
-              <div className="text-sm text-gray-500 italic">Loading members...</div>
+              <div className="text-gray-500 text-sm italic">Loading members...</div>
             )}
 
             {/* Show role members if it's a RedpandaRole */}
@@ -141,41 +141,41 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
                   return (
                     <div
-                      className="group flex items-center justify-between bg-white/40 border border-gray-200 rounded-lg text-sm font-normal text-gray-900 gap-2 hover:bg-white/60 transition-colors"
+                      className="group flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white/40 font-normal text-gray-900 text-sm transition-colors hover:bg-white/60"
                       key={member.principal}
                       style={{ padding: '8px 10px' }}
                     >
                       <span className="flex-1 text-left">{username}</span>
                       <Button
-                        className="opacity-100 transition-opacity p-1 h-auto "
+                        className="h-auto p-1 opacity-100 transition-opacity"
                         data-testid={`remove-user-${username}-button`}
                         disabled={isDeleting}
                         onClick={() => handleRemoveUser(member.principal)}
                         size="sm"
                         variant="ghost"
                       >
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     </div>
                   );
                 })
               ) : (
-                <div className="text-sm text-gray-500 italic">No members assigned to this role</div>
+                <div className="text-gray-500 text-sm italic">No members assigned to this role</div>
               ))}
           </div>
 
           {/* Add user/principal button and input - only for RedpandaRole */}
           {principalType === 'RedpandaRole' && (
-            <div className="pt-2 border-t border-gray-200">
+            <div className="border-gray-200 border-t pt-2">
               {!isAddingUser ? (
                 <Button
-                  className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-white/60"
+                  className="w-full justify-start text-gray-600 hover:bg-white/60 hover:text-gray-900"
                   data-testid="add-user-principal-button"
                   onClick={() => setIsAddingUser(true)}
                   size="sm"
                   variant="ghost"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Add user/principal
                 </Button>
               ) : (
@@ -204,10 +204,10 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                     size="sm"
                     variant="ghost"
                   >
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="h-4 w-4 text-green-600" />
                   </Button>
                   <Button className="px-2" disabled={isSubmitting} onClick={handleCancel} size="sm" variant="ghost">
-                    <X className="w-4 h-4 text-red-600" />
+                    <X className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
               )}

@@ -22,10 +22,10 @@ import type {
 } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 
-export interface ApiError {
+export type ApiError = {
   statusCode: number;
   message: string;
-}
+};
 
 export function isApiError(obj: any): obj is ApiError {
   if (obj && typeof obj === 'object')
@@ -70,7 +70,7 @@ export const TopicActions = [
   'editConfig',
 ] as const;
 export type TopicAction = 'all' | (typeof TopicActions)[number];
-export interface Topic {
+export type Topic = {
   topicName: string;
   isInternal: boolean;
   partitionCount: number;
@@ -79,9 +79,9 @@ export interface Topic {
   documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
   logDirSummary: TopicLogDirSummary;
   allowedActions: TopicAction[] | undefined; // undefined means 'all'
-}
+};
 
-export interface TopicLogDirSummary {
+export type TopicLogDirSummary = {
   totalSizeBytes: number; // how much space this topic takes up (files in its log dir)
   replicaErrors:
     | {
@@ -90,13 +90,13 @@ export interface TopicLogDirSummary {
       }[]
     | null;
   hint: string | null;
-}
+};
 
-export interface GetTopicsResponse {
+export type GetTopicsResponse = {
   topics: Topic[];
-}
+};
 
-export interface Partition {
+export type Partition = {
   id: number;
 
   // When set, all props from replicas to partitionLogDirs are null
@@ -121,23 +121,23 @@ export interface Partition {
   replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
   topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
   hasErrors: boolean; // just (partitionError || waterMarksError)
-}
+};
 
-export interface GetPartitionsResponse {
+export type GetPartitionsResponse = {
   topicName: string;
   error: string | null; // only set if metadata request has failed for the whole topic
   partitions: Partition[];
-}
+};
 
-export interface GetAllPartitionsResponse {
+export type GetAllPartitionsResponse = {
   topics: {
     topicName: string;
     error: string | null;
     partitions: Partition[];
   }[];
-}
+};
 
-export interface DeleteRecordsResponseData {
+export type DeleteRecordsResponseData = {
   topicName: string;
   partitions: [
     {
@@ -146,17 +146,17 @@ export interface DeleteRecordsResponseData {
       error: string;
     },
   ];
-}
+};
 
-export interface TopicConsumer {
+export type TopicConsumer = {
   groupId: string;
   summedLag: number;
-}
+};
 
-export interface GetTopicConsumersResponse {
+export type GetTopicConsumersResponse = {
   topicName: string;
   topicConsumers: TopicConsumer[];
-}
+};
 
 export type MessageDataType =
   | 'null'
@@ -182,7 +182,7 @@ export enum CompressionType {
   ZStd = 'zstd',
 }
 
-export interface Payload {
+export type Payload = {
   payload: any; // json obj
   isPayloadNull: boolean;
   encoding: MessageDataType; // actual format of the message (before the backend converted it to json)
@@ -193,9 +193,9 @@ export interface Payload {
   isPayloadTooLarge?: boolean;
   normalizedPayload?: Uint8Array; // used to show hex bytes if payload couldn't be decoded
   rawBytes?: Uint8Array;
-}
+};
 
-export interface TopicMessage {
+export type TopicMessage = {
   partitionID: number;
   offset: number;
   timestamp: number;
@@ -215,28 +215,28 @@ export interface TopicMessage {
   valueBinHexPreview: string;
   keyJson: string;
   keyBinHexPreview: string;
-}
+};
 
-export interface ListMessageResponse {
+export type ListMessageResponse = {
   elapsedMs: number;
   fetchedMessages: number;
   isCancelled: boolean;
   messages: TopicMessage[];
-}
+};
 
-export interface GetTopicMessagesResponse {
+export type GetTopicMessagesResponse = {
   kafkaMessages: ListMessageResponse;
-}
+};
 
-export interface KafkaError {
+export type KafkaError = {
   code: number;
   message: string;
   description: string;
-}
+};
 
 export type ConfigType = 'BOOLEAN' | 'STRING' | 'INT' | 'SHORT' | 'LONG' | 'DOUBLE' | 'LIST' | 'CLASS' | 'PASSWORD';
 
-export interface ConfigEntry {
+export type ConfigEntry = {
   name: string;
   value: string | null;
   source: string;
@@ -247,7 +247,7 @@ export interface ConfigEntry {
   isSensitive: boolean;
   synonyms: ConfigEntrySynonym[] | undefined;
   documentation?: string;
-}
+};
 
 export type ConfigEntryExtended = ConfigEntry & {
   category?: string;
@@ -268,27 +268,27 @@ export type ConfigEntryExtended = ConfigEntry & {
   currentValue: string | number | null | undefined;
 };
 
-export interface ConfigEntrySynonym {
+export type ConfigEntrySynonym = {
   name: string;
   value: string | null;
   source: string;
 
   // added by frontend
   type: string | null;
-}
+};
 
-export interface TopicDescription {
+export type TopicDescription = {
   topicName: string;
   configEntries: ConfigEntryExtended[];
   error: KafkaError | null;
-}
-export interface TopicConfigResponse {
+};
+export type TopicConfigResponse = {
   topicDescription: TopicDescription;
-}
-export interface PartialTopicConfigsResponse {
+};
+export type PartialTopicConfigsResponse = {
   topicDescriptions: TopicDescription[];
-}
-export interface TopicDocumentation {
+};
+export type TopicDocumentation = {
   // if false: topic documentation is not configured
   isEnabled: boolean;
   // empty: actually empty
@@ -297,17 +297,17 @@ export interface TopicDocumentation {
 
   // added by frontend:
   text: string | null; // atob(markdown)
-}
-export interface TopicDocumentationResponse {
+};
+export type TopicDocumentationResponse = {
   topicName: string;
   documentation: TopicDocumentation;
-}
+};
 
-export interface GroupMemberAssignment {
+export type GroupMemberAssignment = {
   topicName: string;
   partitionIds: number[];
-}
-export interface GroupMemberDescription {
+};
+export type GroupMemberDescription = {
   id: string; // unique ID assigned to the member after login
   clientId: string; // custom id reported by the member
   clientHost: string; // address/host of the connection
@@ -316,12 +316,12 @@ export interface GroupMemberDescription {
   // added by frontend:
   hasMissingPartitionIds: boolean;
   hasMissingAssignments: boolean;
-}
+};
 
 export const GroupActions = ['seeConsumerGroup', 'editConsumerGroup', 'deleteConsumerGroup'] as const;
 export type GroupAction = 'all' | (typeof GroupActions)[number];
 
-export interface GroupDescription {
+export type GroupDescription = {
   groupId: string; // name of the group
   state: string; // Dead, Initializing, Rebalancing, Stable
   protocol: string;
@@ -338,96 +338,96 @@ export interface GroupDescription {
   isInUse: boolean;
   noEditPerms: boolean;
   noDeletePerms: boolean;
-}
+};
 
-export interface GroupTopicOffsets {
+export type GroupTopicOffsets = {
   topic: string;
   summedLag: number; // summed lag of all partitions (non consumed partitions are not considered)
   partitionCount: number;
   partitionsWithOffset: number; // number of partitions that have an active group offset
   partitionOffsets: GroupPartitionOffset[];
-}
+};
 
 // PartitionOffset describes the kafka lag for a partition for a single consumer group
-export interface GroupPartitionOffset {
+export type GroupPartitionOffset = {
   partitionId: number;
   groupOffset: number;
 
   error: string | undefined; // Error will be set when the high water mark could not be fetched
   highWaterMark: number;
   lag: number;
-}
+};
 
-export interface EditConsumerGroupOffsetsRequest {
+export type EditConsumerGroupOffsetsRequest = {
   groupId: string;
   topics: EditConsumerGroupOffsetsTopic[];
-}
+};
 
-export interface EditConsumerGroupOffsetsTopic {
+export type EditConsumerGroupOffsetsTopic = {
   topicName: string;
   partitions: {
     partitionId: number;
     offset: number; // -1 latest, -2 earliest
   }[];
-}
+};
 
-export interface EditConsumerGroupOffsetsResponse {
+export type EditConsumerGroupOffsetsResponse = {
   error: string | undefined;
   topics: EditConsumerGroupOffsetsResponseTopic[];
-}
+};
 
-export interface EditConsumerGroupOffsetsResponseTopic {
+export type EditConsumerGroupOffsetsResponseTopic = {
   topicName: string;
   partitions: {
     partitionID: number;
     error: string;
   }[];
-}
+};
 
-export interface DeleteConsumerGroupRequest {
+export type DeleteConsumerGroupRequest = {
   groupId: string;
-}
-export interface DeleteConsumerGroupOffsetsRequest {
+};
+export type DeleteConsumerGroupOffsetsRequest = {
   groupId: string;
   topics: DeleteConsumerGroupOffsetsTopic[];
-}
-export interface DeleteConsumerGroupOffsetsTopic {
+};
+export type DeleteConsumerGroupOffsetsTopic = {
   topicName: string;
   partitions: {
     partitionId: number;
   }[];
-}
+};
 
-export interface DeleteConsumerGroupOffsetsResponse {
+export type DeleteConsumerGroupOffsetsResponse = {
   topics: DeleteConsumerGroupOffsetsResponseTopic[];
-}
+};
 
-export interface DeleteConsumerGroupOffsetsResponseTopic {
+export type DeleteConsumerGroupOffsetsResponseTopic = {
   topicName: string;
   partitions: {
     partitionID: number;
     error: string | undefined;
   }[];
-}
+};
 
-export interface GetTopicOffsetsByTimestampRequest {
+export type GetTopicOffsetsByTimestampRequest = {
   topics: GetTopicOffsetsByTimestampRequestTopic[];
   timestamp: number; // unix ms
-}
-export interface GetTopicOffsetsByTimestampRequestTopic {
+};
+export type GetTopicOffsetsByTimestampRequestTopic = {
   topicName: string;
   partitionIds: number[];
-}
+};
 
-export interface GetTopicOffsetsByTimestampResponse {
+export type GetTopicOffsetsByTimestampResponse = {
   topicOffsets: TopicOffset[];
-}
-export interface TopicOffset {
+};
+export type TopicOffset = {
   topicName: string;
   partitions: PartitionOffset[];
-}
+};
 
-export interface PartitionOffset {
+export type PartitionOffset = {
   error: string | undefined;
   partitionId: number;
 
@@ -438,9 +438,9 @@ export interface PartitionOffset {
   // unix ms
   // if offset is not -1, this will tell us the timestamp of that message
   timestamp: number;
-}
+};
 
-export interface TopicLag {
+export type TopicLag = {
   topic: string; // name
   summedLag: number;
 
@@ -449,74 +449,74 @@ export interface TopicLag {
 
   // only lists partitions that have a commited offset (independent of whether or not a member is currently assigned to it)
   partitionLags: PartitionLag[];
-}
+};
 
-export interface PartitionLag {
+export type PartitionLag = {
   partitionId: number;
   offset: number;
   lag: number;
-}
+};
 
-export interface GetConsumerGroupsResponse {
+export type GetConsumerGroupsResponse = {
   consumerGroups: GroupDescription[];
-}
-export interface GetConsumerGroupResponse {
+};
+export type GetConsumerGroupResponse = {
   consumerGroup: GroupDescription;
-}
+};
 
-export interface ClusterInfoResponse {
+export type ClusterInfoResponse = {
   clusterInfo: ClusterInfo;
-}
-export interface ClusterInfo {
+};
+export type ClusterInfo = {
   controllerId: number;
   brokers: Broker[];
   kafkaVersion: string;
-}
-export interface Broker {
+};
+export type Broker = {
   brokerId: number;
   logDirSize: number; // bytes of the whole directory
   address: string;
   rack: string | null;
 
   config: BrokerConfig;
-}
-export interface BrokerConfig {
+};
+export type BrokerConfig = {
   configs: ConfigEntry[] | undefined;
   error: string | undefined;
-}
+};
 
-export interface EndpointCompatibilityResponse {
+export type EndpointCompatibilityResponse = {
   licenses: RedpandaLicense[];
   endpointCompatibility: EndpointCompatibility;
-}
+};
 
-export interface RedpandaLicense {
+export type RedpandaLicense = {
   // Source is where the license is used (e.g. Redpanda Cluster, Console)
   source: 'console' | 'cluster' | string;
   // Type is the type of license (free, trial, enterprise)
   type: 'free_trial' | 'open_source' | 'enterprise' | string;
   // unix seconds
   expiresAt: number;
-}
+};
 
-export interface EndpointCompatibility {
+export type EndpointCompatibility = {
   kafkaVersion: string;
   endpoints: EndpointCompatibilityEntry[];
-}
+};
 
-export interface EndpointCompatibilityEntry {
+export type EndpointCompatibilityEntry = {
   endpoint: string;
   method: string;
   isSupported: boolean;
-}
+};
 
 // Response when requesting configuration of a single broker
-export interface BrokerConfigResponse {
+export type BrokerConfigResponse = {
   brokerConfigs: ConfigEntry[];
-}
+};
 
 // Current user
-export interface User {
+export type User = {
   id: string;
   internalIdentifier: string;
   providerID: number;
@@ -526,14 +526,14 @@ export interface User {
     name: string;
     avatarUrl: string;
   };
-}
-export interface Seat {
+};
+export type Seat = {
   id: string; // id of seat
   licenseId: string; // shouldn't that be censored??
   user: User; // user representation of firestore? should be removed...
   lastActivity: string; // is a datetime string, should probably be a "UnixMillis"
-}
-export interface UserData {
+};
+export type UserData = {
   displayName: string;
   avatarUrl: string;
   authenticationMethod: AuthenticationMethod;
@@ -557,16 +557,16 @@ export interface UserData {
   canListTransforms: boolean;
   canCreateTransforms: boolean;
   canDeleteTransforms: boolean;
-}
+};
 export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 
-export interface AdminInfo {
+export type AdminInfo = {
   roles: Role[];
   roleBindings: RoleBinding[];
   users: UserDetails[];
-}
+};
 
-export interface UserDetails {
+export type UserDetails = {
   internalIdentifier: string;
   oauthUserId: string;
   loginProviderId: number;
@@ -582,14 +582,14 @@ export interface UserDetails {
     role: Role;
     grantedBy: RoleBinding[];
   }[];
-}
+};
 
-export interface PermissionAudit {
+export type PermissionAudit = {
   roleName: string; // Role.name
   grantedBy: string; // RoleBinding.ephemeralId
-}
+};
 
-export interface RoleBinding {
+export type RoleBinding = {
   ephemeralId: string;
   metadata: { [key: string]: string };
   subjects: Subject[];
@@ -597,14 +597,14 @@ export interface RoleBinding {
 
   // Added by frontend:
   resolvedRole: Role;
-}
+};
 
-export interface Role {
+export type Role = {
   name: string;
   permissions: Permission[];
-}
+};
 
-export interface Permission {
+export type Permission = {
   resourceName: string;
   resourceId: number;
 
@@ -613,9 +613,9 @@ export interface Permission {
   allowedActions: string[];
   includes: string[];
   excludes: string[];
-}
+};
 
-export interface Subject {
+export type Subject = {
   name: string;
 
   organization: string;
@@ -625,9 +625,9 @@ export interface Subject {
 
   provider: number;
   providerName: string;
-}
+};
 
-export interface TopicPermissions {
+export type TopicPermissions = {
   canSeeTopic: boolean;
   canViewTopicPartitions: boolean;
   canSeeTopicConfig: boolean;
@@ -635,7 +635,7 @@ export interface TopicPermissions {
   canViewTopicMessages: boolean;
   canViewTopicConsumers: boolean;
   canEditTopicConfig: boolean;
-}
+};
 
 //
 // Listing ACLs
@@ -687,7 +687,7 @@ export enum AclPermission {
 
 // list all:
 //   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
-export interface GetAclsRequest {
+export type GetAclsRequest = {
   resourceType: AclStrResourceType;
   resourceName?: string;
   resourcePatternTypeFilter: AclStrResourcePatternType;
@@ -695,7 +695,7 @@ export interface GetAclsRequest {
   host?: string;
   operation: AclStrOperation;
   permissionType: AclStrPermission;
-}
+};
 
 export const AclRequestDefault = {
   resourceType: 'Any',
@@ -736,26 +736,26 @@ export type AclStrOperation =
 
 export type AclStrPermission = 'Unknown' | 'Any' | 'Deny' | 'Allow';
 
-export interface GetAclOverviewResponse {
+export type GetAclOverviewResponse = {
   aclResources: AclResource[];
   isAuthorizerEnabled: boolean;
-}
+};
 
-export interface AclResource {
+export type AclResource = {
   resourceType: AclStrResourceType;
   resourceName: string;
   resourcePatternType: AclStrResourcePatternType;
   acls: AclRule[];
-}
+};
 
-export interface AclRule {
+export type AclRule = {
   principal: string;
   host: string;
   operation: AclStrOperation;
   permissionType: AclStrPermission;
-}
+};
 
-export interface CreateACLRequest {
+export type CreateACLRequest = {
   // ResourceType is the type of resource this acl entry will be on.
   // It is invalid to use UNKNOWN or ANY.
   resourceType: AclStrResourceType;
@@ -787,9 +787,9 @@ export interface CreateACLRequest {
   // PermissionType is the permission of this acl. This must be either ALLOW
   // or DENY.
   permissionType: ('Allow' | 'Deny') & AclStrPermission;
-}
+};
 
-export interface DeleteACLsRequest {
+export type DeleteACLsRequest = {
   resourceType: AclStrResourceType;
 
   // Unset will match any resource name
@@ -806,18 +806,18 @@ export interface DeleteACLsRequest {
   operation: AclStrOperation;
 
   permissionType: AclStrPermission;
-}
+};
 
-export interface QuotaResponse {
+export type QuotaResponse = {
   error?: string;
   items: QuotaResponseItem[];
-}
+};
 
-export interface QuotaResponseItem {
+export type QuotaResponseItem = {
   entityType: 'client-id' | 'user' | 'ip';
   entityName?: string;
   settings: QuotaResponseSetting[];
-}
+};
 
 export enum QuotaType {
   // A rate representing the upper bound (bytes/sec) for producer traffic
@@ -834,10 +834,10 @@ export enum QuotaType {
   CONNECTION_CREATION_RATE = 'connection_creation_rate',
 }
 
-export interface QuotaResponseSetting {
+export type QuotaResponseSetting = {
   key: QuotaType;
   value: number;
-}
+};
 
 export enum SchemaType {
   AVRO = 'AVRO',
@@ -846,24 +846,24 @@ export enum SchemaType {
 }
 
 // Partition Reassignments - Get
-export interface PartitionReassignmentsResponse {
+export type PartitionReassignmentsResponse = {
   topics: PartitionReassignments[];
-}
-export interface PartitionReassignments {
+};
+export type PartitionReassignments = {
   topicName: string;
   partitions: PartitionReassignmentsPartition[];
-}
-export interface PartitionReassignmentsPartition {
+};
+export type PartitionReassignmentsPartition = {
   partitionId: number;
   addingReplicas: number[];
   removingReplicas: number[];
   replicas: number[];
-}
+};
 
 // PartitionReassignments - Patch
-export interface PartitionReassignmentRequest {
+export type PartitionReassignmentRequest = {
   topics: TopicAssignment[];
-}
+};
 export type TopicAssignment = {
   topicName: string; // name of topic to change
   partitions: {
@@ -880,17 +880,17 @@ export type TopicAssignment = {
   }[];
 };
 
-export interface AlterPartitionReassignmentsResponse {
+export type AlterPartitionReassignmentsResponse = {
   reassignPartitionsResponses: {
     topicName: string;
     partitions: AlterPartitionReassignmentsPartitionResponse[];
   }[];
-}
-export interface AlterPartitionReassignmentsPartitionResponse {
+};
+export type AlterPartitionReassignmentsPartitionResponse = {
   partitionId: number;
   errorCode: string;
   errorMessage: string | null;
-}
+};
 
 // Change broker config
 // PATCH api/operations/configs
@@ -918,7 +918,7 @@ export enum AlterConfigOperation {
   Subtract = 3, // remove a value from a list
 }
 
-export interface IncrementalAlterConfigsRequestResourceConfig {
+export type IncrementalAlterConfigsRequestResourceConfig = {
   // name of key to modify (e.g segment.bytes)
   name: string;
 
@@ -930,7 +930,7 @@ export interface IncrementalAlterConfigsRequestResourceConfig {
 
   // value to set the key to
   value?: string;
-}
+};
 
 // Example
 // To throttle replication rate for reassignments (bytes per second):
@@ -944,7 +944,7 @@ export interface IncrementalAlterConfigsRequestResourceConfig {
 //      --entity-type broker
 //      --entity-name brokerId
 
-export interface ResourceConfig {
+export type ResourceConfig = {
   // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
   resourceType: ConfigResourceType;
 
@@ -964,38 +964,38 @@ export interface ResourceConfig {
 
   // key/value config pairs to set on the resource.
   configs: IncrementalAlterConfigsRequestResourceConfig[];
-}
-export interface PatchConfigsRequest {
+};
+export type PatchConfigsRequest = {
   resources: ResourceConfig[];
-}
+};
 
-export interface PatchConfigsResponse {
+export type PatchConfigsResponse = {
   patchedConfigs: {
     error?: string;
     resourceName: string;
     resourceType: ConfigResourceType;
   }[];
-}
+};
 
-export interface PatchTopicConfigsEntry {
+export type PatchTopicConfigsEntry = {
   key: string; // segment.bytes, ...
   op: 'SET' | 'DELETE' | 'APPEND' | 'SUBTRACT';
   value?: string;
-}
-export interface PatchTopicConfigsRequest {
+};
+export type PatchTopicConfigsRequest = {
   configs: PatchTopicConfigsEntry[];
-}
+};
 
 // GET "/kafka-connect/clusters"
-export interface ConnectClusters {
+export type ConnectClusters = {
   // response
   clusterShards: ConnectClusterShard[];
   filtered: {
     clusterCount: number;
     connectorCount: number;
   };
-}
-export interface ConnectClusterShard {
+};
+export type ConnectClusterShard = {
   // GetClusterShard
   clusterName: string;
   clusterAddress: string;
@@ -1012,19 +1012,19 @@ export interface ConnectClusterShard {
   totalTasks: number;
 
   error?: string;
-}
+};
 
 // GET "/kafka-connect/connectors"
-export interface KafkaConnectors {
+export type KafkaConnectors = {
   // response
   clusters: ClusterConnectors[] | null; // only null when isConfigured=false
   isConfigured: boolean;
-}
+};
 
 export const ConnectClusterActions = ['viewConnectCluster', 'editConnectCluster', 'deleteConnectCluster'] as const;
 export type ConnectClusterAction = 'all' | (typeof ConnectClusterActions)[number];
 
-export interface ClusterConnectors {
+export type ClusterConnectors = {
   // ClusterConnectors
   clusterName: string;
   clusterAddress: string;
@@ -1045,7 +1045,7 @@ export interface ClusterConnectors {
   canViewCluster: boolean;
   canEditCluster: boolean;
   canDeleteCluster: boolean;
-}
+};
 
 // https://docs.confluent.io/home/connect/monitoring.html#connector-and-task-status
 export enum ConnectorState {
@@ -1057,17 +1057,17 @@ export enum ConnectorState {
 
 export type ConnectorStatus = 'HEALTHY' | 'UNHEALTHY' | 'DEGRADED' | 'PAUSED' | 'RESTARTING';
 
-export interface ConnectorError {
+export type ConnectorError = {
   type: 'ERROR' | 'WARNING';
   title: string;
   content: string;
-}
+};
 
 export type TaskState = ConnectorState;
 
 export type ConnectorPossibleStatesLiteral = `${ConnectorState}`;
 
-export interface ClusterConnectorInfo {
+export type ClusterConnectorInfo = {
   name: string;
   class: string; // java class name
   config: object; // map[string]string
@@ -1084,17 +1084,17 @@ export interface ClusterConnectorInfo {
 
   // added by frontend
   jsonConfig: string;
-}
+};
 
-export interface ClusterConnectorTaskInfo {
+export type ClusterConnectorTaskInfo = {
   taskId: number;
   state: TaskState;
   workerId: string;
   trace?: string; // error message
-}
+};
 
 // GET "/kafka-connect/clusters/{clusterName}"
-export interface ClusterAdditionalInfo {
+export type ClusterAdditionalInfo = {
   clusterName: string;
   host: string;
   clusterVersion: string;
@@ -1104,7 +1104,7 @@ export interface ClusterAdditionalInfo {
     version?: string;
   }[];
   enabledFeatures?: string[];
-}
+};
 
 /*
 // GET "/kafka-connect/clusters/{clusterName}/connectors"
@@ -1170,34 +1170,34 @@ export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
 // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
 // all 4 return either nothing (code 200), or an ApiError
 
-export interface ConnectorValidationResult {
+export type ConnectorValidationResult = {
   name: string;
   configs: ConnectorProperty[];
   steps: ConnectorStep[];
-}
+};
 
-export interface ConnectorStep {
+export type ConnectorStep = {
   name: string;
   description?: string;
   groups: ConnectorGroup[];
 
   // added by frontend:
   stepIndex: number;
-}
+};
 
-export interface ConnectorGroup {
+export type ConnectorGroup = {
   name?: string;
   description?: string;
   documentation_link?: string;
   config_keys: string[];
-}
+};
 
-interface ConnectorRecommendedValueEntry {
+type ConnectorRecommendedValueEntry = {
   value: string;
   display_name: string;
-}
+};
 
-export interface ConnectorProperty {
+export type ConnectorProperty = {
   definition: {
     name: string;
     type: DataType;
@@ -1225,7 +1225,7 @@ export interface ConnectorProperty {
     component_type?: 'RADIO_GROUP';
     recommended_values?: ConnectorRecommendedValueEntry[];
   };
-}
+};
 
 export enum PropertyImportance {
   Low = 'LOW',
@@ -1275,7 +1275,7 @@ export function compressionTypeToNum(type: CompressionType) {
       return CompressionTypeNum.None;
   }
 }
-export interface PublishRecordsRequest {
+export type PublishRecordsRequest = {
   // TopicNames is a list of topic names into which the records shall be produced to.
   topicNames: string[];
 
@@ -1288,9 +1288,9 @@ export interface PublishRecordsRequest {
 
   // Records contains one or more records (key, value, headers) that shall be produced.
   records: PublishRecord[];
-}
+};
 
-export interface PublishRecord {
+export type PublishRecord = {
   key: string; // base64
   value: null | string; // base64
 
@@ -1300,22 +1300,22 @@ export interface PublishRecord {
   }[];
 
   partitionId: number; // -1 for automatic
-}
+};
 
-export interface ProduceRecordsResponse {
+export type ProduceRecordsResponse = {
   records: ProduceRecordResponse[];
   // Error indicates that producing for all records have failed. E.g. because creating a transaction has failed
   // when transactions were enabled. Another option could be that the Kafka client creation has failed because
   // brokers are temporarily offline.
   error?: string;
-}
+};
 
-export interface ProduceRecordResponse {
+export type ProduceRecordResponse = {
   topicName: string;
   partitionId: number;
   offset: number;
   error?: string;
-}
+};
 
 type WellKnownTopicConfigEntries =
   | { name: 'cleanup.policy'; value: 'compact' | 'delete' }
@@ -1347,46 +1347,46 @@ type WellKnownTopicConfigEntries =
 
 export type TopicConfigEntry = WellKnownTopicConfigEntries | { name: string; value: string };
 
-export interface CreateTopicRequest {
+export type CreateTopicRequest = {
   topicName: string;
   partitionCount: number; // -1 for default
   replicationFactor: number; // -1 for default
   configs: TopicConfigEntry[];
-}
+};
 
-export interface CreateTopicResponse {
+export type CreateTopicResponse = {
   topicName: string;
   partitionCount: number;
   replicationFactor: number;
   configs: TopicConfigEntry[];
-}
+};
 
 // GET api/users
-export interface GetUsersResponse {
+export type GetUsersResponse = {
   users: string[];
   isComplete: boolean;
-}
+};
 
 // POST api/users
-export interface CreateUserRequest {
+export type CreateUserRequest = {
   username: string;
   password: string;
   mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
-}
+};
 
-export interface CreateSecretRequest {
+export type CreateSecretRequest = {
   connectorName: string;
   clusterName: string;
   secretData: string;
   labels: Record<string, string>;
-}
+};
 
-export interface CreateSecretResponse {
+export type CreateSecretResponse = {
   secretId: string;
   labels: Record<string, string>;
-}
+};
 
-export interface ClusterOverview {
+export type ClusterOverview = {
   kafkaAuthorizerInfo: GetKafkaAuthorizerInfoResponse | null;
   kafkaAuthorizerError?: ConnectError | null;
   kafka: GetKafkaInfoResponse | null;
@@ -1394,16 +1394,16 @@ export interface ClusterOverview {
   console: GetConsoleInfoResponse | null;
   kafkaConnect: GetKafkaConnectInfoResponse | null;
   schemaRegistry: GetSchemaRegistryInfoResponse | null;
-}
+};
 
-export interface OverviewStatus {
+export type OverviewStatus = {
   status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
   statusReason?: string;
-}
+};
 
 // GET /api/brokers
 // from pkg/console/brokers.go
-export interface BrokerWithConfigAndStorage {
+export type BrokerWithConfigAndStorage = {
   brokerId: number;
   isController: boolean;
   address: string;
@@ -1416,7 +1416,7 @@ export interface BrokerWithConfigAndStorage {
   // TotalPrimaryLogDirSizeBytes is the log dir size of the unique/leading partitions only.
   // It represents the data size without replication.
   totalPrimaryLogDirSizeBytes?: number;
-}
+};
 
 // GET /schema-registry/mode
 export type SchemaRegistryModeResponse = {

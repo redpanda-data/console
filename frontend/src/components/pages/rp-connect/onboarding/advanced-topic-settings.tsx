@@ -20,10 +20,10 @@ import {
   isRetentionUnitDisabled,
 } from '../utils/topic';
 
-interface AdvancedTopicSettingsProps {
+type AdvancedTopicSettingsProps = {
   form: UseFormReturn<AddTopicFormData>;
   isExistingTopic: boolean;
-}
+};
 
 export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, isExistingTopic }) => {
   // Generate unit options from CreateTopicModal factors for consistency
@@ -31,7 +31,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
   const retentionSizeUnits = useMemo(() => getRetentionSizeUnitOptions(), []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+    <div className="grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
       <FormField
         control={form.control}
         name="partitions"
@@ -98,7 +98,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
 
 AdvancedTopicSettings.displayName = 'AdvancedTopicSettings';
 
-interface RetentionInputGroupProps {
+type RetentionInputGroupProps = {
   form: UseFormReturn<AddTopicFormData>;
   isExistingTopic: boolean;
   label: string;
@@ -106,7 +106,7 @@ interface RetentionInputGroupProps {
   unitField: keyof AddTopicFormData;
   units: { value: string; label: string }[];
   onChange: (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
+};
 
 const RetentionInputGroup = memo<RetentionInputGroupProps>(
   ({ form, isExistingTopic, label, valueField, unitField, units, onChange }) => {
@@ -116,7 +116,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
     return (
       <div className="space-y-2">
         <FormLabel>{label}</FormLabel>
-        {isExistingTopic && <p className="text-xs text-gray-500 mb-2">Existing topic values cannot be modified</p>}
+        {isExistingTopic && <p className="mb-2 text-gray-500 text-xs">Existing topic values cannot be modified</p>}
         <Group attached>
           <FormField
             control={form.control}

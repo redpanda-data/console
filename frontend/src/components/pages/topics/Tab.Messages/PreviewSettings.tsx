@@ -105,7 +105,7 @@ const globHelp = (
           <div className="rowSeparator" />
 
           {/* Example */}
-          <div className="c1 ">
+          <div className="c1">
             <Code>*.id</Code>
           </div>
           <div className="c2">

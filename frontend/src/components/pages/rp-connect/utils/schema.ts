@@ -106,7 +106,7 @@ export const builtInComponents = parseSchema();
  */
 export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
   if (!componentSpec?.config) {
-    return undefined;
+    return;
   }
 
   // Generate the configuration object from the component's FieldSpec
@@ -762,7 +762,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
   // Fallback to legacy behavior for backward compatibility (external components without _jsonSchema)
   const isOptionalField = spec.default !== undefined || spec.is_optional === true;
   if (isOptionalField && !showOptionalFields) {
-    return undefined;
+    return;
   }
 
   if (spec.default !== undefined) {
@@ -801,7 +801,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
     case 'map':
       return {};
     default:
-      return undefined;
+      return;
   }
 }
 
@@ -867,13 +867,14 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     return {};
   }
 
-  return undefined;
+  return;
 }
 
 /**
  * Get all components (built-in + external)
  * Used by connect-tiles.tsx for filtering and yaml.ts for template generation
  */
-export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => {
-  return [...builtInComponents, ...(additionalComponents || [])];
-};
+export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => [
+  ...builtInComponents,
+  ...(additionalComponents || []),
+];

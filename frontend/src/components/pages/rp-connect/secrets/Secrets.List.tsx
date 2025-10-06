@@ -31,25 +31,21 @@ import { PageComponent, type PageInitHelper } from '../../Page';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-const CreateSecretButton = () => {
-  return (
-    <Flex marginBottom={'.5em'}>
-      <Button as={ReactRouterLink} data-testid="create-rpcn-secret-button" to={'/rp-connect/secrets/create'}>
-        Create secret
-      </Button>
-    </Flex>
-  );
-};
+const CreateSecretButton = () => (
+  <Flex marginBottom={'.5em'}>
+    <Button as={ReactRouterLink} data-testid="create-rpcn-secret-button" to={'/rp-connect/secrets/create'}>
+      Create secret
+    </Button>
+  </Flex>
+);
 
-const EmptyPlaceholder = () => {
-  return (
-    <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
-      <Image src={SittingPanda} width={200} />
-      <Box>You have no Redpanda Connect secrets.</Box>
-      <CreateSecretButton />
-    </Flex>
-  );
-};
+const EmptyPlaceholder = () => (
+  <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
+    <Image src={SittingPanda} width={200} />
+    <Box>You have no Redpanda Connect secrets.</Box>
+    <CreateSecretButton />
+  </Flex>
+);
 
 @observer
 class RpConnectSecretsList extends PageComponent {

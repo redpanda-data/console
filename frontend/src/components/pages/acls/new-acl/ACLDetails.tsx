@@ -52,7 +52,7 @@ const getPluralResourceName = (resourceType: string): string => {
   return pluralNames[resourceType] || resourceType;
 };
 
-interface ACLDetailsProps {
+type ACLDetailsProps = {
   sharedConfig: {
     principal: string;
     host: string;
@@ -61,7 +61,7 @@ interface ACLDetailsProps {
   onUpdateACL: () => void;
   showMatchingUsers?: boolean;
   isSimpleView?: boolean; // this prop show SharedConfig, this is used for emmbedded this component on legacy user page
-}
+};
 
 export function ACLDetails({
   sharedConfig,
@@ -93,20 +93,20 @@ export function ACLDetails({
     <div>
       {/* Header */}
       <div className={`${isSimpleView ? 'hidden' : ''}`}>
-        <div className=" py-4">
-          <div className=" mx-auto">
+        <div className="py-4">
+          <div className="mx-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">View the created ACL configuration</p>
+                  <p className="text-gray-600 text-sm">View the created ACL configuration</p>
                 </div>
               </div>
               <Button
-                className="bg-gray-900 hover:bg-gray-800 text-white"
+                className="bg-gray-900 text-white hover:bg-gray-800"
                 data-testid="update-acl-button"
                 onClick={onUpdateACL}
               >
-                <Edit className="w-4 h-4 mr-2" />
+                <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Button>
             </div>
@@ -116,29 +116,29 @@ export function ACLDetails({
 
       {/* Main Content */}
       <main>
-        <div className=" mx-auto">
+        <div className="mx-auto">
           <div className={`grid grid-cols-1 ${showMatchingUsers ? 'lg:grid-cols-3' : ''} gap-8`}>
             {/* Left Column - Configuration Details */}
             <div className={`${showMatchingUsers ? 'lg:col-span-2' : ''} space-y-6`}>
               {/* Shared Configuration */}
               <Card className={`${isSimpleView ? 'hidden' : ''}`} size="full">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-medium text-gray-900" data-testid={'share-config-title'}>
+                  <CardTitle className="font-medium text-gray-900 text-lg" data-testid={'share-config-title'}>
                     Shared configuration
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <div className="text-sm font-medium text-gray-700 mb-1">Principal</div>
-                      <div className="text-sm text-gray-900">
+                      <div className="mb-1 font-medium text-gray-700 text-sm">Principal</div>
+                      <div className="text-gray-900 text-sm">
                         <span className="text-gray-600">{data.principalType}:</span>{' '}
                         <span>{parsePrincipal(data.sharedConfig.principal).name}</span>
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-700 mb-1">Host</div>
-                      <div className="text-sm text-gray-900">
+                      <div className="mb-1 font-medium text-gray-700 text-sm">Host</div>
+                      <div className="text-gray-900 text-sm">
                         <span className="text-gray-600">{data.hostType}:</span>{' '}
                         <span className="font-mono">{data.sharedConfig.host}</span>
                       </div>
@@ -150,7 +150,7 @@ export function ACLDetails({
               {/* Rules */}
               <Card className="border-gray-200" size="full" variant={isSimpleView ? 'elevated' : undefined}>
                 <CardHeader>
-                  <CardTitle className="text-lg font-medium text-gray-900" data-testid={'acl-rules-length'}>
+                  <CardTitle className="font-medium text-gray-900 text-lg" data-testid={'acl-rules-length'}>
                     {isSimpleView ? (
                       <Button onClick={() => navigate(getGoTo(sharedConfig))} variant="link">
                         {sharedConfig.principal}
@@ -162,7 +162,7 @@ export function ACLDetails({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {data.rules.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">No permissions configured</div>
+                    <div className="py-8 text-center text-gray-500">No permissions configured</div>
                   ) : (
                     data.rules.map((rule: Rule) => {
                       const availableRules = Object.entries(getOperationsForResourceType(rule.resourceType)).length;
@@ -185,7 +185,7 @@ export function ACLDetails({
 
                       return (
                         <div
-                          className="border border-gray-200 rounded-lg p-4 space-y-3"
+                          className="space-y-3 rounded-lg border border-gray-200 p-4"
                           data-testid={`summary-card-${getRuleDataTestId(rule)}`}
                           key={rule.id}
                         >
@@ -209,7 +209,7 @@ export function ACLDetails({
                               <div className="flex flex-wrap gap-2">
                                 {showSummary ? (
                                   <span
-                                    className={`inline-flex items-center px-2 py-1 text-xs rounded-full font-medium ${
+                                    className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
                                       allAllow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                     }`}
                                   >
@@ -218,7 +218,7 @@ export function ACLDetails({
                                 ) : (
                                   enabledOperations.map((op) => (
                                     <span
-                                      className={`inline-flex items-center px-2 py-1 text-xs rounded-full font-medium ${
+                                      className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
                                         op.value === 'allow' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                       }`}
                                       data-testid={`detail-item-op-${getIdFromRule(rule, op.originName, op.value)}`}
@@ -230,7 +230,7 @@ export function ACLDetails({
                                 )}
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400 italic">No operations configured</span>
+                              <span className="text-gray-400 text-xs italic">No operations configured</span>
                             )}
                           </div>
                         </div>

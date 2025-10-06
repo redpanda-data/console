@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-export interface MCPServer {
+export type MCPServer = {
   id: string;
   displayName: string;
   url: string;
-}
+};
 
 export const getRpkCloudEnvironment = () => {
   if (window.location.hostname.includes('main')) {

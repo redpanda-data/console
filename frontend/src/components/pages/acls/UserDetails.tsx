@@ -91,7 +91,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
         <div className="flex justify-between">
           <div>
             <h3>Permissions</h3>
-            <p className="text-sm text-gray-600">The following permissions are assigned to this principal.</p>
+            <p className="text-gray-600 text-sm">The following permissions are assigned to this principal.</p>
           </div>
           <div className="flex gap-3">
             {Features.rolesApi && (
@@ -135,7 +135,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-3 start">
+        <div className="start grid grid-cols-5 gap-3">
           <div className="sm:col-span-5 md:col-span-3">
             <UserPermissionDetailsContent userName={userName} />
           </div>
@@ -143,7 +143,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
           <div className="sm:col-span-5 md:col-span-2">
             <Card size="full">
               <CardHeader>
-                <CardTitle className="text-lg font-medium text-gray-900">Assignments</CardTitle>
+                <CardTitle className="font-medium text-gray-900 text-lg">Assignments</CardTitle>
               </CardHeader>
               <CardContent>
                 <UserRoleTags userName={userName} verticalView={false} />
@@ -201,9 +201,7 @@ const UserPermissionDetailsContent = observer((p: { userName: string }) => {
     } as ListACLsRequest,
     {
       enabled: !!p.userName,
-      select: (response) => {
-        return response.resources.length > 0;
-      },
+      select: (response) => response.resources.length > 0,
     }
   );
 
@@ -215,15 +213,13 @@ const UserPermissionDetailsContent = observer((p: { userName: string }) => {
   }
 
   return (
-    <div className="gap-3 flex flex-col">
-      {roles.map((g) => {
-        return (
-          <EmbeddedAclDetail
-            key={`key-${g.principalType}:${g.principalName}`}
-            principal={`${g.principalType}:${g.principalName}`}
-          />
-        );
-      })}
+    <div className="flex flex-col gap-3">
+      {roles.map((g) => (
+        <EmbeddedAclDetail
+          key={`key-${g.principalType}:${g.principalName}`}
+          principal={`${g.principalType}:${g.principalName}`}
+        />
+      ))}
       {roles.length === 0 && (
         <Card size="full">
           <CardContent>

@@ -73,13 +73,14 @@ export const YamlEditor = (props: YamlEditorProps) => {
   const options = Object.assign({}, defaultOptions, givenOptions ?? {});
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (yaml) {
         yaml.dispose();
       }
-    };
-  }, [yaml]);
+    },
+    [yaml]
+  );
 
   const setMonacoOptions = useCallback(async (monaco: Monaco) => {
     const yaml = configureMonacoYaml(monaco, monacoYamlOptions);

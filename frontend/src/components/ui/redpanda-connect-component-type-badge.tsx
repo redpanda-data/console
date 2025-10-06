@@ -13,9 +13,9 @@ import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badg
 import { Cpu, Database, FolderInput, FolderOutput, HelpCircle } from 'lucide-react';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 
-interface RedpandaConnectComponentTypeBadgeProps {
+type RedpandaConnectComponentTypeBadgeProps = {
   componentType: MCPServer_Tool_ComponentType;
-}
+};
 
 const getComponentTypeConfig = (
   componentType: MCPServer_Tool_ComponentType

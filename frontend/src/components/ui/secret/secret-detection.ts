@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-export interface SecretReference {
+export type SecretReference = {
   secretName: string;
   nestedKey?: string;
   fullReference: string;
-}
+};
 
 /**
  * Extract secret references from YAML content.

@@ -42,9 +42,8 @@ export const isBakedInTrial = (license: License): boolean =>
  *
  * @returns {boolean} - Returns `true` if an enabled feature with name 'sso' or 'reassign partitions' is found, otherwise `false`.
  */
-export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean => {
-  return AppFeatures[feature] ?? false;
-};
+export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS'): boolean =>
+  AppFeatures[feature] ?? false;
 
 /**
  * Determines if the CORE system includes any enabled enterprise features.
@@ -57,9 +56,8 @@ export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIG
  *
  * @returns `true` if at least one enterprise feature is enabled; otherwise, `false`.
  */
-export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean => {
-  return features.some((feature) => feature.enabled);
-};
+export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean =>
+  features.some((feature) => feature.enabled);
 
 /**
  * Checks if a license is expired.
@@ -111,9 +109,7 @@ export const licenseSoonToExpire = (
  * @param {License} license - The license object containing the expiration timestamp.
  * @returns {Date} The expiration date as a JavaScript Date object.
  */
-export const getExpirationDate = (license: License): Date => {
-  return new Date(Number(license.expiresAt) * 1000);
-};
+export const getExpirationDate = (license: License): Date => new Date(Number(license.expiresAt) * 1000);
 
 /**
  * Formats the expiration date of a given license into a user-friendly string format.
@@ -126,13 +122,12 @@ export const getExpirationDate = (license: License): Date => {
  * regardless of the user's local environment. It formats the date using the 'en-US' locale
  * with two-digit month, day, and four-digit year.
  */
-export const getPrettyExpirationDate = (license: License): string => {
-  return new Intl.DateTimeFormat('en-US', {
+export const getPrettyExpirationDate = (license: License): string =>
+  new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   }).format(getExpirationDate(license));
-};
 
 /**
  * Calculates the time remaining until a license expires.
@@ -253,7 +248,7 @@ export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
  */
 export const getLatestExpiringLicense = (licenses: License[]): License | undefined => {
   if (licenses.length === 0) {
-    return undefined;
+    return;
   }
 
   return licenses.reduce((latest, current) => {
@@ -378,9 +373,8 @@ export const resolveEnterpriseCTALink = (
   return url.toString();
 };
 
-export const getEnterpriseCTALink = (type: EnterpriseLinkType): string => {
-  return resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
-};
+export const getEnterpriseCTALink = (type: EnterpriseLinkType): string =>
+  resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
 
 export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
 

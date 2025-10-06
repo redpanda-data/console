@@ -19,9 +19,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface ClientManusProps {
+type ClientManusProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientManus = ({ mcpServer }: ClientManusProps) => {
   const clusterId = config?.clusterId;
@@ -77,7 +77,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <img alt="Manus" className="h-4 w-4" src={ManusLogo} />
                 Manus
               </Text>
@@ -86,7 +86,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <Text>Go to</Text>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Cable className="h-4 w-4" /> Connect Apps
               </Text>
             </div>
@@ -94,7 +94,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Select</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Plus className="h-4 w-4" />
                 Add Connectors
               </Text>
@@ -103,7 +103,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Choose</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Plus className="h-4 w-4" />
                 Custom MCP
               </Text>
@@ -112,7 +112,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Select</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <FileJson className="h-4 w-4" /> Import by JSON
               </Text>
             </div>
@@ -134,7 +134,7 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Send className="h-4 w-4" /> Try it out
               </Text>
             </div>

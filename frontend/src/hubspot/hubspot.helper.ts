@@ -15,9 +15,9 @@ import * as Cookies from 'es-cookie';
 
 import { isAnalyticsEnabled } from '../utils/analytics';
 
-interface Fields {
+type Fields = {
   [key: string]: string | number;
-}
+};
 
 // HubSpot Configuration Constants
 export const HUBSPOT_REGION = 'na1';
@@ -25,27 +25,27 @@ export const HUBSPOT_PORTAL_ID = '7733588';
 export const HUBSPOT_TRACKING_COOKIE_TOKEN = 'hubspotutk';
 export const HUBSPOT_AI_AGENTS_FORM_ID = '79585297-4032-440e-bb62-4f3b72954e81';
 
-interface HubspotSubmitProps {
+type HubspotSubmitProps = {
   fields: Fields;
   formId: string;
   portalId?: string;
   onSuccess?: (data: any) => void;
   onError?: (error: any) => void;
-}
+};
 
-interface HubspotUserData {
+type HubspotUserData = {
   email?: string;
   firstName?: string;
   lastName?: string;
   company?: string;
   avatarUrl?: string;
   [key: string]: string | number | undefined;
-}
+};
 
 declare global {
-  interface Window {
+  type Window = {
     _hsq: any[];
-  }
+  };
 }
 
 export const hubspotSubmit = ({

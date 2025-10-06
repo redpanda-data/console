@@ -36,7 +36,7 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
   );
 }
 
-interface WizardState {
+type WizardState = {
   getCurrentStep(): [number, WizardStep];
 
   getSteps(): Array<WizardStep>;
@@ -50,9 +50,9 @@ interface WizardState {
   isLast(): boolean;
 
   isFirst(): boolean;
-}
+};
 
-export interface WizardStep {
+export type WizardStep = {
   title: React.ReactNode;
   description?: React.ReactNode;
   icon?: React.ReactNode;
@@ -62,4 +62,4 @@ export interface WizardStep {
 
   postConditionMet(): boolean;
   transitionConditionMet?(): Promise<{ conditionMet: boolean }>;
-}
+};

@@ -24,14 +24,14 @@ export function partitionSelectionToTopicPartitions(
 
   for (const topicName in partitionSelection) {
     const topic = apiTopics.first((x) => x.topicName === topicName);
-    if (!topic) return undefined; // topic not available
+    if (!topic) return; // topic not available
 
     const allPartitions = apiTopicPartitions.get(topicName);
-    if (!allPartitions) return undefined; // partitions for topic not available
+    if (!allPartitions) return; // partitions for topic not available
 
     const partitionIds = partitionSelection[topicName];
     const relevantPartitions = partitionIds.map((id) => allPartitions.first((p) => p.id === id));
-    if (relevantPartitions.any((p) => p == null)) return undefined; // at least one selected partition not available
+    if (relevantPartitions.any((p) => p == null)) return; // at least one selected partition not available
 
     // we've checked that there can't be any falsy partitions
     // so we assert that 'relevantPartitions' is the right type

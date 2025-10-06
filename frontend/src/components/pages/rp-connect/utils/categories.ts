@@ -38,9 +38,8 @@ const displayNames: Record<string, string> = {
   unstructured: 'Unstructured',
 };
 
-export const getCategoryDisplayName = (category: string): string => {
-  return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
-};
+export const getCategoryDisplayName = (category: string): string =>
+  displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
 
 const databaseComponents = [
   'sql',

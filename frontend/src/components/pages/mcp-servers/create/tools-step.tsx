@@ -21,7 +21,7 @@ import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 import type { FormValues } from './schemas';
 import { ToolCard } from './tool-card';
 
-interface ToolsStepProps {
+type ToolsStepProps = {
   form: UseFormReturn<FormValues>;
   toolFields: UseFieldArrayReturn<FormValues, 'tools', 'id'>['fields'];
   appendTool: UseFieldArrayReturn<FormValues, 'tools', 'id'>['append'];
@@ -34,7 +34,7 @@ interface ToolsStepProps {
   onSubmit: (values: FormValues) => Promise<void>;
   onLintTool: (toolIndex: number) => Promise<void>;
   onExpandTool: (toolIndex: number) => void;
-}
+};
 
 export const ToolsStep: React.FC<ToolsStepProps> = ({
   form,

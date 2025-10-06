@@ -1,21 +1,21 @@
 import type { ConnectError } from '@connectrpc/connect';
 import { createStandaloneToast, type ToastId, type UseToastOptions } from '@redpanda-data/ui';
 
-export interface ErrorHttpPayload {
+export type ErrorHttpPayload = {
   internalCode: number;
   userMessage: string;
   reason: string;
   description?: string;
-}
+};
 
 interface ShowToastOptions extends Partial<UseToastOptions> {
   resourceName?: string;
 }
 
-interface GetToastIdProps {
+type GetToastIdProps = {
   initialId?: ToastId;
   resourceName?: string;
-}
+};
 
 const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
   if (!resourceName) return initialId;
@@ -77,6 +77,5 @@ export const formatToastErrorMessage = ({
   return `Failed to ${action} ${entity} due to: ${customReason || error.reason} (code: ${error.internalCode})`;
 };
 
-export const formatToastErrorMessageGRPC = ({ error, action, entity }: FormatToastMessageGRPCProps) => {
-  return `Failed to ${action} ${entity} due to: ${error.message} (code: ${error.code})`;
-};
+export const formatToastErrorMessageGRPC = ({ error, action, entity }: FormatToastMessageGRPCProps) =>
+  `Failed to ${action} ${entity} due to: ${error.message} (code: ${error.code})`;

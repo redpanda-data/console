@@ -30,9 +30,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface ClientGeminiProps {
+type ClientGeminiProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
   const [selectedScope, setSelectedScope] = useState<string>('user');
@@ -100,13 +100,13 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
-                <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+                <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                   <img alt="Gemini" className="h-4 w-4" src={GeminiLogo} />
                   Gemini
                 </Text>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
-              <Label className="text-sm font-medium">Scope</Label>
+              <Label className="font-medium text-sm">Scope</Label>
               <div>
                 <Select onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">

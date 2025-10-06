@@ -280,10 +280,10 @@ class RpConnectPipelinesCreate extends PageComponent {
 
 export default RpConnectPipelinesCreate;
 
-interface QuickActionsProps {
+type QuickActionsProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   resetAutocompleteSecrets: VoidFunction;
-}
+};
 
 const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActionsProps) => {
   const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
@@ -303,7 +303,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
   };
 
   return (
-    <div className="flex gap-3 flex-col">
+    <div className="flex flex-col gap-3">
       <Card>
         <CardHeader>
           <CardTitle>Variables</CardTitle>
@@ -370,7 +370,7 @@ export const PipelineEditor = observer(
 
     const persistedConnectComponentTemplate = useMemo(() => {
       if (!(persistedFormData?.connectionName && persistedFormData?.connectionType)) {
-        return undefined;
+        return;
       }
       const template = getConnectTemplate({
         connectionName: persistedFormData?.connectionName,
@@ -380,9 +380,10 @@ export const PipelineEditor = observer(
       return template;
     }, [persistedFormData.connectionName, persistedFormData.connectionType]);
 
-    const yaml = useMemo(() => {
-      return enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml;
-    }, [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]);
+    const yaml = useMemo(
+      () => (enableRpcnTiles && persistedConnectComponentTemplate ? persistedConnectComponentTemplate : p.yaml),
+      [enableRpcnTiles, persistedConnectComponentTemplate, p.yaml]
+    );
 
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
@@ -466,7 +467,7 @@ export const PipelineEditor = observer(
             content: () => (
               <div>
                 {/* yaml editor */}
-                <div className="min-h-[400px] flex gap-7">
+                <div className="flex min-h-[400px] gap-7">
                   <PipelinesYamlEditor
                     defaultPath="config.yaml"
                     defaultValue={yaml}

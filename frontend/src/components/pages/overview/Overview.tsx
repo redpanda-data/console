@@ -196,17 +196,15 @@ class Overview extends PageComponent {
                       id: 'view',
                       size: 100,
                       header: '',
-                      cell: ({ row: { original: broker } }) => {
-                        return (
-                          <Button
-                            onClick={() => appGlobal.historyPush(`/overview/${broker.brokerId}`)}
-                            size="sm"
-                            variant="ghost"
-                          >
-                            View
-                          </Button>
-                        );
-                      },
+                      cell: ({ row: { original: broker } }) => (
+                        <Button
+                          onClick={() => appGlobal.historyPush(`/overview/${broker.brokerId}`)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          View
+                        </Button>
+                      ),
                     },
                     ...(this.hasRack
                       ? [
@@ -230,9 +228,9 @@ class Overview extends PageComponent {
                 <Heading as="h3">Resources and updates</Heading>
                 {api.clusterOverview?.kafka?.distribution && <NurturePanel />}
                 <hr />
-                <div className="flex flex-row items-center gap-2 text-gray-600 mt-4 font-sm">
+                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-gray-600">
                   <a href="https://docs.redpanda.com/docs/home/">Documentation</a>
-                  <span className="text-gray-300 mx-2">|</span>
+                  <span className="mx-2 text-gray-300">|</span>
                   <a href="https://docs.redpanda.com/docs/get-started/rpk-install/">CLI tools</a>
                 </div>
               </Section>
@@ -256,27 +254,25 @@ export default Overview;
 
 type DetailsBlockProps = { title: string; children?: React.ReactNode };
 
-const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => {
-  return (
-    <>
-      <GridItem colSpan={{ base: 1, lg: 3 }}>
-        <Heading
-          as="h4"
-          color="gray.500"
-          fontSize={10}
-          fontWeight={600}
-          letterSpacing={0.8}
-          mb={1}
-          textTransform="uppercase"
-        >
-          {title}
-        </Heading>
-      </GridItem>
-      {children}
-      <GridItem bg="#ddd" colSpan={{ base: 1, lg: 3 }} height={0.25} my={4} />
-    </>
-  );
-};
+const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
+  <>
+    <GridItem colSpan={{ base: 1, lg: 3 }}>
+      <Heading
+        as="h4"
+        color="gray.500"
+        fontSize={10}
+        fontWeight={600}
+        letterSpacing={0.8}
+        mb={1}
+        textTransform="uppercase"
+      >
+        {title}
+      </Heading>
+    </GridItem>
+    {children}
+    <GridItem bg="#ddd" colSpan={{ base: 1, lg: 3 }} height={0.25} my={4} />
+  </>
+);
 
 type DetailsProps = { title: string; content: ([left?: React.ReactNode, right?: React.ReactNode] | undefined)[] };
 
@@ -336,12 +332,10 @@ function ClusterDetails() {
 
   const clusters = overview.kafkaConnect?.clusters ?? [];
   const hasConnect = overview.kafkaConnect !== null && clusters.length > 0;
-  const clusterLines = clusters.map((c) => {
-    return {
-      name: c.name,
-      status: formatStatus(c.status),
-    };
-  });
+  const clusterLines = clusters.map((c) => ({
+    name: c.name,
+    status: formatStatus(c.status),
+  }));
 
   return (
     <Grid alignItems="center" gap={2} templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }} w="full">

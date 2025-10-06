@@ -40,13 +40,12 @@ export const useSetLicenseMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'set',
         entity: 'license',
-      });
-    },
+      }),
   });
 };
 

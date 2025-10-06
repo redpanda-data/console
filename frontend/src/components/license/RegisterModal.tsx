@@ -41,17 +41,17 @@ function isBadRequest(obj: any): obj is { type: string; debug: BadRequest } {
   return obj && obj.type === 'google.rpc.BadRequest';
 }
 
-interface RegisterFormData {
+type RegisterFormData = {
   givenName: string;
   familyName: string;
   email: string;
   companyName?: string;
-}
+};
 
-interface RegisterModalProps {
+type RegisterModalProps = {
   isOpen: boolean;
   onClose: () => void;
-}
+};
 
 export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);

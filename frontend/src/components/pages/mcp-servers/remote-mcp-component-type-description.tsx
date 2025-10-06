@@ -2,10 +2,10 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { ExternalLink } from 'lucide-react';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 
-interface RemoteMCPComponentTypeDescriptionProps {
+type RemoteMCPComponentTypeDescriptionProps = {
   componentType?: MCPServer_Tool_ComponentType;
   className?: string;
-}
+};
 
 const getComponentTypeDescription = (componentType: MCPServer_Tool_ComponentType) => {
   switch (componentType) {
@@ -38,20 +38,18 @@ const getComponentTypeDocumentationUrl = (componentType: MCPServer_Tool_Componen
   }
 };
 
-export const RemoteMCPComponentTypeDescription = ({ componentType }: RemoteMCPComponentTypeDescriptionProps) => {
-  return (
-    <Text variant="muted">
-      {getComponentTypeDescription(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}{' '}
-      {componentType !== undefined && (
-        <a
-          className="text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
-          href={getComponentTypeDocumentationUrl(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Learn more <ExternalLink className="h-3 w-3" />
-        </a>
-      )}
-    </Text>
-  );
-};
+export const RemoteMCPComponentTypeDescription = ({ componentType }: RemoteMCPComponentTypeDescriptionProps) => (
+  <Text variant="muted">
+    {getComponentTypeDescription(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}{' '}
+    {componentType !== undefined && (
+      <a
+        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
+        href={getComponentTypeDocumentationUrl(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Learn more <ExternalLink className="h-3 w-3" />
+      </a>
+    )}
+  </Text>
+);

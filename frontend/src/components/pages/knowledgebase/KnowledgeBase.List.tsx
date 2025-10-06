@@ -76,27 +76,23 @@ function openDeleteKnowledgeBaseModal(knowledgeBaseName: string, onConfirm: () =
   });
 }
 
-const CreateKnowledgeBaseButton = () => {
-  return (
-    <ButtonGroup>
-      <Button data-testid="create-knowledge-base-button" variant="outline">
-        <Link style={{ textDecoration: 'none', color: 'inherit' }} to={'/knowledgebases/create'}>
-          Create knowledge base
-        </Link>
-      </Button>
-    </ButtonGroup>
-  );
-};
+const CreateKnowledgeBaseButton = () => (
+  <ButtonGroup>
+    <Button data-testid="create-knowledge-base-button" variant="outline">
+      <Link style={{ textDecoration: 'none', color: 'inherit' }} to={'/knowledgebases/create'}>
+        Create knowledge base
+      </Link>
+    </Button>
+  </ButtonGroup>
+);
 
-const EmptyPlaceholder = () => {
-  return (
-    <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
-      <Image src={EmptyConnectors} />
-      <Box>You have no knowledge bases.</Box>
-      <CreateKnowledgeBaseButton />
-    </Flex>
-  );
-};
+const EmptyPlaceholder = () => (
+  <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
+    <Image src={EmptyConnectors} />
+    <Box>You have no knowledge bases.</Box>
+    <CreateKnowledgeBaseButton />
+  </Flex>
+);
 
 export const KnowledgeBaseList = () => {
   const [searchText, setSearchText] = useState('');

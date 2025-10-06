@@ -34,27 +34,25 @@ const GenericModal = observer(
     primaryColorScheme?: ThemeTypings['colorSchemes'];
 
     closeModal: () => void;
-  }) => {
-    return (
-      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{p.body}</ModalBody>
+  }) => (
+    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>{p.body}</ModalBody>
 
-          <ModalFooter>
-            <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
-              {p.primaryButtonContent}
-            </Button>
-            <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
-              {p.secondaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
+        <ModalFooter>
+          <Button colorScheme={p.primaryColorScheme} mr={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
+            {p.primaryButtonContent}
+          </Button>
+          <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="outline">
+            {p.secondaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
 );
 
 const ExplicitConfirmModal = observer(
@@ -114,28 +112,26 @@ const InfoModal = observer(
     primaryButtonContent: ReactNode;
     onClose?: () => void;
     closeModal: () => void;
-  }) => {
-    return (
-      <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader mr="4">{p.title}</ModalHeader>
-          <ModalBody>{p.body}</ModalBody>
-          <ModalFooter>
-            <Button
-              mr={3}
-              onClick={() => {
-                if (p.onClose) p.onClose();
-                p.closeModal();
-              }}
-            >
-              {p.primaryButtonContent}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
+  }) => (
+    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader mr="4">{p.title}</ModalHeader>
+        <ModalBody>{p.body}</ModalBody>
+        <ModalFooter>
+          <Button
+            mr={3}
+            onClick={() => {
+              if (p.onClose) p.onClose();
+              p.closeModal();
+            }}
+          >
+            {p.primaryButtonContent}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
 );
 
 export function openInfoModal(p: {

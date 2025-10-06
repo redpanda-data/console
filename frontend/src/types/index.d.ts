@@ -9,7 +9,7 @@ declare module '*.jpg';
 
 // Heap Analytics types
 declare global {
-  interface Window {
+  type Window = {
     heap: {
       identify: (email: string) => void;
       track: (eventName: string, eventData?: any) => void;
@@ -17,5 +17,5 @@ declare global {
       addEventProperties: (properties: Record<string, any>) => void;
       resetIdentity: () => void;
     };
-  }
+  };
 }

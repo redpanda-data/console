@@ -17,10 +17,10 @@ import { AiOutlineDelete } from 'react-icons/ai';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface KeyValuePair {
+type KeyValuePair = {
   key: string;
   value: string;
-}
+};
 
 interface KeyValueFieldProps extends InputProps {
   label: ReactNode;

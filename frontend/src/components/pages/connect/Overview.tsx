@@ -361,15 +361,13 @@ class TabTasks extends Component {
     const allConnectors: ConnectorType[] =
       clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
     const allTasks: TaskType[] = allConnectors.flatMap((con) =>
-      con.tasks.map((task) => {
-        return {
-          ...task,
-          connector: con,
-          cluster: con.cluster,
+      con.tasks.map((task) => ({
+        ...task,
+        connector: con,
+        cluster: con.cluster,
 
-          connectorName: con.name,
-        };
-      })
+        connectorName: con.name,
+      }))
     );
 
     return (

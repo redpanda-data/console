@@ -43,11 +43,11 @@ export const updatePageTitle = () => {
 /**
  * Interface for secret form data
  */
-export interface SecretFormData {
+export type SecretFormData = {
   id: string;
   value: string;
   labels: { key: string; value: string }[];
-}
+};
 
 export const getScopeDisplayValue = (scope: Scope) => {
   switch (scope) {

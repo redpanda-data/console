@@ -6,9 +6,9 @@ import remarkGfm from 'remark-gfm';
 
 import { ChatCodeBlock } from './chat-code-block';
 
-interface ChatMarkdownProps {
+type ChatMarkdownProps = {
   message: ChatMessage;
-}
+};
 
 export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
   return (
@@ -18,28 +18,28 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
 
         // Headings
-        h1: ({ children }) => <h1 className="text-2xl font-bold pt-6 pb-4 first:pt-0">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-xl font-bold pt-5 pb-3 first:pt-0">{children}</h2>,
-        h3: ({ children }) => <h3 className="text-lg font-bold pt-4 pb-2 first:pt-0">{children}</h3>,
-        h4: ({ children }) => <h4 className="text-base font-bold pt-3 pb-2 first:pt-0">{children}</h4>,
-        h5: ({ children }) => <h5 className="text-sm font-bold pt-2 pb-1 first:pt-0">{children}</h5>,
-        h6: ({ children }) => <h6 className="text-xs font-bold pt-2 pb-1 first:pt-0">{children}</h6>,
+        h1: ({ children }) => <h1 className="pt-6 pb-4 font-bold text-2xl first:pt-0">{children}</h1>,
+        h2: ({ children }) => <h2 className="pt-5 pb-3 font-bold text-xl first:pt-0">{children}</h2>,
+        h3: ({ children }) => <h3 className="pt-4 pb-2 font-bold text-lg first:pt-0">{children}</h3>,
+        h4: ({ children }) => <h4 className="pt-3 pb-2 font-bold text-base first:pt-0">{children}</h4>,
+        h5: ({ children }) => <h5 className="pt-2 pb-1 font-bold text-sm first:pt-0">{children}</h5>,
+        h6: ({ children }) => <h6 className="pt-2 pb-1 font-bold text-xs first:pt-0">{children}</h6>,
 
         // Lists
         ul: ({ children }) => (
-          <ul className="list-disc mb-4 space-y-1" style={{ marginLeft: '2rem' }}>
+          <ul className="mb-4 list-disc space-y-1" style={{ marginLeft: '2rem' }}>
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal mb-4 space-y-1" style={{ marginLeft: '2rem' }}>
+          <ol className="mb-4 list-decimal space-y-1" style={{ marginLeft: '2rem' }}>
             {children}
           </ol>
         ),
         li: ({ children }) => <li className="mb-1">{children}</li>,
 
         // Media elements
-        img: ({ src, alt }) => <img alt={alt} className="mb-4 max-w-full h-auto rounded-lg" src={src} />,
+        img: ({ src, alt }) => <img alt={alt} className="mb-4 h-auto max-w-full rounded-lg" src={src} />,
         audio: ({ src, controls }) => (
           <audio className="mb-4 w-full" controls={controls} src={src}>
             <track kind="captions" label="English captions" src="" />
@@ -52,7 +52,7 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
           <a
             className={`${
               message.sender === 'user'
-                ? 'text-blue-100 hover:text-white underline'
+                ? 'text-blue-100 underline hover:text-white'
                 : 'text-blue-600 hover:text-blue-800'
             }`}
             href={href}
@@ -73,31 +73,31 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         bdo: ({ dir, children }) => <bdo dir={dir}>{children}</bdo>,
         big: ({ children }) => <span className="text-lg">{children}</span>,
         blockquote: ({ children }) => (
-          <blockquote className="pl-4 italic border-l-4 border-gray-300 mb-4 text-gray-600">{children}</blockquote>
+          <blockquote className="mb-4 border-gray-300 border-l-4 pl-4 text-gray-600 italic">{children}</blockquote>
         ),
         br: () => <br />,
         cite: ({ children }) => <cite className="italic">{children}</cite>,
-        del: ({ children }) => <del className="line-through text-gray-500">{children}</del>,
+        del: ({ children }) => <del className="text-gray-500 line-through">{children}</del>,
         em: ({ children }) => <em className="italic">{children}</em>,
         strong: ({ children }) => <strong className="font-bold">{children}</strong>,
 
         // Layout elements
         article: ({ children }) => <article className="mb-4">{children}</article>,
-        aside: ({ children }) => <aside className="mb-4 p-4 bg-gray-50 rounded">{children}</aside>,
+        aside: ({ children }) => <aside className="mb-4 rounded bg-gray-50 p-4">{children}</aside>,
         body: ({ children }) => <div>{children}</div>,
         div: ({ children }) => <div className="mb-4">{children}</div>,
         details: ({ children }) => <details className="mb-4">{children}</details>,
-        dialog: ({ children }) => <dialog className="p-4 rounded shadow-lg">{children}</dialog>,
-        figcaption: ({ children }) => <figcaption className="text-sm text-gray-500 mt-1">{children}</figcaption>,
+        dialog: ({ children }) => <dialog className="rounded p-4 shadow-lg">{children}</dialog>,
+        figcaption: ({ children }) => <figcaption className="mt-1 text-gray-500 text-sm">{children}</figcaption>,
         figure: ({ children }) => <figure className="mb-4">{children}</figure>,
-        footer: ({ children }) => <footer className="mt-4 pt-4 border-t border-gray-200">{children}</footer>,
-        header: ({ children }) => <header className="mb-4 pb-4 border-b border-gray-200">{children}</header>,
-        hr: () => <hr className="my-6 border-t border-gray-200" />,
+        footer: ({ children }) => <footer className="mt-4 border-gray-200 border-t pt-4">{children}</footer>,
+        header: ({ children }) => <header className="mb-4 border-gray-200 border-b pb-4">{children}</header>,
+        hr: () => <hr className="my-6 border-gray-200 border-t" />,
 
         // Definition lists
         dl: ({ children }) => <dl className="mb-4">{children}</dl>,
         dt: ({ children }) => <dt className="font-bold">{children}</dt>,
-        dd: ({ children }) => <dd className="ml-4 mb-2">{children}</dd>,
+        dd: ({ children }) => <dd className="mb-2 ml-4">{children}</dd>,
 
         // Data elements
         data: ({ value, children }) => (
@@ -109,13 +109,13 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         // Form elements (limited markdown support)
         button: ({ children }) => (
           <button
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
             type="button"
           >
             {children}
           </button>
         ),
-        fieldset: ({ children }) => <fieldset className="border border-gray-300 p-4 rounded mb-4">{children}</fieldset>,
+        fieldset: ({ children }) => <fieldset className="mb-4 rounded border border-gray-300 p-4">{children}</fieldset>,
 
         // Code blocks
         code({ className, children }) {
@@ -140,7 +140,7 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
 
         // Table elements
         table: ({ children }) => (
-          <div className="overflow-x-auto mb-4">
+          <div className="mb-4 overflow-x-auto">
             <table className="min-w-[600px] divide-y divide-gray-200 border border-gray-300">{children}</table>
           </div>
         ),
@@ -148,9 +148,9 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
         tbody: ({ children }) => <tbody className="divide-y divide-gray-200">{children}</tbody>,
         tr: ({ children }) => <tr>{children}</tr>,
         th: ({ children }) => (
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>
+          <th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">{children}</th>
         ),
-        td: ({ children }) => <td className="px-6 py-4 whitespace-nowrap">{children}</td>,
+        td: ({ children }) => <td className="whitespace-nowrap px-6 py-4">{children}</td>,
 
         // Elements with no visual representation or not commonly used in markdown
         area: () => null,

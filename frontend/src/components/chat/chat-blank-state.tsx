@@ -15,9 +15,9 @@ import { useEffect, useState } from 'react';
 import { FaCode, FaGraduationCap } from 'react-icons/fa';
 import { MdCreate } from 'react-icons/md';
 
-interface ChatBlankStateProps {
+type ChatBlankStateProps = {
   onSelectQuestion?: (question: string) => void;
-}
+};
 
 const CREATE_EXAMPLE_QUESTIONS = [
   'How do I ingest data into Snowflake with Redpanda via Snowpipe?',

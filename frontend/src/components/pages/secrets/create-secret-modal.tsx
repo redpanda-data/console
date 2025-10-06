@@ -29,12 +29,12 @@ import type { z } from 'zod';
 
 import { secretSchema } from './form/secret-schema';
 
-interface CreateSecretModalProps {
+type CreateSecretModalProps = {
   isOpen: boolean;
   onClose: (createdSecretId?: string) => void;
   customSecretSchema?: z.ZodTypeAny;
   helperText?: ReactNode;
-}
+};
 
 export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperText }: CreateSecretModalProps) => {
   const { data: secretList } = useListSecretsQuery();
@@ -54,12 +54,12 @@ export const CreateSecretModal = ({ isOpen, onClose, customSecretSchema, helperT
   };
 
   // Form type
-  interface Secret {
+  type Secret = {
     id: string;
     value: string;
     labels: string[];
     scopes: Scope[];
-  }
+  };
 
   const defaultValues: Secret = {
     id: '',

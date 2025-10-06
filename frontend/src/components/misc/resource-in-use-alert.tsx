@@ -2,11 +2,11 @@ import { Alert, AlertDescription, AlertTitle, Box, Flex, Icon, ListItem, Unorder
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 
-interface ResourceInUseAlertProps {
+type ResourceInUseAlertProps = {
   resource: string;
   usedBy: string;
   pipelines?: Pipeline[];
-}
+};
 
 export const ResourceInUseAlert = ({ resource, usedBy, pipelines }: ResourceInUseAlertProps) => {
   if (pipelines?.length === 0) {

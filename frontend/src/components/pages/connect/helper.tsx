@@ -83,7 +83,7 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 
-interface ConnectorMetadata {
+type ConnectorMetadata = {
   readonly className?: string; // match by exact match
   readonly classNamePrefix?: string; // match by prefix
 
@@ -92,7 +92,7 @@ interface ConnectorMetadata {
   readonly description?: string;
   readonly learnMoreLink?: string;
   readonly author?: string;
-}
+};
 
 const fallbackConnector: ConnectorMetadata = {
   logo: <img alt="Redpanda logo" className="connectorLogo" src={RedpandaLogo} />,
@@ -577,7 +577,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
   const toast = useToast();
 
   const renderError: () => { title: string; content: string } | undefined = () => {
-    if (!$state.error) return undefined;
+    if (!$state.error) return;
 
     const txt = typeof $state.error === 'string' ? $state.error : $state.error.message;
 

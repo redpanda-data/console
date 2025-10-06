@@ -139,9 +139,7 @@ const ConfigEditorForm: FC<{
 
   const defaultConfigSynonym = editedEntry.synonyms
     ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
-    .sort((a, b) => {
-      return SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source);
-    })[0];
+    .sort((a, b) => SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source))[0];
 
   return (
     <Modal isOpen onClose={onClose}>
@@ -307,22 +305,20 @@ const ConfigGroup = observer(
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
     entries: ConfigEntryExtended[];
     hasEditPermissions: boolean;
-  }) => {
-    return (
-      <>
-        <div className="configGroupSpacer" />
-        {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
-        {p.entries.map((e) => (
-          <ConfigEntryComponent
-            entry={e}
-            hasEditPermissions={p.hasEditPermissions}
-            key={e.name}
-            onEditEntry={p.onEditEntry}
-          />
-        ))}
-      </>
-    );
-  }
+  }) => (
+    <>
+      <div className="configGroupSpacer" />
+      {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+      {p.entries.map((e) => (
+        <ConfigEntryComponent
+          entry={e}
+          hasEditPermissions={p.hasEditPermissions}
+          key={e.name}
+          onEditEntry={p.onEditEntry}
+        />
+      ))}
+    </>
+  )
 );
 
 const ConfigEntryComponent = observer(
@@ -349,7 +345,7 @@ const ConfigEntryComponent = observer(
         <span className="configButtons">
           <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
             <button
-              className={`btnEdit${canEdit ? '' : ' disabled'}`}
+              className={`btnEdit${canEdit ? '' : 'disabled'}`}
               onClick={() => {
                 if (canEdit) p.onEditEntry(p.entry);
               }}

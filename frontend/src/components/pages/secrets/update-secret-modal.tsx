@@ -27,11 +27,11 @@ import { secretSchema } from './form/secret-schema';
 import { Scope, UpdateSecretRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 
-interface UpdateSecretModalProps {
+type UpdateSecretModalProps = {
   isOpen: boolean;
   onClose: () => void;
   secretId: string;
-}
+};
 
 export const UpdateSecretModal = ({ isOpen, onClose, secretId }: UpdateSecretModalProps) => {
   // Secret update mutation

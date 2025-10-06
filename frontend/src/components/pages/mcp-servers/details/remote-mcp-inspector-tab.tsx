@@ -183,13 +183,14 @@ export const RemoteMCPInspectorTab = () => {
     }
   }, [selectedTool, mcpServerTools, resetMCPServerToolCall]);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Remote MCP Inspector Tab useEffect dependencies
   useEffect(() => {
@@ -382,10 +383,10 @@ export const RemoteMCPInspectorTab = () => {
   const toolResponseData = getToolResponseData();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {/* Left Panel - Tools */}
-      <Card className="px-0 py-0 h-fit" size="full">
-        <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+      <Card className="h-fit px-0 py-0" size="full">
+        <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
             <Text className="font-semibold">Tools</Text>
@@ -397,14 +398,14 @@ export const RemoteMCPInspectorTab = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-center py-4">
                 <Badge className="text-xs" variant="outline">
-                  <Clock className="h-3 w-3 mr-1 animate-spin" />
+                  <Clock className="mr-1 h-3 w-3 animate-spin" />
                   Server starting...
                 </Badge>
               </div>
               <div className="space-y-2">
-                <Skeleton className="h-[60px] rounded w-full" />
-                <Skeleton className="h-[60px] rounded w-full" />
-                <Skeleton className="h-[60px] rounded w-full" />
+                <Skeleton className="h-[60px] w-full rounded" />
+                <Skeleton className="h-[60px] w-full rounded" />
+                <Skeleton className="h-[60px] w-full rounded" />
               </div>
             </div>
           )}
@@ -415,7 +416,7 @@ export const RemoteMCPInspectorTab = () => {
               {(isLoadingTools || isRefetchingTools) && (
                 <div className="flex items-center justify-center py-4">
                   <Badge className="text-xs" variant="outline">
-                    <Clock className="h-3 w-3 mr-1 animate-spin" />
+                    <Clock className="mr-1 h-3 w-3 animate-spin" />
                     {isRefetchingTools ? 'Refreshing tools...' : 'Loading tools...'}
                   </Badge>
                 </div>
@@ -455,7 +456,7 @@ export const RemoteMCPInspectorTab = () => {
                     />
                   ))
                 : !(isLoadingTools || isRefetchingTools || toolsError) && (
-                    <Text className="text-muted-foreground py-8 text-center" variant="small">
+                    <Text className="py-8 text-center text-muted-foreground" variant="small">
                       No tools available on this MCP server.
                     </Text>
                   )}
@@ -465,10 +466,10 @@ export const RemoteMCPInspectorTab = () => {
       </Card>
 
       {/* Right Panel - Selected Tool */}
-      <Card className="px-0 py-0 flex flex-col" size="full">
+      <Card className="flex flex-col px-0 py-0" size="full">
         {selectedTool && mcpServerData?.mcpServer?.state === MCPServer_State.RUNNING ? (
           <>
-            <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
                 <RedpandaConnectComponentTypeBadge
                   componentType={
@@ -479,12 +480,12 @@ export const RemoteMCPInspectorTab = () => {
                 <Text className="font-semibold">{selectedTool}</Text>
               </CardTitle>
             </CardHeader>
-            <div className="flex flex-col flex-1 relative">
+            <div className="relative flex flex-1 flex-col">
               {(() => {
                 const selectedToolData = mcpServerTools?.tools?.find((t) => t.name === selectedTool);
                 return (
                   <>
-                    <div className="flex-1 p-4 space-y-4 overflow-y-auto pb-20">
+                    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-20">
                       {(() => {
                         const handleFormChange = (newValue: JSONValue) => {
                           setToolParameters(newValue);
@@ -561,7 +562,7 @@ export const RemoteMCPInspectorTab = () => {
                         <div className="space-y-2">
                           {Object.entries(validationErrors).map(([field, error]) => (
                             <div
-                              className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md"
+                              className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950/20"
                               key={field}
                             >
                               <div className="flex items-start">
@@ -580,9 +581,9 @@ export const RemoteMCPInspectorTab = () => {
                       {/* Response Section */}
                       {isServerToolPending && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Response</Label>
+                          <Label className="font-medium text-sm">Response</Label>
                           <div className="flex flex-col space-y-3">
-                            <Skeleton className="h-[250px] rounded-xl w-full" />
+                            <Skeleton className="h-[250px] w-full rounded-xl" />
                             <div className="space-y-2">
                               <Skeleton className="h-4 w-full" />
                               <Skeleton className="h-4 w-full" />
@@ -593,7 +594,7 @@ export const RemoteMCPInspectorTab = () => {
 
                       {!isServerToolPending && (toolError || toolResponseData) && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium">Response</Label>
+                          <Label className="font-medium text-sm">Response</Label>
                           <JSONView
                             className="border-gray-200 dark:border-gray-800"
                             data={toolError ? toolError?.message : toolResponseData}
@@ -605,16 +606,16 @@ export const RemoteMCPInspectorTab = () => {
                     </div>
 
                     {/* Buttons positioned at bottom left within card */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-card border-t border-gray-200 dark:border-border rounded-b-lg">
+                    <div className="absolute right-0 bottom-0 left-0 rounded-b-lg border-gray-200 border-t bg-card p-4 dark:border-border">
                       <div className="flex gap-2">
                         {isServerToolPending ? (
                           <>
                             <Button disabled onClick={executeToolRequest} variant="secondary">
-                              <Clock className="w-4 h-4 animate-spin" />
+                              <Clock className="h-4 w-4 animate-spin" />
                               Run Tool
                             </Button>
                             <Button onClick={cancelToolRequest} variant="destructive">
-                              <X className="w-4 h-4" />
+                              <X className="h-4 w-4" />
                               Cancel
                             </Button>
                           </>
@@ -627,7 +628,7 @@ export const RemoteMCPInspectorTab = () => {
                             onClick={executeToolRequest}
                             variant="secondary"
                           >
-                            <Send className="w-4 h-4" />
+                            <Send className="h-4 w-4" />
                             Run Tool
                           </Button>
                         )}
@@ -646,7 +647,7 @@ export const RemoteMCPInspectorTab = () => {
             </div>
           </>
         ) : (
-          <CardContent className="px-4 pb-4 flex-1 flex items-center justify-center">
+          <CardContent className="flex flex-1 items-center justify-center px-4 pb-4">
             <div className="text-center">
               <Text className="text-muted-foreground">
                 {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING

@@ -44,15 +44,13 @@ const { ToastContainer, toast } = createStandaloneToast();
 /**
  * Navigates to /rp-connect/create (legacy flow)
  */
-const LegacyCreatePipelineButton = () => {
-  return (
-    <div>
-      <NewButton as={Link} to="/rp-connect/create">
-        Create pipeline
-      </NewButton>
-    </div>
-  );
-};
+const LegacyCreatePipelineButton = () => (
+  <div>
+    <NewButton as={Link} to="/rp-connect/create">
+      Create pipeline
+    </NewButton>
+  </div>
+);
 
 /**
  * Navigates to wizard and clears session storage
@@ -83,15 +81,13 @@ const WizardCreatePipelineButton = () => {
 /**
  * Shows image, text, and create button
  */
-const LegacyEmptyState = () => {
-  return (
-    <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
-      <Image src={EmptyConnectors} />
-      <Box>You have no Redpanda Connect pipelines.</Box>
-      <LegacyCreatePipelineButton />
-    </Flex>
-  );
-};
+const LegacyEmptyState = () => (
+  <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
+    <Image src={EmptyConnectors} />
+    <Box>You have no Redpanda Connect pipelines.</Box>
+    <LegacyCreatePipelineButton />
+  </Flex>
+);
 
 /**
  * Shows ConnectTiles and navigates to wizard with connector pre-selected
@@ -264,7 +260,7 @@ class RpConnectPipelinesList extends PageComponent {
             <WizardCreatePipelineButton />
           </div>
         ) : pipelinesApi.pipelines.length !== 0 ? (
-          <div className="flex flex-col gap-2 my-5">
+          <div className="my-5 flex flex-col gap-2">
             <LegacyCreatePipelineButton />
             <SearchField
               placeholderText="Enter search term / regex..."
@@ -312,9 +308,7 @@ class RpConnectPipelinesList extends PageComponent {
               },
               {
                 header: 'State',
-                cell: ({ row: { original } }) => {
-                  return <PipelineStatus status={original.state} />;
-                },
+                cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
               },
               // {
               //     header: 'Throughput',

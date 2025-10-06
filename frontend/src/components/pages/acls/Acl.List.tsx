@@ -563,9 +563,7 @@ const RolesTab = observer(() => {
               {
                 id: 'assignedPrincipals',
                 header: 'Assigned principals',
-                cell: (ctx) => {
-                  return <>{ctx.row.original.members.length}</>;
-                },
+                cell: (ctx) => <>{ctx.row.original.members.length}</>,
               },
               {
                 size: 60,

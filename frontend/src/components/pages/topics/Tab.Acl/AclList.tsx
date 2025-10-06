@@ -24,9 +24,9 @@ import { toJson } from '../../../../utils/jsonUtils';
 
 type Acls = GetAclOverviewResponse | null | undefined;
 
-interface AclListProps {
+type AclListProps = {
   acl: Acls;
-}
+};
 
 function flatResourceList(store: Acls) {
   const acls = store;

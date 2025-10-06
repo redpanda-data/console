@@ -175,14 +175,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
-    if (!api.topics) return undefined;
+    if (!api.topics) return;
     const topic = api.topics.find((e) => e.topicName === this.props.topicName);
     if (!topic) return null;
     return topic;
   }
   @computed get topicConfig(): undefined | ConfigEntry[] | null {
     const config = api.topicConfig.get(this.props.topicName);
-    if (config === undefined) return undefined;
+    if (config === undefined) return;
     if (config === null || config.error != null) return null;
     return config.configEntries;
   }
@@ -284,9 +284,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         'topicacl',
         'seeTopic',
         'ACL',
-        (t) => {
-          return <AclList acl={api.topicAcls.get(t.topicName)} />;
-        },
+        (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
             if (AppFeatures.SINGLE_SIGN_ON)
@@ -302,7 +300,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     </div>
                   </Popover>
                 );
-            return undefined;
+            return;
           },
         ]
       ),
@@ -336,9 +334,11 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
-              return (this.deleteRecordsModalAlive = true);
-            })}
+            {DeleteRecordsMenuItem(
+              topic.cleanupPolicy === 'compact',
+              topic.allowedActions,
+              () => (this.deleteRecordsModalAlive = true)
+            )}
           </Flex>
 
           {/* Tabs:  Messages, Configuration */}

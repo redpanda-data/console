@@ -30,9 +30,7 @@ import { LicenseNotification } from './LicenseNotification';
  * @param daysOffset - The number of days to offset (default is 0).
  * @returns Unix timestamp in seconds.
  */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
-  return Math.floor(Date.now() / 1000) + daysOffset * 86400;
-};
+const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86400;
 
 vi.mock('../../state/backendApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../state/backendApi')>();

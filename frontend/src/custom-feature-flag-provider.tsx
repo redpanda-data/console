@@ -1,15 +1,15 @@
 import { FEATURE_FLAGS } from 'components/constants';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
-interface FeatureFlags {
+type FeatureFlags = {
   [key: string]: boolean;
-}
+};
 
-interface FeatureFlagContextType {
+type FeatureFlagContextType = {
   flags: FeatureFlags;
   setFlag: (key: string, value: boolean) => void;
   getBooleanFlagValue: (key: keyof typeof FEATURE_FLAGS, defaultValue?: boolean) => boolean;
-}
+};
 
 const FeatureFlagContext = createContext<FeatureFlagContextType>({
   flags: {},
@@ -17,10 +17,10 @@ const FeatureFlagContext = createContext<FeatureFlagContextType>({
   getBooleanFlagValue: () => false,
 });
 
-interface CustomFeatureFlagProviderProps {
+type CustomFeatureFlagProviderProps = {
   children: ReactNode;
   initialFlags?: FeatureFlags;
-}
+};
 
 export const CustomFeatureFlagProvider = ({
   children,
@@ -36,9 +36,7 @@ export const CustomFeatureFlagProvider = ({
   }, []);
 
   const getBooleanFlagValue = useCallback(
-    (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => {
-      return flags[key] !== undefined ? flags[key] : defaultValue;
-    },
+    (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => (flags[key] !== undefined ? flags[key] : defaultValue),
     [flags]
   );
 

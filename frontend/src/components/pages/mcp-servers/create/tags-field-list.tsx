@@ -17,12 +17,12 @@ import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import type { FormValues } from './schemas';
 
-interface TagsFieldListProps {
+type TagsFieldListProps = {
   form: UseFormReturn<FormValues>;
   tagFields: UseFieldArrayReturn<FormValues, 'tags', 'id'>['fields'];
   appendTag: UseFieldArrayReturn<FormValues, 'tags', 'id'>['append'];
   removeTag: UseFieldArrayReturn<FormValues, 'tags', 'id'>['remove'];
-}
+};
 
 export const TagsFieldList: React.FC<TagsFieldListProps> = ({ form, tagFields, appendTag, removeTag }) => {
   return (

@@ -46,13 +46,12 @@ export const useCreateDebugBundleMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'debug bundle',
-      });
-    },
+      }),
   });
 };
 
@@ -82,13 +81,12 @@ export const useCancelDebugBundleProcessMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'cancel',
         entity: 'debug bundle process',
-      });
-    },
+      }),
   });
 };
 
@@ -105,12 +103,11 @@ export const useDeleteDebugBundleFileMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'debug bundle file',
-      });
-    },
+      }),
   });
 };

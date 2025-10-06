@@ -24,15 +24,15 @@ const settingsName = 'uiSettings-v3';
 
 export type ValueDisplay = 'friendly' | 'both' | 'raw';
 
-export interface PreviewTag {
+export type PreviewTag = {
   id: string;
 
   isActive: boolean;
   text: string;
   customName?: string;
-}
+};
 
-export interface PreviewTagV2 {
+export type PreviewTagV2 = {
   id: string;
 
   isActive: boolean;
@@ -43,14 +43,14 @@ export interface PreviewTagV2 {
   searchInMessageHeaders: boolean;
   searchInMessageKey: boolean;
   searchInMessageValue: boolean;
-}
+};
 
 export type DataColumnKey = 'offset' | 'partitionID' | 'timestamp' | 'key' | 'value' | 'keySize' | 'valueSize';
 
-export interface ColumnList {
+export type ColumnList = {
   title: string;
   dataIndex: DataColumnKey;
-}
+};
 
 export type FilterType = 'code';
 export class FilterEntry {

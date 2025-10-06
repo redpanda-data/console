@@ -43,7 +43,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 
-interface QuickAddSecretsProps {
+type QuickAddSecretsProps = {
   requiredSecrets: string[];
   existingSecrets: string[];
   scopes: Scope[];
@@ -52,7 +52,7 @@ interface QuickAddSecretsProps {
   enableNewSecrets?: boolean;
   hideHeader?: boolean;
   onError?: (errors: string[]) => void;
-}
+};
 
 const SecretFormSchema = z.record(
   z.string(),
@@ -240,7 +240,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                         name={`${secretName}.value` as keyof SecretFormData}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="font-mono text-sm font-medium">{secretName}</FormLabel>
+                            <FormLabel className="font-medium font-mono text-sm">{secretName}</FormLabel>
                             <FormControl>
                               <Input
                                 name={field.name}
@@ -296,7 +296,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             {/* Display newly created secrets */}
             {newlyCreatedSecrets.length > 0 && (
               <div className="space-y-2">
-                <Text className="text-sm font-medium text-muted-foreground">Created Secrets:</Text>
+                <Text className="font-medium text-muted-foreground text-sm">Created Secrets:</Text>
                 <div className="space-y-2">
                   {newlyCreatedSecrets.map((secretName) => (
                     <Input className="font-mono" disabled key={secretName} readOnly value={secretName}>
@@ -318,7 +318,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Secret Name</FormLabel>
+                        <FormLabel className="font-medium text-sm">Secret Name</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., API_KEY, DATABASE_PASSWORD" {...field} />
                         </FormControl>
@@ -333,7 +333,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     name="value"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">Secret Value</FormLabel>
+                        <FormLabel className="font-medium text-sm">Secret Value</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter secret value..." type="password" {...field} />
                         </FormControl>

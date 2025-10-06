@@ -232,11 +232,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   }
 
   @action editGroup() {
-    const groupOffsets = this.group?.topicOffsets.flatMap((x) => {
-      return x.partitionOffsets.map((p) => {
-        return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
-      });
-    });
+    const groupOffsets = this.group?.topicOffsets.flatMap((x) =>
+      x.partitionOffsets.map(
+        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+      )
+    );
 
     if (!groupOffsets) return;
 
@@ -246,11 +246,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   }
 
   @action deleteGroup() {
-    const groupOffsets = this.group?.topicOffsets.flatMap((x) => {
-      return x.partitionOffsets.map((p) => {
-        return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
-      });
-    });
+    const groupOffsets = this.group?.topicOffsets.flatMap((x) =>
+      x.partitionOffsets.map(
+        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+      )
+    );
 
     if (!groupOffsets) return;
 
@@ -278,9 +278,9 @@ const GroupByTopics = observer(function GroupByTopics(props: {
 
   const topicLags = props.group.topicOffsets;
   const p = props;
-  const allAssignments = p.group.members.flatMap((m) => {
-    return m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }));
-  });
+  const allAssignments = p.group.members.flatMap((m) =>
+    m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds }))
+  );
 
   const lagsFlat = topicLags.flatMap((topicLag) =>
     topicLag.partitionOffsets.map((partLag) => {

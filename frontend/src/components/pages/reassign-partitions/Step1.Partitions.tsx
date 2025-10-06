@@ -172,17 +172,15 @@ export class StepSelectPartitions extends Component<{
             _internal_connectors_configs: true,
           }}
           sorting={true}
-          subComponent={({ row: { original: topic } }) => {
-            return (
-              <SelectPartitionTable
-                getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
-                isSelected={this.isSelected}
-                setSelection={this.setSelection}
-                topic={topic}
-                topicPartitions={topic.partitions}
-              />
-            );
-          }}
+          subComponent={({ row: { original: topic } }) => (
+            <SelectPartitionTable
+              getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
+              isSelected={this.isSelected}
+              setSelection={this.setSelection}
+              topic={topic}
+              topicPartitions={topic.partitions}
+            />
+          )}
         />
       </div>
     );

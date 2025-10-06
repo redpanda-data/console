@@ -24,7 +24,7 @@ import {
 
 import { isFieldEditable, isFieldImmutable, isFieldOutputOnly, isFieldRequired } from '../../utils/protobuf-reflection';
 
-interface BaseProtoFormFieldProps {
+type BaseProtoFormFieldProps = {
   /** The protobuf message schema to analyze */
   messageSchema: DescMessage;
   /** The field name as it appears in the protobuf schema (e.g., 'display_name') */
@@ -43,7 +43,7 @@ interface BaseProtoFormFieldProps {
   forceReadOnly?: boolean;
   /** Override the automatic required detection */
   forceRequired?: boolean;
-}
+};
 
 interface ProtoInputFieldProps extends BaseProtoFormFieldProps {
   /** Input-specific props */
@@ -169,26 +169,24 @@ export const ProtoDisplayField = ({
   label: string;
   value: string | number;
   description?: string;
-}) => {
-  return (
-    <Box>
-      <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
-        {label}
+}) => (
+  <Box>
+    <Text color="gray.700" fontSize="sm" fontWeight="medium" mb={1}>
+      {label}
+    </Text>
+    {description && (
+      <Text color="gray.500" fontSize="sm" mb={2}>
+        {description}
       </Text>
-      {description && (
-        <Text color="gray.500" fontSize="sm" mb={2}>
-          {description}
-        </Text>
-      )}
-      <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={3}>
-        <Text color="gray.900" fontSize="sm">
-          {value || (
-            <Text as="span" color="gray.400" fontStyle="italic">
-              Not set
-            </Text>
-          )}
-        </Text>
-      </Box>
+    )}
+    <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={3}>
+      <Text color="gray.900" fontSize="sm">
+        {value || (
+          <Text as="span" color="gray.400" fontStyle="italic">
+            Not set
+          </Text>
+        )}
+      </Text>
     </Box>
-  );
-};
+  </Box>
+);

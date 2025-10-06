@@ -12,14 +12,14 @@
 import type { Table } from 'dexie';
 import Dexie from 'dexie';
 
-export interface ChatMessage {
+export type ChatMessage = {
   id: string;
   agentId: string;
   content: string;
   sender: 'user' | 'system';
   timestamp: Date;
   failure: boolean;
-}
+};
 
 class ChatDatabase extends Dexie {
   messages!: Table<ChatMessage, string>;

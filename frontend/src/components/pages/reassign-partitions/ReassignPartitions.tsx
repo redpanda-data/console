@@ -71,10 +71,10 @@ import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
 
-export interface PartitionSelection {
+export type PartitionSelection = {
   // Which partitions are selected?
   [topicName: string]: number[]; // topicName -> array of partitionIds
-}
+};
 
 const reassignmentTracker = new ReassignmentTracker();
 export { reassignmentTracker };
@@ -766,9 +766,9 @@ class ReassignPartitions extends PageComponent {
 
   @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
     const apiTopics = api.topics;
-    if (!apiTopics) return undefined;
+    if (!apiTopics) return;
     const apiPartitions = api.topicPartitions;
-    if (!apiPartitions) return undefined;
+    if (!apiPartitions) return;
 
     return partitionSelectionToTopicPartitions(this.partitionSelection, apiPartitions, apiTopics);
   }
@@ -794,7 +794,7 @@ class ReassignPartitions extends PageComponent {
 }
 export default ReassignPartitions;
 
-interface WizardStep {
+type WizardStep = {
   step: number;
   title: string;
   backButton?: string;
@@ -803,7 +803,7 @@ interface WizardStep {
     isEnabled: (rp: ReassignPartitions) => boolean | string;
     computeWarning?: (rp: ReassignPartitions) => string | undefined;
   };
-}
+};
 const steps: WizardStep[] = [
   {
     step: 0,
@@ -831,13 +831,13 @@ const steps: WizardStep[] = [
       },
       computeWarning: (rp) => {
         const allBrokers = api.clusterInfo?.brokers;
-        if (!allBrokers) return undefined;
+        if (!allBrokers) return;
 
         // Show a warning if the user has selected brokers that are all in the same rack, but
         // could theoretically select brokers that are in different racks.
         const allRacks = allBrokers.map((x) => x.rack ?? '').distinct();
-        if (!allRacks) return undefined; // can't happen since no brokers == can't reach this page anyway
-        if (allRacks.length <= 1) return undefined; // Ok, all available brokers are on the same rack
+        if (!allRacks) return; // can't happen since no brokers == can't reach this page anyway
+        if (allRacks.length <= 1) return; // Ok, all available brokers are on the same rack
 
         // At least 2 racks available
         const selectedBrokers = rp.selectedBrokerIds

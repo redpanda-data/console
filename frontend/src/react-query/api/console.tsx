@@ -10,17 +10,15 @@ import {
 import type { MessageInit } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-export const usePublishMessageMutation = () => {
-  return useMutation(publishMessage, {
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+export const usePublishMessageMutation = () =>
+  useMutation(publishMessage, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'publish',
         entity: 'message',
-      });
-    },
+      }),
   });
-};
 
 /**
  * Helper function to create a PublishMessageRequest with payload options

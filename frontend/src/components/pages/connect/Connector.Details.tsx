@@ -70,13 +70,13 @@ const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
-interface LocalConnectorState {
+type LocalConnectorState = {
   pausingConnector: ClusterConnectorInfo | null;
   restartingConnector: ClusterConnectorInfo | null;
   updatingConnector: UpdatingConnectorData | null;
   restartingTask: RestartingTaskData | null;
   deletingConnector: string | null;
-}
+};
 const KafkaConnectorMain = observer(
   ({
     clusterName,

@@ -171,16 +171,14 @@ class GroupList extends PageComponent {
     );
   }
 
-  SearchBar = observer(() => {
-    return (
-      <SearchField
-        placeholderText="Enter search term/regex"
-        searchText={uiSettings.consumerGroupList.quickSearch}
-        setSearchText={(x) => (uiSettings.consumerGroupList.quickSearch = x)}
-        width="350px"
-      />
-    );
-  });
+  SearchBar = observer(() => (
+    <SearchField
+      placeholderText="Enter search term/regex"
+      searchText={uiSettings.consumerGroupList.quickSearch}
+      setSearchText={(x) => (uiSettings.consumerGroupList.quickSearch = x)}
+      width="350px"
+    />
+  ));
 
   GroupId = (p: { group: GroupDescription }) => {
     const protocol = p.group.protocolType;

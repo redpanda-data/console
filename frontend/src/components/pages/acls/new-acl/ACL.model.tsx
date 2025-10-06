@@ -45,19 +45,19 @@ export const ResourcePatternTypeAny: ResourcePatternType = 'any';
 export const ResourcePatternTypeLiteral: ResourcePatternType = 'literal';
 export const ResourcePatternTypePrefix: ResourcePatternType = 'prefix';
 
-export interface Rule {
+export type Rule = {
   id: number;
   resourceType: ResourceType;
   mode: ModeType;
   selectorType: ResourcePatternType;
   selectorValue: string;
   operations: Record<string, OperationType>;
-}
+};
 
-export interface SharedConfig {
+export type SharedConfig = {
   principal: string;
   host: string;
-}
+};
 
 export type AclDetail = {
   sharedConfig: SharedConfig;
@@ -109,16 +109,16 @@ export const operationSets: Record<ResourceType, Record<string, OperationType>> 
   },
 };
 
-export interface SharedConfigProps {
+export type SharedConfigProps = {
   sharedConfig: SharedConfig;
   setSharedConfig: (config: { principal: string; host: string }) => void;
   openMatchingSections: Record<string, boolean>;
   setOpenMatchingSections: (setter: (prev: Record<string, boolean>) => Record<string, boolean>) => void;
   getSectionKey: (ruleId: number, section: string) => string;
   edit: boolean;
-}
+};
 
-export interface AclRulesProps {
+export type AclRulesProps = {
   rules: Rule[];
   addRule: () => void;
   addAllowAllOperations: () => void;
@@ -138,14 +138,14 @@ export interface AclRulesProps {
   getSectionKey: (ruleId: number, section: string) => string;
   openMatchingSections: Record<string, boolean>;
   schemaRegistryEnabled: boolean;
-}
+};
 
-export interface SummaryProps {
+export type SummaryProps = {
   sharedConfig: { principal: string; host: string };
   rules: Rule[];
-}
+};
 
-export interface ResourceTypeSelectionProps {
+export type ResourceTypeSelectionProps = {
   rule: Rule;
   handleResourceTypeChange: (ruleId: number, resourceType: ResourceType) => void;
   isClusterDisabledForRule: (ruleId: number) => boolean;
@@ -155,7 +155,7 @@ export interface ResourceTypeSelectionProps {
   getSchemaRegistryTooltipText: () => string;
   ruleIndex: number;
   isSchemaRegistryEnabled: boolean;
-}
+};
 
 export const parsePrincipal = (principal: string): { type: string; name: string } => {
   let [type, name] = principal.split(':'); // Split at the first colon
@@ -403,9 +403,8 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail 
   };
 };
 
-export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> => {
-  return operationSets[resourceType] || {};
-};
+export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> =>
+  operationSets[resourceType] || {};
 
 // Generate a unique key for an ACL based on Rule and SharedConfig
 export function getIdFromRule(rule: Rule, operation: string, permission: OperationType): string {
@@ -503,12 +502,11 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
 }
 
 // Helper function to convert UPPER_CASE strings to sentence case
-export const formatLabel = (text: string): string => {
-  return text
+export const formatLabel = (text: string): string =>
+  text
     .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/^\w/, (c) => c.toUpperCase());
-};
 
 // Helper function to generate rule data-testid
 export const getRuleDataTestId = (rule: Rule): string => {
@@ -522,10 +520,10 @@ interface ACLWithId extends CreateACLRequest {
   id: string;
 }
 
-export interface ACLDifference {
+export type ACLDifference = {
   toCreate: ACLWithId[];
   toDelete: ACLWithId[];
-}
+};
 
 /**
  * Compares current ACL rules with new rules to determine which need to be created and deleted

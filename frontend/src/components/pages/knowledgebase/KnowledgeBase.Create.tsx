@@ -395,7 +395,7 @@ const TopicSelector = ({
   );
 };
 
-interface FormData {
+type FormData = {
   displayName: string;
   description: string;
   tags: Array<{ key: string; value: string }>;
@@ -436,7 +436,7 @@ interface FormData {
   generationProvider: 'openai';
   generationModel: string;
   generationApiKey: string;
-}
+};
 
 @observer
 class KnowledgeBaseCreate extends PageComponent {
@@ -688,9 +688,7 @@ class KnowledgeBaseCreate extends PageComponent {
     return result;
   };
 
-  generateUsername = (kbId: string): string => {
-    return `KB_USER_${kbId}`;
-  };
+  generateUsername = (kbId: string): string => `KB_USER_${kbId}`;
 
   generatePassword = (): string => {
     // Generate a secure 32-character password

@@ -63,7 +63,7 @@ export const InstallRpkListItem = () => {
     <ListItem>
       <div className="flex flex-col gap-2">
         <div>Install rpk:</div>
-        <Label className="text-sm font-medium">Installation Method</Label>
+        <Label className="font-medium text-sm">Installation Method</Label>
         <div>
           <Select onValueChange={setSelectedMethod} value={selectedMethod}>
             <SelectTrigger className="w-full max-w-md">

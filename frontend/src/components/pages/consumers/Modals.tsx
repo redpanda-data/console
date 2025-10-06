@@ -1010,7 +1010,7 @@ export class DeleteOffsetsModal extends Component<{
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
-    if (x == null) return undefined;
+    if (x == null) return;
 
     // from other group
     if (typeof x === 'number') return x;
@@ -1019,7 +1019,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     if ('offset' in x) return x.offset;
 
     // otherwise 'x' might be 'Date', which means timestamps are resolved yet
-    return undefined;
+    return;
   };
 
   const topicOffsets = offsets

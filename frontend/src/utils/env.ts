@@ -64,7 +64,7 @@ export function getBasePath() {
 
 export function getBuildDate(): Date | undefined {
   const timestamp = +env.REACT_APP_BUILD_TIMESTAMP;
-  if (timestamp === 0) return undefined;
+  if (timestamp === 0) return;
   return new Date(timestamp * 1000);
 }
 

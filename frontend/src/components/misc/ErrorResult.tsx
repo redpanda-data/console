@@ -6,11 +6,11 @@ import { capitalizeFirst } from 'utils/utils';
 
 import type { WrappedApiError } from '../../state/restInterfaces';
 
-interface ErrorResultProps {
+type ErrorResultProps = {
   error?: ConnectError | WrappedApiError | null;
   title?: string;
   message?: string;
-}
+};
 
 const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   if (!error) {
@@ -18,14 +18,10 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   }
 
   // Type guard for ConnectError
-  const isConnectError = (err: any): err is ConnectError => {
-    return err && typeof err.code === 'number' && 'details' in err;
-  };
+  const isConnectError = (err: any): err is ConnectError => err && typeof err.code === 'number' && 'details' in err;
 
   // Type guard for WrappedApiError
-  const isWrappedApiError = (err: any): err is WrappedApiError => {
-    return err && typeof err.statusCode === 'number';
-  };
+  const isWrappedApiError = (err: any): err is WrappedApiError => err && typeof err.statusCode === 'number';
 
   // Map gRPC error codes to HTTP status codes
   const getStatusCode = (code: Code): number => {

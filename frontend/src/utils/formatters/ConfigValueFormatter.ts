@@ -19,9 +19,7 @@ export const CONFIG_INFINITE_VALUES: Record<string, number> = {
 export const entryHasInfiniteValue = (entry: ConfigEntry) =>
   Number(entry.value) === CONFIG_INFINITE_VALUES[entry.name] || entry.value === '-1';
 
-export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => {
-  return CONFIG_INFINITE_VALUES[entry.name] ?? -1;
-};
+export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => CONFIG_INFINITE_VALUES[entry.name] ?? -1;
 
 export function formatConfigValue(
   name: string,

@@ -19,9 +19,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, getRpkCommand, type MCPServer } from '../utils';
 
-interface ClientClaudeDesktopProps {
+type ClientClaudeDesktopProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => {
   const clusterId = config?.clusterId;
@@ -88,7 +88,7 @@ export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => 
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <img alt="Claude Desktop" className="h-4 w-4" src={ClaudeDesktopLogo} />
                 Claude Desktop
               </Text>

@@ -157,10 +157,10 @@ const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
   {} as Record<PayloadEncoding, string>
 );
 
-interface TopicMessageViewProps {
+type TopicMessageViewProps = {
   topic: Topic;
   refreshTopicData: (force: boolean) => void;
-}
+};
 
 // Add these type definitions and helper functions at the top of the file
 type TopicMessageParams = {
@@ -1006,60 +1006,58 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         id: 'action',
         size: 0,
-        cell: ({ row: { original } }) => {
-          return (
-            <Menu computePositionOnMount>
-              <MenuButton as={Button} className="iconButton" variant="link">
-                <KebabHorizontalIcon />
-              </MenuButton>
-              <MenuList>
-                <MenuItem
-                  onClick={() => {
-                    navigator.clipboard
-                      .writeText(getMessageAsString(original))
-                      .then(() => {
-                        toast({
-                          status: 'success',
-                          description: 'Message copied to clipboard',
-                        });
-                      })
-                      .catch(navigatorClipboardErrorHandler);
-                  }}
-                >
-                  Copy Message
-                </MenuItem>
-                <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
-                  Copy Key
-                </MenuItem>
-                <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
-                  Copy Value
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    navigator.clipboard
-                      .writeText(original.timestamp.toString())
-                      .then(() => {
-                        toast({
-                          status: 'success',
-                          description: 'Epoch Timestamp copied to clipboard',
-                        });
-                      })
-                      .catch(navigatorClipboardErrorHandler);
-                  }}
-                >
-                  Copy Epoch Timestamp
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    this.downloadMessages = [original];
-                  }}
-                >
-                  Save to File
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          );
-        },
+        cell: ({ row: { original } }) => (
+          <Menu computePositionOnMount>
+            <MenuButton as={Button} className="iconButton" variant="link">
+              <KebabHorizontalIcon />
+            </MenuButton>
+            <MenuList>
+              <MenuItem
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(getMessageAsString(original))
+                    .then(() => {
+                      toast({
+                        status: 'success',
+                        description: 'Message copied to clipboard',
+                      });
+                    })
+                    .catch(navigatorClipboardErrorHandler);
+                }}
+              >
+                Copy Message
+              </MenuItem>
+              <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
+                Copy Key
+              </MenuItem>
+              <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
+                Copy Value
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(original.timestamp.toString())
+                    .then(() => {
+                      toast({
+                        status: 'success',
+                        description: 'Epoch Timestamp copied to clipboard',
+                      });
+                    })
+                    .catch(navigatorClipboardErrorHandler);
+                }}
+              >
+                Copy Epoch Timestamp
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  this.downloadMessages = [original];
+                }}
+              >
+                Save to File
+              </MenuItem>
+            </MenuList>
+          </Menu>
+        ),
       },
     ];
 
@@ -2048,19 +2046,17 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
           data={props.msg.headers}
           pagination
           sorting
-          subComponent={({ row: { original: header } }) => {
-            return (
-              <Box px={10} py={6}>
-                {typeof header.value?.payload !== 'object' ? (
-                  <div className="codeBox" style={{ margin: '0', width: '100%' }}>
-                    {toSafeString(header.value.payload)}
-                  </div>
-                ) : (
-                  <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
-                )}
-              </Box>
-            );
-          }}
+          subComponent={({ row: { original: header } }) => (
+            <Box px={10} py={6}>
+              {typeof header.value?.payload !== 'object' ? (
+                <div className="codeBox" style={{ margin: '0', width: '100%' }}>
+                  {toSafeString(header.value.payload)}
+                </div>
+              ) : (
+                <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
+              )}
+            </Box>
+          )}
         />
       </div>
     </div>
@@ -2176,35 +2172,33 @@ const PreviewFieldsModal: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
   messageSearch: MessageSearch;
-}> = observer(({ getShowDialog, setShowDialog, messageSearch }) => {
-  return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
-      }}
-    >
-      <ModalOverlay />
-      <ModalContent minW="4xl">
-        <ModalHeader>Preview fields</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <PreviewSettings messageSearch={messageSearch} />
-        </ModalBody>
-        <ModalFooter gap={2}>
-          <Button
-            colorScheme="red"
-            onClick={() => {
-              setShowDialog(false);
-            }}
-          >
-            Close
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-});
+}> = observer(({ getShowDialog, setShowDialog, messageSearch }) => (
+  <Modal
+    isOpen={getShowDialog()}
+    onClose={() => {
+      setShowDialog(false);
+    }}
+  >
+    <ModalOverlay />
+    <ModalContent minW="4xl">
+      <ModalHeader>Preview fields</ModalHeader>
+      <ModalCloseButton />
+      <ModalBody>
+        <PreviewSettings messageSearch={messageSearch} />
+      </ModalBody>
+      <ModalFooter gap={2}>
+        <Button
+          colorScheme="red"
+          onClick={() => {
+            setShowDialog(false);
+          }}
+        >
+          Close
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+));
 
 const DeserializersModal: FC<{
   getShowDialog: () => boolean;

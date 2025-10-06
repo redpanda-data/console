@@ -383,14 +383,14 @@ export class RadioOptionGroup<T extends string | null = string> extends Componen
   }
 }
 
-interface StatusIndicatorProps {
+type StatusIndicatorProps = {
   identityKey: string;
   fillFactor: number;
   statusText: string;
   bytesConsumed?: string;
   messagesConsumed?: string;
   progressText: string;
-}
+};
 
 // TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -573,13 +573,11 @@ const ellipsisSpanStyle: CSSProperties = {
   maxWidth: '100%',
   verticalAlign: 'text-bottom',
 };
-export const Ellipsis = (p: { children?: React.ReactNode; className?: string }) => {
-  return (
-    <span className={p.className} style={ellipsisSpanStyle}>
-      {p.children}
-    </span>
-  );
-};
+export const Ellipsis = (p: { children?: React.ReactNode; className?: string }) => (
+  <span className={p.className} style={ellipsisSpanStyle}>
+    {p.children}
+  </span>
+);
 
 export const Code = (p: { children?: React.ReactNode; nowrap?: boolean }) => {
   const className = p.nowrap ? 'codeBox nowrap' : 'codeBox';

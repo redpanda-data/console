@@ -37,9 +37,9 @@ import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../typ
 import { type AddUserFormData, addUserFormSchema } from '../types/wizard';
 import { createTopicSuperuserACLs, saslMechanismToProto } from '../utils/user';
 
-interface AddUserStepProps {
+type AddUserStepProps = {
   usersList: ListUsersResponse_User[];
-}
+};
 
 export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersList }, ref) => {
   const [persistedUserData, setUserFormData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
@@ -212,7 +212,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-8 max-w-2xl">
+          <div className="max-w-2xl space-y-8">
             <FormField
               control={form.control}
               name="username"
@@ -265,7 +265,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                         control={form.control}
                         name="specialCharactersEnabled"
                         render={({ field: specialCharsField }) => (
-                          <Label className="flex-row items-center text-muted-foreground font-normal">
+                          <Label className="flex-row items-center font-normal text-muted-foreground">
                             <Checkbox
                               checked={specialCharsField.value}
                               onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
@@ -313,23 +313,23 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                             <FormControl>
                               <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
-                            <FormLabel className="text-sm font-medium">
+                            <FormLabel className="font-medium text-sm">
                               Enable topic-specific permissions for this user for "{topicData.topicName}"
                             </FormLabel>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {field.value ? (
                               `This user will have full permissions (read, write, create, delete, describe, alter) on the selected topic "${topicData.topicName}".`
                             ) : (
                               <Alert variant="destructive">
-                                <AlertTitle className="flex gap-2 items-center">
+                                <AlertTitle className="flex items-center gap-2">
                                   <CircleAlert size={15} />
                                   Want custom User Permissions?
                                 </AlertTitle>
                                 <AlertDescription>
                                   You can configure custom ACLs to connect your data to Redpanda{' '}
                                   <a
-                                    className="text-blue-600 hover:text-blue-800 underline"
+                                    className="text-blue-600 underline hover:text-blue-800"
                                     href="/security/acls"
                                     rel="noopener noreferrer"
                                     target="_blank"

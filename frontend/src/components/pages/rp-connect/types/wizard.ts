@@ -18,16 +18,16 @@ export const connectTilesFormSchema = z.object({
 
 export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
 
-export interface StepSubmissionResult {
+export type StepSubmissionResult = {
   success: boolean;
   message?: string;
   error?: string;
-}
+};
 
-export interface BaseStepRef {
+export type BaseStepRef = {
   triggerSubmit: () => Promise<StepSubmissionResult>;
   isLoading: boolean;
-}
+};
 
 export const retentionTimeUnits = enumFromKeys(timeFactors);
 export const retentionSizeUnits = enumFromKeys(sizeFactors);

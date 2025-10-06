@@ -97,8 +97,8 @@ export const ConnectOnboardingWizard = () => {
     <PageContent>
       <Stepper.Provider className="space-y-4" initialStep={initialStep}>
         {({ methods }) => (
-          <div className="flex flex-col gap-8 relative">
-            <div className="flex flex-col gap-8 pt-6 h-full">
+          <div className="relative flex flex-col gap-8">
+            <div className="flex h-full flex-col gap-8 pt-6">
               <div className="flex flex-col space-y-2 text-center">
                 <Stepper.Navigation>
                   {stepDefinitions.map((step) => (

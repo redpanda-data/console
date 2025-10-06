@@ -23,10 +23,10 @@ import type { ConnectorStep } from '../../../../state/restInterfaces';
 import { clone } from '../../../../utils/jsonUtils';
 import KowlEditor from '../../../misc/KowlEditor';
 
-export interface ConfigPageProps {
+export type ConfigPageProps = {
   connectorStore: ConnectorPropertiesStore;
   context: 'CREATE' | 'EDIT';
-}
+};
 
 export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore, context }: ConfigPageProps) => {
   if (connectorStore.error)
@@ -77,19 +77,17 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore,
             Show advanced options
           </Switch>
 
-          {steps.map(({ step, groups }) => {
-            return (
-              <ConnectorStepComponent
-                allGroups={connectorStore.allGroups}
-                connectorType={connectorStore.connectorType}
-                context={context}
-                groups={groups}
-                key={step.stepIndex}
-                showAdvancedOptions={connectorStore.showAdvancedOptions}
-                step={step}
-              />
-            );
-          })}
+          {steps.map(({ step, groups }) => (
+            <ConnectorStepComponent
+              allGroups={connectorStore.allGroups}
+              connectorType={connectorStore.connectorType}
+              context={context}
+              groups={groups}
+              key={step.stepIndex}
+              showAdvancedOptions={connectorStore.showAdvancedOptions}
+              step={step}
+            />
+          ))}
         </>
       ) : (
         <div style={{ margin: '0 auto 1.5rem' }}>

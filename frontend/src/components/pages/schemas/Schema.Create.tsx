@@ -267,13 +267,14 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
       schema: state.schemaText,
       references: state.references.filter((x) => x.name && x.subject),
     })
-    .catch((err) => {
-      return {
-        compatibility: { isCompatible: false },
-        isValid: false,
-        parsingError: String(err),
-      } as SchemaRegistryValidateSchemaResponse;
-    });
+    .catch(
+      (err) =>
+        ({
+          compatibility: { isCompatible: false },
+          isValid: false,
+          parsingError: String(err),
+        }) as SchemaRegistryValidateSchemaResponse
+    );
 
   return {
     isValid: r.isValid,

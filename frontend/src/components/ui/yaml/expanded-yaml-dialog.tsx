@@ -22,7 +22,7 @@ import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
 import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import type { UseFormReturn } from 'react-hook-form';
 
-interface ExpandedYamlDialogProps {
+type ExpandedYamlDialogProps = {
   form: UseFormReturn<FormValues>;
   toolIndex: number;
   isOpen: boolean;
@@ -30,7 +30,7 @@ interface ExpandedYamlDialogProps {
   isLintConfigPending: boolean;
   onClose: () => void;
   onLint: () => void;
-}
+};
 
 export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
   form,
@@ -46,7 +46,7 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DialogContent className="max-h-[95vh] h-[95vh] flex flex-col max-w-[95vw] w-[95vw]" size="full">
+      <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col" size="full">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             YAML Configuration - Tool {toolIndex + 1}
@@ -54,8 +54,8 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <YamlEditorCard
               height="100%"
               isLinting={isLintConfigPending}
@@ -72,8 +72,8 @@ export const ExpandedYamlDialog: React.FC<ExpandedYamlDialogProps> = ({
           </div>
 
           {/* Display validation errors and lint hints below the editor */}
-          <div className="flex-shrink-0 mt-4 space-y-2">
-            {configError && <div className="text-sm text-red-600">{configError.message}</div>}
+          <div className="mt-4 flex-shrink-0 space-y-2">
+            {configError && <div className="text-red-600 text-sm">{configError.message}</div>}
 
             <LintHintList lintHints={lintHints} />
           </div>

@@ -130,7 +130,7 @@ export class CommaSeparatedStringList extends Component<{
   AddButton = observer(() => {
     return (
       <div className="createEntryRow">
-        <div className={`inputWrapper${this.newEntryError ? ' hasError' : ''}`} style={{ height: '100%' }}>
+        <div className={`inputWrapper${this.newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
           <Input
             onChange={(e) => {
               this.newEntry = e.target.value;

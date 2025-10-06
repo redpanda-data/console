@@ -1,15 +1,15 @@
 import { toast } from 'sonner';
 
-interface StepSubmissionResult {
+type StepSubmissionResult = {
   success: boolean;
   message?: string; // Success or error message
   error?: string; // Detailed error for debugging
-}
+};
 
-export interface BaseStepRef {
+export type BaseStepRef = {
   triggerSubmit: () => Promise<StepSubmissionResult>;
   isLoading: boolean;
-}
+};
 
 /**
  * Handles step submission results with success feedback only
@@ -40,18 +40,14 @@ export const handleStepResult = (result: StepSubmissionResult | undefined, onSuc
  * @param value - The value to check
  * @returns true if the value is null, undefined, or empty string
  */
-export const isEmpty = (value: string | null | undefined): boolean => {
-  return value == null || value === '';
-};
+export const isEmpty = (value: string | null | undefined): boolean => value == null || value === '';
 
 /**
  * Checks if a value has content (not null, undefined, or empty string)
  * @param value - The value to check
  * @returns true if the value has content
  */
-export const hasValue = (value: string | null | undefined): boolean => {
-  return !isEmpty(value);
-};
+export const hasValue = (value: string | null | undefined): boolean => !isEmpty(value);
 
 export enum WizardStep {
   ADD_CONNECTOR = 'add-connector-step',

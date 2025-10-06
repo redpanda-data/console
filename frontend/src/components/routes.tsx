@@ -90,7 +90,7 @@ import { type AppFeature, AppFeatures } from '../utils/env';
 //
 export type IRouteEntry = PageDefinition<any>;
 
-export interface PageDefinition<TRouteParams = NoRouteParams> {
+export type PageDefinition<TRouteParams = NoRouteParams> = {
   title: string;
   path: string;
   pageType: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>;
@@ -98,7 +98,7 @@ export interface PageDefinition<TRouteParams = NoRouteParams> {
   icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
   menuItemKey?: string; // set by 'CreateRouteMenuItems'
   visibilityCheck?: () => MenuItemState;
-}
+};
 
 // Generate content for <Menu> from all routes
 export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[] {
@@ -196,10 +196,10 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.notSupportedServerless]: <span>This feature is not yet supported for Serverless.</span>,
 } as const;
 
-interface MenuItemState {
+type MenuItemState = {
   visible: boolean;
   disabledReasons: DisabledReasons[];
-}
+};
 
 // Separate component to handle the route rendering logic
 const RouteRenderer: FunctionComponent<{ route: PageDefinition<any> }> = ({ route }) => {

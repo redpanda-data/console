@@ -6,14 +6,14 @@ import { useEffect, useRef, useState } from 'react';
 import { SendMessageButton } from './send-message-button';
 import { sendMessageToApi } from './send-message-to-api';
 
-interface ChatInputProps {
+type ChatInputProps = {
   setIsTyping: (isTyping: boolean) => void;
   agentUrl?: string;
   agentId: string;
   initialValue?: string;
   onInputChange?: () => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-}
+};
 
 export const ChatInput = ({
   setIsTyping,
@@ -136,7 +136,7 @@ export const ChatInput = ({
   };
 
   return (
-    <div className="border border-slate-200 p-4 bg-white shadow-sm backdrop-blur-sm">
+    <div className="border border-slate-200 bg-white p-4 shadow-sm backdrop-blur-sm">
       <form
         className="space-y-2"
         onSubmit={(e) => {
@@ -150,7 +150,7 @@ export const ChatInput = ({
             aria-label="Type your message"
             autoCapitalize="off"
             autoCorrect="off"
-            className="w-full rounded-md outline-none focus:outline-none focus:ring-0 border-none resize-none min-h-[80px] text-sm"
+            className="min-h-[80px] w-full resize-none rounded-md border-none text-sm outline-none focus:outline-none focus:ring-0"
             id="chat-input"
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
@@ -165,7 +165,7 @@ export const ChatInput = ({
           <SendMessageButton inputValue={inputValue} isSending={isSending} onClick={handleSendMessage} />
         </div>
       </form>
-      <p className="text-xs text-slate-500 mt-2">Press Enter to send, Shift+Enter for a new line</p>
+      <p className="mt-2 text-slate-500 text-xs">Press Enter to send, Shift+Enter for a new line</p>
     </div>
   );
 };

@@ -36,13 +36,12 @@ export const useLoginSaslScramMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'authenticate',
         entity: 'user',
-      });
-    },
+      }),
   });
 };
 

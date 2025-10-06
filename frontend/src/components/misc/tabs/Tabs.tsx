@@ -12,28 +12,28 @@
 import { Tabs as RpTabs } from '@redpanda-data/ui';
 import React, { useState } from 'react';
 
-export interface Tab {
+export type Tab = {
   key: string;
   title: React.ReactNode | (() => React.ReactNode);
   content: React.ReactNode | (() => React.ReactNode);
   disabled?: boolean;
-}
+};
 
-interface TabsProps {
+type TabsProps = {
   tabs: Tab[];
   selectedTabKey?: string;
   defaultSelectedTabKey?: string;
   onChange?: (selectedTabKey: string) => void;
 
   isFitted?: boolean; // whether or not to fit tab buttons to max width
-}
+};
 
 export default function Tabs(props: TabsProps) {
   const { tabs, selectedTabKey } = props;
 
-  const [selectedIndex, setSelectedIndex] = useState(() => {
-    return selectedTabKey ? tabs.findIndex((t) => t.key === selectedTabKey) : undefined;
-  });
+  const [selectedIndex, setSelectedIndex] = useState(() =>
+    selectedTabKey ? tabs.findIndex((t) => t.key === selectedTabKey) : undefined
+  );
   const defaultIndex = props.defaultSelectedTabKey
     ? tabs.findIndex((t) => t.key === props.defaultSelectedTabKey)
     : undefined;

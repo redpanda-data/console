@@ -290,13 +290,7 @@ export function collectElements2(
       switch (segment) {
         case '**': {
           // And all their nested objects are a result
-          const allNested = collectElements(
-            currentObj,
-            (_key, _path, value) => {
-              return typeof value === 'object';
-            },
-            false
-          );
+          const allNested = collectElements(currentObj, (_key, _path, value) => typeof value === 'object', false);
 
           for (const n of allNested) {
             targetList.push({
@@ -375,14 +369,14 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
   return ctx.results;
 }
 
-interface Property {
+type Property = {
   /** property name */
   propertyName: string;
   /** path to the property (excluding 'prop' itself) */
   path: string[];
   /** path + prop */
   fullPath: string;
-}
+};
 type GetAllKeysContext = {
   currentPath: string[]; // complete, real path
   currentFullPath: string; // string path, with array indices replaced by a start
@@ -762,8 +756,8 @@ export function retrier<T>(
   operation: () => Promise<T>,
   { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
 ): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    return operation()
+  return new Promise<T>((resolve, reject) =>
+    operation()
       .then(resolve)
       .catch((reason: unknown) => {
         if (attempts > 0) {
@@ -773,8 +767,8 @@ export function retrier<T>(
             .catch(reject);
         }
         reject(reason);
-      });
-  });
+      })
+  );
 }
 
 /**

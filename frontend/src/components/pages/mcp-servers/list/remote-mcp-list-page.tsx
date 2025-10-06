@@ -161,7 +161,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
         <div className="flex flex-wrap gap-1">
           {tools.map((tool) => (
             <span
-              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+              className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs"
               key={tool}
             >
               {tool}
@@ -175,9 +175,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
     accessorKey: 'state',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => <StatusIcon state={row.getValue('state')} />,
-    filterFn: (row, id, value) => {
-      return value.includes(String(row.getValue(id)));
-    },
+    filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
   },
   {
     accessorKey: 'url',
@@ -188,7 +186,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Text className="font-mono text-muted-foreground cursor-help" variant="small">
+            <Text className="cursor-help font-mono text-muted-foreground" variant="small">
               {truncatedUrl}
             </Text>
           </TooltipTrigger>
@@ -238,7 +236,7 @@ export const createColumns = (setIsDeleteDialogOpen: (open: boolean) => void): C
         <div data-actions-column>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="data-[state=open]:bg-muted h-8 w-8" size="icon" variant="ghost">
+              <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -343,9 +341,10 @@ export const RemoteMCPListPage = () => {
   const { data: mcpServersData, isLoading, error } = useListMCPServersQuery({});
 
   // Transform API data to component format
-  const mcpServers = React.useMemo(() => {
-    return mcpServersData?.mcpServers?.map(transformAPIMCPServer) || [];
-  }, [mcpServersData]);
+  const mcpServers = React.useMemo(
+    () => mcpServersData?.mcpServers?.map(transformAPIMCPServer) || [],
+    [mcpServersData]
+  );
 
   useEffect(() => {
     updatePageTitle();
@@ -410,13 +409,11 @@ export const RemoteMCPListPage = () => {
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -424,7 +421,7 @@ export const RemoteMCPListPage = () => {
             {isLoading ? (
               <TableRow>
                 <TableCell className="h-24 text-center" colSpan={columns.length}>
-                  <div className="flex items-center gap-2 justify-center">
+                  <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Loading MCP servers...
                   </div>
@@ -433,7 +430,7 @@ export const RemoteMCPListPage = () => {
             ) : error ? (
               <TableRow>
                 <TableCell className="h-24 text-center" colSpan={columns.length}>
-                  <div className="flex items-center gap-2 justify-center text-red-600">
+                  <div className="flex items-center justify-center gap-2 text-red-600">
                     <AlertCircle className="h-4 w-4" />
                     Error loading MCP servers: {error.message}
                   </div>

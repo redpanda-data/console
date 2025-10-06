@@ -139,16 +139,18 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     const categories = useMemo(() => getAllCategories(additionalComponents), [additionalComponents]);
 
     // Filter components based on search, categories, and component type
-    const filteredComponents = useMemo(() => {
-      return searchComponents(
-        filter,
-        {
-          types: componentTypeFilter,
-          categories: selectedCategories,
-        },
-        additionalComponents
-      );
-    }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
+    const filteredComponents = useMemo(
+      () =>
+        searchComponents(
+          filter,
+          {
+            types: componentTypeFilter,
+            categories: selectedCategories,
+          },
+          additionalComponents
+        ),
+      [componentTypeFilter, filter, selectedCategories, additionalComponents]
+    );
 
     // Check if scrolling is needed whenever filtered components change
     useEffect(() => {
@@ -195,7 +197,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
         <CardContent className="relative">
           <Form {...form}>
             {!hideFilters && (
-              <div className="flex flex-col gap-4 sticky top-0 bg-background z-10 border-b-2 pb-6 mb-0">
+              <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pb-6">
                 <div className="grid grid-cols-3 gap-2">
                   <Label className="flex-1">
                     Search for Connectors
@@ -271,7 +273,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                         {filteredComponents.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                            <Text className="text-sm text-muted-foreground mt-1">
+                            <Text className="mt-1 text-muted-foreground text-sm">
                               Try adjusting your search, component type, or category filters
                             </Text>
                           </div>
@@ -306,11 +308,11 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                       </div>
                                       {/* Component Summary */}
                                       {component.summary && (
-                                        <Text className="text-sm text-muted-foreground line-clamp-2">
+                                        <Text className="line-clamp-2 text-muted-foreground text-sm">
                                           {component.summary}
                                         </Text>
                                       )}
-                                      <div className="flex gap-1 flex-wrap">
+                                      <div className="flex flex-wrap gap-1">
                                         {/* Component type badge */}
                                         <Badge
                                           icon={getConnectorTypeBadgeProps(component.type).icon}
@@ -349,7 +351,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               </div>
               {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
               {showScrollGradient && (
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background to-transparent" />
               )}
             </div>
           </Form>

@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 declare namespace NodeJS {
-  interface Global {
+  type Global = {
     value: any;
-  }
+  };
 }
 
 global.value = {};

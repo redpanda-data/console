@@ -13,17 +13,17 @@ import React from 'react';
 
 import styles from './BoxCard.module.scss';
 
-export interface BoxCardProps {
+export type BoxCardProps = {
   id?: string;
   borderStyle?: 'solid' | 'dashed';
   borderWidth?: 'thin' | 'medium';
   hoverable?: boolean;
   active?: boolean;
   children?: React.ReactNode;
-}
+};
 
 export default function BoxCard({
-  id = undefined,
+  id,
   borderStyle = 'solid',
   borderWidth = 'thin',
   hoverable = true,

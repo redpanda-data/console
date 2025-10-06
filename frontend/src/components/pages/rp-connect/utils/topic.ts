@@ -19,14 +19,11 @@ export const TOPIC_FORM_DEFAULTS = {
   retentionSizeUnit: DEFAULT_RETENTION_SIZE_UNIT,
 } as const;
 
-export const isUsingDefaultRetentionSettings = (data: AddTopicFormData): boolean => {
-  return (
-    data.retentionTimeMs === DEFAULT_RETENTION_TIME_MS &&
-    data.retentionTimeUnit === DEFAULT_RETENTION_TIME_UNIT &&
-    data.retentionSize === DEFAULT_RETENTION_SIZE &&
-    data.retentionSizeUnit === DEFAULT_RETENTION_SIZE_UNIT
-  );
-};
+export const isUsingDefaultRetentionSettings = (data: AddTopicFormData): boolean =>
+  data.retentionTimeMs === DEFAULT_RETENTION_TIME_MS &&
+  data.retentionTimeUnit === DEFAULT_RETENTION_TIME_UNIT &&
+  data.retentionSize === DEFAULT_RETENTION_SIZE &&
+  data.retentionSizeUnit === DEFAULT_RETENTION_SIZE_UNIT;
 
 export const resetToDefaults = (form: UseFormReturn<AddTopicFormData>) => {
   form.setValue('partitions', TOPIC_FORM_DEFAULTS.partitions);
@@ -146,22 +143,19 @@ export const parseTopicConfigFromExisting = (
   };
 };
 
-export const parseRetentionFromConfig = (config: { configEntries?: Array<{ name: string; value: string | null }> }) => {
-  return parseTopicConfigFromExisting({ topicName: '' }, config);
-};
+export const parseRetentionFromConfig = (config: { configEntries?: Array<{ name: string; value: string | null }> }) =>
+  parseTopicConfigFromExisting({ topicName: '' }, config);
 
 // Form helper functions for input handling
-export const createNumberChangeHandler = (onChange: (value?: number) => void) => {
-  return (e: React.ChangeEvent<HTMLInputElement>) => {
+export const createNumberChangeHandler =
+  (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value ? Number.parseInt(e.target.value, 10) : undefined);
   };
-};
 
-export const createFloatChangeHandler = (onChange: (value?: number) => void) => {
-  return (e: React.ChangeEvent<HTMLInputElement>) => {
+export const createFloatChangeHandler =
+  (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value ? Number.parseFloat(e.target.value) : 0);
   };
-};
 
 // Generate unit options from CreateTopicModal factors for consistency
 export const getRetentionTimeUnitOptions = () => {
@@ -183,6 +177,4 @@ export const getRetentionSizeUnitOptions = () => {
 };
 
 // Check if retention unit is disabled (infinite or default)
-export const isRetentionUnitDisabled = (unit: string): boolean => {
-  return unit === 'default' || unit === 'infinite';
-};
+export const isRetentionUnitDisabled = (unit: string): boolean => unit === 'default' || unit === 'infinite';

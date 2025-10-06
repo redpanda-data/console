@@ -45,9 +45,9 @@ import { AppFeatures, getBasePath } from './utils/env';
 declare const __webpack_public_path__: string;
 
 declare global {
-  interface Window {
+  type Window = {
     MonacoEnvironment?: monaco.Environment;
-  }
+  };
 }
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
@@ -94,7 +94,7 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   }
 };
 
-export interface SetConfigArguments {
+export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
@@ -108,21 +108,21 @@ export interface SetConfigArguments {
   setBreadcrumbs?: (items: Breadcrumb[]) => void;
   isServerless?: boolean;
   featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
-}
+};
 
-export interface SidebarItem {
+export type SidebarItem = {
   title: string; // "Topics"
   to: string; // '/topics'
   icon?: JSX.Element;
   order: number;
-}
+};
 
-export interface Breadcrumb {
+export type Breadcrumb = {
   title: string; // "Topics"
   to: string; // '/topics'
-}
+};
 
-interface Config {
+type Config = {
   restBasePath: string;
   grpcBasePath: string;
   authenticationClient?: Client<typeof AuthenticationService>;
@@ -144,7 +144,7 @@ interface Config {
   setBreadcrumbs: (items: Breadcrumb[]) => void;
   isServerless: boolean;
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
-}
+};
 
 // Config object is an mobx observable, always make sure you call it from
 // inside a componenet, don't be tempted to used it as singleton you might find

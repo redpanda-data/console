@@ -72,9 +72,7 @@ const TopicList: FC = () => {
       onUpdate: (val) => {
         uiSettings.topicList.hideInternalTopics = val;
       },
-      getDefaultValue: () => {
-        return uiSettings.topicList.hideInternalTopics;
-      },
+      getDefaultValue: () => uiSettings.topicList.hideInternalTopics,
     },
     'showInternal',
     parseAsBoolean
@@ -511,15 +509,11 @@ function hasDeletePrivilege() {
 
 function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutation>['mutateAsync']) {
   api.refreshCluster(); // get brokers (includes configs) to display default values
-  const tryGetBrokerConfig = (configName: string): string | undefined => {
-    return (
-      api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ??
-      undefined
-    );
-  };
+  const tryGetBrokerConfig = (configName: string): string | undefined =>
+    api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
 
   const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
-    if (unit === 'default') return undefined;
+    if (unit === 'default') return;
 
     if (value === undefined)
       throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
@@ -535,7 +529,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
     if (unit === 'infinite') return -1;
   };
   const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
-    if (unit === 'default') return undefined;
+    if (unit === 'default') return;
 
     if (value === undefined)
       throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);

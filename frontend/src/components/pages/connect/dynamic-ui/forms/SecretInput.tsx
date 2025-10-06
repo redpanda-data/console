@@ -12,11 +12,11 @@ import {
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 
-export interface SecretInputProps {
+export type SecretInputProps = {
   value: string;
   onChange: (v: string) => void;
   updating: boolean;
-}
+};
 
 const EditButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
   <Tooltip hasArrow={true} label="Edit secret value" placement="top">

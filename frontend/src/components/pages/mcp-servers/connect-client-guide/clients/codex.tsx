@@ -19,9 +19,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface ClientCodexProps {
+type ClientCodexProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
@@ -56,7 +56,7 @@ args = ["-X", "cloud", "mcp", "proxy", "${clusterFlag}", "${clusterId}", "--mcp-
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <img alt="Codex" className="h-4 w-4" src={CodexLogo} />
                 Codex
               </Text>

@@ -49,15 +49,15 @@ import { RemoteMCPToolButton } from './remote-mcp-tool-button';
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import { type Template, templates } from '../templates/remote-mcp-templates';
 
-interface LocalTool {
+type LocalTool = {
   id: string;
   name: string;
   componentType: MCPServer_Tool_ComponentType;
   config: string;
   selectedTemplate?: string;
-}
+};
 
-interface LocalMCPServer {
+type LocalMCPServer = {
   id: string;
   displayName: string;
   description: string;
@@ -69,7 +69,7 @@ interface LocalMCPServer {
   state: MCPServer_State;
   status: string;
   url: string;
-}
+};
 
 export const RemoteMCPConfigurationTab = () => {
   const { id } = useParams<{ id: string }>();
@@ -328,9 +328,7 @@ export const RemoteMCPConfigurationTab = () => {
     return new Set(duplicates);
   };
 
-  const getResourceTierByName = (name: string) => {
-    return RESOURCE_TIERS.find((tier) => tier.name === name || tier.id === name);
-  };
+  const getResourceTierByName = (name: string) => RESOURCE_TIERS.find((tier) => tier.name === name || tier.id === name);
 
   const getResourceDisplayString = (resources: { cpuShares?: string; memoryShares?: string }): string => {
     const cpu = resources.cpuShares || '0';
@@ -418,11 +416,11 @@ export const RemoteMCPConfigurationTab = () => {
   return (
     <div>
       <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           {/* Server Configuration Card - takes 3/4 width on large screens */}
           <div className="lg:col-span-3">
             <Card className="px-0 py-0" size="full">
-              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
@@ -511,8 +509,8 @@ export const RemoteMCPConfigurationTab = () => {
 
           {/* Resources Card */}
           <div className="lg:col-span-1">
-            <Card className="px-0 py-0 h-full" size="full">
-              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+            <Card className="h-full px-0 py-0" size="full">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   <Text className="font-semibold">Resources</Text>
@@ -547,8 +545,8 @@ export const RemoteMCPConfigurationTab = () => {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="h-10 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
-                          <code className="text-sm font-mono">
+                        <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                          <code className="font-mono text-sm">
                             {getResourceDisplayString(mcpServerData?.mcpServer?.resources || {})}
                           </code>
                         </div>
@@ -557,8 +555,8 @@ export const RemoteMCPConfigurationTab = () => {
                   </div>
 
                   {(displayData.tags.length > 0 || isEditing) && (
-                    <div className="space-y-4 flex flex-col gap-2">
-                      <Heading className="text-sm font-medium" level={4}>
+                    <div className="flex flex-col gap-2 space-y-4">
+                      <Heading className="font-medium text-sm" level={4}>
                         Tags
                       </Heading>
                       <div className="space-y-2">
@@ -590,7 +588,7 @@ export const RemoteMCPConfigurationTab = () => {
                                 />
                               </div>
                               {isEditing && (
-                                <div className="flex items-end h-9">
+                                <div className="flex h-9 items-end">
                                   <Button onClick={() => handleRemoveTag(index)} size="sm" variant="outline">
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -618,7 +616,7 @@ export const RemoteMCPConfigurationTab = () => {
           {/* Main tools configuration - takes 2 columns on xl screens when secrets panel is shown, full width otherwise */}
           <div className={hasSecretWarnings && isEditing ? 'xl:col-span-2' : ''}>
             <Card className="px-0 py-0" size="full">
-              <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+              <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Hammer className="h-4 w-4" />
                   <Text className="font-semibold">Tools Configuration</Text>
@@ -628,7 +626,7 @@ export const RemoteMCPConfigurationTab = () => {
                 <div className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between" />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {displayData.tools.map((tool) => (
                         <RemoteMCPToolButton
                           componentType={tool.componentType}
@@ -648,9 +646,9 @@ export const RemoteMCPConfigurationTab = () => {
                   {selectedTool && (
                     <div className="space-y-4">
                       {isEditing && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="grid grid-cols-1 gap-4 rounded-lg bg-muted/30 p-4 md:grid-cols-3">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Component Type</Label>
+                            <Label className="font-medium text-sm">Component Type</Label>
                             <Select
                               onValueChange={(value) => {
                                 const componentType = Number.parseInt(value, 10) as MCPServer_Tool_ComponentType;
@@ -680,7 +678,7 @@ export const RemoteMCPConfigurationTab = () => {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Tool Name</Label>
+                            <Label className="font-medium text-sm">Tool Name</Label>
                             <Input
                               onChange={(e) =>
                                 handleUpdateTool(selectedTool.id, {
@@ -692,7 +690,7 @@ export const RemoteMCPConfigurationTab = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium">Template</Label>
+                            <Label className="font-medium text-sm">Template</Label>
                             <Select
                               onValueChange={(templateName) => {
                                 const template = templates.find((t) => t.name === templateName);
@@ -752,9 +750,9 @@ export const RemoteMCPConfigurationTab = () => {
                   )}
 
                   {!selectedTool && displayData.tools.length > 0 && (
-                    <div className="flex items-center justify-center py-12 text-center border-2 border-dashed border-muted rounded-lg">
+                    <div className="flex items-center justify-center rounded-lg border-2 border-muted border-dashed py-12 text-center">
                       <div className="space-y-2">
-                        <FileText className="h-8 w-8 mx-auto opacity-50" />
+                        <FileText className="mx-auto h-8 w-8 opacity-50" />
                         <Text className="text-muted-foreground" variant="small">
                           Select a tool to view and edit its configuration
                         </Text>

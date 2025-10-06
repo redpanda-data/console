@@ -17,17 +17,17 @@ import { api } from './backendApi';
 import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
 import type { PageDefinition } from '../components/routes';
 
-export interface BreadcrumbOptions {
+export type BreadcrumbOptions = {
   canBeTruncated?: boolean;
   canBeCopied?: boolean;
-}
+};
 
-export interface BreadcrumbEntry {
+export type BreadcrumbEntry = {
   title: string;
   heading?: string;
   linkTo: string;
   options?: BreadcrumbOptions;
-}
+};
 
 class UIState {
   constructor() {
@@ -110,13 +110,13 @@ class UIState {
   };
 }
 
-export interface ServerVersionInfo {
+export type ServerVersionInfo = {
   ts?: string; // build timestamp, unix seconds
   sha?: string;
   branch?: string;
   shaBusiness?: string;
   branchBusiness?: string;
-}
+};
 
 const uiState = new UIState();
 export { uiState };

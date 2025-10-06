@@ -18,12 +18,12 @@ import redpandaOutputTemplate from './output/redpanda.yaml';
 import bigqueryProcessorTemplate from './processor/gcp_bigquery_select.yaml';
 import httpProcessorTemplate from './processor/http.yaml';
 
-export interface Template {
+export type Template = {
   name: string;
   componentType: MCPServer_Tool_ComponentType;
   yaml: Record<string, any>;
   description: string;
-}
+};
 
 export const templates: Template[] = [
   {

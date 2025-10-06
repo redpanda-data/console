@@ -32,12 +32,10 @@ export function openModal<P extends object>(
   });
 }
 
-export const ModalContainer = observer(() => {
-  return (
-    <Box id="modalContainer">
-      {modals.map((e) => (
-        <React.Fragment key={e.id}>{e.element}</React.Fragment>
-      ))}
-    </Box>
-  );
-});
+export const ModalContainer = observer(() => (
+  <Box id="modalContainer">
+    {modals.map((e) => (
+      <React.Fragment key={e.id}>{e.element}</React.Fragment>
+    ))}
+  </Box>
+));

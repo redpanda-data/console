@@ -11,9 +11,9 @@ import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
 import { ChatNotification } from './chat-notification';
 
-interface ChatTabProps {
+type ChatTabProps = {
   pipeline?: Pipeline;
-}
+};
 
 /**
  * This component is using Dexie to listen for message changes in the database.
@@ -82,8 +82,8 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
   }
 
   return (
-    <div className="flex flex-col w-full px-4 max-w-screen-xl mx-auto">
-      <div className="flex flex-col min-h-0">
+    <div className="mx-auto flex w-full max-w-screen-xl flex-col px-4">
+      <div className="flex min-h-0 flex-col">
         {messages?.length > 0 && <ChatClearButton onClear={handleClearChat} />}
         {!isLoadingMessages && (
           <ChatMessageContainer isTyping={isTyping} messages={messages} messagesEndRef={messagesEndRef} />

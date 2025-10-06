@@ -11,20 +11,20 @@
 
 import styles from './HiddenRadioList.module.scss';
 
-export interface HiddenRadioOption<ValueType> {
+export type HiddenRadioOption<ValueType> = {
   checked?: boolean;
   disabled?: boolean;
   value: ValueType;
   render: (option: HiddenRadioOption<ValueType>) => JSX.Element;
-}
+};
 
-export interface HiddenRadioListProps<ValueType> {
+export type HiddenRadioListProps<ValueType> = {
   options: Array<HiddenRadioOption<ValueType>>;
   name: string;
   onChange: (value: ValueType) => void;
   value?: ValueType;
   disabled?: boolean;
-}
+};
 
 export function HiddenRadioList<ValueType>({
   options,

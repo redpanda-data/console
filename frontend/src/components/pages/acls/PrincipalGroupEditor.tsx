@@ -416,14 +416,12 @@ export const ResourceACLsEditor = observer(
                 <InputLeftAddon padding="0px" width="124px">
                   <SingleSelect<'Any' | 'Literal' | 'Prefixed'>
                     chakraStyles={{
-                      container: (_p, _s) => {
-                        return {
-                          flexGrow: 1,
-                          marginLeft: '-1px',
-                          marginRight: '-1px',
-                          cursor: 'pointer',
-                        };
-                      },
+                      container: (_p, _s) => ({
+                        flexGrow: 1,
+                        marginLeft: '-1px',
+                        marginRight: '-1px',
+                        cursor: 'pointer',
+                      }),
                     }}
                     isSearchable={false}
                     onChange={(e) => {

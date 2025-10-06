@@ -8,7 +8,7 @@ import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
 import type { ConnectComponentType } from '../types/schema';
 
-interface CreatePipelineSidebarProps {
+type CreatePipelineSidebarProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   detectedSecrets: string[];
@@ -16,7 +16,7 @@ interface CreatePipelineSidebarProps {
   secretDefaultValues: Record<string, string>;
   onSecretsCreated: () => void;
   editorContent: string;
-}
+};
 
 export const CreatePipelineSidebar = memo(
   ({
@@ -59,7 +59,7 @@ export const CreatePipelineSidebar = memo(
     };
 
     return (
-      <div className="flex gap-3 flex-col">
+      <div className="flex flex-col gap-3">
         <AddSecretsCard
           detectedSecrets={detectedSecrets}
           editorInstance={editorInstance}

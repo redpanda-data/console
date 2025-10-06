@@ -22,11 +22,11 @@ import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { deleteSecretSchema } from './form/delete-secret-schema';
 import { ResourceInUseAlert } from '../../misc/resource-in-use-alert';
 
-export interface DeleteSecretModalProps {
+export type DeleteSecretModalProps = {
   secretId: string;
   isOpen: boolean;
   onClose: () => void;
-}
+};
 
 export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretModalProps) => {
   const { data: pipelinesForSecret } = useGetPipelinesForSecretQuery({ secretId });

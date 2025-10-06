@@ -44,9 +44,7 @@ export const UserRoleTags = observer(
       } as ListACLsRequest,
       {
         enabled: !!userName,
-        select: (response) => {
-          return response.resources.length > 0;
-        },
+        select: (response) => response.resources.length > 0,
       }
     );
 

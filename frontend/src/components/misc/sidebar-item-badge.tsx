@@ -1,8 +1,8 @@
 import { Badge } from '@redpanda-data/ui';
 
-export interface SidebarItemBadgeProps {
+export type SidebarItemBadgeProps = {
   children: React.ReactNode;
-}
+};
 
 /**
  * @description SidebarItemBadge should be used for sidebar items only.

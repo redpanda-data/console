@@ -120,13 +120,12 @@ export const useCreatePipelineMutation = () => {
         }),
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'pipeline',
-      });
-    },
+      }),
   });
 };
 
@@ -142,13 +141,12 @@ export const useUpdatePipelineMutation = () => {
         }),
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'pipeline',
-      });
-    },
+      }),
   });
 };
 
@@ -164,13 +162,12 @@ export const useStartPipelineMutation = () => {
         }),
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'start',
         entity: 'pipeline',
-      });
-    },
+      }),
   });
 };
 
@@ -186,13 +183,12 @@ export const useStopPipelineMutation = () => {
         }),
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'stop',
         entity: 'pipeline',
-      });
-    },
+      }),
   });
 };
 
@@ -208,13 +204,12 @@ export const useDeletePipelineMutation = () => {
         }),
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'pipeline',
-      });
-    },
+      }),
   });
 };
 

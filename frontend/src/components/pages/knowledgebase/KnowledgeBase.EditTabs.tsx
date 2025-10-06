@@ -203,11 +203,11 @@ const SecretDropdownField = ({
   );
 };
 
-interface TopicSelectorProps {
+type TopicSelectorProps = {
   selectedTopics: string[];
   onTopicsChange: (topics: string[]) => void;
   isReadOnly?: boolean;
-}
+};
 
 const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: TopicSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -491,13 +491,13 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
   );
 };
 
-interface KnowledgeBaseEditTabsProps {
+type KnowledgeBaseEditTabsProps = {
   knowledgeBase: KnowledgeBase;
   isEditMode?: boolean;
   onSave?: (updatedKnowledgeBase: KnowledgeBaseUpdate, updateMask?: string[]) => Promise<void>;
   onCancel?: () => void;
   onFormChange?: (hasChanges: boolean) => void;
-}
+};
 
 @observer
 export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabsProps> {
@@ -775,9 +775,8 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
   };
 
   // Convert snake_case to camelCase (protobuf field names to TypeScript property names)
-  protobufFieldToCamelCase = (fieldName: string): string => {
-    return fieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-  };
+  protobufFieldToCamelCase = (fieldName: string): string =>
+    fieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 
   validateForm = () => {
     const errors: { [key: string]: string } = {};

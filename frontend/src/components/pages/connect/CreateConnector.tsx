@@ -231,10 +231,10 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
   }
 }
 
-interface ConnectorWizardProps {
+type ConnectorWizardProps = {
   connectClusters: Array<ClusterConnectors>;
   activeCluster: string;
-}
+};
 
 const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorWizardProps) => {
   const toast = useToast();
@@ -538,7 +538,7 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   );
 }
 
-interface ReviewProps {
+type ReviewProps = {
   connectorPlugin: ConnectorPlugin | null;
   onChange: (editorContent: string | undefined) => void;
   properties?: string;
@@ -547,7 +547,7 @@ interface ReviewProps {
   creationFailure: unknown;
   genericFailure: Error | null;
   isCreating: boolean;
-}
+};
 
 function Review({
   connectorPlugin,

@@ -180,9 +180,7 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
             { header: 'Node', accessorKey: 'brokerId' },
             {
               header: 'Status',
-              cell: ({ row: { original: r } }) => {
-                return <PartitionStatus status={r.status} />;
-              },
+              cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
             },
             { header: 'Lag', accessorKey: 'lag' },
           ]}

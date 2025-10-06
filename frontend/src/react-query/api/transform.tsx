@@ -92,12 +92,11 @@ export const useDeleteTransformMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'transform',
-      });
-    },
+      }),
   });
 };

@@ -28,14 +28,14 @@ import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, Trash2 } from 'lucide-react';
 import React from 'react';
 
-export interface DeleteResourceAlertDialogProps {
+export type DeleteResourceAlertDialogProps = {
   resourceId: string;
   resourceName: string;
   resourceType: string;
   onDelete: (id: string) => void;
   onOpenChange?: (open: boolean) => void;
   isDeleting?: boolean;
-}
+};
 
 export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps> = ({
   resourceId,
@@ -89,7 +89,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => setConfirmationText('')}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!isDeleteConfirmed}
             onClick={handleDelete}
           >

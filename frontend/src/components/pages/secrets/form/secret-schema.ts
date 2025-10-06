@@ -21,9 +21,9 @@ export const secretSchema = (customValueSchema?: z.ZodTypeAny) =>
       .default([])
       .refine((labels) => {
         // Only validate non-empty labels - if both key and value are empty, that's fine
-        return labels.every((label) => {
-          return (label.key === '' && label.value === '') || (label.key !== '' && label.value !== '');
-        });
+        return labels.every(
+          (label) => (label.key === '' && label.value === '') || (label.key !== '' && label.value !== '')
+        );
       }, 'Both key and value must be provided for a label'),
     scopes: z.array(z.number()).min(1, 'At least one scope is required'),
   });

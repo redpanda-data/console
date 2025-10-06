@@ -209,11 +209,11 @@ export default class UploadLicensePage extends PageComponent {
                 onSuccess={() => {
                   this.success = true;
                 }}
-                onUploadLicense={async (license) => {
-                  return await api.uploadLicense({
+                onUploadLicense={async (license) =>
+                  await api.uploadLicense({
                     license,
-                  } as SetLicenseRequest);
-                }}
+                  } as SetLicenseRequest)
+                }
               />
             </Box>
           </>

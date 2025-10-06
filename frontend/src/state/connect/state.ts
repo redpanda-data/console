@@ -37,11 +37,11 @@ import {
   PropertyWidth,
 } from '../restInterfaces';
 
-export interface ConfigPageProps {
+export type ConfigPageProps = {
   clusterName: string;
   pluginClassName: string;
   onChange: (jsonText: string, secrets?: ConnectorSecret) => void;
-}
+};
 
 export type ConnectorSecret = Map<string, string>;
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
@@ -270,11 +270,7 @@ export class ConnectClusterStore {
     this.connectors.delete(identifier);
   }
 
-  getConnector(
-    pluginClassName: string,
-    connectorName: string | null = null,
-    initialConfig: Record<string, any> | undefined = undefined
-  ) {
+  getConnector(pluginClassName: string, connectorName: string | null, initialConfig: Record<string, any> | undefined) {
     const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
     let connectorStore = this.connectors.get(identifier);
     if (!connectorStore) {
@@ -344,10 +340,10 @@ export class ConnectClusterStore {
   }
 }
 
-export interface ConnectorClusterFeatures {
+export type ConnectorClusterFeatures = {
   secretStore?: boolean;
   editing?: boolean;
-}
+};
 
 export class SecretsStore {
   _data = new Map<string, Secret>();
@@ -596,9 +592,7 @@ export class ConnectorPropertiesStore {
       // Update JSON
       this.reactionDisposers.push(
         reaction(
-          () => {
-            return this.getConfigObject();
-          },
+          () => this.getConfigObject(),
           (config) => {
             this.jsonText = JSON.stringify(config, undefined, 4);
           },
@@ -609,9 +603,7 @@ export class ConnectorPropertiesStore {
       // Validate on changes
       this.reactionDisposers.push(
         reaction(
-          () => {
-            return this.getConfigObject();
-          },
+          () => this.getConfigObject(),
           (config) => {
             this.validate(config);
           },
@@ -797,7 +789,7 @@ const hiddenProperties = [
   'connector.class', // user choses that in the first page of the wizard
 ];
 
-export interface PropertyGroup {
+export type PropertyGroup = {
   step: ConnectorStep;
   group: ConnectorGroup;
 
@@ -809,9 +801,9 @@ export interface PropertyGroup {
 
   description?: string;
   documentation_link?: string;
-}
+};
 
-export interface Property {
+export type Property = {
   name: string;
   entry: ConnectorProperty;
   value: null | string | number | boolean | string[];
@@ -825,7 +817,7 @@ export interface Property {
   propertyGroup: PropertyGroup;
   crud: 'create' | 'update';
   isDisabled: boolean | undefined;
-}
+};
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'selected-connect-tile';
 export const CONNECT_WIZARD_TOPIC_KEY = 'connect-wizard-topic';

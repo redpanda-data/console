@@ -91,13 +91,12 @@ export const useCreateRoleMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'role',
-      });
-    },
+      }),
   });
 };
 
@@ -125,13 +124,12 @@ export const useDeleteRoleMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'delete',
         entity: 'role',
-      });
-    },
+      }),
   });
 };
 
@@ -157,12 +155,11 @@ export const useUpdateRoleMembershipMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'role membership',
-      });
-    },
+      }),
   });
 };

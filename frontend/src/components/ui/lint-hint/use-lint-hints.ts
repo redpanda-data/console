@@ -35,9 +35,10 @@ export function useLintHints(form: UseFormReturn<FormValues>) {
   }, [form]);
 
   // Check if there are any linting issues
-  const hasLintingIssues = useMemo(() => {
-    return Object.values(lintHints).some((toolLints) => Object.keys(toolLints).length > 0);
-  }, [lintHints]);
+  const hasLintingIssues = useMemo(
+    () => Object.values(lintHints).some((toolLints) => Object.keys(toolLints).length > 0),
+    [lintHints]
+  );
 
   return { lintHints, setLintHints, hasLintingIssues };
 }

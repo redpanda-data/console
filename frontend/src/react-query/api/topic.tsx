@@ -21,9 +21,9 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { api } from '../../state/backendApi';
 
-interface ListTopicsExtraOptions {
+type ListTopicsExtraOptions = {
   hideInternalTopics?: boolean;
-}
+};
 
 /**
  * We need to use legacy API to list topics for now
@@ -116,13 +116,12 @@ export const useCreateTopicMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'topic',
-      });
-    },
+      }),
   });
 };
 

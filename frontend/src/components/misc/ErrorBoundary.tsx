@@ -40,10 +40,10 @@ const valueStyle: CSSProperties = {
   padding: '1rem',
 };
 
-interface InfoItem {
+type InfoItem = {
   name: string;
   value: string | (() => any);
-}
+};
 
 @observer
 export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }> {

@@ -60,7 +60,7 @@ const AclUpdatePage = () => {
   if (isLoading || !data) {
     return (
       <PageContent>
-        <div className="flex items-center justify-center h-96">
+        <div className="flex h-96 items-center justify-center">
           <div className="text-gray-500">Loading ACL configuration...</div>
         </div>
       </PageContent>

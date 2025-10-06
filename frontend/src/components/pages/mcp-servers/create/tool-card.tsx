@@ -40,7 +40,7 @@ import type { FormValues } from './schemas';
 import { RemoteMCPComponentTypeDescription } from '../remote-mcp-component-type-description';
 import { templates } from '../templates/remote-mcp-templates';
 
-interface ToolCardProps {
+type ToolCardProps = {
   form: UseFormReturn<FormValues>;
   toolIndex: number;
   canRemove: boolean;
@@ -49,7 +49,7 @@ interface ToolCardProps {
   onRemove: () => void;
   onExpand: () => void;
   onLint: () => void;
-}
+};
 
 export const ToolCard: React.FC<ToolCardProps> = ({
   form,
@@ -91,7 +91,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
             <FormField
               control={form.control}
               name={`tools.${toolIndex}.componentType` as const}

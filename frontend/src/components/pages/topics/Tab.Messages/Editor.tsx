@@ -15,10 +15,10 @@ import { type FC, useRef, useState } from 'react';
 
 import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 
-interface FilterEditorProps {
+type FilterEditorProps = {
   value: string;
   onValueChange: (code: string, transpiledCode: string) => void;
-}
+};
 
 const options: editor.IStandaloneEditorConstructionOptions = {
   lineNumbers: 'on',

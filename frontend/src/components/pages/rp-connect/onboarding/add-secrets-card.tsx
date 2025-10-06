@@ -73,7 +73,7 @@ export const AddSecretsCard = ({
           {/* Existing secrets - always show if any exist */}
           {existingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text className="text-sm font-medium">Existing Secrets:</Text>
+              <Text className="font-medium text-sm">Existing Secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {/* Used secrets - green with check icon */}
                 {categorizedSecrets.used.map((secret) => (
@@ -84,7 +84,7 @@ export const AddSecretsCard = ({
                 {/* Unused secrets - clickable, secondary variant */}
                 {categorizedSecrets.unused.map((secret) => (
                   <Badge
-                    className="font-mono cursor-pointer hover:opacity-80"
+                    className="cursor-pointer font-mono hover:opacity-80"
                     key={secret}
                     onClick={() => handleSecretClick(secret)}
                     variant="secondary"
@@ -99,7 +99,7 @@ export const AddSecretsCard = ({
           {/* Missing secrets - show as buttons */}
           {missingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text className="text-sm font-medium text-destructive">Missing Secrets:</Text>
+              <Text className="font-medium text-destructive text-sm">Missing Secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {missingSecrets.map((secret) => (
                   <Button key={secret} onClick={onOpenDialog} size="sm" variant="destructive">
@@ -113,7 +113,7 @@ export const AddSecretsCard = ({
 
           {/* No secrets hint - show only when no existing secrets */}
           {existingSecrets.length === 0 && detectedSecrets.length === 0 && (
-            <Text className="text-sm text-muted-foreground">
+            <Text className="text-muted-foreground text-sm">
               Your pipeline doesn't reference any secrets yet. Use <code>$&#123;secrets.NAME&#125;</code> syntax to
               reference secrets.
             </Text>

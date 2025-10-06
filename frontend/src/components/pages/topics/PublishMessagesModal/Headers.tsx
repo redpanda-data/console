@@ -14,16 +14,16 @@ import { observer } from 'mobx-react';
 import './headersEditor.scss';
 import { Button, Input } from '@redpanda-data/ui';
 
-interface Header {
+type Header = {
   key: string;
   value: string;
-}
+};
 
-export interface Props {
+export type Props = {
   items: Header[];
-}
-const HeadersEditor = observer((p: Props): JSX.Element => {
-  return (
+};
+const HeadersEditor = observer(
+  (p: Props): JSX.Element => (
     <div className="headersEditor">
       <table>
         <thead>
@@ -53,8 +53,8 @@ const HeadersEditor = observer((p: Props): JSX.Element => {
         Add Row
       </Button>
     </div>
-  );
-});
+  )
+);
 export default HeadersEditor;
 
 const HeaderComp = observer((p: { list: Header[]; header: Header; index: number }) => {

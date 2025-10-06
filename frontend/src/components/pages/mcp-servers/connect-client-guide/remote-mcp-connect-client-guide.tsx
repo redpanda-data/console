@@ -76,14 +76,14 @@ const CLIENT_INFO: Record<Client, { name: string; logo: string; alt: string }> =
   manus: { name: 'Manus', logo: ManusLogo, alt: 'Manus CLI' },
 };
 
-interface RemoteMCPConnectClientGuideProps {
+type RemoteMCPConnectClientGuideProps = {
   mcpServer: MCPServer;
-}
+};
 
-interface RemoteMCPClientGuideContentProps {
+type RemoteMCPClientGuideContentProps = {
   client: Client;
   mcpServer: MCPServer;
-}
+};
 
 const RemoteMCPClientGuideContent = ({ client, mcpServer }: RemoteMCPClientGuideContentProps) => {
   switch (client) {
@@ -119,7 +119,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">Connect to your client</Label>
+      <Label className="font-medium text-sm">Connect to your client</Label>
       <div>
         <Select onValueChange={(value) => setClient(value as Client)} value={client}>
           <SelectTrigger className="w-[180px]">
@@ -133,7 +133,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
                 return (
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
-                      <img alt={client.alt} className="w-4 h-4" src={client.logo} />
+                      <img alt={client.alt} className="h-4 w-4" src={client.logo} />
                       <Text>{client.name}</Text>
                     </div>
                   </SelectItem>

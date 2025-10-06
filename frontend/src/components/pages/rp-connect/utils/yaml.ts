@@ -23,13 +23,13 @@ export const getConnectTemplate = ({
       : undefined;
 
   if (!componentSpec) {
-    return undefined;
+    return;
   }
 
   // Phase 1: Generate config object for new component
   const newConfigObject = schemaToConfig(componentSpec, showOptionalFields);
   if (!newConfigObject) {
-    return undefined;
+    return;
   }
 
   // Phase 2 & 3: Merge with existing (if any) and convert to YAML

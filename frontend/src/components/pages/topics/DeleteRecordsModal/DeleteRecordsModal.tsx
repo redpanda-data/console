@@ -382,13 +382,13 @@ function formatMarks(marks: number[]) {
   );
 }
 
-interface DeleteRecordsModalProps {
+type DeleteRecordsModalProps = {
   topic: Topic | undefined | null;
   visible: boolean;
   onCancel: () => void;
   onFinish: () => void;
   afterClose: () => void;
-}
+};
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
   const { visible, topic, onCancel, onFinish, afterClose } = props;

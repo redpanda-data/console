@@ -2349,7 +2349,7 @@ export const knowledgebaseApi = observable({
         .listKnowledgeBases({ pageSize: 10, pageToken: nextPageToken })
         .catch((error: ConnectError) => {
           this.knowledgeBasesError = error;
-          return undefined;
+          return;
         });
 
       // Handle response structure (some APIs return res.response, others return res directly)
@@ -2480,12 +2480,10 @@ export const rpcnSecretManagerApi = observable({
     const pipelinesBySecrets = await client.getPipelinesBySecrets({
       request: create(GetPipelinesBySecretsRequestSchemaDataPlane),
     });
-    return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => {
-      return {
-        secretId: secretId,
-        pipelines: pipelines,
-      };
-    });
+    return pipelinesBySecrets.response?.pipelinesForSecret.map(({ secretId, pipelines }) => ({
+      secretId: secretId,
+      pipelines: pipelines,
+    }));
   },
 });
 
@@ -3004,7 +3002,7 @@ export async function partialTopicConfigs(
   return parseOrUnwrap<PartialTopicConfigsResponse>(response, null);
 }
 
-export interface MessageSearchRequest {
+export type MessageSearchRequest = {
   topicName: string;
   startOffset: number;
   startTimestamp: number;
@@ -3021,7 +3019,7 @@ export interface MessageSearchRequest {
 
   keyDeserializer?: PayloadEncoding;
   valueDeserializer?: PayloadEncoding;
-}
+};
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
   let obj: undefined | any;

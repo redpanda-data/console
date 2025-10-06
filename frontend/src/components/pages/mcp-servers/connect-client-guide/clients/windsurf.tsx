@@ -21,9 +21,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface ClientWindsurfProps {
+type ClientWindsurfProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
   const clusterId = config?.clusterId;
@@ -57,7 +57,7 @@ export const ClientWindsurf = ({ mcpServer }: ClientWindsurfProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <img alt="Windsurf" className="h-4 w-4" src={WindsurfLogo} /> Windsurf
               </Text>
               <div className="inline-flex items-center gap-1 whitespace-nowrap">

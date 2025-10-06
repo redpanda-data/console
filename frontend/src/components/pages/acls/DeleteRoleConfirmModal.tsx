@@ -17,25 +17,23 @@ export const DeleteRoleConfirmModal: FC<{
   numberOfPrincipals: number;
   onConfirm: () => void;
   buttonEl: React.ReactElement;
-}> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => {
-  return (
-    <ConfirmItemDeleteModal
-      heading={`Delete role ${roleName}`}
-      inputMatchText={roleName}
-      itemType="role"
-      onConfirm={onConfirm}
-      primaryActionLabel="Delete"
-      secondaryActionLabel="Cancel"
-      trigger={buttonEl}
-    >
-      <Text>
-        This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}. Deleting
-        it will remove it from these principals and take those permissions away. The ACLs will all be deleted.
-      </Text>
-      <Text>
-        To restore the permissions, the role will need to be recreated and reassigned to these principals. To confirm,
-        type the role name in the confirmation box below.
-      </Text>
-    </ConfirmItemDeleteModal>
-  );
-};
+}> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl }) => (
+  <ConfirmItemDeleteModal
+    heading={`Delete role ${roleName}`}
+    inputMatchText={roleName}
+    itemType="role"
+    onConfirm={onConfirm}
+    primaryActionLabel="Delete"
+    secondaryActionLabel="Cancel"
+    trigger={buttonEl}
+  >
+    <Text>
+      This role is assigned to {numberOfPrincipals} {numberOfPrincipals === 1 ? 'principal' : 'principals'}. Deleting it
+      will remove it from these principals and take those permissions away. The ACLs will all be deleted.
+    </Text>
+    <Text>
+      To restore the permissions, the role will need to be recreated and reassigned to these principals. To confirm,
+      type the role name in the confirmation box below.
+    </Text>
+  </ConfirmItemDeleteModal>
+);

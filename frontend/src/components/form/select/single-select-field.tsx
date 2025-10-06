@@ -7,7 +7,7 @@ import { SingleSelect } from '../../misc/Select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface SingleSelectFieldProps {
+type SingleSelectFieldProps = {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;
@@ -15,7 +15,7 @@ interface SingleSelectFieldProps {
   options: SelectOption[];
   showCreateNewOption?: boolean;
   onCreateNewOptionClick?: () => void;
-}
+};
 
 export const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
 

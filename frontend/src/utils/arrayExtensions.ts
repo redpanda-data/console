@@ -12,7 +12,7 @@
 export {};
 
 declare global {
-  interface Array<T> {
+  type Array<T> = {
     remove(obj: T): boolean;
     removeAll(selector: (x: T) => boolean): number;
 
@@ -77,7 +77,7 @@ declare global {
     isEqual(this: string[], other: string[]): boolean;
 
     orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[];
-  }
+  };
 }
 
 Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
@@ -104,12 +104,12 @@ Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolea
 
   for (const e of this) if (selector(e)) return e;
 
-  return undefined;
+  return;
 };
 
 Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
   for (let i = this.length - 1; i >= 0; i--) if (!selector || selector(this[i])) return this[i];
-  return undefined;
+  return;
 };
 
 Array.prototype.count = function count<T>(this: T[], selector: (x: T) => boolean) {
@@ -143,7 +143,7 @@ Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
 };
 
 Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number) {
-  if (this.length === 0) return undefined;
+  if (this.length === 0) return;
 
   let bestIndex = 0;
   let bestVal = selector(this[0]);
@@ -160,7 +160,7 @@ Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number)
 };
 
 Array.prototype.maxBy = function maxBy<T>(this: T[], selector: (x: T) => number) {
-  if (this.length === 0) return undefined;
+  if (this.length === 0) return;
 
   let bestIndex = 0;
   let bestVal = selector(this[0]);

@@ -154,7 +154,7 @@ export const RemoteMCPLogsTab = observer(() => {
 
   return (
     <Card className="px-0 py-0" size="full">
-      <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+      <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Logs className="h-4 w-4" />
           <Text className="font-semibold">Server Logs</Text>
@@ -164,7 +164,7 @@ export const RemoteMCPLogsTab = observer(() => {
         <div className="flex flex-col gap-2">
           <Text variant="muted">Real-time logs from the MCP server.</Text>
 
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <Input
               className="w-60"
               onChange={(e) => {

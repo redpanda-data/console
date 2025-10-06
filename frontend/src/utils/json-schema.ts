@@ -96,7 +96,7 @@ export function generateDefaultFromJsonSchema(
     case 'null':
       return null;
     default:
-      return undefined;
+      return;
   }
 }
 

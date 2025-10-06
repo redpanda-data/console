@@ -20,10 +20,10 @@ import { computed, observable } from 'mobx';
 
 import { api } from './backendApi';
 
-export interface FeatureEntry {
+export type FeatureEntry = {
   endpoint: string;
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
-}
+};
 
 // biome-ignore lint/complexity/noStaticOnlyClass: need to use class to ensure MobX support
 export class Feature {

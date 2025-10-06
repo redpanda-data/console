@@ -44,11 +44,9 @@ interface RenderWithRouterOptions extends ExtendedRenderOptions {
   route?: string;
 }
 
-const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) => {
-  return {
-    ...customRender(<MemoryRouter>{ui}</MemoryRouter>, renderOptions),
-  };
-};
+const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) => ({
+  ...customRender(<MemoryRouter>{ui}</MemoryRouter>, renderOptions),
+});
 
 const connectQueryWrapper = (
   config?: QueryClientConfig,

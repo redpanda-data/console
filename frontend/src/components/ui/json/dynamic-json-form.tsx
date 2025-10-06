@@ -13,7 +13,7 @@ import { JSONEditor } from './json-editor';
 import type { JSONSchemaType, JSONValue } from './json-utils';
 import { updateValueAtPath } from './json-utils';
 
-interface CustomFieldConfig {
+type CustomFieldConfig = {
   fieldName: string;
   options: { value: string; label: string }[];
   placeholder?: string;
@@ -22,16 +22,16 @@ interface CustomFieldConfig {
     path: string[],
     handleFieldChange: (path: string[], value: JSONValue) => void
   ) => Promise<void>;
-}
+};
 
-interface DynamicJSONFormProps {
+type DynamicJSONFormProps = {
   schema: JSONSchemaType;
   value: JSONValue;
   onChange: (value: JSONValue) => void;
   maxDepth?: number;
   showPlaceholder?: boolean;
   customFields?: CustomFieldConfig[];
-}
+};
 
 const isTypeSupported = (type: JSONSchemaType['type'], supportedTypes: string[]): boolean => {
   if (Array.isArray(type)) {
@@ -470,7 +470,7 @@ export const DynamicJSONForm = ({
         return (
           <Input
             checked={(currentValue as boolean) ?? false}
-            className="w-4 h-4"
+            className="h-4 w-4"
             onChange={(e) => handleFieldChange(path, e.target.checked)}
             required={isRequired}
             type="checkbox"
@@ -501,12 +501,12 @@ export const DynamicJSONForm = ({
           <div className="space-y-2 p-3">
             {Object.entries(propSchema.properties).map(([key, subSchema]) => (
               <div key={key}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="mb-1 flex items-center gap-2">
                   <Text className="text-sm" variant="label">
                     {key}
-                    {propSchema.required?.includes(key) && <span className="text-red-500 ml-1">*</span>}
+                    {propSchema.required?.includes(key) && <span className="ml-1 text-red-500">*</span>}
                   </Text>
-                  <Badge className="text-xs px-1 py-0" variant="outline">
+                  <Badge className="px-1 py-0 text-xs" variant="outline">
                     {(subSchema as JSONSchemaType).type || 'unknown'}
                   </Badge>
                 </div>
@@ -553,8 +553,8 @@ export const DynamicJSONForm = ({
                   const itemDisplayName = itemTypeName.charAt(0).toUpperCase() + itemTypeName.slice(1);
 
                   return (
-                    <div className="border border-border rounded-lg p-4 bg-card" key={index}>
-                      <div className="flex items-center justify-between mb-3">
+                    <div className="rounded-lg border border-border bg-card p-4" key={index}>
+                      <div className="mb-3 flex items-center justify-between">
                         <Heading className="text-sm" level={4}>
                           {itemDisplayName} #{index + 1}
                         </Heading>
@@ -580,11 +580,11 @@ export const DynamicJSONForm = ({
                                   <Text className="text-sm" variant="label">
                                     {key}
                                   </Text>
-                                  <Badge className="text-xs px-1 py-0" variant="outline">
+                                  <Badge className="px-1 py-0 text-xs" variant="outline">
                                     {(subSchema as JSONSchemaType).type || 'unknown'}
                                   </Badge>
                                   {propSchema.items?.required?.includes(key) && (
-                                    <span className="text-red-500 ml-1">*</span>
+                                    <span className="ml-1 text-red-500">*</span>
                                   )}
                                 </div>
                                 {renderFormFields(

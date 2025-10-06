@@ -193,7 +193,7 @@ export class ActiveReassignments extends Component<{
     if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined)
       return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
 
-    return undefined;
+    return;
   }
 }
 

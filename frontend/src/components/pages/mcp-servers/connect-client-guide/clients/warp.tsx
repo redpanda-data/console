@@ -19,9 +19,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface ClientWarpProps {
+type ClientWarpProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
   const clusterId = config?.clusterId;
@@ -73,11 +73,11 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <img alt="Warp" className="h-4 w-4" src={WarpLogo} /> Warp
               </Text>
               <span>and go to</span>
-              <Text as="span" className="font-bold whitespace-nowrap">
+              <Text as="span" className="whitespace-nowrap font-bold">
                 Settings → AI → Manage MCP servers
               </Text>
             </div>

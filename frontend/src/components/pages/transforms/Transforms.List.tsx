@@ -153,13 +153,11 @@ class TransformsList extends PageComponent {
                 header: 'Name',
                 accessorKey: 'name',
                 size: 300,
-                cell: ({ row: { original: r } }) => {
-                  return (
-                    <Box whiteSpace="break-spaces" wordBreak="break-word">
-                      <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
-                    </Box>
-                  );
-                },
+                cell: ({ row: { original: r } }) => (
+                  <Box whiteSpace="break-spaces" wordBreak="break-word">
+                    <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
+                  </Box>
+                ),
               },
               {
                 header: 'Status',
@@ -188,15 +186,13 @@ class TransformsList extends PageComponent {
               },
               {
                 header: 'Output topics',
-                cell: ({ row: { original: r } }) => {
-                  return (
-                    <Stack>
-                      {r.outputTopicNames.map((n) => (
-                        <Box key={n}>{n}</Box>
-                      ))}
-                    </Stack>
-                  );
-                },
+                cell: ({ row: { original: r } }) => (
+                  <Stack>
+                    {r.outputTopicNames.map((n) => (
+                      <Box key={n}>{n}</Box>
+                    ))}
+                  </Stack>
+                ),
               },
               {
                 header: '',

@@ -123,13 +123,12 @@ export const useCreateUserMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'user',
-      });
-    },
+      }),
   });
 };
 
@@ -146,12 +145,11 @@ export const useUpdateUserMutationWithToast = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'user',
-      });
-    },
+      }),
   });
 };

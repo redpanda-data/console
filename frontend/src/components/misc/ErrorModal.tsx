@@ -82,7 +82,7 @@ class ErrorModal extends Component<ErrorModalProps> {
   }
 }
 
-interface ErrorModalProps {
+type ErrorModalProps = {
   key: number;
 
   title: () => string;
@@ -94,7 +94,7 @@ interface ErrorModalProps {
   afterClose: () => void;
 
   animate: boolean;
-}
+};
 
 const errorModals: ErrorModalProps[] = observable([]);
 

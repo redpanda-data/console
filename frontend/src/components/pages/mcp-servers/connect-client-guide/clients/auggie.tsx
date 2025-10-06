@@ -19,9 +19,9 @@ import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
 
-interface ClientAuggieProps {
+type ClientAuggieProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientAuggie = ({ mcpServer }: ClientAuggieProps) => {
   const clusterId = config?.clusterId;
@@ -87,7 +87,7 @@ export const ClientAuggie = ({ mcpServer }: ClientAuggieProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <img alt="Auggie (Augment Code) CLI" className="h-4 w-4" src={AuggieLogo} /> Auggie (Augment Code CLI)
               </Text>
               <span>and run the following command:</span>

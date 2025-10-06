@@ -1,20 +1,20 @@
 import { config } from 'config';
 import type { ChatMessage } from 'database/chat-db';
 
-interface ChatApiResponse {
+type ChatApiResponse = {
   message: string;
   success: boolean;
   error?: string;
-}
+};
 
 // Limit chat history to last 30 messages
 export const CHAT_HISTORY_MESSAGE_LIMIT = 15;
 
-interface SendMessageToApiProps {
+type SendMessageToApiProps = {
   message: string;
   chatHistory: ChatMessage[];
   agentUrl?: string;
-}
+};
 
 export const sendMessageToApi = async ({
   message,

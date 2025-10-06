@@ -266,7 +266,7 @@ function getVersionFromQuery(): 'latest' | number | undefined {
     console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
   }
 
-  return undefined;
+  return;
 }
 
 export function schemaTypeToCodeBlockLanguage(type: string) {

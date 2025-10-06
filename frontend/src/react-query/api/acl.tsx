@@ -377,29 +377,28 @@ export const useCreateACLMutation = () => {
         }),
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'acl',
-      });
-    },
+      }),
   });
 };
 
 // New ACL implementation
 
 // this method is used from AclTab frontend/src/components/pages/acls/Acl.List.tsx, removed this when that page is migrated.
-interface SimpleAcl {
+type SimpleAcl = {
   host: string;
   principal: string;
   principalType: string;
   principalName: string;
   hasAcl: boolean;
-}
+};
 // this method is used from AclTab frontend/src/components/pages/acls/Acl.List.tsx, removed this when that page is migrated.
-export const useListACLAsPrincipalGroups = () => {
-  return useQuery(listACLs, {} as ListACLsRequest, {
+export const useListACLAsPrincipalGroups = () =>
+  useQuery(listACLs, {} as ListACLsRequest, {
     select: (response) => {
       const groupsAcl = response.resources.reduce((acc, r) => {
         for (const a of r.acls) {
@@ -419,7 +418,6 @@ export const useListACLAsPrincipalGroups = () => {
       return groupsAcl.values().toArray();
     },
   });
-};
 
 // New ACL implementation
 
@@ -515,8 +513,8 @@ export const useUpdateAclMutation = () => {
 export const useGetAclsByPrincipal = <T = AclDetail>(
   principal: string,
   transformFn?: (aclList: ListACLsResponse) => T
-) => {
-  return useQuery(
+) =>
+  useQuery(
     listACLs,
     {
       filter: {
@@ -527,7 +525,6 @@ export const useGetAclsByPrincipal = <T = AclDetail>(
       select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
     }
   );
-};
 
 export const useCreateAcls = () => {
   const { mutateAsync: createACLMutation } = useMutation(createACL);
