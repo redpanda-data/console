@@ -198,6 +198,7 @@ export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: ReturnType<typeof schemaToConfig>,
   componentSpec: ConnectComponentSpec
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 51, refactor later
 ) => {
   // If no existing YAML, return new config object
   if (!existingYaml.trim()) {
@@ -512,6 +513,7 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
  * Recursively populates persisted topic/user data in the generated defaults object
  * Also creates optional nested objects when they contain relevant fields
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 65, refactor later
 const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: string): any => {
   const { topicData, userData } = getPersistedWizardData();
 
@@ -806,6 +808,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
  * Used when showOptionalFields is true
  * Also populates topic/user defaults from session storage when applicable
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 35, refactor later
 function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): unknown {
   if (jsonSchema.default !== undefined) {
     return jsonSchema.default;

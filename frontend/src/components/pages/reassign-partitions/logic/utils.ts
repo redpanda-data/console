@@ -41,6 +41,7 @@ export function partitionSelectionToTopicPartitions(
   return ar;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 31, refactor later
 export function computeMovedReplicas(
   partitionSelection: PartitionSelection,
   assignments: PartitionReassignmentRequest,

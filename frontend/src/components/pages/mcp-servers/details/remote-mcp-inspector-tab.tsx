@@ -299,6 +299,7 @@ export const RemoteMCPInspectorTab = () => {
   const validateRequiredFields = (
     schema: JSONSchemaType | undefined,
     values: JSONValue
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
   ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 

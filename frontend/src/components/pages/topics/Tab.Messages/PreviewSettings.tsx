@@ -488,6 +488,7 @@ const splitChars = ["'", '"', '.'];
 // Returns:
 // - String array when the path was parsed correctly
 // - Single string as error reason why the path couldn't be parsed
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 34, refactor later
 function parseJsonPath(str: string): string[] | string {
   // Collect symbols until we find a dot, single-quote, or double-quote
   const result: string[] = [];

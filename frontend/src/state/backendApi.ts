@@ -727,6 +727,7 @@ const apiStore = {
 
     return cachedApiRequest<GetAllPartitionsResponse | null>(url, force).then((response) => {
       if (!response?.topics) return;
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
       transaction(() => {
         const errors: {
           topicName: string;
@@ -796,7 +797,9 @@ const apiStore = {
     cachedApiRequest<GetPartitionsResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/partitions`,
       force
-    ).then((response) => {
+    )
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 46, refactor later
+      .then((response) => {
       if (response?.partitions) {
         const partitionErrors: Array<{ id: number; partitionError: string }> = [];
         const waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
@@ -2558,6 +2561,7 @@ export function createMessageSearch() {
     // Live view of messages, gets updated as new messages arrive
     messages: observable([] as TopicMessage[], { deep: false }),
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
     async startSearch(_searchRequest: MessageSearchRequest): Promise<TopicMessage[]> {
       // https://connectrpc.com/docs/web/using-clients
       // https://github.com/connectrpc/connect-es

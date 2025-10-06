@@ -19,6 +19,7 @@ import { parse, stringify } from 'yaml';
  */
 export function useYamlLabelSync(form: UseFormReturn<FormValues>) {
   useEffect(() => {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
     const subscription = form.watch((_, info) => {
       const name = info.name ?? '';
       if (!name.startsWith('tools')) return;

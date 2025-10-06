@@ -146,6 +146,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
     }));
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 56, refactor later
   const handleValidationError = (error: ConnectError) => {
     if (error.code === ConnectCode.InvalidArgument && error.details) {
       // Find BadRequest details

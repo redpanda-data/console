@@ -1305,6 +1305,7 @@ class SaveMessagesDialog extends Component<{
     this.props.onClose();
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
   convertToCSV(messages: any[]): string {
     if (messages.length === 0) return '';
 

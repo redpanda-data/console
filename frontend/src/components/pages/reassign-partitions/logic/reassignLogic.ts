@@ -213,6 +213,7 @@ function computeReplicaAssignments(
 
   for (let i = 0; i < replicas; i++) {
     // Sort to find the best broker (better brokers first)
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 48, refactor later
     brokerReplicaCount.sort((a, b) => {
       // Precondition
       // Each broker can't host more than 1 replica of a partition

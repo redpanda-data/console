@@ -236,6 +236,7 @@ const UserPermissionDetailsContent = observer((p: { userName: string }) => {
 });
 
 // TODO: remove this component when we update RoleDetails
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 70, refactor later
 export const AclPrincipalGroupPermissionsTable = observer((p: { group: AclPrincipalGroup }) => {
   const entries: {
     type: string;

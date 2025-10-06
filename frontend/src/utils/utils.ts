@@ -264,6 +264,7 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
 type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
 export type CollectedProperty = { path: string[]; value: any };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 37, refactor later
 export function collectElements2(
   targetObject: any,
 

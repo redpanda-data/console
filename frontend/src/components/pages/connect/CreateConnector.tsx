@@ -75,6 +75,7 @@ const ConnectorType = observer(
       const allPlugins = api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins;
 
       filteredPlugins =
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 33, refactor later
         allPlugins?.filter((p) => {
           if (state.tabFilter === 'export' && p.type === 'source') return false; // not an "export" type
 
@@ -355,6 +356,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         />
       ),
       postConditionMet: () => postCondition && !loading,
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
       async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
         clearErrors();
         setLoading(true);

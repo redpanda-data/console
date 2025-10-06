@@ -449,6 +449,7 @@ export const principalGroupsView = observable(
  Why? Because you'll need to call the remove/create acl apis and those only work with flat acls.
  Use this method to convert your principal group back to a list of flat acls.
 */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 52, refactor later
 export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
   const flat: AclFlat[] = [];
 

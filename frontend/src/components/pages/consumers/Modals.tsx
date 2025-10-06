@@ -425,6 +425,7 @@ export class EditOffsetsModal extends Component<{
   }
 
   @action
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 54, refactor later
   setPage(page: 0 | 1) {
     if (page === 1) {
       // compute and set newOffset

@@ -105,6 +105,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
         /* do nothing */
       };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 38, refactor later
   const isPatternMatch = (obj: object, pattern: object): boolean => {
     if (typeof obj !== typeof pattern) {
       log(`  type mismatch obj<>pattern: '${typeof obj}' != '${typeof pattern}'`);
