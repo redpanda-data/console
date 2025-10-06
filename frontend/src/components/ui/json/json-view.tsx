@@ -91,15 +91,10 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
 
     return (
       <div className="flex flex-col">
-        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of JSONNode implementation */}
-        <div
-          className="flex items-center mr-1 rounded cursor-pointer group hover:bg-gray-800/10 dark:hover:bg-gray-800/20"
+        <button
+          className="flex items-center mr-1 rounded cursor-pointer group hover:bg-gray-800/10 dark:hover:bg-gray-800/20 bg-transparent border-none p-0 text-left w-full"
           onClick={() => setIsExpanded(!isExpanded)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              setIsExpanded(!isExpanded);
-            }
-          }}
+          type="button"
         >
           {name && (
             <span className="mr-1 text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-100 group-hover:text-gray-400">
@@ -120,7 +115,7 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
               </span>
             </>
           )}
-        </div>
+        </button>
         {isExpanded && (
           <>
             <div className="pl-2 ml-4 border-l border-gray-200 dark:border-gray-800">
@@ -176,6 +171,13 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
             'cursor-pointer break-all whitespace-pre-wrap'
           )}
           onClick={() => setIsExpanded(!isExpanded)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              setIsExpanded(!isExpanded);
+            }
+          }}
+          role="button"
+          tabIndex={0}
           title={isExpanded ? 'Click to collapse' : 'Click to expand'}
         >
           {isExpanded ? `"${value}"` : `"${value.slice(0, maxLength)}..."`}
