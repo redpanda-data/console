@@ -13,3 +13,6 @@ deps:
   - name: buf.build/redpandadata/common
     commit: 9feeb258823648009d54c7c2b8a22524
     digest: b5:669904f69cff7bf106d81dd30f417dcc64f511da31db1abff2ace9fc4530580ce8da68eb8f5863f6c36d6bb6d9209a6cc61239144f968eae9bbe249440111762
+  - name: buf.build/redpandadata/core
+    commit: a1e818380921422e866250a0d32f9df9
+    digest: b5:5e5e66fd5ef27dcdb61b4fc0e144232055a223688a5bccbc5b0fb9387fd6d06439bd38dc8a1dc25d4164844324fed5090ddc55ab70da405e9eda94742b2f0316
