@@ -348,15 +348,15 @@ const ConfigEntryComponent = observer(
 
         <span className="configButtons">
           <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
-            {/** biome-ignore lint/a11y/noStaticElementInteractions: part of ConfigEntryComponent implementation */}
-            <span
+            <button
               className={`btnEdit${canEdit ? '' : ' disabled'}`}
               onClick={() => {
                 if (canEdit) p.onEditEntry(p.entry);
               }}
+              type="button"
             >
               <Icon as={PencilIcon} />
-            </span>
+            </button>
           </Tooltip>
           {entry.documentation && (
             <Popover
