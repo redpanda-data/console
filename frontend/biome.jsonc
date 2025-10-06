@@ -328,8 +328,6 @@
         "noVoidTypeReturn": "error",
         // Enforce all dependencies are correctly specified in a React hook.
         "useExhaustiveDependencies": "error",
-        // Enforce specifying the name of GraphQL operations.
-        "useGraphqlNamedOperations": "error",
         // Enforce that all React hooks are being called from the Top Level component functions.
         "useHookAtTopLevel": "error",
         // Require calls to isNaN() when checking for NaN.
@@ -388,6 +386,66 @@
         // Disallow unmatchable An+B selectors.
         "noUnmatchableAnbSelector": "error"
       },
+      "nursery": {
+        // Prevent the listing of duplicate dependencies.
+        "noDuplicateDependencies": "error",
+        // Disallow Promises to be used in places where they are almost certainly a mistake.
+        "noMisusedPromises": "error",
+        // Prevent client components from being async functions.
+        "noNextAsyncClientComponent": "error",
+        // Disallow non-null assertions after optional chaining expressions.
+        "noNonNullAssertedOptionalChain": "error",
+        // Disallow variable declarations from shadowing variables declared in the outer scope.
+        "noShadow": "error",
+        // Disallow the use of useless undefined.
+        "noUselessUndefined": "error",
+        // Enforces href attribute for <a> elements.
+        "useAnchorHref": "error",
+        // Enforce consistent arrow function bodies.
+        "useConsistentArrowReturn": "error",
+        //Enforce type definitions to consistently use either interface or type.
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
+        },
+        // Require switch-case statements to be exhaustive.
+        "useExhaustiveSwitchCases": "error",
+        // Enforces that <img> elements have both width and height attributes.
+        "useImageSize": "error",
+        // Enforce a maximum number of parameters in function definitions.
+        "useMaxParams": "error",
+        // Enforce that components are defined as functions and never as classes.
+        "useReactFunctionComponents": "off", // Enable later
+        // Disallow string literals inside JSX elements.
+        "noJsxLiterals": "off",
+        // Disallow unused catch bindings.
+        "noUselessCatchBinding": "off",
+        // Disallow unnecessary type-based conditions that can be statically determined as redundant.
+        "noUnnecessaryConditions": "off",
+        // Disallow usage of sensitive data such as API keys and tokens.
+        "noSecrets": "off",
+        // Enforce types in functions, methods, variables, and parameters.
+        "useExplicitType": "off",
+        // Enforce the sorting of CSS utility classes.
+        "useSortedClasses": {
+          "fix": "safe",
+          "level": "error",
+          "options": {
+            "attributes": ["className"],
+            "functions": ["clsx", "cva", "tw", "twMerge", "cn", "twJoin", "tv"]
+          }
+        },
+
+        /** ------ These rules should be enabled but Scanner makes them too slow ------ **/
+        // Require Promise-like statements to be handled appropriately.
+        "noFloatingPromises": "off",
+        // Warn when importing non-existing exports.
+        "noUnresolvedImports": "off",
+        // Prevent import cycles.
+        "noImportCycles": "off"
+      },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
         "noParameterAssign": "off",
@@ -431,10 +489,6 @@
         "noParameterProperties": "off", // enable later
         // Enforce using single if instead of nested if clauses.
         "useCollapsedIf": "off" // enable later
-      },
-      "nursery": {
-        // Disallow variable declarations from shadowing variables declared in the outer scope.
-        "noShadow": "off" // enable later
       },
       "performance": {
         // Prevent usage of <img> element in a Next.js project. We don't use Next.js
