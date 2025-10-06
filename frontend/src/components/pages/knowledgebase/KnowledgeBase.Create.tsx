@@ -35,7 +35,7 @@ import {
 } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AiOutlineDelete, AiOutlinePlus } from 'react-icons/ai';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -78,6 +78,7 @@ import { SecretsQuickAdd } from '../rp-connect/secrets/Secrets.QuickAdd';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
+const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 
 const SecretDropdownField = ({
   label,
@@ -221,24 +222,24 @@ const TopicSelector = ({
     );
 
   // Check if a string is a regex pattern (contains regex special characters)
-  const isRegexPattern = (str: string) => {
-    const regexChars = /[.*+?^${}()|[\]\\]/;
-    return regexChars.test(str);
-  };
+  const isRegexPattern = (str: string) => REGEX_SPECIAL_CHARS.test(str);
 
   // Get matching topics for a pattern - always treat as regex if possible, fallback to substring
-  const getMatchingTopics = (pattern: string) => {
-    if (!pattern) return [];
+  const getMatchingTopics = useMemo(
+    () => (pattern: string) => {
+      if (!pattern) return [];
 
-    try {
-      const regex = new RegExp(pattern);
-      const matches = allTopics.filter((topic) => regex.test(topic));
-      return matches;
-    } catch (_error) {
-      // If regex is invalid, fall back to substring match
-      return allTopics.filter((topic) => topic.toLowerCase().includes(pattern.toLowerCase()));
-    }
-  };
+      try {
+        const regex = new RegExp(pattern);
+        const matches = allTopics.filter((topic) => regex.test(topic));
+        return matches;
+      } catch (_error) {
+        // If regex is invalid, fall back to substring match
+        return allTopics.filter((topic) => topic.toLowerCase().includes(pattern.toLowerCase()));
+      }
+    },
+    [allTopics]
+  );
 
   // Create options for the select dropdown - always show all topics
   const topicOptions = allTopics.map((name) => ({

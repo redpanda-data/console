@@ -42,6 +42,8 @@ import { ToolsStep } from './tools-step';
 import { useMetadataValidation } from './use-metadata-validation';
 import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
+const TOOL_FIELD_REGEX = /mcp_server\.tools\.([^.]+)\.(.+)/;
+
 // Stepper definition
 const { Stepper } = defineStepper(
   {
@@ -171,7 +173,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             toast.error(`Description: ${description}`);
           } else if (field.startsWith('mcp_server.tools.')) {
             // Handle tool-specific validation errors
-            const toolFieldMatch = field.match(/mcp_server\.tools\.([^.]+)\.(.+)/);
+            const toolFieldMatch = field.match(TOOL_FIELD_REGEX);
             if (toolFieldMatch) {
               const [, toolName, toolField] = toolFieldMatch;
               // Find the tool index by name

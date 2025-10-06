@@ -34,6 +34,9 @@ import { Label as UILabel } from '../../../redpanda-ui/components/label';
 import { Slider as UISlider } from '../../../redpanda-ui/components/slider';
 import type { CleanupPolicyType } from '../types';
 
+// Regex for checking if value has 4 or more decimal places
+const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+
 type CreateTopicModalState = {
   topicName: string; // required
 
@@ -300,7 +303,7 @@ function RetentionTimeSelect(p: {
                   const ms = value * factor;
                   let newValue = ms / timeFactors[u];
                   if (Number.isNaN(newValue)) newValue = 0;
-                  if (/\.\d{4,}/.test(String(newValue))) newValue = Math.round(newValue);
+                  if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
                   p.onChangeValue(newValue);
                 }
                 p.onChangeUnit(u);
@@ -369,7 +372,7 @@ function RetentionSizeSelect(p: {
                   const ms = value * factor;
                   let newValue = ms / sizeFactors[u];
                   if (Number.isNaN(newValue)) newValue = 0;
-                  if (/\.\d{4,}/.test(String(newValue))) newValue = Math.round(newValue);
+                  if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
                   p.onChangeValue(newValue);
                 }
                 p.onChangeUnit(u);

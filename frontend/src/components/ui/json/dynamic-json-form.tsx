@@ -13,6 +13,9 @@ import { JSONEditor } from './json-editor';
 import type { JSONSchemaType, JSONValue } from './json-utils';
 import { updateValueAtPath } from './json-utils';
 
+// Regex for matching trailing 's' to create singular names
+const TRAILING_S_REGEX = /s$/;
+
 type CustomFieldConfig = {
   fieldName: string;
   options: { value: string; label: string }[];
@@ -549,7 +552,7 @@ export const DynamicJSONForm = ({
                   const itemTypeName =
                     propSchema.items?.title ||
                     propSchema.items?.description ||
-                    propertyName?.replace(/s$/, '') ||
+                    propertyName?.replace(TRAILING_S_REGEX, '') ||
                     'Item'; // Remove trailing 's' from property name
                   const itemDisplayName = itemTypeName.charAt(0).toUpperCase() + itemTypeName.slice(1);
 
@@ -620,7 +623,7 @@ export const DynamicJSONForm = ({
                   + Add{' '}
                   {propSchema.items?.title ||
                     propSchema.items?.description ||
-                    propertyName?.replace(/s$/, '') ||
+                    propertyName?.replace(TRAILING_S_REGEX, '') ||
                     'Item'}
                 </Button>
               </div>

@@ -29,6 +29,9 @@ import { formatPipelineError } from '../errors';
 
 const { toast } = createStandaloneToast();
 
+// Regex for validating secret ID format
+const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
+
 type SecretsQuickAddProps = {
   isOpen: boolean;
   onCloseAddSecret: () => void;
@@ -106,7 +109,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     if (id === '') {
       return '';
     }
-    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(id)) {
+    if (!SECRET_NAME_REGEX.test(id)) {
       return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain alphanumeric and underscores (_).';
     }
     if (id.length > 255) {

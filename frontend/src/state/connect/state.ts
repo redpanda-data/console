@@ -37,6 +37,9 @@ import {
   PropertyWidth,
 } from '../restInterfaces';
 
+// Regex for validating secret strings
+const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/;
+
 export type ConfigPageProps = {
   clusterName: string;
   pluginClassName: string;
@@ -420,8 +423,7 @@ export class Secret {
   }
 
   validateSecretString(secretString: string): boolean {
-    const regex = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/;
-    const validationResult = regex.test(secretString);
+    const validationResult = SECRET_STRING_REGEX.test(secretString);
     if (validationResult) this.secretString = secretString;
     return validationResult;
   }

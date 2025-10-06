@@ -53,6 +53,24 @@ import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
 import AclList from '../topics/Tab.Acl/AclList';
 
+const DEFAULT_MATCH_ALL_REGEX = /.*/s;
+const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
+
+function getQuickSearchRegex(pattern: string): RegExp {
+  if (QUICK_SEARCH_REGEX_CACHE.has(pattern)) {
+    // biome-ignore lint/style/noNonNullAssertion: cache hit guarantees value exists
+    return QUICK_SEARCH_REGEX_CACHE.get(pattern)!;
+  }
+  let regExp = DEFAULT_MATCH_ALL_REGEX; // match everything by default
+  try {
+    regExp = new RegExp(pattern, 'i');
+  } catch (_e) {
+    console.warn('Invalid expression');
+  }
+  QUICK_SEARCH_REGEX_CACHE.set(pattern, regExp);
+  return regExp;
+}
+
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
   @observable edittingOffsets: GroupOffset[] | null = null;
@@ -266,15 +284,7 @@ const GroupByTopics = observer(function GroupByTopics(props: {
   onEditOffsets: (offsets: GroupOffset[]) => void;
   onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
 }) {
-  const quickSearchRegExp = useMemo(() => {
-    let regExp = /.*/s; // match everything by default
-    try {
-      regExp = new RegExp(props.quickSearch, 'i');
-    } catch (_e) {
-      console.warn('Invalid expression');
-    }
-    return regExp;
-  }, [props.quickSearch]);
+  const quickSearchRegExp = useMemo(() => getQuickSearchRegex(props.quickSearch), [props.quickSearch]);
 
   const topicLags = props.group.topicOffsets;
   const p = props;

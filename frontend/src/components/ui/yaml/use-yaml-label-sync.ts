@@ -14,6 +14,9 @@ import { useEffect } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { parse, stringify } from 'yaml';
 
+// Regex for parsing tool field names (tools.{index}.{field})
+const TOOLS_FIELD_REGEX = /^tools\.(\d+)\.(name|config)$/;
+
 /**
  * Keep YAML label in sync with Tool Name field
  */
@@ -25,7 +28,7 @@ export function useYamlLabelSync(form: UseFormReturn<FormValues>) {
       if (!name.startsWith('tools')) return;
 
       // tools.{index}.field
-      const match = name.match(/^tools\.(\d+)\.(name|config)$/);
+      const match = TOOLS_FIELD_REGEX.exec(name);
       if (!match) return;
       const index = Number(match[1]);
       const field = match[2] as 'name' | 'config';

@@ -463,8 +463,8 @@
         "noUnwantedPolyfillio": "error",
         // Ensure the preconnect attribute is used when using Google Fonts.
         "useGoogleFontPreconnect": "error",
-        // Require regex literals to be declared at the top level. Performance hit.
-        "useTopLevelRegex": "off" // enable later
+        // Require regex literals to be declared at the top level.
+        "useTopLevelRegex": "error"
       },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.

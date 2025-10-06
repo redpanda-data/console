@@ -49,7 +49,7 @@ import {
 import type { TabsItemProps } from '@redpanda-data/ui/dist/components/Tabs/Tabs';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { AiOutlineDelete, AiOutlinePlus } from 'react-icons/ai';
 
 import { config } from '../../../config';
@@ -88,6 +88,7 @@ import { SecretsQuickAdd } from '../rp-connect/secrets/Secrets.QuickAdd';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
+const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 
 const UserDropdown = ({
   label,
@@ -234,26 +235,29 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
     );
 
   // Check if a string is a regex pattern (contains regex special characters)
-  const isRegexPattern = (str: string) => {
-    const regexChars = /[.*+?^${}()|[\]\\]/;
-    return regexChars.test(str);
-  };
+  const isRegexPattern = useCallback((str: string) => REGEX_SPECIAL_CHARS.test(str), []);
 
   // Test if a topic matches a regex pattern
-  const topicMatchesPattern = (topic: string, pattern: string) => {
-    try {
-      const regex = new RegExp(pattern);
-      return regex.test(topic);
-    } catch {
-      return false; // Invalid regex
-    }
-  };
+  const topicMatchesPattern = useMemo(
+    () => (topic: string, pattern: string) => {
+      try {
+        const regex = new RegExp(pattern);
+        return regex.test(topic);
+      } catch {
+        return false; // Invalid regex
+      }
+    },
+    []
+  );
 
   // Get topics that match a pattern
-  const getMatchingTopics = (pattern: string) => {
-    if (!isRegexPattern(pattern)) return [];
-    return allTopics.filter((topic) => topicMatchesPattern(topic, pattern));
-  };
+  const getMatchingTopics = useMemo(
+    () => (pattern: string) => {
+      if (!isRegexPattern(pattern)) return [];
+      return allTopics.filter((topic) => topicMatchesPattern(topic, pattern));
+    },
+    [allTopics, topicMatchesPattern, isRegexPattern]
+  );
 
   // Create options for the select
   const topicOptions = allTopics

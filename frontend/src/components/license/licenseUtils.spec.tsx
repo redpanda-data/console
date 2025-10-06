@@ -23,6 +23,9 @@ import { api } from '../../state/backendApi';
 import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './LicenseNotification';
 
+const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
+const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 27 days/;
+
 /**
  * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
  * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
@@ -193,7 +196,7 @@ describe('licenseUtils', () => {
 
   describe('prettyExpirationDate', () => {
     test.skip('should return a formatted expiration date for an expiring license', () => {
-      expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(/\d{2}\/\d{2}\/\d{4}/); // MM/DD/YYYY format
+      expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX); // MM/DD/YYYY format
     });
 
     test('should return an empty string for a community license', () => {
@@ -344,7 +347,7 @@ describe('licenseUtils', () => {
       });
 
       // Check that user is informed about a license that will expire.
-      expect(screen.getByText(/Your Redpanda Enterprise license will expire in 27 days/)).toBeInTheDocument();
+      expect(screen.getByText(LICENSE_EXPIRE_MESSAGE_REGEX)).toBeInTheDocument();
       // Check for the color of the notification banner
       expect(screen.queryByTestId('license-alert')).toHaveAttribute('data-status', 'info');
       // Check for CTAs

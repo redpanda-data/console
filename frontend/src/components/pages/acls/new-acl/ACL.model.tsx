@@ -10,6 +10,9 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { ReactNode } from 'react';
 
+const UNDERSCORE_REGEX = /_/g;
+const FIRST_CHAR_REGEX = /^\w/;
+
 export type OperationType = 'not-set' | 'allow' | 'deny';
 export const OperationTypeNotSet: OperationType = 'not-set';
 export const OperationTypeAllow: OperationType = 'allow';
@@ -504,9 +507,9 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
 // Helper function to convert UPPER_CASE strings to sentence case
 export const formatLabel = (text: string): string =>
   text
-    .replace(/_/g, ' ')
+    .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
-    .replace(/^\w/, (c) => c.toUpperCase());
+    .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase());
 
 // Helper function to generate rule data-testid
 export const getRuleDataTestId = (rule: Rule): string => {

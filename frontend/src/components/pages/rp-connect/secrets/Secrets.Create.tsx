@@ -15,6 +15,7 @@ import { formatPipelineError } from '../errors';
 const { ToastContainer, toast } = createStandaloneToast();
 
 const returnSecretTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
+const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 @observer
 class RpConnectSecretCreate extends PageComponent {
@@ -89,7 +90,7 @@ class RpConnectSecretCreate extends PageComponent {
     if (this.id === '') {
       return '';
     }
-    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(this.id)) {
+    if (!SECRET_NAME_VALIDATION_REGEX.test(this.id)) {
       return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain letters (A–Z), digits (0–9), and underscores (_).';
     }
     if (this.id.length > 255) {

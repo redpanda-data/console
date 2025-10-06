@@ -17,6 +17,8 @@ import { observer } from 'mobx-react';
 import { Component, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from 'react-beautiful-dnd';
 
+const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
+
 @observer
 export class CommaSeparatedStringList extends Component<{
   defaultValue: string;
@@ -94,7 +96,7 @@ export class CommaSeparatedStringList extends Component<{
                   return;
                 }
 
-                if (/^[a-z][a-z_\d]*$/i.test(valuePending) === false) {
+                if (VALID_NAME_REGEX.test(valuePending) === false) {
                   // no, invalid characters
                   e.stopPropagation();
                   return;
@@ -141,7 +143,7 @@ export class CommaSeparatedStringList extends Component<{
 
               if (this.data.any((x) => x.id === this.newEntry)) this.newEntryError = 'Entry already exists';
 
-              if (/^[a-z][a-z_\d]*$/i.test(this.newEntry) === false)
+              if (VALID_NAME_REGEX.test(this.newEntry) === false)
                 this.newEntryError = 'Name is not valid (only letters, digits, underscore)';
             }}
             placeholder={this.props.locale?.addInputPlaceholder ?? 'Enter a name...'}

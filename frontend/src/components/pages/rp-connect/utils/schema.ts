@@ -14,6 +14,9 @@ import {
 } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
 
+// Regex for matching YAML key-value pairs
+const YAML_KEY_VALUE_REGEX = /^(\s*)([^:#\n]+):\s*(.*)$/;
+
 /**
  * Extracts lightweight metadata from JSON Schema component variants
  * No complex transformation - just metadata for display + raw schema reference
@@ -642,7 +645,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     }
 
     // Match YAML key-value pairs
-    const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
+    const keyValueMatch = YAML_KEY_VALUE_REGEX.exec(line);
     if (!keyValueMatch) {
       processedLines.push(line);
       continue;
@@ -697,9 +700,9 @@ const addRootSpacing = (yamlString: string): string => {
     // Check if this is a root-level key
     const currentIndent = line.length - line.trimStart().length;
     if (currentIndent === 0 && line.includes(':')) {
-      const keyMatch = line.match(/^([^:#\n]+):/);
+      const keyMatch = YAML_KEY_VALUE_REGEX.exec(line);
       if (keyMatch) {
-        const cleanKey = keyMatch[1].trim();
+        const cleanKey = keyMatch[2].trim();
 
         // Add spacing before root components (except first)
         if (previousRootKey !== null && cleanKey !== previousRootKey) {

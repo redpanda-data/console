@@ -185,6 +185,9 @@ const PARAM_MAPPING = {
 // Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
+// Regex for checking printable ASCII characters
+const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+
 function parseUrlParams(): TopicMessageParams {
   const query = new URLSearchParams(window.location.search);
   const params = { ...DEFAULT_SEARCH_PARAMS };
@@ -1746,10 +1749,9 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
       }
       const str = String(val);
       let result = '';
-      const isPrintable = /[\x20-\x7E]/;
       for (let i = 0; i < str.length; i++) {
         let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
-        ch = isPrintable.test(ch) ? ch : '. ';
+        ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
         result += `${ch} `;
       }
 

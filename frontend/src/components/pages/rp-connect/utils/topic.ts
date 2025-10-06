@@ -3,6 +3,8 @@ import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactor
 
 import type { AddTopicFormData } from '../types/wizard';
 
+const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+
 // Default values for topic creation
 export const DEFAULT_RETENTION_TIME_MS = 7;
 export const DEFAULT_RETENTION_TIME_UNIT: RetentionTimeUnit = 'days';
@@ -58,7 +60,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
 
   let value = best.value;
   // Clean up decimal places like in CreateTopicModal
-  if (/\.\d{4,}/.test(String(value))) {
+  if (DECIMAL_PLACES_REGEX.test(String(value))) {
     value = Math.round(value);
   }
 
@@ -89,7 +91,7 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
 
   let value = best.value;
   // Clean up decimal places like in CreateTopicModal
-  if (/\.\d{4,}/.test(String(value))) {
+  if (DECIMAL_PLACES_REGEX.test(String(value))) {
     value = Math.round(value);
   }
 

@@ -6,6 +6,9 @@ import remarkGfm from 'remark-gfm';
 
 import { ChatCodeBlock } from './chat-code-block';
 
+const LANGUAGE_CLASS_REGEX = /language-(\w+)/;
+const TRAILING_NEWLINE_REGEX = /\n$/;
+
 type ChatMarkdownProps = {
   message: ChatMessage;
 };
@@ -119,13 +122,13 @@ export const ChatMarkdown = ({ message }: ChatMarkdownProps) => {
 
         // Code blocks
         code({ className, children }) {
-          const match = /language-(\w+)/.exec(className || '');
+          const match = LANGUAGE_CLASS_REGEX.exec(className || '');
 
           if (match) {
             return (
               <Box py={1}>
                 <ChatCodeBlock
-                  codeString={String(children).replace(/\n$/, '')}
+                  codeString={String(children).replace(TRAILING_NEWLINE_REGEX, '')}
                   language={match?.[1] ?? ''}
                   showCopyButton
                   showLineNumbers={false}

@@ -38,6 +38,10 @@ import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
 
+// Regex for extracting record names from schema text
+const JSON_NAME_REGEX = /"name"\s*:\s*"(.*)"/;
+const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(\S+)\s*\{/;
+
 @observer
 export class SchemaCreatePage extends PageComponent {
   initPage(p: PageInitHelper): void {
@@ -549,15 +553,13 @@ function createSchemaState() {
 
         // The above will obviously only work when the schema is complete,
         // when the user is editting the text, it might not parse, so we fall back to regex matching
-        const jsonNameRegex = /"name"\s*:\s*"(.*)"/;
-        const ar = jsonNameRegex.exec(this.schemaText);
+        const ar = JSON_NAME_REGEX.exec(this.schemaText);
         if (!ar) return ''; // no match
         if (ar.length < 2) return ''; // capture group missing?
         return ar[1]; // return only first capture group
       }
       // Protobuf
-      const messageNameRegex = /message\s+(\S+)\s*\{/;
-      const ar = messageNameRegex.exec(this.schemaText);
+      const ar = PROTOBUF_MESSAGE_NAME_REGEX.exec(this.schemaText);
       if (!ar) return ''; // no match
       if (ar.length < 2) return ''; // capture group missing?
       return ar[1]; // return only first capture group

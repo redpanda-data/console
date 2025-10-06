@@ -28,6 +28,9 @@ import { capitalizeFirst } from 'utils/utils';
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backendApi';
 
+const NAME_VALIDATION_REGEX = /^[\p{L}\p{M}\p{N} '_-]+$/u;
+const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+
 type FieldViolation = {
   field: string;
   description: string;
@@ -184,7 +187,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                       rules={{
                         required: 'First name is required',
                         pattern: {
-                          value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
+                          value: NAME_VALIDATION_REGEX,
                           message: 'First name contains invalid characters',
                         },
                         minLength: {
@@ -212,7 +215,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                       rules={{
                         required: 'Last name is required',
                         pattern: {
-                          value: /^[\p{L}\p{M}\p{N} '_-]+$/u,
+                          value: NAME_VALIDATION_REGEX,
                           message: 'Last name contains invalid characters',
                         },
                         minLength: {
@@ -243,7 +246,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
                     rules={{
                       required: 'Email address is required',
                       pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        value: EMAIL_VALIDATION_REGEX,
                         message: 'Please enter a valid email address',
                       },
                     }}

@@ -60,6 +60,9 @@ import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { Statistic } from '../../misc/Statistic';
 
+// Regex for quick search filtering
+const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
+
 const TopicList: FC = () => {
   useEffect(() => {
     uiState.pageBreadcrumbs = [{ title: 'Topics', linkTo: '' }];
@@ -104,7 +107,11 @@ const TopicList: FC = () => {
     const searchQuery = localSearchValue;
     if (searchQuery) {
       try {
-        const quickSearchRegExp = new RegExp(searchQuery, 'i');
+        let quickSearchRegExp = QUICK_SEARCH_REGEX_CACHE.get(searchQuery);
+        if (!quickSearchRegExp) {
+          quickSearchRegExp = new RegExp(searchQuery, 'i');
+          QUICK_SEARCH_REGEX_CACHE.set(searchQuery, quickSearchRegExp);
+        }
         topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
       } catch (_e) {
         console.warn('Invalid expression');
@@ -507,6 +514,9 @@ function hasDeletePrivilege() {
   return true;
 }
 
+// Regex for validating topic names
+const TOPIC_NAME_REGEX = /^\S+$/;
+
 function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutation>['mutateAsync']) {
   api.refreshCluster(); // get brokers (includes configs) to display default values
   const tryGetBrokerConfig = (configName: string): string | undefined =>
@@ -603,7 +613,7 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
         },
         hasErrors: false,
       }),
-    isOkEnabled: (state) => /^\S+$/.test(state.topicName) && !state.hasErrors,
+    isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
     onOk: async (state) => {
       if (!state.topicName) throw new Error('"Topic Name" must be set');
       if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');

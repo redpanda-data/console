@@ -59,12 +59,17 @@ import {
   type SummaryProps,
 } from './ACL.model';
 
+const UNDERSCORE_REGEX = /_/g;
+const FIRST_CHAR_REGEX = /^\w/;
+const COLON_REGEX = /:/;
+const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/;
+
 // Helper function to convert UPPER_CASE strings to sentence case ex: ALTER => Alter ALTER_CONFIG => Alter config
 export const formatLabel = (text: string): string => {
   return text
-    .replace(/_/g, ' ')
+    .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
-    .replace(/^\w/, (c) => c.toUpperCase())
+    .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase())
     .replace('id', 'ID'); // transactional ids => transactional IDs
 };
 
@@ -191,7 +196,7 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
           <div className="rounded-lg border-0">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Principal:</span>
-              <span className="font-medium text-gray-900">{sharedConfig.principal.replace(/:/, ': ')}</span>
+              <span className="font-medium text-gray-900">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Host:</span>
@@ -617,7 +622,7 @@ const SharedConfiguration = ({
                   }
                   placeholder="analytics-writer"
                   testId="shared-principal-input"
-                  value={sharedConfig.principal.replace(/^[^:]+:/, '')}
+                  value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
                 />
                 {principalError && (
                   <p className="text-red-600 text-sm" data-testid="principal-error">

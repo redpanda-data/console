@@ -26,6 +26,12 @@ import { api } from '../../../state/backendApi';
 import { animProps } from '../../../utils/animationProps';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
+// Regex for extracting language from code blocks
+const CODE_LANGUAGE_REGEX = /language-(\w+)/;
+
+// Regex for removing trailing newlines
+const TRAILING_NEWLINE_REGEX = /\n$/;
+
 // Test for link sanitizer
 /*
 <a href="javascript:alert('h4x0red!');">
@@ -34,6 +40,9 @@ My nonsuspious link
 */
 
 const allowedProtocols = ['http://', 'https://', 'mailto://'];
+
+// Regex for checking printable ASCII characters
+const _PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
 
 function sanitizeUrl(uri: string): string {
   const baseTransformed = baseUriTransformer(uri);
@@ -54,7 +63,7 @@ function sanitizeUrl(uri: string): string {
 export class TopicDocumentation extends Component<{ topic: Topic }> {
   private components = {
     code({ inline, className, children, ...props }: any) {
-      const match = /language-(\w+)/.exec(className || '');
+      const match = CODE_LANGUAGE_REGEX.exec(className || '');
       return !inline && match ? (
         <SyntaxHighlighter
           customStyle={{
@@ -68,7 +77,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
           style={vs}
           {...props}
         >
-          {String(children).replace(/\n$/, '')}
+          {String(children).replace(TRAILING_NEWLINE_REGEX, '')}
         </SyntaxHighlighter>
       ) : (
         <code className={className} {...props}>
