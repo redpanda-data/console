@@ -81,8 +81,11 @@ export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
       return true;
     case 'relative':
       return true;
+    case 'unixTimestamp':
+      return false;
+    case 'unixMillis':
+      return false;
   }
-  return false;
 }
 
 export enum PartitionOffsetOrigin {
