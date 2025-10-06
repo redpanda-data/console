@@ -64,7 +64,7 @@ export class FilterableDataSource<T> {
   dispose() {
     if (this.reactionDisposer) {
       this.reactionDisposer();
-      delete this.reactionDisposer;
+      this.reactionDisposer = undefined;
     }
   }
 }

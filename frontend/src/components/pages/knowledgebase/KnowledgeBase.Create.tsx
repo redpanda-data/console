@@ -543,8 +543,8 @@ class KnowledgeBaseCreate extends PageComponent {
     if (field === 'credentialChoice') {
       // Clear username/password errors when switching to auto mode
       if (value === 'auto') {
-        delete this.validationErrors.redpandaUsername;
-        delete this.validationErrors.redpandaPassword;
+        this.validationErrors.redpandaUsername = undefined;
+        this.validationErrors.redpandaPassword = undefined;
       }
     }
   };
@@ -570,7 +570,7 @@ class KnowledgeBaseCreate extends PageComponent {
 
     // Clear validation error for input topics when user makes changes
     if (this.validationErrors.inputTopics) {
-      delete this.validationErrors.inputTopics;
+      this.validationErrors.inputTopics = undefined;
     }
   };
 
