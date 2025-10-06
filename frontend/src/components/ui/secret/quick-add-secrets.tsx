@@ -158,9 +158,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         onError(errorMessages);
       } else {
         // Display error toasts
-        errorMessages.forEach((message) => {
+        for (const message of errorMessages) {
           toast.error(message);
-        });
+        }
       }
     }
   };

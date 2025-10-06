@@ -83,14 +83,14 @@ export function generateDefaultFromJsonSchema(
 
       const obj: JsonObject = {};
       // Only include properties that are required according to the schema's required array
-      Object.entries(schema.properties).forEach(([key, prop]) => {
+      for (const [key, prop] of Object.entries(schema.properties)) {
         if (isPropertyRequired(key, schema)) {
           const value = generateDefaultFromJsonSchema(prop, key, schema);
           if (value !== undefined) {
             obj[key] = value;
           }
         }
-      });
+      }
       return obj;
     }
     case 'null':

@@ -152,7 +152,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
       const badRequest = error.details.find((detail) => (detail as any).type === 'google.rpc.BadRequest') as any;
       if (badRequest?.debug?.fieldViolations) {
         // Set form errors for specific fields
-        badRequest.debug.fieldViolations.forEach((violation: { field: string; description: string }) => {
+        for (const violation of badRequest.debug.fieldViolations) {
           const { field, description } = violation;
 
           // Map server field names to form field names
@@ -196,7 +196,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
             // Generic field error
             toast.error(`${field}: ${description}`);
           }
-        });
+        }
         return;
       }
     }
@@ -208,19 +208,19 @@ export const RemoteMCPCreatePage: React.FC = () => {
   const onSubmit = async (values: FormValues) => {
     const tier = getTierById(values.resourcesTier);
     const tagsMap: Record<string, string> = {};
-    values.tags.forEach((t) => {
+    for (const t of values.tags) {
       const key = t.key?.trim();
       if (key) tagsMap[key] = (t.value ?? '').trim();
-    });
+    }
 
     const toolsMap: Record<string, { componentType: number; configYaml: string }> = {};
-    values.tools.forEach((t) => {
-      if (!t.name.trim()) return;
+    for (const t of values.tools) {
+      if (!t.name.trim()) continue;
       toolsMap[t.name.trim()] = {
         componentType: t.componentType,
         configYaml: t.config,
       };
-    });
+    }
 
     await createServer(
       create(CreateMCPServerRequestSchema, {

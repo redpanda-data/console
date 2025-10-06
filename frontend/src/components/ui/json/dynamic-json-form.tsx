@@ -99,9 +99,9 @@ const generateExampleData = (schema: JSONSchemaType): JSONValue => {
     case 'object':
       if (schema.properties) {
         const result: Record<string, JSONValue> = {};
-        Object.entries(schema.properties).forEach(([key, propSchema]) => {
+        for (const [key, propSchema] of Object.entries(schema.properties)) {
           result[key] = generateExampleData(propSchema as JSONSchemaType);
-        });
+        }
         return result;
       }
       return {};
@@ -682,10 +682,10 @@ export const DynamicJSONForm = ({
           onChange(newValue);
         }
       } else if (currentSchema.type === 'object' && currentSchema.properties) {
-        Object.entries(currentSchema.properties).forEach(([key, subSchema]) => {
+        for (const [key, subSchema] of Object.entries(currentSchema.properties)) {
           const subValue = (currentValue as Record<string, JSONValue>)?.[key];
           initializeArrayDefaults(subSchema as JSONSchemaType, subValue, [...path, key]);
-        });
+        }
       }
     };
 
@@ -700,7 +700,7 @@ export const DynamicJSONForm = ({
   useEffect(() => {
     const syncAutoSelections = (currentSchema: JSONSchemaType, currentValue: JSONValue, path: string[] = []) => {
       if (currentSchema.type === 'object' && currentSchema.properties) {
-        Object.entries(currentSchema.properties).forEach(([key, subSchema]) => {
+        for (const [key, subSchema] of Object.entries(currentSchema.properties)) {
           const subValue = (currentValue as Record<string, JSONValue>)?.[key];
           const customFieldConfig = customFields.find((field) => field.fieldName === key);
 

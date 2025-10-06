@@ -155,19 +155,19 @@ export const RemoteMCPConfigurationTab = () => {
 
     try {
       const toolsMap: { [key: string]: { componentType: number; configYaml: string } } = {};
-      currentData.tools.forEach((tool) => {
+      for (const tool of currentData.tools) {
         toolsMap[tool.name] = {
           componentType: tool.componentType,
           configYaml: tool.config,
         };
-      });
+      }
 
       const tagsMap: { [key: string]: string } = {};
-      currentData.tags.forEach((tag) => {
+      for (const tag of currentData.tags) {
         if (tag.key.trim() && tag.value.trim()) {
           tagsMap[tag.key.trim()] = tag.value.trim();
         }
-      });
+      }
 
       await updateMCPServer(
         create(UpdateMCPServerRequestSchema, {
@@ -376,7 +376,7 @@ export const RemoteMCPConfigurationTab = () => {
 
     const allSecretReferences: string[] = [];
 
-    currentData.tools.forEach((tool) => {
+    for (const tool of currentData.tools) {
       if (tool.config) {
         try {
           const secretRefs = extractSecretReferences(tool.config);
@@ -386,7 +386,7 @@ export const RemoteMCPConfigurationTab = () => {
           // Ignore YAML parsing errors
         }
       }
-    });
+    }
 
     // Get unique secret names
     const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();

@@ -78,11 +78,11 @@ const RoleUpdatePage = () => {
       mergedOperations = Object.fromEntries(Object.keys(allOperations).map((op) => [op, OperationTypeDeny]));
     } else {
       // For custom mode, override with the actual values from the fetched rule
-      Object.entries(rule.operations).forEach(([op, value]) => {
+      for (const [op, value] of Object.entries(rule.operations)) {
         if (op in mergedOperations) {
           mergedOperations[op] = value;
         }
-      });
+      }
     }
 
     return {

@@ -630,18 +630,18 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
   const lines = yamlString.split('\n');
   const processedLines: string[] = [];
 
-  lines.forEach((line) => {
+  for (const line of lines) {
     // Skip empty lines and existing comments
     if (!line.trim() || line.trim().startsWith('#') || line.includes('#')) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     // Match YAML key-value pairs
     const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
     if (!keyValueMatch) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     const [, indent, key, value] = keyValueMatch;
@@ -651,7 +651,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const fieldSchema = jsonSchema.properties[cleanKey];
     if (!fieldSchema) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     // Generate comment based on JSON Schema
@@ -674,7 +674,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     }
 
     processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
-  });
+  }
 
   return processedLines.join('\n');
 };
@@ -684,10 +684,10 @@ const addRootSpacing = (yamlString: string): string => {
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
 
-  lines.forEach((line) => {
+  for (const line of lines) {
     if (!line.trim()) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     // Check if this is a root-level key
@@ -708,7 +708,7 @@ const addRootSpacing = (yamlString: string): string => {
     }
 
     processedLines.push(line);
-  });
+  }
 
   return processedLines.join('\n');
 };

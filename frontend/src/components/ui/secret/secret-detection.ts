@@ -61,8 +61,8 @@ export function extractSecretReferences(yamlContent: string): SecretReference[] 
  */
 export function getUniqueSecretNames(references: SecretReference[]): string[] {
   const uniqueNames = new Set<string>();
-  references.forEach((ref) => {
+  for (const ref of references) {
     uniqueNames.add(ref.secretName);
-  });
+  }
   return Array.from(uniqueNames).sort();
 }

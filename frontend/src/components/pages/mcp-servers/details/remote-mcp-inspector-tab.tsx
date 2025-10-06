@@ -59,7 +59,7 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
     case 'object':
       if (fieldSchema.properties) {
         const result: Record<string, JSONValue> = {};
-        Object.entries(fieldSchema.properties).forEach(([propKey, propSchema]) => {
+        for (const [propKey, propSchema] of Object.entries(fieldSchema.properties)) {
           // Generate defaults for object properties, especially if they're required
           if (fieldSchema.required?.includes(propKey)) {
             result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
@@ -73,7 +73,7 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
               result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
             }
           }
-        });
+        }
         return result;
       }
       return {};
@@ -92,7 +92,7 @@ const initializeFormData = (schema: JSONSchemaType | undefined): JSONValue => {
   const initialData: Record<string, unknown> = {};
 
   // Initialize all fields with appropriate default values, prioritizing required fields
-  Object.entries(schema.properties).forEach(([key, propSchema]) => {
+  for (const [key, propSchema] of Object.entries(schema.properties)) {
     const fieldSchema = propSchema as JSONSchemaType;
     const isRequired = schema.required?.includes(key) ?? false;
 

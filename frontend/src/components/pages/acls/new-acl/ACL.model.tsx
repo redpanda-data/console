@@ -338,7 +338,7 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail 
   const rulesMap = new Map<string, Rule>();
   let ruleIdCounter = 0;
 
-  aclList.resources.forEach((resource) => {
+  for (const resource of aclList.resources) {
     const resourceType = getResourceTypeFromGRPC(resource.resourceType);
     const selectorType = getResourcePatternTypeFromGRPC(resource.resourcePatternType);
     const selectorValue = resource.resourceName;
@@ -361,12 +361,12 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail 
     const rule = rulesMap.get(ruleKey)!;
 
     // Add operations from ACLs (assuming all ACLs have the same principal and host)
-    resource.acls.forEach((acl) => {
+    for (const acl of resource.acls) {
       const operationName = getOperationNameFromGRPC(acl.operation);
       const operationType = getOperationTypeFromGRPC(acl.permissionType);
 
       rule.operations[operationName] = operationType;
-    });
+    }
 
     // Determine mode based on operations
     const operationValues = Object.values(rule.operations);
@@ -551,20 +551,20 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
 
 export const handleResponses = (toast: (op: UseToastOptions) => void, errors: ConnectError[], created: boolean) => {
   if (errors.length > 0 && created) {
-    errors.forEach((er) => {
+    for (const er of errors) {
       toast({
         status: 'warning',
         title: 'Some ACLs were created, but there were errors',
         description: er.message,
       });
-    });
+    }
   } else if (errors.length > 0 && !created) {
-    errors.forEach((er) => {
+    for (const er of errors) {
       toast({
         status: 'error',
         description: er.message,
       });
-    });
+    }
   } else {
     toast({
       status: 'success',

@@ -95,13 +95,13 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
       if (error instanceof ConnectError) {
         const newFieldErrors: Record<string, string> = {};
 
-        error.details?.forEach((detail) => {
+        for (const detail of error.details ?? []) {
           if (isBadRequest(detail)) {
-            detail.debug.fieldViolations.forEach((violation) => {
+            for (const violation of detail.debug.fieldViolations) {
               newFieldErrors[violation.field] = violation.description;
-            });
+            }
           }
-        });
+        }
 
         setFieldErrors(newFieldErrors);
       }

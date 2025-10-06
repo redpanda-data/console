@@ -23,7 +23,7 @@ export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecr
       const tools = form.getValues('tools');
       const allSecretReferences: string[] = [];
 
-      tools.forEach((tool) => {
+      for (const tool of tools) {
         if (tool.config) {
           try {
             const secretRefs = extractSecretReferences(tool.config);
@@ -33,7 +33,7 @@ export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecr
             // Ignore YAML parsing errors
           }
         }
-      });
+      }
 
       // Get unique secret names
       const uniqueSecrets = Array.from(new Set(allSecretReferences)).sort();
