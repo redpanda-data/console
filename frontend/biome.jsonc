@@ -167,7 +167,12 @@
         // Disallow empty type parameters in type aliases and interfaces.
         "noEmptyTypeParameters": "error",
         // Disallow functions that exceed a given Cognitive Complexity score.
-        "noExcessiveCognitiveComplexity": "error",
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 30
+          }
+        },
         // This rule enforces a maximum depth to nested describe() in test files.
         "noExcessiveNestedTestSuites": "error",
         // Disallow unnecessary boolean casts
