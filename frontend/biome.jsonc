@@ -549,7 +549,7 @@
         // Prevents importing next/document outside of pages/_document.jsx in Next.js projects.
         "noDocumentImportInPage": "error",
         // Require the use of === and !==.
-        "noDoubleEquals": "off", // Enable later - many violations
+        "noDoubleEquals": "error",
         // Disallow duplicate case labels.
         "noDuplicateCase": "error",
         // Disallow duplicate class members.
