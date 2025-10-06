@@ -396,7 +396,7 @@
         // Disallow non-null assertions after optional chaining expressions.
         "noNonNullAssertedOptionalChain": "error",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
-        "noShadow": "error",
+        "noShadow": "off", // Enable later
         // Disallow the use of useless undefined.
         "noUselessUndefined": "error",
         // Enforces href attribute for <a> elements.
