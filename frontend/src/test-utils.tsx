@@ -76,6 +76,7 @@ const connectQueryWrapper = (
 };
 
 // re-export everything
+// biome-ignore lint/performance/noBarrelFile: Test utilities intentionally re-export for convenience
 export * from '@testing-library/react';
 
 // override render method

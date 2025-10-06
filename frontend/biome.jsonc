@@ -449,6 +449,8 @@
       "performance": {
         // Disallow the use of spread (...) syntax on accumulators.
         "noAccumulatingSpread": "error",
+        // Disallow the use of barrel file.
+        "noBarrelFile": "error",
         // Prevent usage of <img> element in a Next.js project. We don't use Next.js
         "noImgElement": "off",
         // Require regex literals to be declared at the top level. Performance hit.
