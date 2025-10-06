@@ -36,7 +36,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import { openDeleteModal } from './modals';
 import { ConnectTiles } from './onboarding/connect-tiles';
 import type { ConnectComponentType } from './types/schema';
-import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData } from './types/wizard';
+import type { AddTopicFormData, AddUserFormData, ConnectTilesFormData, WizardFormData } from './types/wizard';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -96,7 +96,7 @@ const LegacyEmptyState = () => {
  * Shows ConnectTiles and navigates to wizard with connector pre-selected
  */
 const WizardEmptyState = () => {
-  const [, setPersistedConnectionName] = useSessionStorage<Partial<ConnectTilesFormData>>(
+  const [persistedConnectionName, setPersistedConnectionName] = useSessionStorage<Partial<WizardFormData>>(
     CONNECT_WIZARD_CONNECTOR_KEY,
     {},
   );
@@ -107,10 +107,14 @@ const WizardEmptyState = () => {
   const handleConnectionChange = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
       try {
-        setPersistedConnectionName({ connectionName, connectionType });
+        const existingOutput = persistedConnectionName.output;
+        const newConfig = existingOutput
+          ? { input: { connectionName, connectionType }, output: existingOutput }
+          : { input: { connectionName, connectionType } };
+        setPersistedConnectionName(newConfig);
         setPersistedTopic({});
         setPersistedUser({});
-        navigate('/rp-connect/wizard?step=add-topic');
+        navigate('/rp-connect/wizard?step=add-output');
       } catch (error) {
         toast({
           status: 'error',
@@ -121,10 +125,19 @@ const WizardEmptyState = () => {
         });
       }
     },
-    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate],
+    [setPersistedConnectionName, setPersistedTopic, setPersistedUser, navigate, persistedConnectionName],
   );
 
-  return <ConnectTiles onChange={handleConnectionChange} componentTypeFilter={['input', 'output']} hideHeader />;
+  return (
+    <ConnectTiles
+      title="Send data to your pipeline"
+      onChange={handleConnectionChange}
+      componentTypeFilter={['input']}
+      defaultConnectionName={persistedConnectionName.input?.connectionName}
+      defaultConnectionType={persistedConnectionName.input?.connectionType}
+      className="mt-4"
+    />
+  );
 };
 
 const EmptyPlaceholder = () => {

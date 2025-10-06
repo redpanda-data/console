@@ -54,7 +54,8 @@ export const hasValue = (value: string | null | undefined): boolean => {
 };
 
 export enum WizardStep {
-  ADD_CONNECTOR = 'add-connector-step',
+  ADD_INPUT = 'add-input-step',
+  ADD_OUTPUT = 'add-output-step',
   ADD_TOPIC = 'add-topic-step',
   ADD_USER = 'add-user-step',
 }

@@ -39,13 +39,19 @@ bun run install:chromium # Install Chromium for Playwright
 
 **Testing Strategy:**
 
-1. **Vitest Tests** (Unit + Integration) - Fast, cheap to run
-   - Test CRUD operations and business logic
-   - Verify gRPC Connect transport endpoints are called correctly
-   - Test data fetching, mutations, and state management
-   - **DO NOT** extensively test component rendering
-   - **DO NOT** test UI components themselves (they're tested in the UI registry repo)
-   - Test files: `src/**/*.test.ts`, `src/**/*.test.tsx` (co-located with source files)
+<<<<<<< HEAD
+
+1. # **Vitest Tests** (Unit + Integration) - Fast, cheap to run
+1. **Bun Tests** (Unit + Integration) - Fast, cheap to run
+
+> > > > > > > 525399b3 (feat: various cleanup)
+
+- Test CRUD operations and business logic
+- Verify gRPC Connect transport endpoints are called correctly
+- Test data fetching, mutations, and state management
+- **DO NOT** extensively test component rendering
+- **DO NOT** test UI components themselves (they're tested in the UI registry repo)
+- Test files: `src/**/*.test.ts`, `src/**/*.test.tsx` (co-located with source files)
 
 2. **Playwright E2E Tests** - Complex scenarios
    - Test browser behaviors and interactions
@@ -58,7 +64,8 @@ bun run install:chromium # Install Chromium for Playwright
 
 **What to Test:**
 
-✅ **Integration Tests (Vitest):**
+✅ **Integration Tests (Bun):**
+
 - API calls are made with correct parameters
 - gRPC Connect transport endpoints are invoked
 - Data transformations and business logic
@@ -66,10 +73,32 @@ bun run install:chromium # Install Chromium for Playwright
 - Error handling and edge cases
 
 ❌ **Don't Test (Components tested in UI registry):**
+
 - Button clicks render correctly
 - Dialog opens/closes
 - Form fields are styled properly
 - Component props work as expected
+
+**Writing E2E Tests**
+Recording, Transcript
+
+**Initial setup**:
+
+1. If running the first time, navigate to `tests/e2e-ui` inside the cloudv2 monorepo and run `bun install` && `bunx playwright install` . This will take care of installing all browsers/dependencies on your local machine
+2. To get the secrets required for running e2e tests locally, please ask @Beniamin Malinski (BST, London) for 1password link
+3. Add the secrets to `.env` file under `tests/e2e-ui`
+
+**Checklist**:
+
+1. Run all the tests:`bunx playwright test --update-snapshots`
+2. Run a single test: `bunx playwright test namespace.spec.ts --update-snapshots` (replace spec file name)
+3. Use UI mode: `bunx playwright test namespace.spec.ts --update-snapshots --ui` (replace spec file name)
+4. Generate test code: `bunx playwright codegen https://dev--redpanda-cloud.netlify.app/` (can use localhost:3000 or any other port too)
+
+**What to look out for**:
+
+- If you change UI components, please make sure to add `testId` attributes, these are sometimes enforced by the Redpanda UI library to make writing and maintaining tests easier.
+- If you modify navigation between pages, please run e2e tests locally if possible since the tests will require an additional step. If the UX becomes more complex, the tests will follow, and the same applies if we make the experience more seamless to the user - the tests should flow naturally
 
 ### Code Quality
 
@@ -151,12 +180,14 @@ src/
 **Philosophy: Separation of Business Logic and Styling**
 
 🎯 **GOAL**: Keep business logic components clean by minimizing CSS/className usage. Push styling concerns into:
+
 - **Layout components** - Handle page structure and spacing
 - **Redpanda UI Registry components** - Encapsulate reusable styled components
 
 **For New Features:**
 
 1. **Minimize Styling in Business Logic Components:**
+
    ```tsx
    // ✅ EXCELLENT - Business logic component with minimal styling
    export const UserListPage = () => {
@@ -197,20 +228,22 @@ src/
    ```
 
 2. **Use Redpanda UI Registry Components:**
+
    ```tsx
    // ✅ GOOD - New Redpanda UI Registry (Tailwind-based)
-   import { Button } from 'components/redpanda-ui/components/button';
-   import { Dialog } from 'components/redpanda-ui/components/dialog';
-   import { Card } from 'components/redpanda-ui/components/card';
+   import { Button } from "components/redpanda-ui/components/button";
+   import { Dialog } from "components/redpanda-ui/components/dialog";
+   import { Card } from "components/redpanda-ui/components/card";
 
    // ❌ BAD - Legacy @redpanda-data/ui package (Chakra-based)
-   import { Button, Modal } from '@redpanda-data/ui';
+   import { Button, Modal } from "@redpanda-data/ui";
 
    // ❌ BAD - Chakra UI directly
-   import { Button } from '@chakra-ui/react';
+   import { Button } from "@chakra-ui/react";
    ```
 
 3. **Create Reusable UI Components Instead of Inline Styling:**
+
    ```tsx
    // ✅ GOOD - Create a new component in redpanda-ui registry
    // File: src/components/redpanda-ui/components/page-header.tsx
@@ -234,6 +267,7 @@ src/
    ```
 
 4. **Use Functional Components:**
+
    ```tsx
    // ✅ GOOD - Functional component
    export const MyComponent = ({ prop }: Props) => {
@@ -249,40 +283,42 @@ src/
    ```
 
 5. **State Management:**
+
    ```tsx
    // ✅ GOOD - Local state
    const [data, setData] = useState<DataType | null>(null);
 
    // ✅ GOOD - Zustand for global state
-   import { create } from 'zustand';
+   import { create } from "zustand";
    const useStore = create<State>((set) => ({
      data: null,
      setData: (data) => set({ data }),
    }));
 
    // ❌ BAD - MobX
-   import { observable, action } from 'mobx';
+   import { observable, action } from "mobx";
    ```
 
 6. **Forms:**
+
    ```tsx
    // ✅ EXCELLENT - AutoForm for simple forms (no custom components needed)
-   import { AutoForm } from '@autoform/react';
-   import { ZodProvider } from '@autoform/zod';
-   import { z } from 'zod';
+   import { AutoForm } from "@autoform/react";
+   import { ZodProvider } from "@autoform/zod";
+   import { z } from "zod";
 
    const schema = z.object({
-     name: z.string().min(1, 'Name is required'),
+     name: z.string().min(1, "Name is required"),
      email: z.string().email(),
      age: z.number().min(18),
    });
 
-   <AutoForm schema={schema} onSubmit={handleSubmit} provider={ZodProvider} />
+   <AutoForm schema={schema} onSubmit={handleSubmit} provider={ZodProvider} />;
 
    // ✅ GOOD - React Hook Form for complex forms with custom components
-   import { useForm } from 'react-hook-form';
-   import { zodResolver } from '@hookform/resolvers/zod';
-   import { z } from 'zod';
+   import { useForm } from "react-hook-form";
+   import { zodResolver } from "@hookform/resolvers/zod";
+   import { z } from "zod";
 
    const schema = z.object({
      name: z.string().min(1),
@@ -294,13 +330,13 @@ src/
    });
 
    // ✅ GOOD - Zod for validation
-   import { z } from 'zod';
+   import { z } from "zod";
 
    // ✅ GOOD - protovalidate-es for protobuf-based validation
-   import { validate } from 'protovalidate-es';
+   import { validate } from "protovalidate-es";
 
    // ❌ BAD - Yup validation (legacy)
-   import * as yup from 'yup';
+   import * as yup from "yup";
 
    // ❌ BAD - Manually managed form state with Chakra
    ```
@@ -312,12 +348,14 @@ src/
 The frontend communicates with the backend using Connect protocol (`@connectrpc/connect-web`).
 
 1. **Use React Query hooks** from `/src/react-query/`:
+
    ```tsx
-   import { useQuery } from '@tanstack/react-query';
-   import { queryClient } from 'queryClient';
+   import { useQuery } from "@tanstack/react-query";
+   import { queryClient } from "queryClient";
    ```
 
 2. **Protobuf schemas** in `/src/protogen/` are auto-generated:
+
    - Never manually edit these files
    - Regenerate with `task proto:generate` from repository root
 
@@ -354,11 +392,13 @@ The frontend communicates with the backend using Connect protocol (`@connectrpc/
 **Where Styling Should Live:**
 
 1. **Redpanda UI Registry Components** (`src/components/redpanda-ui/`)
+
    - All reusable UI components with their styling encapsulated
    - Built on shadcn + Tailwind CSS v4
    - Examples: Button, Dialog, Card, Table, Input, etc.
 
 2. **Layout Components** (`src/components/layout/`)
+
    - Page structure, spacing, and grid systems
    - Container wrappers and section layouts
 
@@ -391,9 +431,7 @@ export const MCPServerPage = () => {
     <div className="flex flex-col w-full min-h-screen p-8 bg-gray-50">
       <div className="flex items-center justify-between mb-6 pb-4 border-b">
         <h1 className="text-2xl font-semibold">MCP Servers</h1>
-        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-          Create
-        </button>
+        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Create</button>
       </div>
       {/* ... lots more inline styling ... */}
     </div>
@@ -415,6 +453,7 @@ export const MCPServerPage = () => {
 4. Minimal Tailwind usage in page/feature components
 
 **Legacy Styling** (do not expand):
+
 - `@redpanda-data/ui` - Legacy Chakra UI-based package (migrating away from)
 - `index.scss` - Global SCSS (legacy)
 - Chakra UI theme and components
@@ -435,6 +474,7 @@ export const MCPServerPage = () => {
 8. Write E2E tests with Playwright for complex user journeys
 
 **Example Structure:**
+
 ```tsx
 // src/components/pages/my-feature/my-feature-page.tsx
 // ✅ GOOD - Clean business logic, composed from UI components
@@ -466,11 +506,13 @@ export const MyFeatureCard = ({ title, description }: Props) => {
 ### Working with Existing Code
 
 **When modifying legacy code:**
+
 - If it's a small change, maintain existing patterns
 - If it's a major refactor, consider migrating to modern patterns
 - Never expand usage of MobX, Chakra UI, or class components
 
 **When reading legacy code:**
+
 - MobX stores in `/src/state/` use `@observable`, `@computed`, `@action` decorators
 - Components wrapped with `observer()` are reactive to MobX stores
 - Chakra UI components are being phased out
@@ -478,91 +520,109 @@ export const MyFeatureCard = ({ title, description }: Props) => {
 ### Common Patterns
 
 **Data Fetching:**
+
 ```tsx
 // ✅ Modern - React Query
 const { data, isLoading, error } = useQuery({
-  queryKey: ['resource', id],
+  queryKey: ["resource", id],
   queryFn: () => fetchResource(id),
 });
 ```
 
 **Testing:**
+
 ```tsx
+<<<<<<< HEAD
 // ✅ GOOD - Integration test for API calls and business logic (Vitest)
 import { describe, test, expect, vi } from 'vitest';
 
 describe('MCP Server CRUD', () => {
   test('should create MCP server with correct transport call', async () => {
     const mockTransport = vi.fn(() => Promise.resolve({ id: '123', name: 'test' }));
+=======
+// ✅ GOOD - Integration test for API calls and business logic (Bun test)
+import { describe, test, expect, mock } from "bun:test";
 
-    const result = await createMCPServer({ name: 'test', url: 'http://example.com' });
+describe("MCP Server CRUD", () => {
+  test("should create MCP server with correct transport call", async () => {
+    const mockTransport = mock(() => Promise.resolve({ id: "123", name: "test" }));
+>>>>>>> 525399b3 (feat: various cleanup)
+
+    const result = await createMCPServer({ name: "test", url: "http://example.com" });
 
     // Verify gRPC Connect endpoint was called with correct data
     expect(mockTransport).toHaveBeenCalledWith({
-      name: 'test',
-      url: 'http://example.com',
+      name: "test",
+      url: "http://example.com",
     });
-    expect(result.id).toBe('123');
+    expect(result.id).toBe("123");
   });
 
+<<<<<<< HEAD
   test('should handle server creation errors', async () => {
     const mockTransport = vi.fn(() => Promise.reject(new Error('Network error')));
+=======
+  test("should handle server creation errors", async () => {
+    const mockTransport = mock(() => Promise.reject(new Error("Network error")));
+>>>>>>> 525399b3 (feat: various cleanup)
 
-    await expect(createMCPServer({ name: 'test' })).rejects.toThrow('Network error');
+    await expect(createMCPServer({ name: "test" })).rejects.toThrow("Network error");
   });
 });
 
 // ✅ GOOD - E2E test for complex user journeys (Playwright)
 // File: tests/console/remote-mcp.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('user can create and configure MCP server', async ({ page }) => {
-  await page.goto('/remote-mcp');
-  await page.click('text=Create Server');
-  await page.fill('[name="name"]', 'My Server');
-  await page.fill('[name="url"]', 'http://example.com');
-  await page.click('text=Submit');
-  await expect(page.locator('text=My Server')).toBeVisible();
+test("user can create and configure MCP server", async ({ page }) => {
+  await page.goto("/remote-mcp");
+  await page.click("text=Create Server");
+  await page.fill('[name="name"]', "My Server");
+  await page.fill('[name="url"]', "http://example.com");
+  await page.click("text=Submit");
+  await expect(page.locator("text=My Server")).toBeVisible();
   // Test multi-step workflow across pages
-  await page.click('text=My Server');
-  await page.click('text=Configure');
+  await page.click("text=My Server");
+  await page.click("text=Configure");
   // ... more complex interactions
 });
 
 // For enterprise features:
 // File: tests/console-enterprise/sso.spec.ts
-test('enterprise user can configure SSO', async ({ page }) => {
+test("enterprise user can configure SSO", async ({ page }) => {
   // ... enterprise-specific test
 });
 
 // ❌ BAD - Testing component rendering (components tested in UI registry)
-test('button renders with correct text', () => {
+test("button renders with correct text", () => {
   render(<Button>Click me</Button>);
-  expect(screen.getByText('Click me')).toBeInTheDocument();
+  expect(screen.getByText("Click me")).toBeInTheDocument();
 });
 
 // ❌ BAD - Testing UI component behavior (tested in UI registry)
-test('dialog opens when button is clicked', () => {
+test("dialog opens when button is clicked", () => {
   render(<DialogComponent />);
-  fireEvent.click(screen.getByRole('button'));
-  expect(screen.getByRole('dialog')).toBeVisible();
+  fireEvent.click(screen.getByRole("button"));
+  expect(screen.getByRole("dialog")).toBeVisible();
 });
 ```
 
 **Modal/Dialog:**
+
 ```tsx
 // ✅ Modern - Redpanda UI Dialog
-import { Dialog, DialogContent, DialogHeader } from 'components/redpanda-ui/components/dialog';
+import { Dialog, DialogContent, DialogHeader } from "components/redpanda-ui/components/dialog";
 
 <Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent>
     <DialogHeader>Title</DialogHeader>
     ...
   </DialogContent>
-</Dialog>
+</Dialog>;
 ```
 
 **Forms:**
+
 ```tsx
 // ✅ EXCELLENT - AutoForm for simple forms (automatically generates UI)
 import { AutoForm } from '@autoform/react';
@@ -606,6 +666,7 @@ const schema = yup.object().shape({ ... });
 ```
 
 **Styling - Component Composition:**
+
 ```tsx
 // ✅ EXCELLENT - Create a UI component in the registry
 // src/components/redpanda-ui/components/status-badge.tsx
@@ -657,6 +718,7 @@ Frontend config via `REACT_APP_` prefixed environment variables:
 ## Migration Strategy Summary
 
 **DO:**
+
 - ✅ Minimize CSS/className usage in business logic components
 - ✅ Create reusable UI components in Redpanda UI registry (`src/components/redpanda-ui/`)
 - ✅ Use component composition to separate styling from business logic
@@ -672,6 +734,7 @@ Frontend config via `REACT_APP_` prefixed environment variables:
 - ✅ Run `bun i --yarn` after installing packages
 
 **DON'T:**
+
 - ❌ Add heavy styling/classNames to business logic components
 - ❌ Use `@redpanda-data/ui` package (legacy Chakra-based)
 - ❌ Use Chakra UI directly

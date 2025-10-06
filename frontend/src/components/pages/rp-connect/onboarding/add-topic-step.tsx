@@ -54,6 +54,8 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   const createTopicMutation = useCreateTopicMutation();
   const updateTopicConfigMutation = useUpdateTopicConfigMutation();
 
+  const isLoading = createTopicMutation.isPending || updateTopicConfigMutation.isPending;
+
   // Sync topicOptions when topicList updates
   useEffect(() => {
     setTopicOptions(initialTopicOptions);
@@ -228,7 +230,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         error: 'Form validation failed',
       };
     },
-    isLoading: createTopicMutation.isPending || updateTopicConfigMutation.isPending,
+    isLoading,
   }));
 
   return (
@@ -261,6 +263,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
                       onCreateOption={handleCreateTopicOption}
                       placeholder="Select or create a topic..."
                       className="max-w-[300px]"
+                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -270,13 +273,17 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
 
             <Collapsible open={showAdvancedSettings} onOpenChange={setShowAdvancedSettings}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-fit p-0">
+                <Button variant="ghost" size="sm" className="w-fit p-0" disabled={isLoading}>
                   <ChevronDown className="h-4 w-4" />
                   Show Advanced Settings
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-6 mt-4">
-                <AdvancedTopicSettings form={form} isExistingTopic={Boolean(existingTopicBeingEdited)} />
+                <AdvancedTopicSettings
+                  form={form}
+                  isExistingTopic={Boolean(existingTopicBeingEdited)}
+                  disabled={isLoading}
+                />
               </CollapsibleContent>
             </Collapsible>
           </div>

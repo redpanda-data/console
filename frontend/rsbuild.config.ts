@@ -1,5 +1,5 @@
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
-import { defineConfig, loadEnv, rspack } from '@rsbuild/core';
+import { defineConfig, loadEnv } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';

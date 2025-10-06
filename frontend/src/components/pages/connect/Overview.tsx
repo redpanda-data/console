@@ -117,13 +117,15 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
         ),
         content: (
           <Box>
-            <Text mb={4}>
-              Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available
-              connectors.{' '}
-              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
-                Learn more.
-              </Link>
-            </Text>
+            {!isFeatureFlagEnabled('enableRpcnTiles') && (
+              <Text mb={4}>
+                Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily
+                available connectors.{' '}
+                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
+                  Learn more.
+                </Link>
+              </Text>
+            )}
             {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
           </Box>
         ),
