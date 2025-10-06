@@ -15,7 +15,7 @@ import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useCallback, useEffect, useState } from 'react';
 
-import benthosSchema from '../../assets/rp-connect-schema.json';
+import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;

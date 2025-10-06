@@ -658,7 +658,6 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
           Precise value:
         </UILabel>
         <div className="relative flex-shrink-0">
-          {/* biome-ignore lint/correctness/useUniqueElementIds: legacy, needs refactor */}
           <UIInput
             aria-label="Percentage input"
             className="w-20 pr-6 text-right"

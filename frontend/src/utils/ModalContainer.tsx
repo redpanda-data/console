@@ -34,7 +34,6 @@ export function openModal<P extends object>(
 
 export const ModalContainer = observer(() => {
   return (
-    /** biome-ignore lint/correctness/useUniqueElementIds: leave it for now */
     <Box id="modalContainer">
       {modals.map((e) => (
         <React.Fragment key={e.id}>{e.element}</React.Fragment>

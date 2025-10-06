@@ -17,7 +17,10 @@ import { type BreadcrumbOptions, uiState } from '../../state/uiState';
 //
 // Page Types
 //
-export type PageProps<TRouteParams = {}> = TRouteParams & { matchedPath: string };
+// biome-ignore lint/complexity/noBannedTypes: Empty object type needed for routes without params
+export type NoRouteParams = {};
+
+export type PageProps<TRouteParams = NoRouteParams> = TRouteParams & { matchedPath: string };
 
 export class PageInitHelper {
   constructor() {
@@ -30,7 +33,7 @@ export class PageInitHelper {
     uiState.pageBreadcrumbs.push({ title: title, linkTo: to, heading, options });
   }
 }
-export abstract class PageComponent<TRouteParams = {}> extends React.Component<PageProps<TRouteParams>> {
+export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {
   constructor(props: Readonly<PageProps<TRouteParams>>) {
     super(props);
 
@@ -41,4 +44,6 @@ export abstract class PageComponent<TRouteParams = {}> extends React.Component<P
 
   abstract initPage(p: PageInitHelper): void;
 }
-export type PageComponentType<TRouteParams = {}> = new (props: PageProps<TRouteParams>) => PageComponent<TRouteParams>;
+export type PageComponentType<TRouteParams = NoRouteParams> = new (
+  props: PageProps<TRouteParams>
+) => PageComponent<TRouteParams>;

@@ -95,7 +95,6 @@ export const DeleteSecretModal = ({ secretId, isOpen, onClose }: DeleteSecretMod
             <ModalFooter>
               <Box alignSelf="end">
                 <ButtonGroup isDisabled={isDeleteSecretPending}>
-                  {/** biome-ignore lint/correctness/useUniqueElementIds: legacy, needs refactor */}
                   <form.SubscribeButton
                     data-testid="delete-secret-button"
                     id="delete-modal-btn"

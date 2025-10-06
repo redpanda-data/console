@@ -1,7 +1,7 @@
 import { parseDocument, stringify as yamlStringify } from 'yaml';
 
 import { getCategoryDisplayName, inferComponentCategory } from './categories';
-import benthosSchema from '../../../../assets/rp-connect-schema.json';
+import benthosSchema from '../../../../assets/rp-connect-schema.json' with { type: 'json' };
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
 import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema';
 import {
@@ -552,8 +552,10 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
             result[propName] = topicData.topicName;
           }
         } else if (isUserField(propName) && userData?.username) {
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
           result[propName] = '${secrets.REDPANDA_USERNAME}';
         } else if (isPasswordField(propName) && userData?.password) {
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
           result[propName] = '${secrets.REDPANDA_PASSWORD}';
         } else if (propSchema.type === 'object') {
           const nestedDefaults = existsInResult ? result[propName] : {};
@@ -827,10 +829,12 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     }
 
     if (isUserField(fieldName) && userData?.username) {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
       return '${secrets.REDPANDA_USERNAME}';
     }
 
     if (isPasswordField(fieldName) && userData?.password) {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
       return '${secrets.REDPANDA_PASSWORD}';
     }
   }

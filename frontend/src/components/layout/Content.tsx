@@ -23,7 +23,6 @@ import { NullFallbackBoundary } from '../misc/NullFallbackBoundary';
 import { RouteView } from '../routes';
 
 export const AppContent = observer(() => (
-  // biome-ignore lint/correctness/useUniqueElementIds: legacy layout
   <div id="mainLayout">
     <TooltipProvider>
       {/* Page */}
