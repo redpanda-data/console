@@ -521,7 +521,7 @@
         // Prevents the use of the ! pattern in the first position of files.includes in the configuration file.
         "noBiomeFirstException": "error",
         // Disallow bitwise operators.
-        "noBitwiseOperators": "off", // Enable later - some violations
+        "noBitwiseOperators": "error",
         // Disallow expressions where the operation doesn't affect the value
         "noConstantBinaryExpressions": "error",
         // Disallow reassigning exceptions in catch clauses.
