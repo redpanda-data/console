@@ -453,6 +453,8 @@
         "noBarrelFile": "error",
         // Disallow the use of the delete operator.
         "noDelete": "error",
+        // Disallow accessing namespace imports dynamically.
+        "noDynamicNamespaceImportAccess": "error",
         // Prevent usage of <img> element in a Next.js project. We don't use Next.js
         "noImgElement": "off",
         // Require regex literals to be declared at the top level. Performance hit.
