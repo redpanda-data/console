@@ -632,10 +632,9 @@ export function IconButton(p: {
 }) {
   if (!p.disabledReason) {
     return (
-      // biome-ignore lint/a11y/noStaticElementInteractions: part of IconButton implementation
-      <span className="iconButton" onClick={p.onClick}>
+      <button className="iconButton" onClick={p.onClick} type="button">
         {p.children}
-      </span>
+      </button>
     );
   }
 
