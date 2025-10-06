@@ -457,10 +457,12 @@
         "noDynamicNamespaceImportAccess": "error",
         // Prevent usage of <img> element in a Next.js project. We don't use Next.js
         "noImgElement": "off",
-        // Require regex literals to be declared at the top level. Performance hit.
-        "useTopLevelRegex": "off", // enable later
         // Disallow the use of namespace imports.
-        "noNamespaceImport": "error"
+        "noNamespaceImport": "error",
+        // Prevent duplicate polyfills from Polyfill.io.
+        "noUnwantedPolyfillio": "error",
+        // Require regex literals to be declared at the top level. Performance hit.
+        "useTopLevelRegex": "off" // enable later
       },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
