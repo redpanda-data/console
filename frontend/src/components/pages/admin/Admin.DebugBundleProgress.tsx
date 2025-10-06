@@ -23,7 +23,7 @@ import DebugBundleLink from '../../debugBundle/DebugBundleLink';
 import { PageComponent, type PageInitHelper } from '../Page';
 
 @observer
-export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
+export default class AdminPageDebugBundleProgress extends PageComponent<Record<string, never>> {
   @observable advancedForm = false;
   @observable submitInProgress = false;
 

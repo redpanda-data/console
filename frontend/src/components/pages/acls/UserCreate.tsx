@@ -77,7 +77,7 @@ export type CreateUserModalState = CreateUserRequest & {
 };
 
 @observer
-class UserCreatePage extends PageComponent<{}> {
+class UserCreatePage extends PageComponent<Record<string, never>> {
   @observable username = '';
   @observable password: string = generatePassword(30, false);
   @observable mechanism: SaslMechanism = 'SCRAM-SHA-256';

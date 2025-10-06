@@ -21,7 +21,7 @@ import { RoleBindingComponent } from './Admin.RoleBindings';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 
 @observer
-export class AdminRoles extends Component<{}> {
+export class AdminRoles extends Component<Record<string, never>> {
   render() {
     if (!api.adminInfo) return DefaultSkeleton;
     const roles = api.adminInfo.roles;

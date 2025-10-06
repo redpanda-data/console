@@ -39,7 +39,7 @@ import { SingleSelect } from '../../misc/Select';
 import { PageComponent, type PageInitHelper } from '../Page';
 
 @observer
-export class SchemaCreatePage extends PageComponent<{}> {
+export class SchemaCreatePage extends PageComponent<Record<string, never>> {
   initPage(p: PageInitHelper): void {
     p.title = 'Create schema';
     p.addBreadcrumb('Schema Registry', '/schema-registry');

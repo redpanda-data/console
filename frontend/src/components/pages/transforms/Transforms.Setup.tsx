@@ -19,7 +19,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 
 const rpkInitTransform = 'rpk transform init --language=tinygo';
 
-export class TransformsSetup extends PageComponent<{}> {
+export class TransformsSetup extends PageComponent<Record<string, never>> {
   initPage(p: PageInitHelper) {
     p.title = 'Transforms Setup';
     p.addBreadcrumb('Transforms', '/transforms');
@@ -66,7 +66,7 @@ const exampleDir = `${`
 |-- transform.yaml
 `.trim()}\n`;
 
-function TabGo(_p: {}) {
+function TabGo(_p: Record<string, never>) {
   return (
     <OrderedList display="flex" flexDirection="column" gap="0.5rem">
       <ListItem>
@@ -103,6 +103,6 @@ function TabGo(_p: {}) {
   );
 }
 
-function TabRust(_p: {}) {
+function TabRust(_p: Record<string, never>) {
   return 'rust content';
 }

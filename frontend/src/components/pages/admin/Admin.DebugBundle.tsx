@@ -108,7 +108,7 @@ type FieldViolationsMap = {
 };
 
 @observer
-export class AdminDebugBundle extends PageComponent<{}> {
+export class AdminDebugBundle extends PageComponent<Record<string, never>> {
   @observable quickSearch = '';
   @observable submitInProgress = false;
   @observable confirmModalIsOpen = false;

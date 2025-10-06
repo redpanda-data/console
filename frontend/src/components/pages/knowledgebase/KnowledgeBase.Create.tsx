@@ -439,7 +439,7 @@ interface FormData {
 }
 
 @observer
-class KnowledgeBaseCreate extends PageComponent<{}> {
+class KnowledgeBaseCreate extends PageComponent<Record<string, never>> {
   @observable formData: FormData = {
     displayName: '',
     description: '',

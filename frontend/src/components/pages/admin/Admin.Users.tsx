@@ -24,7 +24,7 @@ import { RoleComponent } from './Admin.Roles';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 @observer
-export class AdminUsers extends Component<{}> {
+export class AdminUsers extends Component<Record<string, never>> {
   @observable quickSearch = '';
 
   constructor(p: any) {

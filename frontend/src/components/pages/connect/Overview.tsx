@@ -421,7 +421,7 @@ class TabTasks extends Component {
   }
 }
 
-const TabKafkaConnect = observer((_p: {}) => {
+const TabKafkaConnect = observer((_p: Record<string, never>) => {
   const settings = uiSettings.kafkaConnect;
 
   if (api.connectConnectorsError) {

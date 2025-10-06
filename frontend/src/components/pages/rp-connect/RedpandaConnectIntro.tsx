@@ -38,7 +38,7 @@ const installInstructions = {
   unzip rpk-darwin-amd64.zip -d ~/.local/bin/`,
 } as const;
 
-export function RedpandaConnectIntro(_p: {}) {
+export function RedpandaConnectIntro(_p: Record<string, never>) {
   const exampleCode = `
 input:
   generate:

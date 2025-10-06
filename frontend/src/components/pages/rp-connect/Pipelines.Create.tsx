@@ -58,7 +58,7 @@ const exampleContent = `
 `;
 
 @observer
-class RpConnectPipelinesCreate extends PageComponent<{}> {
+class RpConnectPipelinesCreate extends PageComponent<Record<string, never>> {
   @observable fileName = '';
   @observable description = '';
   @observable tasks = MIN_TASKS;
