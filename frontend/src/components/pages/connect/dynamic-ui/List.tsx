@@ -114,15 +114,15 @@ export class CommaSeparatedStringList extends Component<{
         </Tooltip>
 
         {/* Delete */}
-        {/** biome-ignore lint/a11y/noStaticElementInteractions: part of CommaSeparatedStringList implementation */}
-        <span
+        <button
           className="deleteButton"
           onClick={() => {
             this.data.splice(index, 1);
           }}
+          type="button"
         >
           <XIcon />
-        </span>
+        </button>
       </>
     );
   });
