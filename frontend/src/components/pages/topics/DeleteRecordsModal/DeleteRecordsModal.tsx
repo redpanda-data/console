@@ -115,11 +115,16 @@ function SelectPartitionStep({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
-              // biome-ignore lint/a11y/noStaticElementInteractions: part of SelectPartitionStep implementation
-              <span
+              <div
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
                 }}
               >
                 <SingleSelect<number | undefined>
@@ -131,7 +136,7 @@ function SelectPartitionStep({
                   placeholder="Choose Partition…"
                   value={specificPartition ?? undefined}
                 />
-              </span>
+              </div>
             ),
           },
         ]}
@@ -202,15 +207,20 @@ const SelectOffsetStep = ({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
-              // biome-ignore lint/a11y/noStaticElementInteractions: part of SelectOffsetStep implementation
-              <span
+              <div
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
               >
                 <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp || Date.now().valueOf()} />
-              </span>
+              </div>
             ),
           },
         ]}
