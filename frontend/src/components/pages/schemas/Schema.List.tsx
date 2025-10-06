@@ -102,7 +102,7 @@ function renderNotConfigured() {
 }
 
 @observer
-class SchemaList extends PageComponent<Record<string, never>> {
+class SchemaList extends PageComponent {
   @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
   @observable filteredSchemaSubjects: { name: string }[];
   @observable isLoadingSchemaVersionMatches = false;

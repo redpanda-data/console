@@ -392,7 +392,7 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail 
     } else {
       rule.mode = ModeCustom;
     }
-  });
+  }
 
   return {
     sharedConfig: {

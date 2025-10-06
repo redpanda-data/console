@@ -31,7 +31,7 @@ export class UrlTestPage extends PageComponent {
   }
 
   render() {
-    const p = this.props;
+    const p = this.props as any;
     return (
       <MotionDiv>
         <div>

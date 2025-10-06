@@ -710,7 +710,7 @@ export const DynamicJSONForm = ({
           }
 
           syncAutoSelections(subSchema as JSONSchemaType, subValue, [...path, key]);
-        });
+        }
       }
     };
 

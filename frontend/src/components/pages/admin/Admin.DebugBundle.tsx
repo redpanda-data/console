@@ -108,7 +108,7 @@ type FieldViolationsMap = {
 };
 
 @observer
-export class AdminDebugBundle extends PageComponent<Record<string, never>> {
+export class AdminDebugBundle extends PageComponent {
   @observable quickSearch = '';
   @observable submitInProgress = false;
   @observable confirmModalIsOpen = false;
@@ -207,9 +207,7 @@ const NewDebugBundleForm: FC<{
   const [advancedForm, setAdvancedForm] = useState(false);
 
   useEffect(() => {
-    api.refreshBrokers(true).catch(() => {
-      // Error handling managed by API layer
-    });
+    api.refreshBrokers(true);
     api.refreshPartitions('all', true).catch(() => {
       // Error handling managed by API layer
     });

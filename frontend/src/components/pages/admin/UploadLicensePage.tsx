@@ -132,7 +132,7 @@ const UploadLicenseForm: FC<{
 });
 
 @observer
-export default class UploadLicensePage extends PageComponent<Record<string, never>> {
+export default class UploadLicensePage extends PageComponent {
   @observable success = false;
 
   constructor(p: any) {

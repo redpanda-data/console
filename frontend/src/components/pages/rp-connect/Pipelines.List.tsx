@@ -198,7 +198,7 @@ export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
 });
 
 @observer
-class RpConnectPipelinesList extends PageComponent<Record<string, never>> {
+class RpConnectPipelinesList extends PageComponent {
   @observable placeholder = 5;
 
   constructor(p: any) {

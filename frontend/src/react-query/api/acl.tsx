@@ -413,7 +413,7 @@ export const useListACLAsPrincipalGroups = () => {
               hasAcl: true,
             });
           }
-        });
+        }
         return acc;
       }, new Map<string, SimpleAcl>());
       return groupsAcl.values().toArray();

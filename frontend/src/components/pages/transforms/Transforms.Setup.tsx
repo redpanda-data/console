@@ -19,7 +19,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 
 const rpkInitTransform = 'rpk transform init --language=tinygo';
 
-export class TransformsSetup extends PageComponent<Record<string, never>> {
+export class TransformsSetup extends PageComponent {
   initPage(p: PageInitHelper) {
     p.title = 'Transforms Setup';
     p.addBreadcrumb('Transforms', '/transforms');

@@ -103,7 +103,7 @@ const initializeFormData = (schema: JSONSchemaType | undefined): JSONValue => {
       // Still initialize arrays even if not required, for better UX
       initialData[key] = generateDefaultValue(fieldSchema);
     }
-  });
+  }
 
   return initialData as JSONValue;
 };
