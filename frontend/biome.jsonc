@@ -251,6 +251,143 @@
         // Disallow the use of the !important style.
         "noImportantStyles": "off"
       },
+      "correctness": {
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
+        // Prevent passing of children as props.
+        "noChildrenProp": "error",
+        // Prevents from having const variables being re-assigned.
+        "noConstAssign": "error",
+        // Disallow constant expressions in conditions.
+        "noConstantCondition": "error",
+        // Disallow the use of Math.min and Math.max to clamp a value where the result itself is constant.
+        "noConstantMathMinMaxClamp": "error",
+        // Disallow returning a value from a constructor.
+        "noConstructorReturn": "error",
+        // Disallow empty character classes in regular expression literals.
+        "noEmptyCharacterClassInRegex": "error",
+        // Disallows empty destructuring patterns.
+        "noEmptyPattern": "error",
+        // Disallow the use of __dirname and __filename in the global scope.
+        "noGlobalDirnameFilename": "error",
+        // Disallow calling global object properties as functions.
+        "noGlobalObjectCalls": "error",
+        // Disallow function and var declarations that are accessible outside their block.
+        "noInnerDeclarations": "error",
+        // Ensure that builtins are correctly instantiated.
+        "noInvalidBuiltinInstantiation": "error",
+        // Prevents the incorrect use of super() inside classes. It also checks whether a call super() is missing from classes that extends other constructors.
+        "noInvalidConstructorSuper": "error",
+        // Disallow the use of variables and function parameters before their declaration.
+        "noInvalidUseBeforeDeclaration": "error",
+        // Disallows defining React components inside other components.
+        "noNestedComponentDefinitions": "error",
+        // Disallow \8 and \9 escape sequences in string literals.
+        "noNonoctalDecimalEscape": "error",
+        // Disallow literal numbers that lose precision
+        "noPrecisionLoss": "error",
+        // Disallow assigning to React component props.
+        "noReactPropAssignments": "error",
+        // Prevent the usage of the return value of React.render.
+        "noRenderReturnValue": "error",
+        // Disallow the use of configured elements.
+        "noRestrictedElements": "error",
+        // Disallow assignments where both sides are exactly the same.
+        "noSelfAssign": "error",
+        // Disallow returning a value from a setter
+        "noSetterReturn": "error",
+        // Enforce JSDoc comment lines to start with a single asterisk, except for the first one.
+        "useSingleJsDocAsterisk": "error",
+        // Disallow comparison of expressions modifying the string case with non-compliant value.
+        "noStringCaseMismatch": "error",
+        // Disallow lexical declarations in switch clauses.
+        "noSwitchDeclarations": "error",
+        // Prevents the usage of variables that haven't been declared inside the document.
+        "noUndeclaredVariables": "error",
+        // Disallow unreachable code
+        "noUnreachable": "error",
+        // Ensures the super() constructor is called exactly once on every code path in a class constructor before this is accessed if the class has a superclass
+        "noUnreachableSuper": "error",
+        // Disallow control flow statements in finally blocks.
+        "noUnsafeFinally": "error",
+        // Disallow the use of optional chaining in contexts where the undefined value is not allowed.
+        "noUnsafeOptionalChaining": "error",
+        // Disallow unused function parameters.
+        "noUnusedFunctionParameters": "error",
+        // Disallow unused imports.
+        "noUnusedImports": "error",
+        // Disallow unused labels.
+        "noUnusedLabels": "error",
+        // Disallow unused private class members
+        "noUnusedPrivateClassMembers": "error",
+        // Disallow unused variables.
+        "noUnusedVariables": "error",
+        // This rules prevents void elements (AKA self-closing elements) from having children.
+        "noVoidElementsWithChildren": "error",
+        // Disallow returning a value from a function with the return type 'void'
+        "noVoidTypeReturn": "error",
+        // Enforce all dependencies are correctly specified in a React hook.
+        "useExhaustiveDependencies": "error",
+        // Enforce specifying the name of GraphQL operations.
+        "useGraphqlNamedOperations": "error",
+        // Enforce that all React hooks are being called from the Top Level component functions.
+        "useHookAtTopLevel": "error",
+        // Require calls to isNaN() when checking for NaN.
+        "useIsNan": "error",
+        // Enforces the use of with { type: "json" } for JSON module imports.
+        "useJsonImportAttributes": "error",
+        // Disallow missing key props in iterators/collection literals.
+        "useJsxKeyInIterable": "error",
+        // Enforce the consistent use of the radix argument when using parseInt().
+        "useParseIntRadix": "error",
+        // Enforce "for" loop update clause moving the counter in the right direction.
+        "useValidForDirection": "error",
+        // This rule checks that the result of a typeof expression is compared to a valid value.
+        "useValidTypeof": "error",
+        // Require generator functions to contain yield.
+        "useYield": "error",
+
+        // Disallow destructuring props inside JSX components in Solid projects.
+        "noSolidDestructuredProps": "off",
+        // Disallow the use of dependencies that aren't specified in the package.json.
+        "noUndeclaredDependencies": "off",
+        // Disallow the use of process global.
+        "noProcessGlobal": "off",
+        // Forbid the use of Node.js builtin modules.
+        "noNodejsModules": "off",
+        // Restrict imports of private exports.
+        "noPrivateImports": "off",
+        // Enforce file extensions for relative imports.
+        "useImportExtensions": "off",
+        // Prevent the usage of static string literal id attribute on elements.
+        "useUniqueElementIds": "off",
+
+        /** ------------------------ CSS Rules ------------------------ **/
+        // Disallow non-standard direction values for linear gradient functions.
+        "noInvalidDirectionInLinearGradient": "error",
+        // Disallows invalid named grid areas in CSS Grid Layouts.
+        "noInvalidGridAreas": "error",
+        // Disallow the use of @import at-rules in invalid positions.
+        "noInvalidPositionAtImportRule": "error",
+        // Disallow missing var function for css variables.
+        "noMissingVarFunction": "error",
+        // Disallow unknown CSS value functions.
+        "noUnknownFunction": "error",
+        // Disallow unknown media feature names.
+        "noUnknownMediaFeatureName": "error",
+        // Disallow unknown properties.
+        "noUnknownProperty": "error",
+        // Disallow unknown pseudo-class selectors.
+        "noUnknownPseudoClass": "error",
+        // Disallow unknown pseudo-element selectors.
+        "noUnknownPseudoElement": "error",
+        // Disallow unknown type selectors.
+        "noUnknownTypeSelector": "error",
+        // Disallow unknown CSS units.
+        "noUnknownUnit": "error",
+        // Disallow unmatchable An+B selectors.
+        "noUnmatchableAnbSelector": "error"
+      },
       "style": {
         // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
         "noParameterAssign": "off",
@@ -294,11 +431,6 @@
         "noParameterProperties": "off", // enable later
         // Enforce using single if instead of nested if clauses.
         "useCollapsedIf": "off" // enable later
-      },
-      "correctness": {
-        // Prevents the usage of variables that haven't been declared inside the document.
-        // Prevents the usage of variables that haven't been declared inside the document.
-        "noUndeclaredVariables": "off" // enable later
       },
       "nursery": {
         // Disallow variable declarations from shadowing variables declared in the outer scope.
