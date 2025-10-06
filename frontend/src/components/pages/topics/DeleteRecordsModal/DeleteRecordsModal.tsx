@@ -115,6 +115,7 @@ function SelectPartitionStep({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
+              // biome-ignore lint/a11y/noStaticElementInteractions: event handlers needed for dropdown workaround
               <div
                 onClick={(e) => {
                   e.preventDefault();
@@ -126,6 +127,7 @@ function SelectPartitionStep({
                     e.stopPropagation();
                   }
                 }}
+                role="presentation"
               >
                 <SingleSelect<number | undefined>
                   onChange={onSpecificPartitionSelected as (v: number | undefined) => void}
@@ -207,6 +209,7 @@ const SelectOffsetStep = ({
             content: (
               // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
               // fixes immediately self closing Select drop down after an option has already been selected
+              // biome-ignore lint/a11y/noStaticElementInteractions: event handlers needed for dropdown workaround
               <div
                 onClick={(e) => {
                   e.preventDefault();
@@ -218,6 +221,7 @@ const SelectOffsetStep = ({
                     e.stopPropagation();
                   }
                 }}
+                role="presentation"
               >
                 <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp || Date.now().valueOf()} />
               </div>

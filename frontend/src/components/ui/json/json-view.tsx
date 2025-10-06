@@ -165,23 +165,17 @@ const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = fa
             {name}:
           </span>
         )}
-        <pre
+        <button
           className={clsx(
             isError ? typeStyleMap.error : typeStyleMap.string,
-            'cursor-pointer break-all whitespace-pre-wrap'
+            'cursor-pointer break-all whitespace-pre-wrap font-mono text-left bg-transparent border-none p-0 m-0 w-full'
           )}
           onClick={() => setIsExpanded(!isExpanded)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              setIsExpanded(!isExpanded);
-            }
-          }}
-          role="button"
-          tabIndex={0}
           title={isExpanded ? 'Click to collapse' : 'Click to expand'}
+          type="button"
         >
           {isExpanded ? `"${value}"` : `"${value.slice(0, maxLength)}..."`}
-        </pre>
+        </button>
       </div>
     );
   };

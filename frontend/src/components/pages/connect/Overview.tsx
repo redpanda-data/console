@@ -202,7 +202,15 @@ class TabClusters extends Component {
                 <button
                   className="hoverLink"
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
-                  style={{ display: 'inline-block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                  style={{
+                    display: 'inline-block',
+                    width: '100%',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
                   type="button"
                 >
                   {r.clusterName}
@@ -290,7 +298,15 @@ const TabConnectors = observer(() => {
                       `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
                     )
                   }
-                  style={{ display: 'inline-block', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                  style={{
+                    display: 'inline-block',
+                    width: '100%',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
                   type="button"
                 >
                   {original.name}

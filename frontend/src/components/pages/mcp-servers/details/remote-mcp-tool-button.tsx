@@ -37,7 +37,7 @@ export const RemoteMCPToolButton = ({
   onRemove,
 }: RemoteMCPToolButtonProps) => {
   return (
-    <div
+    <button
       aria-pressed={isSelected}
       className={`flex flex-col p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer text-left w-full ${
         isSelected
@@ -52,8 +52,8 @@ export const RemoteMCPToolButton = ({
           onClick();
         }
       }}
-      role="button"
       tabIndex={0}
+      type="button"
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -80,6 +80,6 @@ export const RemoteMCPToolButton = ({
           {description}
         </Text>
       </div>
-    </div>
+    </button>
   );
 };
