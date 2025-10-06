@@ -224,7 +224,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
     return autorun(() => {
       const filteredSoftDeletedSchemaSubjects =
         api.schemaSubjects?.filter(
-          (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted)
+          (x) => uiSettings.schemaList.showSoftDeleted || !(uiSettings.schemaList.showSoftDeleted || x.isSoftDeleted)
         ) ?? [];
 
       const formattedSchemaSubjects = filteredSoftDeletedSchemaSubjects?.filter((x) =>
@@ -232,7 +232,9 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
       );
 
       for (const schemaSubject of formattedSchemaSubjects) {
-        void api.refreshSchemaDetails(schemaSubject.name);
+        api.refreshSchemaDetails(schemaSubject.name).catch(() => {
+          // Error handling managed by API layer
+        });
       }
     });
   }, []);
@@ -252,7 +254,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
 
     // Headers
     for (const h of data.headers) {
-      if (!h.value && !h.value) {
+      if (!(h.value || h.value)) {
         continue;
       }
       const kafkaHeader = create(KafkaRecordHeaderSchema);

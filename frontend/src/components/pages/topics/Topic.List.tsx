@@ -90,7 +90,9 @@ const TopicList: FC = () => {
 
   const refreshData = useCallback(async () => {
     api.refreshClusterOverview();
-    void api.refreshClusterHealth();
+    api.refreshClusterHealth().catch(() => {
+      // Error handling managed by API layer
+    });
 
     refetchTopics();
   }, [refetchTopics]);
@@ -98,7 +100,7 @@ const TopicList: FC = () => {
   const topics = useMemo(() => {
     let topics = data.topics ?? [];
     if (!showInternalTopics) {
-      topics = topics.filter((x) => !x.isInternal && !x.topicName.startsWith('_'));
+      topics = topics.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
     }
 
     const searchQuery = localSearchValue;
@@ -665,7 +667,9 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
     },
     onSuccess: (_state, _result) => {
       api.refreshClusterOverview();
-      void api.refreshClusterHealth();
+      api.refreshClusterHealth().catch(() => {
+        // Error handling managed by API layer
+      });
     },
     content: (state) => <CreateTopicModalContent state={state} />,
   });

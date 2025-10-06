@@ -50,7 +50,7 @@ const searchComponents = (
       const matchesSummary = component.summary?.toLowerCase().includes(searchLower);
       const matchesDescription = component.description?.toLowerCase().includes(searchLower);
 
-      if (!matchesName && !matchesSummary && !matchesDescription) return false;
+      if (!(matchesName || matchesSummary || matchesDescription)) return false;
     }
 
     // Filter by types

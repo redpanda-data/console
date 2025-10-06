@@ -182,7 +182,9 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           <Button
             isLoading={isCreating}
             onClick={() => {
-              void addSecret(id);
+              addSecret(id).catch(() => {
+                // Error handling managed by API layer
+              });
             }}
           >
             Select

@@ -21,13 +21,13 @@ import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
 const extractComponentMetadata = (componentType: string, definition: any): ConnectComponentSpec[] => {
   const components: ConnectComponentSpec[] = [];
 
-  if (!definition.allOf || !Array.isArray(definition.allOf)) {
+  if (!(definition.allOf && Array.isArray(definition.allOf))) {
     return components;
   }
 
   // The first element of allOf contains anyOf with component variants
   const variantsSection = definition.allOf[0];
-  if (!variantsSection.anyOf || !Array.isArray(variantsSection.anyOf)) {
+  if (!(variantsSection.anyOf && Array.isArray(variantsSection.anyOf))) {
     return components;
   }
 
@@ -550,9 +550,9 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
             result[propName] = topicData.topicName;
           }
         } else if (isUserField(propName) && userData?.username) {
-          result[propName] = '$' + '{secrets.REDPANDA_USERNAME}';
+          result[propName] = '${secrets.REDPANDA_USERNAME}';
         } else if (isPasswordField(propName) && userData?.password) {
-          result[propName] = '$' + '{secrets.REDPANDA_PASSWORD}';
+          result[propName] = '${secrets.REDPANDA_PASSWORD}';
         } else if (propSchema.type === 'object') {
           const nestedDefaults = existsInResult ? result[propName] : {};
           const populated = populatePersistedData(nestedDefaults, propSchema, propName);
@@ -623,7 +623,7 @@ export const getAllCategories = (additionalComponents?: ExtendedConnectComponent
 const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
   // Get the JSON Schema for this component
   const jsonSchema = componentSpec.config._jsonSchema;
-  if (!jsonSchema || !jsonSchema.properties) {
+  if (!jsonSchema?.properties) {
     return yamlString;
   }
 
@@ -824,11 +824,11 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     }
 
     if (isUserField(fieldName) && userData?.username) {
-      return '$' + '{secrets.REDPANDA_USERNAME}';
+      return '${secrets.REDPANDA_USERNAME}';
     }
 
     if (isPasswordField(fieldName) && userData?.password) {
-      return '$' + '{secrets.REDPANDA_PASSWORD}';
+      return '${secrets.REDPANDA_PASSWORD}';
     }
   }
 

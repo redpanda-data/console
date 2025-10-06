@@ -55,7 +55,9 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
       const client = appConfig.authenticationClient;
       if (!client) throw new Error('security client is not initialized');
 
-      void api.refreshUserData();
+      api.refreshUserData().catch(() => {
+        // Intentionally ignore errors during initial load
+      });
 
       return preLogin;
     }

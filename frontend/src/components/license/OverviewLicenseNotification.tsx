@@ -254,8 +254,12 @@ export const OverviewLicenseNotification: FC = observer(() => {
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
-    void api.refreshClusterOverview();
-    void api.listLicenses();
+    api.refreshClusterOverview().catch(() => {
+      // Error handling managed by API layer
+    });
+    api.listLicenses().catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const trialLicenses = api.licenses.filter((license) => license.type === License_Type.TRIAL);

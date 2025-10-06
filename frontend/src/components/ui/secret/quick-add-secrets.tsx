@@ -92,7 +92,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<string[]>([]);
 
   const missingSecrets = requiredSecrets.filter(
-    (secret) => !existingSecrets.includes(secret) && !createdSecrets.includes(secret)
+    (secret) => !(existingSecrets.includes(secret) || createdSecrets.includes(secret))
   );
 
   const form = useForm<SecretFormData>({

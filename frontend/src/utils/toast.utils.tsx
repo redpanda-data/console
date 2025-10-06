@@ -38,7 +38,7 @@ export const showToast = (options: ShowToastOptions) => {
     resourceName: options?.resourceName,
   });
 
-  if (!toastId || !toast.isActive(toastId)) {
+  if (!(toastId && toast.isActive(toastId))) {
     toast({
       ...defaultToastSettings,
       ...options,

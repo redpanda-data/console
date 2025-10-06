@@ -75,11 +75,17 @@ class Overview extends PageComponent {
 
   refreshData(force: boolean) {
     api.refreshCluster(force);
-    void api.refreshClusterOverview();
+    api.refreshClusterOverview().catch(() => {
+      // Error handling managed by API layer
+    });
 
     api.refreshBrokers(force);
-    void api.refreshClusterHealth();
-    void api.refreshDebugBundleStatuses();
+    api.refreshClusterHealth().catch(() => {
+      // Error handling managed by API layer
+    });
+    api.refreshDebugBundleStatuses().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   render() {
@@ -300,7 +306,7 @@ function ClusterDetails() {
   const brokers = api.brokers;
   const licenses = api.licenses;
 
-  if (!overview || !brokers) {
+  if (!(overview && brokers)) {
     return <Skeleton height={4} mt={5} noOfLines={13} speed={0} />;
   }
 

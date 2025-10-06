@@ -148,7 +148,7 @@ export const RemoteMCPConfigurationTab = () => {
   };
 
   const handleSave = async () => {
-    if (!mcpServerData?.mcpServer || !id) return;
+    if (!(mcpServerData?.mcpServer && id)) return;
 
     const currentData = getCurrentData();
     if (!currentData) return;
@@ -362,7 +362,7 @@ export const RemoteMCPConfigurationTab = () => {
   const displayData = getCurrentData();
 
   const selectedTool = React.useMemo(() => {
-    if (!selectedToolId || !displayData?.tools) return null;
+    if (!(selectedToolId && displayData?.tools)) return null;
     return displayData.tools.find((tool) => tool.id === selectedToolId) || null;
   }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
 

@@ -161,7 +161,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     // configuration is always required for the statistics bar
     api.refreshTopicConfig(this.props.topicName, force);
 
-    void api.refreshClusterHealth();
+    api.refreshClusterHealth().catch(() => {
+      // Error handling managed by API layer
+    });
 
     // documentation can be lazy loaded
     if (uiSettings.topicDetailsActiveTabKey === 'documentation')

@@ -172,8 +172,12 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
     useEffect(() => {
-      void api.refreshClusterOverview();
-      void api.listLicenses();
+      api.refreshClusterOverview().catch(() => {
+        // Error handling managed by API layer
+      });
+      api.listLicenses().catch(() => {
+        // Error handling managed by API layer
+      });
     }, []);
 
     const licenses = api.licenses

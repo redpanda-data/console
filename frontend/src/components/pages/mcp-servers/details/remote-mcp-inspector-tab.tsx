@@ -50,7 +50,7 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
     case 'integer':
       return (fieldSchema as any).examples?.[0] || 42;
     case 'boolean':
-      return (fieldSchema as any).examples?.[0] || true;
+      return true;
     case 'array':
       if (fieldSchema.items) {
         return [generateDefaultValue(fieldSchema.items as JSONSchemaType)];
@@ -85,7 +85,7 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
 };
 
 const initializeFormData = (schema: JSONSchemaType | undefined): JSONValue => {
-  if (!schema || !schema.properties) {
+  if (!schema?.properties) {
     return {};
   }
 
@@ -253,7 +253,7 @@ export const RemoteMCPInspectorTab = () => {
   }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
 
   const executeToolRequest = async () => {
-    if (!selectedTool || !mcpServerData?.mcpServer?.url) return;
+    if (!(selectedTool && mcpServerData?.mcpServer?.url)) return;
 
     // Cancel any existing request
     if (abortControllerRef.current) {
@@ -302,7 +302,7 @@ export const RemoteMCPInspectorTab = () => {
   ): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 
-    if (!schema || !schema.properties || !schema.required) {
+    if (!(schema?.properties && schema.required)) {
       return { isValid: true, errors }; // No validation needed if no required fields
     }
 
@@ -453,9 +453,7 @@ export const RemoteMCPInspectorTab = () => {
                       }}
                     />
                   ))
-                : !isLoadingTools &&
-                  !isRefetchingTools &&
-                  !toolsError && (
+                : !(isLoadingTools || isRefetchingTools || toolsError) && (
                     <Text className="text-muted-foreground py-8 text-center" variant="small">
                       No tools available on this MCP server.
                     </Text>

@@ -229,9 +229,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
     .map((topic) => topic.name)
     .filter(
       (name) =>
-        !name.startsWith('__redpanda') &&
-        !name.startsWith('_internal') &&
-        !name.startsWith('_redpanda') &&
+        !(name.startsWith('__redpanda') || name.startsWith('_internal') || name.startsWith('_redpanda')) &&
         name !== '_schemas'
     );
 
@@ -1302,7 +1300,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
             <FormControl>
               <Flex alignItems="center" gap={2}>
                 <Checkbox
-                  isChecked={this.formData.retriever?.reranker?.enabled || false}
+                  isChecked={this.formData.retriever?.reranker?.enabled}
                   onChange={(e) => this.updateFormData('retriever.reranker.enabled', e.target.checked)}
                 />
                 <FormLabel fontWeight="medium" mb={0}>
@@ -1351,7 +1349,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
           <>
             <FormControl>
               <Flex alignItems="center" gap={2}>
-                <Checkbox isChecked={reranker?.enabled || false} isDisabled={true} />
+                <Checkbox isChecked={reranker?.enabled} isDisabled={true} />
                 <FormLabel fontWeight="medium" mb={0}>
                   Enable Reranker (Recommended)
                 </FormLabel>

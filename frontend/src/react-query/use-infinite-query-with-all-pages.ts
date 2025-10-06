@@ -51,7 +51,7 @@ export function useInfiniteQueryWithAllPages<
   const queryResult = useInfiniteQuery(schema, input, options);
 
   useEffect(() => {
-    if (!queryResult.isFetching && !queryResult.isFetchingNextPage && queryResult.hasNextPage) {
+    if (!(queryResult.isFetching || queryResult.isFetchingNextPage) && queryResult.hasNextPage) {
       queryResult.fetchNextPage();
     }
   }, [queryResult.hasNextPage, queryResult.isFetching, queryResult.isFetchingNextPage, queryResult.fetchNextPage]);

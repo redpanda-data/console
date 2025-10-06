@@ -49,7 +49,7 @@ export const AddConnectorsCard = memo(
               <AddConnectorButton key={processorType} onClick={onAddConnector} type={processorType} />
             ))}
           </div>
-          {(!hasInput || !hasOutput) && (
+          {!(hasInput && hasOutput) && (
             <div className="flex flex-col gap-2">
               <Separator className="mb-2" />
               {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" />}

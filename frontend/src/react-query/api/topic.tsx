@@ -63,7 +63,7 @@ export const useLegacyListTopicsQuery = (
   const allRetrievedTopics = legacyListTopicsResult?.data?.topics;
 
   const topics = hideInternalTopics
-    ? allRetrievedTopics?.filter((topic) => !topic.isInternal && !topic.topicName.startsWith('_'))
+    ? allRetrievedTopics?.filter((topic) => !(topic.isInternal || topic.topicName.startsWith('_')))
     : allRetrievedTopics;
 
   return { ...legacyListTopicsResult, data: { topics } };
@@ -92,7 +92,7 @@ export const useListTopicsQuery = (
   const allRetrievedTopics = listTopicsResult?.data?.pages?.flatMap(({ topics }) => topics);
 
   const topics = hideInternalTopics
-    ? allRetrievedTopics?.filter((topic) => !topic.internal && !topic.name.startsWith('_'))
+    ? allRetrievedTopics?.filter((topic) => !(topic.internal || topic.name.startsWith('_')))
     : allRetrievedTopics;
 
   return {

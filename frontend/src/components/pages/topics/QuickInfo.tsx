@@ -52,7 +52,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
   const segmentMs = filteredConfigEntries?.find((e) => e.name === 'segment.ms');
   const segmentBytes = filteredConfigEntries?.find((e) => e.name === 'segment.bytes');
 
-  if (!configEntries || !filteredConfigEntries || !cleanupPolicy) {
+  if (!(configEntries && filteredConfigEntries && cleanupPolicy)) {
     return null;
   }
 

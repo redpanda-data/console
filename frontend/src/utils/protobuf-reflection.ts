@@ -75,7 +75,7 @@ export function isFieldRequired(messageSchema: DescMessage, fieldName: string): 
  * @returns true if the field can be edited
  */
 export function isFieldEditable(messageSchema: DescMessage, fieldName: string): boolean {
-  return !isFieldImmutable(messageSchema, fieldName) && !isFieldOutputOnly(messageSchema, fieldName);
+  return !(isFieldImmutable(messageSchema, fieldName) || isFieldOutputOnly(messageSchema, fieldName));
 }
 
 /**
@@ -103,7 +103,7 @@ export function getMessageFieldMetadata(messageSchema: DescMessage): Record<
       isRequired: behaviors.includes(FieldBehavior.REQUIRED),
       isImmutable: behaviors.includes(FieldBehavior.IMMUTABLE),
       isOutputOnly: behaviors.includes(FieldBehavior.OUTPUT_ONLY),
-      isEditable: !behaviors.includes(FieldBehavior.IMMUTABLE) && !behaviors.includes(FieldBehavior.OUTPUT_ONLY),
+      isEditable: !(behaviors.includes(FieldBehavior.IMMUTABLE) || behaviors.includes(FieldBehavior.OUTPUT_ONLY)),
       behaviors,
     };
   }

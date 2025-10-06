@@ -133,7 +133,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
 });
 
 const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
-  if (!partition.partitionError && !partition.waterMarksError) {
+  if (!(partition.partitionError || partition.waterMarksError)) {
     return null;
   }
 

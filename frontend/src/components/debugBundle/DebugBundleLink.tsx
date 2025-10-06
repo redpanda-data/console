@@ -70,7 +70,9 @@ const DebugBundleLink = ({
               aria-label="Delete file"
               icon={<MdDeleteOutline />}
               onClick={() => {
-                void api.deleteDebugBundleFile();
+                api.deleteDebugBundleFile().catch(() => {
+                  // Error handling should be managed by the API layer
+                });
               }}
               variant="ghost"
             />

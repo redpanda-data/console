@@ -24,7 +24,9 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (api.isDebugBundleInProgress) {
-        void api.refreshDebugBundleStatuses();
+        api.refreshDebugBundleStatuses().catch(() => {
+          // Error handling managed by API layer
+        });
       }
     }, 5000);
 

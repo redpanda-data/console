@@ -279,7 +279,9 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
               colorScheme="red"
               onClick={() => {
                 $state.newThrottleValue = null;
-                void applyBandwidthThrottle();
+                applyBandwidthThrottle().catch(() => {
+                  // Error handling managed by API layer
+                });
               }}
               variant="outline"
             >
@@ -293,7 +295,9 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
               <Button
                 disabled={noChange}
                 onClick={() => {
-                  void applyBandwidthThrottle();
+                  applyBandwidthThrottle().catch(() => {
+                    // Error handling managed by API layer
+                  });
                 }}
                 variant="solid"
               >

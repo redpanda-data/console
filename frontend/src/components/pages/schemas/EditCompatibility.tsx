@@ -77,7 +77,7 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
     if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
     if (!api.schemaMode) return DefaultSkeleton; // request in progress
 
-    if (!api.schemaDetails && !api.schemaCompatibility) {
+    if (!(api.schemaDetails || api.schemaCompatibility)) {
       return DefaultSkeleton;
     }
 

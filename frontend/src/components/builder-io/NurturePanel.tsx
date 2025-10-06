@@ -79,7 +79,7 @@ export default function NurturePanel() {
     );
   }
 
-  if (hasError || (!content && !isPreviewing())) {
+  if (hasError || !(content || isPreviewing())) {
     return (
       <Box>
         <Text>No updates available</Text>

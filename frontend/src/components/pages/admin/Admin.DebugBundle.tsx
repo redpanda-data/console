@@ -124,7 +124,9 @@ export class AdminDebugBundle extends PageComponent<{}> {
   }
 
   refreshData() {
-    void api.refreshDebugBundleStatuses();
+    api.refreshDebugBundleStatuses().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   constructor(p: any) {
@@ -205,8 +207,12 @@ const NewDebugBundleForm: FC<{
   const [advancedForm, setAdvancedForm] = useState(false);
 
   useEffect(() => {
-    void api.refreshBrokers(true);
-    void api.refreshPartitions('all', true);
+    api.refreshBrokers(true).catch(() => {
+      // Error handling managed by API layer
+    });
+    api.refreshPartitions('all', true).catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const fieldViolationsMap = error?.details

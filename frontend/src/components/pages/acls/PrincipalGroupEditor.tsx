@@ -353,7 +353,7 @@ export const AclPrincipalGroupEditor = observer(
               colorScheme="red"
               data-testid="ok-button"
               isDisabled={
-                !isFormValid || !isTopicsValid || !isConsumerGroupsValid || !isTransactionalIDValid || noNameOrNameInUse
+                !(isFormValid && isTopicsValid && isConsumerGroupsValid && isTransactionalIDValid) || noNameOrNameInUse
               }
               isLoading={isLoading}
               onClick={onOK}

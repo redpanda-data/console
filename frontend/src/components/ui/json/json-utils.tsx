@@ -70,7 +70,7 @@ export function tryParseJSON(str: string): {
   data: JSONValue;
 } {
   const trimmed = str.trim();
-  if (!(trimmed.startsWith('{') && trimmed.endsWith('}')) && !(trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+  if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     return { success: false, data: str };
   }
   try {

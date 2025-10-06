@@ -76,7 +76,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   }
 
   render() {
-    if (!api.serviceAccounts || !api.serviceAccounts.users) return DefaultSkeleton;
+    if (!api.serviceAccounts?.users) return DefaultSkeleton;
     const userName = this.props.userName;
 
     const isServiceAccount = api.serviceAccounts.users.includes(userName);

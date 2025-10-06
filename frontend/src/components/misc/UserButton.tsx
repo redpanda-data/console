@@ -22,7 +22,9 @@ export const UserProfile = observer(() => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
-    void api.refreshUserData();
+    api.refreshUserData().catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const userName = api.userData?.displayName ?? 'null';

@@ -72,8 +72,8 @@ export const UpdatePopup = observer(() => {
 
   const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
 
-  if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
-  if (!serverTimestamp || !Number.isFinite(serverTimestamp)) return null;
+  if (!(curTimestamp && Number.isFinite(curTimestamp))) return null;
+  if (!(serverTimestamp && Number.isFinite(serverTimestamp))) return null;
 
   if (serverTimestamp < curTimestamp) return null; // don't downgrade
   if (serverTimestamp === curTimestamp) return null; // version already matches

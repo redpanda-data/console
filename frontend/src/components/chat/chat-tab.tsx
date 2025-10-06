@@ -64,7 +64,7 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
     }
   };
 
-  if (!id || !pipeline?.url || pipeline?.state === Pipeline_State.STARTING) {
+  if (!(id && pipeline?.url) || pipeline?.state === Pipeline_State.STARTING) {
     return (
       <ChatNotification
         notification={

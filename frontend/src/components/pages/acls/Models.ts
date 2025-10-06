@@ -353,7 +353,7 @@ export const principalGroupsView = observable(
   {
     get flatAcls() {
       const acls = api.ACLs;
-      if (!acls || !acls.aclResources || acls.aclResources.length === 0) return [];
+      if (!acls?.aclResources || acls.aclResources.length === 0) return [];
 
       const flattened: AclFlat[] = [];
       for (const res of acls.aclResources) {

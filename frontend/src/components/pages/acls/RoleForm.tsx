@@ -368,7 +368,9 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
   const [searchValue, setSearchValue] = useState<string>('');
 
   useEffect(() => {
-    void api.refreshServiceAccounts();
+    api.refreshServiceAccounts().catch(() => {
+      // Error handling managed by API layer
+    });
   }, []);
 
   const state = p.state;

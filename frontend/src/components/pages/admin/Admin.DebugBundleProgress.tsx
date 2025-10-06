@@ -38,7 +38,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
   }
 
   refreshData() {
-    void api.refreshDebugBundleStatuses();
+    api.refreshDebugBundleStatuses().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   constructor(p: any) {
@@ -80,7 +82,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent<{}> {
                   onClick={() => {
                     for (const status of api.debugBundleStatuses) {
                       if (status.value.case === 'bundleStatus') {
-                        void api.cancelDebugBundleProcess({ jobId: status.value.value.jobId });
+                        api.cancelDebugBundleProcess({ jobId: status.value.value.jobId }).catch(() => {
+                          // Error handling managed by API layer
+                        });
                       }
                     }
                   }}

@@ -121,7 +121,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   const handleLintTool = async (toolIndex: number) => {
     const tool = form.getValues(`tools.${toolIndex}`);
-    if (!tool || !tool.name.trim() || !tool.config.trim()) {
+    if (!(tool?.name.trim() && tool.config.trim())) {
       toast.error('Tool name and configuration are required for linting');
       return;
     }

@@ -90,7 +90,7 @@ const generateExampleData = (schema: JSONSchemaType): JSONValue => {
     case 'integer':
       return (schema.examples?.[0] as number) || 42;
     case 'boolean':
-      return (schema.examples?.[0] as boolean) || true;
+      return true;
     case 'array':
       if (schema.items) {
         return [generateExampleData(schema.items as JSONSchemaType)];
@@ -302,7 +302,7 @@ export const DynamicJSONForm = ({
             <Combobox
               creatable
               onChange={(val) => {
-                if (!val && !isRequired) {
+                if (!(val || isRequired)) {
                   handleFieldChange(path, undefined);
                 } else {
                   handleFieldChange(path, val);
@@ -334,7 +334,7 @@ export const DynamicJSONForm = ({
             <Combobox
               creatable
               onChange={(val) => {
-                if (!val && !isRequired) {
+                if (!(val || isRequired)) {
                   handleFieldChange(path, undefined);
                 } else {
                   handleFieldChange(path, val);
@@ -362,7 +362,7 @@ export const DynamicJSONForm = ({
             <Combobox
               creatable
               onChange={(val) => {
-                if (!val && !isRequired) {
+                if (!(val || isRequired)) {
                   handleFieldChange(path, undefined);
                 } else {
                   handleFieldChange(path, val);
@@ -424,7 +424,7 @@ export const DynamicJSONForm = ({
             min={propSchema.minimum}
             onChange={(e) => {
               const val = e.target.value;
-              if (!val && !isRequired) {
+              if (!(val || isRequired)) {
                 handleFieldChange(path, undefined);
               } else {
                 const num = Number(val);
@@ -447,7 +447,7 @@ export const DynamicJSONForm = ({
             min={propSchema.minimum}
             onChange={(e) => {
               const val = e.target.value;
-              if (!val && !isRequired) {
+              if (!(val || isRequired)) {
                 handleFieldChange(path, undefined);
               } else {
                 const num = Number(val);

@@ -389,7 +389,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         await api.refreshSchemaDetails(subject.name, true);
 
                         const newDetails = api.schemaDetails.get(subject.name);
-                        if (!newDetails || !newDetails.latestActiveVersion) {
+                        if (!newDetails?.latestActiveVersion) {
                           appGlobal.historyPush('/schema-registry/');
                         } else {
                           setSelectedVersion(newDetails.latestActiveVersion);

@@ -216,9 +216,7 @@ const TopicSelector = ({
     .map((topic) => topic.name)
     .filter(
       (name) =>
-        !name.startsWith('__redpanda') &&
-        !name.startsWith('_internal') &&
-        !name.startsWith('_redpanda') &&
+        !(name.startsWith('__redpanda') || name.startsWith('_internal') || name.startsWith('_redpanda')) &&
         name !== '_schemas'
     );
 

@@ -196,7 +196,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
             </Button>
             <NoClipboardPopover>
               <CopyToClipboardButton
-                disabled={!isClipboardAvailable || !this.decodingDone}
+                disabled={!(isClipboardAvailable && this.decodingDone)}
                 isLoading={!this.decodingDone}
                 message={this.getError()}
               />

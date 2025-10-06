@@ -369,7 +369,7 @@ export const PipelineEditor = observer(
     const [actualEditorContent, setActualEditorContent] = useState<string>('');
 
     const persistedConnectComponentTemplate = useMemo(() => {
-      if (!persistedFormData?.connectionName || !persistedFormData?.connectionType) {
+      if (!(persistedFormData?.connectionName && persistedFormData?.connectionType)) {
         return undefined;
       }
       const template = getConnectTemplate({

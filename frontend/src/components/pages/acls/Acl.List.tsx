@@ -114,7 +114,9 @@ class AclList extends PageComponent<{ tab: AclListTab }> {
     p.title = 'Access Control';
     p.addBreadcrumb('Access control', '/security');
 
-    void this.refreshData();
+    this.refreshData().catch(() => {
+      // Error handling managed by API layer
+    });
     appGlobal.onRefresh = () => this.refreshData();
   }
 
@@ -806,18 +808,22 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                       </MenuButton>
                       <MenuList>
                         <MenuItem
-                          isDisabled={!userExists || !Features.deleteUser}
+                          isDisabled={!(userExists && Features.deleteUser)}
                           onClick={(e) => {
-                            void onDelete(true, true);
+                            onDelete(true, true).catch(() => {
+                              // Error handling managed by API layer
+                            });
                             e.stopPropagation();
                           }}
                         >
                           Delete (User and ACLs)
                         </MenuItem>
                         <MenuItem
-                          isDisabled={!userExists || !Features.deleteUser}
+                          isDisabled={!(userExists && Features.deleteUser)}
                           onClick={(e) => {
-                            void onDelete(true, false);
+                            onDelete(true, false).catch(() => {
+                              // Error handling managed by API layer
+                            });
                             e.stopPropagation();
                           }}
                         >
@@ -825,7 +831,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                         </MenuItem>
                         <MenuItem
                           onClick={(e) => {
-                            void onDelete(false, true);
+                            onDelete(false, true).catch(() => {
+                              // Error handling managed by API layer
+                            });
                             e.stopPropagation();
                           }}
                         >

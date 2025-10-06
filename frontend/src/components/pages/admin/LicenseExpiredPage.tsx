@@ -14,7 +14,9 @@ export default class LicenseExpiredPage extends PageComponent {
   }
 
   refreshData() {
-    void api.listLicenses();
+    api.listLicenses().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   render() {

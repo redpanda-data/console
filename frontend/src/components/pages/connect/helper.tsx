@@ -585,7 +585,7 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     let apiErr: ApiError | undefined;
     try {
       apiErr = JSON.parse(txt) as ApiError;
-      if (!apiErr || !apiErr.message || !apiErr.statusCode) apiErr = undefined;
+      if (!(apiErr?.message && apiErr.statusCode)) apiErr = undefined;
     } catch {
       apiErr = undefined;
     }
