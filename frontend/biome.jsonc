@@ -378,8 +378,8 @@
         "noNonNullAssertedOptionalChain": "error",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
         "noShadow": "off", // Enable later
-        // Disallow the use of useless undefined.
-        "noUselessUndefined": "error",
+        // Disallow the use of useless undefined. (disabled due to conflict with useGetterReturn)
+        "noUselessUndefined": "off",
         // Enforces href attribute for <a> elements.
         "useAnchorHref": "error",
         // Enforce consistent arrow function bodies.
@@ -661,7 +661,7 @@
         // Enforce passing a message value when creating a built-in error.
         "useErrorMessage": "error",
         // Enforce get methods to always return a value.
-        "useGetterReturn": "off", // Enable later - some violations
+        "useGetterReturn": "error",
         // Enforces the use of a recommended display strategy with Google Fonts.
         "useGoogleFontDisplay": "error",
         // Require for-in loops to include an if statement.

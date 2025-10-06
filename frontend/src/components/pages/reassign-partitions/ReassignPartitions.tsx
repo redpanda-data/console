@@ -766,9 +766,9 @@ class ReassignPartitions extends PageComponent {
 
   @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
     const apiTopics = api.topics;
-    if (!apiTopics) return;
+    if (!apiTopics) return undefined;
     const apiPartitions = api.topicPartitions;
-    if (!apiPartitions) return;
+    if (!apiPartitions) return undefined;
 
     return partitionSelectionToTopicPartitions(this.partitionSelection, apiPartitions, apiTopics);
   }
@@ -854,7 +854,6 @@ const steps: WizardStep[] = [
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }
-        // biome-ignore lint/nursery/noUselessUndefined: TypeScript requires explicit return type
         return undefined;
       },
     },
