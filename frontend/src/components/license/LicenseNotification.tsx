@@ -118,7 +118,14 @@ export const LicenseNotification = observer(() => {
                 Upload license
               </Button>
             )}
-            <Button as="a" href="https://support.redpanda.com/" size="sm" target="_blank" variant="outline">
+            <Button
+              as="a"
+              href="https://support.redpanda.com/"
+              rel="noopener noreferrer"
+              size="sm"
+              target="_blank"
+              variant="outline"
+            >
               Request a license
             </Button>
           </Flex>

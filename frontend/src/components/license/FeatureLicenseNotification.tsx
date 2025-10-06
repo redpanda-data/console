@@ -89,11 +89,11 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>{' '}
               will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
                 contact us
               </Link>
               .
@@ -129,7 +129,7 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               This is a Redpanda Enterprise feature. Try it with our{' '}
-              <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
+              <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
                 Redpanda Enterprise Trial
               </Link>
               .
@@ -145,11 +145,11 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>{' '}
               will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
                 contact us
               </Link>
               .

@@ -188,7 +188,11 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             <CardDescription>
               Redpanda Connect is an alternative to Kafka Connect. It allows you to connect to a variety of data sources
               and sinks, and to create pipelines to transform data.{' '}
-              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
+              <Link
+                href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Learn more.
               </Link>
             </CardDescription>

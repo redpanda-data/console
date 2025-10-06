@@ -121,7 +121,11 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
             <Text mb={4}>
               Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available
               connectors.{' '}
-              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
+              <Link
+                href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Learn more.
               </Link>
             </Text>
@@ -137,7 +141,11 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
             <Text mb={4}>
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
-              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
+              <Link
+                href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Learn more.
               </Link>
             </Text>

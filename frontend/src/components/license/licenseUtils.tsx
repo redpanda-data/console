@@ -394,6 +394,7 @@ export const UpgradeButton = () => (
   <Button
     as={Link}
     href={getEnterpriseCTALink('upgrade')}
+    rel="noopener noreferrer"
     size="sm"
     style={{
       textDecoration: 'none',
@@ -411,7 +412,14 @@ export const RegisterButton = ({ onRegisterModalOpen }: { onRegisterModalOpen: (
       Register
     </Button>
   ) : (
-    <Button as={Link} href={getEnterpriseCTALink('tryEnterprise')} size="sm" target="_blank" variant="outline">
+    <Button
+      as={Link}
+      href={getEnterpriseCTALink('tryEnterprise')}
+      rel="noopener noreferrer"
+      size="sm"
+      target="_blank"
+      variant="outline"
+    >
       Register
     </Button>
   );

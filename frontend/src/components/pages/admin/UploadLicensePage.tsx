@@ -159,7 +159,7 @@ export default class UploadLicensePage extends PageComponent {
                       A restart will be needed to use Redpanda Console's enterprise features.
                     </Text>
                     <Text fontWeight="normal">
-                      <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+                      <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                         Enterprise features
                       </Link>{' '}
                       in your Redpanda cluster will be available right away.
@@ -185,19 +185,20 @@ export default class UploadLicensePage extends PageComponent {
           <>
             <Text>
               If you're interested in Redpanda Enterprise, please{' '}
-              <Link href="https://www.redpanda.com/contact" target="_blank">
+              <Link href="https://www.redpanda.com/contact" rel="noopener noreferrer" target="_blank">
                 contact us
               </Link>
               .
             </Text>
             <Text>
               If you're an existing customer, get in touch with{' '}
-              <Link href="https://support.redpanda.com/hc/en-us" target="_blank">
+              <Link href="https://support.redpanda.com/hc/en-us" rel="noopener noreferrer" target="_blank">
                 our support team
               </Link>{' '}
               to request a license. To see a list of what is available with Redpanda Enterprise, check{' '}
               <Link
                 href="https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 our documentation

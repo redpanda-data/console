@@ -36,11 +36,11 @@ export default class LicenseExpiredPage extends PageComponent {
             <Text fontSize="lg">
               You were using Console RBAC/SSO and your trial license has expired. To continue using them, you will need
               an{' '}
-              <Link href="https://redpanda.com/upgrade" target="_blank">
+              <Link href="https://redpanda.com/upgrade" rel="noopener noreferrer" target="_blank">
                 Enterprise license
               </Link>
               . Alternatively, you can{' '}
-              <Link href={DISABLE_SSO_DOCS_LINK} target="_blank">
+              <Link href={DISABLE_SSO_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 disable
               </Link>{' '}
               the paid features in your configuration file.
