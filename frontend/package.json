@@ -114,7 +114,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.0.6",
+    "@biomejs/biome": "2.2.5",
     "@module-federation/enhanced": "^0.19.1",
     "@module-federation/rsbuild-plugin": "^0.19.1",
     "@module-federation/runtime": "^0.19.1",
