@@ -607,7 +607,7 @@
 
         /** ------------------------ CSS Rules ------------------------ **/
         // Disallow a lower specificity selector from coming after a higher specificity selector.
-        "noDescendingSpecificity": "off",
+        "noDescendingSpecificity": "error",
         // Disallow use of @value rule in css modules.
         "noValueAtRule": "off"
       },
