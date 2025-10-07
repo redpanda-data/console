@@ -61,100 +61,110 @@ You are an expert automation engineer specializing in web scraping, API integrat
 
 3. **Multi-Source Logo Import/Download Strategy**
 
-   **IMPORTANT: Avoid Duplicate Logo Files**
+Search for logos in order of priority. If logo is unavailable on SVGLogos, and there is also no company logo for the connector, move on to SVGL API, and so on.
 
-   - When multiple components use the same logo (e.g., all AWS services), create ONE logo file and reference it multiple times in componentLogoMap
-   - Example: `AmazonWebServicesLogo.tsx` used by `aws_s3`, `aws_dynamodb`, `aws_lambda`, etc.
-   - Do NOT create separate files with identical SVG content
+**IMPORTANT: Avoid Duplicate Logo Files**
 
-   **Priority 1: React Simple Icons Package**
+- When multiple components use the same logo (e.g., all AWS services), create ONE logo file and reference it multiple times in componentLogoMap
+- Example: `AmazonWebServicesLogo.tsx` used by `aws_s3`, `aws_dynamodb`, `aws_lambda`, etc.
+- Do NOT create separate files with identical SVG content
 
-   1. Read available exports from `node_modules/@icons-pack/react-simple-icons/index.d.ts`
-   2. For each component, try BOTH specific and company-level searches:
+**Priority 1: SVGLogos.dev**
 
-      **First: Try service-specific logo**
+- using the browser agent, navigate to https://svglogos.dev/ and use query params to search (eg: https://svglogos.dev/#search=astro) for connector logos
+- Search Strategy:
+  - Search by exact title match (case-insensitive)
+  - Try service-specific name first: "Cohere", "Qdrant", "Microsoft Azure"
+  - Then try company name: "Microsoft", "Amazon Web Services"
+- Download SVG from the browser or use the github repo to access SVG assets: https://github.com/gilbarbara/logos/tree/main/logos
 
-      - `aws_s3` → Try `SiAmazons3`, `SiS3`
-      - `aws_dynamodb` → Try `SiAmazondynamodb`, `SiDynamodb`
-      - `gcp_pubsub` → Try `SiGooglepubsub`, `SiPubsub`
+  **Priority 2: SVGL API**
 
-      **Second: Fall back to company logo (reuse for all services)**
+  - API endpoint: `https://api.svgl.app` (returns JSON array of 546+ logos)
+  - Search strategy:
+    - Fetch full logo list: `await fetch('https://api.svgl.app')`
+    - Search by exact title match (case-insensitive)
+    - Try service-specific name first: "Cohere", "Qdrant", "Microsoft Azure"
+    - Then try company name: "Microsoft", "Amazon Web Services"
+  - Download SVG from `route` field (string or object with light/dark variants)
+  - If service-specific logo not found, create parent company logo file and reuse it
+  - License: Note license information from API response
+  - Examples: Cohere, Qdrant, Microsoft SQL Server, Microsoft Azure
 
-      - `aws_*` → `SiAws`
-      - `gcp_*` → `SiGooglecloud` or `SiGcp`
-      - `azure_*` → `SiMicrosoftazure` or `SiAzure`
-      - `mongodb_*` → `SiMongodb`
+  **DO NO USE ANY OTHER API, only SVGLKit**
 
-   3. Naming convention: Convert to camelCase with "Si" prefix
-      - `aws` → `SiAws`
-      - `amazons3` → `SiAmazons3`
-      - `kafka` → `SiApachekafka` or `SiKafka`
-      - `postgresql` → `SiPostgresql`
+  **Priority 3: Company Brand Kit / Official Website**
 
-   **Priority 2: SVGL API**
+  - Access company's official website and look for brand assets
+  - Common paths: `/press`, `/brand`, `/assets`, `/media-kit`, `/logos`
+  - Try favicon.svg: `https://{company}.com/favicon.svg`
+  - Examples that worked:
+    - Pinecone: `https://www.pinecone.io/images/pinecone-logo.svg`
+    - Authzed: `https://authzed.com/favicon.svg`
+  - Note: Some companies block direct access (403) - document these
 
-   - For components NOT found in react-simple-icons
-   - API endpoint: `https://api.svgl.app` (returns JSON array of 546+ logos)
-   - Search strategy:
-     - Fetch full logo list: `await fetch('https://api.svgl.app')`
-     - Search by exact title match (case-insensitive)
-     - Try service-specific name first: "Cohere", "Qdrant", "Microsoft Azure"
-     - Then try company name: "Microsoft", "Amazon Web Services"
-   - Download SVG from `route` field (string or object with light/dark variants)
-   - If service-specific logo not found, create parent company logo file and reuse it
-   - License: Note license information from API response
-   - Examples: Cohere, Qdrant, Microsoft SQL Server, Microsoft Azure
+**Priority 4: React Simple Icons Package**
 
-   **DO NO USE ANY OTHER API, only SVGLKit**
+1.  Read available exports from `node_modules/@icons-pack/react-simple-icons/index.d.ts`
+2.  For each component, try BOTH specific and company-level searches:
 
-   **Priority 3: Company Brand Kit / Official Website**
+    **First: Try service-specific logo**
 
-   - Access company's official website and look for brand assets
-   - Common paths: `/press`, `/brand`, `/assets`, `/media-kit`, `/logos`
-   - Try favicon.svg: `https://{company}.com/favicon.svg`
-   - Examples that worked:
-     - Pinecone: `https://www.pinecone.io/images/pinecone-logo.svg`
-     - Authzed: `https://authzed.com/favicon.svg`
-   - Note: Some companies block direct access (403) - document these
+    - `aws_s3` → Try `SiAmazons3`, `SiS3`
+    - `aws_dynamodb` → Try `SiAmazondynamodb`, `SiDynamodb`
+    - `gcp_pubsub` → Try `SiGooglepubsub`, `SiPubsub`
 
-   **Priority 4: Lucide-React Generic Icons**
+    **Second: Fall back to company logo (reuse for all services)**
 
-   - For generic/internal components without brand-specific logos
-   - For brands where NO logo source is available after exhausting all options
-   - Package: `lucide-react`
-   - Use semantic matches from lucide's icon library
-   - Examples:
-     - `archive` → `Archive`
-     - `workflow` → `Workflow`
-     - `git` → `GitBranch`
-     - `database` → `Database`
-     - `cache` → `Database`
-     - `http` → `Globe`
-     - `terminal` → `Terminal`
-     - Data streaming (e.g., Confluent, Kafka) → `Network` or `Server`
-     - Message queue (e.g., ZeroMQ) → `Inbox` or `Network`
-   - Benefits: Provides visual indicators for all components
-   - License: ISC License (permissive)
+    - `aws_*` → `SiAws`
+    - `gcp_*` → `SiGooglecloud` or `SiGcp`
+    - `azure_*` → `SiMicrosoftazure` or `SiAzure`
+    - `mongodb_*` → `SiMongodb`
 
-   **Priority 6: Mark as undefined**
+3.  Naming convention: Convert to camelCase with "Si" prefix
+    - `aws` → `SiAws`
+    - `amazons3` → `SiAmazons3`
+    - `kafka` → `SiApachekafka` or `SiKafka`
+    - `postgresql` → `SiPostgresql`
 
-   - Only if truly no semantic match exists
-   - For internal/control-flow components: `branch`, `catch`, `fallback`, `try`, `switch`
-   - Should be rare - prefer lucide-react icons when possible
+**Priority 5: Lucide-React Generic Icons**
 
-   **Download Process:**
+- For generic/internal components without brand-specific logos
+- For brands where NO logo source is available after exhausting all options
+- Package: `lucide-react`
+- Use semantic matches from lucide's icon library
+- Examples:
+  - `archive` → `Archive`
+  - `workflow` → `Workflow`
+  - `git` → `GitBranch`
+  - `database` → `Database`
+  - `cache` → `Database`
+  - `http` → `Globe`
+  - `terminal` → `Terminal`
+  - Data streaming (e.g., Confluent, Kafka) → `Network` or `Server`
+  - Message queue (e.g., ZeroMQ) → `Inbox` or `Network`
+- Benefits: Provides visual indicators for all components
+- License: ISC License (permissive)
 
-   - For each component:
-     1. Try react-simple-icons (check types file for service-specific, then company logo)
-     2. If not found, try SVGL API (exact title match)
-     3. If not found, try vectorlogo.zone with brand name variations
-     4. If not found, try company's official website/brand kit/GitHub
-     5. If it's a generic component OR all sources fail, use lucide-react semantic match
-     6. Only mark as `undefined` if no semantic lucide icon exists
-   - **Consolidate duplicate logos**: If downloading parent company logo, reuse for all services
-   - Be respectful of API rate limits (add 100-200ms delay between requests)
-   - Handle network errors gracefully with up to 3 retries
-   - For SVGs without viewBox, extract from width/height attributes
+**Priority 6: Mark as undefined**
+
+- Only if truly no semantic match exists
+- For internal/control-flow components: `branch`, `catch`, `fallback`, `try`, `switch`
+- Should be rare - prefer lucide-react icons when possible
+
+**Download Process:**
+
+- For each component:
+  1.  Try react-simple-icons (check types file for service-specific, then company logo)
+  2.  If not found, try SVGL API (exact title match)
+  3.  If not found, try vectorlogo.zone with brand name variations
+  4.  If not found, try company's official website/brand kit/GitHub
+  5.  If it's a generic component OR all sources fail, use lucide-react semantic match
+  6.  Only mark as `undefined` if no semantic lucide icon exists
+- **Consolidate duplicate logos**: If downloading parent company logo, reuse for all services
+- Be respectful of API rate limits (add 100-200ms delay between requests)
+- Handle network errors gracefully with up to 3 retries
+- For SVGs without viewBox, extract from width/height attributes
 
 4. **React Component Generation**
 

@@ -41,11 +41,9 @@ const searchComponents = (
       }
 
       if (query.trim()) {
-        const searchLower = query.toLowerCase();
-        const matchesName = component.name.toLowerCase().includes(searchLower);
-        const matchesDescription = component.description?.toLowerCase().includes(searchLower);
+        const matchesName = component.name.toLowerCase().includes(query.toLowerCase());
 
-        if (!matchesName && !matchesDescription) {
+        if (!matchesName) {
           return false;
         }
       }
@@ -210,7 +208,7 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               <div className="flex flex-col gap-4 sticky top-0 bg-background z-10 border-b-2 pb-4 mb-0 pt-2">
                 <div className="flex justify-between gap-4">
                   <Label className="w-[240px]">
-                    Search for Connectors
+                    Search connectors
                     <Input
                       value={filter}
                       onChange={(e) => {
@@ -290,20 +288,19 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                           {component.summary}
                                         </Text>
                                       </div>
+                                      <div>
+                                        {component?.logoUrl ? (
+                                          <img src={component.logoUrl} alt={component.name} className="size-6" />
+                                        ) : componentLogoMap[component.name as ComponentName] ? (
+                                          <ConnectorLogo name={component.name as ComponentName} className="size-6" />
+                                        ) : (
+                                          <Waypoints className="size-6 text-muted-foreground" />
+                                        )}
+                                      </div>
                                       {field.value === component.name &&
                                         form.getValues('connectionType') === component.type && (
                                           <ChoiceboxItemIndicator className="absolute right-2 top-2" />
                                         )}
-                                      {component?.logoUrl ? (
-                                        <img src={component.logoUrl} alt={component.name} className="size-6" />
-                                      ) : componentLogoMap[component.name as ComponentName] ? (
-                                        <ConnectorLogo
-                                          name={component.name as ComponentName}
-                                          className="size-6 text-muted-foreground"
-                                        />
-                                      ) : (
-                                        <Waypoints className="size-6 text-muted-foreground" />
-                                      )}
                                     </div>
                                   </ChoiceboxItem>
                                 );

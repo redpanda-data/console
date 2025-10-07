@@ -3,9 +3,10 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Text } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertCircle, Check, ChevronDown, PlusIcon } from 'lucide-react';
 import type { editor } from 'monaco-editor';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export const AddSecretsCard = ({
   detectedSecrets,
@@ -20,6 +21,7 @@ export const AddSecretsCard = ({
   editorInstance: editor.IStandaloneCodeEditor | null;
   onOpenDialog: () => void;
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const detectedSecretsSet = useMemo(() => new Set(detectedSecrets), [detectedSecrets]);
 
   const categorizedSecrets = useMemo(() => {
@@ -88,7 +90,7 @@ export const AddSecretsCard = ({
       <CardContent>
         <div className="space-y-4">
           {existingSecrets.length > 0 && (
-            <Collapsible>
+            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
               <div className="flex flex-col gap-2">
                 <Text className="text-sm font-medium">Existing Secrets:</Text>
                 <div className="flex flex-wrap gap-2">
@@ -129,9 +131,9 @@ export const AddSecretsCard = ({
                       <Badge
                         variant="outline"
                         className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                        icon={<ChevronDown className="transition-transform group-data-[state=open]:rotate-180" />}
+                        icon={<ChevronDown className={cn('transition-transform', isOpen && 'rotate-180')} />}
                       >
-                        {existingSecrets.length - 3} More
+                        {isOpen ? 'Hide' : `${existingSecrets.length - 3} More`}
                       </Badge>
                     </CollapsibleTrigger>
                   )}

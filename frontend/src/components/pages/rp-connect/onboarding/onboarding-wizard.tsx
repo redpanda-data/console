@@ -20,11 +20,11 @@ import { ConnectTiles } from './connect-tiles';
 const stepDefinitions = [
   {
     id: WizardStep.ADD_INPUT,
-    title: 'Send Data',
+    title: 'Send data',
   },
-  { id: WizardStep.ADD_OUTPUT, title: 'Receive Data' },
-  { id: WizardStep.ADD_TOPIC, title: 'Add a Topic' },
-  { id: WizardStep.ADD_USER, title: 'Add a User' },
+  { id: WizardStep.ADD_OUTPUT, title: 'Receive data' },
+  { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
+  { id: WizardStep.ADD_USER, title: 'Add a user' },
 ];
 
 const { Stepper } = defineStepper(...stepDefinitions);
