@@ -475,7 +475,7 @@
         // Disallow type annotations for variables, parameters, and class properties initialized with a literal expression.
         "noInferrableTypes": "error",
         // Disallow the use of TypeScript's namespaces. It's legacy as of TS v5+.
-        "noNamespace": "off",
+        "noNamespace": "error",
         // Disallow negation in the condition of an if statement if it has an else clause.
         "noNegationElse": "off",
         // Disallow nested ternary expressions.
