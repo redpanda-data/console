@@ -687,7 +687,7 @@ export class EditOffsetsModal extends Component<{
       if (errors.length > 0) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('apply offsets, backend errors', { errors, request: topics });
-        throw { errors, request: topics };
+        throw new Error(`Apply offsets failed with ${errors.length} errors`);
       }
 
       toast.update(toastRef, {
@@ -992,7 +992,7 @@ export class DeleteOffsetsModal extends Component<{
                         request: deleteRequest,
                         errors,
                       });
-                      throw { request: deleteRequest, errors };
+                      throw new Error(`Delete offsets failed with ${errors.length} errors`);
                     }
                   }
 
