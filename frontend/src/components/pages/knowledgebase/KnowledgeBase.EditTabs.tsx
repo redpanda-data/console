@@ -690,7 +690,10 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
       current = current[keys[i]];
     }
 
-    current[keys[keys.length - 1]] = value;
+    const lastKey = keys.at(-1);
+    if (lastKey !== undefined) {
+      current[lastKey] = value;
+    }
 
     // Special handling for reranker enabled - initialize provider structure
     if (path === 'retriever.reranker.enabled' && value === true) {

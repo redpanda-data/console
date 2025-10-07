@@ -502,7 +502,7 @@
         // Enforce the use of as const over literal type and type annotation.
         "useAsConstAssertion": "error",
         // Use at() instead of integer index access.
-        "useAtIndex": "off",
+        "useAtIndex": "error",
         // Requires following curly brace conventions.
         "useBlockStatements": "off",
         // Enforce using else if instead of nested if in else clauses.

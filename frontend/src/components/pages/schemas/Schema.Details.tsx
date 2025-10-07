@@ -354,7 +354,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                   label:
                     String(v.version) +
                     (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                    (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
+                    (subject.versions.at(-1) === v ? ' (latest)' : ''),
                 }))}
                 value={selectedVersion}
               />
@@ -569,7 +569,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                     label:
                       String(v.version) +
                       (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                      (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
+                      (subject.versions.at(-1) === v ? ' (latest)' : ''),
                   }))}
                   value={selectedVersionLeft}
                 />
@@ -596,7 +596,7 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                     label:
                       String(v.version) +
                       (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                      (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
+                      (subject.versions.at(-1) === v ? ' (latest)' : ''),
                   }))}
                   value={selectedVersionRight}
                 />

@@ -713,7 +713,8 @@ const addRootSpacing = (yamlString: string): string => {
 
         // Add spacing before root components (except first)
         if (previousRootKey !== null && cleanKey !== previousRootKey) {
-          if (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() !== '') {
+          const lastLine = processedLines.at(-1);
+          if (processedLines.length > 0 && lastLine && lastLine.trim() !== '') {
             processedLines.push('');
           }
         }

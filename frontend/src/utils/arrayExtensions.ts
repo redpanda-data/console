@@ -308,7 +308,10 @@ Array.prototype.genericJoin = function genericJoin<T>(
   }
 
   // add final element
-  ar.push(this[this.length - 1]);
+  const lastElement = this.at(-1);
+  if (lastElement !== undefined) {
+    ar.push(lastElement);
+  }
 
   return ar;
 };

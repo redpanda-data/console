@@ -455,10 +455,10 @@ export function groupConsecutive(ar: number[]): number[][] {
   const groups: number[][] = [];
 
   for (const cur of ar) {
-    const group = groups.length > 0 ? groups[groups.length - 1] : undefined;
+    const group = groups.length > 0 ? groups.at(-1) : undefined;
 
     if (group) {
-      const last = group[group.length - 1];
+      const last = group.at(-1);
       if (last === cur - 1) {
         // We can extend the group
         group.push(cur);

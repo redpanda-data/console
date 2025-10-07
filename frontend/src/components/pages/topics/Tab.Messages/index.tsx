@@ -1011,7 +1011,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     if (newColumns.length > 0) {
-      newColumns[newColumns.length - 1].size = Number.POSITIVE_INFINITY;
+      const lastColumn = newColumns.at(-1);
+      if (lastColumn) {
+        lastColumn.size = Number.POSITIVE_INFINITY;
+      }
     }
 
     const columns: ColumnDef<TopicMessage>[] = [
