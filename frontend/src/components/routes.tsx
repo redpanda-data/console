@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+// biome-ignore-all lint/complexity/noBannedTypes: empty object represents pages with no route params
+
 import {
   BeakerIcon,
   BookOpenIcon,
@@ -89,7 +91,6 @@ import { type AppFeature, AppFeatures } from '../utils/env';
 //	Route Types
 //
 export type IRouteEntry = PageDefinition<any>;
-
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
   path: string;
@@ -178,12 +179,14 @@ export const RouteView = () => (
   </AnimatePresence>
 );
 
-enum DisabledReasons {
-  notSupported = 0, // kafka cluster version too low
-  noPermission = 1, // user doesn't have permissions to use the feature,
-  enterpriseFeature = 2,
-  notSupportedServerless = 3, // This feature is not supported in serverless mode
-}
+const DisabledReasons = {
+  notSupported: 0, // kafka cluster version too low
+  noPermission: 1, // user doesn't have permissions to use the feature,
+  enterpriseFeature: 2,
+  notSupportedServerless: 3, // This feature is not supported in serverless mode
+} as const;
+
+type DisabledReasons = (typeof DisabledReasons)[keyof typeof DisabledReasons];
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.noPermission]: (
@@ -259,6 +262,7 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
   return children;
 };
 
+// biome-ignore lint/nursery/useMaxParams: legacy routing function, refactoring would require extensive changes
 function MakeRoute<TRouteParams>(
   path: string,
   page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
@@ -416,7 +420,7 @@ export const APP_ROUTES: IRouteEntry[] = [
   ),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
-  MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
+  MakeRoute<{ tab?: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/acls/create', AclCreatePage, 'Create ACL'),
   MakeRoute<{}>('/security/acls/:aclName/update', AclUpdatePage, 'Update ACL'),
@@ -539,7 +543,7 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 
-  MakeRoute<Record<string, never>>(
+  MakeRoute<{}>(
     '/mcp-servers',
     RemoteMCPListPage,
     'Remote MCP',

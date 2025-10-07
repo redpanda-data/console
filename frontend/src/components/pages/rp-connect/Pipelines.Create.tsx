@@ -58,6 +58,7 @@ const exampleContent = `
 `;
 
 @observer
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable fileName = '';
   @observable description = '';
@@ -211,6 +212,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     );
   }
 
+  // biome-ignore lint/suspicious/useAwait: async needed for error handling in MobX action
   async createPipeline(toast?: CreateToastFnReturn) {
     this.isCreating = true;
 
@@ -533,7 +535,7 @@ export const PipelineEditor = observer(
                         resetAutocompleteSecrets={() => {
                           if (secretAutocomplete && monaco) {
                             secretAutocomplete.dispose();
-                            registerSecretsAutocomplete(monaco, setSecretAutocomplete);
+                            void registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                           }
                         }}
                       />

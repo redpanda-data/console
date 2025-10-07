@@ -323,20 +323,26 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                         form.getValues('connectionType') === component.type && (
                                           <ChoiceboxItemIndicator className="absolute top-2 right-2" />
                                         )}
-                                      {component?.logoUrl ? (
-                                        <img
-                                          alt={component.name}
-                                          className="size-6 grayscale"
-                                          src={component.logoUrl}
-                                        />
-                                      ) : componentLogoMap[component.name as ComponentName] ? (
-                                        <ConnectorLogo
-                                          className="size-6 text-muted-foreground"
-                                          name={component.name as ComponentName}
-                                        />
-                                      ) : (
-                                        <Waypoints className="size-6 text-muted-foreground" />
-                                      )}
+                                      {(() => {
+                                        if (component?.logoUrl) {
+                                          return (
+                                            <img
+                                              alt={component.name}
+                                              className="size-6 grayscale"
+                                              src={component.logoUrl}
+                                            />
+                                          );
+                                        }
+                                        if (componentLogoMap[component.name as ComponentName]) {
+                                          return (
+                                            <ConnectorLogo
+                                              className="size-6 text-muted-foreground"
+                                              name={component.name as ComponentName}
+                                            />
+                                          );
+                                        }
+                                        return <Waypoints className="size-6 text-muted-foreground" />;
+                                      })()}
                                     </div>
                                   </ChoiceboxItem>
                                 );

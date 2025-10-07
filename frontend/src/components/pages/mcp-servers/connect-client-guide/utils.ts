@@ -141,19 +141,21 @@ export const getCloudEnvArgsForInlineJson = () => {
   return cloudEnv !== 'production' ? `"-X","cloud_environment=${cloudEnv}",` : '';
 };
 
-export enum ClientType {
-  CLAUDE_CODE = 'claude-code',
-  CLAUDE_DESKTOP = 'claude-desktop',
-  VSCODE = 'vscode',
-  CURSOR = 'cursor',
-  WINDSURF = 'windsurf',
-  GEMINI = 'gemini',
-  CODEX = 'codex',
-  WARP = 'warp',
-  AUGGIE = 'auggie',
-  CLINE = 'cline',
-  MANUS = 'manus',
-}
+export const ClientType = {
+  CLAUDE_CODE: 'claude-code',
+  CLAUDE_DESKTOP: 'claude-desktop',
+  VSCODE: 'vscode',
+  CURSOR: 'cursor',
+  WINDSURF: 'windsurf',
+  GEMINI: 'gemini',
+  CODEX: 'codex',
+  WARP: 'warp',
+  AUGGIE: 'auggie',
+  CLINE: 'cline',
+  MANUS: 'manus',
+} as const;
+
+export type ClientType = (typeof ClientType)[keyof typeof ClientType];
 
 export const AVAILABLE_CLIENTS = [
   ClientType.CLAUDE_CODE,
@@ -314,6 +316,24 @@ args = [${getCloudEnvArgsForToml()}"cloud", "mcp", "proxy", "${clusterFlag}", "$
       "command": "rpk",
       "args": [
         ${getCloudEnvArgsForJson(6)}"cloud",
+        "mcp",
+        "proxy",
+        "${clusterFlag}",
+        "${clusterId}",
+        "--mcp-server-id",
+        "${mcpServerId}"
+      ]
+    }
+  }
+}`;
+
+    default:
+      return `{
+  "mcpServers": {
+    "${mcpServerName}": {
+      "command": "rpk",
+      "args": [
+        ${getCloudEnvArgsForJson(8)}"cloud",
         "mcp",
         "proxy",
         "${clusterFlag}",

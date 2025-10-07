@@ -42,11 +42,13 @@ import { PageComponent, type PageInitHelper } from '../Page';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
 
-enum ConnectView {
-  KafkaConnect = 'kafka-connect',
-  RedpandaConnect = 'redpanda-connect',
-  RedpandaConnectSecret = 'redpanda-connect-secret',
-}
+const ConnectView = {
+  KafkaConnect: 'kafka-connect',
+  RedpandaConnect: 'redpanda-connect',
+  RedpandaConnectSecret: 'redpanda-connect-secret',
+} as const;
+
+type ConnectView = (typeof ConnectView)[keyof typeof ConnectView];
 
 /**
  * The Redpanda Connect Secret Manager introduces a new tab in Redpanda Connect.
@@ -85,9 +87,9 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    this.checkRPCNSecretEnable();
-    this.refreshData();
-    appGlobal.onRefresh = () => this.refreshData();
+    void this.checkRPCNSecretEnable();
+    void this.refreshData();
+    appGlobal.onRefresh = () => void this.refreshData();
   }
 
   async checkRPCNSecretEnable() {
@@ -204,6 +206,8 @@ class TabClusters extends Component {
 
               return (
                 // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
+                // biome-ignore lint/a11y/noNoninteractiveElementInteractions: legacy MobX pattern
+                // biome-ignore lint/a11y/useKeyWithClickEvents: legacy MobX pattern
                 <span
                   className="hoverLink"
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
@@ -287,6 +291,8 @@ const TabConnectors = observer(() => {
             cell: ({ row: { original } }) => (
               <Tooltip hasArrow={true} label={original.name} placement="top">
                 {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
+                {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: legacy MobX pattern */}
+                {/** biome-ignore lint/a11y/useKeyWithClickEvents: legacy MobX pattern */}
                 <span
                   className="hoverLink"
                   onClick={() =>
@@ -406,6 +412,7 @@ class TabTasks extends Component {
   }
 }
 
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 

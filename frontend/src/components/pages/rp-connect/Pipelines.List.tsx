@@ -209,6 +209,7 @@ export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
 });
 
 @observer
+// biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesList extends PageComponent<{}> {
   @observable placeholder = 5;
 
@@ -280,21 +281,22 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         <ToastContainer />
         {/* Pipeline List */}
 
-        {pipelinesApi.pipelines.length !== 0 && isFeatureFlagEnabled('enableRpcnTiles') ? (
-          <div className="my-5">
-            <WizardCreatePipelineButton />
-          </div>
-        ) : pipelinesApi.pipelines.length !== 0 ? (
-          <div className="my-5 flex flex-col gap-2">
-            <LegacyCreatePipelineButton />
-            <SearchField
-              placeholderText="Enter search term / regex..."
-              searchText={uiSettings.pipelinesList.quickSearch}
-              setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
-              width="350px"
-            />
-          </div>
-        ) : null}
+        {pipelinesApi.pipelines.length !== 0 &&
+          (isFeatureFlagEnabled('enableRpcnTiles') ? (
+            <div className="my-5">
+              <WizardCreatePipelineButton />
+            </div>
+          ) : (
+            <div className="my-5 flex flex-col gap-2">
+              <LegacyCreatePipelineButton />
+              <SearchField
+                placeholderText="Enter search term / regex..."
+                searchText={uiSettings.pipelinesList.quickSearch}
+                setSearchText={(x) => (uiSettings.pipelinesList.quickSearch = x)}
+                width="350px"
+              />
+            </div>
+          ))}
 
         {(pipelinesApi.pipelines ?? []).length === 0 ? (
           <EmptyPlaceholder />
@@ -365,7 +367,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                               isClosable: false,
                               title: 'Pipeline deleted',
                             });
-                            pipelinesApi.refreshPipelines(true);
+                            await pipelinesApi.refreshPipelines(true);
                           })
                           .catch((err) => {
                             toast({
