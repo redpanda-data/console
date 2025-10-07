@@ -489,7 +489,7 @@
         // Disallow specified modules when loaded by import or require.
         "noRestrictedImports": "error",
         // Disallow user defined types.
-        "noRestrictedTypes": "off",
+        "noRestrictedTypes": "error",
         // Disallow the use of constants which its value is the upper-case version of its name.
         "noShoutyConstants": "error",
         // Enforce the use of String.slice() over String.substr() and String.substring().
