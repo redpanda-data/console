@@ -462,48 +462,161 @@
         "noGlobalEval": "error"
       },
       "style": {
-        // Disallow reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
-        "noParameterAssign": "off",
-        // Enforce the use of as const over literal type and type annotation.
-        "useAsConstAssertion": "error",
-        // Enforce default function parameters and optional function parameters to be last.
-        "useDefaultParameterLast": "error",
-        // Require that each enum member value be explicitly initialized.
-        "useEnumInitializers": "error",
-        // Prevent extra closing tags for components without children.
-        "useSelfClosingElements": "error",
-        // Disallow multiple variable declarations in the same variable statement
-        "useSingleVarDeclarator": "error",
-        // Disallow template literals if interpolation and special-character handling are not needed
-        "noUnusedTemplateLiteral": "error",
-        // Use the Number properties instead of global ones. For instance. Number.isNaN();
-        "useNumberNamespace": "error",
+        /** ------------------------ JavaScript Rules ------------------------ **/
+
+        // Disallow using a callback in asynchronous tests and hooks.
+        "noDoneCallback": "off",
+        // Allow TypeScript enum.
+        "noEnum": "off",
+        // Disallow exporting an imported variable.
+        "noExportedImports": "off",
+        // Prevent usage of <head> element in a Next.js project.
+        "noHeadElement": "off",
         // Disallow type annotations for variables, parameters, and class properties initialized with a literal expression.
         "noInferrableTypes": "error",
+        // Disallow the use of TypeScript's namespaces. It's legacy as of TS v5+.
+        "noNamespace": "off",
+        // Disallow negation in the condition of an if statement if it has an else clause.
+        "noNegationElse": "off",
+        // Disallow nested ternary expressions.
+        "noNestedTernary": "off",
+        // Disallow non-null assertions using the ! postfix operator.
+        "noNonNullAssertion": "error",
+        // Disallow reassigning function parameters.
+        "noParameterAssign": "off", // Enable later - Disallows reassigning function parameters. This is a common MobX pattern in Console, so we leave it for now.
+        // Disallow the use of parameter properties in class constructors.
+        "noParameterProperties": "off",
+        // This rule allows you to specify global variable names that you don't want to use in your application.
+        "noRestrictedGlobals": "off",
+        // Disallow specified modules when loaded by import or require.
+        "noRestrictedImports": "off",
+        // Disallow user defined types.
+        "noRestrictedTypes": "off",
+        // Disallow the use of constants which its value is the upper-case version of its name.
+        "noShoutyConstants": "off",
+        // Enforce the use of String.slice() over String.substr() and String.substring().
+        "noSubstr": "off",
+        // Disallow template literals if interpolation and special-character handling are not needed
+        "noUnusedTemplateLiteral": "error",
         // Disallow else block when the if block breaks early.
         "noUselessElse": "error",
-        // Enforce naming conventions for JavaScript and TypeScript filenames.
-        // Supports TanStack Router convention: allows - prefixed files (e.g., -hooks.ts, -components.tsx)
-        // For now we don't have bandwidth to refactor the codebase fully.
-        "useFilenamingConvention": "off", // enable later
-        // Disallow exporting an imported variable. Sometimes we need to do it for monaco editor.
-        "noExportedImports": "off", // enable later
-        // Require the default clause in switch statements.
-        "useDefaultSwitchClause": "off", // enable later
-        // Require consistent accessibility modifiers on class properties and methods.
-        "useConsistentMemberAccessibility": "off", // enable later
-        // Disallow the use of TypeScript's namespaces. It's legacy as of TS v5+.
-        "noNamespace": "off", // enable later
-        // Disallow nested ternary expressions. Too many cases to cover for now.
-        "noNestedTernary": "off", // enable later
-        // Disallow TypeScript enum. We use them a lot so it's off.
-        "noEnum": "off",
-        // Disallow throwing non-Error values. For now we allow it.
-        "useThrowOnlyError": "off",
-        // Disallow the use of parameter properties in class constructors.
-        "noParameterProperties": "off", // enable later
+        // Disallow the use of yoda expressions.
+        "noYodaExpression": "off",
+        // Disallow Array constructors.
+        "useArrayLiterals": "off",
+        // Enforce the use of as const over literal type and type annotation.
+        "useAsConstAssertion": "off",
+        // Use at() instead of integer index access.
+        "useAtIndex": "off",
+        // Requires following curly brace conventions.
+        "useBlockStatements": "off",
+        // Enforce using else if instead of nested if in else clauses.
+        "useCollapsedElseIf": "off",
         // Enforce using single if instead of nested if clauses.
-        "useCollapsedIf": "off" // enable later
+        "useCollapsedIf": "off",
+        // Require consistently using either T[] or Array<T>
+        "useConsistentArrayType": "off",
+        // Enforce the use of new for all builtins, except String, Number and Boolean.
+        "useConsistentBuiltinInstantiation": "off",
+        // Require consistent accessibility modifiers on class properties and methods.
+        "useConsistentMemberAccessibility": "off",
+        // Require the consistent declaration of object literals. Defaults to explicit definitions.
+        "useConsistentObjectDefinitions": "off",
+        // Require const declarations for variables that are only assigned once.
+        "useConst": "off",
+        // Enforce default function parameters and optional function parameters to be last.
+        "useDefaultParameterLast": "error",
+        // Require the default clause in switch statements.
+        "useDefaultSwitchClause": "off",
+        // Require specifying the reason argument when using @deprecated directive
+        "useDeprecatedReason": "off",
+        // Require that each enum member value be explicitly initialized.
+        "useEnumInitializers": "error",
+        // Disallow the use of Math.pow in favor of the ** operator.
+        "useExponentiationOperator": "off",
+        // Promotes the use of export type for types.
+        "useExportType": "off",
+        // Enforce naming conventions for JavaScript and TypeScript filenames.
+        // Supports TanStack Router convention: allows - prefixed files (e.g., -hooks.ts, $slug)
+        "useFilenamingConvention": {
+          "level": "off",
+          "options": {
+            "requireAscii": true,
+            "filenameCases": ["kebab-case"],
+            "match": "[\\-$]?(.+?)[.](.+)"
+          }
+        },
+        // This rule recommends a for-of loop when in a for loop, the index used to extract an item from the iterated array.
+        "useForOf": "off",
+        // This rule enforces the use of <>...</> over <Fragment>...</Fragment>.
+        "useFragmentSyntax": "off",
+        // Validates that all enum values are capitalized.
+        "useGraphqlNamingConvention": "off",
+        // Enforce that getters and setters for the same property are adjacent in class and object definitions.
+        "useGroupedAccessorPairs": "off",
+        // Promotes the use of import type for types.
+        "useImportType": "off",
+        // Require all enum members to be literal values.
+        "useLiteralEnumMembers": "off",
+        // Reports usage of “magic numbers” — numbers used directly instead of being assigned to named constants.
+        "noMagicNumbers": "off",
+        // Promotes the usage of node:assert/strict over node:assert.
+        "useNodeAssertStrict": "off",
+        // Enforces using the node: protocol for Node.js builtin modules.
+        "useNodejsImportProtocol": "off",
+        // Use the Number properties instead of global ones.
+        "useNumberNamespace": "error",
+        // Enforce the use of numeric separators in numeric literals.
+        "useNumericSeparators": "off",
+        // Prefer object spread over Object.assign() when constructing new objects.
+        "useObjectSpread": "off",
+        // Enforce marking members as readonly if they are never modified outside the constructor.
+        "useReadonlyClassProperties": "off",
+        // Prevent extra closing tags for components without children.
+        "useSelfClosingElements": "error",
+        // Require assignment operator shorthand where possible.
+        "useShorthandAssign": "off",
+        // Enforce using function types instead of object type with call signatures.
+        "useShorthandFunctionType": "off",
+        // Require a description parameter for the Symbol().
+        "useSymbolDescription": "off",
+        // Prefer template literals over string concatenation.
+        "useTemplate": "off",
+        // Require new when throwing an off.
+        "useThrowNewError": "off",
+        // Disallow throwing non-Error values.
+        "useThrowOnlyError": "off",
+        // Enforce the use of String.trimStart() and String.trimEnd() over String.trimLeft() and String.trimRight().
+        "useTrimStartEnd": "off",
+        // Disallow overload signatures that can be unified into a single signature.
+        "useUnifiedTypeSignatures": "off",
+
+        // Disallow use of CommonJs module system in favor of ESM style imports.
+        "noCommonJs": "off",
+        // Disallow default exports.
+        "noDefaultExport": "off",
+        // Disallow implicit true values on JSX boolean attributes.
+        "noImplicitBoolean": "off",
+        // Disallow the use of process.env.
+        "noProcessEnv": "off",
+        // Enforce declaring components only within modules that export React Components exclusively.
+        "useComponentExportOnlyModules": "off",
+        // Naming convention rule is disabled to allow flexibility in codebase naming styles.
+        "useNamingConvention": "off",
+        // This rule enforces consistent use of curly braces inside JSX attributes and JSX children.
+        "useConsistentCurlyBraces": "off",
+        // Enforce explicitly comparing the length, size, byteLength or byteOffset property of a value.
+        "useExplicitLengthCheck": "off",
+        // Require that all exports are declared after all non-export statements.
+        "useExportsLast": "off",
+        // Disallow multiple variable declarations in the same variable statement.
+        "useSingleVarDeclarator": "error",
+
+        /** ------------------------ CSS Rules ------------------------ **/
+        // Disallow a lower specificity selector from coming after a higher specificity selector.
+        "noDescendingSpecificity": "off",
+        // Disallow use of @value rule in css modules.
+        "noValueAtRule": "off"
       },
       "suspicious": {
         /** ------------------------ JavaScript Rules ------------------------ **/
