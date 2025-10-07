@@ -121,11 +121,12 @@ const DefaultQuickTableOptions = {
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
 
 // [ { key: 'a', value: 'b' } ]
-export function QuickTable(data: { key: any; value: any }[], options?: QuickTableOptions): JSX.Element;
 // { 'key1': 'value1', 'key2': 'value2' }
-export function QuickTable(data: { [key: string]: any }, options?: QuickTableOptions): JSX.Element;
 // [ ['a', 'b'] ]
-export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
+export function QuickTable(
+  data: [any, any][] | { [key: string]: any } | { key: any; value: any }[],
+  options?: QuickTableOptions
+): JSX.Element;
 
 export function QuickTable(
   data: { key: any; value: any }[] | { [key: string]: any } | [any, any][],
