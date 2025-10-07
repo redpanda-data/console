@@ -650,5 +650,6 @@ export const navigatorClipboardErrorHandler = (e: DOMException) => {
     status: 'error',
     description: 'Unable to copy settings to clipboard. See console for more information.',
   });
+  // biome-ignore lint/suspicious/noConsole: error logging for debugging clipboard failures
   console.error('unable to copy settings to clipboard', { error: e });
 };

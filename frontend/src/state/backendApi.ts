@@ -227,6 +227,7 @@ async function handle401(res: Response) {
   try {
     const text = await res.text();
     const obj = JSON.parse(text);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`unauthorized message: ${text}`);
 
     const err = obj as ApiError;
@@ -737,7 +738,8 @@ const apiStore = {
 
         for (const t of response.topics) {
           if (t.error != null) {
-            // console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
             continue;
           }
 
@@ -786,9 +788,6 @@ const apiStore = {
             });
           }
         }
-
-        // if (errors.length > 0)
-        //     console.error('refreshAllTopicPartitions: response had errors', errors);
       });
     }, addError);
   },
@@ -835,6 +834,7 @@ const apiStore = {
           } else {
             this.topicPartitionErrors.set(topicName, partitionErrors);
             this.topicWatermarksErrors.set(topicName, waterMarksErrors);
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error(
               `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`
             );
@@ -870,6 +870,7 @@ const apiStore = {
         this.topicPartitions.set(topicName, response.partitions);
 
         if (partitionErrors > 0 || waterMarkErrors > 0)
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.warn(
             `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`
           );
@@ -902,6 +903,7 @@ const apiStore = {
         if (v) normalizeAcls(v.aclResources);
         this.topicAcls.set(topicName, v);
       })
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       .catch(console.error);
   },
 
@@ -951,22 +953,27 @@ const apiStore = {
     const requests: Array<Promise<any>> = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
         this.clusterOverview.kafkaAuthorizerError = e;
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getConsoleInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getKafkaInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getRedpandaInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
       client.getKafkaConnectInfo({}).catch((e) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
       }),
@@ -976,6 +983,7 @@ const apiStore = {
     if (api.userData?.canViewSchemas) {
       requests.push(
         client.getSchemaRegistryInfo({}).catch((e) => {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(e);
           return null;
         })
@@ -1087,6 +1095,7 @@ const apiStore = {
         }
         this.consumerGroupAcls.set(groupName, v);
       })
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       .catch(console.error);
   },
 
@@ -1160,6 +1169,7 @@ const apiStore = {
       for (const binding of info.roleBindings) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         if (binding.resolvedRole == null) console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
       }
 
@@ -1168,6 +1178,7 @@ const apiStore = {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
         if (user.bindings.any((b) => b == null))
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
 
         user.grantedRoles = [];
@@ -1208,6 +1219,7 @@ const apiStore = {
       })
       .catch((err) => {
         this.schemaMode = 'Unknown';
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('failed to request schema mode', err);
       });
   },
@@ -1257,6 +1269,7 @@ const apiStore = {
       })
       .catch((err) => {
         this.schemaTypes = undefined;
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('failed to request schema type', err);
       });
   },
@@ -1288,6 +1301,7 @@ const apiStore = {
         const cleanedReferences = [] as SchemaReferencedByEntry[];
         for (const ref of references) {
           if (ref.error) {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('error in refreshSchemaReferencedBy, reference entry has error', {
               subjectName,
               version,
@@ -2005,6 +2019,7 @@ const apiStore = {
           this.licensesLoaded = 'failed';
           const errorText = err instanceof Error ? err.message : String(err);
 
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.log(`error refreshing licenses: ${errorText}`);
           return err;
         }),
@@ -2113,6 +2128,7 @@ const apiStore = {
     }
 
     return await client.createDebugBundle(request).finally(() => {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       this.refreshDebugBundleStatuses().catch(console.error);
     });
   },
@@ -2130,6 +2146,7 @@ const apiStore = {
         jobId,
       })
       .finally(() => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.refreshDebugBundleStatuses().catch(console.error);
       });
   },
@@ -2146,6 +2163,7 @@ const apiStore = {
         deleteAll: true,
       })
       .finally(() => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.refreshDebugBundleStatuses().catch(console.error);
       });
   },
@@ -2215,6 +2233,7 @@ export const rolesApi = observable({
         .map((x) => {
           const principalParts = x.principal.split(':');
           if (principalParts.length !== 2) {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('failed to split principal of role', {
               roleName,
               principal: x.principal,
@@ -2225,6 +2244,7 @@ export const rolesApi = observable({
           const name = principalParts[1];
 
           if (principalType !== 'User') {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('unexpected principal type in refreshRoleMembers', {
               roleName,
               principal: x.principal,
@@ -2635,10 +2655,12 @@ export function createMessageSearch() {
           try {
             switch (res.controlMessage.case) {
               case 'phase':
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.log(`phase: ${res.controlMessage.value.phase}`);
                 this.searchPhase = res.controlMessage.value.phase;
                 break;
               case 'progress':
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.log(`progress: ${res.controlMessage.value.messagesConsumed}`);
                 this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
                 this.totalMessagesConsumed = Number(res.controlMessage.value.messagesConsumed);
@@ -2652,6 +2674,7 @@ export function createMessageSearch() {
                 break;
               case 'error':
                 // error doesn't necessarily mean the whole request is done
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.info(`ws backend error: ${res.controlMessage.value.message}`);
                 toast({
                   title: 'Backend Error',
@@ -2752,6 +2775,7 @@ export function createMessageSearch() {
                     m.key.encoding = 'cbor';
                     break;
                   default:
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
                     console.log('unhandled key encoding type', {
                       encoding: key?.encoding,
                       encodingName:
@@ -2775,8 +2799,6 @@ export function createMessageSearch() {
                 m.keyJson = JSON.stringify(m.key.payload);
                 m.key.size = Number(key?.payloadSize);
                 m.key.isPayloadTooLarge = key?.isPayloadTooLarge;
-
-                // console.log(m.keyJson)
 
                 // value
                 const val = res.controlMessage.value.value;
@@ -2828,6 +2850,7 @@ export function createMessageSearch() {
                     m.value.encoding = 'cbor';
                     break;
                   default:
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
                     console.log('unhandled value encoding type', {
                       encoding: val?.encoding,
                       encodingName:
@@ -2856,6 +2879,7 @@ export function createMessageSearch() {
               }
             }
           } catch (e) {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.error('error in listMessages loop', { error: e });
           }
         }
@@ -2869,6 +2893,7 @@ export function createMessageSearch() {
         if (messageSearchAbortController.signal.aborted) {
           // Do not throw, this is a user cancellation
         } else {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
           throw e;
         }

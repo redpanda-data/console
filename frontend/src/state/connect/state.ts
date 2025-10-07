@@ -69,6 +69,7 @@ export class SecretCreationError extends CustomError {}
  * if (p.definition.type == DataType.Boolean) {
  *     // Boolean
  *     // convert 'false' | 'true' to actual boolean values
+ // biome-ignore lint/suspicious/noConsole: intentional console usage
  *     console.log(name, initialValue);
  *     if (typeof defaultValue == 'string')
  *         if (defaultValue.toLowerCase() == 'false') defaultValue = p.definition.default_value = false as any;
@@ -461,6 +462,7 @@ export class ConnectorPropertiesStore {
     if (features?.editing) this.crud = 'update';
 
     this.fallbackGroupName = removeNamespace(this.pluginClassName);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     this.initConfig().catch(console.error);
   }
 
@@ -570,6 +572,7 @@ export class ConnectorPropertiesStore {
               const prop = this.propsByName.get(k);
 
               if (!prop) {
+                // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
                   step: step.name,
                   group: groupDef,
@@ -608,12 +611,14 @@ export class ConnectorPropertiesStore {
         reaction(
           () => this.getConfigObject(),
           (config) => {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             this.validate(config).catch(console.error);
           },
           { delay: 300, fireImmediately: true, equals: comparer.structural }
         )
       );
     } catch (err: any) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error in initConfig', err);
       this.error =
         typeof err === 'object'
@@ -725,6 +730,7 @@ export class ConnectorPropertiesStore {
       // Set last error values, so we know when to show the validation error
       for (const g of this.allGroups) for (const p of g.properties) p.lastErrorValue = p.value;
     } catch (err: any) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error validating config', err);
     }
   }

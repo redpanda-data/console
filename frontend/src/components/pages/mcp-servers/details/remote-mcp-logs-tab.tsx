@@ -78,10 +78,12 @@ function executeMessageSearch(search: MessageSearch, topicName: string, remoteMc
     try {
       return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in remoteMcpLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: unknown) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in remoteMcpLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return Promise.resolve([]);
     }

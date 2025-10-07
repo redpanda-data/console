@@ -35,6 +35,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
   try {
     const location = appGlobal.historyLocation();
     if (!location) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Location not available yet, skipping query update');
       return;
     }
@@ -49,6 +50,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
       appGlobal.historyReplace(`${path}${newQuery}`);
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to update query:', error);
   }
 }

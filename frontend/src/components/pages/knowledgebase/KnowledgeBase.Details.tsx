@@ -74,12 +74,14 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       knowledgebaseApi.getKnowledgeBase(this.props.knowledgebaseId),
       rpcnSecretManagerApi.refreshSecrets(true).catch((err) => {
         // Silently handle secrets loading error - secrets are optional
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('KnowledgeBase.Details: Failed to load secrets for Knowledge Base page:', err);
       }),
     ])
       .then(([kb]) => {
         this.knowledgeBase = kb;
         // Load consumer group data after knowledge base is loaded
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.loadConsumerGroupData().catch(console.error);
       })
       .catch((err) => {
@@ -114,6 +116,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       const errorStr = String(err);
       if (errorStr.includes('404') || errorStr.includes('not found')) {
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('KnowledgeBase.Details: Failed to load consumer group data:', err);
       }
     } finally {
@@ -197,6 +200,7 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
       requiredText: this.knowledgeBase.displayName.trim(),
 
       onPrimaryButton: (closeModal) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.handleDeleteConfirmed().catch(console.error);
         closeModal();
       },

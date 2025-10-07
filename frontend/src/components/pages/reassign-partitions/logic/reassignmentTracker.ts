@@ -86,6 +86,7 @@ export class ReassignmentTracker {
 
     // Active reassignments
     this.reassignTimer = window.setInterval(
+      // biome-ignore lint/suspicious/noConsole: existing console error logging
       () => this.refreshReassignments().catch(console.error),
       refreshIntervals.reassignments
     );
@@ -122,7 +123,6 @@ export class ReassignmentTracker {
           // console.log('adding new state', { id: r.id, reassignment: r });
           const state = this.createReassignmentState(r);
           this.trackingReassignments.push(state);
-          if (IsDev) console.log('tracking reassignment', r.topicName);
         }
       }
 
@@ -136,7 +136,6 @@ export class ReassignmentTracker {
           r.actualTimeCompleted = new Date();
           r.progressPercent = 100;
           r.remaining = { value: 0, timestamp: new Date() };
-          if (IsDev) console.log('completed reassignment', r.topicName);
         }
       }
 
@@ -150,8 +149,7 @@ export class ReassignmentTracker {
         if (x.actualTimeCompleted == null) return false; // not yet complete
         const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
         if (age > 8) {
-          if (IsDev) console.log('removing reassignment', x.topicName);
-          return true;
+          if (IsDev) return true;
         }
         return false;
       });

@@ -90,6 +90,7 @@ const authenticationApi = observable({
         appGlobal.historyPush('/overview');
       });
 
+    // biome-ignore lint/suspicious/noConsole: debug logging
     console.log({ response });
   },
 });

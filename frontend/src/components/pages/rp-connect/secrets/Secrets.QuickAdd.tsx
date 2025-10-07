@@ -143,7 +143,6 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                 onChange={(val, meta) => {
                   if (val && isSingleValue(val) && val.value) {
                     if (meta.action === 'create-option') {
-                      console.log({ value: val, meta });
                       enableNewSecret();
                       // @ts-expect-error when creating a new secret, the value is a string
                       setId(meta.option.value);
@@ -151,7 +150,6 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                     }
                     disableNewSecret();
                     setSecret('');
-                    console.log({ value: val, meta });
                     setSearchValue('');
                     setId(val.value.id);
                   }

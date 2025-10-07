@@ -220,6 +220,7 @@ const ImportExportTab: FC = observer(() => {
                   status: 'error',
                   description: 'Unable to import settings. See console for more information.',
                 });
+                // biome-ignore lint/suspicious/noConsole: error logging for debugging settings import failures
                 console.error('unable to import settings', { error: e });
               }
             }}

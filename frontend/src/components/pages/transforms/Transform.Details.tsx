@@ -236,6 +236,7 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       if (indexOfOldMessage > -1) {
         state.messages[indexOfOldMessage] = messages[0];
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('LoadLargeMessage: cannot find old message to replace', {
           searchReq,
           messages,
@@ -245,6 +246,7 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
         );
       }
     } else {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('LoadLargeMessage: messages response is empty', { messages });
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
@@ -358,10 +360,12 @@ function executeMessageSearch(search: MessageSearch, topicName: string, transfor
     try {
       return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in transformLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in transformLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return Promise.resolve([]);
     }

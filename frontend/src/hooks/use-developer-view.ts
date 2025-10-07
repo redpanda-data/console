@@ -18,6 +18,7 @@ export const runDeveloperView = (): boolean => {
     const storedViewSetting = window.localStorage.getItem('dv');
     developerView = storedViewSetting ? JSON.parse(storedViewSetting) : false;
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(error);
   }
 

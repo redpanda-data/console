@@ -102,7 +102,9 @@ class UserCreatePage extends PageComponent {
     p.addBreadcrumb('Access control', '/security');
     p.addBreadcrumb('Create user', '/security/users/create');
 
+    // biome-ignore lint/suspicious/noConsole: error logging
     this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
@@ -385,6 +387,7 @@ export const RoleSelector = observer((p: { state: string[] }) => {
           isMulti={false}
           noOptionsMessage={() => 'No roles found'}
           onChange={(val, meta) => {
+            // biome-ignore lint/suspicious/noConsole: debug logging
             console.log('onChange', { metaAction: meta.action, val });
             if (val && isSingleValue(val) && val.value) {
               state.push(val.value);

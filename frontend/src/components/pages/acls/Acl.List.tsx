@@ -649,6 +649,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
     const quickSearchRegExp = new RegExp(uiSettings.aclList.configTable.quickSearch, 'i');
     groups = groups?.filter((aclGroup) => aclGroup.principalName.match(quickSearchRegExp));
   } catch (_e) {
+    // biome-ignore lint/suspicious/noConsole: user feedback for invalid regex
     console.warn('Invalid expression');
   }
 
@@ -774,6 +775,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                       try {
                         await deleteACLsForPrincipal(record.principal, record.host);
                       } catch (err: unknown) {
+                        // biome-ignore lint/suspicious/noConsole: error logging
                         console.error('failed to delete acls', { error: err });
                         setAclFailed({ err });
                       }
@@ -791,6 +793,7 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
                           ),
                         });
                       } catch (err: unknown) {
+                        // biome-ignore lint/suspicious/noConsole: error logging
                         console.error('failed to delete acls', { error: err });
                         setAclFailed({ err });
                       }

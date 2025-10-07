@@ -407,7 +407,6 @@ autorun(
   () => {
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
-    //console.log('settings: ' + json);
   },
   { delay: 2000 }
 );
@@ -433,6 +432,7 @@ window.addEventListener('storage', (e) => {
       assignDeep(uiSettings, newSettings);
     });
   } catch (err) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('error applying settings update from another tab', { storageEvent: e, error: err });
   }
 });

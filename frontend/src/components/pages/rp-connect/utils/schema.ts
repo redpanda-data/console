@@ -79,6 +79,7 @@ const parseSchema = () => {
 
   // Check if schema has the new JSON Schema format with definitions
   if (!schemaData.definitions) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('Schema does not have definitions structure. Expected JSON Schema format.');
     return allComponents;
   }
@@ -213,6 +214,7 @@ export const mergeConnectConfigs = (
   try {
     doc = parseDocument(existingYaml);
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to parse existing YAML, starting with empty config:', error);
     return newConfigObject;
   }
@@ -230,6 +232,7 @@ export const mergeConnectConfigs = (
     // Add schema comments
     newYamlWithComments = addSchemaComments(newYamlWithComments, componentSpec);
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to generate YAML with comments, using plain object:', error);
     // Fallback to plain object if YAML generation fails
     newYamlWithComments = '';
@@ -241,6 +244,7 @@ export const mergeConnectConfigs = (
     try {
       newDoc = parseDocument(newYamlWithComments);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Failed to parse new YAML with comments:', error);
     }
   }
@@ -409,6 +413,7 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
 
     return yamlString;
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('Error converting config to YAML:', error);
     return JSON.stringify(configObject, null, 2);
   }
@@ -431,6 +436,7 @@ const getPersistedWizardData = () => {
       topicData = JSON.parse(topicJson);
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to parse topic data from session storage:', error);
   }
 
@@ -440,6 +446,7 @@ const getPersistedWizardData = () => {
       userData = JSON.parse(userJson);
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to parse user data from session storage:', error);
   }
 

@@ -58,6 +58,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
       const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }

@@ -10,6 +10,7 @@ export const useSessionStorage = <T>(key: string, initialValue?: T) => {
       const item = sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn(`Error reading from sessionStorage key "${key}":`, error);
       return initialValue;
     }
@@ -22,6 +23,7 @@ export const useSessionStorage = <T>(key: string, initialValue?: T) => {
         setStoredValue(valueToStore);
         sessionStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn(`Error setting sessionStorage key "${key}":`, error);
       }
     },

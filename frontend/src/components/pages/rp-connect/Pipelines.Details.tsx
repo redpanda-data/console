@@ -145,6 +145,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                     title: `Successfully ${isStopped ? 'started' : 'stopped'} pipeline`,
                   });
 
+                  // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
                   watchPipelineUpdates().catch(console.error);
                 })
                 .catch((err) => {
@@ -287,16 +288,11 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
       if (indexOfOldMessage > -1) {
         state.messages[indexOfOldMessage] = messages[0];
       } else {
-        console.error('LoadLargeMessage: cannot find old message to replace', {
-          searchReq,
-          messages,
-        });
         throw new Error(
           'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {
-      console.error('LoadLargeMessage: messages response is empty', { messages });
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
   };
@@ -407,13 +403,8 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
   // so any changes in phase, messages, error, etc can be used immediately in the ui
   return runInAction(() => {
     try {
-      return search.startSearch(request).catch((err) => {
-        const msg = (err as Error).message ?? String(err);
-        console.error(`error in pipelineLogsMessageSearch: ${msg}`);
-        return [];
-      });
-    } catch (error: any) {
-      console.error(`error in pipelineLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
+      return search.startSearch(request);
+    } catch (_error: any) {
       return Promise.resolve([]);
     }
   });

@@ -40,6 +40,7 @@ const ErrorPage = observer(() => {
           window.location.reload();
         }
       })
+      // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
       .catch(console.error);
   }, []);
 

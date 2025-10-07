@@ -515,7 +515,7 @@
         // Discourage the usage of Array index in keys.
         "noArrayIndexKey": "off", // Enable later - many violations
         // Disallow assignments in expressions.
-        "noAssignInExpressions": "off", // Enable later - many violations
+        "noAssignInExpressions": "off", // Enable later - many violations (mostly MobX related)
         // Disallows using an async function as a Promise executor.
         "noAsyncPromiseExecutor": "error",
         // Prevents the use of the ! pattern in the first position of files.includes in the configuration file.
@@ -537,7 +537,7 @@
         // Disallow void type outside of generic or return types.
         "noConfusingVoidType": "error",
         // Disallow the use of console.
-        "noConsole": "off", // Enable later - many violations
+        "noConsole": "error",
         // Disallow TypeScript const enum.
         "noConstEnum": "error",
         // Prevents from having control characters and some escape sequences that match control characters in regular expression literals.

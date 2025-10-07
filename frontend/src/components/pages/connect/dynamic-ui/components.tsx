@@ -107,10 +107,12 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
     const connectorName = (configObj as any)?.name;
 
     if (connectorName) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('trying to obtain initial config from existing connector...', { name: connectorName });
       const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === connectorStore.clusterName);
       const connector = cluster?.connectors.first((x) => x.name === connectorName);
       if (connector) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.log('success! found connector config', {
           clusterName: connectorStore.clusterName,
           connectorName,
@@ -120,12 +122,14 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
         return JSON.stringify(connector.config, undefined, 4);
       }
 
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('unable to find existing connector for known connector name!', {
         clusterName: connectorStore.clusterName,
         connectorName,
       });
     }
 
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log('creating "new" config for connector', {
       name: connectorName,
       config: clone(configObj),

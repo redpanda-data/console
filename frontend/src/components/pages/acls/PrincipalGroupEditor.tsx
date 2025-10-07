@@ -121,6 +121,7 @@ export const AclPrincipalGroupEditor = observer(
         const results = await Promise.allSettled(requests);
         const rejected = results.filter((x) => x.status === 'rejected');
         if (rejected.length) {
+          // biome-ignore lint/suspicious/noConsole: error logging
           console.error('some create acl requests failed', { results, rejected });
           throw new Error(`${rejected.length} requests failed`);
         }

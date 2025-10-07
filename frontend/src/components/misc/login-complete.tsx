@@ -23,6 +23,7 @@ import { queryToObj } from '../../utils/queryHelper';
 
 class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     this.completeLogin(this.props.provider, window.location).catch(console.error);
   }
 

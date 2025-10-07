@@ -41,7 +41,9 @@ class RoleEditPage extends PageComponent<{ roleName: string }> {
       `/security/roles/${encodeURIComponent(this.props.roleName)}`
     );
 
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 

@@ -116,7 +116,7 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
   topicAssignments = clone(topicAssignments);
 
   // Remove partition reassignments that have no effect
-  let totalRemovedPartitions = 0;
+  let _totalRemovedPartitions = 0;
   const emptyTopics: string[] = [];
   for (const t in topicAssignments) {
     if (Object.hasOwn(topicAssignments, t)) {
@@ -135,7 +135,6 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
           const brokersAfter = a.brokers;
 
           if (brokersBefore.length !== brokersAfter.length) {
-            console.warn('remove empty reassignments: brokersBefore.length != brokersAfter.length');
             continue;
           }
 
@@ -151,7 +150,7 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
         }
       }
 
-      totalRemovedPartitions += partitionIdsToRemove.length;
+      _totalRemovedPartitions += partitionIdsToRemove.length;
 
       if (partitionIdsToRemove.length === originalReassignedPartitionsCount) {
         // All partition reassignments for this topic have are redundant, remove the whole topic
@@ -167,13 +166,6 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
 
   // Remove topics that are completely redundant
   for (const t of emptyTopics) delete topicAssignments[t];
-
-  console.log('removed redundant partition reassignments', {
-    totalRemovedTopics: emptyTopics.length,
-    totalRemovedPartitions: totalRemovedPartitions,
-    removedTopics: emptyTopics,
-    optimizedAssignments: clone(topicAssignments),
-  });
 
   return topicAssignments;
 }

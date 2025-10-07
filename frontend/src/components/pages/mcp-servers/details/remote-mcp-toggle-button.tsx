@@ -26,6 +26,7 @@ export const RemoteMCPToggleButton = () => {
     try {
       await startMCPServer({ id });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to start MCP server:', error);
     }
   };
@@ -35,6 +36,7 @@ export const RemoteMCPToggleButton = () => {
     try {
       await stopMCPServer({ id });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to stop MCP server:', error);
     }
   };

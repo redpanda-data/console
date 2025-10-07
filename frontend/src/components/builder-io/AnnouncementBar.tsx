@@ -22,6 +22,7 @@ export default function AnnouncementBar() {
         }
       })
       .catch((error) => {
+        // biome-ignore lint/suspicious/noConsole: error logging for debugging fetch failures
         console.error('Failed to fetch announcement bar content:', error);
       });
   }, []);

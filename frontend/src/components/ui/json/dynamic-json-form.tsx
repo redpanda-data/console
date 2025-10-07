@@ -663,6 +663,7 @@ export const DynamicJSONForm = ({
       const newValue = updateValueAtPath(value, path, fieldValue);
       onChange(newValue);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to update form value:', error);
       onChange(value);
     }

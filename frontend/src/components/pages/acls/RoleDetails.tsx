@@ -43,7 +43,9 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb(decodeURIComponent(this.props.roleName), `/security/roles/${this.props.roleName}`);
 
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
@@ -81,6 +83,7 @@ class RoleDetailsPage extends PageComponent<{ roleName: string }> {
       const quickSearchRegExp = new RegExp(this.principalSearch, 'i');
       members = members.filter(({ name }) => name.match(quickSearchRegExp));
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: warning for invalid user input
       console.warn('Invalid expression');
     }
 

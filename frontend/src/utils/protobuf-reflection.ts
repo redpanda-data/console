@@ -23,6 +23,7 @@ export function getFieldBehaviors(messageSchema: DescMessage, fieldName: string)
   try {
     const field = messageSchema.fields.find((f) => f.name === fieldName);
     if (!field) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn(`Field '${fieldName}' not found in message schema '${messageSchema.name}'`);
       return [];
     }
@@ -30,6 +31,7 @@ export function getFieldBehaviors(messageSchema: DescMessage, fieldName: string)
     const behaviors = getOption(field, field_behavior);
     return behaviors || [];
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn(`Failed to get field behaviors for '${fieldName}':`, error);
     return [];
   }

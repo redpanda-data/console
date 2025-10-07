@@ -65,6 +65,7 @@ function getQuickSearchRegex(pattern: string): RegExp {
   try {
     regExp = new RegExp(pattern, 'i');
   } catch (_e) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Invalid expression');
   }
   QUICK_SEARCH_REGEX_CACHE.set(pattern, regExp);

@@ -515,6 +515,7 @@ export const PipelineEditor = observer(
                         resetAutocompleteSecrets={() => {
                           if (secretAutocomplete && monaco) {
                             secretAutocomplete.dispose();
+                            // biome-ignore lint/suspicious/noConsole: existing console error logging
                             registerSecretsAutocomplete(monaco, setSecretAutocomplete).catch(console.error);
                           }
                         }}

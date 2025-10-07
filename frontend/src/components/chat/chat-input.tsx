@@ -106,6 +106,7 @@ export const ChatInput = ({
       // Add to database
       await chatDb.addMessage(systemMessage);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging message send failures
       console.error('Error sending message:', error);
 
       // Hide typing indicator
@@ -131,6 +132,7 @@ export const ChatInput = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
       handleSendMessage(e).catch(console.error);
     }
   };
@@ -141,6 +143,7 @@ export const ChatInput = ({
         className="space-y-2"
         onSubmit={(e) => {
           if (agentUrl) {
+            // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
             handleSendMessage(e).catch(console.error);
           }
         }}

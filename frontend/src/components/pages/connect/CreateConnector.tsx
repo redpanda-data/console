@@ -255,6 +255,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     const init = async () => {
       await connectClusterStore.setup();
     };
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     init().catch(console.error);
   }, [connectClusterStore]);
 
@@ -420,6 +421,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
           while (true) {
             const elapsedTime = timer.value;
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.log('scanning for new connector...', { connectorName, elapsedTime });
             if (elapsedTime > maxScanTime) {
               // Abort, tried to wait for too long

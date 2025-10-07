@@ -263,6 +263,7 @@ function getVersionFromQuery(): 'latest' | number | undefined {
 
     if (versionStr === 'latest') return 'latest';
 
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
   }
 

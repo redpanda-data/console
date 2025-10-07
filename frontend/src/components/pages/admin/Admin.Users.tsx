@@ -43,6 +43,7 @@ export class AdminUsers extends Component<Record<string, never>> {
         (u) => u.internalIdentifier.match(quickSearchRegExp) || u.oauthUserId.match(quickSearchRegExp)
       );
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
     }
 

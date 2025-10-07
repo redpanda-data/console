@@ -674,6 +674,7 @@ export class EditOffsetsModal extends Component<{
         }))
         .filter((t) => t.partitions.length > 0);
       if (errors.length > 0) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('apply offsets, backend errors', { errors: errors, request: topics });
         throw { errors: errors, request: topics };
       }
@@ -684,6 +685,7 @@ export class EditOffsetsModal extends Component<{
         description: `${toastMsg} - done`,
       });
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('failed to apply offset edit', err);
       toast.update(toastRef, {
         status: 'error',
@@ -965,6 +967,7 @@ export class DeleteOffsetsModal extends Component<{
                       }))
                       .filter((t) => t.partitions.length > 0);
                     if (errors.length > 0) {
+                      // biome-ignore lint/suspicious/noConsole: intentional console usage
                       console.error('backend returned errors for deleteOffsets', {
                         request: deleteRequest,
                         errors: errors,
@@ -990,6 +993,7 @@ export class DeleteOffsetsModal extends Component<{
                   }
                 } catch (err) {
                   toast.close(toastRef);
+                  // biome-ignore lint/suspicious/noConsole: intentional console usage
                   console.error(err);
                   onError(`Could not delete selected offsets in consumer group ${group.groupId} - ${toJson(err, 4)}`);
                 } finally {

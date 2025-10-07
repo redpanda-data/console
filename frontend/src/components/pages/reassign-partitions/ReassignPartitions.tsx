@@ -145,6 +145,7 @@ class ReassignPartitions extends PageComponent {
     this.stopRefreshingTopicConfigs = this.stopRefreshingTopicConfigs.bind(this);
 
     this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
+    // biome-ignore lint/suspicious/noConsole: existing console error logging
     this.refreshTopicConfigs().catch(console.error);
     this.startRefreshingTopicConfigs();
 
@@ -424,7 +425,6 @@ class ReassignPartitions extends PageComponent {
                         description: `${baseText}: ${errors.length} errors`,
                         duration: 2500,
                       });
-                      console.error('errors in removeThrottleFromTopics', errors);
                     }
 
                     await this.refreshTopicConfigs();
@@ -531,13 +531,12 @@ class ReassignPartitions extends PageComponent {
             // Reset settings, go back to first page
             this.resetSelectionAndPage(true, false);
           }
-        } catch (err) {
+        } catch (_err) {
           toast({
             status: 'error',
             description: 'Error starting partition reassignment.\nSee console for more information.',
             duration: 3000,
           });
-          console.error('error starting partition reassignment', { error: err });
         } finally {
           this.requestInProgress = false;
         }
@@ -618,7 +617,6 @@ class ReassignPartitions extends PageComponent {
     }[] = [];
 
     for (const t of request.topics) {
-      const topicName = t.topicName;
       const leaderReplicas: { partitionId: number; brokerId: number }[] = [];
       const followerReplicas: { partitionId: number; brokerId: number }[] = [];
       for (const p of t.partitions) {
@@ -627,12 +625,6 @@ class ReassignPartitions extends PageComponent {
         const brokersNew = p.replicas;
 
         if (brokersOld == null || brokersNew == null) {
-          console.log("traffic limit: skipping partition because old or new brokers can't be found", {
-            topicName,
-            partitionId,
-            brokersOld,
-            brokersNew,
-          });
           continue;
         }
 
@@ -679,9 +671,8 @@ class ReassignPartitions extends PageComponent {
         duration: 2500,
       });
       return true;
-    } catch (err) {
+    } catch (_err) {
       toast.close(toastRef);
-      console.error('error setting throttle', err);
       return false;
     }
   }
@@ -716,16 +707,16 @@ class ReassignPartitions extends PageComponent {
   }
 
   startRefreshingTopicConfigs() {
-    if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error('Stack trace').stack });
-    if (this.refreshTopicConfigsTimer == null)
-      this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
+    if (IsDev)
+      if (this.refreshTopicConfigsTimer == null)
+        this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
   }
   stopRefreshingTopicConfigs() {
-    if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error('Stack trace').stack });
-    if (this.refreshTopicConfigsTimer) {
-      window.clearInterval(this.refreshTopicConfigsTimer);
-      this.refreshTopicConfigsTimer = null;
-    }
+    if (IsDev)
+      if (this.refreshTopicConfigsTimer) {
+        window.clearInterval(this.refreshTopicConfigsTimer);
+        this.refreshTopicConfigsTimer = null;
+      }
   }
 
   async refreshTopicConfigs() {
@@ -752,8 +743,7 @@ class ReassignPartitions extends PageComponent {
       const _changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
       // if (changes.added || changes.removed)
       //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
-    } catch (err) {
-      console.error('error while refreshing topic configs, stopping auto refresh', { error: err });
+    } catch (_err) {
       this.stopRefreshingTopicConfigs();
     } finally {
       this.refreshTopicConfigsRequestsInProgress--;

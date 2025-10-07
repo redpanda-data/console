@@ -109,6 +109,7 @@ export const RegisterModal = observer(({ isOpen, onClose }: RegisterModalProps) 
         setFieldErrors(newFieldErrors);
       }
 
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging registration failures
       console.error('Registration failed:', error);
     } finally {
       setIsSubmitting(false);

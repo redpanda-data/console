@@ -100,7 +100,8 @@ function findByCallback(
 
 function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
   const log = IsDev
-    ? console.debug
+    ? // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.debug
     : (..._args) => {
         /* do nothing */
       };

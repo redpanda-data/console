@@ -95,6 +95,7 @@ const KafkaConnectorMain = observer(
       const init = async () => {
         await connectClusterStore.setup();
       };
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       init().catch(console.error);
     }, [connectClusterStore]);
 
@@ -512,7 +513,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
         canBeCopied: true,
       }
     );
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
@@ -657,6 +660,7 @@ const LogsTab = observer(
         if (indexOfOldMessage > -1) {
           state.messages[indexOfOldMessage] = messages[0];
         } else {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error('LoadLargeMessage: cannot find old message to replace', {
             searchReq,
             messages,
@@ -666,6 +670,7 @@ const LogsTab = observer(
           );
         }
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('LoadLargeMessage: messages response is empty', { messages });
         throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
       }
@@ -778,10 +783,12 @@ function executeMessageSearch(search: MessageSearch, topicName: string, connecto
     try {
       return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in connectorLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in connectorLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
       return Promise.resolve([]);
     }

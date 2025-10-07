@@ -122,6 +122,7 @@ const ConfigEditorForm: FC<{
       onSuccess();
       onClose();
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error while applying config change', { err, configEntry: editedEntry });
       setGlobalError(err instanceof Error ? err.message : String(err));
     }

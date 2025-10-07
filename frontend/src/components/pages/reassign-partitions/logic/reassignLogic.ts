@@ -122,6 +122,7 @@ function computeReassignments(
   }
 
   const skewPlannedInCluster = calcRange(allExBrokers, (x) => x.plannedLeader);
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.debug('leader skew in cluster', {
     actual: {
       skew: skewActual.range,
@@ -415,7 +416,9 @@ function reportRiskyPartitions(riskyPartitions: RiskyPartition[]) {
       criticalBrokers: x.criticalBrokers.map((b) => String(b.brokerId)).join(', '),
       criticalRacks: x.criticalRacks.join(', '),
     }));
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Issues in topic "${topic.topicName}" (RF: ${topic.replicationFactor}) (${issues.length} issues).`);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.table(table);
   }
 }
@@ -616,7 +619,9 @@ function calcRange<T>(
 
 // @ts-expect-error perhaps this is needed later on?
 function _dumpBrokerInfo(title: string, brokers: ExBroker[]) {
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log(title);
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.table(
     brokers.map((x: ExBroker) => ({
       id: x.brokerId,

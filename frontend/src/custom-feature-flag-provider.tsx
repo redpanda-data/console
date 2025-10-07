@@ -57,6 +57,7 @@ export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValu
 
   if (!context) {
     // throw new Error('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
     return defaultValue; // Fall back to false if the flag is not set.
   }
@@ -69,6 +70,7 @@ export const useFeatureFlags = (): FeatureFlagContextType => {
 
   if (!context) {
     // throw new Error('useFeatureFlags must be used within a CustomFeatureFlagProvider');
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useFeatureFlags must be used within a CustomFeatureFlagProvider');
   }
 

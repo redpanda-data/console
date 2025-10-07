@@ -197,6 +197,7 @@ export const RemoteMCPConfigurationTab = () => {
       setIsEditing(false);
       setEditedServerData(null);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to update MCP server:', error);
     }
   };

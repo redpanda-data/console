@@ -489,6 +489,7 @@ class KnowledgeBaseCreate extends PageComponent {
         this.autoPopulateSecretsFields();
       })
       .catch((err) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('KnowledgeBase.Create: Failed to load secrets:', err);
       });
   }
@@ -742,6 +743,7 @@ class KnowledgeBaseCreate extends PageComponent {
         passwordSecret: `\${secrets.${passwordSecretId}}`,
       };
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Failed to create auto credentials:', error);
       throw new Error('Failed to create auto-generated credentials. Please try manual credentials instead.');
     }

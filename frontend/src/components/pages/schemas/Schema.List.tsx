@@ -135,11 +135,13 @@ class SchemaList extends PageComponent {
     // Find by schema ID
     const filterAsNumber = Number(filterString.trim());
     if (!Number.isNaN(filterAsNumber)) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('finding by num', { num: filterAsNumber });
       // Filter is a number, lets see if we can find a matching schema(-version)
       const schemas = api.schemaUsagesById.get(filterAsNumber);
       const matches = schemas?.filter((s) => s.subject === subject.name);
       if (matches && matches.length > 0) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         for (const m of matches) console.log(`found match: ${m.subject} v${m.version}`);
         return true;
       }

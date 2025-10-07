@@ -74,6 +74,7 @@ class GroupList extends PageComponent {
           groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp)
       );
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
     }
 

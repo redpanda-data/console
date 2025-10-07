@@ -87,6 +87,7 @@ for (const k in env) {
 }
 
 // - print
+// biome-ignore lint/suspicious/noConsole: intentional console usage
 console.log(toJson(envVarDebugObj));
 
 export { envVarDebugObj, envVarDebugAr };

@@ -243,6 +243,7 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
           description: 'Setting throttle rate... done',
         });
       } catch (err) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in applyBandwidthThrottle: ${err}`);
         toast.update(toastRef.current, {
           status: 'error',
@@ -504,6 +505,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   applyBandwidthThrottle() {
     const state = this.props.state;
     if (state == null) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('apply bandwidth throttle: this.props.state is null');
       return;
     }
@@ -517,6 +519,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         const brokersNew = p.addingReplicas;
 
         if (brokersOld == null || brokersNew == null) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.warn(
             "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
             { state: state }
@@ -549,6 +552,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   async cancelReassignment() {
     const state = this.props.state;
     if (state == null) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('cancel reassignment: this.props.state is null');
       return;
     }
@@ -574,6 +578,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       };
       const response = await api.startPartitionReassignment(cancelRequest);
 
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('cancel reassignment result', { request: cancelRequest, response: response });
 
       toast.update(toastRef, {
@@ -583,6 +588,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       });
       this.props.onClose();
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`cancel reassignment: ${String(err)}`);
       toast.update(toastRef, {
         status: 'error',

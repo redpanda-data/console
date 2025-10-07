@@ -27,7 +27,9 @@ class RoleCreatePage extends PageComponent {
     p.addBreadcrumb('Roles', '/security/roles');
     p.addBreadcrumb('Create role', '/security/roles/create');
 
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     this.refreshData().catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     appGlobal.onRefresh = () => this.refreshData().catch(console.error);
   }
 

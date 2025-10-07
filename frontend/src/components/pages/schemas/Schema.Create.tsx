@@ -114,6 +114,7 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
     if (this.editorState == null) {
       const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
       if (!schema) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('Cannot find last active schema version of subject', {
           name: subject.name,
           lastActiveVersion: subject.latestActiveVersion,
@@ -197,13 +198,16 @@ const SchemaPageButtons = observer(
 
               // success: navigate to details
               const latestVersion = api.schemaDetails.get(subjectName)?.latestActiveVersion;
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
               console.log('schema created', { response: r });
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
               console.log('navigating to details', { subjectName, latestVersion });
               appGlobal.historyReplace(
                 `/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=${latestVersion}`
               );
             } catch (err) {
               // error: open modal
+              // biome-ignore lint/suspicious/noConsole: intentional console usage
               console.log('failed to create schema', { err });
               toast({
                 status: 'error',

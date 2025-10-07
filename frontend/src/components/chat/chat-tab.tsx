@@ -60,6 +60,7 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
       if (!id) return;
       await chatDb.clearAllMessages(id);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging clear failures
       console.error('Error clearing messages:', error);
     }
   };

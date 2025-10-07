@@ -56,6 +56,7 @@ export const sendMessageToApi = async ({
         success: true,
       } as ChatApiResponse;
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging API response parsing failures
       console.error('Error parsing API response:', err);
       return {
         success: false,
@@ -64,6 +65,7 @@ export const sendMessageToApi = async ({
       };
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: error logging for debugging API request failures
     console.error('Error sending message to API:', error);
     return {
       success: false,

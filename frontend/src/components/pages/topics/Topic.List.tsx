@@ -114,6 +114,7 @@ const TopicList: FC = () => {
         }
         topics = topics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
       } catch (_e) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('Invalid expression');
         const searchLower = searchQuery.toLowerCase();
         topics = topics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));

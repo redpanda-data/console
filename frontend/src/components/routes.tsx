@@ -430,19 +430,23 @@ export const APP_ROUTES: IRouteEntry[] = [
 
   MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
     if (isServerless()) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('Connect clusters inside serverless checks.');
       // We are in serverless, there is no kafka connect, so we can ignore it.
       // Here, we only care about the pipeline service and use that to decide whether to show the entry
       if (isSupported(Feature.PipelineService)) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.debug('Pipeline Service enabled. Showing sidebar link.');
         return { visible: true, disabledReasons: [] };
       }
       // Pipeline service is not active? Hide entry
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.debug('Pipeline Service NOT enabled. NOT showing sidebar link.');
       return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
     }
     // We are in cloud (dedicated or BYOC), or self-hosted
     // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.debug('Pipeline Service state does not matter. Showing sidebar link.');
     return { visible: true, disabledReasons: [] };
   }),

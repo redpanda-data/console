@@ -744,6 +744,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       const phase = this.messageSearch.searchPhase;
 
       if (searchParams === this.currentSearchRun && source === 'auto') {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.log('ignoring serach, search params are up to date, and source is auto', {
           newParams: searchParams,
           oldParams: this.currentSearchRun,
@@ -758,6 +759,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         this.messageSearch.stopSearch();
       }
 
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('starting a new message search', {
         newParams: searchParams,
         oldParams: this.currentSearchRun,
@@ -769,6 +771,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       this.currentSearchRun = searchParams;
       try {
         this.executeMessageSearch()
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           .catch(console.error)
           .finally(() => {
             untracked(() => {
@@ -776,6 +779,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             });
           });
       } catch (err) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('error in message search', { error: err });
       }
     });
@@ -820,6 +824,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       if (indexOfOldMessage > -1) {
         this.messageSearch.messages[indexOfOldMessage] = messages[0];
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('LoadLargeMessage: cannot find old message to replace', {
           searchReq,
           messages,
@@ -829,6 +834,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         );
       }
     } else {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('LoadLargeMessage: messages response is empty', { messages });
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
@@ -1174,6 +1180,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
       if (functions.length > 0) {
         filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
       }
     }
@@ -1195,11 +1202,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         this.fetchError = null;
         return this.messageSearch.startSearch(request).catch((err) => {
           const msg = (err as Error).message ?? String(err);
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`error in searchTopicMessages: ${msg}`);
           this.fetchError = err;
           return [];
         });
       } catch (error: any) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
         this.fetchError = error;
         return Promise.resolve([]);
@@ -1285,6 +1294,7 @@ class SaveMessagesDialog extends Component<{
 
     const cleanMessages = this.cleanMessages(messages);
 
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`saving cleaned messages; messages: ${messages.length}`);
 
     if (this.format === 'json') {
@@ -1488,12 +1498,10 @@ class StartOffsetDateTimePicker extends Component {
   constructor(p: any) {
     super(p);
     const searchParams = uiState.topicSettings.searchParams;
-    // console.log('time picker 1', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
     if (!searchParams.startTimestampWasSetByUser) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
       searchParams.startTimestamp = Date.now();
     }
-    // console.log('time picker 2', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
   }
 
   render() {

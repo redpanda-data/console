@@ -281,6 +281,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         req.key.data = encodeData(data.key.data, data.key.encoding);
       } catch (err) {
         // TODO: Handle error
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(err);
         return;
       }
@@ -297,6 +298,7 @@ const PublishTopicForm: FC<{ topicName: string }> = observer(({ topicName }) => 
         req.value.data = encodeData(data.value.data, data.value.encoding);
       } catch (err) {
         // TODO: Handle error
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(err);
         return;
       }

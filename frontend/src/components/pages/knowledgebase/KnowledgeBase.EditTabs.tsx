@@ -1461,6 +1461,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         description: `Retrieved ${results.length} results`,
       });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Retrieval API error:', error);
       toast({
         status: 'error',
@@ -1549,6 +1550,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
         description: 'Received chat response',
       });
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Chat API error:', error);
       toast({
         status: 'error',
@@ -1666,6 +1668,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
                     this.callRetrievalAPI().catch(console.error);
                   }
                 }}
@@ -1769,6 +1772,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     e.preventDefault();
+                    // biome-ignore lint/suspicious/noConsole: intentional console usage
                     this.callChatAPI().catch(console.error);
                   }
                 }}

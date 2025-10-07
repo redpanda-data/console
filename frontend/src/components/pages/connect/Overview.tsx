@@ -85,8 +85,11 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     this.checkRPCNSecretEnable().catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     this.refreshData().catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     appGlobal.onRefresh = () => this.refreshData().catch(console.error);
   }
 
@@ -272,6 +275,7 @@ const TabConnectors = observer(() => {
       const quickSearchRegExp = new RegExp(uiSettings.clusterOverview.connectorsList.quickSearch, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }

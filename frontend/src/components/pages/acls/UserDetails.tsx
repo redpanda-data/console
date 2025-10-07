@@ -59,7 +59,9 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
     p.addBreadcrumb('Users', '/security/users');
     p.addBreadcrumb(this.props.userName, '/security/users/');
 
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     this.refreshData(true).catch(console.error);
+    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
