@@ -20,7 +20,8 @@ import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'js
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
-export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco };
+export type { IStandaloneCodeEditor, IStandaloneDiffEditor };
+export type { EditorProps, Monaco } from '@monaco-editor/react';
 
 export type PipelinesYamlEditorProps = EditorProps & {
   'data-testid'?: string;

@@ -64,11 +64,10 @@ export const templates: Template[] = [
   },
 ];
 
-export {
-  httpProcessorTemplate,
-  bigqueryProcessorTemplate,
-  memoryCacheTemplate,
-  redpandaCacheTemplate,
-  generateInputTemplate,
-  redpandaOutputTemplate,
-};
+// biome-ignore lint/performance/noBarrelFile: Templates are used internally in the templates array above
+export { default as memoryCacheTemplate } from './cache/memory.yaml';
+export { default as redpandaCacheTemplate } from './cache/redpanda.yaml';
+export { default as generateInputTemplate } from './input/generate.yaml';
+export { default as redpandaOutputTemplate } from './output/redpanda.yaml';
+export { default as bigqueryProcessorTemplate } from './processor/gcp_bigquery_select.yaml';
+export { default as httpProcessorTemplate } from './processor/http.yaml';
