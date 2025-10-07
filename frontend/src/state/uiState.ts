@@ -73,10 +73,10 @@ class UIState {
 
   @observable
   private _currentTopicName: string | undefined;
-  public get currentTopicName(): string | undefined {
+  get currentTopicName(): string | undefined {
     return this._currentTopicName;
   }
-  public set currentTopicName(topicName: string | undefined) {
+  set currentTopicName(topicName: string | undefined) {
     this._currentTopicName = topicName;
     if (topicName && !uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
       // console.log('creating details for topic: ' + topicName);

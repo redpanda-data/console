@@ -514,7 +514,7 @@
         // Enforce the use of new for all builtins, except String, Number and Boolean.
         "useConsistentBuiltinInstantiation": "error",
         // Require consistent accessibility modifiers on class properties and methods.
-        "useConsistentMemberAccessibility": "off",
+        "useConsistentMemberAccessibility": "error",
         // Require the consistent declaration of object literals. Defaults to explicit definitions.
         "useConsistentObjectDefinitions": "off",
         // Require const declarations for variables that are only assigned once.

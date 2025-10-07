@@ -468,9 +468,9 @@ export class ConnectorPropertiesStore {
 
   connectorStepDefinitions: ConnectorStep[] = [];
 
-  public clusterName: string;
-  public pluginClassName: string;
-  public connectorType: 'sink' | 'source';
+  clusterName: string;
+  pluginClassName: string;
+  connectorType: 'sink' | 'source';
   private appliedConfig: Record<string, any> | undefined;
 
   // biome-ignore lint/nursery/useMaxParams: Legacy MobX class with multiple constructor parameters

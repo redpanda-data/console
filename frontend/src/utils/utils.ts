@@ -157,10 +157,10 @@ export class DebugTimerStore {
     this.frame++;
   }
 
-  public useSeconds() {
+  useSeconds() {
     this.mobxTrigger = this.secondCounter;
   }
-  public useFrame() {
+  useFrame() {
     this.mobxTrigger = this.frame;
   }
 

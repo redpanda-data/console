@@ -45,10 +45,10 @@ export type TopicTabId = (typeof TopicTabIds)[number];
 
 // A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
 class TopicTab {
-  public readonly topicGetter: () => Topic | undefined | null;
-  public id: TopicTabId;
+  readonly topicGetter: () => Topic | undefined | null;
+  id: TopicTabId;
   private requiredPermission: TopicAction;
-  public titleText: React.ReactNode;
+  titleText: React.ReactNode;
   private contentFunc: (topic: Topic) => React.ReactNode;
   private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
 
