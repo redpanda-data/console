@@ -542,7 +542,7 @@
           }
         },
         // This rule recommends a for-of loop when in a for loop, the index used to extract an item from the iterated array.
-        "useForOf": "off",
+        "useForOf": "error",
         // This rule enforces the use of <>...</> over <Fragment>...</Fragment>.
         "useFragmentSyntax": "off",
         // Validates that all enum values are capitalized.
