@@ -284,8 +284,8 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
     return null;
   }
 
-  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes('WRITE' as never);
-  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes('DELETE' as never);
+  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
+  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.DELETE);
 
   const handleVersionChange = (value: number) => {
     setSearchParams({ version: String(value) });
