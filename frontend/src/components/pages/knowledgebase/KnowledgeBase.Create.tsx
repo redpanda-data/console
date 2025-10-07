@@ -41,13 +41,13 @@ import { Link as RouterLink } from 'react-router-dom';
 
 import { config as appConfig } from '../../../config';
 import { CreateSecretRequestSchema, Scope } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   CreateUserRequest_UserSchema,
   CreateUserRequestSchema,
   SASLMechanism,
 } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { KnowledgeBaseCreate as KnowledgeBaseCreateType } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_CohereSchema,

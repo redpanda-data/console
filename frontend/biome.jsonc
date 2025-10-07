@@ -379,6 +379,8 @@
         "noReactForwardRef": "off",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
         "noShadow": "off", // Enable later - 95 violations requiring extensive refactoring
+        // Disallow expression statements that are neither a function call nor an assignment.
+        "noUnusedExpressions": "error",
         // Disallow the use of useless undefined. (disabled due to conflict with useGetterReturn)
         "noUselessUndefined": "off",
         // Enforces href attribute for <a> elements.
@@ -605,7 +607,7 @@
         // Require that all exports are declared after all non-export statements.
         "useExportsLast": "off",
         // Disallow multiple variable declarations in the same variable statement.
-        "useSingleVarDeclarator": "error",
+        "useSingleVarDeclarator": "off",
 
         /** ------------------------ CSS Rules ------------------------ **/
         // Disallow a lower specificity selector from coming after a higher specificity selector.

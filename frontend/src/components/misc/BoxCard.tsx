@@ -32,10 +32,18 @@ export default function BoxCard({
 }: BoxCardProps) {
   const classes = [styles.boxCard];
 
-  borderStyle === 'dashed' && classes.push(styles.dashed);
-  borderWidth === 'medium' && classes.push(styles.medium);
-  hoverable && classes.push(styles.hoverable);
-  active && classes.push(styles.active);
+  if (borderStyle === 'dashed') {
+    classes.push(styles.dashed);
+  }
+  if (borderWidth === 'medium') {
+    classes.push(styles.medium);
+  }
+  if (hoverable) {
+    classes.push(styles.hoverable);
+  }
+  if (active) {
+    classes.push(styles.active);
+  }
 
   return (
     <div className={classes.join(' ')} id={id}>

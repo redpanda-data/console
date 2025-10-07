@@ -78,7 +78,9 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        isUpdateUserPending && setIsOpen(false);
+        if (isUpdateUserPending) {
+          setIsOpen(false);
+        }
       }}
     >
       <ModalOverlay />
@@ -243,7 +245,9 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        isUpdateMembershipPending && setIsOpen(false);
+        if (isUpdateMembershipPending) {
+          setIsOpen(false);
+        }
       }}
     >
       <ModalOverlay />

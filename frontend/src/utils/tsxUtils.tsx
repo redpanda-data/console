@@ -483,7 +483,9 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 
   componentWillUnmount() {
     clearInterval(this.timerHandle);
-    this.toastRef && toast.close(this.toastRef);
+    if (this.toastRef) {
+      toast.close(this.toastRef);
+    }
     this.toastRef = null;
   }
 
