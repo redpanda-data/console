@@ -374,7 +374,7 @@
         // Disallow non-null assertions after optional chaining expressions.
         "noNonNullAssertedOptionalChain": "error",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
-        "noShadow": "off", // Enable later
+        "noShadow": "off", // Enable later - 95 violations requiring extensive refactoring
         // Disallow the use of useless undefined. (disabled due to conflict with useGetterReturn)
         "noUselessUndefined": "off",
         // Enforces href attribute for <a> elements.
@@ -650,8 +650,6 @@
         "noDebugger": "error",
         // Disallow direct assignments to document.cookie.
         "noDocumentCookie": "error",
-        // Prevents importing next/document outside of pages/_document.jsx in Next.js projects.
-        "noDocumentImportInPage": "error",
         // Require the use of === and !==.
         "noDoubleEquals": "error",
         // Disallow duplicate case labels.
