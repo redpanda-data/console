@@ -33,7 +33,8 @@ export const VersionInfo = () => {
     ref = '';
   }
 
-  const sha = IsDev ? '<no git sha in dev>' : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
+  const GIT_SHA_SHORT_LENGTH = 7;
+  const sha = IsDev ? '<no git sha in dev>' : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, GIT_SHA_SHORT_LENGTH);
 
   const buildDate = IsDev ? new Date() : getBuildDate();
 

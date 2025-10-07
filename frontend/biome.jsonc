@@ -431,8 +431,6 @@
         "noDelete": "error",
         // Disallow accessing namespace imports dynamically.
         "noDynamicNamespaceImportAccess": "error",
-        // Prevent usage of <img> element in a Next.js project. We don't use Next.js
-        "noImgElement": "off",
         // Disallow the use of namespace imports.
         "noNamespaceImport": "error",
         // Prevent duplicate polyfills from Polyfill.io.
@@ -551,7 +549,7 @@
         "useImportType": "error",
         // Require all enum members to be literal values.
         "useLiteralEnumMembers": "error",
-        // Reports usage of “magic numbers” — numbers used directly instead of being assigned to named constants.
+        // Reports usage of "magic numbers" — numbers used directly instead of being assigned to named constants.
         "noMagicNumbers": "off",
         // Promotes the usage of node:assert/strict over node:assert.
         "useNodeAssertStrict": "error",

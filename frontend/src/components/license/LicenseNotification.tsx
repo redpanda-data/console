@@ -64,8 +64,9 @@ export const LicenseNotification = observer(() => {
           visibleExpiredLicenses.length > 0 ||
           api.licenseViolation ||
           soonToExpireLicenses.some((license) => {
+            const WARNING_THRESHOLD_DAYS = 15;
             const msToExpiration = getMillisecondsToExpiration(license);
-            return msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY;
+            return msToExpiration > -1 && msToExpiration < WARNING_THRESHOLD_DAYS * MS_IN_DAY;
           })
             ? 'warning'
             : 'info'

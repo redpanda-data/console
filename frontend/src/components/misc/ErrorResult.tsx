@@ -23,29 +23,39 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   // Type guard for WrappedApiError
   const isWrappedApiError = (err: any): err is WrappedApiError => err && typeof err.statusCode === 'number';
 
+  // HTTP status codes
+  const HTTP_UNAUTHORIZED = 401;
+  const HTTP_FORBIDDEN = 403;
+  const HTTP_NOT_FOUND = 404;
+  const HTTP_TIMEOUT = 408;
+  const HTTP_CONFLICT = 409;
+  const HTTP_BAD_REQUEST = 400;
+  const HTTP_INTERNAL_ERROR = 500;
+  const HTTP_SERVICE_UNAVAILABLE = 503;
+
   // Map gRPC error codes to HTTP status codes
   const getStatusCode = (code: Code): number => {
     switch (code) {
       case Code.Unauthenticated:
-        return 401;
+        return HTTP_UNAUTHORIZED;
       case Code.PermissionDenied:
-        return 403;
+        return HTTP_FORBIDDEN;
       case Code.NotFound:
-        return 404;
+        return HTTP_NOT_FOUND;
       case Code.AlreadyExists:
-        return 409;
+        return HTTP_CONFLICT;
       case Code.FailedPrecondition:
-        return 400;
+        return HTTP_BAD_REQUEST;
       case Code.InvalidArgument:
-        return 400;
+        return HTTP_BAD_REQUEST;
       case Code.DeadlineExceeded:
-        return 408;
+        return HTTP_TIMEOUT;
       case Code.Unavailable:
-        return 503;
+        return HTTP_SERVICE_UNAVAILABLE;
       case Code.Internal:
-        return 500;
+        return HTTP_INTERNAL_ERROR;
       default:
-        return 500;
+        return HTTP_INTERNAL_ERROR;
     }
   };
 
@@ -66,7 +76,7 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
     statusCode = error.statusCode;
   } else {
     // Fallback for unknown error type
-    statusCode = 500;
+    statusCode = HTTP_INTERNAL_ERROR;
   }
 
   const errorTitle = title || `Error ${statusCode}`;

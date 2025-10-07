@@ -17,6 +17,9 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './licenseUtils';
+
+const WARNING_THRESHOLD_DAYS = 5;
+
 import { RegisterModal } from './RegisterModal';
 import {
   type License,
@@ -50,7 +53,7 @@ const getLicenseAlertContentForFeature = (
             </Flex>
           </Box>
         ),
-        status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
+        status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'warning',
       };
     }
     return {
@@ -59,7 +62,7 @@ const getLicenseAlertContentForFeature = (
           <Text>This is an enterprise feature.</Text>
         </Box>
       ),
-      status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
+      status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'warning',
     };
   }
 

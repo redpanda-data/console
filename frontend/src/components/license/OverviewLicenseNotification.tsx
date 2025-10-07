@@ -67,7 +67,8 @@ const getLicenseAlertContent = (
       }
 
       // Trial is baked-in and has > 5 days left
-      if (msToExpiration > 5 * MS_IN_DAY) {
+      const WARNING_THRESHOLD_DAYS = 5;
+      if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
         return {
           message: (
             <Box>
@@ -143,7 +144,8 @@ const getLicenseAlertContent = (
     }
 
     // Trial is baked-in and has > 5 days left
-    if (msToExpiration > 5 * MS_IN_DAY) {
+    const WARNING_THRESHOLD_DAYS = 5;
+    if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
       return {
         message: (
           <Box>

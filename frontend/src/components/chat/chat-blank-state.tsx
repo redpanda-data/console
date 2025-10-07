@@ -78,9 +78,10 @@ export const ChatBlankState = ({ onSelectQuestion }: ChatBlankStateProps) => {
 
   useEffect(() => {
     if (isAnimating) {
+      const ANIMATION_DURATION_MS = 300;
       const timer = setTimeout(() => {
         setIsAnimating(false);
-      }, 300); // Match animation duration
+      }, ANIMATION_DURATION_MS);
       return () => clearTimeout(timer);
     }
   }, [isAnimating]);

@@ -142,8 +142,9 @@ export class DebugTimerStore {
   @observable private frame = 0;
 
   private constructor() {
+    const ONE_SECOND_MS = 1000;
     this.increaseSec = this.increaseSec.bind(this);
-    setInterval(this.increaseSec, 1000);
+    setInterval(this.increaseSec, ONE_SECOND_MS);
 
     this.increaseFrame = this.increaseFrame.bind(this);
     //setInterval(this.increaseFrame, 30);
@@ -168,7 +169,8 @@ export class DebugTimerStore {
 }
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
-export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % 1000);
+const REFRESH_COUNTER_MAX = 1000;
+export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX);
 
 export function assignDeep(target: any, source: any) {
   for (const key in source) {
@@ -475,8 +477,10 @@ export function hoursToMilliseconds(hours: number) {
   return hours * hoursToMs;
 }
 
-export const cullText = (str: string, length: number) =>
-  str.length > length ? `${str.substring(0, length - 3)}...` : str;
+export const cullText = (str: string, length: number) => {
+  const ELLIPSIS_LENGTH = 3;
+  return str.length > length ? `${str.substring(0, length - ELLIPSIS_LENGTH)}...` : str;
+};
 
 export function groupConsecutive(ar: number[]): number[][] {
   const groups: number[][] = [];
@@ -617,17 +621,21 @@ export const prettyMilliseconds = (
   return prettyMillisecondsOriginal(n, options);
 };
 
+const ONE_THOUSAND = 1000;
+const ONE_MILLION = 1_000_000;
+const ONE_BILLION = 1_000_000_000;
+
 const between = (min: number, max: number) => (num: number) => num >= min && num < max;
-const isK = between(1000, 1_000_000);
-const isM = between(1_000_000, 1_000_000_000);
+const isK = between(ONE_THOUSAND, ONE_MILLION);
+const isM = between(ONE_MILLION, ONE_BILLION);
 
 const isInfinite = (num: number) => !Number.isFinite(num);
-const toK = (num: number) => `${(num / 1000).toFixed(1)}k`;
-const toM = (num: number) => `${(num / 1_000_000).toFixed(1)}m`;
-const toG = (num: number) => `${(num / 1_000_000_000).toFixed(1)}g`;
+const toK = (num: number) => `${(num / ONE_THOUSAND).toFixed(1)}k`;
+const toM = (num: number) => `${(num / ONE_MILLION).toFixed(1)}m`;
+const toG = (num: number) => `${(num / ONE_BILLION).toFixed(1)}g`;
 
 export function prettyNumber(num: number) {
-  if (Number.isNaN(num) || isInfinite(num) || num < 1000) {
+  if (Number.isNaN(num) || isInfinite(num) || num < ONE_THOUSAND) {
     return String(num);
   }
   if (isK(num)) {
@@ -776,6 +784,7 @@ export function base64ToUInt8Array(base64: string) {
 }
 
 export function base64ToHexString(base64: string): string {
+  const HEX_RADIX = 16;
   try {
     const binary = Base64.atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -784,7 +793,7 @@ export function base64ToHexString(base64: string): string {
     }
     let hex = '';
     for (let i = 0; i < bytes.length; i++) {
-      const b = bytes[i].toString(16);
+      const b = bytes[i].toString(HEX_RADIX);
       hex += b.length === 1 ? `0${b}` : b;
 
       if (i < bytes.length - 1) {
@@ -799,10 +808,11 @@ export function base64ToHexString(base64: string): string {
 }
 
 export function uint8ArrayToHexString(ar: Uint8Array): string {
+  const HEX_RADIX = 16;
   try {
     let hex = '';
     for (let i = 0; i < ar.length; i++) {
-      const b = ar[i].toString(16);
+      const b = ar[i].toString(HEX_RADIX);
       hex += b.length === 1 ? `0${b}` : b;
 
       if (i < ar.length - 1) {
