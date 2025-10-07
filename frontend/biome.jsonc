@@ -485,7 +485,7 @@
         // Disallow the use of parameter properties in class constructors.
         "noParameterProperties": "error",
         // This rule allows you to specify global variable names that you don't want to use in your application.
-        "noRestrictedGlobals": "off",
+        "noRestrictedGlobals": "error",
         // Disallow specified modules when loaded by import or require.
         "noRestrictedImports": "off",
         // Disallow user defined types.
