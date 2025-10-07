@@ -2297,7 +2297,7 @@ const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = ob
               px="6px"
               textDecoration={e.isActive ? '' : 'line-through'}
             >
-              {e.name ? e.name : e.code ? e.code : 'New Filter'}
+              {e.name || e.code || 'New Filter'}
             </TagLabel>
             <TagCloseButton m="0" onClick={() => settings.filters.remove(e)} opacity={1} px="1" />
           </Tag>

@@ -553,7 +553,11 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             onClick={onOk}
             variant="solid"
           >
-            {hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
+            {(() => {
+              if (hasErrors) return 'Ok';
+              if (step === 1) return 'Choose End Offset';
+              return 'Delete Records';
+            })()}
           </Button>
         </ModalFooter>
       </ModalContent>

@@ -870,11 +870,11 @@ const AlertDeleteFailed: FC<{
       <AlertTitle>Failed to delete</AlertTitle>
       <AlertDescription>
         <Text>
-          {aclFailed.err instanceof Error
-            ? aclFailed.err.message
-            : typeof aclFailed.err === 'string'
-              ? aclFailed.err
-              : 'Unknown error'}
+          {(() => {
+            if (aclFailed.err instanceof Error) return aclFailed.err.message;
+            if (typeof aclFailed.err === 'string') return aclFailed.err;
+            return 'Unknown error';
+          })()}
         </Text>
       </AlertDescription>
       <CloseButton onClick={onClose} position="absolute" right="8px" top="8px" />

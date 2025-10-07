@@ -280,24 +280,32 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
               <Text color="gray.600" fontSize="sm" fontWeight="medium">
                 Indexer Status
               </Text>
-              {this.consumerGroup ? (
-                <HStack spacing={2}>
-                  <Text fontSize="lg" fontWeight="semibold">
-                    {this.consumerGroup.state}
+              {(() => {
+                if (this.consumerGroup) {
+                  return (
+                    <HStack spacing={2}>
+                      <Text fontSize="lg" fontWeight="semibold">
+                        {this.consumerGroup.state}
+                      </Text>
+                      <Text color="gray.500" fontSize="sm">
+                        ({this.consumerGroup.members.length} members)
+                      </Text>
+                    </HStack>
+                  );
+                }
+                if (this.consumerGroupLoadFailed) {
+                  return (
+                    <Text color="gray.500" fontSize="lg" title="Consumer group not yet available">
+                      Initializing...
+                    </Text>
+                  );
+                }
+                return (
+                  <Text color="gray.500" fontSize="lg">
+                    -
                   </Text>
-                  <Text color="gray.500" fontSize="sm">
-                    ({this.consumerGroup.members.length} members)
-                  </Text>
-                </HStack>
-              ) : this.consumerGroupLoadFailed ? (
-                <Text color="gray.500" fontSize="lg" title="Consumer group not yet available">
-                  Initializing...
-                </Text>
-              ) : (
-                <Text color="gray.500" fontSize="lg">
-                  -
-                </Text>
-              )}
+                );
+              })()}
             </Box>
 
             <Box>

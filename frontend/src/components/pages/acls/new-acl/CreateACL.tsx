@@ -240,12 +240,15 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                 {/* Combined Resource and Selector */}
                 <p className="text-gray-600 text-xs" data-testid={`${getRuleDataTestId(rule)}-title`}>
                   {(() => {
-                    const text =
-                      rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry
-                        ? getResourceName(rule.resourceType)
-                        : rule.selectorType === ResourcePatternTypeAny
-                          ? `All ${getPluralResourceName(rule.resourceType)}`
-                          : `${getPluralResourceName(rule.resourceType)} ${rule.selectorType === ResourcePatternTypeLiteral ? 'matching' : 'starting with'}: "${rule.selectorValue}"`;
+                    let text: string;
+                    if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {
+                      text = getResourceName(rule.resourceType);
+                    } else if (rule.selectorType === ResourcePatternTypeAny) {
+                      text = `All ${getPluralResourceName(rule.resourceType)}`;
+                    } else {
+                      const matchType = rule.selectorType === ResourcePatternTypeLiteral ? 'matching' : 'starting with';
+                      text = `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
+                    }
                     return formatLabel(text);
                   })()}
                 </p>
@@ -892,10 +895,17 @@ export default function CreateACL({
     if (!rule) return;
 
     const updatedOperations = Object.fromEntries(
-      Object.entries(rule.operations).map(([op, operationValue]) => [
-        op,
-        mode === ModeAllowAll ? OperationTypeAllow : mode === ModeDenyAll ? OperationTypeDeny : operationValue,
-      ])
+      Object.entries(rule.operations).map(([op, operationValue]) => {
+        let newValue: string;
+        if (mode === ModeAllowAll) {
+          newValue = OperationTypeAllow;
+        } else if (mode === ModeDenyAll) {
+          newValue = OperationTypeDeny;
+        } else {
+          newValue = operationValue;
+        }
+        return [op, newValue];
+      })
     );
 
     updateRule(ruleId, { mode, operations: updatedOperations });

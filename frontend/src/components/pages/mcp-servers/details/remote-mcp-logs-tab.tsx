@@ -187,41 +187,47 @@ export const RemoteMCPLogsTab = observer(() => {
         </div>
 
         <div>
-          {state.error ? (
-            <Text className="text-destructive">Error loading logs: {state.error}</Text>
-          ) : !state.isComplete && state.messages.length === 0 ? (
-            <div className="flex flex-col space-y-3">
-              <Skeleton className="h-[125px] w-full rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            </div>
-          ) : (
-            <DataTable<TopicMessage>
-              columns={messageTableColumns}
-              data={filteredMessages}
-              emptyText="No messages"
-              isLoading={!state.isComplete}
-              loadingText="Loading... This can take several seconds."
-              onSortingChange={(sorting) => {
-                runInAction(() => {
-                  uiState.remoteMcpDetails.sorting =
-                    typeof sorting === 'function' ? sorting(uiState.remoteMcpDetails.sorting) : sorting;
-                });
-              }}
-              sorting={uiState.remoteMcpDetails.sorting ?? []}
-              subComponent={({ row: { original } }) => (
-                <ExpandedMessage
-                  loadLargeMessage={
-                    () => Promise.resolve() // No need to load large messages for this view
-                  }
-                  msg={original}
-                />
-              )}
-            />
-          )}
+          {(() => {
+            if (state.error) {
+              return <Text className="text-destructive">Error loading logs: {state.error}</Text>;
+            }
+            if (!state.isComplete && state.messages.length === 0) {
+              return (
+                <div className="flex flex-col space-y-3">
+                  <Skeleton className="h-[125px] w-full rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <DataTable<TopicMessage>
+                columns={messageTableColumns}
+                data={filteredMessages}
+                emptyText="No messages"
+                isLoading={!state.isComplete}
+                loadingText="Loading... This can take several seconds."
+                onSortingChange={(sorting) => {
+                  runInAction(() => {
+                    uiState.remoteMcpDetails.sorting =
+                      typeof sorting === 'function' ? sorting(uiState.remoteMcpDetails.sorting) : sorting;
+                  });
+                }}
+                sorting={uiState.remoteMcpDetails.sorting ?? []}
+                subComponent={({ row: { original } }) => (
+                  <ExpandedMessage
+                    loadLargeMessage={
+                      () => Promise.resolve() // No need to load large messages for this view
+                    }
+                    msg={original}
+                  />
+                )}
+              />
+            );
+          })()}
         </div>
       </CardContent>
     </Card>

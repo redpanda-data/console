@@ -477,7 +477,7 @@
         // Disallow negation in the condition of an if statement if it has an else clause.
         "noNegationElse": "error",
         // Disallow nested ternary expressions.
-        "noNestedTernary": "off",
+        "noNestedTernary": "error",
         // Disallow non-null assertions using the ! postfix operator.
         "noNonNullAssertion": "error",
         // Disallow reassigning function parameters.

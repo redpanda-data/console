@@ -192,12 +192,15 @@ export function ACLDetails({
                           <div className="mb-3">
                             <div className="font-medium text-gray-900">
                               {(() => {
-                                const text =
-                                  rule.resourceType === 'cluster' || rule.resourceType === 'schemaRegistry'
-                                    ? getResourceName(rule.resourceType)
-                                    : rule.selectorType === 'any'
-                                      ? `All ${getPluralResourceName(rule.resourceType)}`
-                                      : `${getPluralResourceName(rule.resourceType)} ${rule.selectorType === 'literal' ? 'matching' : 'starting with'}: "${rule.selectorValue}"`;
+                                let text: string;
+                                if (rule.resourceType === 'cluster' || rule.resourceType === 'schemaRegistry') {
+                                  text = getResourceName(rule.resourceType);
+                                } else if (rule.selectorType === 'any') {
+                                  text = `All ${getPluralResourceName(rule.resourceType)}`;
+                                } else {
+                                  const matchType = rule.selectorType === 'literal' ? 'matching' : 'starting with';
+                                  text = `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
+                                }
                                 return text.charAt(0).toUpperCase() + text.slice(1);
                               })()}
                             </div>

@@ -212,11 +212,11 @@ export class StepReview extends Component<{
     const isThrottled = settings.maxReplicationTraffic != null && settings.maxReplicationTraffic > 0;
     const trafficThrottle = isThrottled ? `${prettyBytesOrNA(settings.maxReplicationTraffic ?? 0)}/s` : 'disabled';
 
-    const estimatedTime = isThrottled
-      ? estimatedTimeSec < 10
-        ? '< 10 seconds'
-        : prettyMilliseconds(estimatedTimeSec * 1000, { secondsDecimalDigits: 0, unitCount: 2, verbose: true })
-      : '-';
+    const estimatedTime = (() => {
+      if (!isThrottled) return '-';
+      if (estimatedTimeSec < 10) return '< 10 seconds';
+      return prettyMilliseconds(estimatedTimeSec * 1000, { secondsDecimalDigits: 0, unitCount: 2, verbose: true });
+    })();
 
     const data = [
       {

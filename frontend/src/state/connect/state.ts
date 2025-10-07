@@ -93,7 +93,9 @@ const sanitizeBoolean = (val: any) => {
   if (typeof val === 'boolean') return val;
   if (typeof val === 'string') {
     const lVal = val.toLowerCase();
-    return lVal === 'true' ? true : lVal === 'false' ? false : val;
+    if (lVal === 'true') return true;
+    if (lVal === 'false') return false;
+    return val;
   }
   return false;
 };

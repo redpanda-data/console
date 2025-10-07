@@ -418,44 +418,53 @@ export const RemoteMCPListPage = () => {
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell className="h-24 text-center" colSpan={columns.length}>
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading MCP servers...
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : error ? (
-              <TableRow>
-                <TableCell className="h-24 text-center" colSpan={columns.length}>
-                  <div className="flex items-center justify-center gap-2 text-red-600">
-                    <AlertCircle className="h-4 w-4" />
-                    Error loading MCP servers: {error.message}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  className="cursor-pointer hover:bg-muted/50"
-                  data-state={row.getIsSelected() && 'selected'}
-                  key={row.id}
-                  onClick={(event) => handleRowClick(row.original.id, event)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
+            {(() => {
+              if (isLoading) {
+                return (
+                  <TableRow>
+                    <TableCell className="h-24 text-center" colSpan={columns.length}>
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading MCP servers...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+              if (error) {
+                return (
+                  <TableRow>
+                    <TableCell className="h-24 text-center" colSpan={columns.length}>
+                      <div className="flex items-center justify-center gap-2 text-red-600">
+                        <AlertCircle className="h-4 w-4" />
+                        Error loading MCP servers: {error.message}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+              if (table.getRowModel().rows?.length) {
+                return table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    className="cursor-pointer hover:bg-muted/50"
+                    data-state={row.getIsSelected() && 'selected'}
+                    key={row.id}
+                    onClick={(event) => handleRowClick(row.original.id, event)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    ))}
+                  </TableRow>
+                ));
+              }
+              return (
+                <TableRow>
+                  <TableCell className="h-24 text-center" colSpan={columns.length}>
+                    No MCP servers found.
+                  </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell className="h-24 text-center" colSpan={columns.length}>
-                  No MCP servers found.
-                </TableCell>
-              </TableRow>
-            )}
+              );
+            })()}
           </TableBody>
         </Table>
         <DataTablePagination table={table} />

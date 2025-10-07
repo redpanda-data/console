@@ -94,12 +94,15 @@ class Overview extends PageComponent {
     const overview = api.clusterOverview;
     const brokers = api.brokers ?? [];
 
-    const clusterStatus =
-      overview.kafka?.status?.status === StatusType.HEALTHY
-        ? { displayText: 'Running', className: 'status-green' }
-        : overview.kafka?.status?.status === StatusType.DEGRADED
-          ? { displayText: 'Degraded', className: 'status-yellow' }
-          : { displayText: 'Unhealthy', className: 'status-red' };
+    const clusterStatus = (() => {
+      if (overview.kafka?.status?.status === StatusType.HEALTHY) {
+        return { displayText: 'Running', className: 'status-green' };
+      }
+      if (overview.kafka?.status?.status === StatusType.DEGRADED) {
+        return { displayText: 'Degraded', className: 'status-yellow' };
+      }
+      return { displayText: 'Unhealthy', className: 'status-red' };
+    })();
 
     const brokerSize = brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : '...';
 

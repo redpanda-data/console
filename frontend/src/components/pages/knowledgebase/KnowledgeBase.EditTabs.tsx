@@ -1095,13 +1095,15 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
               }}
               onCreateNew={() => this.openAddSecret('embeddingGenerator.provider.provider.value.apiKey')}
               placeholder={`Select ${embeddingGen?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} API key from secrets`}
-              value={
-                embeddingGen?.provider?.provider.case === 'openai'
-                  ? embeddingGen.provider.provider.value.apiKey
-                  : embeddingGen?.provider?.provider.case === 'cohere'
-                    ? embeddingGen.provider.provider.value.apiKey
-                    : ''
-              }
+              value={(() => {
+                if (embeddingGen?.provider?.provider.case === 'openai') {
+                  return embeddingGen.provider.provider.value.apiKey;
+                }
+                if (embeddingGen?.provider?.provider.case === 'cohere') {
+                  return embeddingGen.provider.provider.value.apiKey;
+                }
+                return '';
+              })()}
             />
           </>
         ) : (

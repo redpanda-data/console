@@ -155,18 +155,23 @@ export function openValidationErrorsModal(result: {
 }) {
   const { isValid, errorDetails, isCompatible } = result;
 
-  const compatBox =
-    isCompatible === undefined || isValid === false ? null : isCompatible ? (
-      <Alert status="success" variant="subtle">
-        <AlertIcon />
-        No compatibility issues
-      </Alert>
-    ) : (
+  const compatBox = (() => {
+    if (isCompatible === undefined || isValid === false) return null;
+    if (isCompatible) {
+      return (
+        <Alert status="success" variant="subtle">
+          <AlertIcon />
+          No compatibility issues
+        </Alert>
+      );
+    }
+    return (
       <Alert status="error" variant="subtle">
         <AlertIcon />
         Compatibility issues found
       </Alert>
     );
+  })();
 
   const errDetailsBox = errorDetails ? (
     <Box>

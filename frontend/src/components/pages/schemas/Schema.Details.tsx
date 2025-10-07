@@ -305,12 +305,11 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
       : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
-  const defaultVersion =
-    queryVersion !== undefined
-      ? queryVersion === 'latest' || !requestedVersionExists
-        ? fallbackVersion
-        : queryVersion
-      : fallbackVersion;
+  const defaultVersion = (() => {
+    if (queryVersion === undefined) return fallbackVersion;
+    if (queryVersion === 'latest' || !requestedVersionExists) return fallbackVersion;
+    return queryVersion;
+  })();
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
   // Show notification and update URL if requested version doesn't exist
