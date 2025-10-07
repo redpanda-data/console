@@ -465,7 +465,7 @@
         /** ------------------------ JavaScript Rules ------------------------ **/
 
         // Disallow using a callback in asynchronous tests and hooks.
-        "noDoneCallback": "off",
+        "noDoneCallback": "error",
         // Allow TypeScript enum.
         "noEnum": "off",
         // Disallow exporting an imported variable.
