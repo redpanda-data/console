@@ -21,6 +21,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	adminv2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/core/admin/v2"
 )
 
 // Suppress "imported and not used" errors
