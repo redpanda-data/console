@@ -23,10 +23,8 @@ export const runDeveloperView = (): boolean => {
   }
 
   const onDown = (event: KeyboardEvent) => {
-    if (event.key.toLowerCase() === '?') {
-      if (process.env.NODE_ENV !== 'production') {
-        window.localStorage.setItem('dv', JSON.stringify(!developerView));
-      }
+    if (event.key.toLowerCase() === '?' && process.env.NODE_ENV !== 'production') {
+      window.localStorage.setItem('dv', JSON.stringify(!developerView));
     }
   };
 

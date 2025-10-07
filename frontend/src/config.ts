@@ -74,20 +74,17 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   try {
     return await next(request);
   } catch (error) {
-    if (error instanceof ConnectError) {
-      if (error.code === Code.FailedPrecondition) {
-        for (const detail of error.details) {
-          // @ts-expect-error - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-          if (detail?.type && detail?.debug) {
-            if (
-              // @ts-expect-error - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-              detail.type === 'google.rpc.ErrorInfo' &&
-              // @ts-expect-error - TODO fix type checks for IncomingDetail, BE should provide types for debug field
-              detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
-            ) {
-              appGlobal.historyReplace('/trial-expired');
-            }
-          }
+    if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
+      for (const detail of error.details) {
+        // TODO fix type checks for IncomingDetail, BE should provide types for debug field
+        const detailWithDebug = detail as any;
+        if (
+          detailWithDebug?.type &&
+          detailWithDebug?.debug &&
+          detailWithDebug.type === 'google.rpc.ErrorInfo' &&
+          detailWithDebug.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
+        ) {
+          appGlobal.historyReplace('/trial-expired');
         }
       }
     }

@@ -262,10 +262,13 @@ function processVersionInfo(headers: Headers) {
       }
 
       const serverBuildTimestamp = Number(v);
-      if (v != null && v !== '' && Number.isFinite(serverBuildTimestamp)) {
-        if (uiState.serverBuildTimestamp !== serverBuildTimestamp) {
-          uiState.serverBuildTimestamp = serverBuildTimestamp;
-        }
+      if (
+        v != null &&
+        v !== '' &&
+        Number.isFinite(serverBuildTimestamp) &&
+        uiState.serverBuildTimestamp !== serverBuildTimestamp
+      ) {
+        uiState.serverBuildTimestamp = serverBuildTimestamp;
       }
 
       return;
@@ -1383,12 +1386,10 @@ const apiStore = {
         }
       },
       (err) => {
-        if (err instanceof Error) {
-          // Currently we don't get helpful status codes (502) so we have to inspect the message
-          if (err.message.includes('404') && err.message.includes('not found')) {
-            // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
-            return null;
-          }
+        // Currently we don't get helpful status codes (502) so we have to inspect the message
+        if (err instanceof Error && err.message.includes('404') && err.message.includes('not found')) {
+          // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
+          return null;
         }
         throw err;
       }

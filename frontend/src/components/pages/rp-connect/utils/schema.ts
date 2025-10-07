@@ -518,10 +518,12 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
       }
 
       // Check array items
-      if (propSchema.type === 'array' && propSchema.items) {
-        if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
-          return true;
-        }
+      if (
+        propSchema.type === 'array' &&
+        propSchema.items &&
+        hasRelevantNestedFields(propSchema.items, topicData, userData)
+      ) {
+        return true;
       }
     }
   }
@@ -583,14 +585,16 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
           if (Object.keys(populated).length > 0) {
             result[propName] = populated;
           }
-        } else if (propSchema.type === 'array' && propSchema.items) {
+        } else if (
+          propSchema.type === 'array' &&
+          propSchema.items &&
+          hasRelevantNestedFields(propSchema.items, topicData, userData)
+        ) {
           // Handle arrays that contain objects with relevant fields (e.g., sasl array)
-          if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
-            const itemDefaults = {};
-            const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
-            if (Object.keys(populated).length > 0) {
-              result[propName] = [populated];
-            }
+          const itemDefaults = {};
+          const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
+          if (Object.keys(populated).length > 0) {
+            result[propName] = [populated];
           }
         }
       }

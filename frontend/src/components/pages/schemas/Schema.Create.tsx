@@ -556,10 +556,8 @@ function createSchemaState() {
         subjectName = this.userInput;
       }
 
-      if (this.strategy !== 'CUSTOM') {
-        if (this.keyOrValue !== undefined) {
-          subjectName += `-${this.keyOrValue.toLowerCase()}`;
-        }
+      if (this.strategy !== 'CUSTOM' && this.keyOrValue !== undefined) {
+        subjectName += `-${this.keyOrValue.toLowerCase()}`;
       }
 
       return subjectName;

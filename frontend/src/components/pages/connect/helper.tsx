@@ -427,22 +427,18 @@ export function findConnectorMetadata(className: string): ConnectorMetadata | nu
 
   // look for exact match
   for (const e of connectorMetadata) {
-    if (e.className) {
-      if (e.className === c) {
-        meta = e;
-        break;
-      }
+    if (e.className && e.className === c) {
+      meta = e;
+      break;
     }
   }
 
   // look for prefix match
   if (!meta) {
     for (const e of connectorMetadata) {
-      if (e.classNamePrefix) {
-        if (c.startsWith(e.classNamePrefix)) {
-          meta = e;
-          break;
-        }
+      if (e.classNamePrefix && c.startsWith(e.classNamePrefix)) {
+        meta = e;
+        break;
       }
     }
   }

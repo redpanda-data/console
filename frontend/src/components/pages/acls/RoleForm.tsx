@@ -389,12 +389,14 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
   // Add all inferred users
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
   for (const g of principalGroupsView.principalGroups) {
-    if (g.principalType === 'User' && !g.principalName.includes('*')) {
-      if (!availableUsers.any((u) => u.value === g.principalName)) {
-        // is it a user that is being referenced?
-        // is the user already listed as a service account?
-        availableUsers.push({ value: g.principalName });
-      }
+    if (
+      g.principalType === 'User' &&
+      !g.principalName.includes('*') &&
+      !availableUsers.any((u) => u.value === g.principalName)
+    ) {
+      // is it a user that is being referenced?
+      // is the user already listed as a service account?
+      availableUsers.push({ value: g.principalName });
     }
   }
 

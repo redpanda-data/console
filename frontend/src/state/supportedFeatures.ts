@@ -81,10 +81,8 @@ export function isSupported(f: FeatureEntry): boolean {
   }
 
   for (const e of c.endpoints) {
-    if (e.method === f.method) {
-      if (e.endpoint === f.endpoint) {
-        return e.isSupported;
-      }
+    if (e.method === f.method && e.endpoint === f.endpoint) {
+      return e.isSupported;
     }
   }
 

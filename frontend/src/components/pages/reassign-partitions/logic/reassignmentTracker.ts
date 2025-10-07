@@ -156,10 +156,8 @@ export class ReassignmentTracker {
           return false; // not yet complete
         }
         const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
-        if (age > 8) {
-          if (IsDev) {
-            return true;
-          }
+        if (age > 8 && IsDev) {
+          return true;
         }
         return false;
       });

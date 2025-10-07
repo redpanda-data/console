@@ -331,15 +331,17 @@ export const RemoteMCPInspectorTab = () => {
         const componentType =
           mcpServerData?.mcpServer?.tools?.[selectedTool]?.componentType || getComponentTypeFromToolName(selectedTool);
 
-        if (componentType === MCPServer_Tool_ComponentType.OUTPUT) {
+        if (
+          componentType === MCPServer_Tool_ComponentType.OUTPUT &&
+          topicsData?.topics &&
+          Array.isArray(topicsData.topics)
+        ) {
           // Validate that the topic_name exists in the available topics
-          if (topicsData?.topics && Array.isArray(topicsData.topics)) {
-            const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
-            if (!topicExists) {
-              errors[requiredField] =
-                `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
-              continue;
-            }
+          const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
+          if (!topicExists) {
+            errors[requiredField] =
+              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+            continue;
           }
         }
       }

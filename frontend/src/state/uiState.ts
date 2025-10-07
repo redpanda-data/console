@@ -78,13 +78,11 @@ class UIState {
   }
   public set currentTopicName(topicName: string | undefined) {
     this._currentTopicName = topicName;
-    if (topicName) {
-      if (!uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
-        // console.log('creating details for topic: ' + topicName);
-        const topicSettings = new TopicSettings();
-        topicSettings.topicName = topicName;
-        uiSettings.perTopicSettings.push(topicSettings);
-      }
+    if (topicName && !uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
+      // console.log('creating details for topic: ' + topicName);
+      const topicSettings = new TopicSettings();
+      topicSettings.topicName = topicName;
+      uiSettings.perTopicSettings.push(topicSettings);
     }
   }
 

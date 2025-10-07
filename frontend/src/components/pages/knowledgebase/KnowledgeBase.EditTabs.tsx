@@ -698,25 +698,23 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
     }
 
     // Special handling for reranker enabled - initialize provider structure
-    if (path === 'retriever.reranker.enabled' && value === true) {
-      if (!this.formData.retriever?.reranker?.provider) {
-        // Ensure the path exists before assignment
-        if (!this.formData.retriever) {
-          this.formData.retriever = create(KnowledgeBaseUpdate_RetrieverSchema, {});
-        }
-        if (!this.formData.retriever.reranker) {
-          this.formData.retriever.reranker = create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {});
-        }
-        this.formData.retriever.reranker.provider = create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
-          provider: {
-            case: 'cohere',
-            value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
-              model: 'rerank-v3.5',
-              apiKey: '',
-            }),
-          },
-        });
+    if (path === 'retriever.reranker.enabled' && value === true && !this.formData.retriever?.reranker?.provider) {
+      // Ensure the path exists before assignment
+      if (!this.formData.retriever) {
+        this.formData.retriever = create(KnowledgeBaseUpdate_RetrieverSchema, {});
       }
+      if (!this.formData.retriever.reranker) {
+        this.formData.retriever.reranker = create(KnowledgeBaseUpdate_Retriever_RerankerSchema, {});
+      }
+      this.formData.retriever.reranker.provider = create(KnowledgeBaseUpdate_Retriever_Reranker_ProviderSchema, {
+        provider: {
+          case: 'cohere',
+          value: create(KnowledgeBaseUpdate_Retriever_Reranker_Provider_CohereSchema, {
+            model: 'rerank-v3.5',
+            apiKey: '',
+          }),
+        },
+      });
     }
 
     this.hasChanges = true;

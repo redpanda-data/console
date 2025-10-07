@@ -546,14 +546,12 @@ class KnowledgeBaseCreate extends PageComponent {
     }
 
     // Special handling for credential choice changes
-    if (field === 'credentialChoice') {
-      // Clear username/password errors when switching to auto mode
-      if (value === 'auto') {
-        // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
-        delete this.validationErrors.redpandaUsername;
-        // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
-        delete this.validationErrors.redpandaPassword;
-      }
+    // Clear username/password errors when switching to auto mode
+    if (field === 'credentialChoice' && value === 'auto') {
+      // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
+      delete this.validationErrors.redpandaUsername;
+      // biome-ignore lint/performance/noDelete: TypeScript requires string type, can't use undefined assignment
+      delete this.validationErrors.redpandaPassword;
     }
   };
 

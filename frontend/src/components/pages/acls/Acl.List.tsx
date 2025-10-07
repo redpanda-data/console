@@ -221,12 +221,10 @@ const PermissionsListTab = observer(() => {
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
   for (const g of principalGroupsView.principalGroups) {
-    if (g.principalType === 'User' && !g.principalName.includes('*')) {
-      if (!users.any((u) => u.name === g.principalName)) {
-        // is it a user that is being referenced?
-        // is the user already listed as a service account?
-        users.push({ name: g.principalName, type: 'PRINCIPAL' });
-      }
+    if (g.principalType === 'User' && !g.principalName.includes('*') && !users.any((u) => u.name === g.principalName)) {
+      // is it a user that is being referenced?
+      // is the user already listed as a service account?
+      users.push({ name: g.principalName, type: 'PRINCIPAL' });
     }
   }
 

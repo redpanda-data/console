@@ -337,20 +337,15 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
-            if (AppFeatures.SINGLE_SIGN_ON) {
-              if (api.userData != null && !api.userData.canListAcls) {
-                return (
-                  <Popover
-                    content={"You need the cluster-permission 'viewAcl' to view this tab"}
-                    hideCloseButton={true}
-                  >
-                    <div>
-                      {' '}
-                      <LockIcon size={16} /> ACL
-                    </div>
-                  </Popover>
-                );
-              }
+            if (AppFeatures.SINGLE_SIGN_ON && api.userData != null && !api.userData.canListAcls) {
+              return (
+                <Popover content={"You need the cluster-permission 'viewAcl' to view this tab"} hideCloseButton={true}>
+                  <div>
+                    {' '}
+                    <LockIcon size={16} /> ACL
+                  </div>
+                </Popover>
+              );
             }
             return;
           },

@@ -171,10 +171,8 @@ class ReassignPartitions extends PageComponent {
       }
 
       // has user selected a topic partition that is not available anymore?
-      if (reset === false) {
-        if (this.selectedTopicPartitions == null) {
-          reset = true;
-        }
+      if (reset === false && this.selectedTopicPartitions == null) {
+        reset = true;
       }
 
       if (reset) {
@@ -745,18 +743,14 @@ class ReassignPartitions extends PageComponent {
   }
 
   startRefreshingTopicConfigs() {
-    if (IsDev) {
-      if (this.refreshTopicConfigsTimer == null) {
-        this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
-      }
+    if (IsDev && this.refreshTopicConfigsTimer == null) {
+      this.refreshTopicConfigsTimer = window.setInterval(this.refreshTopicConfigs, 6000);
     }
   }
   stopRefreshingTopicConfigs() {
-    if (IsDev) {
-      if (this.refreshTopicConfigsTimer) {
-        window.clearInterval(this.refreshTopicConfigsTimer);
-        this.refreshTopicConfigsTimer = null;
-      }
+    if (IsDev && this.refreshTopicConfigsTimer) {
+      window.clearInterval(this.refreshTopicConfigsTimer);
+      this.refreshTopicConfigsTimer = null;
     }
   }
 
@@ -815,10 +809,8 @@ class ReassignPartitions extends PageComponent {
     for (const topicName in this.partitionSelection) {
       if (Object.hasOwn(this.partitionSelection, topicName)) {
         const topic = api.topics?.first((x) => x.topicName === topicName);
-        if (topic) {
-          if (topic.replicationFactor > maxRf) {
-            maxRf = topic.replicationFactor;
-          }
+        if (topic && topic.replicationFactor > maxRf) {
+          maxRf = topic.replicationFactor;
         }
       }
     }

@@ -90,21 +90,19 @@ export const AclPrincipalGroupEditor = observer(
         }
 
         // Ignore creation of ACLs that already exist, and delete ACLs that are no longer needed
-        if (p.type === 'edit') {
-          if (group.sourceEntries.length > 0) {
-            const requests = group.sourceEntries.map((acl) => {
-              // try to find this in allToCreate
-              const foundIdx = allToCreate.findIndex((x) => comparer.structural(acl, x));
-              if (foundIdx !== -1) {
-                // acl already exists, remove it from the list
-                allToCreate.splice(foundIdx, 1);
-                return Promise.resolve();
-              }
-              // acl should no longer exist, delete it
-              return api.deleteACLs(acl);
-            });
-            await Promise.allSettled(requests);
-          }
+        if (p.type === 'edit' && group.sourceEntries.length > 0) {
+          const requests = group.sourceEntries.map((acl) => {
+            // try to find this in allToCreate
+            const foundIdx = allToCreate.findIndex((x) => comparer.structural(acl, x));
+            if (foundIdx !== -1) {
+              // acl already exists, remove it from the list
+              allToCreate.splice(foundIdx, 1);
+              return Promise.resolve();
+            }
+            // acl should no longer exist, delete it
+            return api.deleteACLs(acl);
+          });
+          await Promise.allSettled(requests);
         }
 
         // Create all ACLs in group
