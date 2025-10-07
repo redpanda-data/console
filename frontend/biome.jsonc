@@ -325,9 +325,6 @@
         "useValidTypeof": "error",
         // Require generator functions to contain yield.
         "useYield": "error",
-
-        // Disallow destructuring props inside JSX components in Solid projects.
-        "noSolidDestructuredProps": "off",
         // Disallow the use of dependencies that aren't specified in the package.json.
         "noUndeclaredDependencies": "off",
         // Disallow the use of process global.
@@ -501,7 +498,7 @@
         // Disallow the use of yoda expressions.
         "noYodaExpression": "error",
         // Disallow Array constructors.
-        "useArrayLiterals": "off",
+        "useArrayLiterals": "error",
         // Enforce the use of as const over literal type and type annotation.
         "useAsConstAssertion": "off",
         // Use at() instead of integer index access.
