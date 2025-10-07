@@ -576,7 +576,7 @@
         // Prefer template literals over string concatenation.
         "useTemplate": "off",
         // Require new when throwing an off.
-        "useThrowNewError": "off",
+        "useThrowNewError": "error",
         // Disallow throwing non-Error values.
         "useThrowOnlyError": "error",
         // Enforce the use of String.trimStart() and String.trimEnd() over String.trimLeft() and String.trimRight().
