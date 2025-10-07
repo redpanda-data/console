@@ -85,6 +85,7 @@ export const SchemaAddVersionPage = ({ subjectName }: { subjectName: string }) =
   const editorState = useSchemaEditorState();
 
   // Initialize editor state from schema details
+  // biome-ignore lint/correctness/useExhaustiveDependencies: editorState setters are stable
   useEffect(() => {
     if (!subject) return;
 
@@ -110,7 +111,7 @@ export const SchemaAddVersionPage = ({ subjectName }: { subjectName: string }) =
     editorState.setReferences(schema.references);
     editorState.setStrategy('CUSTOM');
     editorState.setUserInput(subject.name);
-  }, [subject, editorState]);
+  }, [subject]);
 
   useEffect(() => {
     appGlobal.onRefresh = () => {
