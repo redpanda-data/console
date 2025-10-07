@@ -18,7 +18,7 @@ import VSCodeLogo from '../../../../../assets/vscode.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { createMCPConfig, getMCPServerName, getRpkCloudEnvironment, type MCPServer } from '../utils';
+import { ClientType, createMCPConfig, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
 type ClientVscodeProps = {
   mcpServer: MCPServer;
@@ -45,9 +45,6 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
     window.open(vscodeLink, '_blank');
   };
 
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-
   const mcpDiscoveryConfig = enableMcpDiscovery
     ? `"chat.mcp.discovery.enabled": {
     "windsurf": true,
@@ -57,46 +54,12 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
 }`
     : '';
 
-  const vscodeConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X", 
-          "cloud_environment=${getRpkCloudEnvironment()}",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`
-    : `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X", 
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`;
+  const vscodeConfigJson = getClientConfig(ClientType.VSCODE, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

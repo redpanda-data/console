@@ -1,11 +1,8 @@
 import type { BadgeVariant } from 'components/redpanda-ui/components/badge';
 import {
   Activity,
-  AlertTriangle,
   ArrowRightLeft,
   Brain,
-  CheckCircle2,
-  Clock,
   Cloud,
   Cpu,
   Database,
@@ -29,10 +26,8 @@ import {
   Timer,
   Users,
   Wrench,
-  XCircle,
 } from 'lucide-react';
-
-import type { ComponentCategory, ConnectComponentStatus, ConnectComponentType } from '../types/schema';
+import type { ComponentCategory, ConnectComponentType } from '../types/schema';
 import { getCategoryDisplayName } from '../utils/categories';
 
 export type ConnectBadgeProps = {
@@ -118,7 +113,7 @@ export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectB
 };
 
 export const getCategoryBadgeProps = (
-  category: ComponentCategory | ConnectComponentType | string
+  category: ComponentCategory | ConnectComponentType | string,
 ): ConnectBadgeProps => {
   // Handle null/undefined categories
   if (!category) {
@@ -362,50 +357,11 @@ export const getCategoryBadgeProps = (
     default:
       // Log unknown categories for debugging
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+        console.warn(`Unknown category: "${category}"`);
       }
       return {
         icon: <HelpCircle className="h-3 w-3" />,
         text: displayText,
-        variant: 'gray' as const,
-        className: 'text-gray-800 dark:text-gray-300',
-      };
-  }
-};
-
-export const getStatusBadgeProps = (status: ConnectComponentStatus): ConnectBadgeProps => {
-  switch (status) {
-    case 'stable':
-      return {
-        icon: <CheckCircle2 className="h-3 w-3" />,
-        text: 'Stable',
-        variant: 'emerald' as const,
-        className: 'text-emerald-800 dark:text-emerald-300',
-      };
-    case 'beta':
-      return {
-        icon: <Clock className="h-3 w-3" />,
-        text: 'Beta',
-        variant: 'amber' as const,
-        className: 'text-amber-800 dark:text-amber-300',
-      };
-    case 'experimental':
-      return {
-        icon: <AlertTriangle className="h-3 w-3" />,
-        text: 'Experimental',
-        variant: 'orange' as const,
-        className: 'text-orange-800 dark:text-orange-300',
-      };
-    case 'deprecated':
-      return {
-        icon: <XCircle className="h-3 w-3" />,
-        text: 'Deprecated',
-        variant: 'red' as const,
-        className: 'text-red-800 dark:text-red-300',
-      };
-    default:
-      return {
-        icon: <HelpCircle className="h-3 w-3" />,
-        text: status.charAt(0).toUpperCase() + status.slice(1),
         variant: 'gray' as const,
         className: 'text-gray-800 dark:text-gray-300',
       };

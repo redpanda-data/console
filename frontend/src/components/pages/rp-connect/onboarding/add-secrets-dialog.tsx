@@ -3,10 +3,10 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogDescription,
   DialogHeader,
-  DialogOverlay,
+  DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { AlertTriangle } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -39,15 +39,15 @@ export const AddSecretsDialog = ({
   };
 
   return (
-    <Dialog onOpenChange={onClose} open={isOpen}>
-      <DialogOverlay />
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent size="xl">
         <DialogHeader>
-          <Heading level={2}>Add Secrets</Heading>
+          <DialogTitle>Add Secrets</DialogTitle>
+          <DialogDescription>Add secrets to your pipeline.</DialogDescription>
         </DialogHeader>
         <DialogBody>
           {errorMessages.length > 0 && (
-            <Alert className="mb-4" variant="destructive">
+            <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-1">
@@ -59,13 +59,13 @@ export const AddSecretsDialog = ({
             </Alert>
           )}
           <QuickAddSecrets
-            defaultValues={defaultValues}
-            enableNewSecrets
-            existingSecrets={existingSecrets}
-            onError={handleError}
-            onSecretsCreated={handleSecretsCreated}
             requiredSecrets={missingSecrets}
+            existingSecrets={existingSecrets}
             scopes={[Scope.REDPANDA_CONNECT]}
+            defaultValues={defaultValues}
+            onSecretsCreated={handleSecretsCreated}
+            enableNewSecrets
+            onError={handleError}
           />
         </DialogBody>
       </DialogContent>

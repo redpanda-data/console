@@ -21,19 +21,6 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
-
-import { ClientAuggie } from './clients/auggie';
-import { ClientClaudeCode } from './clients/claude-code';
-import { ClientClaudeDesktop } from './clients/claude-desktop';
-import { ClientCline } from './clients/cline';
-import { ClientCodex } from './clients/codex';
-import { ClientCursor } from './clients/cursor';
-import { ClientGemini } from './clients/gemini';
-import { ClientManus } from './clients/manus';
-import { ClientVscode } from './clients/vscode';
-import { ClientWarp } from './clients/warp';
-import { ClientWindsurf } from './clients/windsurf';
-import type { MCPServer } from './utils';
 import AuggieLogo from '../../../../assets/auggie.svg';
 import ClaudeCodeLogo from '../../../../assets/claude-code.svg';
 import ClaudeDesktopLogo from '../../../../assets/claude-desktop.svg';
@@ -45,69 +32,65 @@ import ManusLogo from '../../../../assets/manus.svg';
 import VSCodeLogo from '../../../../assets/vscode.svg';
 import WarpLogo from '../../../../assets/warp.svg';
 import WindsurfLogo from '../../../../assets/windsurf.svg';
+import { ClientAuggie } from './clients/auggie';
+import { ClientClaudeCode } from './clients/claude-code';
+import { ClientClaudeDesktop } from './clients/claude-desktop';
+import { ClientCline } from './clients/cline';
+import { ClientCodex } from './clients/codex';
+import { ClientCursor } from './clients/cursor';
+import { ClientGemini } from './clients/gemini';
+import { ClientManus } from './clients/manus';
+import { ClientVscode } from './clients/vscode';
+import { ClientWarp } from './clients/warp';
+import { ClientWindsurf } from './clients/windsurf';
+import { AVAILABLE_CLIENTS, ClientType, type MCPServer } from './utils';
 
-const AVAILABLE_CLIENTS = [
-  'claude-code',
-  'claude-desktop',
-  'vscode',
-  'cursor',
-  'windsurf',
-  'gemini',
-  'codex',
-  'warp',
-  'auggie',
-  'cline',
-  'manus',
-] as const;
-
-type Client = (typeof AVAILABLE_CLIENTS)[number];
-
-const CLIENT_INFO: Record<Client, { name: string; logo: string; alt: string }> = {
-  'claude-code': { name: 'Claude Code', logo: ClaudeCodeLogo, alt: 'Claude Code CLI' },
-  'claude-desktop': { name: 'Claude Desktop', logo: ClaudeDesktopLogo, alt: 'Claude Desktop app' },
-  vscode: { name: 'VSCode', logo: VSCodeLogo, alt: 'VSCode IDE' },
-  cursor: { name: 'Cursor', logo: CursorLogo, alt: 'Cursor IDE' },
-  windsurf: { name: 'Windsurf', logo: WindsurfLogo, alt: 'Windsurf IDE' },
-  gemini: { name: 'Gemini', logo: GeminiLogo, alt: 'Gemini CLI' },
-  codex: { name: 'Codex', logo: CodexLogo, alt: 'Codex CLI' },
-  warp: { name: 'Warp', logo: WarpLogo, alt: 'Warp CLI' },
-  auggie: { name: 'Auggie', logo: AuggieLogo, alt: 'Auggie (Augment Code) CLI' },
-  cline: { name: 'Cline', logo: ClineLogo, alt: 'Cline CLI' },
-  manus: { name: 'Manus', logo: ManusLogo, alt: 'Manus CLI' },
+const CLIENT_INFO: Record<ClientType, { name: string; logo: string; alt: string }> = {
+  [ClientType.CLAUDE_CODE]: { name: 'Claude Code', logo: ClaudeCodeLogo, alt: 'Claude Code CLI' },
+  [ClientType.CLAUDE_DESKTOP]: { name: 'Claude Desktop', logo: ClaudeDesktopLogo, alt: 'Claude Desktop app' },
+  [ClientType.VSCODE]: { name: 'VSCode', logo: VSCodeLogo, alt: 'VSCode IDE' },
+  [ClientType.CURSOR]: { name: 'Cursor', logo: CursorLogo, alt: 'Cursor IDE' },
+  [ClientType.WINDSURF]: { name: 'Windsurf', logo: WindsurfLogo, alt: 'Windsurf IDE' },
+  [ClientType.GEMINI]: { name: 'Gemini', logo: GeminiLogo, alt: 'Gemini CLI' },
+  [ClientType.CODEX]: { name: 'Codex', logo: CodexLogo, alt: 'Codex CLI' },
+  [ClientType.WARP]: { name: 'Warp', logo: WarpLogo, alt: 'Warp CLI' },
+  [ClientType.AUGGIE]: { name: 'Auggie', logo: AuggieLogo, alt: 'Auggie (Augment Code) CLI' },
+  [ClientType.CLINE]: { name: 'Cline', logo: ClineLogo, alt: 'Cline CLI' },
+  [ClientType.MANUS]: { name: 'Manus', logo: ManusLogo, alt: 'Manus CLI' },
 };
 
-type RemoteMCPConnectClientGuideProps = {
+interface RemoteMCPConnectClientGuideProps {
   mcpServer: MCPServer;
-};
+}
 
-type RemoteMCPClientGuideContentProps = {
-  client: Client;
+interface RemoteMCPClientGuideContentProps {
+  client: ClientType;
   mcpServer: MCPServer;
-};
+}
 
 const RemoteMCPClientGuideContent = ({ client, mcpServer }: RemoteMCPClientGuideContentProps) => {
   switch (client) {
-    case 'claude-code':
+    case ClientType.CLAUDE_CODE:
       return <ClientClaudeCode mcpServer={mcpServer} />;
-    case 'claude-desktop':
+    case ClientType.CLAUDE_DESKTOP:
       return <ClientClaudeDesktop mcpServer={mcpServer} />;
-    case 'vscode':
+    case ClientType.VSCODE:
       return <ClientVscode mcpServer={mcpServer} />;
-    case 'cursor':
+    case ClientType.CURSOR:
       return <ClientCursor mcpServer={mcpServer} />;
-    case 'windsurf':
+    case ClientType.WINDSURF:
       return <ClientWindsurf mcpServer={mcpServer} />;
-    case 'gemini':
+    case ClientType.GEMINI:
       return <ClientGemini mcpServer={mcpServer} />;
-    case 'codex':
+    case ClientType.CODEX:
       return <ClientCodex mcpServer={mcpServer} />;
-    case 'warp':
+    case ClientType.WARP:
       return <ClientWarp mcpServer={mcpServer} />;
-    case 'auggie':
+    case ClientType.AUGGIE:
       return <ClientAuggie mcpServer={mcpServer} />;
-    case 'cline':
+    case ClientType.CLINE:
       return <ClientCline mcpServer={mcpServer} />;
-    case 'manus':
+    case ClientType.MANUS:
       return <ClientManus mcpServer={mcpServer} />;
     default:
       return <ClientClaudeCode mcpServer={mcpServer} />;
@@ -115,13 +98,13 @@ const RemoteMCPClientGuideContent = ({ client, mcpServer }: RemoteMCPClientGuide
 };
 
 export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClientGuideProps) => {
-  const [client, setClient] = useState<Client>('claude-code');
+  const [client, setClient] = useState<ClientType>(ClientType.CLAUDE_CODE);
 
   return (
     <div className="space-y-2">
-      <Label className="font-medium text-sm">Connect to your client</Label>
+      <Label className="text-sm font-medium">Connect to your client</Label>
       <div>
-        <Select onValueChange={(value) => setClient(value as Client)} value={client}>
+        <Select value={client} onValueChange={(value) => setClient(value as ClientType)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a client" />
           </SelectTrigger>
@@ -133,7 +116,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
                 return (
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
-                      <img alt={client.alt} className="h-4 w-4" src={client.logo} />
+                      <img src={client.logo} alt={client.alt} className="w-4 h-4" />
                       <Text>{client.name}</Text>
                     </div>
                   </SelectItem>

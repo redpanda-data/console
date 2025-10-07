@@ -2,12 +2,11 @@ import { FormControl, FormHelperText, FormLabel, HStack, Icon, Stack, Text } fro
 import type { SelectOption } from '@redpanda-data/ui/dist/components/Inputs/Select/Select';
 import type { ReactNode } from 'react';
 import { AiOutlinePlus } from 'react-icons/ai';
-
 import { SingleSelect } from '../../misc/Select';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-type SingleSelectFieldProps = {
+export interface SingleSelectFieldProps {
   label?: ReactNode;
   helperText?: ReactNode;
   placeholder?: string;
@@ -15,7 +14,7 @@ type SingleSelectFieldProps = {
   options: SelectOption[];
   showCreateNewOption?: boolean;
   onCreateNewOptionClick?: () => void;
-};
+}
 
 export const CREATE_NEW_OPTION_VALUE = 'CREATE_NEW_OPTION_VALUE';
 
@@ -61,16 +60,16 @@ export const SingleSelectField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mb={1} mt={0}>
+          <FormHelperText mt={0} mb={1}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <SingleSelect
-        isDisabled={isDisabled}
-        onChange={handleChange}
         options={selectOptions}
+        onChange={handleChange}
         placeholder={placeholder}
+        isDisabled={isDisabled}
         value={field.state.value}
       />
 

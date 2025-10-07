@@ -1,24 +1,23 @@
 import { FormControl, FormHelperText, FormLabel, Stack, type StackDirection } from '@redpanda-data/ui';
 import { type ReactNode, useId } from 'react';
-
-import { RadioCard, type Sizes } from './radio-card';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
+import { RadioCard, type Sizes } from './radio-card';
 
-type RadioGroupOption = {
+interface RadioGroupOption {
   value: string;
   label: string;
   disabled?: boolean;
   invalid?: boolean;
-};
+}
 
-type RadioGroupFieldProps = {
+export interface RadioGroupFieldProps {
   label?: ReactNode;
   helperText?: ReactNode;
   options: RadioGroupOption[];
   direction?: StackDirection;
   size?: Sizes;
-};
+}
 
 export const RadioGroupField = ({
   label,
@@ -40,27 +39,27 @@ export const RadioGroupField = ({
           </FormLabel>
         )}
         {helperText && (
-          <FormHelperText mb={1} mt={0}>
+          <FormHelperText mt={0} mb={1}>
             {helperText}
           </FormHelperText>
         )}
       </Stack>
       <Stack
-        alignItems={direction === 'column' ? 'flex-start' : undefined}
         direction={direction}
         spacing={2}
         width={direction === 'column' ? 'fit-content' : '100%'}
+        alignItems={direction === 'column' ? 'flex-start' : undefined}
       >
         {options.map((option) => (
           <RadioCard
-            id={`${id}-${option.value}`}
-            isChecked={option.value === field.state.value}
-            isDisabled={option.disabled}
-            isInvalid={option.invalid}
             key={`${id}-${option.value}`}
+            id={`${id}-${option.value}`}
+            value={`${option.value}`}
+            isInvalid={option.invalid}
+            isDisabled={option.disabled}
+            isChecked={option.value === field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}
             size={size}
-            value={`${option.value}`}
             {...rest}
           >
             {option.label}

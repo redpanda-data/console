@@ -18,14 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { useSessionStorage } from 'hooks/use-session-storage';
 import { CircleAlert, RefreshCcw } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from 'state/connect/state';
 import { SASL_MECHANISMS } from 'utils/user';
-
 import { CreateACLRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import {
   CreateUserRequestSchema,
@@ -37,9 +36,9 @@ import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../typ
 import { type AddUserFormData, addUserFormSchema } from '../types/wizard';
 import { createTopicSuperuserACLs, saslMechanismToProto } from '../utils/user';
 
-type AddUserStepProps = {
+interface AddUserStepProps {
   usersList: ListUsersResponse_User[];
-};
+}
 
 export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersList }, ref) => {
   const [persistedUserData, setUserFormData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
@@ -51,24 +50,26 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         value: user.name || '',
         label: user.name || '',
       })),
-    [usersList]
+    [usersList],
   );
   const [userOptions, setUserOptions] = useState<ComboboxOption[]>(initialUserOptions);
   const createUserMutation = useCreateUserMutation();
   const createACLMutation = useLegacyCreateACLMutation();
 
+  const isLoading = createUserMutation.isPending || createACLMutation.isPending;
+
   // Initialize password based on persisted settings or defaults
   const initialSpecialChars = useMemo(
     () => persistedUserData?.specialCharactersEnabled ?? false,
-    [persistedUserData?.specialCharactersEnabled]
+    [persistedUserData?.specialCharactersEnabled],
   );
   const initialPasswordLength = useMemo(
     () => persistedUserData?.passwordLength ?? 30,
-    [persistedUserData?.passwordLength]
+    [persistedUserData?.passwordLength],
   );
   const initialPassword = useMemo(
     () => persistedUserData?.password || generatePassword(initialPasswordLength, initialSpecialChars),
-    [persistedUserData?.password, initialPasswordLength, initialSpecialChars]
+    [persistedUserData?.password, initialPasswordLength, initialSpecialChars],
   );
 
   const form = useForm<AddUserFormData>({
@@ -90,7 +91,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
 
   const matchingUserNameForFormValue = useMemo(
     () => usersList?.find((user) => user.name === watchedUsername)?.name,
-    [usersList, watchedUsername]
+    [usersList, watchedUsername],
   );
   const persistedUsername = useMemo(() => persistedUserData?.username, [persistedUserData]);
 
@@ -117,7 +118,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
       onChange(newValue);
       generateNewPassword();
     },
-    [generateNewPassword]
+    [generateNewPassword],
   );
 
   useEffect(() => {
@@ -178,7 +179,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         };
       }
     },
-    [existingUserBeingEdited, setUserFormData, createUserMutation, topicData?.topicName, createACLMutation]
+    [existingUserBeingEdited, setUserFormData, createUserMutation, topicData?.topicName, createACLMutation],
   );
 
   useImperativeHandle(ref, () => ({
@@ -195,7 +196,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
         error: 'Form validation failed',
       };
     },
-    isLoading: createUserMutation.isPending || createACLMutation.isPending,
+    isLoading,
   }));
 
   return (
@@ -212,19 +213,20 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="max-w-2xl space-y-8">
+          <div className="space-y-8 max-w-2xl">
             <FormField
               control={form.control}
               name="username"
+              disabled={isLoading}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
                     <Combobox
                       {...field}
+                      options={userOptions}
                       creatable
                       onCreateOption={handleCreateUserOption}
-                      options={userOptions}
                       placeholder="Select or create a user..."
                     />
                   </FormControl>
@@ -233,12 +235,16 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
               )}
             />
 
-            {existingUserBeingEdited && (
+            {existingUserBeingEdited && !isLoading && (
               <Alert>
                 <CircleAlert className="h-4 w-4" />
                 <AlertTitle>Existing User Selected</AlertTitle>
                 <AlertDescription>
-                  This user already exists. To change permissions or password, please create a new user.
+                  <Text>
+                    This user already exists. To enable topic-specific permissions automatically, please create a new
+                    user. You can see if this existing user already has permissions{' '}
+                    <Link href={`/security/users/${existingUserBeingEdited.name}/details`}>here</Link>.
+                  </Text>
                 </AlertDescription>
               </Alert>
             )}
@@ -248,24 +254,26 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 <FormField
                   control={form.control}
                   name="password"
+                  disabled={isLoading}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Group>
                           <Input type="password" {...field} />
-                          <CopyButton content={field.value} size="icon" variant="outline" />
-                          <Button onClick={generateNewPassword} size="icon" type="button" variant="outline">
+                          <CopyButton size="icon" content={field.value} variant="outline" />
+                          <Button type="button" size="icon" variant="outline" onClick={generateNewPassword}>
                             <RefreshCcw size={15} />
                           </Button>
                         </Group>
                       </FormControl>
                       <FormMessage />
                       <FormField
+                        {...field}
                         control={form.control}
                         name="specialCharactersEnabled"
                         render={({ field: specialCharsField }) => (
-                          <Label className="flex-row items-center font-normal text-muted-foreground">
+                          <Label className="flex-row items-center text-muted-foreground font-normal">
                             <Checkbox
                               checked={specialCharsField.value}
                               onCheckedChange={(val) => handleSpecialCharsChange(val, specialCharsField.onChange)}
@@ -280,6 +288,7 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                 <FormField
                   control={form.control}
                   name="saslMechanism"
+                  disabled={isLoading}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>SASL Mechanism</FormLabel>
@@ -306,36 +315,38 @@ export const AddUserStep = forwardRef<BaseStepRef, AddUserStepProps>(({ usersLis
                   <FormField
                     control={form.control}
                     name="superuser"
+                    disabled={isLoading}
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center space-x-3">
                             <FormControl>
-                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                              <Checkbox
+                                disabled={field.disabled}
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
-                            <FormLabel className="font-medium text-sm">
+                            <FormLabel className="text-sm font-medium">
                               Enable topic-specific permissions for this user for "{topicData.topicName}"
                             </FormLabel>
                           </div>
-                          <p className="text-muted-foreground text-sm">
+                          <p className="text-sm text-muted-foreground">
                             {field.value ? (
                               `This user will have full permissions (read, write, create, delete, describe, alter) on the selected topic "${topicData.topicName}".`
                             ) : (
                               <Alert variant="destructive">
-                                <AlertTitle className="flex items-center gap-2">
+                                <AlertTitle className="flex gap-2 items-center">
                                   <CircleAlert size={15} />
                                   Want custom User Permissions?
                                 </AlertTitle>
                                 <AlertDescription>
-                                  You can configure custom ACLs to connect your data to Redpanda{' '}
-                                  <a
-                                    className="text-blue-600 underline hover:text-blue-800"
-                                    href="/security/acls"
-                                    rel="noopener noreferrer"
-                                    target="_blank"
-                                  >
-                                    here
-                                  </a>
+                                  <Text>
+                                    You can configure custom ACLs to connect your data to Redpanda{' '}
+                                    <Link href="/security/acls" target="_blank" rel="noopener noreferrer">
+                                      here
+                                    </Link>
+                                  </Text>
                                 </AlertDescription>
                               </Alert>
                             )}

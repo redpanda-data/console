@@ -16,6 +16,13 @@ export const connectTilesFormSchema = z.object({
   connectionType: z.optional(z.enum(CONNECT_COMPONENT_TYPE)),
 });
 
+const wizardFormSchema = z.object({
+  input: connectTilesFormSchema,
+  output: connectTilesFormSchema,
+});
+
+export type WizardFormData = z.infer<typeof wizardFormSchema>;
+
 export type ConnectTilesFormData = z.infer<typeof connectTilesFormSchema>;
 
 export type StepSubmissionResult = {

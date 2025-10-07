@@ -15,17 +15,6 @@ import ErrorResult from 'components/misc/ErrorResult';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FunctionComponent } from 'react';
 import { useLocation } from 'react-router-dom';
-
-import {
-  ConnectorClass,
-  ConnectorsColumn,
-  errIcon,
-  mr05,
-  NotConfigured,
-  OverviewStatisticsCard,
-  TaskState,
-  TasksColumn,
-} from './helper';
 import { isFeatureFlagEnabled, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/appGlobal';
@@ -41,21 +30,29 @@ import Tabs, { type Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import RpConnectPipelinesList from '../rp-connect/Pipelines.List';
 import { RedpandaConnectIntro } from '../rp-connect/RedpandaConnectIntro';
+import {
+  ConnectorClass,
+  ConnectorsColumn,
+  errIcon,
+  mr05,
+  NotConfigured,
+  OverviewStatisticsCard,
+  TaskState,
+  TasksColumn,
+} from './helper';
 
-const ConnectView = {
-  KafkaConnect: 'kafka-connect',
-  RedpandaConnect: 'redpanda-connect',
-  RedpandaConnectSecret: 'redpanda-connect-secret',
-} as const;
-
-type ConnectViewType = (typeof ConnectView)[keyof typeof ConnectView];
+enum ConnectView {
+  KafkaConnect = 'kafka-connect',
+  RedpandaConnect = 'redpanda-connect',
+  RedpandaConnectSecret = 'redpanda-connect-secret',
+}
 
 /**
  * The Redpanda Connect Secret Manager introduces a new tab in Redpanda Connect.
  * this logic determines which tab should be opened based on the `defaultTab`
  * query parameter in the URL.
  */
-const getDefaultView = (defaultView: string): { initialTab: ConnectViewType; redpandaConnectTab: ConnectViewType } => {
+const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpandaConnectTab: ConnectView } => {
   const showKafkaTab = { initialTab: ConnectView.KafkaConnect, redpandaConnectTab: ConnectView.RedpandaConnect };
   const showRedpandaConnectTab = {
     initialTab: ConnectView.RedpandaConnect,
@@ -87,12 +84,9 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
     p.title = 'Overview';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    this.checkRPCNSecretEnable().catch(console.error);
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    this.refreshData().catch(console.error);
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    appGlobal.onRefresh = () => this.refreshData().catch(console.error);
+    this.checkRPCNSecretEnable();
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
   async checkRPCNSecretEnable() {
@@ -123,17 +117,15 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
         ),
         content: (
           <Box>
-            <Text mb={4}>
-              Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available
-              connectors.{' '}
-              <Link
-                href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Learn more.
-              </Link>
-            </Text>
+            {!isFeatureFlagEnabled('enableRpcnTiles') && (
+              <Text mb={4}>
+                Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily
+                available connectors.{' '}
+                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
+                  Learn more.
+                </Link>
+              </Text>
+            )}
             {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
           </Box>
         ),
@@ -146,11 +138,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
             <Text mb={4}>
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
-              <Link
-                href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
+              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
                 Learn more.
               </Link>
             </Text>
@@ -160,9 +148,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
       },
     ] as Tab[];
 
-    if (isServerless()) {
-      tabs.removeAll((x) => x.key === ConnectView.KafkaConnect);
-    }
+    if (isServerless()) tabs.removeAll((x) => x.key === ConnectView.KafkaConnect);
 
     return (
       <PageContent>
@@ -179,7 +165,7 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
             tabs[0].content
           )
         ) : (
-          <Tabs defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} tabs={tabs} />
+          <Tabs tabs={tabs} defaultSelectedTabKey={getDefaultView(this.props.defaultView).initialTab} />
         )}
       </PageContent>
     );
@@ -198,6 +184,9 @@ class TabClusters extends Component {
 
     return (
       <DataTable<ClusterConnectors>
+        data={clusters}
+        sorting={false}
+        pagination
         columns={[
           {
             header: 'Cluster',
@@ -206,7 +195,7 @@ class TabClusters extends Component {
             cell: ({ row: { original: r } }) => {
               if (r.error) {
                 return (
-                  <Tooltip hasArrow={true} label={r.error} placement="top">
+                  <Tooltip label={r.error} placement="top" hasArrow={true}>
                     <span style={mr05}>{errIcon}</span>
                     {r.clusterName}
                   </Tooltip>
@@ -214,22 +203,14 @@ class TabClusters extends Component {
               }
 
               return (
-                <button
+                // biome-ignore lint/a11y/noStaticElementInteractions: part of TabClusters implementation
+                <span
                   className="hoverLink"
+                  style={{ display: 'inline-block', width: '100%' }}
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
-                  style={{
-                    display: 'inline-block',
-                    width: '100%',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
-                  type="button"
                 >
                   {r.clusterName}
-                </button>
+                </span>
               );
             },
           },
@@ -251,9 +232,6 @@ class TabClusters extends Component {
             cell: ({ row: { original } }) => <TasksColumn observable={original} />,
           },
         ]}
-        data={clusters}
-        pagination
-        sorting={false}
       />
     );
   }
@@ -279,7 +257,6 @@ const TabConnectors = observer(() => {
       const quickSearchRegExp = new RegExp(uiSettings.clusterOverview.connectorsList.quickSearch, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
     } catch (_e) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
@@ -288,45 +265,40 @@ const TabConnectors = observer(() => {
   return (
     <Box>
       <SearchBar<ConnectorType>
-        dataSource={() => allConnectors}
-        filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
         isFilterMatch={isFilterMatch}
-        onFilteredDataChanged={(data) => {
-          state.filteredResults = data;
-        }}
+        filterText={uiSettings.clusterOverview.connectorsList.quickSearch}
         onQueryChanged={(x) => {
           uiSettings.clusterOverview.connectorsList.quickSearch = x;
         }}
+        dataSource={() => allConnectors}
         placeholderText="Enter search term/regex"
+        onFilteredDataChanged={(data) => {
+          state.filteredResults = data;
+        }}
       />
       <DataTable<ConnectorType>
+        data={state.filteredResults}
+        pagination
+        sorting={false}
         columns={[
           {
             header: 'Connector',
             accessorKey: 'name',
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
-              <Tooltip hasArrow={true} label={original.name} placement="top">
-                <button
+              <Tooltip placement="top" label={original.name} hasArrow={true}>
+                {/** biome-ignore lint/a11y/noStaticElementInteractions: part of TabConnectors implementation */}
+                <span
                   className="hoverLink"
+                  style={{ display: 'inline-block', width: '100%' }}
                   onClick={() =>
                     appGlobal.historyPush(
-                      `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
+                      `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`,
                     )
                   }
-                  style={{
-                    display: 'inline-block',
-                    width: '100%',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
-                  type="button"
                 >
                   {original.name}
-                </button>
+                </span>
               </Tooltip>
             ),
           },
@@ -356,9 +328,6 @@ const TabConnectors = observer(() => {
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },
         ]}
-        data={state.filteredResults}
-        pagination
-        sorting={false}
       />
     </Box>
   );
@@ -377,31 +346,36 @@ class TabTasks extends Component {
     const allConnectors: ConnectorType[] =
       clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
     const allTasks: TaskType[] = allConnectors.flatMap((con) =>
-      con.tasks.map((task) => ({
-        ...task,
-        connector: con,
-        cluster: con.cluster,
+      con.tasks.map((task) => {
+        return {
+          ...task,
+          connector: con,
+          cluster: con.cluster,
 
-        connectorName: con.name,
-      }))
+          connectorName: con.name,
+        };
+      }),
     );
 
     return (
       <DataTable<TaskType>
+        data={allTasks}
+        pagination
+        sorting
         columns={[
           {
             header: 'Connector',
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
               <Text
+                wordBreak="break-word"
+                whiteSpace="break-spaces"
                 className="hoverLink"
                 onClick={() =>
                   appGlobal.historyPush(
-                    `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
+                    `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`,
                   )
                 }
-                whiteSpace="break-spaces"
-                wordBreak="break-word"
               >
                 {original.connectorName}
               </Text>
@@ -427,33 +401,26 @@ class TabTasks extends Component {
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },
         ]}
-        data={allTasks}
-        pagination
-        sorting
       />
     );
   }
 }
 
-const TabKafkaConnect = observer((_p: Record<string, never>) => {
+const TabKafkaConnect = observer((_p: {}) => {
   const settings = uiSettings.kafkaConnect;
 
   if (api.connectConnectorsError) {
     return <ErrorResult error={api.connectConnectorsError} />;
   }
-  if (!api.connectConnectors) {
-    return DefaultSkeleton;
-  }
-  if (api.connectConnectors.isConfigured === false) {
-    return <NotConfigured />;
-  }
+  if (!api.connectConnectors) return DefaultSkeleton;
+  if (api.connectConnectors.isConfigured === false) return <NotConfigured />;
 
   return (
     <Stack spacing={3}>
       <OverviewStatisticsCard />
 
       <Section>
-        <Tabs onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} tabs={connectTabs} />
+        <Tabs tabs={connectTabs} onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} />
       </Section>
     </Stack>
   );

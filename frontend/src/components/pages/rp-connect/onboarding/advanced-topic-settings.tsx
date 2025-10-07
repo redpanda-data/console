@@ -10,7 +10,6 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { memo, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-
 import type { AddTopicFormData } from '../types/wizard';
 import {
   createFloatChangeHandler,
@@ -20,32 +19,28 @@ import {
   isRetentionUnitDisabled,
 } from '../utils/topic';
 
-type AdvancedTopicSettingsProps = {
+interface AdvancedTopicSettingsProps {
   form: UseFormReturn<AddTopicFormData>;
   isExistingTopic: boolean;
-};
+  disabled?: boolean;
+}
 
-export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, isExistingTopic }) => {
+export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, isExistingTopic, disabled = false }) => {
   // Generate unit options from CreateTopicModal factors for consistency
   const retentionTimeUnits = useMemo(() => getRetentionTimeUnitOptions(), []);
   const retentionSizeUnits = useMemo(() => getRetentionSizeUnitOptions(), []);
 
   return (
-    <div className="grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
       <FormField
         control={form.control}
         name="partitions"
+        disabled={isExistingTopic || disabled}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Partitions</FormLabel>
             <FormControl>
-              <Input
-                {...field}
-                disabled={isExistingTopic}
-                onChange={createNumberChangeHandler(field.onChange)}
-                showStepControls
-                type="number"
-              />
+              <Input {...field} type="number" showStepControls onChange={createNumberChangeHandler(field.onChange)} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -55,17 +50,17 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
       <FormField
         control={form.control}
         name="replicationFactor"
+        disabled={isExistingTopic || disabled}
         render={({ field }) => (
           <FormItem className={isExistingTopic ? '' : 'opacity-70'}>
             <FormLabel>Replication Factor</FormLabel>
             <FormControl>
               <Input
                 {...field}
-                disabled={isExistingTopic}
-                onChange={createNumberChangeHandler(field.onChange)}
-                readOnly
                 showStepControls
                 type="number"
+                readOnly
+                onChange={createNumberChangeHandler(field.onChange)}
               />
             </FormControl>
             <FormMessage />
@@ -76,21 +71,23 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
       <RetentionInputGroup
         form={form}
         isExistingTopic={isExistingTopic}
+        disabled={disabled}
         label="Retention Time"
-        onChange={createFloatChangeHandler}
+        valueField="retentionTimeMs"
         unitField="retentionTimeUnit"
         units={retentionTimeUnits}
-        valueField="retentionTimeMs"
+        onChange={createFloatChangeHandler}
       />
 
       <RetentionInputGroup
         form={form}
         isExistingTopic={isExistingTopic}
+        disabled={disabled}
         label="Retention Size"
-        onChange={createFloatChangeHandler}
+        valueField="retentionSize"
         unitField="retentionSizeUnit"
         units={retentionSizeUnits}
-        valueField="retentionSize"
+        onChange={createFloatChangeHandler}
       />
     </div>
   );
@@ -98,37 +95,38 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
 
 AdvancedTopicSettings.displayName = 'AdvancedTopicSettings';
 
-type RetentionInputGroupProps = {
+interface RetentionInputGroupProps {
   form: UseFormReturn<AddTopicFormData>;
   isExistingTopic: boolean;
+  disabled?: boolean;
   label: string;
   valueField: keyof AddTopicFormData;
   unitField: keyof AddTopicFormData;
   units: { value: string; label: string }[];
   onChange: (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => void;
-};
+}
 
 const RetentionInputGroup = memo<RetentionInputGroupProps>(
-  ({ form, isExistingTopic, label, valueField, unitField, units, onChange }) => {
+  ({ form, isExistingTopic, disabled = false, label, valueField, unitField, units, onChange }) => {
     const unitValue = form.watch(unitField as 'retentionTimeUnit' | 'retentionSizeUnit');
-    const isRetentionDisabled = isRetentionUnitDisabled(unitValue) || isExistingTopic;
+    const isRetentionDisabled = isRetentionUnitDisabled(unitValue) || isExistingTopic || disabled;
 
     return (
       <div className="space-y-2">
         <FormLabel>{label}</FormLabel>
-        {isExistingTopic && <p className="mb-2 text-gray-500 text-xs">Existing topic values cannot be modified</p>}
+        {isExistingTopic && <p className="text-xs text-gray-500 mb-2">Existing topic values cannot be modified</p>}
         <Group attached>
           <FormField
             control={form.control}
-            disabled={isRetentionDisabled}
             name={valueField as 'retentionTimeMs' | 'retentionSize'}
+            disabled={isRetentionDisabled}
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormControl>
                   <Input
+                    type="number"
                     min="0"
                     placeholder={field.value?.toString() || '0'}
-                    type="number"
                     {...field}
                     onChange={onChange(field.onChange)}
                   />
@@ -138,12 +136,12 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
           />
           <FormField
             control={form.control}
-            disabled={isExistingTopic}
             name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
+            disabled={isExistingTopic || disabled}
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select disabled={isExistingTopic} onValueChange={field.onChange} value={field.value}>
+                  <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="w-32 bg-gray-200">
                       <SelectValue defaultValue={field.value} />
                     </SelectTrigger>
@@ -163,7 +161,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
         <FormMessage />
       </div>
     );
-  }
+  },
 );
 
 RetentionInputGroup.displayName = 'RetentionInputGroup';

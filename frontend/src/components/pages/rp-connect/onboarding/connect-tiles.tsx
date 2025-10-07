@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/componentLogoMap';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import {
   Card,
@@ -16,68 +17,59 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { SearchIcon } from 'lucide-react';
+import { SearchIcon, Waypoints } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-import { getCategoryBadgeProps, getConnectorTypeBadgeProps, getStatusBadgeProps } from './connector-badges';
 import type {
   ComponentCategory,
   ConnectComponentSpec,
-  ConnectComponentStatus,
   ConnectComponentType,
   ExtendedConnectComponentSpec,
 } from '../types/schema';
-import { CONNECT_COMPONENT_TYPE } from '../types/schema';
 import { type ConnectTilesFormData, connectTilesFormSchema } from '../types/wizard';
 import { getAllCategories, getAllComponents } from '../utils/schema';
 import type { BaseStepRef } from '../utils/wizard';
+import { getCategoryBadgeProps } from './connector-badges';
+import { ConnectorLogo } from './connector-logo';
 
 const searchComponents = (
   query: string,
   filters?: {
     types?: ConnectComponentType[];
     categories?: (ComponentCategory | string)[];
-    status?: ConnectComponentStatus[];
   },
-  additionalComponents?: ExtendedConnectComponentSpec[]
+  additionalComponents?: ExtendedConnectComponentSpec[],
 ): ConnectComponentSpec[] => {
-  return getAllComponents(additionalComponents).filter((component) => {
-    // Filter by search text
-    if (query.trim()) {
-      const searchLower = query.toLowerCase();
-      const matchesName = component.name.toLowerCase().includes(searchLower);
-      const matchesSummary = component.summary?.toLowerCase().includes(searchLower);
-      const matchesDescription = component.description?.toLowerCase().includes(searchLower);
-
-      if (!(matchesName || matchesSummary || matchesDescription)) {
+  return getAllComponents(additionalComponents)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter((component) => {
+      // First, filter by component type
+      if (filters?.types?.length && !filters.types.includes(component.type)) {
         return false;
       }
-    }
 
-    // Filter by types
-    if (filters?.types?.length && !filters.types.includes(component.type as ConnectComponentType)) {
-      return false;
-    }
+      // Then, filter by search text if provided
+      if (query.trim()) {
+        const searchLower = query.toLowerCase();
+        const matchesName = component.name.toLowerCase().includes(searchLower);
+        const matchesDescription = component.description?.toLowerCase().includes(searchLower);
 
-    // Filter by categories
-    if (filters?.categories?.length) {
-      const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
-      if (!hasMatchingCategory) {
-        return false;
+        if (!matchesName && !matchesDescription) {
+          return false;
+        }
       }
-    }
 
-    // Filter by status
-    if (filters?.status?.length && !filters.status.includes(component.status)) {
-      return false;
-    }
+      // Filter by categories
+      if (filters?.categories?.length) {
+        const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
+        if (!hasMatchingCategory) return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
 };
 
-type ConnectTilesProps = {
+export type ConnectTilesProps = {
   additionalComponents?: ExtendedConnectComponentSpec[];
   componentTypeFilter?: ConnectComponentType[];
   onChange?: (connectionName: string, connectionType: ConnectComponentType) => void;
@@ -89,13 +81,15 @@ type ConnectTilesProps = {
   variant?: CardVariant;
   size?: CardSize;
   className?: string;
+  tileWrapperClassName?: string;
+  title?: string;
 };
 
 export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
   (
     {
       additionalComponents,
-      componentTypeFilter: defaultComponentTypeFilter,
+      componentTypeFilter,
       onChange,
       hideHeader,
       hideFilters,
@@ -105,25 +99,20 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       variant = 'default',
       size = 'full',
       className,
+      tileWrapperClassName,
+      title,
     },
-    ref
+    ref,
   ) => {
     const [filter, setFilter] = useState<string>('');
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [showScrollGradient, setShowScrollGradient] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Default to showing all component types if no default provided, otherwise respect the prop
-    const [componentTypeFilter, setComponentTypeFilter] = useState<ConnectComponentType[]>(
-      defaultComponentTypeFilter ? defaultComponentTypeFilter : []
-    );
-
     // Check if content is scrollable and update gradient visibility
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
-      if (!container) {
-        return;
-      }
+      if (!container) return;
 
       const { scrollTop, scrollHeight, clientHeight } = container;
       const isScrollable = scrollHeight > clientHeight;
@@ -142,21 +131,29 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
       },
     });
 
+    // Sync form when default values change
+    useEffect(() => {
+      if (defaultConnectionName && defaultConnectionType) {
+        form.reset({
+          connectionName: defaultConnectionName,
+          connectionType: defaultConnectionType,
+        });
+      }
+    }, [defaultConnectionName, defaultConnectionType, form]);
+
     const categories = useMemo(() => getAllCategories(additionalComponents), [additionalComponents]);
 
     // Filter components based on search, categories, and component type
-    const filteredComponents = useMemo(
-      () =>
-        searchComponents(
-          filter,
-          {
-            types: componentTypeFilter,
-            categories: selectedCategories,
-          },
-          additionalComponents
-        ),
-      [componentTypeFilter, filter, selectedCategories, additionalComponents]
-    );
+    const filteredComponents = useMemo(() => {
+      return searchComponents(
+        filter,
+        {
+          types: componentTypeFilter,
+          categories: selectedCategories,
+        },
+        additionalComponents,
+      );
+    }, [componentTypeFilter, filter, selectedCategories, additionalComponents]);
 
     // Check if scrolling is needed whenever filtered components change
     useEffect(() => {
@@ -185,73 +182,67 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     }));
 
     return (
-      <Card className={className} size={size} variant={variant}>
+      <Card size={size} variant={variant} className={cn(className, 'relative')}>
         {!hideHeader && (
-          <CardHeader className="mb-4">
+          <CardHeader className="bg-background">
             <CardTitle>
-              <Heading level={2}>Select a connector</Heading>
+              <Heading level={2}>{title ?? 'Select a connector'}</Heading>
             </CardTitle>
-            <CardDescription>
-              Redpanda Connect is an alternative to Kafka Connect. It allows you to connect to a variety of data sources
-              and sinks, and to create pipelines to transform data.{' '}
-              <Link
-                href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Learn more.
-              </Link>
+            <CardDescription className="mt-4">
+              <Text>
+                Redpanda Connect is an alternative to Kafka Connect. It allows you to connect to a variety of data
+                sources and sinks, and to create pipelines to transform data.{' '}
+                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/about/" target="_blank">
+                  Learn more.
+                </Link>
+              </Text>
+              <Text>
+                For help creating your pipeline see our{' '}
+                <Link
+                  href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                  target="_blank"
+                >
+                  quickstart documentation
+                </Link>
+                , our{' '}
+                <Link href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+                  library of examples
+                </Link>
+                , or our{' '}
+                <Link
+                  href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
+                  target="_blank"
+                >
+                  connector catalog
+                </Link>
+              </Text>
             </CardDescription>
           </CardHeader>
         )}
-        <CardContent className="relative">
+        <CardContent id="rp-connect-onboarding-wizard" className="mt-2">
           <Form {...form}>
             {!hideFilters && (
-              <div className="sticky top-0 z-10 mb-0 flex flex-col gap-4 border-b-2 bg-background pb-6">
-                <div className="grid grid-cols-3 gap-2">
-                  <Label className="flex-1">
+              <div className="flex flex-col gap-4 sticky top-0 bg-background z-10 border-b-2 pb-4 mb-0 pt-2">
+                <div className="flex justify-between gap-4">
+                  <Label className="w-[240px]">
                     Search for Connectors
                     <Input
-                      className="flex-1"
+                      value={filter}
                       onChange={(e) => {
                         setFilter(e.target.value);
                       }}
                       placeholder="Snowflake, S3..."
-                      value={filter}
+                      className="flex-1"
                     >
                       <InputStart>
                         <SearchIcon className="size-4" />
                       </InputStart>
                     </Input>
                   </Label>
-
-                  <Label className="flex-1">
-                    Component Type
-                    <SimpleMultiSelect
-                      maxDisplay={2}
-                      onValueChange={(value) => setComponentTypeFilter(value as ConnectComponentType[])}
-                      options={CONNECT_COMPONENT_TYPE.map((type) => {
-                        const { text, icon, variant } = getConnectorTypeBadgeProps(type);
-                        return {
-                          value: type,
-                          label: (
-                            <Badge icon={icon} variant={variant}>
-                              {text}
-                            </Badge>
-                          ),
-                        };
-                      })}
-                      placeholder="Input, Output..."
-                      value={componentTypeFilter}
-                      width="full"
-                    />
-                  </Label>
-
-                  <Label className="flex-1">
+                  <Label className="w-[240px]">
                     Categories
                     <SimpleMultiSelect
-                      maxDisplay={3}
-                      onValueChange={setSelectedCategories}
+                      container={document.getElementById('rp-connect-onboarding-wizard') ?? undefined}
                       options={categories.map((category) => {
                         const { icon, text, variant } = getCategoryBadgeProps(category.id);
                         return {
@@ -263,8 +254,10 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                           ),
                         };
                       })}
-                      placeholder="Databases, Social..."
                       value={selectedCategories}
+                      onValueChange={setSelectedCategories}
+                      placeholder="Databases, Social..."
+                      maxDisplay={3}
                       width="full"
                     />
                   </Label>
@@ -273,7 +266,11 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
             )}
 
             <div className="relative">
-              <div className="max-h-[50vh] overflow-y-auto py-4" onScroll={checkScrollable} ref={scrollContainerRef}>
+              <div
+                ref={scrollContainerRef}
+                className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
+                onScroll={checkScrollable}
+              >
                 <FormField
                   control={form.control}
                   name="connectionName"
@@ -283,19 +280,19 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                         {filteredComponents.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                            <Text className="mt-1 text-muted-foreground text-sm">
-                              Try adjusting your search, component type, or category filters
+                            <Text className="text-sm text-muted-foreground mt-1">
+                              Try adjusting your search or category filters
                             </Text>
                           </div>
                         ) : (
                           <Choicebox>
                             <div className={cn('grid gap-2', `grid-cols-${gridCols}`)}>
                               {filteredComponents.map((component) => {
-                                const statusConfig = getStatusBadgeProps(component.status);
-                                const uniqueKey = `${component.type}-${component.name}-${component.status}`;
+                                const uniqueKey = `${component.type}-${component.name}`;
 
                                 return (
                                   <ChoiceboxItem
+                                    value={component.name}
                                     checked={
                                       field.value === component.name &&
                                       form.getValues('connectionType') === component.type
@@ -306,46 +303,33 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
                                       form.setValue('connectionType', component.type as ConnectComponentType);
                                       onChange?.(component.name, component.type as ConnectComponentType);
                                     }}
-                                    value={component.name}
+                                    className="relative"
                                   >
-                                    <div className="flex flex-col gap-2">
-                                      <div className="flex items-center gap-2">
+                                    <div className="flex gap-4 items-center justify-between w-full">
+                                      <div className="flex flex-col gap-1 min-w-0">
                                         <Text className="truncate font-medium">{component.name}</Text>
-                                        {field.value === component.name &&
-                                          form.getValues('connectionType') === component.type && (
-                                            <ChoiceboxItemIndicator />
-                                          )}
-                                      </div>
-                                      {/* Component Summary */}
-                                      {component.summary && (
-                                        <Text className="line-clamp-2 text-muted-foreground text-sm">
+                                        <Text className="text-sm text-muted-foreground line-clamp-2">
                                           {component.summary}
                                         </Text>
-                                      )}
-                                      <div className="flex flex-wrap gap-1">
-                                        {/* Component type badge */}
-                                        <Badge
-                                          icon={getConnectorTypeBadgeProps(component.type).icon}
-                                          variant={getConnectorTypeBadgeProps(component.type).variant}
-                                        >
-                                          {getConnectorTypeBadgeProps(component.type).text}
-                                        </Badge>
-                                        {/* Category badges */}
-                                        {component.categories?.filter(Boolean).map((c) => {
-                                          const { icon, text, variant } = getCategoryBadgeProps(c);
-                                          return (
-                                            <Badge icon={icon} key={`${c}-${text}`} variant={variant}>
-                                              {text}
-                                            </Badge>
-                                          );
-                                        })}
-                                        {/* Status badge for non-stable components */}
-                                        {component.status !== 'stable' && (
-                                          <Badge icon={statusConfig.icon} variant={statusConfig.variant}>
-                                            {statusConfig.text}
-                                          </Badge>
-                                        )}
                                       </div>
+                                      {field.value === component.name &&
+                                        form.getValues('connectionType') === component.type && (
+                                          <ChoiceboxItemIndicator className="absolute right-2 top-2" />
+                                        )}
+                                      {component?.logoUrl ? (
+                                        <img
+                                          src={component.logoUrl}
+                                          alt={component.name}
+                                          className="size-6 grayscale"
+                                        />
+                                      ) : componentLogoMap[component.name as ComponentName] ? (
+                                        <ConnectorLogo
+                                          name={component.name as ComponentName}
+                                          className="size-6 text-muted-foreground"
+                                        />
+                                      ) : (
+                                        <Waypoints className="size-6 text-muted-foreground" />
+                                      )}
                                     </div>
                                   </ChoiceboxItem>
                                 );
@@ -361,12 +345,12 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
               </div>
               {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
               {showScrollGradient && (
-                <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
               )}
             </div>
           </Form>
         </CardContent>
       </Card>
     );
-  }
+  },
 );

@@ -17,7 +17,7 @@ import ClaudeDesktopLogo from '../../../../../assets/claude-desktop.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
-import { getMCPServerName, getRpkCloudEnvironment, getRpkCommand, type MCPServer } from '../utils';
+import { ClientType, getClientConfig, getMCPServerName, getRpkCommand, type MCPServer } from '../utils';
 
 type ClientClaudeDesktopProps = {
   mcpServer: MCPServer;
@@ -35,49 +35,12 @@ export const ClientClaudeDesktop = ({ mcpServer }: ClientClaudeDesktopProps) => 
     isServerless: config.isServerless,
   });
 
-  const clusterFlag = config.isServerless ? '--serverless-cluster-id' : '--cluster-id';
-  const showCloudEnvironmentFlag = getRpkCloudEnvironment() !== 'production';
-
-  const claudeDesktopConfigJson = showCloudEnvironmentFlag
-    ? `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud_environment=${getRpkCloudEnvironment()}",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`
-    : `{
-  "mcp": {
-    "servers": {
-      "${mcpServerName}": {
-        "command": "rpk",
-        "args": [
-          "-X",
-          "cloud",
-          "mcp",
-          "proxy",
-          "${clusterFlag}",
-          "${clusterId}",
-          "--mcp-server-id",
-          "${mcpServerId}"
-        ]
-      }
-    }
-  }
-}`;
+  const claudeDesktopConfigJson = getClientConfig(ClientType.CLAUDE_DESKTOP, {
+    mcpServerName,
+    clusterId,
+    mcpServerId,
+    isServerless: config.isServerless,
+  });
 
   return (
     <div className="space-y-4">

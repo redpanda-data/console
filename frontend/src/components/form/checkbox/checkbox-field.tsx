@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { ErrorInfoField } from '../error-info/error-info-field';
 import { useFieldContext } from '../form-hook-contexts';
 
-interface CheckboxFieldProps extends CheckboxProps {
+export interface CheckboxFieldProps extends CheckboxProps {
   label?: ReactNode;
   helperText?: ReactNode;
 }

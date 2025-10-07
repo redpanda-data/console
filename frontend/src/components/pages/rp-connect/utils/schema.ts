@@ -639,10 +639,12 @@ export const getAllCategories = (additionalComponents?: ExtendedConnectComponent
   }
 
   // Convert to ConnectNodeCategory array with display names
-  return Array.from(categorySet).map((categoryId) => ({
-    id: categoryId,
-    name: getCategoryDisplayName(categoryId),
-  }));
+  return Array.from(categorySet)
+    .sort((a, b) => a.localeCompare(b))
+    .map((categoryId) => ({
+      id: categoryId,
+      name: getCategoryDisplayName(categoryId),
+    }));
 };
 
 /**

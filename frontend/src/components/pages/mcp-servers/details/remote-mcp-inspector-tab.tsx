@@ -370,8 +370,11 @@ export const RemoteMCPInspectorTab = () => {
       serverToolResponse.content.length > 0
     ) {
       const firstContentItem = serverToolResponse.content[0];
-      if (firstContentItem.type === 'text' && firstContentItem.text) {
+      if (firstContentItem.type === 'text' && typeof firstContentItem.text === 'string') {
         // Try to parse text content as JSON for JSONView
+        if (firstContentItem.text === 'null') {
+          return firstContentItem.text;
+        }
         try {
           return JSON.parse(firstContentItem.text);
         } catch {
