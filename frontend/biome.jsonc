@@ -499,7 +499,7 @@
         // Disallow else block when the if block breaks early.
         "noUselessElse": "error",
         // Disallow the use of yoda expressions.
-        "noYodaExpression": "off",
+        "noYodaExpression": "error",
         // Disallow Array constructors.
         "useArrayLiterals": "off",
         // Enforce the use of as const over literal type and type annotation.
