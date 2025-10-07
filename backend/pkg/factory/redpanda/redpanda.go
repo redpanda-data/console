@@ -18,8 +18,6 @@ import (
 	"io"
 	"net/http"
 
-	"buf.build/gen/go/redpandadata/core/connectrpc/go/redpanda/core/admin/v2/adminv2connect"
-	"connectrpc.com/connect"
 	"github.com/redpanda-data/common-go/rpadmin"
 )
 
@@ -176,5 +174,5 @@ type AdminAPIClient interface {
 	//   - ListShadowLinks: Lists all shadow links
 	//   - UpdateShadowLink: Updates an existing shadow link
 	//   - FailOver: Fails over a shadow link or single shadow topic
-	ShadowLinkService(opts ...connect.ClientOption) adminv2connect.ShadowLinkServiceClient
+	// ShadowLinkService(opts ...connect.ClientOption) adminv2connect.ShadowLinkServiceClient
 }
