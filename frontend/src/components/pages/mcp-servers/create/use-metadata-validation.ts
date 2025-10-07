@@ -18,10 +18,14 @@ export function useMetadataValidation(form: UseFormReturn<FormValues>) {
 
   const isMetadataComplete = useMemo(() => {
     // Check displayName (required)
-    if (!formValues.displayName?.trim()) return false;
+    if (!formValues.displayName?.trim()) {
+      return false;
+    }
 
     // Check resourcesTier (required)
-    if (!formValues.resourcesTier?.trim()) return false;
+    if (!formValues.resourcesTier?.trim()) {
+      return false;
+    }
 
     // Check for any validation errors in metadata fields
     const hasMetadataErrors = !!(

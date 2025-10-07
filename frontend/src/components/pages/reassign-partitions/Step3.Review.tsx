@@ -55,8 +55,12 @@ export class StepReview extends Component<{
   }
 
   render() {
-    if (!api.topics) return DefaultSkeleton;
-    if (api.topicPartitions.size === 0) return <Empty />;
+    if (!api.topics) {
+      return DefaultSkeleton;
+    }
+    if (api.topicPartitions.size === 0) {
+      return <Empty />;
+    }
 
     return (
       <>
@@ -213,8 +217,12 @@ export class StepReview extends Component<{
     const trafficThrottle = isThrottled ? `${prettyBytesOrNA(settings.maxReplicationTraffic ?? 0)}/s` : 'disabled';
 
     const estimatedTime = (() => {
-      if (!isThrottled) return '-';
-      if (estimatedTimeSec < 10) return '< 10 seconds';
+      if (!isThrottled) {
+        return '-';
+      }
+      if (estimatedTimeSec < 10) {
+        return '< 10 seconds';
+      }
       return prettyMilliseconds(estimatedTimeSec * 1000, { secondsDecimalDigits: 0, unitCount: 2, verbose: true });
     })();
 
@@ -271,7 +279,9 @@ const ReviewPartitionTable = observer(
             header: 'Brokers After',
             cell: ({ row: { original: partition } }) => {
               const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
-              if (partitionAssignments == null || partitionAssignments.replicas == null) return '??';
+              if (partitionAssignments == null || partitionAssignments.replicas == null) {
+                return '??';
+              }
               return (
                 <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />
               );

@@ -79,8 +79,12 @@ export const UserRoleTags = observer(
         );
       }
 
-      if (elements.length === 0) elements.push(<p>No roles</p>);
-      if (numberOfHiddenElements > 0) elements.push(<p>{`+${numberOfHiddenElements} more`}</p>);
+      if (elements.length === 0) {
+        elements.push(<p>No roles</p>);
+      }
+      if (numberOfHiddenElements > 0) {
+        elements.push(<p>{`+${numberOfHiddenElements} more`}</p>);
+      }
     }
 
     return <div className={verticalView ? 'flex' : ''}>{elements}</div>;

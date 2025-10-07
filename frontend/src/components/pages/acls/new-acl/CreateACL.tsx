@@ -833,10 +833,14 @@ export default function CreateACL({
 
   const isClusterDisabledForRule = (ruleId: number) => {
     const currentRule = rules.find((rule) => rule.id === ruleId);
-    if (!currentRule) return false;
+    if (!currentRule) {
+      return false;
+    }
 
     // If current rule is already cluster, don't disable it
-    if (currentRule.resourceType === ResourceTypeCluster) return false;
+    if (currentRule.resourceType === ResourceTypeCluster) {
+      return false;
+    }
 
     // If there's already a cluster rule, disable cluster for this rule
     return hasClusterRule();
@@ -848,7 +852,9 @@ export default function CreateACL({
 
   const isSchemaRegistryDisabledForRule = (ruleId: number) => {
     const currentRule = rules.find((rule) => rule.id === ruleId);
-    if (!currentRule) return false;
+    if (!currentRule) {
+      return false;
+    }
 
     // If Schema Registry is not enabled, disable it for all rules except existing schema registry rules
     if (!schemaRegistryEnabled && currentRule.resourceType !== ResourceTypeSchemaRegistry) {
@@ -856,7 +862,9 @@ export default function CreateACL({
     }
 
     // If current rule is already schemaRegistry, don't disable it
-    if (currentRule.resourceType === ResourceTypeSchemaRegistry) return false;
+    if (currentRule.resourceType === ResourceTypeSchemaRegistry) {
+      return false;
+    }
 
     // If there's already a schemaRegistry rule, disable schemaRegistry for this rule
     return hasSchemaRegistryRule();
@@ -878,13 +886,19 @@ export default function CreateACL({
 
   const isSubjectDisabledForRule = (ruleId: number) => {
     const currentRule = rules.find((rule) => rule.id === ruleId);
-    if (!currentRule) return false;
+    if (!currentRule) {
+      return false;
+    }
 
     // If current rule is already subject, don't disable it
-    if (currentRule.resourceType === ResourceTypeSubject) return false;
+    if (currentRule.resourceType === ResourceTypeSubject) {
+      return false;
+    }
 
     // If schema registry is not enabled, disable subject
-    if (!schemaRegistryEnabled) return true;
+    if (!schemaRegistryEnabled) {
+      return true;
+    }
 
     // If there's already a subject rule, disable subject for this rule
     return hasSubjectRule();
@@ -892,7 +906,9 @@ export default function CreateACL({
 
   const handlePermissionModeChange = (ruleId: number, mode: string) => {
     const rule = rules.find((r) => r.id === ruleId);
-    if (!rule) return;
+    if (!rule) {
+      return;
+    }
 
     const updatedOperations = Object.fromEntries(
       Object.entries(rule.operations).map(([op, operationValue]) => {
@@ -913,7 +929,9 @@ export default function CreateACL({
 
   const handleOperationChange = (ruleId: number, operation: string, value: string) => {
     const rule = rules.find((r) => r.id === ruleId);
-    if (!rule) return;
+    if (!rule) {
+      return;
+    }
 
     const updatedOperations = {
       ...rule.operations,
@@ -995,7 +1013,9 @@ export default function CreateACL({
 
     // Render newlines as <br /> in tooltips
     const desc = descriptions[resourceType]?.[operation];
-    if (!desc) return 'Permission description not available';
+    if (!desc) {
+      return 'Permission description not available';
+    }
     return (
       <>
         {desc.split('\n').map((line, i) => (

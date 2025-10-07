@@ -22,7 +22,9 @@ export const RemoteMCPToggleButton = () => {
   const { mutateAsync: stopMCPServer, isPending: isStopping } = useStopMCPServerMutation();
 
   const handleStartServer = async () => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     try {
       await startMCPServer({ id });
     } catch (error) {
@@ -32,7 +34,9 @@ export const RemoteMCPToggleButton = () => {
   };
 
   const handleStopServer = async () => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     try {
       await stopMCPServer({ id });
     } catch (error) {
@@ -41,7 +45,9 @@ export const RemoteMCPToggleButton = () => {
     }
   };
 
-  if (!mcpServerData?.mcpServer) return null;
+  if (!mcpServerData?.mcpServer) {
+    return null;
+  }
 
   if (
     mcpServerData.mcpServer.state === MCPServer_State.RUNNING ||

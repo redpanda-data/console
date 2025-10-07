@@ -45,7 +45,9 @@ const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
 const nbsp = '\xA0'; // non breaking space
 
 export function numberToThousandsString(n: number): JSX.Element {
-  if (typeof n !== 'number') return <>{n}</>;
+  if (typeof n !== 'number') {
+    return <>{n}</>;
+  }
 
   const parts = n.toLocaleString(defaultLocale).split(thousandsSeperator);
   const separator = nbsp;
@@ -58,12 +60,13 @@ export function numberToThousandsString(n: number): JSX.Element {
     result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
 
     // Add a dot
-    if (!last)
+    if (!last) {
       result.push(
         <span className="noSelect nbspSeparator" key={`${i}.`}>
           {separator}
         </span>
       );
+    }
   }
 
   return <>{result}</>;
@@ -74,7 +77,9 @@ export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; 
   render() {
     const { unixEpochMillisecond: ts, format } = this.props;
     // biome-ignore lint/correctness/useHookAtTopLevel: part of TimestampDisplay implementation
-    if (format === 'relative') DebugTimerStore.Instance.useSeconds();
+    if (format === 'relative') {
+      DebugTimerStore.Instance.useSeconds();
+    }
 
     switch (format) {
       case 'unixTimestamp':
@@ -132,7 +137,9 @@ export function QuickTable(
   if (typeof data === 'object' && !Array.isArray(data)) {
     // Convert to array of key value objects
     entries = [];
-    for (const [k, v] of Object.entries(data)) entries.push({ key: k, value: v });
+    for (const [k, v] of Object.entries(data)) {
+      entries.push({ key: k, value: v });
+    }
   }
   // array of [any, any] ?
   else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -178,9 +185,15 @@ export function QuickTable(
 }
 
 export function toSafeString(x: any): string {
-  if (typeof x === 'undefined' || x === null) return '';
-  if (typeof x === 'string') return x;
-  if (typeof x === 'boolean' || typeof x === 'number') return String(x);
+  if (typeof x === 'undefined' || x === null) {
+    return '';
+  }
+  if (typeof x === 'string') {
+    return x;
+  }
+  if (typeof x === 'boolean' || typeof x === 'number') {
+    return String(x);
+  }
   return toJson(x);
 }
 
@@ -214,7 +227,9 @@ export const Label = (p: {
   const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
   const labelClasses = ['labelText'];
-  if (p.required) labelClasses.push('required');
+  if (p.required) {
+    labelClasses.push('required');
+  }
 
   // <label className="label">
   //     <span className="title">{p.text}</span>
@@ -237,10 +252,16 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
   let container = current;
   while (true) {
     const p = container.parentElement;
-    if (!p) return container;
+    if (!p) {
+      return container;
+    }
 
-    if (p.className.includes('kowlCard')) return p;
-    if (p.clientWidth >= 300 && p.clientHeight >= 300) return p;
+    if (p.className.includes('kowlCard')) {
+      return p;
+    }
+    if (p.clientWidth >= 300 && p.clientHeight >= 300) {
+      return p;
+    }
 
     container = p;
   }
@@ -289,7 +310,7 @@ export const InfoText = (p: {
     </span>
   );
 
-  if (p.tooltipOverText === true)
+  if (p.tooltipOverText === true) {
     return (
       <Tooltip hasArrow label={overlay} placement={placement}>
         <span style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -298,6 +319,7 @@ export const InfoText = (p: {
         </span>
       </Tooltip>
     );
+  }
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -450,7 +472,9 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     this.lastPropsJson = curJson;
 
     this.lastUpdateTimestamp = Date.now();
-    if (this.showWaitingText) this.showWaitingText = false;
+    if (this.showWaitingText) {
+      this.showWaitingText = false;
+    }
 
     this.customRender();
   }
@@ -595,9 +619,15 @@ export function LabelTooltip(p: {
 }) {
   const style: CSSProperties = {};
 
-  if (typeof p.width === 'number') style.width = `${p.width}px`;
-  if (p.nowrap === true) style.whiteSpace = 'nowrap';
-  if (p.left === true) style.textAlign = 'left';
+  if (typeof p.width === 'number') {
+    style.width = `${p.width}px`;
+  }
+  if (p.nowrap === true) {
+    style.whiteSpace = 'nowrap';
+  }
+  if (p.left === true) {
+    style.textAlign = 'left';
+  }
 
   const content = <div style={style}>{p.children}</div>;
 
@@ -612,7 +642,9 @@ export function LabelTooltip(p: {
 
 export type ButtonProps = Omit<RpButtonProps, 'disabled' | 'isDisabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
-  if (!p.disabledReason) return <RpButton {...p} />;
+  if (!p.disabledReason) {
+    return <RpButton {...p} />;
+  }
 
   const reason = p.disabledReason;
   const btnProps = { ...p };

@@ -45,7 +45,9 @@ export class SearchTitle extends Component<{
   render() {
     const props = this.props;
 
-    if (!props.observableFilterOpen.filterOpen) return this.props.title;
+    if (!props.observableFilterOpen.filterOpen) {
+      return this.props.title;
+    }
 
     // Render the actual search bar
 
@@ -103,6 +105,8 @@ export class SearchTitle extends Component<{
   }
 
   onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === 'Escape') this.hideSearchBar();
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      this.hideSearchBar();
+    }
   }
 }

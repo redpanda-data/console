@@ -45,14 +45,17 @@ function sanitizeUrl(uri: string): string {
   const baseTransformed = baseUriTransformer(uri);
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log('baseTransformed', baseTransformed);
-  if (baseTransformed !== uri) return baseTransformed;
+  if (baseTransformed !== uri) {
+    return baseTransformed;
+  }
 
   const cleanedUri = uri.trim().toLocaleLowerCase();
 
-  for (const p of allowedProtocols)
+  for (const p of allowedProtocols) {
     if (cleanedUri.startsWith(p)) {
       return uri;
     }
+  }
 
   return ''; // didn't match any allowed protocol, remove the link
 }
@@ -87,13 +90,21 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
 
   render() {
     const docu = api.topicDocumentation.get(this.props.topic.topicName);
-    if (docu === undefined) return DefaultSkeleton; // not yet loaded
-    if (!docu.isEnabled) return errorNotConfigured;
+    if (docu === undefined) {
+      return DefaultSkeleton; // not yet loaded
+    }
+    if (!docu.isEnabled) {
+      return errorNotConfigured;
+    }
 
     const markdown = docu?.text;
-    if (markdown === null || markdown === undefined) return errorNotFound;
+    if (markdown === null || markdown === undefined) {
+      return errorNotFound;
+    }
 
-    if (markdown === '') return errorEmpty;
+    if (markdown === '') {
+      return errorEmpty;
+    }
 
     return (
       <div className="topicDocumentation">

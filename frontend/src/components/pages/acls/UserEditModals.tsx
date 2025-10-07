@@ -189,7 +189,9 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
   }, [originalRoles, isLoading, selectedRoles]);
 
   const onSaveRoles = async () => {
-    if (!Features.rolesApi) return;
+    if (!Features.rolesApi) {
+      return;
+    }
     let formattedSelectedRoles: string[] = [];
     if (selectedRoles) {
       formattedSelectedRoles = selectedRoles;

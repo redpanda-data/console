@@ -135,9 +135,13 @@ const TopicList: FC = () => {
     };
   }, [topics]);
 
-  if (isLoading) return DefaultSkeleton;
+  if (isLoading) {
+    return DefaultSkeleton;
+  }
 
-  if (isError) return <div>Error</div>;
+  if (isError) {
+    return <div>Error</div>;
+  }
 
   return (
     <PageContent>
@@ -343,12 +347,20 @@ const iconClosedEye = (
 const renderName = (topic: Topic) => {
   const actions = topic.allowedActions;
 
-  if (!actions || actions[0] === 'all') return topic.topicName; // happens in non-business version
+  if (!actions || actions[0] === 'all') {
+    return topic.topicName; // happens in non-business version
+  }
 
   let missing = 0;
-  for (const a of TopicActions) if (!actions.includes(a)) missing++;
+  for (const a of TopicActions) {
+    if (!actions.includes(a)) {
+      missing++;
+    }
+  }
 
-  if (missing === 0) return topic.topicName; // everything is allowed
+  if (missing === 0) {
+    return topic.topicName; // everything is allowed
+  }
 
   // There's at least one action the user can't do
   // Show a table of what they can't do
@@ -524,34 +536,68 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
     api.clusterInfo?.brokers?.find((_) => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
 
   const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
-    if (unit === 'default') return;
+    if (unit === 'default') {
+      return;
+    }
 
-    if (value === undefined)
+    if (value === undefined) {
       throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
+    }
 
-    if (unit === 'ms') return value;
-    if (unit === 'seconds') return value * 1000;
-    if (unit === 'minutes') return value * 1000 * 60;
-    if (unit === 'hours') return value * 1000 * 60 * 60;
-    if (unit === 'days') return value * 1000 * 60 * 60 * 24;
-    if (unit === 'months') return value * 1000 * 60 * 60 * 24 * (365 / 12);
-    if (unit === 'years') return value * 1000 * 60 * 60 * 24 * 365;
+    if (unit === 'ms') {
+      return value;
+    }
+    if (unit === 'seconds') {
+      return value * 1000;
+    }
+    if (unit === 'minutes') {
+      return value * 1000 * 60;
+    }
+    if (unit === 'hours') {
+      return value * 1000 * 60 * 60;
+    }
+    if (unit === 'days') {
+      return value * 1000 * 60 * 60 * 24;
+    }
+    if (unit === 'months') {
+      return value * 1000 * 60 * 60 * 24 * (365 / 12);
+    }
+    if (unit === 'years') {
+      return value * 1000 * 60 * 60 * 24 * 365;
+    }
 
-    if (unit === 'infinite') return -1;
+    if (unit === 'infinite') {
+      return -1;
+    }
   };
   const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
-    if (unit === 'default') return;
+    if (unit === 'default') {
+      return;
+    }
 
-    if (value === undefined)
+    if (value === undefined) {
       throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
+    }
 
-    if (unit === 'Bit') return value;
-    if (unit === 'KiB') return value * 1024;
-    if (unit === 'MiB') return value * 1024 * 1024;
-    if (unit === 'GiB') return value * 1024 * 1024 * 1024;
-    if (unit === 'TiB') return value * 1024 * 1024 * 1024 * 1024;
+    if (unit === 'Bit') {
+      return value;
+    }
+    if (unit === 'KiB') {
+      return value * 1024;
+    }
+    if (unit === 'MiB') {
+      return value * 1024 * 1024;
+    }
+    if (unit === 'GiB') {
+      return value * 1024 * 1024 * 1024;
+    }
+    if (unit === 'TiB') {
+      return value * 1024 * 1024 * 1024 * 1024;
+    }
 
-    if (unit === 'infinite') return -1;
+    if (unit === 'infinite') {
+      return -1;
+    }
   };
 
   return createAutoModal<void, CreateTopicModalState>({
@@ -616,23 +662,35 @@ function makeCreateTopicModal(createTopic: ReturnType<typeof useCreateTopicMutat
       }),
     isOkEnabled: (state) => TOPIC_NAME_REGEX.test(state.topicName) && !state.hasErrors,
     onOk: async (state) => {
-      if (!state.topicName) throw new Error('"Topic Name" must be set');
-      if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');
+      if (!state.topicName) {
+        throw new Error('"Topic Name" must be set');
+      }
+      if (!state.cleanupPolicy) {
+        throw new Error('"Cleanup Policy" must be set');
+      }
 
       const config: TopicConfigEntry[] = [];
       const setVal = (name: string, value: string | number | undefined) => {
-        if (value === undefined) return;
+        if (value === undefined) {
+          return;
+        }
         config.removeAll((x) => x.name === name);
         config.push({ name, value: String(value) });
       };
 
-      for (const x of state.additionalConfig) setVal(x.name, x.value);
+      for (const x of state.additionalConfig) {
+        setVal(x.name, x.value);
+      }
 
-      if (state.retentionTimeUnit !== 'default')
+      if (state.retentionTimeUnit !== 'default') {
         setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
-      if (state.retentionSizeUnit !== 'default')
+      }
+      if (state.retentionSizeUnit !== 'default') {
         setVal('retention.bytes', getRetentionSizeFinalValue(state.retentionSize, state.retentionSizeUnit));
-      if (state.minInSyncReplicas !== undefined) setVal('min.insync.replicas', state.minInSyncReplicas);
+      }
+      if (state.minInSyncReplicas !== undefined) {
+        setVal('min.insync.replicas', state.minInSyncReplicas);
+      }
 
       setVal('cleanup.policy', state.cleanupPolicy);
 

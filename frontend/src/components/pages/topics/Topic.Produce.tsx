@@ -93,10 +93,18 @@ const protoBufInfoElement = (
 );
 
 function encodingToLanguage(encoding: PayloadEncoding) {
-  if (encoding === PayloadEncoding.AVRO) return 'json';
-  if (encoding === PayloadEncoding.JSON) return 'json';
-  if (encoding === PayloadEncoding.PROTOBUF) return 'protobuf';
-  if (encoding === PayloadEncoding.BINARY) return 'plaintext';
+  if (encoding === PayloadEncoding.AVRO) {
+    return 'json';
+  }
+  if (encoding === PayloadEncoding.JSON) {
+    return 'json';
+  }
+  if (encoding === PayloadEncoding.PROTOBUF) {
+    return 'protobuf';
+  }
+  if (encoding === PayloadEncoding.BINARY) {
+    return 'plaintext';
+  }
   return;
 }
 

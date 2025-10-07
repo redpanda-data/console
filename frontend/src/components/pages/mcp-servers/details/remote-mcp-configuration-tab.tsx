@@ -84,7 +84,9 @@ export const RemoteMCPConfigurationTab = () => {
   const [detectedSecrets, setDetectedSecrets] = useState<string[]>([]);
 
   const getResourceTierFromServer = useCallback((resources?: { cpuShares?: string; memoryShares?: string }) => {
-    if (!resources) return 'Small';
+    if (!resources) {
+      return 'Small';
+    }
 
     // Try to find exact string match with predefined tiers
     const matchingTier = RESOURCE_TIERS.find((tier) => {
@@ -126,7 +128,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const applyTemplate = (toolId: string, template: Template) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTools = currentData.tools.map((tool) => {
       if (tool.id === toolId) {
@@ -148,10 +152,14 @@ export const RemoteMCPConfigurationTab = () => {
   };
 
   const handleSave = async () => {
-    if (!(mcpServerData?.mcpServer && id)) return;
+    if (!(mcpServerData?.mcpServer && id)) {
+      return;
+    }
 
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     try {
       const toolsMap: { [key: string]: { componentType: number; configYaml: string } } = {};
@@ -204,7 +212,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleAddTool = () => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const newToolId = `tool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const newTool = {
@@ -224,7 +234,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleRemoveTool = (toolId: string) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTools = currentData.tools.filter((tool) => tool.id !== toolId);
     setEditedServerData({
@@ -243,7 +255,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleUpdateTool = (toolId: string, updates: Partial<LocalTool>) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTools = [...currentData.tools];
     const toolIndex = updatedTools.findIndex((tool) => tool.id === toolId);
@@ -287,7 +301,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleAddTag = () => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     setEditedServerData({
       ...currentData,
@@ -297,7 +313,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleRemoveTag = (index: number) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTags = currentData.tags.filter((_, i) => i !== index);
     setEditedServerData({
@@ -308,7 +326,9 @@ export const RemoteMCPConfigurationTab = () => {
 
   const handleUpdateTag = (index: number, field: 'key' | 'value', value: string) => {
     const currentData = getCurrentData();
-    if (!currentData) return;
+    if (!currentData) {
+      return;
+    }
 
     const updatedTags = [...currentData.tags];
     updatedTags[index] = { ...updatedTags[index], [field]: value };
@@ -361,7 +381,9 @@ export const RemoteMCPConfigurationTab = () => {
   const displayData = getCurrentData();
 
   const selectedTool = React.useMemo(() => {
-    if (!(selectedToolId && displayData?.tools)) return null;
+    if (!(selectedToolId && displayData?.tools)) {
+      return null;
+    }
     return displayData.tools.find((tool) => tool.id === selectedToolId) || null;
   }, [selectedToolId, displayData?.tools?.length, displayData?.tools]);
 
@@ -400,13 +422,17 @@ export const RemoteMCPConfigurationTab = () => {
 
   // Get existing secret names
   const existingSecrets = React.useMemo(() => {
-    if (!secretsData?.secrets) return [];
+    if (!secretsData?.secrets) {
+      return [];
+    }
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean);
   }, [secretsData]);
 
   // Check if any detected secrets are missing
   const hasSecretWarnings = React.useMemo(() => {
-    if (detectedSecrets.length === 0) return false;
+    if (detectedSecrets.length === 0) {
+      return false;
+    }
     return detectedSecrets.some((secretName) => !existingSecrets.includes(secretName));
   }, [detectedSecrets, existingSecrets]);
 
@@ -476,7 +502,9 @@ export const RemoteMCPConfigurationTab = () => {
                           id="displayName"
                           onChange={(e) => {
                             const currentData = getCurrentData();
-                            if (!currentData) return;
+                            if (!currentData) {
+                              return;
+                            }
                             setEditedServerData({
                               ...currentData,
                               displayName: e.target.value,
@@ -492,7 +520,9 @@ export const RemoteMCPConfigurationTab = () => {
                           id="description"
                           onChange={(e) => {
                             const currentData = getCurrentData();
-                            if (!currentData) return;
+                            if (!currentData) {
+                              return;
+                            }
                             setEditedServerData({
                               ...currentData,
                               description: e.target.value,
@@ -526,7 +556,9 @@ export const RemoteMCPConfigurationTab = () => {
                         <Select
                           onValueChange={(value) => {
                             const currentData = getCurrentData();
-                            if (!currentData) return;
+                            if (!currentData) {
+                              return;
+                            }
                             setEditedServerData({
                               ...currentData,
                               resources: { tier: value },

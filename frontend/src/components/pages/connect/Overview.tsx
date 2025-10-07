@@ -160,7 +160,9 @@ class KafkaConnectOverview extends PageComponent<{ defaultView: string }> {
       },
     ] as Tab[];
 
-    if (isServerless()) tabs.removeAll((x) => x.key === ConnectView.KafkaConnect);
+    if (isServerless()) {
+      tabs.removeAll((x) => x.key === ConnectView.KafkaConnect);
+    }
 
     return (
       <PageContent>
@@ -439,8 +441,12 @@ const TabKafkaConnect = observer((_p: Record<string, never>) => {
   if (api.connectConnectorsError) {
     return <ErrorResult error={api.connectConnectorsError} />;
   }
-  if (!api.connectConnectors) return DefaultSkeleton;
-  if (api.connectConnectors.isConfigured === false) return <NotConfigured />;
+  if (!api.connectConnectors) {
+    return DefaultSkeleton;
+  }
+  if (api.connectConnectors.isConfigured === false) {
+    return <NotConfigured />;
+  }
 
   return (
     <Stack spacing={3}>

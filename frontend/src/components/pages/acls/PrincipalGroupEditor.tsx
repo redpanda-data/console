@@ -74,7 +74,9 @@ export const AclPrincipalGroupEditor = observer(
       setError(undefined);
       setIsLoading(true);
       try {
-        if (group.principalName.length === 0) throw new Error('The principal field can not be empty.');
+        if (group.principalName.length === 0) {
+          throw new Error('The principal field can not be empty.');
+        }
 
         const allToCreate = unpackPrincipalGroup(group);
 
@@ -156,7 +158,9 @@ export const AclPrincipalGroupEditor = observer(
       p.onClose();
     };
 
-    if (!group.clusterAcls) group.clusterAcls = createEmptyClusterAcl();
+    if (!group.clusterAcls) {
+      group.clusterAcls = createEmptyClusterAcl();
+    }
 
     return (
       <Modal isOpen onClose={() => {}}>
@@ -236,17 +240,21 @@ export const AclPrincipalGroupEditor = observer(
 
                 <Button
                   onClick={() => {
-                    if (group.topicAcls.length === 0) group.topicAcls.push(createEmptyTopicAcl());
+                    if (group.topicAcls.length === 0) {
+                      group.topicAcls.push(createEmptyTopicAcl());
+                    }
                     group.topicAcls[0].selector = '*';
                     group.topicAcls[0].all = 'Allow';
 
-                    if (group.consumerGroupAcls.length === 0)
+                    if (group.consumerGroupAcls.length === 0) {
                       group.consumerGroupAcls.push(createEmptyConsumerGroupAcl());
+                    }
                     group.consumerGroupAcls[0].selector = '*';
                     group.consumerGroupAcls[0].all = 'Allow';
 
-                    if (group.transactionalIdAcls.length === 0)
+                    if (group.transactionalIdAcls.length === 0) {
                       group.transactionalIdAcls.push(createEmptyTransactionalIdAcl());
+                    }
                     group.transactionalIdAcls[0].selector = '*';
                     group.transactionalIdAcls[0].all = 'Allow';
 
@@ -386,9 +394,15 @@ export const ResourceACLsEditor = observer(
     const isAllSet = res.all === 'Allow' || res.all === 'Deny';
 
     let resourceName = 'Cluster';
-    if (p.resourceType === 'Topic') resourceName = 'Topic';
-    if (p.resourceType === 'Group') resourceName = 'Consumer Group';
-    if (p.resourceType === 'TransactionalID') resourceName = 'Transactional ID';
+    if (p.resourceType === 'Topic') {
+      resourceName = 'Topic';
+    }
+    if (p.resourceType === 'Group') {
+      resourceName = 'Consumer Group';
+    }
+    if (p.resourceType === 'TransactionalID') {
+      resourceName = 'Transactional ID';
+    }
 
     const isInvalid =
       (!isCluster && res.patternType === 'Literal' && res.selector === '') ||

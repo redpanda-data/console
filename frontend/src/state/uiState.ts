@@ -50,7 +50,9 @@ class UIState {
   @observable pageBreadcrumbs: BreadcrumbEntry[] = [];
 
   @computed get selectedClusterName(): string | null {
-    if (uiSettings.selectedClusterIndex in api.clusters) return api.clusters[uiSettings.selectedClusterIndex];
+    if (uiSettings.selectedClusterIndex in api.clusters) {
+      return api.clusters[uiSettings.selectedClusterIndex];
+    }
     return null;
   }
 
@@ -62,7 +64,9 @@ class UIState {
     let path = this.pathName;
 
     const i = path.indexOf('/', 1);
-    if (i > -1) path = path.slice(0, i);
+    if (i > -1) {
+      path = path.slice(0, i);
+    }
 
     return [path];
   }
@@ -91,7 +95,9 @@ class UIState {
     }
 
     const topicSettings = uiSettings.perTopicSettings.find((t) => t.topicName === n);
-    if (topicSettings) return topicSettings;
+    if (topicSettings) {
+      return topicSettings;
+    }
 
     throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
   }

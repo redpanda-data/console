@@ -25,7 +25,9 @@ type BrokerListProps =
 export class BrokerList extends Component<BrokerListProps> {
   constructor(p: any) {
     super(p);
-    if (!api.clusterInfo) setTimeout(() => api.refreshCluster());
+    if (!api.clusterInfo) {
+      setTimeout(() => api.refreshCluster());
+    }
   }
 
   render() {
@@ -39,9 +41,13 @@ export class BrokerList extends Component<BrokerListProps> {
       const { partition } = this.props;
       leaderId = partition.leader;
       sortedIds = partition.replicas.distinct().sort((a, b) => a - b);
-      if (partition.offlineReplicas) offlineIds.push(...partition.offlineReplicas);
+      if (partition.offlineReplicas) {
+        offlineIds.push(...partition.offlineReplicas);
+      }
     } else {
-      if (!this.props.brokerIds) return null;
+      if (!this.props.brokerIds) {
+        return null;
+      }
 
       sortedIds = this.props.brokerIds.distinct().sort((a, b) => a - b);
       addedIds = this.props.addedIds ?? [];
@@ -55,43 +61,58 @@ export class BrokerList extends Component<BrokerListProps> {
       const broker = brokers?.get(id);
 
       let classNames = 'broker-tag';
-      if (id === leaderId) classNames += ' leader';
-      if (offlineIds.includes(id)) classNames += ' offline';
-      if (brokers && !broker) classNames += ' missing';
+      if (id === leaderId) {
+        classNames += ' leader';
+      }
+      if (offlineIds.includes(id)) {
+        classNames += ' offline';
+      }
+      if (brokers && !broker) {
+        classNames += ' missing';
+      }
 
       const isAdding = addedIds.includes(id);
-      if (isAdding) classNames += ' added';
+      if (isAdding) {
+        classNames += ' added';
+      }
 
       const isRemoving = removedIds.includes(id);
-      if (isRemoving) classNames += ' removed';
+      if (isRemoving) {
+        classNames += ' removed';
+      }
 
       const tag = (
         <div className={classNames}>
           <span>{id ?? '?'}</span>
         </div>
       );
-      if (!broker) return tag;
+      if (!broker) {
+        return tag;
+      }
 
       const additionalContent: JSX.Element[] = [];
-      if (id === leaderId)
+      if (id === leaderId) {
         additionalContent.push(
           <div key="leader" style={{ marginTop: '5px' }}>
             <ChevronRightIcon className="svgCenter" height="15px" style={{ marginLeft: '-4px', marginRight: '-2px' }} />
             This broker is the leader for this partition
           </div>
         );
-      if (isAdding)
+      }
+      if (isAdding) {
         additionalContent.push(
           <div key="added" style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>
             Partitions are currently being transferred to this broker.
           </div>
         );
-      if (isRemoving)
+      }
+      if (isRemoving) {
         additionalContent.push(
           <div key="removed" style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>
             Once the assignment completes, the partitions of the reassignment will be removed from the broker.
           </div>
         );
+      }
 
       return (
         <BrokerTooltip broker={broker} key={id} tooltipSuffix={additionalContent}>

@@ -38,7 +38,9 @@ class RoleCreatePage extends PageComponent {
   }
 
   render() {
-    if (!api.serviceAccounts?.users) return DefaultSkeleton;
+    if (!api.serviceAccounts?.users) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent>

@@ -42,7 +42,9 @@ export class FilterableDataSource<T> {
   ) {
     this.dataSource = dataSource;
     this.filter = filter;
-    if (!debounceMilliseconds) debounceMilliseconds = 100;
+    if (!debounceMilliseconds) {
+      debounceMilliseconds = 100;
+    }
     this.reactionDisposer = autorun(this.update.bind(this), {
       delay: debounceMilliseconds,
       name: 'FilterableDataSource',

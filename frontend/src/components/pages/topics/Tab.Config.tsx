@@ -39,7 +39,9 @@ export class TopicConfiguration extends Component<{
 
   render() {
     const renderedError = this.handleError();
-    if (renderedError) return renderedError;
+    if (renderedError) {
+      return renderedError;
+    }
 
     const entries = api.topicConfig.get(this.props.topic.topicName)?.configEntries ?? [];
 
@@ -56,7 +58,9 @@ export class TopicConfiguration extends Component<{
 
   @computed get configEntries(): ConfigEntryExtended[] {
     const config = api.topicConfig.get(this.props.topic.topicName);
-    if (config == null) return [];
+    if (config == null) {
+      return [];
+    }
 
     return config.configEntries.slice().sort((a, b) => {
       switch (uiSettings.topicList.propsOrder) {
@@ -65,7 +69,9 @@ export class TopicConfiguration extends Component<{
         case 'alphabetical':
           return a.name.localeCompare(b.name);
         case 'changedFirst': {
-          if (uiSettings.topicList.propsOrder !== 'changedFirst') return 0;
+          if (uiSettings.topicList.propsOrder !== 'changedFirst') {
+            return 0;
+          }
           const v1 = a.isExplicitlySet ? 1 : 0;
           const v2 = b.isExplicitlySet ? 1 : 0;
           return v2 - v1;
@@ -78,8 +84,12 @@ export class TopicConfiguration extends Component<{
 
   handleError(): JSX.Element | null {
     const config = api.topicConfig.get(this.props.topic.topicName);
-    if (config === undefined) return DefaultSkeleton; // still loading
-    if (config?.error) return this.renderKafkaError(this.props.topic.topicName, config.error);
+    if (config === undefined) {
+      return DefaultSkeleton; // still loading
+    }
+    if (config?.error) {
+      return this.renderKafkaError(this.props.topic.topicName, config.error);
+    }
 
     if (config === null || config.configEntries.length === 0) {
       // config===null should never happen, so we catch it together with empty

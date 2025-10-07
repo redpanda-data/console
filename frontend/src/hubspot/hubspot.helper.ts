@@ -56,7 +56,9 @@ export const hubspotSubmit = ({
   onError,
 }: HubspotSubmitProps) => {
   // Check if analytics is enabled
-  if (!isAnalyticsEnabled()) return;
+  if (!isAnalyticsEnabled()) {
+    return;
+  }
   const prepareFields = (fields: Fields) =>
     Object.entries(fields).map(([name, value]) => ({
       name,
@@ -73,10 +75,14 @@ export const hubspotSubmit = ({
       },
     })
     .then((response) => {
-      if (onSuccess) onSuccess(response);
+      if (onSuccess) {
+        onSuccess(response);
+      }
     })
     .catch((error) => {
-      if (onError) onError(error);
+      if (onError) {
+        onError(error);
+      }
     });
 };
 
@@ -85,7 +91,9 @@ export const hubspotSubmit = ({
  * @param userData - User data to track in HubSpot
  */
 export const trackHubspotUser = (userData: HubspotUserData) => {
-  if (!isAnalyticsEnabled()) return;
+  if (!isAnalyticsEnabled()) {
+    return;
+  }
   window._hsq = window._hsq || [];
   window._hsq.push(['identify', userData]);
 };
@@ -95,7 +103,9 @@ export const trackHubspotUser = (userData: HubspotUserData) => {
  * @param path - The current page path to track
  */
 export const trackHubspotPage = (path: string) => {
-  if (!isAnalyticsEnabled()) return;
+  if (!isAnalyticsEnabled()) {
+    return;
+  }
   window._hsq = window._hsq || [];
   window._hsq.push(['setPath', { path }]);
 };

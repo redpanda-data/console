@@ -227,7 +227,9 @@ const TopicSelector = ({
   // Get matching topics for a pattern - always treat as regex if possible, fallback to substring
   const getMatchingTopics = useMemo(
     () => (pattern: string) => {
-      if (!pattern) return [];
+      if (!pattern) {
+        return [];
+      }
 
       try {
         const regex = new RegExp(pattern);
@@ -496,7 +498,9 @@ class KnowledgeBaseCreate extends PageComponent {
 
   autoPopulateSecretsFields = () => {
     const secrets = rpcnSecretManagerApi.secrets;
-    if (!secrets || secrets.length === 0) return;
+    if (!secrets || secrets.length === 0) {
+      return;
+    }
 
     // Create a map of secret IDs for quick lookup
     const secretIds = new Set(secrets.map((secret) => secret.id));
@@ -732,7 +736,9 @@ class KnowledgeBaseCreate extends PageComponent {
 
       // Create the user using the userClient
       const userClient = appConfig.userClient;
-      if (!userClient) throw new Error('user client is not initialized');
+      if (!userClient) {
+        throw new Error('user client is not initialized');
+      }
       await userClient.createUser(userRequest);
 
       // Refresh secrets list

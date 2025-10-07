@@ -69,14 +69,18 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     if (rpcnSecretManagerApi.secrets) {
       // inject secrets to editor
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
     }
     const pipelineId = this.props.pipelineId;
     const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
-    if (!pipeline) return DefaultSkeleton;
+    if (!pipeline) {
+      return DefaultSkeleton;
+    }
 
     if (this.displayName === undefined) {
       this.displayName = pipeline.displayName;

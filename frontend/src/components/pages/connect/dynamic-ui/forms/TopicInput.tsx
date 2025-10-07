@@ -50,7 +50,9 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
 
       get matchingTopics() {
         const allTopics = api.topics?.map((x) => x.topicName);
-        if (!allTopics) return [];
+        if (!allTopics) {
+          return [];
+        }
 
         if (this.isRegex) {
           const regex = new RegExp(String(this.property.value));
@@ -62,7 +64,9 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
     };
   });
 
-  if (!state.property) return null;
+  if (!state.property) {
+    return null;
+  }
 
   const showErrors = state.property.errors.length > 0;
   const errors = showErrors ? state.property.errors : state.property.lastErrors;

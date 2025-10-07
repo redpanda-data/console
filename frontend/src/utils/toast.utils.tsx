@@ -18,7 +18,9 @@ type GetToastIdProps = {
 };
 
 const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
-  if (!resourceName) return initialId;
+  if (!resourceName) {
+    return initialId;
+  }
 
   return `${initialId}_${resourceName}`;
 };

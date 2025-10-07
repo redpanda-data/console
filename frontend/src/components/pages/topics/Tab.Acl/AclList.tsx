@@ -30,7 +30,9 @@ type AclListProps = {
 
 function flatResourceList(store: Acls) {
   const acls = store;
-  if (acls?.aclResources == null) return [];
+  if (acls?.aclResources == null) {
+    return [];
+  }
   const flatResources = acls.aclResources
     .flatMap((res) => res.acls.map((rule) => ({ ...res, ...rule })))
     .map((x) => ({ ...x, eqKey: toJson(x) }));

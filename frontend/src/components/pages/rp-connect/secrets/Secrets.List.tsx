@@ -56,7 +56,9 @@ class RpConnectSecretsList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    if (!Features.pipelinesApi) return;
+    if (!Features.pipelinesApi) {
+      return;
+    }
 
     rpcnSecretManagerApi.refreshSecrets(force).catch((err) => {
       if (String(err).includes('404')) {
@@ -86,10 +88,14 @@ class RpConnectSecretsList extends PageComponent {
   render() {
     const filteredSecrets = (rpcnSecretManagerApi.secrets ?? []).filter((u) => {
       const filter = uiSettings.rpcnSecretList.quickSearch;
-      if (!filter) return true;
+      if (!filter) {
+        return true;
+      }
       try {
         const quickSearchRegExp = new RegExp(filter, 'i');
-        if (u.id.match(quickSearchRegExp)) return true;
+        if (u.id.match(quickSearchRegExp)) {
+          return true;
+        }
         return false;
       } catch {
         return false;

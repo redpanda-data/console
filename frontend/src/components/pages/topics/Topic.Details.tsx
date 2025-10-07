@@ -74,12 +74,18 @@ class TopicTab {
 
     if (topic && this.disableHooks) {
       for (const h of this.disableHooks) {
-        if (h(topic)) return false;
+        if (h(topic)) {
+          return false;
+        }
       }
     }
 
-    if (!topic) return true; // no data yet
-    if (!topic.allowedActions || topic.allowedActions[0] === 'all') return true; // Redpanda Console free version
+    if (!topic) {
+      return true; // no data yet
+    }
+    if (!topic.allowedActions || topic.allowedActions[0] === 'all') {
+      return true; // Redpanda Console free version
+    }
 
     return topic.allowedActions.includes(this.requiredPermission);
   }
@@ -89,13 +95,17 @@ class TopicTab {
   }
 
   @computed get title(): React.ReactNode {
-    if (this.isEnabled) return this.titleText;
+    if (this.isEnabled) {
+      return this.titleText;
+    }
 
     const topic = this.topicGetter();
     if (topic && this.disableHooks) {
       for (const h of this.disableHooks) {
         const replacementTitle = h(topic);
-        if (replacementTitle) return replacementTitle;
+        if (replacementTitle) {
+          return replacementTitle;
+        }
       }
     }
 
@@ -113,7 +123,9 @@ class TopicTab {
 
   @computed get content(): React.ReactNode {
     const topic = this.topicGetter();
-    if (topic) return this.contentFunc(topic);
+    if (topic) {
+      return this.contentFunc(topic);
+    }
     return null;
   }
 }
@@ -138,7 +150,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   constructor(props: any) {
     super(props);
 
-    if (isServerless()) this.topicTabs.removeAll((x) => x.id === 'documentation');
+    if (isServerless()) {
+      this.topicTabs.removeAll((x) => x.id === 'documentation');
+    }
 
     makeObservable(this);
   }
@@ -166,7 +180,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     api.refreshTopics(force);
 
     // consumers are lazy loaded because they're (relatively) expensive
-    if (uiSettings.topicDetailsActiveTabKey === 'consumers') api.refreshTopicConsumers(this.props.topicName, force);
+    if (uiSettings.topicDetailsActiveTabKey === 'consumers') {
+      api.refreshTopicConsumers(this.props.topicName, force);
+    }
 
     // partitions are always required to display message count in the statistics bar
     api.refreshPartitionsForTopic(this.props.topicName, force);
@@ -179,24 +195,35 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     });
 
     // documentation can be lazy loaded
-    if (uiSettings.topicDetailsActiveTabKey === 'documentation')
+    if (uiSettings.topicDetailsActiveTabKey === 'documentation') {
       api.refreshTopicDocumentation(this.props.topicName, force);
+    }
 
     // ACL can be lazy loaded
-    if (uiSettings.topicDetailsActiveTabKey === 'topicacl') api.refreshTopicAcls(this.props.topicName, force);
+    if (uiSettings.topicDetailsActiveTabKey === 'topicacl') {
+      api.refreshTopicAcls(this.props.topicName, force);
+    }
   }
 
   @computed get topic(): undefined | Topic | null {
     // undefined = not yet known, null = known to be null
-    if (!api.topics) return undefined;
+    if (!api.topics) {
+      return undefined;
+    }
     const topic = api.topics.find((e) => e.topicName === this.props.topicName);
-    if (!topic) return null;
+    if (!topic) {
+      return null;
+    }
     return topic;
   }
   @computed get topicConfig(): undefined | ConfigEntry[] | null {
     const config = api.topicConfig.get(this.props.topicName);
-    if (config === undefined) return undefined;
-    if (config === null || config.error != null) return null;
+    if (config === undefined) {
+      return undefined;
+    }
+    if (config === null || config.error != null) {
+      return null;
+    }
     return config.configEntries;
   }
 
@@ -204,12 +231,16 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     function computeTabId() {
       // use url anchor if possible
       let key = appGlobal.location.hash.replace('#', '');
-      if (TopicTabIds.includes(key as any)) return key as TopicTabId;
+      if (TopicTabIds.includes(key as any)) {
+        return key as TopicTabId;
+      }
 
       // use settings (last visited tab)
       // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
       key = uiSettings.topicDetailsActiveTabKey!;
-      if (TopicTabIds.includes(key as any)) return key as TopicTabId;
+      if (TopicTabIds.includes(key as any)) {
+        return key as TopicTabId;
+      }
 
       // default to partitions
       return 'messages';
@@ -219,14 +250,20 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     // 2. if that tab is enabled, return it, otherwise return the first one that is not
     //    (todo: should probably show some message if all tabs are disabled...)
     const id = computeTabId();
-    if (this.topicTabs.first((t) => t.id === id)?.isEnabled) return id;
+    if (this.topicTabs.first((t) => t.id === id)?.isEnabled) {
+      return id;
+    }
     return this.topicTabs.first((t) => t?.isEnabled)?.id ?? 'messages';
   }
 
   render() {
     const topic = this.topic;
-    if (topic === undefined) return DefaultSkeleton;
-    if (topic === null) return this.topicNotFound();
+    if (topic === undefined) {
+      return DefaultSkeleton;
+    }
+    if (topic === null) {
+      return this.topicNotFound();
+    }
 
     const topicConfig = this.topicConfig;
 
@@ -300,8 +337,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         (t) => <AclList acl={api.topicAcls.get(t.topicName)} />,
         [
           () => {
-            if (AppFeatures.SINGLE_SIGN_ON)
-              if (api.userData != null && !api.userData.canListAcls)
+            if (AppFeatures.SINGLE_SIGN_ON) {
+              if (api.userData != null && !api.userData.canListAcls) {
                 return (
                   <Popover
                     content={"You need the cluster-permission 'viewAcl' to view this tab"}
@@ -313,6 +350,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     </div>
                   </Popover>
                 );
+              }
+            }
             return;
           },
         ]

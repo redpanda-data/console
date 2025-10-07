@@ -71,7 +71,9 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
   }
 
   componentDidUpdate(prevProps: { subjectName: string }) {
-    if (!prevProps) return;
+    if (!prevProps) {
+      return;
+    }
 
     const prevName = decodeURIComponentPercents(prevProps.subjectName);
     const currentName = decodeURIComponentPercents(this.props.subjectName);
@@ -117,10 +119,14 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     const subjectName = decodeURIComponentPercents(this.props.subjectName);
     api.refreshSchemaDetails(subjectName, force).then(() => {
       const details = api.schemaDetails.get(subjectName);
-      if (!details) return;
+      if (!details) {
+        return;
+      }
 
       for (const v of details.versions) {
-        if (v.isSoftDeleted) continue;
+        if (v.isSoftDeleted) {
+          continue;
+        }
 
         api.refreshSchemaReferencedBy(subjectName, v.version, force);
       }
@@ -130,7 +136,9 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
   render() {
     const isSoftDeleted = api.schemaSubjects?.find((x) => x.name === this.subjectNameRaw)?.isSoftDeleted;
     const subject = api.schemaDetails.get(this.subjectNameRaw);
-    if (!subject) return DefaultSkeleton;
+    if (!subject) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent key="b">
@@ -261,7 +269,9 @@ function getVersionFromQuery(): 'latest' | number | undefined {
       return Number(versionStr);
     }
 
-    if (versionStr === 'latest') return 'latest';
+    if (versionStr === 'latest') {
+      return 'latest';
+    }
 
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
@@ -283,7 +293,9 @@ export function schemaTypeToCodeBlockLanguage(type: string) {
 
 export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   const lower = schema.type.toLowerCase();
-  if (lower === 'avro' || lower === 'json') return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+  if (lower === 'avro' || lower === 'json') {
+    return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+  }
   return schema.schema;
 }
 
@@ -306,8 +318,12 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
   const defaultVersion = (() => {
-    if (queryVersion === undefined) return fallbackVersion;
-    if (queryVersion === 'latest' || !requestedVersionExists) return fallbackVersion;
+    if (queryVersion === undefined) {
+      return fallbackVersion;
+    }
+    if (queryVersion === 'latest' || !requestedVersionExists) {
+      return fallbackVersion;
+    }
     return queryVersion;
   })();
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
@@ -436,10 +452,11 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       await api.refreshSchemaDetails(subject.name, true);
 
                       const updatedDetails = api.schemaDetails.get(subject.name);
-                      if (updatedDetails)
+                      if (updatedDetails) {
                         appGlobal.historyPush(
                           `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`
                         );
+                      }
                     })
                     .catch((err) => {
                       toast({

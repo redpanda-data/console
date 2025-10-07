@@ -329,7 +329,9 @@ const ManualOffsetContent = observer(
           }}
           onChange={(e) => {
             const { value } = e.target;
-            if (!DIGITS_ONLY_REGEX.test(value)) return;
+            if (!DIGITS_ONLY_REGEX.test(value)) {
+              return;
+            }
             updateOffsetFromSlider(Number(value));
           }}
           value={sliderValue}
@@ -340,11 +342,12 @@ const ManualOffsetContent = observer(
 );
 
 function getMarks(partition: Partition) {
-  if (!partition)
+  if (!partition) {
     return {
       min: 0,
       max: Number.POSITIVE_INFINITY,
     };
+  }
 
   const diff = partition.waterMarkHigh - partition.waterMarkLow;
 
@@ -435,10 +438,14 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     }
   };
 
-  if (!topic) return null;
+  if (!topic) {
+    return null;
+  }
 
   const isOkButtonDisabled = () => {
-    if (hasErrors) return false;
+    if (hasErrors) {
+      return false;
+    }
 
     if (step === 1) {
       return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
@@ -452,7 +459,9 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   };
 
   const onOk = () => {
-    if (!topic) return;
+    if (!topic) {
+      return;
+    }
 
     const topicName = topic.topicName;
 
@@ -554,8 +563,12 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             variant="solid"
           >
             {(() => {
-              if (hasErrors) return 'Ok';
-              if (step === 1) return 'Choose End Offset';
+              if (hasErrors) {
+                return 'Ok';
+              }
+              if (step === 1) {
+                return 'Choose End Offset';
+              }
               return 'Delete Records';
             })()}
           </Button>

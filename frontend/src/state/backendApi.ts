@@ -257,11 +257,15 @@ async function handle401(res: Response) {
 function processVersionInfo(headers: Headers) {
   try {
     for (const [k, v] of headers) {
-      if (k.toLowerCase() !== 'app-build-timestamp') continue;
+      if (k.toLowerCase() !== 'app-build-timestamp') {
+        continue;
+      }
 
       const serverBuildTimestamp = Number(v);
       if (v != null && v !== '' && Number.isFinite(serverBuildTimestamp)) {
-        if (uiState.serverBuildTimestamp !== serverBuildTimestamp) uiState.serverBuildTimestamp = serverBuildTimestamp;
+        if (uiState.serverBuildTimestamp !== serverBuildTimestamp) {
+          uiState.serverBuildTimestamp = serverBuildTimestamp;
+        }
       }
 
       return;
@@ -464,7 +468,9 @@ const apiStore = {
   },
   async refreshUserData() {
     const client = appConfig.authenticationClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     await client
       .getIdentity({})
@@ -604,7 +610,8 @@ const apiStore = {
     cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics != null) {
         for (const t of v.topics) {
-          if (!t.allowedActions) continue;
+          if (!t.allowedActions) {
+          }
 
           // DEBUG: randomly remove some allowedActions
           /*
@@ -717,9 +724,10 @@ const apiStore = {
   },
 
   refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
-    if (Array.isArray(topics))
+    if (Array.isArray(topics)) {
       // sort in order to maximize cache hits (todo: track/cache each topic individually instead)
       topics = topics.sort().map((t) => encodeURIComponent(t));
+    }
 
     const url =
       topics === 'all'
@@ -727,7 +735,9 @@ const apiStore = {
         : `${appConfig.restBasePath}/operations/topic-details?topicNames=${topics.joinStr(',')}`;
 
     return cachedApiRequest<GetAllPartitionsResponse | null>(url, force).then((response) => {
-      if (!response?.topics) return;
+      if (!response?.topics) {
+        return;
+      }
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
       transaction(() => {
         const errors: {
@@ -808,17 +818,21 @@ const apiStore = {
             // topicName
             p.topicName = topicName;
 
-            if (p.partitionError)
+            if (p.partitionError) {
               partitionErrors.push({
                 id: p.id,
                 partitionError: p.partitionError,
               });
-            if (p.waterMarksError)
+            }
+            if (p.waterMarksError) {
               waterMarksErrors.push({
                 id: p.id,
                 waterMarksError: p.waterMarksError,
               });
-            if (partitionErrors.length || waterMarksErrors.length) continue;
+            }
+            if (partitionErrors.length || waterMarksErrors.length) {
+              continue;
+            }
 
             // replicaSize
             const validLogDirs = p.partitionLogDirs.filter((e) => (e.error == null || e.error === '') && e.size >= 0);
@@ -853,8 +867,12 @@ const apiStore = {
           // topicName
           p.topicName = topicName;
 
-          if (p.partitionError) partitionErrors++;
-          if (p.waterMarksError) waterMarkErrors++;
+          if (p.partitionError) {
+            partitionErrors++;
+          }
+          if (p.waterMarksError) {
+            waterMarkErrors++;
+          }
           if (partitionErrors || waterMarkErrors) {
             p.hasErrors = true;
             continue;
@@ -869,11 +887,12 @@ const apiStore = {
         // Set partitions
         this.topicPartitions.set(topicName, response.partitions);
 
-        if (partitionErrors > 0 || waterMarkErrors > 0)
+        if (partitionErrors > 0 || waterMarkErrors > 0) {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.warn(
             `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`
           );
+        }
       }, addError);
   },
 
@@ -900,7 +919,9 @@ const apiStore = {
     });
     cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
       .then((v) => {
-        if (v) normalizeAcls(v.aclResources);
+        if (v) {
+          normalizeAcls(v.aclResources);
+        }
         this.topicAcls.set(topicName, v);
       })
       // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -938,7 +959,9 @@ const apiStore = {
 
   async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
     const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
-    if (!r) return null;
+    if (!r) {
+      return null;
+    }
     this.endpointCompatibility = r.endpointCompatibility;
     return r;
   },
@@ -1031,17 +1054,26 @@ const apiStore = {
       if (v?.clusterInfo != null) {
         transaction(() => {
           // add 'type' to each synonym entry
-          for (const broker of v.clusterInfo.brokers)
-            if (broker.config && !broker.config.error) prepareSynonyms(broker.config.configs ?? []);
+          for (const broker of v.clusterInfo.brokers) {
+            if (broker.config && !broker.config.error) {
+              prepareSynonyms(broker.config.configs ?? []);
+            }
+          }
 
           // don't assign if the value didn't change
           // we'd re-trigger all observers!
           // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
-          if (!comparer.structural(this.clusterInfo, v.clusterInfo)) this.clusterInfo = v.clusterInfo;
+          if (!comparer.structural(this.clusterInfo, v.clusterInfo)) {
+            this.clusterInfo = v.clusterInfo;
+          }
 
-          for (const b of v.clusterInfo.brokers)
-            if (b.config.error) this.brokerConfigs.set(b.brokerId, b.config.error);
-            else this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
+          for (const b of v.clusterInfo.brokers) {
+            if (b.config.error) {
+              this.brokerConfigs.set(b.brokerId, b.config.error);
+            } else {
+              this.brokerConfigs.set(b.brokerId, b.config.configs ?? []);
+            }
+          }
         });
       }
     }, addError);
@@ -1071,11 +1103,15 @@ const apiStore = {
   refreshConsumerGroups(force?: boolean) {
     cachedApiRequest<GetConsumerGroupsResponse>(`${appConfig.restBasePath}/consumer-groups`, force).then((v) => {
       if (v?.consumerGroups != null) {
-        for (const g of v.consumerGroups) addFrontendFieldsForConsumerGroup(g);
+        for (const g of v.consumerGroups) {
+          addFrontendFieldsForConsumerGroup(g);
+        }
 
         transaction(() => {
           this.consumerGroups.clear();
-          for (const g of v.consumerGroups) this.consumerGroups.set(g.groupId, g);
+          for (const g of v.consumerGroups) {
+            this.consumerGroups.set(g.groupId, g);
+          }
         });
       }
     }, addError);
@@ -1158,28 +1194,33 @@ const apiStore = {
 
       // normalize responses (missing arrays, or arrays with an empty string)
       // todo: not needed anymore, responses are always correct now
-      for (const role of info.roles)
-        for (const permission of role.permissions)
+      for (const role of info.roles) {
+        for (const permission of role.permissions) {
           for (const k of ['allowedActions', 'includes', 'excludes']) {
             const ar: string[] = (permission as any)[k] ?? [];
             (permission as any)[k] = ar.filter((x) => x.length > 0);
           }
+        }
+      }
 
       // resolve role of each binding
       for (const binding of info.roleBindings) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        if (binding.resolvedRole == null) console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
+        if (binding.resolvedRole == null) {
+          console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
+        }
       }
 
       // resolve bindings, and roles of each user
       for (const user of info.users) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
-        if (user.bindings.any((b) => b == null))
+        if (user.bindings.any((b) => b == null)) {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
+        }
 
         user.grantedRoles = [];
         for (const roleName in user.audits) {
@@ -1454,8 +1495,11 @@ const apiStore = {
       `${appConfig.restBasePath}/operations/reassign-partitions`,
       force
     ).then((v) => {
-      if (v === null) this.partitionReassignments = null;
-      else this.partitionReassignments = v.topics;
+      if (v === null) {
+        this.partitionReassignments = null;
+      } else {
+        this.partitionReassignments = v.topics;
+      }
     }, addError);
   },
 
@@ -1626,7 +1670,9 @@ const apiStore = {
         }
 
         // prepare helper properties
-        for (const cluster of v.clusters) addFrontendFieldsForConnectCluster(cluster);
+        for (const cluster of v.clusters) {
+          addFrontendFieldsForConnectCluster(cluster);
+        }
 
         this.connectConnectors = v;
       },
@@ -2178,7 +2224,9 @@ export const rolesApi = observable({
   async refreshRoles(): Promise<void> {
     this.rolesError = null;
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     const roles: string[] = [];
 
@@ -2198,7 +2246,9 @@ export const rolesApi = observable({
           const newRoles = res.response?.roles.map((x) => x.name);
           roles.push(...newRoles);
 
-          if (!res.response?.nextPageToken || res.response?.nextPageToken.length === 0) break;
+          if (!res.response?.nextPageToken || res.response?.nextPageToken.length === 0) {
+            break;
+          }
 
           nextPageToken = res.response?.nextPageToken;
         }
@@ -2210,7 +2260,9 @@ export const rolesApi = observable({
 
   async refreshRoleMembers() {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     const rolePromises = [];
 
@@ -2226,7 +2278,9 @@ export const rolesApi = observable({
 
     for (const r of rolePromises) {
       const res = await r;
-      if (res.response == null || res.response.role == null) continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+      if (res.response == null || res.response.role == null) {
+        continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+      }
       const roleName = res.response.role.name;
 
       const members = res.response.members
@@ -2261,7 +2315,9 @@ export const rolesApi = observable({
 
   async createRole(name: string) {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     if (Features.rolesApi) {
       await client.createRole({ request: { role: { name } } });
@@ -2270,7 +2326,9 @@ export const rolesApi = observable({
 
   async deleteRole(name: string, deleteAcls: boolean) {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     if (Features.rolesApi) {
       await client.deleteRole({ request: { roleName: name, deleteAcls } });
@@ -2279,7 +2337,9 @@ export const rolesApi = observable({
 
   async updateRoleMembership(roleName: string, addUsers: string[], removeUsers: string[], create = false) {
     const client = appConfig.securityClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     return await client.updateRoleMembership({
       request: {
@@ -2298,7 +2358,9 @@ export const pipelinesApi = observable({
 
   async refreshPipelines(_force: boolean): Promise<void> {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     const pipelines = [];
     this.pipelinesError = null;
@@ -2311,11 +2373,15 @@ export const pipelinesApi = observable({
           this.pipelinesError = error;
         });
       const response = res?.response;
-      if (!response) break;
+      if (!response) {
+        break;
+      }
 
       pipelines.push(...response.pipelines);
 
-      if (!response.nextPageToken || response.nextPageToken.length === 0) break;
+      if (!response.nextPageToken || response.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = response.nextPageToken;
     }
 
@@ -2324,19 +2390,25 @@ export const pipelinesApi = observable({
 
   async deletePipeline(id: string) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     await client.deletePipeline({ request: { id: id } });
   },
   async createPipeline(pipeline: PipelineCreate) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     return await client.createPipeline({ request: { pipeline } });
   },
   async updatePipeline(id: string, pipelineUpdate: PipelineUpdate) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     return await client.updatePipeline({
       request: {
@@ -2347,13 +2419,17 @@ export const pipelinesApi = observable({
   },
   async startPipeline(id: string) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     await client.startPipeline({ request: { id } });
   },
   async stopPipeline(id: string) {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('pipelines client is not initialized');
+    if (!client) {
+      throw new Error('pipelines client is not initialized');
+    }
 
     await client.stopPipeline({ request: { id } });
   },
@@ -2365,7 +2441,9 @@ export const knowledgebaseApi = observable({
 
   async refreshKnowledgeBases(_force: boolean): Promise<void> {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     const knowledgeBases = [];
     this.knowledgeBasesError = null;
@@ -2381,11 +2459,15 @@ export const knowledgebaseApi = observable({
 
       // Handle response structure (some APIs return res.response, others return res directly)
       const response = (res as any)?.response || res;
-      if (!response) break;
+      if (!response) {
+        break;
+      }
 
       knowledgeBases.push(...response.knowledgeBases);
 
-      if (!response.nextPageToken || response.nextPageToken.length === 0) break;
+      if (!response.nextPageToken || response.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = response.nextPageToken;
     }
 
@@ -2394,19 +2476,25 @@ export const knowledgebaseApi = observable({
 
   async deleteKnowledgeBase(id: string) {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     await client.deleteKnowledgeBase({ id });
   },
   async createKnowledgeBase(knowledgeBase: KnowledgeBaseCreate) {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
     const result = await client.createKnowledgeBase({ knowledgeBase });
     return result;
   },
   async updateKnowledgeBase(id: string, knowledgeBaseUpdate: KnowledgeBaseUpdate, updateMask?: string[]) {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     await client.updateKnowledgeBase({
       id,
@@ -2420,7 +2508,9 @@ export const knowledgebaseApi = observable({
   },
   async getKnowledgeBase(id: string): Promise<KnowledgeBase> {
     const client = appConfig.knowledgebaseClient;
-    if (!client) throw new Error('knowledgebase client is not initialized');
+    if (!client) {
+      throw new Error('knowledgebase client is not initialized');
+    }
 
     const response = await client.getKnowledgeBase({ id });
     if (!response.knowledgeBase) {
@@ -2437,7 +2527,9 @@ export const rpcnSecretManagerApi = observable({
 
   async refreshSecrets(_force: boolean): Promise<void> {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     // handle error in order to avoid crash app for this request
     this.secretsByPipeline = await this.getPipelinesBySecret().catch(() => []);
@@ -2454,11 +2546,15 @@ export const rpcnSecretManagerApi = observable({
       });
 
       const response = res.response;
-      if (!response) break;
+      if (!response) {
+        break;
+      }
 
       secrets.push(...response.secrets);
 
-      if (!res || response.nextPageToken.length === 0) break;
+      if (!res || response.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = response.nextPageToken;
     }
 
@@ -2467,25 +2563,33 @@ export const rpcnSecretManagerApi = observable({
 
   async delete(secret: DeleteSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     await client.deleteSecret({ request: secret });
   },
   async create(secret: CreateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     await client.createSecret({ request: secret });
   },
   async update(_id: string, updateSecretRequest: UpdateSecretRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     await client.updateSecret({ request: updateSecretRequest });
   },
   async checkScope(listSecretScopesRequest: ListSecretScopesRequest) {
     const client = appConfig.rpcnSecretsClient;
-    if (!client) throw new Error('redpanda connect secret client is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect secret client is not initialized');
+    }
 
     const res = await client.listSecretScopes({
       request: listSecretScopesRequest,
@@ -2502,7 +2606,9 @@ export const rpcnSecretManagerApi = observable({
   },
   async getPipelinesBySecret() {
     const client = appConfig.pipelinesClient;
-    if (!client) throw new Error('redpanda connect dataplane pipeline is not initialized');
+    if (!client) {
+      throw new Error('redpanda connect dataplane pipeline is not initialized');
+    }
 
     const pipelinesBySecrets = await client.getPipelinesBySecrets({
       request: create(GetPipelinesBySecretsRequestSchemaDataPlane),
@@ -2520,7 +2626,9 @@ export const transformsApi = observable({
 
   async refreshTransforms(_force: boolean): Promise<void> {
     const client = appConfig.transformsClient;
-    if (!client) throw new Error('transforms client is not initialized');
+    if (!client) {
+      throw new Error('transforms client is not initialized');
+    }
     const transforms: TransformMetadata[] = [];
     let nextPageToken = '';
     while (true) {
@@ -2533,37 +2641,51 @@ export const transformsApi = observable({
         break;
       }
       const r = res.response;
-      if (!r) break;
+      if (!r) {
+        break;
+      }
 
       transforms.push(...r.transforms);
 
-      if (!r.nextPageToken || r.nextPageToken.length === 0) break;
+      if (!r.nextPageToken || r.nextPageToken.length === 0) {
+        break;
+      }
       nextPageToken = r.nextPageToken;
     }
 
     runInAction(() => {
       this.transforms = transforms;
       this.transformDetails.clear();
-      for (const t of transforms) this.transformDetails.set(t.name, t);
+      for (const t of transforms) {
+        this.transformDetails.set(t.name, t);
+      }
     });
   },
 
   async refreshTransformDetails(name: string, _force: boolean): Promise<void> {
     const client = appConfig.transformsClient;
-    if (!client) throw new Error('transforms client is not initialized');
+    if (!client) {
+      throw new Error('transforms client is not initialized');
+    }
 
     const res = await client.getTransform({ request: { name } });
     const r = res.response;
-    if (!r) throw new Error('got empty response from getTransform');
+    if (!r) {
+      throw new Error('got empty response from getTransform');
+    }
 
-    if (!r.transform) return;
+    if (!r.transform) {
+      return;
+    }
 
     this.transformDetails.set(r.transform.name, r.transform);
   },
 
   async deleteTransform(name: string) {
     const client = appConfig.transformsClient;
-    if (!client) throw new Error('transforms client is not initialized');
+    if (!client) {
+      throw new Error('transforms client is not initialized');
+    }
 
     await client.deleteTransform({ request: { name } });
   },
@@ -2650,7 +2772,9 @@ export function createMessageSearch() {
           signal: messageSearchAbortController.signal,
           timeoutMs,
         })) {
-          if (messageSearchAbortController.signal.aborted) break;
+          if (messageSearchAbortController.signal.aborted) {
+            break;
+          }
 
           try {
             switch (res.controlMessage.case) {
@@ -2936,9 +3060,13 @@ function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
   cluster.canEditCluster = allowAll || allowedActions.includes('editConnectCluster');
   cluster.canDeleteCluster = allowAll || allowedActions.includes('deleteConnectCluster');
 
-  for (const connector of cluster.connectors)
-    if (connector.config) connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
-    else connector.jsonConfig = '';
+  for (const connector of cluster.connectors) {
+    if (connector.config) {
+      connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
+    } else {
+      connector.jsonConfig = '';
+    }
+  }
 }
 
 function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
@@ -2959,10 +3087,14 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
 export const brokerMap = computed(
   () => {
     const brokers = api.clusterInfo?.brokers;
-    if (brokers == null) return null;
+    if (brokers == null) {
+      return null;
+    }
 
     const map = new Map<number, Broker>();
-    for (const b of brokers) map.set(b.brokerId, b);
+    for (const b of brokers) {
+      map.set(b.brokerId, b);
+    }
 
     return map;
   },
@@ -2972,19 +3104,27 @@ export const brokerMap = computed(
 // 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
 // 2. remove redundant synonym entries (those that have the same source as the root config entry)
 function prepareSynonyms(configEntries: ConfigEntry[]) {
-  if (!Array.isArray(configEntries)) return;
+  if (!Array.isArray(configEntries)) {
+    return;
+  }
 
   for (const e of configEntries) {
-    if (e.synonyms === undefined) continue;
+    if (e.synonyms === undefined) {
+      continue;
+    }
 
     // add 'type' from root object
-    for (const s of e.synonyms) s.type = e.type;
+    for (const s of e.synonyms) {
+      s.type = e.type;
+    }
   }
 }
 
 function normalizeAcls(acls: AclResource[]) {
   function upperFirst(str: string): string {
-    if (!str) return str;
+    if (!str) {
+      return str;
+    }
     const lower = str.toLowerCase();
     const first = lower[0];
     const result = first.toUpperCase() + lower.slice(1);
@@ -2996,8 +3136,12 @@ function normalizeAcls(acls: AclResource[]) {
   } as { [key: string]: string };
 
   function normalizeStringEnum<T extends string>(str: T): T {
-    if (!str) return str;
-    if (specialCaseMap[str]) return specialCaseMap[str] as T;
+    if (!str) {
+      return str;
+    }
+    if (specialCaseMap[str]) {
+      return specialCaseMap[str] as T;
+    }
 
     const parts = str.split('_');
     for (let i = 0; i < parts.length; i++) {
@@ -3061,7 +3205,9 @@ export type MessageSearchRequest = {
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
   let obj: undefined | any;
   if (text === null) {
-    if (response.bodyUsed) throw new Error('response content already consumed');
+    if (response.bodyUsed) {
+      throw new Error('response content already consumed');
+    }
     text = await response.text();
   }
   try {
@@ -3069,7 +3215,9 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
   } catch {}
 
   // api error?
-  if (isApiError(obj)) throw new WrappedApiError(response, obj);
+  if (isApiError(obj)) {
+    throw new WrappedApiError(response, obj);
+  }
 
   // server/proxy error?
   if (!response.ok) {

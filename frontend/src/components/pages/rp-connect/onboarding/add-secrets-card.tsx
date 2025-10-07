@@ -41,10 +41,14 @@ export const AddSecretsCard = ({
   // Memoize the click handler to prevent recreating on every render
   const handleSecretClick = useCallback(
     (secretName: string) => {
-      if (!editorInstance) return;
+      if (!editorInstance) {
+        return;
+      }
 
       const position = editorInstance.getPosition();
-      if (!position) return;
+      if (!position) {
+        return;
+      }
 
       editorInstance.executeEdits('insert-secret', [
         {

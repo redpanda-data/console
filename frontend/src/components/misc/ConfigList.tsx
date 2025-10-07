@@ -37,7 +37,9 @@ export function ConfigList({
       accessorKey: 'name',
       cell: ({ row: { original: record } }) => {
         let name = <Flex className={styles.nameText}>{record.name}</Flex>;
-        if (renderTooltip) name = renderTooltip(record, name);
+        if (renderTooltip) {
+          name = renderTooltip(record, name);
+        }
 
         const sensitive = record.isSensitive && (
           <Tooltip hasArrow label="Value has been redacted because it's sensitive" placement="top">

@@ -66,7 +66,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
     }
 
     // Handle error while getting config
-    if (typeof brokerConfigs === 'string')
+    if (typeof brokerConfigs === 'string') {
       return (
         <div className="error">
           <h3>Error</h3>
@@ -75,6 +75,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
           </div>
         </div>
       );
+    }
 
     return (
       <PageContent>
@@ -108,7 +109,9 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
         case 'alphabetical':
           return a.name.localeCompare(b.name);
         case 'changedFirst': {
-          if (uiSettings.brokerList.propsOrder !== 'changedFirst') return 0;
+          if (uiSettings.brokerList.propsOrder !== 'changedFirst') {
+            return 0;
+          }
           const v1 = a.isExplicitlySet ? 1 : 0;
           const v2 = b.isExplicitlySet ? 1 : 0;
           return v2 - v1;

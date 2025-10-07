@@ -74,11 +74,15 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
     const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
 
-    if (!pipeline) return DefaultSkeleton;
+    if (!pipeline) {
+      return DefaultSkeleton;
+    }
     const isStopped = pipeline.state === Pipeline_State.STOPPED;
     const isTransitioningState =
       pipeline.state === Pipeline_State.STARTING || pipeline.state === Pipeline_State.STOPPING;
@@ -125,10 +129,14 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
                   await pipelinesApi.refreshPipelines(true);
                   // if we can't find the pipeline we're checking anymore it got deleted
                   const p = pipelinesApi.pipelines?.first((x) => x.id === pipeline.id);
-                  if (!p) return;
+                  if (!p) {
+                    return;
+                  }
 
                   // if its no longer in a transition state, we're done
-                  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) return;
+                  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
+                    return;
+                  }
                 }
               };
 
@@ -324,7 +332,9 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
   ];
 
   const filteredMessages = state.messages.filter((x) => {
-    if (!uiSettings.pipelinesDetails.logsQuickSearch) return true;
+    if (!uiSettings.pipelinesDetails.logsQuickSearch) {
+      return true;
+    }
     return isFilterMatch(uiSettings.pipelinesDetails.logsQuickSearch, x);
   });
 
@@ -372,9 +382,15 @@ const LogsTab = observer((p: { pipeline: Pipeline }) => {
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson?.toLowerCase().includes(str)) return true;
-  if (m.valueJson?.toLowerCase().includes(str)) return true;
+  if (m.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
   return false;
 }
 
@@ -413,7 +429,9 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
 export const PipelineResources = observer((p: { resources?: Pipeline_Resources }) => {
   const r = p.resources;
 
-  if (!r) return 'Not set';
+  if (!r) {
+    return 'Not set';
+  }
   const tasks = cpuToTasks(r.cpuShares);
   return (
     <Flex gap="4">

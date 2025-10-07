@@ -58,7 +58,9 @@ const authenticationApi = observable({
 
   async refreshAuthenticationMethods(): Promise<void> {
     const client = appConfig.authenticationClient;
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     const { methods } = await client.listAuthenticationMethods({}).catch((e) => {
       this.methodsErrorResponse = e;
@@ -78,7 +80,9 @@ const authenticationApi = observable({
   }): Promise<void> {
     const client = appConfig.authenticationClient;
 
-    if (!client) throw new Error('security client is not initialized');
+    if (!client) {
+      throw new Error('security client is not initialized');
+    }
 
     const response = await client
       .loginSaslScram({

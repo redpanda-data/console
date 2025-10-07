@@ -23,7 +23,9 @@ import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 @observer
 export class AdminRoles extends Component<Record<string, never>> {
   render() {
-    if (!api.adminInfo) return DefaultSkeleton;
+    if (!api.adminInfo) {
+      return DefaultSkeleton;
+    }
     const roles = api.adminInfo.roles;
 
     return (
@@ -96,24 +98,32 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
         </span>,
       ],
     ];
-    if (p.allowedActions.length > 0)
+    if (p.allowedActions.length > 0) {
       rows.push([
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Actions</span>,
         stringsToBoxes(p.allowedActions, null, 'permissionsList'),
       ]);
-    if (p.includes.length > 0 && !(p.includes[0] === '*') && !(p.includes[0] === '^*$') && !(p.includes[0] === '^.*$'))
+    }
+    if (
+      p.includes.length > 0 &&
+      !(p.includes[0] === '*') &&
+      !(p.includes[0] === '^*$') &&
+      !(p.includes[0] === '^.*$')
+    ) {
       rows.push([
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Includes</span>,
         stringsToBoxes(p.includes, joinerOr, 'permissionRegex'),
       ]);
-    if (p.excludes.length > 0)
+    }
+    if (p.excludes.length > 0) {
       rows.push([
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Excludes</span>,
         stringsToBoxes(p.excludes, joinerOr, 'permissionRegex'),
       ]);
+    }
 
     const t = QuickTable(rows, {
       tableClassName: 'permissionTable',
@@ -133,7 +143,9 @@ function stringsToBoxes(ar: string[], joiner?: ReactNode, wrapperClass?: string)
       {str}
     </span>
   ));
-  if (joiner) r = r.genericJoin(() => joiner);
+  if (joiner) {
+    r = r.genericJoin(() => joiner);
+  }
 
   return <div className={wrapperClass}>{r}</div>;
 }

@@ -38,7 +38,9 @@ export default function fetchWithTimeout(
 
     setTimeout(() => {
       // no need to construct an error when already settled
-      if (hasSettled) return;
+      if (hasSettled) {
+        return;
+      }
 
       const timeStr = timeoutMs < 1000 ? `${timeoutMs} ms` : `${timeoutMs / 1000} sec`;
       reject(new RestTimeoutError(`Request timed out after ${timeStr}: ${url}`));

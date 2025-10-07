@@ -102,7 +102,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   // Get existing secret names
   const existingSecrets = useMemo(() => {
-    if (!secretsData?.secrets) return [];
+    if (!secretsData?.secrets) {
+      return [];
+    }
     return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
   }, [secretsData]);
 
@@ -116,7 +118,9 @@ export const RemoteMCPCreatePage: React.FC = () => {
   const handleNext = async (isOnMetadataStep: boolean, goNext: () => void) => {
     if (isOnMetadataStep) {
       const valid = await form.trigger(['displayName', 'description', 'resourcesTier', 'tags']);
-      if (!valid) return;
+      if (!valid) {
+        return;
+      }
       goNext();
     }
   };
@@ -213,12 +217,16 @@ export const RemoteMCPCreatePage: React.FC = () => {
     const tagsMap: Record<string, string> = {};
     for (const t of values.tags) {
       const key = t.key?.trim();
-      if (key) tagsMap[key] = (t.value ?? '').trim();
+      if (key) {
+        tagsMap[key] = (t.value ?? '').trim();
+      }
     }
 
     const toolsMap: Record<string, { componentType: number; configYaml: string }> = {};
     for (const t of values.tools) {
-      if (!t.name.trim()) continue;
+      if (!t.name.trim()) {
+        continue;
+      }
       toolsMap[t.name.trim()] = {
         componentType: t.componentType,
         configYaml: t.config,

@@ -67,12 +67,16 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     this.infoItems = [];
 
     // Type
-    if (this.error?.name && this.error.name.toLowerCase() !== 'error')
+    if (this.error?.name && this.error.name.toLowerCase() !== 'error') {
       this.infoItems.push({ name: 'Type', value: this.error.name });
+    }
 
     // Message
-    if (this.error?.message) this.infoItems.push({ name: 'Message', value: this.error.message });
-    else this.infoItems.push({ name: 'Message', value: '(no message)' });
+    if (this.error?.message) {
+      this.infoItems.push({ name: 'Message', value: this.error.message });
+    } else {
+      this.infoItems.push({ name: 'Message', value: '(no message)' });
+    }
 
     // Call Stack
     if (this.error?.stack) {
@@ -83,8 +87,9 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       this.infoItems.push({
         name: 'Stack (Decoded)',
         value: () => {
-          if (dataHolder.value == null)
+          if (dataHolder.value == null) {
             return <div style={{ fontSize: '2rem' }}>Decoding stack trace, please wait...</div>;
+          }
           return dataHolder.value;
         },
       });
@@ -106,20 +111,23 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       // remove "Error: " prefix
       s = s.removePrefix('error:').trim();
       // remove the error message as well, leaving only the stack trace
-      if (this.error.message && s.startsWith(this.error.message)) s = s.slice(this.error.message.length).trimStart();
+      if (this.error.message && s.startsWith(this.error.message)) {
+        s = s.slice(this.error.message.length).trimStart();
+      }
       this.infoItems.push({ name: 'Stack (Raw)', value: s });
     }
 
     // Component Stack
-    if (this.errorInfo && (this.errorInfo as any).componentStack)
+    if (this.errorInfo && (this.errorInfo as any).componentStack) {
       this.infoItems.push({ name: 'Components', value: (this.errorInfo as any).componentStack });
-    else
+    } else {
       this.infoItems.push({
         name: 'Components',
         value: this.errorInfo
           ? `(componentStack not set) errorInfo as Json: \n${toJson(this.errorInfo)}`
           : '(errorInfo was not set)',
       });
+    }
 
     // EnvVars
     try {
@@ -174,7 +182,9 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
   }
 
   render() {
-    if (!this.hasError) return this.props.children;
+    if (!this.hasError) {
+      return this.props.children;
+    }
 
     return (
       <Box style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
@@ -214,9 +224,13 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
 }
 
 function getStringFromInfo(info: InfoItem) {
-  if (!info) return '';
+  if (!info) {
+    return '';
+  }
 
-  if (typeof info.value === 'string') return info.value;
+  if (typeof info.value === 'string') {
+    return info.value;
+  }
   try {
     const r = info.value();
     return String(r);

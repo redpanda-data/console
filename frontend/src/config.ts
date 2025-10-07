@@ -55,7 +55,9 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
-  if (config.jwt) request.header.set('Authorization', `Bearer ${config.jwt}`);
+  if (config.jwt) {
+    request.header.set('Authorization', `Bearer ${config.jwt}`);
+  }
   return await next(request);
 };
 
@@ -230,7 +232,9 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
 setTimeout(() => {
   autorun(() => {
     const setBreadcrumbs = config.setBreadcrumbs;
-    if (!setBreadcrumbs) return;
+    if (!setBreadcrumbs) {
+      return;
+    }
 
     const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
       title: v.title,
@@ -242,7 +246,9 @@ setTimeout(() => {
 
   autorun(() => {
     const setSidebarItems = config.setSidebarItems;
-    if (!setSidebarItems) return;
+    if (!setSidebarItems) {
+      return;
+    }
 
     const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
       (r, i) =>
@@ -301,7 +307,9 @@ export const embeddedAvailableRoutesObservable = observable({
         return true;
       })
       .filter((x) => {
-        if (isServerless() && routesIgnoredInServerless.includes(x.path)) return false;
+        if (isServerless() && routesIgnoredInServerless.includes(x.path)) {
+          return false;
+        }
         return true;
       });
   },

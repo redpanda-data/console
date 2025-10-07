@@ -40,8 +40,9 @@ export class CommaSeparatedStringList extends Component<{
     super(p);
     makeObservable(this);
 
-    if (!this.data)
+    if (!this.data) {
       this.data = this.props.defaultValue ? this.props.defaultValue.split(',').map((x) => ({ id: x.trim() })) : [];
+    }
 
     this.reactionDisposer = autorun(() => {
       const list = this.commaSeperatedList;
@@ -139,12 +140,17 @@ export class CommaSeparatedStringList extends Component<{
 
               this.newEntryError = null;
 
-              if (!this.newEntry) return;
+              if (!this.newEntry) {
+                return;
+              }
 
-              if (this.data.any((x) => x.id === this.newEntry)) this.newEntryError = 'Entry already exists';
+              if (this.data.any((x) => x.id === this.newEntry)) {
+                this.newEntryError = 'Entry already exists';
+              }
 
-              if (VALID_NAME_REGEX.test(this.newEntry) === false)
+              if (VALID_NAME_REGEX.test(this.newEntry) === false) {
                 this.newEntryError = 'Name is not valid (only letters, digits, underscore)';
+              }
             }}
             placeholder={this.props.locale?.addInputPlaceholder ?? 'Enter a name...'}
             spellCheck={false}
@@ -181,7 +187,9 @@ export class List<T extends { id: string }> extends Component<{
     const { observableAr: list, renderItem } = this.props;
 
     const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) return;
+      if (!result.destination) {
+        return;
+      }
       arrayMoveMutable(this.props.observableAr, result.source.index, result.destination.index);
     };
 

@@ -55,8 +55,12 @@ export type DataType =
  * @returns The specific data type including "array" and "null" as distinct types
  */
 export function getDataType(value: JSONValue): DataType {
-  if (Array.isArray(value)) return 'array';
-  if (value === null) return 'null';
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  if (value === null) {
+    return 'null';
+  }
   return typeof value;
 }
 
@@ -88,7 +92,9 @@ export function tryParseJSON(str: string): {
  * @returns A new JSON value with the updated path
  */
 export function updateValueAtPath(obj: JSONValue, path: string[], value: JSONValue): JSONValue {
-  if (path.length === 0) return value;
+  if (path.length === 0) {
+    return value;
+  }
 
   if (obj === null || obj === undefined) {
     obj = Number.isNaN(Number(path[0])) ? {} : [];
@@ -181,7 +187,9 @@ function updateObject(obj: JSONObject, path: string[], value: JSONValue): JSONOb
  * @returns The value at the path, or defaultValue if not found
  */
 export function getValueAtPath(obj: JSONValue, path: string[], defaultValue: JSONValue = null): JSONValue {
-  if (path.length === 0) return obj;
+  if (path.length === 0) {
+    return obj;
+  }
 
   const [first, ...rest] = path;
 

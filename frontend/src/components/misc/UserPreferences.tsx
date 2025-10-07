@@ -200,20 +200,24 @@ const ImportExportTab: FC = observer(() => {
                 const skipped: string[] = [];
                 transaction(() => {
                   for (const k in data) {
-                    if (Reflect.has(uiSettings, k)) (uiSettings as any)[k] = data[k];
-                    else skipped.push(k);
+                    if (Reflect.has(uiSettings, k)) {
+                      (uiSettings as any)[k] = data[k];
+                    } else {
+                      skipped.push(k);
+                    }
                   }
                 });
-                if (skipped.length > 0)
+                if (skipped.length > 0) {
                   toast({
                     status: 'warning',
                     description: `Some properties were skipped during import:\n${skipped.join(', ')}`,
                   });
-                else
+                } else {
                   toast({
                     status: 'success',
                     description: 'Settings imported successfully',
                   });
+                }
                 $state.importCode = '';
               } catch (e) {
                 toast({

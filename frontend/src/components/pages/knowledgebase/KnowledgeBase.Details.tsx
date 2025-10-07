@@ -65,7 +65,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   }
 
   refreshData(): void {
-    if (!Features.pipelinesApi) return;
+    if (!Features.pipelinesApi) {
+      return;
+    }
 
     this.loading = true;
 
@@ -99,7 +101,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   }
 
   loadConsumerGroupData = async (): Promise<void> => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     const consumerGroupId = `${this.knowledgeBase.id}-indexer`;
     this.consumerGroupLoading = true;
@@ -125,13 +129,17 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   get consumerGroup() {
-    if (!this.knowledgeBase) return null;
+    if (!this.knowledgeBase) {
+      return null;
+    }
     const consumerGroupId = `${this.knowledgeBase.id}-indexer`;
     return api.consumerGroups.get(consumerGroupId);
   }
 
   handleUpdate = async (updatedKnowledgeBase: KnowledgeBaseUpdate, updateMask?: string[]) => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     this.isUpdating = true;
     try {
@@ -182,7 +190,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   openDeleteKnowledgeBaseModal = () => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     openModal(ExplicitConfirmModal, {
       title: <>Delete Knowledge Base</>,
@@ -212,7 +222,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   handleDeleteConfirmed = async () => {
-    if (!this.knowledgeBase) return;
+    if (!this.knowledgeBase) {
+      return;
+    }
 
     try {
       await knowledgebaseApi.deleteKnowledgeBase(this.knowledgeBase.id);
@@ -238,7 +250,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   };
 
   renderKnowledgeBaseDetails(): JSX.Element {
-    if (!this.knowledgeBase) return <Box>Knowledge base not found</Box>;
+    if (!this.knowledgeBase) {
+      return <Box>Knowledge base not found</Box>;
+    }
 
     const kb = this.knowledgeBase;
 
@@ -343,7 +357,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   }
 
   render(): JSX.Element {
-    if (this.loading) return DefaultSkeleton;
+    if (this.loading) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent>

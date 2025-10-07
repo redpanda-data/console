@@ -122,7 +122,9 @@ const InfoModal = observer(
           <Button
             mr={3}
             onClick={() => {
-              if (p.onClose) p.onClose();
+              if (p.onClose) {
+                p.onClose();
+              }
               p.closeModal();
             }}
           >
@@ -156,7 +158,9 @@ export function openValidationErrorsModal(result: {
   const { isValid, errorDetails, isCompatible } = result;
 
   const compatBox = (() => {
-    if (isCompatible === undefined || isValid === false) return null;
+    if (isCompatible === undefined || isValid === false) {
+      return null;
+    }
     if (isCompatible) {
       return (
         <Alert status="success" variant="subtle">

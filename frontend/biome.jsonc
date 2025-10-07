@@ -504,7 +504,7 @@
         // Use at() instead of integer index access.
         "useAtIndex": "error",
         // Requires following curly brace conventions.
-        "useBlockStatements": "off",
+        "useBlockStatements": "error",
         // Enforce using else if instead of nested if in else clauses.
         "useCollapsedElseIf": "off",
         // Enforce using single if instead of nested if clauses.

@@ -254,7 +254,9 @@ export const RemoteMCPInspectorTab = () => {
   }, [selectedTool, topicsData, mcpServerData, toolParameters, mcpServerTools]);
 
   const executeToolRequest = () => {
-    if (!(selectedTool && mcpServerData?.mcpServer?.url)) return;
+    if (!(selectedTool && mcpServerData?.mcpServer?.url)) {
+      return;
+    }
 
     // Cancel any existing request
     if (abortControllerRef.current) {
@@ -357,7 +359,9 @@ export const RemoteMCPInspectorTab = () => {
   };
 
   const getToolResponseData = () => {
-    if (!serverToolResponse) return null;
+    if (!serverToolResponse) {
+      return null;
+    }
 
     // Process content array if it exists and show only the first content item
     if (

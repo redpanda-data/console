@@ -161,7 +161,9 @@ export function createEmptyClusterAcl(): ClusterACLs {
 }
 
 function modelPatternTypeToUIType(resourcePatternType: AclStrResourcePatternType, resourceName: string) {
-  if (resourcePatternType === 'Literal' && resourceName === '*') return 'Any';
+  if (resourcePatternType === 'Literal' && resourceName === '*') {
+    return 'Any';
+  }
 
   return resourcePatternType;
 }
@@ -207,8 +209,12 @@ function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
 
     let all: AclStrPermission = 'Any';
     const allEntry = items.find((x) => x.operation === 'All');
-    if (allEntry && allEntry.permissionType === 'Allow') all = 'Allow';
-    if (allEntry && allEntry.permissionType === 'Deny') all = 'Deny';
+    if (allEntry && allEntry.permissionType === 'Allow') {
+      all = 'Allow';
+    }
+    if (allEntry && allEntry.permissionType === 'Deny') {
+      all = 'Deny';
+    }
 
     const topicAcl: TopicACLs = {
       patternType: modelPatternTypeToUIType(first.resourcePatternType, selector),
@@ -250,8 +256,12 @@ function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
 
     let all: AclStrPermission = 'Any';
     const allEntry = items.find((x) => x.operation === 'All');
-    if (allEntry && allEntry.permissionType === 'Allow') all = 'Allow';
-    if (allEntry && allEntry.permissionType === 'Deny') all = 'Deny';
+    if (allEntry && allEntry.permissionType === 'Allow') {
+      all = 'Allow';
+    }
+    if (allEntry && allEntry.permissionType === 'Deny') {
+      all = 'Deny';
+    }
 
     const groupAcl: ConsumerGroupACLs = {
       patternType: modelPatternTypeToUIType(first.resourcePatternType, selector),
@@ -292,8 +302,12 @@ function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs[] {
 
     let all: AclStrPermission = 'Any';
     const allEntry = items.find((x) => x.operation === 'All');
-    if (allEntry && allEntry.permissionType === 'Allow') all = 'Allow';
-    if (allEntry && allEntry.permissionType === 'Deny') all = 'Deny';
+    if (allEntry && allEntry.permissionType === 'Allow') {
+      all = 'Allow';
+    }
+    if (allEntry && allEntry.permissionType === 'Deny') {
+      all = 'Deny';
+    }
 
     const groupAcl: TransactionalIdACLs = {
       patternType: modelPatternTypeToUIType(first.resourcePatternType, selector),
@@ -338,8 +352,12 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
 
   let all: AclStrPermission = 'Any';
   const allEntry = flatClusterAcls.find((x) => x.operation === 'All');
-  if (allEntry && allEntry.permissionType === 'Allow') all = 'Allow';
-  if (allEntry && allEntry.permissionType === 'Deny') all = 'Deny';
+  if (allEntry && allEntry.permissionType === 'Allow') {
+    all = 'Allow';
+  }
+  if (allEntry && allEntry.permissionType === 'Deny') {
+    all = 'Deny';
+  }
 
   const clusterAcls: ClusterACLs = {
     permissions: clusterPermissions,
@@ -353,7 +371,9 @@ export const principalGroupsView = observable(
   {
     get flatAcls() {
       const acls = api.ACLs;
-      if (!acls?.aclResources || acls.aclResources.length === 0) return [];
+      if (!acls?.aclResources || acls.aclResources.length === 0) {
+        return [];
+      }
 
       const flattened: AclFlat[] = [];
       for (const res of acls.aclResources) {
@@ -457,7 +477,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
   const host = group.host || '*';
 
   for (const topic of group.topicAcls) {
-    if (!topic.selector) continue;
+    if (!topic.selector) {
+      continue;
+    }
 
     // If the user selects 'Any' in the ui, we need to submit pattern type "Literal" and "*" as resourceName
     const resourcePatternType = topic.patternType === 'Any' ? 'Literal' : topic.patternType;
@@ -482,7 +504,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     for (const [key, permission] of Object.entries(topic.permissions)) {
       const operation = key as AclStrOperation;
 
-      if (permission !== 'Allow' && permission !== 'Deny') continue;
+      if (permission !== 'Allow' && permission !== 'Deny') {
+        continue;
+      }
 
       const e: AclFlat = {
         principal,
@@ -500,7 +524,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
   }
 
   for (const consumerGroup of group.consumerGroupAcls) {
-    if (!consumerGroup.selector) continue;
+    if (!consumerGroup.selector) {
+      continue;
+    }
 
     // If the user selects 'Any' in the ui, we need to submit pattern type "Literal" and "*" as resourceName
     const resourcePatternType = consumerGroup.patternType === 'Any' ? 'Literal' : consumerGroup.patternType;
@@ -525,7 +551,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     for (const [key, permission] of Object.entries(consumerGroup.permissions)) {
       const operation = key as AclStrOperation;
 
-      if (permission !== 'Allow' && permission !== 'Deny') continue;
+      if (permission !== 'Allow' && permission !== 'Deny') {
+        continue;
+      }
 
       const e: AclFlat = {
         principal,
@@ -543,7 +571,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
   }
 
   for (const transactionalId of group.transactionalIdAcls) {
-    if (!transactionalId.selector) continue;
+    if (!transactionalId.selector) {
+      continue;
+    }
 
     // If the user selects 'Any' in the ui, we need to submit pattern type "Literal" and "*" as resourceName
     const resourcePatternType = transactionalId.patternType === 'Any' ? 'Literal' : transactionalId.patternType;
@@ -568,7 +598,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     for (const [key, permission] of Object.entries(transactionalId.permissions)) {
       const operation = key as AclStrOperation;
 
-      if (permission !== 'Allow' && permission !== 'Deny') continue;
+      if (permission !== 'Allow' && permission !== 'Deny') {
+        continue;
+      }
 
       const e: AclFlat = {
         principal,
@@ -601,7 +633,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
   } else {
     for (const [key, permission] of Object.entries(group.clusterAcls.permissions)) {
       const operation = key as AclStrOperation;
-      if (permission !== 'Allow' && permission !== 'Deny') continue;
+      if (permission !== 'Allow' && permission !== 'Deny') {
+        continue;
+      }
 
       const e: AclFlat = {
         principal,

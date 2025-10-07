@@ -53,7 +53,9 @@ export const ChatInput = ({
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!inputValue.trim() || isSending) return;
+    if (!inputValue.trim() || isSending) {
+      return;
+    }
 
     // Create user message
     const userMessage: ChatMessage = {

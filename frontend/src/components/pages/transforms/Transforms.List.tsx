@@ -95,7 +95,9 @@ class TransformsList extends PageComponent {
   }
 
   render() {
-    if (!transformsApi.transforms) return DefaultSkeleton;
+    if (!transformsApi.transforms) {
+      return DefaultSkeleton;
+    }
     if (transformsApi.transforms.length === 0) {
       appGlobal.historyReplace('/transforms-setup');
       return null;
@@ -103,7 +105,9 @@ class TransformsList extends PageComponent {
 
     const filteredTransforms = (transformsApi.transforms ?? []).filter((u) => {
       const filter = uiSettings.transformsList.quickSearch;
-      if (!filter) return true;
+      if (!filter) {
+        return true;
+      }
       try {
         const quickSearchRegExp = new RegExp(filter, 'i');
         return u.name.match(quickSearchRegExp);
@@ -162,12 +166,13 @@ class TransformsList extends PageComponent {
               {
                 header: 'Status',
                 cell: ({ row: { original: r } }) => {
-                  if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
+                  if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
                     return (
                       <Flex alignItems="center">
                         <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />
                       </Flex>
                     );
+                  }
                   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
                   const partitionTransformStatus = r.statuses.first(
                     (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING

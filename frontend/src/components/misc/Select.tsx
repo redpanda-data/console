@@ -24,7 +24,9 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
         return data.label ?? String(data.value);
       }}
       onChange={(e) => {
-        if (!e) return;
+        if (!e) {
+          return;
+        }
 
         if (isSingleValue(e)) {
           p.onChange(e.value);

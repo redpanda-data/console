@@ -94,11 +94,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
     p.title = this.props.groupId;
     p.addBreadcrumb('Consumer Groups', '/groups');
-    if (group)
+    if (group) {
       p.addBreadcrumb(group, `/${group}`, undefined, {
         canBeCopied: true,
         canBeTruncated: true,
       });
+    }
 
     this.refreshData(true);
     appGlobal.onRefresh = () => this.refreshData(true);
@@ -163,9 +164,13 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
   render() {
     // Get info about the group
-    if (api.consumerGroups.size === 0) return DefaultSkeleton;
+    if (api.consumerGroups.size === 0) {
+      return DefaultSkeleton;
+    }
     const group = this.group;
-    if (!group) return DefaultSkeleton;
+    if (!group) {
+      return DefaultSkeleton;
+    }
 
     // Get info about each topic
     const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
@@ -257,7 +262,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
       )
     );
 
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
 
     this.editedTopic = null;
     this.editedPartition = null;
@@ -271,7 +278,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
       )
     );
 
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
 
     this.deletingOffsets = groupOffsets;
     this.deletingMode = 'group';
@@ -324,9 +333,13 @@ const GroupByTopics = observer(function GroupByTopics(props: {
     const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
     const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
-    if (p.onlyShowPartitionsWithLag) g.partitions.removeAll((e) => e.lag === 0);
+    if (p.onlyShowPartitionsWithLag) {
+      g.partitions.removeAll((e) => e.lag === 0);
+    }
 
-    if (g.partitions.length === 0) return null;
+    if (g.partitions.length === 0) {
+      return null;
+    }
 
     return {
       heading: (
@@ -571,27 +584,47 @@ export const GroupState = (p: { group: GroupDescription }) => {
 };
 const ProtocolType = (p: { group: GroupDescription }) => {
   const protocol = p.group.protocolType;
-  if (protocol === 'consumer') return null;
+  if (protocol === 'consumer') {
+    return null;
+  }
 
   return <Statistic title="Protocol" value={protocol} />;
 };
 
 function cannotEditGroupReason(group: GroupDescription): string | undefined {
-  if (group.noEditPerms) return "You don't have 'editConsumerGroup' permissions for this group";
-  if (group.isInUse) return 'Consumer groups with active members cannot be edited';
-  if (!Features.patchGroup) return 'This cluster does not support editing group offsets';
+  if (group.noEditPerms) {
+    return "You don't have 'editConsumerGroup' permissions for this group";
+  }
+  if (group.isInUse) {
+    return 'Consumer groups with active members cannot be edited';
+  }
+  if (!Features.patchGroup) {
+    return 'This cluster does not support editing group offsets';
+  }
 }
 
 function cannotDeleteGroupReason(group: GroupDescription): string | undefined {
-  if (group.noDeletePerms) return "You don't have 'deleteConsumerGroup' permissions for this group";
-  if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
-  if (!Features.deleteGroup) return 'This cluster does not support deleting groups';
+  if (group.noDeletePerms) {
+    return "You don't have 'deleteConsumerGroup' permissions for this group";
+  }
+  if (group.isInUse) {
+    return 'Consumer groups with active members cannot be deleted';
+  }
+  if (!Features.deleteGroup) {
+    return 'This cluster does not support deleting groups';
+  }
 }
 
 function cannotDeleteGroupOffsetsReason(group: GroupDescription): string | undefined {
-  if (group.noEditPerms) return "You don't have 'deleteConsumerGroup' permissions for this group";
-  if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
-  if (!Features.deleteGroupOffsets) return 'This cluster does not support deleting group offsets';
+  if (group.noEditPerms) {
+    return "You don't have 'deleteConsumerGroup' permissions for this group";
+  }
+  if (group.isInUse) {
+    return 'Consumer groups with active members cannot be deleted';
+  }
+  if (!Features.deleteGroupOffsets) {
+    return 'This cluster does not support deleting group offsets';
+  }
 }
 
 export default GroupDetails;

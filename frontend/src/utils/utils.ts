@@ -57,7 +57,9 @@ export class Cooldown {
   /** Time (in ms) until the cooldown is ready (or 0 if it is) */
   get timeLeft(): number {
     const t = this.duration - this.timeSinceLastTrigger();
-    if (t < 0) return 0;
+    if (t < 0) {
+      return 0;
+    }
     return t;
   }
 
@@ -102,7 +104,9 @@ export class Timer {
   /** Time (in ms) until done (or 0) */
   get timeLeft() {
     const t = this.target - Date.now();
-    if (t < 0) return 0;
+    if (t < 0) {
+      return 0;
+    }
     return t;
   }
 
@@ -128,7 +132,9 @@ export class Timer {
 export class DebugTimerStore {
   private static instance: DebugTimerStore;
   static get Instance() {
-    if (!DebugTimerStore.instance) DebugTimerStore.instance = new DebugTimerStore();
+    if (!DebugTimerStore.instance) {
+      DebugTimerStore.instance = new DebugTimerStore();
+    }
     return DebugTimerStore.instance;
   }
 
@@ -166,8 +172,12 @@ export const alwaysChanging = () => (refreshCounter = (refreshCounter + 1) % 100
 
 export function assignDeep(target: any, source: any) {
   for (const key in source) {
-    if (!Object.hasOwn(source, key)) continue;
-    if (key === '__proto__' || key === 'constructor') continue;
+    if (!Object.hasOwn(source, key)) {
+      continue;
+    }
+    if (key === '__proto__' || key === 'constructor') {
+      continue;
+    }
 
     const value = source[key];
     const existing = key in target ? target[key] : undefined;
@@ -183,13 +193,18 @@ export function assignDeep(target: any, source: any) {
     }
 
     if (typeof value === 'object') {
-      if (!existing || typeof existing !== 'object') target[key] = value;
-      else assignDeep(target[key], value);
+      if (!existing || typeof existing !== 'object') {
+        target[key] = value;
+      } else {
+        assignDeep(target[key], value);
+      }
 
       continue;
     }
 
-    if (existing === value) continue;
+    if (existing === value) {
+      continue;
+    }
 
     // console.log(`Key ["${key}"]:  ${JSON.stringify(existing)} ->  ${JSON.stringify(value)}`);
 
@@ -246,7 +261,9 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
         const clonedPath = Object.assign([], ctx.currentPath);
         ctx.results.push({ propertyName: key, path: clonedPath, value: value });
 
-        if (ctx.returnFirstResult) return 'abort';
+        if (ctx.returnFirstResult) {
+          return 'abort';
+        }
       }
 
       // descend into object
@@ -255,7 +272,9 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
         const childResult = collectElementsRecursive(ctx, value);
         ctx.currentPath.pop();
 
-        if (childResult === 'abort') return 'abort';
+        if (childResult === 'abort') {
+          return 'abort';
+        }
       }
     }
   }
@@ -315,7 +334,9 @@ export function collectElements2(
           for (const key in currentObj) {
             if (Object.hasOwn(currentObj, key)) {
               const value = currentObj[key];
-              if (value == null || typeof value === 'function') continue;
+              if (value == null || typeof value === 'function') {
+                continue;
+              }
 
               targetList.push({
                 path: [...foundProp.path, key],
@@ -330,7 +351,9 @@ export function collectElements2(
           for (const key in currentObj) {
             if (Object.hasOwn(currentObj, key)) {
               const value = currentObj[key];
-              if (value == null || typeof value === 'function') continue;
+              if (value == null || typeof value === 'function') {
+                continue;
+              }
 
               const match = isMatch(segment, key, value);
               if (match) {
@@ -424,13 +447,17 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
       if (typeof value === 'object' && value != null) {
         const childResult = getAllKeysRecursive(ctx, value);
 
-        if (childResult === 'abort') result = 'abort';
+        if (childResult === 'abort') {
+          result = 'abort';
+        }
       }
 
       ctx.currentPath.pop();
       ctx.currentFullPath = currentFullPath;
 
-      if (result === 'abort') break;
+      if (result === 'abort') {
+        break;
+      }
     }
   }
 
@@ -473,7 +500,9 @@ export function groupConsecutive(ar: number[]): number[][] {
 }
 
 export const prettyBytesOrNA = (n: number) => {
-  if (!Number.isFinite(n) || n < 0) return 'N/A';
+  if (!Number.isFinite(n) || n < 0) {
+    return 'N/A';
+  }
   return prettyBytes(n);
 };
 
@@ -508,24 +537,36 @@ export type PrettyValueOptions = {
 };
 export const UInt64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
 function isUInt64Maximum(str: string) {
-  if (str === UInt64Max) return true;
-  if (str === String(Number(UInt64Max))) return true;
+  if (str === UInt64Max) {
+    return true;
+  }
+  if (str === String(Number(UInt64Max))) {
+    return true;
+  }
   return false;
 }
 
 export const prettyBytes = (n: number | string | null | undefined, options?: PrettyValueOptions) => {
-  if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  if (typeof n === 'undefined' || n === null) {
+    return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  }
 
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) return 'Infinite';
+  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) {
+    return 'Infinite';
+  }
 
   if (typeof n !== 'number') {
     if (typeof n === 'string') {
       // string
-      if (n === '') return 'N/A'; // empty -> N/A
+      if (n === '') {
+        return 'N/A'; // empty -> N/A
+      }
 
       n = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(n)) {
+        return String(n); // "NaN" or "Infinity"
+      }
 
       // number parsed, fall through
     } else {
@@ -542,18 +583,26 @@ export const prettyMilliseconds = (
   n: number | string,
   options?: prettyMillisecondsOriginal.Options & PrettyValueOptions
 ) => {
-  if (typeof n === 'undefined' || n === null) return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  if (typeof n === 'undefined' || n === null) {
+    return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  }
 
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) return 'Infinite';
+  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) {
+    return 'Infinite';
+  }
 
   if (typeof n !== 'number') {
     if (typeof n === 'string') {
       // string
-      if (n === '') return 'N/A'; // empty -> N/A
+      if (n === '') {
+        return 'N/A'; // empty -> N/A
+      }
 
       n = Number.parseFloat(String(n));
 
-      if (!Number.isFinite(n)) return String(n); // "NaN" or "Infinity"
+      if (!Number.isFinite(n)) {
+        return String(n); // "NaN" or "Infinity"
+      }
 
       // number parsed, fall through
     } else {
@@ -561,7 +610,9 @@ export const prettyMilliseconds = (
       return 'NaN';
     }
   } else {
-    if (!Number.isFinite(n)) return 'N/A';
+    if (!Number.isFinite(n)) {
+      return 'N/A';
+    }
   }
 
   // n is a finite number
@@ -578,14 +629,22 @@ const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
 const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
 
 export function prettyNumber(num: number) {
-  if (Number.isNaN(num) || isInfinite(num) || num < 1000) return String(num);
-  if (isK(num)) return toK(num);
-  if (isM(num)) return toM(num);
+  if (Number.isNaN(num) || isInfinite(num) || num < 1000) {
+    return String(num);
+  }
+  if (isK(num)) {
+    return toK(num);
+  }
+  if (isM(num)) {
+    return toM(num);
+  }
   return toG(num);
 }
 
 export function fromDecimalSeparated(str: string): number {
-  if (!str || str === '') return 0;
+  if (!str || str === '') {
+    return 0;
+  }
   return Number.parseInt(str.replace(',', ''), 10);
 }
 
@@ -615,12 +674,16 @@ export function uniqueId4(): string {
 }
 
 export function titleCase(str: string): string {
-  if (!str) return str;
+  if (!str) {
+    return str;
+  }
   return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
 export function capitalizeFirst(str: string): string {
-  if (!str) return str; // Handle empty or falsy strings
+  if (!str) {
+    return str; // Handle empty or falsy strings
+  }
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -629,7 +692,9 @@ export function capitalizeFirst(str: string): string {
  */
 export function scrollToTop(): void {
   const mainLayout = document.getElementById('mainLayout');
-  if (!mainLayout) return;
+  if (!mainLayout) {
+    return;
+  }
 
   mainLayout.scrollTo({ behavior: 'smooth', left: 0, top: 0 });
 }
@@ -639,9 +704,13 @@ export function scrollToTop(): void {
  */
 export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
   const mainLayout = document.getElementById('mainLayout');
-  if (!mainLayout) return;
+  if (!mainLayout) {
+    return;
+  }
   const target = document.getElementById(targetId);
-  if (!target) return;
+  if (!target) {
+    return;
+  }
 
   const rect = target.getBoundingClientRect();
   // @ts-expect-error perhaps it affects the target for some reason?
@@ -669,7 +738,9 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
 
 // See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
 export function decodeBase64(base64: string) {
-  if (!base64) return base64;
+  if (!base64) {
+    return base64;
+  }
 
   return Base64.decode(base64);
 }
@@ -718,7 +789,9 @@ export function base64ToHexString(base64: string): string {
       const b = bytes[i].toString(16);
       hex += b.length === 1 ? `0${b}` : b;
 
-      if (i < bytes.length - 1) hex += ' ';
+      if (i < bytes.length - 1) {
+        hex += ' ';
+      }
     }
 
     return hex;
@@ -734,7 +807,9 @@ export function uint8ArrayToHexString(ar: Uint8Array): string {
       const b = ar[i].toString(16);
       hex += b.length === 1 ? `0${b}` : b;
 
-      if (i < ar.length - 1) hex += ' ';
+      if (i < ar.length - 1) {
+        hex += ' ';
+      }
     }
 
     return hex;

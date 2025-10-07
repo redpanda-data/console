@@ -25,14 +25,20 @@ export function partitionSelectionToTopicPartitions(
   for (const topicName in partitionSelection) {
     if (Object.hasOwn(partitionSelection, topicName)) {
       const topic = apiTopics.first((x) => x.topicName === topicName);
-      if (!topic) return; // topic not available
+      if (!topic) {
+        return; // topic not available
+      }
 
       const allPartitions = apiTopicPartitions.get(topicName);
-      if (!allPartitions) return; // partitions for topic not available
+      if (!allPartitions) {
+        return; // partitions for topic not available
+      }
 
       const partitionIds = partitionSelection[topicName];
       const relevantPartitions = partitionIds.map((id) => allPartitions.first((p) => p.id === id));
-      if (relevantPartitions.any((p) => p == null)) return; // at least one selected partition not available
+      if (relevantPartitions.any((p) => p == null)) {
+        return; // at least one selected partition not available
+      }
 
       // we've checked that there can't be any falsy partitions
       // so we assert that 'relevantPartitions' is the right type
@@ -55,10 +61,16 @@ export function computeMovedReplicas(
   // - get Partition objects
   // - compute number of moved replicas
   for (const [topicName, allPartitions] of apiTopicPartitions) {
-    if (allPartitions == null) continue;
-    if (partitionSelection[topicName] == null || partitionSelection[topicName].length === 0) continue;
+    if (allPartitions == null) {
+      continue;
+    }
+    if (partitionSelection[topicName] == null || partitionSelection[topicName].length === 0) {
+      continue;
+    }
     const topic = apiTopics?.first((t) => t.topicName === topicName);
-    if (topic == null) continue;
+    if (topic == null) {
+      continue;
+    }
 
     const selectedPartitions = allPartitions.filter((p) => partitionSelection[topicName].includes(p.id));
     const partitionsWithMoves: PartitionWithMoves[] = [];
@@ -83,8 +95,11 @@ export function computeMovedReplicas(
 
         anyChanges = changedLeader || oldBrokers.length !== newBrokers.length;
         if (!anyChanges) {
-          for (let i = 0; i < oldBrokers.length && !anyChanges; i++)
-            if (oldBrokers[i] !== newBrokers[i]) anyChanges = true;
+          for (let i = 0; i < oldBrokers.length && !anyChanges; i++) {
+            if (oldBrokers[i] !== newBrokers[i]) {
+              anyChanges = true;
+            }
+          }
         }
       }
       partitionsWithMoves.push({
@@ -122,7 +137,9 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
     if (Object.hasOwn(topicAssignments, t)) {
       const topicAssignment = topicAssignments[t];
       const curTopicPartitions = apiData.topicPartitions.get(t);
-      if (!curTopicPartitions) continue;
+      if (!curTopicPartitions) {
+        continue;
+      }
 
       const partitionIdsToRemove: string[] = [];
       let originalReassignedPartitionsCount = 0;
@@ -131,7 +148,9 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
           originalReassignedPartitionsCount++;
           const a = topicAssignment[partitionId];
           const brokersBefore = curTopicPartitions.first((p) => p.id === Number(partitionId))?.replicas;
-          if (!brokersBefore) continue;
+          if (!brokersBefore) {
+            continue;
+          }
           const brokersAfter = a.brokers;
 
           if (brokersBefore.length !== brokersAfter.length) {
@@ -146,7 +165,9 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
             }
           }
 
-          if (sameBrokers) partitionIdsToRemove.push(partitionId);
+          if (sameBrokers) {
+            partitionIdsToRemove.push(partitionId);
+          }
         }
       }
 
@@ -157,7 +178,9 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
         emptyTopics.push(t);
       } else if (partitionIdsToRemove.length > 0) {
         // Only some of the reassignments need to be removed
-        for (const r of partitionIdsToRemove) delete topicAssignment[Number(r)];
+        for (const r of partitionIdsToRemove) {
+          delete topicAssignment[Number(r)];
+        }
       } else {
         // All are required
       }
@@ -165,7 +188,9 @@ export function removeRedundantReassignments(topicAssignments: TopicAssignments,
   }
 
   // Remove topics that are completely redundant
-  for (const t of emptyTopics) delete topicAssignments[t];
+  for (const t of emptyTopics) {
+    delete topicAssignments[t];
+  }
 
   return topicAssignments;
 }

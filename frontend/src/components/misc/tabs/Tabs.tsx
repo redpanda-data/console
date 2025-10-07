@@ -59,7 +59,9 @@ export default function Tabs(props: TabsProps) {
       })}
       onChange={(index, key) => {
         setSelectedIndex(Number(index));
-        if (props.onChange) props.onChange(String(key));
+        if (props.onChange) {
+          props.onChange(String(key));
+        }
       }}
     />
   );

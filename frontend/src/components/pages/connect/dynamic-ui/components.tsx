@@ -29,19 +29,22 @@ export type ConfigPageProps = {
 };
 
 export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore, context }: ConfigPageProps) => {
-  if (connectorStore.error)
+  if (connectorStore.error) {
     return (
       <div>
         <h3>Error</h3>
         <div className="codeBox">{connectorStore.error}</div>
       </div>
     );
+  }
 
   if (connectorStore.initPending) {
     return <Skeleton height={4} mt={5} noOfLines={20} />;
   }
 
-  if (connectorStore.allGroups.length === 0) return <div>debug: no groups</div>;
+  if (connectorStore.allGroups.length === 0) {
+    return <div>debug: no groups</div>;
+  }
 
   // Find all steps
   const steps: {
@@ -143,7 +146,9 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
       height="600px"
       language="json"
       onChange={(x) => {
-        if (!x) return;
+        if (!x) {
+          return;
+        }
         setJsonText(x);
         connectorStore.jsonText = x;
       }}

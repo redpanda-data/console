@@ -55,7 +55,9 @@ export const RemoteMCPConnectionTab = () => {
     language: selectedLanguage,
   });
 
-  if (!mcpServerData?.mcpServer) return null;
+  if (!mcpServerData?.mcpServer) {
+    return null;
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

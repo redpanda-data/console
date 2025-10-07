@@ -70,12 +70,18 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
     api.refreshSchemaMode();
     const subjectName = this.props.subjectName ? decodeURIComponent(this.props.subjectName) : undefined;
 
-    if (subjectName) api.refreshSchemaDetails(subjectName, force);
+    if (subjectName) {
+      api.refreshSchemaDetails(subjectName, force);
+    }
   }
 
   render() {
-    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
-    if (!api.schemaMode) return DefaultSkeleton; // request in progress
+    if (api.schemaOverviewIsConfigured === false) {
+      return renderNotConfigured();
+    }
+    if (!api.schemaMode) {
+      return DefaultSkeleton; // request in progress
+    }
 
     if (!(api.schemaDetails || api.schemaCompatibility)) {
       return DefaultSkeleton;
@@ -89,8 +95,11 @@ class EditSchemaCompatibilityPage extends PageComponent<{ subjectName: string }>
           onClose={() => {
             // Navigate back to the "caller" of the page, depending on what
             // variant of the editCompatibility page we are on(can be global, or subject)
-            if (subjectName) appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
-            else appGlobal.historyReplace('/schema-registry');
+            if (subjectName) {
+              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}`);
+            } else {
+              appGlobal.historyReplace('/schema-registry');
+            }
           }}
           subjectName={subjectName}
         />
@@ -114,7 +123,9 @@ function EditSchemaCompatibility(p: {
     (subjectName ? subject?.compatibility : api.schemaCompatibility) ?? 'DEFAULT'
   );
 
-  if (subjectName && !schema) return DefaultSkeleton;
+  if (subjectName && !schema) {
+    return DefaultSkeleton;
+  }
 
   const onSave = () => {
     const changeReq = subjectName
@@ -131,8 +142,11 @@ function EditSchemaCompatibility(p: {
           position: 'top-right',
         });
 
-        if (subjectName) await api.refreshSchemaDetails(subjectName, true);
-        else await api.refreshSchemaCompatibilityConfig();
+        if (subjectName) {
+          await api.refreshSchemaDetails(subjectName, true);
+        } else {
+          await api.refreshSchemaCompatibilityConfig();
+        }
 
         p.onClose();
       })

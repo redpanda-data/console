@@ -417,7 +417,9 @@ autorun(
 
 // Auto save (on exit)
 window.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') return; // only save on close, minimize, tab-switch
+  if (document.visibilityState === 'visible') {
+    return; // only save on close, minimize, tab-switch
+  }
 
   const json = JSON.stringify(uiSettings);
   localStorage.setItem(settingsName, json);
@@ -426,10 +428,14 @@ window.addEventListener('visibilitychange', () => {
 // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
 // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
 window.addEventListener('storage', (e) => {
-  if (e.newValue == null) return;
+  if (e.newValue == null) {
+    return;
+  }
   try {
     const newSettings = JSON.parse(e.newValue);
-    if (!newSettings) return;
+    if (!newSettings) {
+      return;
+    }
     transaction(() => {
       // Applying changes here will of course trigger the auto-save, but that's fine.
       // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`

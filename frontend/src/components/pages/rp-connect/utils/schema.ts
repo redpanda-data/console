@@ -36,7 +36,9 @@ const extractComponentMetadata = (componentType: string, definition: any): Conne
 
   // Extract metadata from each variant
   for (const variant of variantsSection.anyOf) {
-    if (!variant.properties) continue;
+    if (!variant.properties) {
+      continue;
+    }
 
     // Each variant has a single property key which is the component name
     const componentNames = Object.keys(variant.properties);
@@ -87,7 +89,9 @@ const parseSchema = () => {
   // Parse each component type from definitions
   for (const componentType of CONNECT_COMPONENT_TYPE) {
     const definition = schemaData.definitions[componentType];
-    if (!definition) continue;
+    if (!definition) {
+      continue;
+    }
 
     // Extract lightweight metadata from the JSON Schema definition
     const components = extractComponentMetadata(componentType, definition);
@@ -499,9 +503,15 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
   // Check object properties
   if (schema?.type === 'object' && schema.properties) {
     for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
-      if (isTopicField(propName) && topicData?.topicName) return true;
-      if (isUserField(propName) && userData?.username) return true;
-      if (isPasswordField(propName) && userData?.password) return true;
+      if (isTopicField(propName) && topicData?.topicName) {
+        return true;
+      }
+      if (isUserField(propName) && userData?.username) {
+        return true;
+      }
+      if (isPasswordField(propName) && userData?.password) {
+        return true;
+      }
 
       if (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) {
         return true;
@@ -850,10 +860,18 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     }
   }
 
-  if (jsonSchema.type === 'string') return '';
-  if (jsonSchema.type === 'number' || jsonSchema.type === 'integer') return 0;
-  if (jsonSchema.type === 'boolean') return false;
-  if (jsonSchema.type === 'array') return [];
+  if (jsonSchema.type === 'string') {
+    return '';
+  }
+  if (jsonSchema.type === 'number' || jsonSchema.type === 'integer') {
+    return 0;
+  }
+  if (jsonSchema.type === 'boolean') {
+    return false;
+  }
+  if (jsonSchema.type === 'array') {
+    return [];
+  }
 
   if (jsonSchema.type === 'object') {
     const obj: Record<string, unknown> = {};

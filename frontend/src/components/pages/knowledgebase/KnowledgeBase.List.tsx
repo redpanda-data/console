@@ -142,12 +142,20 @@ export const KnowledgeBaseList = () => {
 
   // Filter knowledge bases based on search text
   const filteredKnowledgeBases = knowledgeBases.filter((kb) => {
-    if (!searchText) return true;
+    if (!searchText) {
+      return true;
+    }
     try {
       const quickSearchRegExp = new RegExp(searchText, 'i');
-      if (kb.id.match(quickSearchRegExp)) return true;
-      if (kb.displayName.match(quickSearchRegExp)) return true;
-      if (kb.description.match(quickSearchRegExp)) return true;
+      if (kb.id.match(quickSearchRegExp)) {
+        return true;
+      }
+      if (kb.displayName.match(quickSearchRegExp)) {
+        return true;
+      }
+      if (kb.description.match(quickSearchRegExp)) {
+        return true;
+      }
       return false;
     } catch {
       return false;

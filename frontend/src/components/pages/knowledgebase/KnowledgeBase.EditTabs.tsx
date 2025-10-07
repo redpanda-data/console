@@ -253,7 +253,9 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
   // Get topics that match a pattern
   const getMatchingTopics = useMemo(
     () => (pattern: string) => {
-      if (!isRegexPattern(pattern)) return [];
+      if (!isRegexPattern(pattern)) {
+        return [];
+      }
       return allTopics.filter((topic) => topicMatchesPattern(topic, pattern));
     },
     [allTopics, topicMatchesPattern, isRegexPattern]

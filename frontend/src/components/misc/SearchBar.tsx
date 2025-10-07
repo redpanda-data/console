@@ -62,7 +62,9 @@ class SearchBar<TItem> extends Component<{
 
   componentWillUnmount() {
     this.filteredSource.dispose();
-    if (this.reactionDisposer) this.reactionDisposer();
+    if (this.reactionDisposer) {
+      this.reactionDisposer();
+    }
   }
 
   render() {
@@ -126,12 +128,16 @@ class SearchBar<TItem> extends Component<{
       return null;
     }
 
-    if (!this.filteredSource.lastFilterText) return null;
+    if (!this.filteredSource.lastFilterText) {
+      return null;
+    }
 
     const sourceLength = source.length;
     const resultLength = this.filteredSource.data.length;
 
-    if (sourceLength === resultLength) return { identity: 'all', node: <span>Filter matched everything</span> };
+    if (sourceLength === resultLength) {
+      return { identity: 'all', node: <span>Filter matched everything</span> };
+    }
 
     return {
       identity: 'r',

@@ -43,19 +43,25 @@ class GroupList extends PageComponent {
   componentDidMount() {
     // 1. use 'q' parameter for quick search (if it exists)
     editQuery((query) => {
-      if (query.q) uiSettings.consumerGroupList.quickSearch = String(query.q);
+      if (query.q) {
+        uiSettings.consumerGroupList.quickSearch = String(query.q);
+      }
     });
 
     // 2. whenever the quick search box changes, update the url
     this.quickSearchReaction = autorun(() => {
       editQuery((query) => {
         const q = String(uiSettings.consumerGroupList.quickSearch);
-        if (q) query.q = q;
+        if (q) {
+          query.q = q;
+        }
       });
     });
   }
   componentWillUnmount() {
-    if (this.quickSearchReaction) this.quickSearchReaction();
+    if (this.quickSearchReaction) {
+      this.quickSearchReaction();
+    }
   }
 
   refreshData(force: boolean) {
@@ -63,7 +69,9 @@ class GroupList extends PageComponent {
   }
 
   render() {
-    if (!api.consumerGroups) return DefaultSkeleton;
+    if (!api.consumerGroups) {
+      return DefaultSkeleton;
+    }
 
     let groups = Array.from(api.consumerGroups.values());
 

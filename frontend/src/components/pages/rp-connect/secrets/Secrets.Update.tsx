@@ -82,7 +82,9 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   }
 
   render() {
-    if (!rpcnSecretManagerApi.secrets) return DefaultSkeleton;
+    if (!rpcnSecretManagerApi.secrets) {
+      return DefaultSkeleton;
+    }
 
     const isSecretEmpty = this.secret.trim().length === 0;
 

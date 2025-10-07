@@ -190,8 +190,9 @@ export class ActiveReassignments extends Component<{
 
   @computed get minThrottle(): number | undefined {
     const t = this.throttleSettings;
-    if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined)
+    if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined) {
       return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
+    }
 
     return undefined;
   }
@@ -351,10 +352,14 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   }
 
   render() {
-    if (this.props.state == null) return null;
+    if (this.props.state == null) {
+      return null;
+    }
 
     const state = this.props.state;
-    if (this.lastState !== state) this.lastState = state;
+    if (this.lastState !== state) {
+      this.lastState = state;
+    }
 
     const visible = this.props.state != null;
     if (this.wasVisible !== visible) {
@@ -369,10 +374,11 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     this.wasVisible = visible;
 
     const topicConfig = api.topicConfig.get(state.topicName);
-    if (!topicConfig)
+    if (!topicConfig) {
       setTimeout(() => {
         api.refreshTopicConfig(state.topicName);
       });
+    }
 
     const replicas = state.partitions.flatMap((p) => p.replicas).distinct();
     const addingReplicas = state.partitions.flatMap((p) => p.addingReplicas).distinct();
@@ -453,7 +459,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       ?.split(',')
       .map((e) => {
         const ar = e.split(':');
-        if (ar.length !== 2) return null;
+        if (ar.length !== 2) {
+          return null;
+        }
         return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
       })
       .filterNull();
@@ -468,7 +476,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId)
         );
 
-        if (hasThrottle) return true;
+        if (hasThrottle) {
+          return true;
+        }
       }
     }
 
@@ -480,7 +490,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       ?.split(',')
       .map((e) => {
         const ar = e.split(':');
-        if (ar.length !== 2) return null;
+        if (ar.length !== 2) {
+          return null;
+        }
         return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
       })
       .filterNull();
@@ -495,7 +507,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId)
         );
 
-        if (hasThrottle) return true;
+        if (hasThrottle) {
+          return true;
+        }
       }
     }
 
@@ -528,13 +542,15 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         }
 
         // leader throttling is applied to all sources (all brokers that have a replica of this partition)
-        for (const sourceBroker of brokersOld)
+        for (const sourceBroker of brokersOld) {
           leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
+        }
 
         // follower throttling is applied only to target brokers that do not yet have a copy
         const newBrokers = brokersNew.except(brokersOld);
-        for (const targetBroker of newBrokers)
+        for (const targetBroker of newBrokers) {
           followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
+        }
       }
 
       api.setThrottledReplicas([
@@ -613,7 +629,9 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
 
-    if (state.remaining == null) return '...';
+    if (state.remaining == null) {
+      return '...';
+    }
     const transferred = state.totalTransferSize - state.remaining.value;
 
     let progressBar: JSX.Element;
@@ -658,7 +676,9 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
 
-    if (state.estimateSpeed == null || state.estimateCompletionTime == null) return '...';
+    if (state.estimateSpeed == null || state.estimateCompletionTime == null) {
+      return '...';
+    }
 
     const remainingMs = (state.estimateCompletionTime.getTime() - Date.now()).clamp(0, undefined);
 

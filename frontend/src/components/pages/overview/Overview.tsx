@@ -89,7 +89,9 @@ class Overview extends PageComponent {
   }
 
   render() {
-    if (!api.clusterOverview) return DefaultSkeleton;
+    if (!api.clusterOverview) {
+      return DefaultSkeleton;
+    }
 
     const overview = api.clusterOverview;
     const brokers = api.brokers ?? [];
@@ -107,7 +109,9 @@ class Overview extends PageComponent {
     const brokerSize = brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : '...';
 
     const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
-      if (!record.isController) return text;
+      if (!record.isController) {
+        return text;
+      }
       return (
         <Flex alignItems="flex-start" gap={4}>
           {text}
@@ -324,12 +328,13 @@ function ClusterDetails() {
       return null;
     }
     let status = <div>{titleCase(StatusType[overviewStatus.status])}</div>;
-    if (overviewStatus.statusReason)
+    if (overviewStatus.statusReason) {
       status = (
         <Tooltip hasArrow label={overviewStatus.statusReason}>
           {status}
         </Tooltip>
       );
+    }
     return status;
   };
 

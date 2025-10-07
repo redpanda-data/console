@@ -33,7 +33,9 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
   const partitions = api.topicPartitions.get(topic.topicName);
   const paginationParams = usePaginationParams(partitions?.length ?? 0, uiState.topicSettings.partitionPageSize);
 
-  if (partitions === undefined) return DefaultSkeleton;
+  if (partitions === undefined) {
+    return DefaultSkeleton;
+  }
   if (partitions === null) {
     return <div />; // todo: show the error (if one was reported);
   }
@@ -46,13 +48,14 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
   )?.partitionIds;
 
   let warning: JSX.Element = <></>;
-  if (topic.cleanupPolicy.toLowerCase() === 'compact')
+  if (topic.cleanupPolicy.toLowerCase() === 'compact') {
     warning = (
       <Alert marginBottom="1em" status="warning">
         <AlertIcon />
         Topic cleanupPolicy is 'compact'. Message Count is an estimate!
       </Alert>
     );
+  }
 
   return (
     <>

@@ -122,8 +122,14 @@ export function debugFieldBehaviors(messageSchema: DescMessage): void {
 
   for (const [, meta] of Object.entries(metadata)) {
     const flags = [];
-    if (meta.isRequired) flags.push('REQUIRED');
-    if (meta.isImmutable) flags.push('IMMUTABLE');
-    if (meta.isOutputOnly) flags.push('OUTPUT_ONLY');
+    if (meta.isRequired) {
+      flags.push('REQUIRED');
+    }
+    if (meta.isImmutable) {
+      flags.push('IMMUTABLE');
+    }
+    if (meta.isOutputOnly) {
+      flags.push('OUTPUT_ONLY');
+    }
   }
 }

@@ -33,7 +33,9 @@ class AppGlobal {
   }
 
   set navigate(n: NavigateFunction) {
-    if (this._navigate === n || !n) return;
+    if (this._navigate === n || !n) {
+      return;
+    }
 
     this._navigate = n;
   }
@@ -46,7 +48,9 @@ class AppGlobal {
   }
 
   set location(l: Location) {
-    if (this._location === l || !l) return;
+    if (this._location === l || !l) {
+      return;
+    }
 
     this._location = l;
   }

@@ -73,7 +73,9 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 
   render() {
-    if (!transformsApi.transforms) return DefaultSkeleton;
+    if (!transformsApi.transforms) {
+      return DefaultSkeleton;
+    }
     if (transformsApi.transforms.length === 0) {
       appGlobal.historyReplace('/transforms-setup');
       return null;
@@ -81,7 +83,9 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 
     const transformName = decodeURIComponentPercents(this.props.transformName);
     const transform = transformsApi.transformDetails.get(transformName);
-    if (!transform) return DefaultSkeleton;
+    if (!transform) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent>
@@ -134,9 +138,9 @@ export default TransformDetails;
 
 const OverviewTab = observer((p: { transform: TransformMetadata }) => {
   let overallStatus = <></>;
-  if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
+  if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
     overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
-  else {
+  } else {
     // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
     const partitionTransformStatus = p.transform.statuses.first(
       (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
@@ -279,7 +283,9 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
   ];
 
   const filteredMessages = state.messages.filter((x) => {
-    if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+    if (!uiSettings.connectorsDetails.logsQuickSearch) {
+      return true;
+    }
     return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
   });
 
@@ -327,9 +333,15 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson?.toLowerCase().includes(str)) return true;
-  if (m.valueJson?.toLowerCase().includes(str)) return true;
+  if (m.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
   return false;
 }
 

@@ -17,13 +17,21 @@ import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
 export const VersionInfo = () => {
   const appName = 'Redpanda Console';
   let mode = '';
-  if (IsDev) mode = ' - DEV';
-  if (IsCI) mode = ' - CI';
+  if (IsDev) {
+    mode = ' - DEV';
+  }
+  if (IsCI) {
+    mode = ' - CI';
+  }
 
-  if (env.REACT_APP_CONSOLE_PLATFORM_VERSION) mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
+  if (env.REACT_APP_CONSOLE_PLATFORM_VERSION) {
+    mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
+  }
 
   let ref = env.REACT_APP_CONSOLE_GIT_REF;
-  if (!ref || ref === 'master') ref = '';
+  if (!ref || ref === 'master') {
+    ref = '';
+  }
 
   const sha = IsDev ? '<no git sha in dev>' : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
 

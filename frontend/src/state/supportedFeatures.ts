@@ -80,10 +80,18 @@ export function isSupported(f: FeatureEntry): boolean {
     return Feature.SchemaRegistryACLApi.endpoint !== f.endpoint; // not yet checked, allow it by default... except for schema registry ACLs
   }
 
-  for (const e of c.endpoints) if (e.method === f.method) if (e.endpoint === f.endpoint) return e.isSupported;
+  for (const e of c.endpoints) {
+    if (e.method === f.method) {
+      if (e.endpoint === f.endpoint) {
+        return e.isSupported;
+      }
+    }
+  }
 
   // Special handling, this will be completely absent in the community version
-  if (f.endpoint.includes('.SecurityService')) return false;
+  if (f.endpoint.includes('.SecurityService')) {
+    return false;
+  }
 
   featureErrors.push(
     `Unable to check if feature "${f.method} ${f.endpoint}" is supported because the backend did not return any information about it.`

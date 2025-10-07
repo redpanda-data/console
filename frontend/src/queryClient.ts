@@ -10,7 +10,9 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 3 * 1000, // 3 seconds
       retry: (failureCount, error) => {
-        if (failureCount > 3) return false;
+        if (failureCount > 3) {
+          return false;
+        }
 
         if (isConnectError(error)) {
           // Retry only gRPC errors that map to 5xx HTTP error codes

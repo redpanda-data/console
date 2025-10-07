@@ -25,16 +25,22 @@ export function useYamlLabelSync(form: UseFormReturn<FormValues>) {
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
     const subscription = form.watch((_, info) => {
       const name = info.name ?? '';
-      if (!name.startsWith('tools')) return;
+      if (!name.startsWith('tools')) {
+        return;
+      }
 
       // tools.{index}.field
       const match = TOOLS_FIELD_REGEX.exec(name);
-      if (!match) return;
+      if (!match) {
+        return;
+      }
       const index = Number(match[1]);
       const field = match[2] as 'name' | 'config';
 
       const tool = form.getValues(`tools.${index}`);
-      if (!tool) return;
+      if (!tool) {
+        return;
+      }
 
       if (field === 'name') {
         // Update YAML label when the tool name changes

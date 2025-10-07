@@ -149,10 +149,14 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
 });
 
 function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntry[] | null | undefined {
-  if (!config) return config;
+  if (!config) {
+    return config;
+  }
 
   const newConfig: ConfigEntry[] = [];
-  for (const e of config) newConfig.push(e);
+  for (const e of config) {
+    newConfig.push(e);
+  }
 
   if (config.find((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
     // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them

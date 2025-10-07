@@ -55,14 +55,18 @@ export function toJson(obj: any, space?: string | number | undefined): string {
 // Clone object using serialization
 
 export function clone<T>(obj: T): T {
-  if (!obj) return obj;
+  if (!obj) {
+    return obj;
+  }
   return JSON.parse(toJson(obj));
 }
 // Accesses all members of an object by serializing it
 
 export function touch(obj: any): void {
   JSON.stringify(obj, (_k, v) => {
-    if (typeof v === 'object') return v;
+    if (typeof v === 'object') {
+      return v;
+    }
     return '';
   });
 }
@@ -73,8 +77,12 @@ export function touch(obj: any): void {
  * @returns The specific data type including "array" and "null" as distinct types
  */
 export function getDataType(value: JsonValue): DataType {
-  if (Array.isArray(value)) return 'array';
-  if (value === null) return 'null';
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  if (value === null) {
+    return 'null';
+  }
   return typeof value;
 }
 
@@ -106,7 +114,9 @@ export function tryParseJson(str: string): {
  * @returns A new JSON value with the updated path
  */
 export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue): JsonValue {
-  if (path.length === 0) return value;
+  if (path.length === 0) {
+    return value;
+  }
 
   if (obj === null || obj === undefined) {
     obj = Number.isNaN(Number(path[0])) ? {} : [];
@@ -199,7 +209,9 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
  * @returns The value at the path, or defaultValue if not found
  */
 export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: JsonValue = null): JsonValue {
-  if (path.length === 0) return obj;
+  if (path.length === 0) {
+    return obj;
+  }
 
   const [first, ...rest] = path;
 

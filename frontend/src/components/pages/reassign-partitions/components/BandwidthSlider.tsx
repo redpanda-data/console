@@ -48,9 +48,15 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
     const sliderValue = Math.log10(value);
 
     const tipText = (f: number | null) => {
-      if (f == null) return null;
-      if (f < 3) return 'No change';
-      if (f > 12) return 'Unlimited';
+      if (f == null) {
+        return null;
+      }
+      if (f < 3) {
+        return 'No change';
+      }
+      if (f > 12) {
+        return 'Unlimited';
+      }
       const v = Math.round(10 ** f.clamp(3, 12));
       return `${prettyNumber(v).toUpperCase()}B/s`;
     };
@@ -114,12 +120,17 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
   }
 
   get value(): number | null {
-    if ('value' in this.props) return this.props.value;
+    if ('value' in this.props) {
+      return this.props.value;
+    }
     return this.props.settings.maxReplicationTraffic;
   }
 
   set value(x: number | null) {
-    if ('value' in this.props) this.props.onChange(x);
-    else this.props.settings.maxReplicationTraffic = x;
+    if ('value' in this.props) {
+      this.props.onChange(x);
+    } else {
+      this.props.settings.maxReplicationTraffic = x;
+    }
   }
 }

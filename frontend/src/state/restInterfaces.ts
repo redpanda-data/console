@@ -28,8 +28,13 @@ export type ApiError = {
 };
 
 export function isApiError(obj: any): obj is ApiError {
-  if (obj && typeof obj === 'object')
-    if (typeof obj.statusCode === 'number') if (typeof obj.message === 'string') return true;
+  if (obj && typeof obj === 'object') {
+    if (typeof obj.statusCode === 'number') {
+      if (typeof obj.message === 'string') {
+        return true;
+      }
+    }
+  }
 
   return false;
 }

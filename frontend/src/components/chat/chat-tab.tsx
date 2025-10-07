@@ -47,7 +47,9 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
-      if (!id) return [];
+      if (!id) {
+        return [];
+      }
       setIsLoadingMessages(true);
       const storedMessages = await chatDb.getAllMessages(id);
       setShouldScroll(true);
@@ -57,7 +59,9 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
 
   const handleClearChat = async () => {
     try {
-      if (!id) return;
+      if (!id) {
+        return;
+      }
       await chatDb.clearAllMessages(id);
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: error logging for debugging clear failures

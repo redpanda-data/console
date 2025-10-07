@@ -77,23 +77,37 @@ const ConnectorType = observer(
       filteredPlugins =
         // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 33, refactor later
         allPlugins?.filter((p) => {
-          if (state.tabFilter === 'export' && p.type === 'source') return false; // not an "export" type
+          if (state.tabFilter === 'export' && p.type === 'source') {
+            return false; // not an "export" type
+          }
 
-          if (state.tabFilter === 'import' && p.type === 'sink') return false; // not an "import" type
+          if (state.tabFilter === 'import' && p.type === 'sink') {
+            return false; // not an "import" type
+          }
 
           const meta = findConnectorMetadata(p.class);
-          if (!meta) return true; // no metadata, show it always
+          if (!meta) {
+            return true; // no metadata, show it always
+          }
 
           if (state.textFilter) {
             let matchesFilter = false;
 
-            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter)) matchesFilter = true;
+            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter)) {
+              matchesFilter = true;
+            }
 
-            if (p.class && containsIgnoreCase(p.class, state.textFilter)) matchesFilter = true;
+            if (p.class && containsIgnoreCase(p.class, state.textFilter)) {
+              matchesFilter = true;
+            }
 
-            if (meta.description && containsIgnoreCase(meta.description, state.textFilter)) matchesFilter = true;
+            if (meta.description && containsIgnoreCase(meta.description, state.textFilter)) {
+              matchesFilter = true;
+            }
 
-            if (!matchesFilter) return false; // doesn't match the text filter
+            if (!matchesFilter) {
+              return false; // doesn't match the text filter
+            }
           }
 
           // no filters active that would remove the entry from the list
@@ -214,7 +228,9 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
 
   render() {
     const clusters = api.connectConnectors?.clusters;
-    if (clusters == null) return null;
+    if (clusters == null) {
+      return null;
+    }
     const clusterName = decodeURIComponent(this.props.clusterName);
 
     return (
@@ -484,7 +500,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             const transitionConditionMet = steps[currentStep].transitionConditionMet;
             if (transitionConditionMet) {
               const { conditionMet } = await transitionConditionMet();
-              if (!conditionMet) return;
+              if (!conditionMet) {
+                return;
+              }
             }
 
             setTimeout(() => {
@@ -528,7 +546,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 });
 
 function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
-  if (!p.plugin) return <Heading>Creating Connector</Heading>;
+  if (!p.plugin) {
+    return <Heading>Creating Connector</Heading>;
+  }
 
   // const { logo } = findConnectorMetadata(p.plugin.class) ?? {};
   const displayName = getConnectorFriendlyName(p.plugin.class);

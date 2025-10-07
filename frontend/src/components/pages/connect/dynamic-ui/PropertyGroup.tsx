@@ -31,7 +31,9 @@ export const PropertyGroupComponent = observer(
 
     const filteredProperties = g.filteredProperties;
 
-    if (filteredProperties.length === 0) return null;
+    if (filteredProperties.length === 0) {
+      return null;
+    }
 
     if (g.group.name === 'Transforms') {
       // Transforms + its sub groups

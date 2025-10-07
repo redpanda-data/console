@@ -202,8 +202,9 @@ export const ToolCard: React.FC<ToolCardProps> = ({
               </Select>
               <Text variant="muted">
                 {(() => {
-                  if (!templateSelectionValue || templateSelectionValue.length === 0)
+                  if (!templateSelectionValue || templateSelectionValue.length === 0) {
                     return 'Select a template to prefill configuration';
+                  }
                   const selectedTemplate = templates.find((t) => t.name === templateSelectionValue);
                   if (!selectedTemplate || selectedTemplate.componentType !== selectedComponentType) {
                     return 'Select a template to prefill configuration';

@@ -111,7 +111,9 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         }
 
         // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-        if (state.result && !state.result.error) options.onSuccess?.(userState!, state.result.returnValue);
+        if (state.result && !state.result.error) {
+          options.onSuccess?.(userState!, state.result.returnValue);
+        }
       },
       afterClose: () => {
         state.modalProps = null;
@@ -133,13 +135,13 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
       margin: '0em 1em',
     };
 
-    if (React.isValidElement(err))
+    if (React.isValidElement(err)) {
       // JSX
       content = err;
-    else if (typeof err === 'string')
+    } else if (typeof err === 'string') {
       // String
       content = <div style={codeBoxStyle}>{err}</div>;
-    else if (err instanceof Error) {
+    } else if (err instanceof Error) {
       // Error
       title = err.name;
       content = <div style={codeBoxStyle}>{err.message}</div>;
@@ -176,7 +178,9 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
   // The component the user uses to render/mount into the jsx tree
   const Component = observer(() => {
-    if (!state.modalProps) return null;
+    if (!state.modalProps) {
+      return null;
+    }
 
     let content: ReactElement;
 

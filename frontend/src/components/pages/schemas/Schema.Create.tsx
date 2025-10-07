@@ -113,7 +113,9 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
   render() {
     const subjectName = decodeURIComponent(this.props.subjectName);
     const subject = api.schemaDetails.get(subjectName);
-    if (!subject) return DefaultSkeleton;
+    if (!subject) {
+      return DefaultSkeleton;
+    }
 
     if (this.editorState == null) {
       const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
@@ -132,8 +134,9 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
       this.editorState.format = schema.type as 'AVRO' | 'PROTOBUF';
       this.editorState.keyOrValue = undefined;
 
-      if (schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON)
+      if (schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON) {
         schema.schema = JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+      }
 
       this.editorState.schemaText = schema.schema;
       this.editorState.references = schema.references;
@@ -253,9 +256,11 @@ const SchemaPageButtons = observer(
 
         <Button
           onClick={() => {
-            if (p.parentSubjectName)
+            if (p.parentSubjectName) {
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
-            else appGlobal.historyReplace('/schema-registry');
+            } else {
+              appGlobal.historyReplace('/schema-registry');
+            }
           }}
           variant="link"
         >
@@ -271,7 +276,9 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   errorDetails?: string; // details about why the schema is not valid
   isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
 }> {
-  if (!state.computedSubjectName) return { isValid: false, errorDetails: 'Missing subject name' };
+  if (!state.computedSubjectName) {
+    return { isValid: false, errorDetails: 'Missing subject name' };
+  }
 
   const r = await api
     .validateSchema(state.computedSubjectName, 'latest', {
@@ -462,7 +469,9 @@ const ReferencesEditor = observer((p: { state: SchemaEditorStateHelper }) => {
               details = api.schemaDetails.get(e);
             }
 
-            if (!details) return; // failed to get details
+            if (!details) {
+              return; // failed to get details
+            }
 
             // Need to make sure that, after refreshing, the subject is still the same
             // otherwise, when the user switches between subjects very quickly, we might refresh 3 subjectDetails,
@@ -536,15 +545,22 @@ function createSchemaState() {
 
     get computedSubjectName() {
       let subjectName = '';
-      if (this.strategy === 'TOPIC')
+      if (this.strategy === 'TOPIC') {
         // was switch-case earlier, but if-cascade is actually more readable
         subjectName = this.userInput;
-      else if (this.strategy === 'RECORD_NAME') subjectName = this.computeRecordName();
-      else if (this.strategy === 'TOPIC_RECORD_NAME') subjectName = `${this.userInput}-${this.computeRecordName()}`;
-      else subjectName = this.userInput;
+      } else if (this.strategy === 'RECORD_NAME') {
+        subjectName = this.computeRecordName();
+      } else if (this.strategy === 'TOPIC_RECORD_NAME') {
+        subjectName = `${this.userInput}-${this.computeRecordName()}`;
+      } else {
+        subjectName = this.userInput;
+      }
 
-      if (this.strategy !== 'CUSTOM')
-        if (this.keyOrValue !== undefined) subjectName += `-${this.keyOrValue.toLowerCase()}`;
+      if (this.strategy !== 'CUSTOM') {
+        if (this.keyOrValue !== undefined) {
+          subjectName += `-${this.keyOrValue.toLowerCase()}`;
+        }
+      }
 
       return subjectName;
     },
@@ -562,14 +578,22 @@ function createSchemaState() {
         // The above will obviously only work when the schema is complete,
         // when the user is editting the text, it might not parse, so we fall back to regex matching
         const ar = JSON_NAME_REGEX.exec(this.schemaText);
-        if (!ar) return ''; // no match
-        if (ar.length < 2) return ''; // capture group missing?
+        if (!ar) {
+          return ''; // no match
+        }
+        if (ar.length < 2) {
+          return ''; // capture group missing?
+        }
         return ar[1]; // return only first capture group
       }
       // Protobuf
       const ar = PROTOBUF_MESSAGE_NAME_REGEX.exec(this.schemaText);
-      if (!ar) return ''; // no match
-      if (ar.length < 2) return ''; // capture group missing?
+      if (!ar) {
+        return ''; // no match
+      }
+      if (ar.length < 2) {
+        return ''; // capture group missing?
+      }
       return ar[1]; // return only first capture group
     },
   });

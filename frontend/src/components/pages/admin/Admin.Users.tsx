@@ -33,7 +33,9 @@ export class AdminUsers extends Component<Record<string, never>> {
   }
 
   render() {
-    if (!api.adminInfo) return DefaultSkeleton;
+    if (!api.adminInfo) {
+      return DefaultSkeleton;
+    }
 
     let users = api.adminInfo.users;
 

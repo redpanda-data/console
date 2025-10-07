@@ -86,9 +86,15 @@ export const inferComponentCategory = (componentName: string): string[] => {
   // Cloud/Service providers
   if (cloudComponents.some((cloud) => name.includes(cloud))) {
     categories.push(COMPONENT_CATEGORIES.CLOUD);
-    if (name.includes('aws')) categories.push(COMPONENT_CATEGORIES.AWS);
-    if (name.includes('gcp') || name.includes('google')) categories.push(COMPONENT_CATEGORIES.GCP);
-    if (name.includes('azure')) categories.push(COMPONENT_CATEGORIES.AZURE);
+    if (name.includes('aws')) {
+      categories.push(COMPONENT_CATEGORIES.AWS);
+    }
+    if (name.includes('gcp') || name.includes('google')) {
+      categories.push(COMPONENT_CATEGORIES.GCP);
+    }
+    if (name.includes('azure')) {
+      categories.push(COMPONENT_CATEGORIES.AZURE);
+    }
   }
 
   // Messaging/Streaming

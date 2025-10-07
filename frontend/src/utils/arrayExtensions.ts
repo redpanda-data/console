@@ -82,7 +82,9 @@ declare global {
 
 Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
   const index = this.indexOf(obj);
-  if (index === -1) return false;
+  if (index === -1) {
+    return false;
+  }
   this.splice(index, 1);
   return true;
 };
@@ -100,15 +102,25 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
 };
 
 Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
-  if (!selector) return this.length > 0 ? this[0] : undefined;
+  if (!selector) {
+    return this.length > 0 ? this[0] : undefined;
+  }
 
-  for (const e of this) if (selector(e)) return e;
+  for (const e of this) {
+    if (selector(e)) {
+      return e;
+    }
+  }
 
   return;
 };
 
 Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
-  for (let i = this.length - 1; i >= 0; i--) if (!selector || selector(this[i])) return this[i];
+  for (let i = this.length - 1; i >= 0; i--) {
+    if (!selector || selector(this[i])) {
+      return this[i];
+    }
+  }
   return;
 };
 
@@ -125,7 +137,9 @@ Array.prototype.min = function min<T>(this: T[], selector: (x: T) => number) {
 
   for (let i = 0; i < this.length; i++) {
     const value = selector(this[i]);
-    if (value < cur) cur = value;
+    if (value < cur) {
+      cur = value;
+    }
   }
 
   return cur;
@@ -136,14 +150,18 @@ Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
 
   for (let i = 0; i < this.length; i++) {
     const value = selector(this[i]);
-    if (value > cur) cur = value;
+    if (value > cur) {
+      cur = value;
+    }
   }
 
   return cur;
 };
 
 Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number) {
-  if (this.length === 0) return;
+  if (this.length === 0) {
+    return;
+  }
 
   let bestIndex = 0;
   let bestVal = selector(this[0]);
@@ -160,7 +178,9 @@ Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number)
 };
 
 Array.prototype.maxBy = function maxBy<T>(this: T[], selector: (x: T) => number) {
-  if (this.length === 0) return;
+  if (this.length === 0) {
+    return;
+  }
 
   let bestIndex = 0;
   let bestVal = selector(this[0]);
@@ -222,35 +242,50 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
   // Early out, compare both arrays
   if (this.length === newData.length) {
     let same = true;
-    for (let i = 0; i < this.length; i++)
+    for (let i = 0; i < this.length; i++) {
       if (this[i] !== newData[i]) {
         same = false;
         break;
       }
-    if (same) return { removed: 0, added: 0 };
+    }
+    if (same) {
+      return { removed: 0, added: 0 };
+    }
   }
 
   const added = newData.except(this);
   const removed = this.except(newData);
 
   this.removeAll((x) => removed.includes(x));
-  for (const a of added) this.push(a);
+  for (const a of added) {
+    this.push(a);
+  }
 
   return { removed: removed.length, added: added.length };
 };
 
 Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boolean {
-  if (this.length === 0 && other.length === 0) return true;
+  if (this.length === 0 && other.length === 0) {
+    return true;
+  }
 
-  if (this.length !== other.length) return false;
+  if (this.length !== other.length) {
+    return false;
+  }
 
-  for (let i = 0; i < this.length; i++) if (this[i] !== other[i]) return false;
+  for (let i = 0; i < this.length; i++) {
+    if (this[i] !== other[i]) {
+      return false;
+    }
+  }
 
   return true;
 };
 
 Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
-  if (!keySelector) return [...new Set(this)];
+  if (!keySelector) {
+    return [...new Set(this)];
+  }
 
   const set = new Set<any>();
   const ar: T[] = [];
@@ -269,16 +304,28 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
 Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]): void {
   if (this.length + elements.length > 50) {
     const s = new Set(this);
-    for (const e of elements) if (!s.has(e)) this.push(e);
+    for (const e of elements) {
+      if (!s.has(e)) {
+        this.push(e);
+      }
+    }
   } else {
-    for (const e of elements) if (!this.includes(e)) this.push(e);
+    for (const e of elements) {
+      if (!this.includes(e)) {
+        this.push(e);
+      }
+    }
   }
 };
 
 Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {
   const thisSet = new Set<T>(this);
   const results: T[] = [];
-  for (const e of other) if (thisSet.has(e)) results.push(e);
+  for (const e of other) {
+    if (thisSet.has(e)) {
+      results.push(e);
+    }
+  }
   return results;
 };
 
@@ -286,7 +333,9 @@ Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
   const ar = [];
   const otherSet = new Set<T>(other);
   for (const e of this) {
-    if (otherSet.has(e)) continue;
+    if (otherSet.has(e)) {
+      continue;
+    }
     ar.push(e);
   }
   return ar;
@@ -335,10 +384,15 @@ Array.prototype.toMap = function toMap<TItem, TKey, TValue>(
 Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], separator: string): string {
   let r = '';
   for (const str of this) {
-    if (str === null || str === undefined || str === '') continue;
+    if (str === null || str === undefined || str === '') {
+      continue;
+    }
 
-    if (r.length === 0) r = str;
-    else r += separator + str;
+    if (r.length === 0) {
+      r = str;
+    } else {
+      r += separator + str;
+    }
   }
 
   return r;
@@ -348,14 +402,20 @@ Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item:
   const result = this.slice();
 
   const elementOrder = new Map<T, number>();
-  for (const e of this) elementOrder.set(e, getElementOrder(e));
+  for (const e of this) {
+    elementOrder.set(e, getElementOrder(e));
+  }
 
   result.sort((a, b) => {
     const orderA = elementOrder.get(a);
-    if (typeof orderA === 'undefined') return 0;
+    if (typeof orderA === 'undefined') {
+      return 0;
+    }
 
     const orderB = elementOrder.get(b);
-    if (typeof orderB === 'undefined') return 0;
+    if (typeof orderB === 'undefined') {
+      return 0;
+    }
 
     return orderA - orderB;
   });

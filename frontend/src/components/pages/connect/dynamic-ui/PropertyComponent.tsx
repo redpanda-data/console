@@ -23,8 +23,12 @@ export const PropertyComponent = observer((props: { property: Property }) => {
   const p = props.property;
   const def = p.entry.definition;
   const metadata = p.entry.metadata;
-  if (p.isHidden) return null;
-  if (p.entry.value.visible === false) return null;
+  if (p.isHidden) {
+    return null;
+  }
+  if (p.entry.value.visible === false) {
+    return null;
+  }
 
   let inputComp = (
     <div key={p.name}>

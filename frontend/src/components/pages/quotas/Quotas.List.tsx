@@ -40,13 +40,19 @@ class QuotasList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListQuotas) return;
+    if (api.userData != null && !api.userData.canListQuotas) {
+      return;
+    }
     api.refreshQuotas(force);
   }
 
   render() {
-    if (api.userData != null && !api.userData.canListQuotas) return PermissionDenied;
-    if (api.Quotas === undefined) return DefaultSkeleton;
+    if (api.userData != null && !api.userData.canListQuotas) {
+      return PermissionDenied;
+    }
+    if (api.Quotas === undefined) {
+      return DefaultSkeleton;
+    }
 
     const warning =
       api.Quotas === null ? (
@@ -131,7 +137,9 @@ class QuotasList extends PageComponent {
 
   @computed get quotasList() {
     const quotaResponse = api.Quotas;
-    if (!quotaResponse || quotaResponse.error) return [];
+    if (!quotaResponse || quotaResponse.error) {
+      return [];
+    }
 
     return quotaResponse.items.map((x) => ({ ...x, eqKey: toJson(x) }));
   }

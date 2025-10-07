@@ -65,7 +65,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   }
 
   render() {
-    if (!api.connectConnectors) return DefaultSkeleton;
+    if (!api.connectConnectors) {
+      return DefaultSkeleton;
+    }
 
     const clusterName = decodeURIComponent(this.props.clusterName);
     if (api.connectConnectors?.isConfigured === false) {

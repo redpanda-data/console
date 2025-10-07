@@ -72,7 +72,9 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
         <Input
           onChange={(e) => {
             localState.value = e.target.value;
-            if (onChange) onChange(e.target.value);
+            if (onChange) {
+              onChange(e.target.value);
+            }
           }}
           readOnly={!localState.canEdit}
           type={visible ? 'text' : 'password'}

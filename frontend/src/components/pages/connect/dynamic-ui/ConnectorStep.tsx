@@ -30,7 +30,9 @@ export const ConnectorStepComponent = observer(
     const groups = props.groups;
 
     const totalVisibleProperties = groups.sum((x) => x.filteredProperties.length);
-    if (totalVisibleProperties === 0) return null;
+    if (totalVisibleProperties === 0) {
+      return null;
+    }
 
     return (
       <Box>

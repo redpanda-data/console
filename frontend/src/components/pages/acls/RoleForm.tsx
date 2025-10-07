@@ -75,7 +75,9 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
     ...initialData,
   }));
 
-  if (!formState.clusterACLs) formState.clusterACLs = createEmptyClusterAcl();
+  if (!formState.clusterACLs) {
+    formState.clusterACLs = createEmptyClusterAcl();
+  }
 
   const [isFormValid, setIsFormValid] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -189,17 +191,21 @@ export const RoleForm = observer(({ initialData }: RoleFormProps) => {
               alignSelf="self-end"
               data-testid="roles-allow-all-operations"
               onClick={() => {
-                if (formState.topicACLs.length === 0) formState.topicACLs.push(createEmptyTopicAcl());
+                if (formState.topicACLs.length === 0) {
+                  formState.topicACLs.push(createEmptyTopicAcl());
+                }
                 formState.topicACLs[0].selector = '*';
                 formState.topicACLs[0].all = 'Allow';
 
-                if (formState.consumerGroupsACLs.length === 0)
+                if (formState.consumerGroupsACLs.length === 0) {
                   formState.consumerGroupsACLs.push(createEmptyConsumerGroupAcl());
+                }
                 formState.consumerGroupsACLs[0].selector = '*';
                 formState.consumerGroupsACLs[0].all = 'Allow';
 
-                if (formState.transactionalIDACLs.length === 0)
+                if (formState.transactionalIDACLs.length === 0) {
                   formState.transactionalIDACLs.push(createEmptyTransactionalIdAcl());
+                }
                 formState.transactionalIDACLs[0].selector = '*';
                 formState.transactionalIDACLs[0].all = 'Allow';
 
@@ -382,18 +388,24 @@ const PrincipalSelector = observer((p: { state: RolePrincipal[] }) => {
 
   // Add all inferred users
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
-  for (const g of principalGroupsView.principalGroups)
-    if (g.principalType === 'User' && !g.principalName.includes('*'))
-      if (!availableUsers.any((u) => u.value === g.principalName))
+  for (const g of principalGroupsView.principalGroups) {
+    if (g.principalType === 'User' && !g.principalName.includes('*')) {
+      if (!availableUsers.any((u) => u.value === g.principalName)) {
         // is it a user that is being referenced?
         // is the user already listed as a service account?
         availableUsers.push({ value: g.principalName });
+      }
+    }
+  }
 
-  for (const [_, roleMembers] of rolesApi.roleMembers)
-    for (const roleMember of roleMembers)
-      if (!availableUsers.any((u) => u.value === roleMember.name))
+  for (const [_, roleMembers] of rolesApi.roleMembers) {
+    for (const roleMember of roleMembers) {
+      if (!availableUsers.any((u) => u.value === roleMember.name)) {
         // make sure that user isn't already in the list
         availableUsers.push({ value: roleMember.name });
+      }
+    }
+  }
 
   return (
     <Flex direction="column" gap={4}>

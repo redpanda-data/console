@@ -42,7 +42,9 @@ const AppPageHeader = observer(() => {
 
   const lastBreadcrumb = breadcrumbItems.pop();
 
-  if (shouldHideHeader) return null;
+  if (shouldHideHeader) {
+    return null;
+  }
 
   return (
     <Box>
@@ -151,10 +153,18 @@ function useShouldShowRefresh() {
   const roleDetailMatch = useMatch('/security/roles/:id/details');
   const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
 
-  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') return false;
-  if (schemaCreateMatch) return false;
-  if (topicProduceRecordMatch) return false;
-  if (secretsMatch) return false;
+  if (connectClusterMatch && connectClusterMatch.params.connectorName === 'create-connector') {
+    return false;
+  }
+  if (schemaCreateMatch) {
+    return false;
+  }
+  if (topicProduceRecordMatch) {
+    return false;
+  }
+  if (secretsMatch) {
+    return false;
+  }
   if (isACLRelated) {
     return false;
   }

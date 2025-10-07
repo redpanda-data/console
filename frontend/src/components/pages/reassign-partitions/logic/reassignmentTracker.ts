@@ -82,7 +82,9 @@ export class ReassignmentTracker {
 
   start() {
     const alreadyStarted = this.reassignTimer != null;
-    if (alreadyStarted) return;
+    if (alreadyStarted) {
+      return;
+    }
 
     // Active reassignments
     this.reassignTimer = window.setInterval(
@@ -113,7 +115,9 @@ export class ReassignmentTracker {
 
     // Update relevant topic-partitions
     const topics = liveReassignments.map((r) => r.topicName);
-    if (topics.length > 0) await api.refreshPartitions(topics, true);
+    if (topics.length > 0) {
+      await api.refreshPartitions(topics, true);
+    }
 
     transaction(() => {
       // Add new reassignments
@@ -128,7 +132,9 @@ export class ReassignmentTracker {
 
       // Mark removed reassignments as completed
       for (const r of this.trackingReassignments) {
-        if (r.actualTimeCompleted != null) continue; // no need to the ones already marked as completed
+        if (r.actualTimeCompleted != null) {
+          continue; // no need to the ones already marked as completed
+        }
 
         const live = liveReassignments.first((x) => x.id === r.id);
         if (!live) {
@@ -146,10 +152,14 @@ export class ReassignmentTracker {
 
       // Remove reassignments that are in completed state for some time
       const expiredTrackers = this.trackingReassignments.filter((x) => {
-        if (x.actualTimeCompleted == null) return false; // not yet complete
+        if (x.actualTimeCompleted == null) {
+          return false; // not yet complete
+        }
         const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
         if (age > 8) {
-          if (IsDev) return true;
+          if (IsDev) {
+            return true;
+          }
         }
         return false;
       });
@@ -188,14 +198,19 @@ export class ReassignmentTracker {
     const topicPartitions = api.topicPartitions.get(state.topicName);
     for (const p of state.partitions) {
       const logDirs = topicPartitions?.first((e) => e.id === p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
-      if (!logDirs || logDirs.length === 0) continue;
+      if (!logDirs || logDirs.length === 0) {
+        continue;
+      }
 
       // current size (on new brokers)
       const newSizeOnBrokers: { brokerId: number; replicaSize: number }[] = [];
       for (const b of p.addingReplicas) {
         const logDir = logDirs.first((l) => l.brokerId === b);
-        if (logDir && !logDir.error) newSizeOnBrokers.push({ brokerId: b, replicaSize: logDir.size });
-        else newSizeOnBrokers.push({ brokerId: b, replicaSize: 0 });
+        if (logDir && !logDir.error) {
+          newSizeOnBrokers.push({ brokerId: b, replicaSize: logDir.size });
+        } else {
+          newSizeOnBrokers.push({ brokerId: b, replicaSize: 0 });
+        }
       }
       p.currentSize = newSizeOnBrokers;
 

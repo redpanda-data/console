@@ -109,7 +109,9 @@ class UserCreatePage extends PageComponent {
   }
 
   async refreshData(force: boolean) {
-    if (api.userData != null && !api.userData.canListAcls) return;
+    if (api.userData != null && !api.userData.canListAcls) {
+      return;
+    }
 
     await Promise.allSettled([api.refreshAcls(AclRequestDefault, force), api.refreshServiceAccounts()]);
   }
@@ -151,7 +153,9 @@ class UserCreatePage extends PageComponent {
       });
 
       // Refresh user list
-      if (api.userData != null && !api.userData.canListAcls) return false;
+      if (api.userData != null && !api.userData.canListAcls) {
+        return false;
+      }
       await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), api.refreshServiceAccounts()]);
 
       // Add the user to the selected roles
@@ -457,7 +461,9 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
 };
 
 export function generatePassword(length: number, allowSpecialChars: boolean): string {
-  if (length <= 0) return '';
+  if (length <= 0) {
+    return '';
+  }
 
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const uppercase = lowercase.toUpperCase();

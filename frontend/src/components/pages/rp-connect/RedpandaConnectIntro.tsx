@@ -124,7 +124,9 @@ redpanda:
                 defaultPath="config.yaml"
                 language="yaml"
                 onChange={(e) => {
-                  if (e) setEditorText(e);
+                  if (e) {
+                    setEditorText(e);
+                  }
                 }}
                 path="config.yaml"
                 value={editorText}

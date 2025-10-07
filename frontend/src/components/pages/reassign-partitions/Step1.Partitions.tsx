@@ -62,7 +62,9 @@ export class StepSelectPartitions extends Component<{
   }
 
   render() {
-    if (!api.topics) return DefaultSkeleton;
+    if (!api.topics) {
+      return DefaultSkeleton;
+    }
 
     const query = uiSettings.reassignment.quickSearch ?? '';
     const filterActive = query.length > 1;
@@ -122,7 +124,9 @@ export class StepSelectPartitions extends Component<{
               header: 'Partitions',
               cell: ({ row: { original: topic } }) => {
                 const errors = topic.partitions.count((p) => p.hasErrors);
-                if (errors === 0) return topic.partitionCount;
+                if (errors === 0) {
+                  return topic.partitionCount;
+                }
 
                 return (
                   <Flex alignItems="center" flexDirection="row" gap={2}>
@@ -138,7 +142,9 @@ export class StepSelectPartitions extends Component<{
             {
               header: 'Replication Factor',
               cell: ({ row: { original: r } }) => {
-                if (r.activeReassignments.length === 0) return r.replicationFactor;
+                if (r.activeReassignments.length === 0) {
+                  return r.replicationFactor;
+                }
                 return (
                   <InfoText
                     maxWidth="180px"
@@ -205,39 +211,56 @@ export class StepSelectPartitions extends Component<{
       partitions.remove(partition);
     }
 
-    if (partitions.length === 0) delete this.props.partitionSelection[topic];
-    else this.props.partitionSelection[topic] = partitions;
+    if (partitions.length === 0) {
+      delete this.props.partitionSelection[topic];
+    } else {
+      this.props.partitionSelection[topic] = partitions;
+    }
   }
 
   getSelectedPartitions(topic: string) {
     const partitions = this.props.partitionSelection[topic];
-    if (!partitions) return [];
+    if (!partitions) {
+      return [];
+    }
     return partitions;
   }
 
   isSelected(topic: string, partition: number) {
     const partitions = this.props.partitionSelection[topic];
-    if (!partitions) return false;
+    if (!partitions) {
+      return false;
+    }
     return partitions.includes(partition);
   }
 
   getTopicCheckState(topicName: string): { checked: boolean; indeterminate: boolean } {
     const tp = this.topicPartitions.first((t) => t.topicName === topicName);
-    if (!tp) return { checked: false, indeterminate: false };
+    if (!tp) {
+      return { checked: false, indeterminate: false };
+    }
 
     const selected = this.props.partitionSelection[topicName];
-    if (!selected) return { checked: false, indeterminate: false };
+    if (!selected) {
+      return { checked: false, indeterminate: false };
+    }
 
-    if (selected.length === 0) return { checked: false, indeterminate: false };
+    if (selected.length === 0) {
+      return { checked: false, indeterminate: false };
+    }
 
     const validPartitions = tp.partitions.count((x) => !x.hasErrors);
-    if (validPartitions > 0 && selected.length === validPartitions) return { checked: true, indeterminate: false };
+    if (validPartitions > 0 && selected.length === validPartitions) {
+      return { checked: true, indeterminate: false };
+    }
 
     return { checked: false, indeterminate: true };
   }
 
   @computed get topicPartitions(): TopicWithPartitions[] {
-    if (api.topics == null) return [];
+    if (api.topics == null) {
+      return [];
+    }
     return api.topics
       .map((topic) => {
         return {

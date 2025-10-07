@@ -96,7 +96,9 @@ class RpConnectPipelinesCreate extends PageComponent {
   };
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
     if (rpcnSecretManagerApi.secrets) {
       // inject secrets to editor
       this.secrets.updateWith(rpcnSecretManagerApi.secrets.map((value) => value.id));
@@ -306,7 +308,9 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
 
   const onAddSecret = (secretNotation: string) => {
     const selection = editorInstance.getSelection();
-    if (selection === null) return;
+    if (selection === null) {
+      return;
+    }
     const id = { major: 1, minor: 1 };
     const op = { identifier: id, range: selection, text: secretNotation, forceMoveMarkers: true };
     editorInstance.executeEdits('my-source', [op]);
@@ -399,7 +403,9 @@ export const PipelineEditor = observer(
 
     const { data: secretsData, refetch: refetchSecrets } = useListSecretsQuery();
     const existingSecrets = useMemo(() => {
-      if (!secretsData?.secrets) return [];
+      if (!secretsData?.secrets) {
+        return [];
+      }
       return secretsData.secrets.map((secret) => secret?.id).filter(Boolean) as string[];
     }, [secretsData]);
 
@@ -415,15 +421,23 @@ export const PipelineEditor = observer(
     const [wizardUserData] = useSessionStorage<AddUserFormData>(CONNECT_WIZARD_USER_KEY);
 
     const secretDefaultValues = useMemo(() => {
-      if (!wizardUserData) return {};
+      if (!wizardUserData) {
+        return {};
+      }
       const values: Record<string, string> = {};
-      if (wizardUserData.username) values.REDPANDA_USERNAME = wizardUserData.username;
-      if (wizardUserData.password) values.REDPANDA_PASSWORD = wizardUserData.password;
+      if (wizardUserData.username) {
+        values.REDPANDA_USERNAME = wizardUserData.username;
+      }
+      if (wizardUserData.password) {
+        values.REDPANDA_PASSWORD = wizardUserData.password;
+      }
       return values;
     }, [wizardUserData]);
 
     const handleAddConnector = (connectionName: string, connectionType: ConnectComponentType) => {
-      if (!editorInstance) return;
+      if (!editorInstance) {
+        return;
+      }
 
       const currentValue = editorInstance.getValue();
       const mergedYaml = getConnectTemplate({
@@ -433,7 +447,9 @@ export const PipelineEditor = observer(
         existingYaml: currentValue,
       });
 
-      if (!mergedYaml) return;
+      if (!mergedYaml) {
+        return;
+      }
 
       editorInstance.setValue(mergedYaml);
     };
@@ -450,7 +466,9 @@ export const PipelineEditor = observer(
     // Sync actual editor content with editor instance
     // This ensures sidebar always sees what's actually in the editor
     useEffect(() => {
-      if (!editorInstance) return;
+      if (!editorInstance) {
+        return;
+      }
 
       // Read actual content from editor after mount
       const currentValue = editorInstance.getValue();
@@ -485,7 +503,9 @@ export const PipelineEditor = observer(
                     defaultValue={yaml}
                     language="yaml"
                     onChange={(e) => {
-                      if (e) p.onChange?.(e);
+                      if (e) {
+                        p.onChange?.(e);
+                      }
                     }}
                     onMount={async (editor, monacoInstance) => {
                       setEditorInstance(editor);

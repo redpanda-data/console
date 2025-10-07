@@ -30,7 +30,15 @@ Number.prototype.lerp = function (this: number, to: number, t: number): number {
 };
 
 Number.prototype.clamp = function (this: number, min: number | undefined, max: number | undefined): number {
-  if (max !== undefined) if (this > max) return max;
-  if (min !== undefined) if (this < min) return min;
+  if (max !== undefined) {
+    if (this > max) {
+      return max;
+    }
+  }
+  if (min !== undefined) {
+    if (this < min) {
+      return min;
+    }
+  }
   return this;
 };

@@ -50,7 +50,9 @@ const searchComponents = (
       const matchesSummary = component.summary?.toLowerCase().includes(searchLower);
       const matchesDescription = component.description?.toLowerCase().includes(searchLower);
 
-      if (!(matchesName || matchesSummary || matchesDescription)) return false;
+      if (!(matchesName || matchesSummary || matchesDescription)) {
+        return false;
+      }
     }
 
     // Filter by types
@@ -61,7 +63,9 @@ const searchComponents = (
     // Filter by categories
     if (filters?.categories?.length) {
       const hasMatchingCategory = component.categories?.some((cat) => filters.categories?.includes(cat));
-      if (!hasMatchingCategory) return false;
+      if (!hasMatchingCategory) {
+        return false;
+      }
     }
 
     // Filter by status
@@ -117,7 +121,9 @@ export const ConnectTiles = forwardRef<BaseStepRef, ConnectTilesProps>(
     // Check if content is scrollable and update gradient visibility
     const checkScrollable = useCallback(() => {
       const container = scrollContainerRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       const { scrollTop, scrollHeight, clientHeight } = container;
       const isScrollable = scrollHeight > clientHeight;

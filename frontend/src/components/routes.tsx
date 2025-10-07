@@ -105,18 +105,25 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
   return entries
     .map((entry) => {
       // Menu entry for Page
-      if (entry.path.includes(':')) return null; // only root-routes (no param) can be in menu
-      if (!entry?.icon) return null; // items without icon do not appear in the sidebar
+      if (entry.path.includes(':')) {
+        return null; // only root-routes (no param) can be in menu
+      }
+      if (!entry?.icon) {
+        return null; // items without icon do not appear in the sidebar
+      }
 
       let isEnabled = true;
       let disabledText: JSX.Element = <Fragment key={entry.title} />;
       if (entry.visibilityCheck) {
         const visibility = entry.visibilityCheck();
-        if (!visibility.visible) return null;
+        if (!visibility.visible) {
+          return null;
+        }
 
         isEnabled = visibility.disabledReasons?.length === 0;
-        if (!isEnabled && visibility.disabledReasons?.[0] !== undefined)
+        if (!isEnabled && visibility.disabledReasons?.[0] !== undefined) {
           disabledText = disabledReasonText[visibility.disabledReasons[0] as DisabledReasonsType];
+        }
       }
       const isDisabled = !isEnabled;
 
@@ -301,7 +308,7 @@ function routeVisibility(
     let v = typeof visible === 'boolean' ? visible : visible();
 
     const disabledReasons: DisabledReasonsType[] = [];
-    if (requiredFeatures)
+    if (requiredFeatures) {
       for (const f of requiredFeatures) {
         if (!isSupported(f)) {
           if (shouldHideIfNotSupported(f)) {
@@ -312,8 +319,9 @@ function routeVisibility(
           break;
         }
       }
+    }
 
-    if (requiredPermissions && api.userData)
+    if (requiredPermissions && api.userData) {
       for (const p of requiredPermissions) {
         const hasPermission = api.userData[p];
         if (!hasPermission) {
@@ -321,13 +329,15 @@ function routeVisibility(
           break;
         }
       }
+    }
 
     if (requiredAppFeatures) {
-      for (const f of requiredAppFeatures)
+      for (const f of requiredAppFeatures) {
         if (AppFeatures[f] === false) {
           disabledReasons.push(DisabledReasons.enterpriseFeature);
           break;
         }
+      }
     }
 
     return {

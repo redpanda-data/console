@@ -231,10 +231,18 @@ function updateUrlParams(params: Partial<TopicMessageParams>) {
   });
 
   // Update local storage with the new params
-  if (params.partitionID !== undefined) uiState.topicSettings.searchParams.partitionID = params.partitionID;
-  if (params.maxResults !== undefined) uiState.topicSettings.searchParams.maxResults = params.maxResults;
-  if (params.startOffset !== undefined) uiState.topicSettings.searchParams.startOffset = params.startOffset;
-  if (params.quickSearch !== undefined) uiState.topicSettings.quickSearch = params.quickSearch;
+  if (params.partitionID !== undefined) {
+    uiState.topicSettings.searchParams.partitionID = params.partitionID;
+  }
+  if (params.maxResults !== undefined) {
+    uiState.topicSettings.searchParams.maxResults = params.maxResults;
+  }
+  if (params.startOffset !== undefined) {
+    uiState.topicSettings.searchParams.startOffset = params.startOffset;
+  }
+  if (params.quickSearch !== undefined) {
+    uiState.topicSettings.quickSearch = params.quickSearch;
+  }
 }
 
 /*
@@ -244,7 +252,9 @@ function updateUrlParams(params: Partial<TopicMessageParams>) {
 */
 
 function getMessageAsString(value: string | TopicMessage): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
 
   const obj = Object.assign({}, value) as Partial<TopicMessage>;
   obj.keyBinHexPreview = undefined;
@@ -253,22 +263,32 @@ function getMessageAsString(value: string | TopicMessage): string {
   obj.valueJson = undefined;
   if (obj.key) {
     obj.key.normalizedPayload = undefined;
-    if (obj.key.rawBytes) obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+    if (obj.key.rawBytes) {
+      obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+    }
   }
   if (obj.value) {
     obj.value.normalizedPayload = undefined;
-    if (obj.value.rawBytes) obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+    if (obj.value.rawBytes) {
+      obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+    }
   }
 
   return JSON.stringify(obj, null, 4);
 }
 
 function getPayloadAsString(value: string | Uint8Array | object): string {
-  if (value == null) return '';
+  if (value == null) {
+    return '';
+  }
 
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
 
-  if (value instanceof Uint8Array) return JSON.stringify(Array.from(value), null, 4);
+  if (value instanceof Uint8Array) {
+    return JSON.stringify(Array.from(value), null, 4);
+  }
 
   return JSON.stringify(value, null, 4);
 }
@@ -378,9 +398,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   componentWillUnmount() {
     this.messageSource.dispose();
-    if (this.autoSearchReaction) this.autoSearchReaction();
-    if (this.quickSearchReaction) this.quickSearchReaction();
-    if (this.urlParamsReaction) this.urlParamsReaction();
+    if (this.autoSearchReaction) {
+      this.autoSearchReaction();
+    }
+    if (this.quickSearchReaction) {
+      this.quickSearchReaction();
+    }
+    if (this.urlParamsReaction) {
+      this.urlParamsReaction();
+    }
 
     this.messageSearch.stopSearch();
 
@@ -487,7 +513,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                   data-testid="start-offset-dropdown"
                   onChange={(e) => {
                     if (e === PartitionOffsetOrigin.Custom) {
-                      if (this.currentParams.startOffset < 0) this.currentParams.startOffset = 0;
+                      if (this.currentParams.startOffset < 0) {
+                        this.currentParams.startOffset = 0;
+                      }
                     } else {
                       this.currentParams.startOffset = e;
                     }
@@ -792,11 +820,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   isFilterMatch(_str: string, m: TopicMessage) {
     const searchStr = this.currentParams.quickSearch.toLowerCase();
     // If search string is empty, show all messages
-    if (!searchStr) return true;
+    if (!searchStr) {
+      return true;
+    }
 
-    if (m.offset.toString().toLowerCase().includes(searchStr)) return true;
-    if (m.keyJson?.toLowerCase().includes(searchStr)) return true;
-    if (m.valueJson?.toLowerCase().includes(searchStr)) return true;
+    if (m.offset.toString().toLowerCase().includes(searchStr)) {
+      return true;
+    }
+    if (m.keyJson?.toLowerCase().includes(searchStr)) {
+      return true;
+    }
+    if (m.valueJson?.toLowerCase().includes(searchStr)) {
+      return true;
+    }
     return false;
   }
 
@@ -1157,9 +1193,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const key = `${r.offset} ${r.partitionID}${r.timestamp}`;
     // try collapsing it, removeAll returns the number of matches
     const removed = this.expandedKeys.removeAll((x) => x === key);
-    if (removed === 0)
+    if (removed === 0) {
       // wasn't expanded, so expand it now
       this.expandedKeys.push(key);
+    }
   }
 
   executeMessageSearch(): Promise<TopicMessage[]> {
@@ -1186,7 +1223,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       if (functions.length > 0) {
         filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+        if (IsDev) {
+          console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+        }
       }
     }
 
@@ -1245,8 +1284,12 @@ class SaveMessagesDialog extends Component<{
     const title = count > 1 ? 'Save Messages' : 'Save Message';
 
     // Keep dialog open after closing it, so it can play its closing animation
-    if (count > 0 && !this.isOpen) setTimeout(() => (this.isOpen = true));
-    if (this.isOpen && count === 0) setTimeout(() => (this.isOpen = false));
+    if (count > 0 && !this.isOpen) {
+      setTimeout(() => (this.isOpen = true));
+    }
+    if (this.isOpen && count === 0) {
+      setTimeout(() => (this.isOpen = false));
+    }
 
     return (
       <Modal isOpen={count > 0} onClose={onClose}>
@@ -1295,7 +1338,9 @@ class SaveMessagesDialog extends Component<{
 
   saveMessages() {
     const messages = this.props.messages;
-    if (!messages) return;
+    if (!messages) {
+      return;
+    }
 
     const cleanMessages = this.cleanMessages(messages);
 
@@ -1325,14 +1370,19 @@ class SaveMessagesDialog extends Component<{
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
   convertToCSV(messages: any[]): string {
-    if (messages.length === 0) return '';
+    if (messages.length === 0) {
+      return '';
+    }
 
     const headers: string[] = [...COLUMN_ORDER];
 
     // Add other common fields that might not be in COLUMN_ORDER
-    if (messages[0].compression && !headers.includes('compression')) headers.push('compression');
-    if (messages[0].isTransactional !== undefined && !headers.includes('isTransactional'))
+    if (messages[0].compression && !headers.includes('compression')) {
+      headers.push('compression');
+    }
+    if (messages[0].isTransactional !== undefined && !headers.includes('isTransactional')) {
       headers.push('isTransactional');
+    }
 
     const csvRows = [];
 
@@ -1391,7 +1441,9 @@ class SaveMessagesDialog extends Component<{
     const includeRaw = this.includeRawContent;
 
     const cleanPayload = (p: Payload): Payload => {
-      if (!p) return undefined as any;
+      if (!p) {
+        return undefined as any;
+      }
 
       const cleanedPayload = {
         payload: p.payload,
@@ -1399,7 +1451,9 @@ class SaveMessagesDialog extends Component<{
         encoding: p.encoding,
       } as any as Payload;
 
-      if (p.schemaId && p.schemaId !== 0) cleanedPayload.schemaId = p.schemaId;
+      if (p.schemaId && p.schemaId !== 0) {
+        cleanedPayload.schemaId = p.schemaId;
+      }
 
       return cleanedPayload;
     };
@@ -1562,8 +1616,9 @@ export class MessagePreview extends Component<{
       if (value.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0)
+      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0) {
         return <EmptyBadge mode="empty" />;
+      }
       if (msg.value.encoding === 'binary') {
         // If the original data was binary, display as hex dump
         text = msg.valueBinHexPreview;
@@ -1737,8 +1792,9 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
   }
 
   try {
-    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
+    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
       return <code>null</code>;
+    }
 
     const val = payload.payload;
     const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
@@ -1812,20 +1868,25 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
         sequentialChars = '';
       }
       elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
-      if (code === 10)
+      if (code === 10) {
         // LineFeed (\n) should be rendered properly
         elements.push(<br />);
+      }
     } else {
       sequentialChars += char;
     }
 
     if (maxLength !== undefined) {
       numChars++;
-      if (numChars >= maxLength) break;
+      if (numChars >= maxLength) {
+        break;
+      }
     }
   }
 
-  if (sequentialChars.length > 0) elements.push(sequentialChars);
+  if (sequentialChars.length > 0) {
+    elements.push(sequentialChars);
+  }
 
   return elements;
 }
@@ -1905,8 +1966,12 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
   const report = props.payload.troubleshootReport;
   const [show, setShow] = useState(true);
 
-  if (!report) return null;
-  if (report.length === 0) return null;
+  if (!report) {
+    return null;
+  }
+  if (report.length === 0) {
+    return null;
+  }
 
   return (
     <Box mb="4" mt="4">
@@ -2038,12 +2103,19 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                   original: { value: headerValue },
                 },
               }) => {
-                if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
-                if (headerValue.payload === null) return renderEmptyIcon('"null"');
-                if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>;
+                if (typeof headerValue.payload === 'undefined') {
+                  return renderEmptyIcon('"undefined"');
+                }
+                if (headerValue.payload === null) {
+                  return renderEmptyIcon('"null"');
+                }
+                if (typeof headerValue.payload === 'number') {
+                  return <span>{String(headerValue.payload)}</span>;
+                }
 
-                if (typeof headerValue.payload === 'string')
+                if (typeof headerValue.payload === 'string') {
                   return <span className="cellDiv">{headerValue.payload}</span>;
+                }
 
                 // object
                 return <span className="cellDiv">{toSafeString(headerValue.payload)}</span>;
@@ -2327,7 +2399,9 @@ const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
 );
 
 function renderEmptyIcon(tooltipText?: string) {
-  if (!tooltipText) tooltipText = 'Empty';
+  if (!tooltipText) {
+    tooltipText = 'Empty';
+  }
   return (
     <Tooltip hasArrow label={tooltipText} openDelay={1} placement="top">
       <span style={{ opacity: 0.66, marginLeft: '2px' }}>
@@ -2350,18 +2424,22 @@ export function DeleteRecordsMenuItem(
   const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 
   let errorText: string | undefined;
-  if (isCompacted) errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
-  else if (!hasDeleteRecordsPrivilege(allowedActions))
+  if (isCompacted) {
+    errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
+  } else if (!hasDeleteRecordsPrivilege(allowedActions)) {
     errorText = "You're not permitted to delete records on this topic.";
-  else if (!isSupported(Feature.DeleteRecords)) errorText = "The cluster doesn't support deleting records.";
+  } else if (!isSupported(Feature.DeleteRecords)) {
+    errorText = "The cluster doesn't support deleting records.";
+  }
 
   let content: JSX.Element | string = 'Delete Records';
-  if (errorText)
+  if (errorText) {
     content = (
       <Tooltip hasArrow label={errorText} placement="top">
         {content}
       </Tooltip>
     );
+  }
 
   return (
     <Button isDisabled={!isEnabled} onClick={onClick} variant="outline">

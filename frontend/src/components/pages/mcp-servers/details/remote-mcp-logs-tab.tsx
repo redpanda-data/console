@@ -42,12 +42,20 @@ const DEFAULT_SORTING: SortingState = [
 ];
 
 const isFilterMatch = (filter: string, message: TopicMessage): boolean => {
-  if (!filter) return true;
+  if (!filter) {
+    return true;
+  }
 
   const str = filter.toLowerCase();
-  if (message.offset.toString().toLowerCase().includes(str)) return true;
-  if (message.keyJson?.toLowerCase().includes(str)) return true;
-  if (message.valueJson?.toLowerCase().includes(str)) return true;
+  if (message.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (message.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (message.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
 
   return false;
 };
@@ -150,7 +158,9 @@ export const RemoteMCPLogsTab = observer(() => {
   ];
 
   const filteredMessages = state.messages.filter((x) => {
-    if (!uiState.remoteMcpDetails.logsQuickSearch) return true;
+    if (!uiState.remoteMcpDetails.logsQuickSearch) {
+      return true;
+    }
     return isFilterMatch(uiState.remoteMcpDetails.logsQuickSearch, x);
   });
 

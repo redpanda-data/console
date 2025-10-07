@@ -75,7 +75,9 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
 }
 
 export function getConnectorFriendlyName(className?: string) {
-  if (!className) return '';
+  if (!className) {
+    return '';
+  }
 
   const { friendlyName } = findConnectorMetadata(className) ?? {};
   const displayName = friendlyName ?? removeNamespace(className);

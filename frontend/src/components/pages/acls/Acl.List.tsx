@@ -220,22 +220,30 @@ const PermissionsListTab = observer(() => {
   }));
 
   // In addition, find all principals that are referenced by roles, or acls, that are not service accounts
-  for (const g of principalGroupsView.principalGroups)
-    if (g.principalType === 'User' && !g.principalName.includes('*'))
-      if (!users.any((u) => u.name === g.principalName))
+  for (const g of principalGroupsView.principalGroups) {
+    if (g.principalType === 'User' && !g.principalName.includes('*')) {
+      if (!users.any((u) => u.name === g.principalName)) {
         // is it a user that is being referenced?
         // is the user already listed as a service account?
         users.push({ name: g.principalName, type: 'PRINCIPAL' });
+      }
+    }
+  }
 
-  for (const [_, roleMembers] of rolesApi.roleMembers)
-    for (const roleMember of roleMembers)
-      if (!users.any((u) => u.name === roleMember.name))
+  for (const [_, roleMembers] of rolesApi.roleMembers) {
+    for (const roleMember of roleMembers) {
+      if (!users.any((u) => u.name === roleMember.name)) {
         // make sure that user isn't already in the list
         users.push({ name: roleMember.name, type: 'PRINCIPAL' });
+      }
+    }
+  }
 
   const usersFiltered = users.filter((u) => {
     const filter = uiSettings.aclList.permissionsTab.quickSearch;
-    if (!filter) return true;
+    if (!filter) {
+      return true;
+    }
 
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
@@ -315,7 +323,9 @@ const UsersTab = observer(() => {
 
   const usersFiltered = users.filter((u) => {
     const filter = uiSettings.aclList.usersTab.quickSearch;
-    if (!filter) return true;
+    if (!filter) {
+      return true;
+    }
 
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
@@ -487,7 +497,9 @@ const UserActions = ({ user }: { user: UsersEntry }) => {
 const RolesTab = observer(() => {
   const roles = (rolesApi.roles ?? []).filter((u) => {
     const filter = uiSettings.aclList.rolesTab.quickSearch;
-    if (!filter) return true;
+    if (!filter) {
+      return true;
+    }
     try {
       const quickSearchRegExp = new RegExp(filter, 'i');
       return u.match(quickSearchRegExp);
@@ -653,7 +665,9 @@ const AclsTab = observer((_: { principalGroups: AclPrincipalGroup[] }) => {
     console.warn('Invalid expression');
   }
 
-  if (isLoading || !principalGroups) return DefaultSkeleton;
+  if (isLoading || !principalGroups) {
+    return DefaultSkeleton;
+  }
 
   return (
     <Flex flexDirection="column" gap="4">
@@ -862,7 +876,9 @@ const AlertDeleteFailed: FC<{
 }> = ({ aclFailed, onClose }) => {
   const ref = useRef(null);
 
-  if (!aclFailed) return null;
+  if (!aclFailed) {
+    return null;
+  }
 
   return (
     <Alert mb={4} ref={ref} status="error">
@@ -871,8 +887,12 @@ const AlertDeleteFailed: FC<{
       <AlertDescription>
         <Text>
           {(() => {
-            if (aclFailed.err instanceof Error) return aclFailed.err.message;
-            if (typeof aclFailed.err === 'string') return aclFailed.err;
+            if (aclFailed.err instanceof Error) {
+              return aclFailed.err.message;
+            }
+            if (typeof aclFailed.err === 'string') {
+              return aclFailed.err;
+            }
             return 'Unknown error';
           })()}
         </Text>

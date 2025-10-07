@@ -413,28 +413,39 @@ export function findConnectorMetadata(className: string): ConnectorMetadata | nu
   // Quick and dirty cache
   // If cache has too many entries, remove some
   const cacheKeys = Object.keys(connectorMetadataMatchCache);
-  if (cacheKeys.length > 200) for (const k of cacheKeys.slice(0, 5)) delete connectorMetadataMatchCache[k];
+  if (cacheKeys.length > 200) {
+    for (const k of cacheKeys.slice(0, 5)) {
+      delete connectorMetadataMatchCache[k];
+    }
+  }
 
   // try find in cache
   let meta = connectorMetadataMatchCache[c];
-  if (meta) return meta;
+  if (meta) {
+    return meta;
+  }
 
   // look for exact match
-  for (const e of connectorMetadata)
-    if (e.className)
+  for (const e of connectorMetadata) {
+    if (e.className) {
       if (e.className === c) {
         meta = e;
         break;
       }
+    }
+  }
 
   // look for prefix match
-  if (!meta)
-    for (const e of connectorMetadata)
-      if (e.classNamePrefix)
+  if (!meta) {
+    for (const e of connectorMetadata) {
+      if (e.classNamePrefix) {
         if (c.startsWith(e.classNamePrefix)) {
           meta = e;
           break;
         }
+      }
+    }
+  }
 
   // use fallback icon
   if (!meta) {
@@ -474,10 +485,14 @@ export const ConnectorClass = observer((props: { observable: { class: string } }
 });
 
 export function removeNamespace(className: string): string {
-  if (!className) return className;
+  if (!className) {
+    return className;
+  }
 
   const lastDot = className.lastIndexOf('.');
-  if (lastDot >= 0) return className.slice(lastDot + 1, undefined);
+  if (lastDot >= 0) {
+    return className.slice(lastDot + 1, undefined);
+  }
 
   return className;
 }
@@ -497,7 +512,9 @@ export const OverviewStatisticsCard = observer(() => {
 });
 
 export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
-  if (isEmbedded()) return null;
+  if (isEmbedded()) {
+    return null;
+  }
 
   const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName === p.clusterName);
 
@@ -577,7 +594,9 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
   const toast = useToast();
 
   const renderError: () => { title: string; content: string } | undefined = () => {
-    if (!$state.error) return;
+    if (!$state.error) {
+      return;
+    }
 
     const txt = typeof $state.error === 'string' ? $state.error : $state.error.message;
 
@@ -585,17 +604,20 @@ export const ConfirmModal = observer(<T,>(props: ConfirmModalProps<T>) => {
     let apiErr: ApiError | undefined;
     try {
       apiErr = JSON.parse(txt) as ApiError;
-      if (!(apiErr?.message && apiErr.statusCode)) apiErr = undefined;
+      if (!(apiErr?.message && apiErr.statusCode)) {
+        apiErr = undefined;
+      }
     } catch {
       apiErr = undefined;
     }
 
     // return text only
-    if (!apiErr)
+    if (!apiErr) {
       return {
         title: 'Error',
         content: txt,
       };
+    }
 
     // render error object
     return {
@@ -685,11 +707,15 @@ export const TasksColumn = observer((props: { observable: ClusterConnectors | Cl
   let running = 0;
   let total = 0;
 
-  if ('error' in obs && obs.error != null) return null;
+  if ('error' in obs && obs.error != null) {
+    return null;
+  }
 
   if ('clusterName' in obs) {
     // ClusterConnectors
-    if (obs.error) return null;
+    if (obs.error) {
+      return null;
+    }
     running = obs.connectors.sum((x) => x.runningTasks);
     total = obs.connectors.sum((x) => x.totalTasks);
   } else if ('name' in obs) {
@@ -718,13 +744,17 @@ export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | C
     total = props.observable.totalConnectors;
     error = props.observable.error;
   } else {
-    if (props.observable.length === 0) return null;
+    if (props.observable.length === 0) {
+      return null;
+    }
     error = props.observable[0].error;
     running = props.observable.sum((x) => x.runningConnectors);
     total = props.observable.sum((x) => x.totalConnectors);
   }
 
-  if (error) return null;
+  if (error) {
+    return null;
+  }
 
   return (
     <>
@@ -746,10 +776,18 @@ export const TaskState = observer(
     const iconWrapper = (icon: JSX.Element) => <span style={{ fontSize: '18px' }}>{icon}</span>;
 
     let icon: JSX.Element = <></>;
-    if (state === ConnectorState.Running) icon = iconWrapper(okIcon);
-    if (state === ConnectorState.Failed) icon = iconWrapper(errIcon);
-    if (state === ConnectorState.Paused) icon = iconWrapper(pauseIcon);
-    if (state === ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
+    if (state === ConnectorState.Running) {
+      icon = iconWrapper(okIcon);
+    }
+    if (state === ConnectorState.Failed) {
+      icon = iconWrapper(errIcon);
+    }
+    if (state === ConnectorState.Paused) {
+      icon = iconWrapper(pauseIcon);
+    }
+    if (state === ConnectorState.Unassigned) {
+      icon = iconWrapper(waitIcon);
+    }
 
     let stateContent = (
       <span className="capitalize" style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }}>

@@ -29,7 +29,9 @@ function find(this: any | undefined, arg1: any, arg2: any): any {
 
   const results = findGeneric(self, arg1, arg2, true);
 
-  if (results.length > 0) return results[0];
+  if (results.length > 0) {
+    return results[0];
+  }
   return;
 }
 
@@ -120,7 +122,9 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
         // don't require objects to have the same functions
         // todo: later we might want to have special functions that can compare against the actual value!
         //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
-        if (typeof patternValue === 'function') continue;
+        if (typeof patternValue === 'function') {
+          continue;
+        }
 
         const objValue = (obj as any)[k];
         log(`  [${k}]`);
@@ -152,7 +156,9 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
         } else {
           // Compare object
           log(`  -> descending into [${k}]`);
-          if (!isPatternMatch(objValue, patternValue)) return false;
+          if (!isPatternMatch(objValue, patternValue)) {
+            return false;
+          }
         }
       }
     }
@@ -192,7 +198,9 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const value = obj[key];
-      if (typeof value === 'function') continue;
+      if (typeof value === 'function') {
+        continue;
+      }
 
       // Check if property is a match
       let isMatch = false;
@@ -204,7 +212,9 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
         const clonedPath = Object.assign([], ctx.currentPath);
         ctx.results.push({ propertyName: key, path: clonedPath, value: value });
 
-        if (ctx.returnFirstResult) return true;
+        if (ctx.returnFirstResult) {
+          return true;
+        }
       }
 
       // Descend into object
@@ -213,7 +223,9 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
         const stop = findElement(ctx, value);
         ctx.currentPath.pop();
 
-        if (stop && ctx.returnFirstResult) return true;
+        if (stop && ctx.returnFirstResult) {
+          return true;
+        }
       }
     }
   }
@@ -224,16 +236,22 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
 function findObject(ctx: ObjectSearchContext, obj: any): boolean {
   if (ctx.isMatch(obj, ctx.pattern)) {
     ctx.results.push(obj);
-    if (ctx.returnFirstResult) return true;
+    if (ctx.returnFirstResult) {
+      return true;
+    }
   }
 
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const value = obj[key];
-      if (typeof value !== 'object') continue;
+      if (typeof value !== 'object') {
+        continue;
+      }
 
       const stop = findObject(ctx, value);
-      if (stop) return true;
+      if (stop) {
+        return true;
+      }
     }
   }
 

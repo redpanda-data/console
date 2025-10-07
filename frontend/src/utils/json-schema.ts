@@ -74,12 +74,16 @@ export function generateDefaultFromJsonSchema(
       return isRequired ? false : undefined;
     case 'array': {
       // Always start arrays with at least 1 item to reduce user clicks
-      if (!schema.items) return [];
+      if (!schema.items) {
+        return [];
+      }
       const defaultItem = generateDefaultFromJsonSchema(schema.items);
       return [defaultItem];
     }
     case 'object': {
-      if (!schema.properties) return {};
+      if (!schema.properties) {
+        return {};
+      }
 
       const obj: JsonObject = {};
       // Only include properties that are required according to the schema's required array

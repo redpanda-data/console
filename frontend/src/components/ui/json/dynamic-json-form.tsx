@@ -45,7 +45,9 @@ const isTypeSupported = (type: JSONSchemaType['type'], supportedTypes: string[])
 
 const isSimpleObject = (schema: JSONSchemaType): boolean => {
   const supportedTypes = ['string', 'number', 'integer', 'boolean', 'null'];
-  if (schema.type && isTypeSupported(schema.type, supportedTypes)) return true;
+  if (schema.type && isTypeSupported(schema.type, supportedTypes)) {
+    return true;
+  }
   if (schema.type === 'object') {
     // Allow objects with properties (even nested ones) to be considered "simple" for form rendering
     return !!schema.properties && Object.keys(schema.properties).length > 0;
@@ -116,11 +118,15 @@ const generateExampleData = (schema: JSONSchemaType): JSONValue => {
 };
 
 const hasEmptyValues = (value: JSONValue, schema: JSONSchemaType): boolean => {
-  if (!value) return true;
+  if (!value) {
+    return true;
+  }
 
   if (schema.type === 'object' && typeof value === 'object' && !Array.isArray(value)) {
     const obj = value as Record<string, JSONValue>;
-    if (Object.keys(obj).length === 0) return true;
+    if (Object.keys(obj).length === 0) {
+      return true;
+    }
 
     // Check if all values are empty/default
     if (schema.properties) {
@@ -129,12 +135,24 @@ const hasEmptyValues = (value: JSONValue, schema: JSONSchemaType): boolean => {
         const val = obj[key];
         const subSchema = propSchema as JSONSchemaType;
 
-        if (val === undefined || val === null) return true;
-        if (subSchema.type === 'string' && val === '') return true;
-        if ((subSchema.type === 'number' || subSchema.type === 'integer') && val === 0) return true;
-        if (subSchema.type === 'boolean' && val === false) return true;
-        if (subSchema.type === 'array' && Array.isArray(val) && val.length === 0) return true;
-        if (subSchema.type === 'object' && hasEmptyValues(val, subSchema)) return true;
+        if (val === undefined || val === null) {
+          return true;
+        }
+        if (subSchema.type === 'string' && val === '') {
+          return true;
+        }
+        if ((subSchema.type === 'number' || subSchema.type === 'integer') && val === 0) {
+          return true;
+        }
+        if (subSchema.type === 'boolean' && val === false) {
+          return true;
+        }
+        if (subSchema.type === 'array' && Array.isArray(val) && val.length === 0) {
+          return true;
+        }
+        if (subSchema.type === 'object' && hasEmptyValues(val, subSchema)) {
+          return true;
+        }
 
         return false;
       });
@@ -528,7 +546,9 @@ export const DynamicJSONForm = ({
         );
       case 'array': {
         let arrayValue = Array.isArray(currentValue) ? currentValue : [];
-        if (!propSchema.items) return null;
+        if (!propSchema.items) {
+          return null;
+        }
 
         // Handle empty arrays without triggering state update during render
         if (arrayValue.length === 0) {

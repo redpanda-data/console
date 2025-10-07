@@ -184,7 +184,9 @@ export const PipelineStatus = observer((p: { status: Pipeline_State }) => {
 
 export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
   const { resources } = p.pipeline;
-  if (!resources) return null;
+  if (!resources) {
+    return null;
+  }
 
   return (
     <>
@@ -210,7 +212,9 @@ class RpConnectPipelinesList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    if (!Features.pipelinesApi) return;
+    if (!Features.pipelinesApi) {
+      return;
+    }
 
     pipelinesApi.refreshPipelines(force).catch((err) => {
       if (String(err).includes('404')) {
@@ -233,17 +237,25 @@ class RpConnectPipelinesList extends PageComponent {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) return DefaultSkeleton;
+    if (!pipelinesApi.pipelines) {
+      return DefaultSkeleton;
+    }
 
     const filteredPipelines = (pipelinesApi.pipelines ?? [])
       ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
       .filter((u) => {
         const filter = uiSettings.pipelinesList.quickSearch;
-        if (!filter) return true;
+        if (!filter) {
+          return true;
+        }
         try {
           const quickSearchRegExp = new RegExp(filter, 'i');
-          if (u.id.match(quickSearchRegExp)) return true;
-          if (u.displayName.match(quickSearchRegExp)) return true;
+          if (u.id.match(quickSearchRegExp)) {
+            return true;
+          }
+          if (u.displayName.match(quickSearchRegExp)) {
+            return true;
+          }
           return false;
         } catch {
           return false;

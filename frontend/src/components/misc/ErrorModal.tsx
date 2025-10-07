@@ -157,7 +157,9 @@ const afterClose = action((key: number) => {
 });
 
 export function renderErrorModals() {
-  if (errorModals.length === 0) return null;
+  if (errorModals.length === 0) {
+    return null;
+  }
   const e = errorModals[0];
   return <ErrorModal {...e} />;
 }

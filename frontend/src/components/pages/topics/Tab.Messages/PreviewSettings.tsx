@@ -210,7 +210,9 @@ export class PreviewSettings extends Component<{
     // add ids to elements that don't have any
     const getFreeId = (): string => {
       let i = 1;
-      while (tags.any((t) => t.id === String(i))) i++;
+      while (tags.any((t) => t.id === String(i))) {
+        i++;
+      }
       return String(i);
     };
     const filteredTags = tags.filter((t) => t.id);
@@ -219,7 +221,9 @@ export class PreviewSettings extends Component<{
     }
 
     const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-      if (!result.destination) return;
+      if (!result.destination) {
+        return;
+      }
       arrayMoveMutable(tags, result.source.index, result.destination.index);
     };
 
@@ -416,12 +420,18 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
   const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
 
   for (const t of tags) {
-    if (t.pattern.length === 0) continue;
+    if (t.pattern.length === 0) {
+      continue;
+    }
 
     const trimmed = t.pattern.trim();
     const searchPath = parseJsonPath(trimmed);
-    if (searchPath == null) continue;
-    if (typeof searchPath === 'string') continue; // todo: show error to user
+    if (searchPath == null) {
+      continue;
+    }
+    if (typeof searchPath === 'string') {
+      continue; // todo: show error to user
+    }
 
     const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
       // We'll never get called for '*' or '**' patterns
@@ -430,12 +440,13 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
       return segmentRegex.test(propertyName);
     });
 
-    for (const p of foundProperties)
+    for (const p of foundProperties) {
       results.push({
         tag: t,
         prop: p,
         fullPath: p.path.join('.'),
       });
+    }
   }
 
   // order results by the tag they were created from, and then their path
@@ -448,7 +459,9 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
 
     // first sort by path length
     const pathLengthDiff = a.prop.path.length - b.prop.path.length;
-    if (pathLengthDiff !== 0) return pathLengthDiff;
+    if (pathLengthDiff !== 0) {
+      return pathLengthDiff;
+    }
 
     // then alphabetically
     const pathA = a.fullPath;
@@ -508,10 +521,14 @@ function parseJsonPath(str: string): string[] | string {
         start = pos + 1; // start just after the quote
         end = str.indexOf(c, start); // and collect until the closing quote
 
-        if (end === -1) return `missing closing quote, quote was opened at index ${start - 1}`;
+        if (end === -1) {
+          return `missing closing quote, quote was opened at index ${start - 1}`;
+        }
         match = str.slice(start, end);
 
-        if (match.length > 0) result.push(match);
+        if (match.length > 0) {
+          result.push(match);
+        }
 
         pos = end === -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
         break;
@@ -519,11 +536,17 @@ function parseJsonPath(str: string): string[] | string {
       case '.':
         // A dot, skip over it
 
-        if (pos === 0) return 'pattern cannot start with a dot';
+        if (pos === 0) {
+          return 'pattern cannot start with a dot';
+        }
         pos++;
-        if (pos >= str.length) return 'pattern can not end with a dot';
+        if (pos >= str.length) {
+          return 'pattern can not end with a dot';
+        }
         c = str[pos];
-        if (c === '.') return 'pattern cannot contain more than one dot in a row';
+        if (c === '.') {
+          return 'pattern cannot contain more than one dot in a row';
+        }
         break;
 
       default:
@@ -533,7 +556,9 @@ function parseJsonPath(str: string): string[] | string {
 
         match = end >= 0 ? str.slice(start, end) : str.slice(start, str.length);
 
-        if (match.length > 0) result.push(match);
+        if (match.length > 0) {
+          result.push(match);
+        }
 
         pos = end === -1 ? str.length : end; // continue after the end
         break;
@@ -556,8 +581,9 @@ function parseJsonPath(str: string): string[] | string {
   //
 
   for (const segment of result) {
-    if (segment !== '**' && segment.includes('**'))
+    if (segment !== '**' && segment.includes('**')) {
       return "path segment '**' must not have anything before or after it (except for dots of course)";
+    }
   }
 
   return result;
@@ -566,13 +592,17 @@ function parseJsonPath(str: string): string[] | string {
 function indexOfMany(str: string, matches: string[], position: number): number {
   const indices: number[] = matches.map((_) => -1);
   // for every string we want to find, record the index of its first occurance
-  for (let i = 0; i < matches.length; i++) indices[i] = str.indexOf(matches[i], position);
+  for (let i = 0; i < matches.length; i++) {
+    indices[i] = str.indexOf(matches[i], position);
+  }
 
   // find the first match (smallest value in our results)
   // but skip over -1, because that means the string didn't contain that match
   let smallest = -1;
   for (const i of indices) {
-    if (smallest === -1 || i < smallest) smallest = i;
+    if (smallest === -1 || i < smallest) {
+      smallest = i;
+    }
   }
 
   return smallest;
@@ -622,24 +652,39 @@ if (IsDev) {
     const expected = test.output;
     let result = parseJsonPath(test.input);
 
-    if (typeof result === 'string') result = null as unknown as string[]; // string means error message
-
-    if (result === null && expected === null) continue;
-
-    let hasError = false;
-    if (result === null && expected !== null) hasError = true; // didn't match when it should have
-    if (result !== null && expected === null) hasError = true; // matched something we don't want
-
-    if (!hasError && result && expected) {
-      if (result.length !== expected.length) hasError = true; // wrong length
-
-      for (let i = 0; i < result.length && !hasError; i++) if (result[i] !== expected[i]) hasError = true; // wrong array entry
+    if (typeof result === 'string') {
+      result = null as unknown as string[]; // string means error message
     }
 
-    if (hasError)
+    if (result === null && expected === null) {
+      continue;
+    }
+
+    let hasError = false;
+    if (result === null && expected !== null) {
+      hasError = true; // didn't match when it should have
+    }
+    if (result !== null && expected === null) {
+      hasError = true; // matched something we don't want
+    }
+
+    if (!hasError && result && expected) {
+      if (result.length !== expected.length) {
+        hasError = true; // wrong length
+      }
+
+      for (let i = 0; i < result.length && !hasError; i++) {
+        if (result[i] !== expected[i]) {
+          hasError = true; // wrong array entry
+        }
+      }
+    }
+
+    if (hasError) {
       throw new Error(
         `Error in parseJsonPath test:\nTest: ${JSON.stringify(test)}\nActual Result: ${JSON.stringify(result)}`
       );
+    }
   }
 }
 

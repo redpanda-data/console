@@ -115,7 +115,9 @@ const KafkaConnectorMain = observer(
     const connector = connectClusterStore.getRemoteConnector(connectorName);
 
     const canEdit = connectClusterStore.canEdit;
-    if (!connector) return null;
+    if (!connector) {
+      return null;
+    }
 
     return (
       <>
@@ -210,8 +212,12 @@ const KafkaConnectorMain = observer(
                     >
                       <Button
                         isDisabled={(() => {
-                          if (!canEdit) return true;
-                          if (!connector) return true;
+                          if (!canEdit) {
+                            return true;
+                          }
+                          if (!connector) {
+                            return true;
+                          }
                           const connectorConfigObject = connectorStore?.getConfigObject();
                           if (connectorConfigObject && comparer.shallow(connector.config, connectorConfigObject)) {
                             return true;
@@ -255,9 +261,11 @@ const KafkaConnectorMain = observer(
             </>
           )}
           onOk={async (c) => {
-            if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING']))
+            if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING'])) {
               await api.pauseConnector(clusterName, c.name);
-            else await api.resumeConnector(clusterName, c.name);
+            } else {
+              await api.resumeConnector(clusterName, c.name);
+            }
             await delay(500);
             await refreshData(true);
           }}
@@ -532,7 +540,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     const clusterName = decodeURIComponent(this.props.clusterName);
     const connectorName = decodeURIComponent(this.props.connector);
 
-    if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
+    if (api.connectConnectors?.isConfigured === false) {
+      return <NotConfigured />;
+    }
 
     return (
       <PageContent>
@@ -552,23 +562,37 @@ const ConnectorDetails = observer(
 
     const items = allProps
       .filter((x) => {
-        if (x.isHidden) return false;
-        if (x.entry.definition.type === DataType.Password) return false;
-        if (x.entry.definition.importance !== PropertyImportance.High) return false;
+        if (x.isHidden) {
+          return false;
+        }
+        if (x.entry.definition.type === DataType.Password) {
+          return false;
+        }
+        if (x.entry.definition.importance !== PropertyImportance.High) {
+          return false;
+        }
 
-        if (!x.value) return false;
-        if (x.name === 'name') return false;
+        if (!x.value) {
+          return false;
+        }
+        if (x.name === 'name') {
+          return false;
+        }
 
         return true;
       })
       .orderBy((x) => {
         let i = 0;
-        for (const s of store?.connectorStepDefinitions ?? [])
-          for (const g of s.groups)
+        for (const s of store?.connectorStepDefinitions ?? []) {
+          for (const g of s.groups) {
             for (const p of g.config_keys) {
-              if (p === x.name) return i;
+              if (p === x.name) {
+                return i;
+              }
               i++;
             }
+          }
+        }
 
         return 0;
       });
@@ -703,7 +727,9 @@ const LogsTab = observer(
     ];
 
     const filteredMessages = state.messages.filter((x) => {
-      if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+      if (!uiSettings.connectorsDetails.logsQuickSearch) {
+        return true;
+      }
       return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
     });
 
@@ -750,9 +776,15 @@ const LogsTab = observer(
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson?.toLowerCase().includes(str)) return true;
-  if (m.valueJson?.toLowerCase().includes(str)) return true;
+  if (m.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
   return false;
 }
 

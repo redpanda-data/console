@@ -45,7 +45,9 @@ export function useSecretDetection(form: UseFormReturn<FormValues>, existingSecr
 
   // Check if any detected secrets are missing
   const hasSecretWarnings = useMemo(() => {
-    if (detectedSecrets.length === 0) return false;
+    if (detectedSecrets.length === 0) {
+      return false;
+    }
     return detectedSecrets.some((secretName) => !existingSecrets.includes(secretName));
   }, [detectedSecrets, existingSecrets]);
 

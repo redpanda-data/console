@@ -231,7 +231,9 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
 
   let entries = props.entries;
   const filter = $state.filter;
-  if (filter) entries = entries.filter((x) => x.name.includes(filter) || (x.value ?? '').includes(filter));
+  if (filter) {
+    entries = entries.filter((x) => x.name.includes(filter) || (x.value ?? '').includes(filter));
+  }
 
   const entryOrder = {
     retention: -3,
@@ -240,14 +242,22 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
 
   entries = entries.slice().sort((a, b) => {
     for (const [e, order] of Object.entries(entryOrder)) {
-      if (a.name.includes(e) && !b.name.includes(e)) return order;
-      if (b.name.includes(e) && !a.name.includes(e)) return -order;
+      if (a.name.includes(e) && !b.name.includes(e)) {
+        return order;
+      }
+      if (b.name.includes(e) && !a.name.includes(e)) {
+        return -order;
+      }
     }
     return 0;
   });
 
   const categories = entries.groupInto((x) => x.category);
-  for (const e of categories) if (!e.key) e.key = 'Other';
+  for (const e of categories) {
+    if (!e.key) {
+      e.key = 'Other';
+    }
+  }
 
   const displayOrder = [
     'Retention',
@@ -348,7 +358,9 @@ const ConfigEntryComponent = observer(
             <button
               className={`btnEdit${canEdit ? '' : 'disabled'}`}
               onClick={() => {
-                if (canEdit) p.onEditEntry(p.entry);
+                if (canEdit) {
+                  p.onEditEntry(p.entry);
+                }
               }}
               type="button"
             >
@@ -384,8 +396,9 @@ function isTopicConfigEdittable(
   entry: ConfigEntryExtended,
   hasEditPermissions: boolean
 ): { canEdit: boolean; reason?: string } {
-  if (!hasEditPermissions)
+  if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
+  }
 
   if (isServerless()) {
     const edittableEntries = [

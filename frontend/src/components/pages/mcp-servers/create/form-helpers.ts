@@ -16,7 +16,9 @@ import { RESOURCE_TIERS } from '../remote-mcp-constants';
 import type { Template } from '../templates/remote-mcp-templates';
 
 export function getTierById(id: string | undefined) {
-  if (!id) return;
+  if (!id) {
+    return;
+  }
   return RESOURCE_TIERS.find((t) => t.id === id || t.name === id);
 }
 

@@ -142,7 +142,9 @@ class SchemaList extends PageComponent {
       const matches = schemas?.filter((s) => s.subject === subject.name);
       if (matches && matches.length > 0) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        for (const m of matches) console.log(`found match: ${m.subject} v${m.version}`);
+        for (const m of matches) {
+          console.log(`found match: ${m.subject} v${m.version}`);
+        }
         return true;
       }
     }
@@ -150,7 +152,9 @@ class SchemaList extends PageComponent {
     // Find by regex
     try {
       const quickSearchRegExp = new RegExp(filterString, 'i');
-      if (subject.name.match(quickSearchRegExp)) return true;
+      if (subject.name.match(quickSearchRegExp)) {
+        return true;
+      }
     } catch {}
 
     // Find by normal string matching
@@ -173,8 +177,12 @@ class SchemaList extends PageComponent {
   }
 
   render() {
-    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
-    if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
+    if (api.schemaOverviewIsConfigured === false) {
+      return renderNotConfigured();
+    }
+    if (api.schemaSubjects === undefined) {
+      return DefaultSkeleton; // request in progress
+    }
 
     let filteredSubjects = api.schemaSubjects;
     if (uiSettings.schemaList.quickSearch) {

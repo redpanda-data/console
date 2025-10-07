@@ -134,9 +134,13 @@ export class EditOffsetsModal extends Component<{
 
     const visible = Boolean(offsets);
     this.updateVisible(visible);
-    if (offsets) this.lastOffsets = offsets;
+    if (offsets) {
+      this.lastOffsets = offsets;
+    }
     offsets = offsets ?? this.lastOffsets;
-    if (!offsets) return null;
+    if (!offsets) {
+      return null;
+    }
 
     this.offsetsByTopic = offsets.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
 
@@ -429,7 +433,9 @@ export class EditOffsetsModal extends Component<{
   setPage(page: 0 | 1) {
     if (page === 1) {
       // compute and set newOffset
-      if (this.props.offsets == null) return;
+      if (this.props.offsets == null) {
+        return;
+      }
       const op = this.selectedOption;
 
       // reset all newOffset
@@ -526,7 +532,9 @@ export class EditOffsetsModal extends Component<{
 
           //
           // Copy offsets that exist in the current group from the other group
-          for (const x of selectedOffsets) x.newOffset = getOffset(x.topicName, x.partitionId);
+          for (const x of selectedOffsets) {
+            x.newOffset = getOffset(x.topicName, x.partitionId);
+          }
 
           //
           // Extend our offsets with any offsets that our group currently doesn't have
@@ -539,14 +547,16 @@ export class EditOffsetsModal extends Component<{
               }))
             );
 
-            for (const o of otherFlat)
-              if (!alreadyExists(o.topicName, o.partitionId))
+            for (const o of otherFlat) {
+              if (!alreadyExists(o.topicName, o.partitionId)) {
                 currentOffsets.push({
                   topicName: o.topicName,
                   partitionId: o.partitionId,
                   offset: undefined,
                   newOffset: o.offset,
                 });
+              }
+            }
           }
         } else {
           showErrorModal(
@@ -568,7 +578,7 @@ export class EditOffsetsModal extends Component<{
     const disableContinue = this.selectedOption === 'otherGroup' && !this.selectedGroup;
     const disableNav = this.isApplyingEdit || this.isLoadingTimestamps;
 
-    if (this.page === 0)
+    if (this.page === 0) {
       return (
         <Flex gap={2}>
           <Button key="cancel" onClick={this.props.onClose}>
@@ -589,6 +599,7 @@ export class EditOffsetsModal extends Component<{
           </Button>
         </Flex>
       );
+    }
 
     return (
       <Flex gap={2}>
@@ -611,7 +622,9 @@ export class EditOffsetsModal extends Component<{
   }
 
   updateVisible(visible: boolean) {
-    if (visible === this.lastVisible) return;
+    if (visible === this.lastVisible) {
+      return;
+    }
 
     if (visible) {
       setTimeout(() => {
@@ -730,15 +743,19 @@ class ColAfter extends Component<{
     // Set by timestamp
     if (typeof val === 'object') {
       // placeholder while loading
-      if (val instanceof Date) return val.toLocaleString();
+      if (val instanceof Date) {
+        return val.toLocaleString();
+      }
 
       // actual offset
       if ('offset' in val) {
         // error
-        if (val.error) return <span style={{ color: 'orangered' }}>{val.error}</span>;
+        if (val.error) {
+          return <span style={{ color: 'orangered' }}>{val.error}</span>;
+        }
 
         // successful fetch
-        if (val.timestamp > 0)
+        if (val.timestamp > 0) {
           return (
             <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
               <span>{numberToThousandsString(val.offset)}</span>
@@ -754,6 +771,7 @@ class ColAfter extends Component<{
               </span>
             </div>
           );
+        }
 
         // not found - no message after given timestamp
         // use 'latest'
@@ -783,7 +801,9 @@ class ColAfter extends Component<{
     // Earliest / Latest / OtherGroup
     if (typeof val === 'number') {
       // copied from other group
-      if (val >= 0) return numberToThousandsString(val);
+      if (val >= 0) {
+        return numberToThousandsString(val);
+      }
 
       // Get offset from current partition values
       const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
@@ -844,7 +864,9 @@ export class DeleteOffsetsModal extends Component<{
     let offsets = this.props.offsets;
 
     const visible = Boolean(offsets);
-    if (offsets) this.lastOffsets = offsets;
+    if (offsets) {
+      this.lastOffsets = offsets;
+    }
     offsets = offsets ?? this.lastOffsets;
 
     const offsetsByTopic = offsets?.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
@@ -1014,13 +1036,19 @@ export class DeleteOffsetsModal extends Component<{
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
-    if (x == null) return;
+    if (x == null) {
+      return;
+    }
 
     // from other group
-    if (typeof x === 'number') return x;
+    if (typeof x === 'number') {
+      return x;
+    }
 
     // from timestamp
-    if ('offset' in x) return x.offset;
+    if ('offset' in x) {
+      return x.offset;
+    }
 
     // otherwise 'x' might be 'Date', which means timestamps are resolved yet
     return;
@@ -1037,7 +1065,9 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }));
 
   // filter undefined partitions
-  for (const t of topicOffsets) t.partitions.removeAll((p) => p.offset == null);
+  for (const t of topicOffsets) {
+    t.partitions.removeAll((p) => p.offset == null);
+  }
 
   // assert type:
   // we know that there can't be any undefined offsets anymore
