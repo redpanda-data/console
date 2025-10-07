@@ -528,7 +528,7 @@
         // Require that each enum member value be explicitly initialized.
         "useEnumInitializers": "error",
         // Disallow the use of Math.pow in favor of the ** operator.
-        "useExponentiationOperator": "off",
+        "useExponentiationOperator": "error",
         // Promotes the use of export type for types.
         "useExportType": "off",
         // Enforce naming conventions for JavaScript and TypeScript filenames.
