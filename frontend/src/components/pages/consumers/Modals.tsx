@@ -650,11 +650,9 @@ export class EditOffsetsModal extends Component<{
           this.selectedOption = 'startOffset';
         });
       });
-    } else {
-      if (this.autorunDisposer) {
-        this.autorunDisposer();
-        this.autorunDisposer = null;
-      }
+    } else if (this.autorunDisposer) {
+      this.autorunDisposer();
+      this.autorunDisposer = null;
     }
 
     this.lastVisible = visible;

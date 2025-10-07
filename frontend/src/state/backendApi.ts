@@ -1207,8 +1207,8 @@ const apiStore = {
       for (const binding of info.roleBindings) {
         // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
         binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
         if (binding.resolvedRole == null) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
         }
       }

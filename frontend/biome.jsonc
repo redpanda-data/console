@@ -506,7 +506,7 @@
         // Requires following curly brace conventions.
         "useBlockStatements": "error",
         // Enforce using else if instead of nested if in else clauses.
-        "useCollapsedElseIf": "off",
+        "useCollapsedElseIf": "error",
         // Enforce using single if instead of nested if clauses.
         "useCollapsedIf": "off",
         // Require consistently using either T[] or Array<T>

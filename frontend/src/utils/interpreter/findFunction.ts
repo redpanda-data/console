@@ -141,11 +141,9 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
               log(`  strings don't match (case sensitive): "${objValue}" != "${patternValue}"`);
               return false;
             }
-          } else {
-            if (String(objValue).toUpperCase() !== String(patternValue).toUpperCase()) {
-              log(`  strings don't match (ignore case): "${objValue}" != "${patternValue}"`);
-              return false;
-            }
+          } else if (String(objValue).toUpperCase() !== String(patternValue).toUpperCase()) {
+            log(`  strings don't match (ignore case): "${objValue}" != "${patternValue}"`);
+            return false;
           }
         } else if (typeof objValue === 'boolean' || typeof objValue === 'number' || typeof objValue === 'undefined') {
           // Compare primitive

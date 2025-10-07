@@ -1222,8 +1222,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
       if (functions.length > 0) {
         filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
         if (IsDev) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
         }
       }

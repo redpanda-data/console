@@ -76,8 +76,8 @@ export function numberToThousandsString(n: number): JSX.Element {
 export class TimestampDisplay extends Component<{ unixEpochMillisecond: number; format: TimestampDisplayFormat }> {
   render() {
     const { unixEpochMillisecond: ts, format } = this.props;
-    // biome-ignore lint/correctness/useHookAtTopLevel: part of TimestampDisplay implementation
     if (format === 'relative') {
+      // biome-ignore lint/correctness/useHookAtTopLevel: part of TimestampDisplay implementation
       DebugTimerStore.Instance.useSeconds();
     }
 

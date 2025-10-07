@@ -63,15 +63,13 @@ const generateDefaultValue = (fieldSchema: JSONSchemaType): JSONValue => {
           // Generate defaults for object properties, especially if they're required
           if (fieldSchema.required?.includes(propKey)) {
             result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
-          } else {
+          } else if (propKey === 'key') {
             // Use specific example values for common property names
-            if (propKey === 'key') {
-              result[propKey] = 'key';
-            } else if (propKey === 'value') {
-              result[propKey] = 'value';
-            } else {
-              result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
-            }
+            result[propKey] = 'key';
+          } else if (propKey === 'value') {
+            result[propKey] = 'value';
+          } else {
+            result[propKey] = generateDefaultValue(propSchema as JSONSchemaType);
           }
         }
         return result;

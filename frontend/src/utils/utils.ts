@@ -609,10 +609,8 @@ export const prettyMilliseconds = (
       // something else: object, function, ...
       return 'NaN';
     }
-  } else {
-    if (!Number.isFinite(n)) {
-      return 'N/A';
-    }
+  } else if (!Number.isFinite(n)) {
+    return 'N/A';
   }
 
   // n is a finite number

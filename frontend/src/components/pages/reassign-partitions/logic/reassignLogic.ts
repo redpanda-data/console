@@ -633,10 +633,8 @@ function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
     if (obj.length === 0) {
       throw new Error(`${name} is empty`);
     }
-  } else {
-    if (obj.size === 0) {
-      throw new Error(`${name} is empty`);
-    }
+  } else if (obj.size === 0) {
+    throw new Error(`${name} is empty`);
   }
 }
 

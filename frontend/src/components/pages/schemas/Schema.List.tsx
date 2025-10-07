@@ -141,8 +141,8 @@ class SchemaList extends PageComponent {
       const schemas = api.schemaUsagesById.get(filterAsNumber);
       const matches = schemas?.filter((s) => s.subject === subject.name);
       if (matches && matches.length > 0) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
         for (const m of matches) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.log(`found match: ${m.subject} v${m.version}`);
         }
         return true;

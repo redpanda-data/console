@@ -110,8 +110,8 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
           state.loading = false;
         }
 
-        // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
         if (state.result && !state.result.error) {
+          // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
           options.onSuccess?.(userState!, state.result.returnValue);
         }
       },

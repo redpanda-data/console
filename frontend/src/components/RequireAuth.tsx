@@ -42,8 +42,8 @@ export default class RequireAuth extends Component<{ children: ReactNode }> {
     const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
     const path = window.location.pathname.removePrefix(getBasePath() ?? '');
     const devPrint = (str: string) => {
-      // biome-ignore lint/suspicious/noConsole: dev logging
       if (IsDev) {
+        // biome-ignore lint/suspicious/noConsole: dev logging
         console.log(`loginHandling (${path}): ${str}`);
       }
     };
