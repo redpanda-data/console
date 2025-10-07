@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/core/admin/v2/shadow_link.proto";
+
+message CreateShadowLinkResponse {
+  core.admin.v2.ShadowLink shadow_link = 1;
+}
+
+message GetShadowLinkResponse {
+  core.admin.v2.ShadowLink shadow_link = 1;
+}
+
+message ListShadowLinksResponse {
+  repeated core.admin.v2.ShadowLink shadow_links = 1;
+}
+
+message UpdateShadowLinkResponse {}
+
+message DeleteShadowLinkResponse {}
+
+service ShadowLinkService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Shadow Links"
+    description: "Manage Redpanda shadow links for disaster recovery and failover."
+  };
+
+  rpc CreateShadowLink(core.admin.v2.CreateShadowLinkRequest) returns (CreateShadowLinkResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/shadowlink"
+      body: "shadow_link"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create Shadow Link"
+      description: "Create a new shadow link to replicate topics from a source cluster."
+      responses: {
+        key: "201"
+        value: {
+          description: "Shadow link created"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.CreateShadowLinkResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  rpc GetShadowLink(core.admin.v2.GetShadowLinkRequest) returns (GetShadowLinkResponse) {
+    option (google.api.http) = {get: "/v1alpha1/shadowlink/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Shadow Link"
+      description: "Retrieve details of a specific shadow link by name."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.GetShadowLinkResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  rpc ListShadowLinks(core.admin.v2.ListShadowLinksRequest) returns (ListShadowLinksResponse) {
+    option (google.api.http) = {get: "/v1alpha1/shadowlink"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List Shadow Links"
+      description: "List all shadow links in the cluster."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListShadowLinksResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  rpc UpdateShadowLink(core.admin.v2.UpdateShadowLinkRequest) returns (UpdateShadowLinkResponse) {
+    option (google.api.http) = {
+      patch: "/v1alpha1/shadowlink/{shadow_link.name}"
+      body: "shadow_link"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update Shadow Link"
+      description: "Update an existing shadow link configuration."
+      responses: {
+        key: "200"
+        value: {
+          description: "Shadow link updated"
+          schema: {
+            json_schema: {ref: ".redpanda.api.console.v1alpha1.UpdateShadowLinkResponse"}
+          }
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  rpc DeleteShadowLink(core.admin.v2.DeleteShadowLinkRequest) returns (DeleteShadowLinkResponse) {
+    option (google.api.http) = {delete: "/v1alpha1/shadowlink/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete Shadow Link"
+      description: "Delete a shadow link by name."
+      responses: {
+        key: "204"
+        value: {description: "Shadow link deleted"}
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_EDIT
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}
