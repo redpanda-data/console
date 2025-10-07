@@ -1,6 +1,5 @@
 import { Alert, AlertDescription, AlertIcon, Box, Button, Flex } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
-import { Fragment } from 'react';
 import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 
 import {
@@ -76,7 +75,7 @@ export const LicenseNotification = observer(() => {
         <AlertIcon />
         <AlertDescription>
           {visibleSoonToExpireLicenses.length > 0 && (
-            <Fragment>
+            <>
               {capitalizeFirst(
                 visibleSoonToExpireLicenses
                   .map(
@@ -86,22 +85,22 @@ export const LicenseNotification = observer(() => {
                   .join(' and ')
               )}
               .{' '}
-            </Fragment>
+            </>
           )}
 
           {visibleExpiredLicenses.length > 0 && api.licenseViolation && (
-            <Fragment>
+            <>
               {capitalizeFirst(
                 visibleExpiredLicenses
                   .map((license) => `your ${prettyLicenseType(license, true)} license has expired`)
                   .join(' and ')
               )}
               .{' '}
-            </Fragment>
+            </>
           )}
 
           {coreHasEnterpriseFeatures(api.enterpriseFeaturesUsed) && (
-            <Fragment>
+            <>
               You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
               <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
               cluster.{' '}
@@ -109,7 +108,7 @@ export const LicenseNotification = observer(() => {
                 (activeEnterpriseFeatures.length === 1
                   ? 'This feature requires a license.'
                   : 'These features require a license.')}
-            </Fragment>
+            </>
           )}
 
           <Flex gap={2} my={2}>

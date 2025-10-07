@@ -503,7 +503,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     ) as PartitionOffsetOriginType;
 
     return (
-      <React.Fragment>
+      <>
         <Grid gap={3} gridTemplateColumns="auto 1fr" my={4} width="full">
           <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
             <Label text="Start Offset">
@@ -762,7 +762,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }}
           />
         )}
-      </React.Fragment>
+      </>
     );
   });
 
