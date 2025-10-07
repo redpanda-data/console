@@ -365,6 +365,8 @@
         "noUnmatchableAnbSelector": "error"
       },
       "nursery": {
+        // Restrict imports of deprecated exports.
+        "noDeprecatedImports": "error",
         // Prevent the listing of duplicate dependencies.
         "noDuplicateDependencies": "error",
         // Disallow Promises to be used in places where they are almost certainly a mistake.
@@ -373,6 +375,8 @@
         "noNextAsyncClientComponent": "error",
         // Disallow non-null assertions after optional chaining expressions.
         "noNonNullAssertedOptionalChain": "error",
+        // Replaces usages of forwardRef with passing ref as a prop. Required for now in React v18.x
+        "noReactForwardRef": "off",
         // Disallow variable declarations from shadowing variables declared in the outer scope.
         "noShadow": "off", // Enable later - 95 violations requiring extensive refactoring
         // Disallow the use of useless undefined. (disabled due to conflict with useGetterReturn)

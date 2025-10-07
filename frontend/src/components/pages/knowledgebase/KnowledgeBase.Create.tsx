@@ -46,8 +46,8 @@ import {
   CreateUserRequestSchema,
   SASLMechanism,
 } from '../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic_pb';
-import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1alpha1/topic-TopicService_connectquery';
+import { ListTopicsRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/topic_pb';
+import { listTopics } from '../../../protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { KnowledgeBaseCreate as KnowledgeBaseCreateType } from '../../../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import {
   KnowledgeBaseCreate_EmbeddingGenerator_Provider_CohereSchema,
