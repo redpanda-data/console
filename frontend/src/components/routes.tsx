@@ -352,12 +352,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Add version',
   ),
   MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
-  MakeRoute<{ subjectName: string }>(
-    '/schema-registry/edit-compatibility',
-    EditSchemaCompatibilityPage,
-    'Edit Schema Compatibility',
-  ),
-  MakeRoute<{ subjectName: string }>(
+  MakeRoute<{}>('/schema-registry/edit-compatibility', EditSchemaCompatibilityPage, 'Edit Schema Compatibility'),
+  MakeRoute<{ subjectName?: string }>(
     '/schema-registry/subjects/:subjectName/edit-compatibility',
     EditSchemaCompatibilityPage,
     'Edit Schema Compatibility',

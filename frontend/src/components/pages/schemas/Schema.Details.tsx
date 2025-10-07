@@ -57,7 +57,7 @@ import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
-const SchemaDetailsView: React.FC<{ subjectName?: string }> = ({ subjectName: subjectNameProp }) => {
+const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
   const { subjectName: subjectNameParam } = useParams<{ subjectName: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

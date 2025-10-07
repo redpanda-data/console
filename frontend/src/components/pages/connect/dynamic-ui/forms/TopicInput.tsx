@@ -20,17 +20,17 @@ import {
   Select,
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { api } from '../../../../../state/backendApi';
 import type { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';
 
 export const TopicInput = observer((p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
-  const topics = useLegacyListTopicsQuery();
-
   const state = useLocalObservable(() => {
     const props = new Map(p.properties.map((p) => [p.name, p]));
     const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
     const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
+
+    api.refreshTopics();
 
     return {
       properties: props,
@@ -46,20 +46,20 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         this.property.value = '';
         this._selected = input;
       },
+
+      get matchingTopics() {
+        const allTopics = api.topics?.map((x) => x.topicName);
+        if (!allTopics) return [];
+
+        if (this.isRegex) {
+          const regex = new RegExp(String(this.property.value));
+          return allTopics.filter((t) => regex.test(t));
+        }
+        const validTopics = String(this.property.value).split(',');
+        return allTopics.filter((t) => validTopics.includes(t));
+      },
     };
   });
-
-  const allTopics = topics.data?.topics?.map((x) => x.topicName) ?? [];
-  const _matchingTopics = state.isRegex
-    ? allTopics.filter((t) => {
-        try {
-          const regex = new RegExp(String(state.property.value));
-          return regex.test(t);
-        } catch {
-          return false;
-        }
-      })
-    : allTopics.filter((t) => String(state.property.value).split(',').includes(t));
 
   if (!state.property) return null;
 
@@ -95,7 +95,7 @@ export const TopicInput = observer((p: { properties: Property[]; connectorType: 
         ) : (
           <Select
             isMulti
-            options={allTopics.map((x) => ({ value: x, label: x }))}
+            options={api.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
             value={
               state.property.value
                 ? state.property.value
