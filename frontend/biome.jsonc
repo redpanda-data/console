@@ -538,7 +538,7 @@
         // Enforce naming conventions for JavaScript and TypeScript filenames.
         // Supports TanStack Router convention: allows - prefixed files (e.g., -hooks.ts, $slug)
         "useFilenamingConvention": {
-          "level": "off",
+          "level": "error",
           "options": {
             "requireAscii": true,
             "filenameCases": ["kebab-case"],
