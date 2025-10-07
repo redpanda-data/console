@@ -976,7 +976,7 @@ const apiStore = {
       throw new Error('Cluster status client is not initialized');
     }
 
-    const requests: Array<Promise<any>> = [
+    const requests: Promise<any>[] = [
       client.getKafkaAuthorizerInfo({}).catch((e) => {
         this.clusterOverview.kafkaAuthorizerError = e;
         // biome-ignore lint/suspicious/noConsole: intentional console usage

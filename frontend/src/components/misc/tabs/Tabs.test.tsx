@@ -14,7 +14,7 @@ import React from 'react';
 
 import Tabs, { type Tab } from './Tabs';
 
-const testTabs: Array<Tab> = [
+const testTabs: Tab[] = [
   {
     key: 'test1',
     title: 'test title 1',

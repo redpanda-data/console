@@ -2411,14 +2411,14 @@ function renderEmptyIcon(tooltipText?: string) {
   );
 }
 
-function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction> | undefined) {
+function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined) {
   // undefined has the same meaning as 'all'
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
 export function DeleteRecordsMenuItem(
   isCompacted: boolean,
-  allowedActions: Array<TopicAction> | undefined,
+  allowedActions: TopicAction[] | undefined,
   onClick: () => void
 ) {
   const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);

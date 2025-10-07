@@ -29,7 +29,7 @@ interface KeyValueFieldProps extends InputProps {
 }
 
 export const KeyValueField = ({ label, helperText, showAddButton = true, ...rest }: KeyValueFieldProps) => {
-  const field = useFieldContext<Array<KeyValuePair>>();
+  const field = useFieldContext<KeyValuePair[]>();
 
   // Add a new label
   const addLabel = () => {
@@ -78,7 +78,7 @@ interface KeyValuePairFieldProps extends InputProps {
 }
 
 const KeyValuePairField = ({ index, ...rest }: KeyValuePairFieldProps) => {
-  const parentField = useFieldContext<Array<KeyValuePair>>();
+  const parentField = useFieldContext<KeyValuePair[]>();
   const currentLabel = parentField.state.value[index];
 
   const handleKeyChange = (value: string) => {

@@ -510,7 +510,7 @@
         // Enforce using single if instead of nested if clauses.
         "useCollapsedIf": "error",
         // Require consistently using either T[] or Array<T>
-        "useConsistentArrayType": "off",
+        "useConsistentArrayType": "error",
         // Enforce the use of new for all builtins, except String, Number and Boolean.
         "useConsistentBuiltinInstantiation": "off",
         // Require consistent accessibility modifiers on class properties and methods.

@@ -19,7 +19,7 @@ export type HiddenRadioOption<ValueType> = {
 };
 
 export type HiddenRadioListProps<ValueType> = {
-  options: Array<HiddenRadioOption<ValueType>>;
+  options: HiddenRadioOption<ValueType>[];
   name: string;
   onChange: (value: ValueType) => void;
   value?: ValueType;

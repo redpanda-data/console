@@ -39,7 +39,7 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
 type WizardState = {
   getCurrentStep(): [number, WizardStep];
 
-  getSteps(): Array<WizardStep>;
+  getSteps(): WizardStep[];
 
   canContinue(): boolean;
 

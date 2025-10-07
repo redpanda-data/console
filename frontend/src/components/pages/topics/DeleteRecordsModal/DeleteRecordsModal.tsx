@@ -84,7 +84,7 @@ function SelectPartitionStep({
   onPartitionOptionSelected: (v: PartitionOption) => void;
   onPartitionSpecified: (v: number | null) => void;
   specificPartition: number | null;
-  partitions: Array<number>;
+  partitions: number[];
 }): JSX.Element {
   return (
     <>
@@ -351,7 +351,7 @@ function getMarks(partition: Partition) {
 
   const diff = partition.waterMarkHigh - partition.waterMarkLow;
 
-  let marks: Array<number> = [];
+  let marks: number[] = [];
 
   if (diff > 0) {
     marks = [partition.waterMarkLow, partition.waterMarkLow];
@@ -408,7 +408,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
   const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
   const [timestamp, setTimestamp] = useState<number>(Date.now());
-  const [errors, setErrors] = useState<Array<string>>([]);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const hasErrors = errors.length > 0;
   const isAllPartitions = partitionOption === 'allPartitions';

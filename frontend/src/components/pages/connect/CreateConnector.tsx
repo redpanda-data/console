@@ -53,7 +53,7 @@ import { PageComponent, type PageInitHelper } from '../Page';
 
 const ConnectorType = observer(
   (p: {
-    connectClusters: Array<ClusterConnectors>;
+    connectClusters: ClusterConnectors[];
     activeCluster: string | null;
     onActiveClusterChange: (clusterName: string | null) => void;
     selectedPlugin: ConnectorPlugin | null;
@@ -248,7 +248,7 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
 }
 
 type ConnectorWizardProps = {
-  connectClusters: Array<ClusterConnectors>;
+  connectClusters: ClusterConnectors[];
   activeCluster: string;
 };
 
@@ -296,7 +296,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     setGenericFailure(null);
   };
 
-  const steps: Array<WizardStep> = [
+  const steps: WizardStep[] = [
     {
       title: 'Connector Type',
       description: 'Choose type of connector.',
