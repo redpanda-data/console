@@ -77,7 +77,7 @@ import { FeatureLicenseNotification } from '../../license/feature-license-notifi
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 // TODO - once AclList is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -105,7 +105,7 @@ const getCreateUserButtonProps = () => ({
 class AclList extends PageComponent<{ tab?: AclListTab }> {
   @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
-  constructor(p: { tab?: AclListTab }) {
+  constructor(p: Readonly<PageProps<{ tab?: AclListTab }>>) {
     super(p);
     makeObservable(this);
   }

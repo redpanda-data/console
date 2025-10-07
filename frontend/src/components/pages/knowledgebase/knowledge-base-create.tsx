@@ -258,7 +258,7 @@ const TopicSelector = ({
     : topicOptions;
 
   // Custom option component - show if filtered by regex
-  const formatOptionLabel = (option: { value: string; label: string }) => {
+  const formatOptionLabel = (option: { value: string; label?: React.ReactNode }): React.ReactNode => {
     // Show if this option is being shown because it matches a regex search
     if (searchTerm && isRegexPattern(searchTerm)) {
       return (
@@ -475,7 +475,7 @@ class KnowledgeBaseCreate extends PageComponent {
   @observable currentSecretField: string | null = null;
   @observable validationErrors: { [key: string]: string } = {};
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }
@@ -774,7 +774,7 @@ class KnowledgeBaseCreate extends PageComponent {
     });
 
     // Create embedding generator provider
-    let embeddingProvider: unknown;
+    let embeddingProvider: ReturnType<typeof create<typeof KnowledgeBaseCreate_EmbeddingGenerator_ProviderSchema>>;
     switch (this.formData.embeddingProvider) {
       case 'openai':
         embeddingProvider = create(KnowledgeBaseCreate_EmbeddingGenerator_ProviderSchema, {
@@ -822,7 +822,7 @@ class KnowledgeBaseCreate extends PageComponent {
     const indexer = create(KnowledgeBaseCreate_IndexerSchema, indexerConfig);
 
     // Create retriever configuration (optional)
-    let retriever: unknown;
+    let retriever: ReturnType<typeof create<typeof KnowledgeBaseCreate_RetrieverSchema>> | undefined;
     if (this.formData.rerankerEnabled) {
       const rerankerProvider = create(KnowledgeBaseCreate_Retriever_Reranker_ProviderSchema, {
         provider: {
@@ -868,7 +868,7 @@ class KnowledgeBaseCreate extends PageComponent {
       embeddingGenerator,
       indexer,
       generation,
-      ...(retriever && { retriever }),
+      ...(retriever ? { retriever } : {}),
     });
 
     return kb;

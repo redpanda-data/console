@@ -19,6 +19,7 @@ import {
   getIdFromRule,
   getOperationsForResourceType,
   getRuleDataTestId,
+  type OperationType,
   parsePrincipal,
   type Rule,
   type SharedConfig,
@@ -167,7 +168,7 @@ export function ACLDetails({
                     data.rules.map((rule: Rule) => {
                       const availableRules = Object.entries(getOperationsForResourceType(rule.resourceType)).length;
                       const enabledOperations = Object.entries(rule.operations).map(
-                        ([op, value]: [string, unknown]) => ({
+                        ([op, value]: [string, OperationType]) => ({
                           name: formatLabel(op),
                           originName: op,
                           value,

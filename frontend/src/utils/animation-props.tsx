@@ -113,7 +113,8 @@ export const MotionDiv: FC<{
   children?: React.ReactNode;
   positionTransition?: boolean;
   layoutTransition?: boolean;
-  animProps?: Record<string, unknown>;
+  // biome-ignore lint/suspicious/noExplicitAny: framer-motion props are complex and vary by component
+  animProps?: any;
   style?: CSSProperties;
   className?: string;
 }> = (p) => (
@@ -132,7 +133,8 @@ export const MotionDiv: FC<{
 export const MotionSpan: FC<{
   identityKey?: React.Key;
   children?: React.ReactNode;
-  overrideAnimProps?: Record<string, unknown>;
+  // biome-ignore lint/suspicious/noExplicitAny: framer-motion props are complex and vary by component
+  overrideAnimProps?: any;
   style?: CSSProperties;
 }> = (p) => (
   <motion.span key={p.identityKey} style={p.style} {...(p.overrideAnimProps ?? animProps)}>

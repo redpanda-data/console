@@ -21,7 +21,7 @@ import { AnimatePresence, animProps, MotionDiv } from '../../utils/animation-pro
 export class UrlTestPage extends PageComponent {
   @observable test = true;
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }
@@ -31,7 +31,7 @@ export class UrlTestPage extends PageComponent {
   }
 
   render() {
-    const p = this.props as Record<string, unknown>;
+    const p = this.props;
     return (
       <MotionDiv>
         <div>
@@ -41,7 +41,7 @@ export class UrlTestPage extends PageComponent {
 
         <div>
           <h4>Query:</h4>
-          <pre>{JSON.stringify(p.query, null, 4)}</pre>
+          <pre>{JSON.stringify((p as Record<string, unknown>).query, null, 4)}</pre>
         </div>
 
         <div>

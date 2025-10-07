@@ -108,7 +108,7 @@ class SchemaList extends PageComponent {
   @observable isLoadingSchemaVersionMatches = false;
   @observable isHelpSidebarOpen = false;
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }

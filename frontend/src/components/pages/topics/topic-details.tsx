@@ -38,7 +38,7 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];
@@ -147,7 +147,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
   topicTabs: TopicTab[] = [];
 
-  constructor(props: { topicName: string }) {
+  constructor(props: Readonly<PageProps<{ topicName: string }>>) {
     super(props);
 
     if (isServerless()) {
@@ -441,7 +441,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 
   setTabPage = (activeKey: string): void => {
-    uiSettings.topicDetailsActiveTabKey = activeKey;
+    uiSettings.topicDetailsActiveTabKey = activeKey as TopicTabId;
 
     const loc = appGlobal.location;
     loc.hash = String(activeKey);

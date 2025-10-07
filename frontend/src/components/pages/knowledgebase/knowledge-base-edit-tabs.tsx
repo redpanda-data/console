@@ -273,7 +273,7 @@ const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: T
   // Filter options based on search term
   const filteredOptions = topicOptions.slice(0, 50); // Limit to 50 for performance
 
-  const formatOptionLabel = (option: { value: string; label: string }) => (
+  const formatOptionLabel = (option: { value: string; label?: React.ReactNode }): React.ReactNode => (
     <div>
       <div>{option.label}</div>
     </div>
@@ -521,7 +521,13 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
   @observable query = '';
   @observable topN = 10;
   @observable isQueryLoading = false;
-  @observable retrievalResults: unknown[] = [];
+  @observable retrievalResults: Array<{
+    score?: number;
+    document_name: string;
+    chunk_id: string;
+    topic: string;
+    text: string;
+  }> = [];
   @observable chatResponse = '';
   @observable chatLoadingPhase: 'retrieving' | 'thinking' = 'retrieving';
 
@@ -689,7 +695,7 @@ export class KnowledgeBaseEditTabs extends React.Component<KnowledgeBaseEditTabs
       if (!current[keys[i]]) {
         current[keys[i]] = {};
       }
-      current = current[keys[i]];
+      current = current[keys[i]] as Record<string, unknown>;
     }
 
     const lastKey = keys.at(-1);

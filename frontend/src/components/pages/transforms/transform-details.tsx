@@ -41,7 +41,7 @@ import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -50,7 +50,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 class TransformDetails extends PageComponent<{ transformName: string }> {
   @observable placeholder = 5;
 
-  constructor(p: { transformName: string }) {
+  constructor(p: Readonly<PageProps<{ transformName: string }>>) {
     super(p);
     makeObservable(this);
   }

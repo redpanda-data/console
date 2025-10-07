@@ -33,7 +33,7 @@ import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 @observer
 class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
@@ -46,7 +46,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   // TODO: Actually show this within the pipeline edit page
   @observable tags = {} as Record<string, string>;
 
-  constructor(p: { pipelineId: string }) {
+  constructor(p: Readonly<PageProps<{ pipelineId: string }>>) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

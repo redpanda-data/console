@@ -19,14 +19,14 @@ import { api, rolesApi } from '../../../state/backend-api';
 import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 @observer
 class RoleEditPage extends PageComponent<{ roleName: string }> {
   @observable allDataLoaded = false;
   @observable roleName = '';
 
-  constructor(p: { roleName: string }) {
+  constructor(p: Readonly<PageProps<{ roleName: string }>>) {
     super(p);
     makeObservable(this);
     this.roleName = decodeURIComponent(this.props.roleName);

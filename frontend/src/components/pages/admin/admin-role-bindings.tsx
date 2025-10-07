@@ -34,7 +34,7 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }> {
         <span className="resourceLabelSub" key={binding.ephemeralId}>
           Metadata
         </span>,
-        QuickTable(ObjToKv(binding.metadata), {
+        QuickTable(ObjToKv(binding.metadata) as { key: React.ReactNode; value: React.ReactNode }[], {
           tableStyle: { width: 'auto', fontFamily: 'monospace', fontSize: '80%' },
           gapWidth: '6px',
         }),

@@ -44,7 +44,7 @@ import PageContent from '../../misc/page-content';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -53,7 +53,7 @@ const { ToastContainer, toast } = createStandaloneToast();
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   @observable isChangingPauseState = false;
 
-  constructor(p: { pipelineId: string }) {
+  constructor(p: Readonly<PageProps<{ pipelineId: string }>>) {
     super(p);
     makeObservable(this);
   }
@@ -101,7 +101,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
               { key: 'Description', value: pipeline.description ?? '' },
               { key: 'Status', value: <PipelineStatus status={pipeline.state} /> },
               { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
-              pipeline.url && { key: 'URL', value: pipeline.url },
+              ...(pipeline.url ? [{ key: 'URL', value: pipeline.url }] : []),
             ],
             { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
           )}

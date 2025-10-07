@@ -91,7 +91,7 @@ class UserCreatePage extends PageComponent {
 
   @observable selectedRoles: string[] = [];
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
     this.onCreateUser = this.onCreateUser.bind(this);

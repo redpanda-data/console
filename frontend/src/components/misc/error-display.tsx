@@ -27,7 +27,7 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children
     return children;
   }
 
-  const error: WrappedApiError = api.errors[0];
+  const error = api.errors[0];
 
   return (
     <>

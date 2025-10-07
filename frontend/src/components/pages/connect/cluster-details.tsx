@@ -24,14 +24,14 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 @observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   @observable placeholder = 5;
   @observable filteredResults: ClusterConnectorInfo[] = [];
 
-  constructor(p: { clusterName: string }) {
+  constructor(p: Readonly<PageProps<{ clusterName: string }>>) {
     super(p);
     makeObservable(this);
   }

@@ -120,11 +120,11 @@ export class EditOffsetsModal extends Component<{
   @observable isApplyingEdit = false;
 
   constructor(p: {
-    offsets: GroupOffset[];
-    groupId: string;
+    group: GroupDescription;
+    offsets: GroupOffset[] | null;
     onClose: () => void;
-    initialTopic?: string;
-    initialPartition?: number;
+    initialTopic: string | null;
+    initialPartition: number | null;
   }) {
     super(p);
     makeObservable(this);

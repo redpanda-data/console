@@ -213,7 +213,7 @@ export const PipelineThroughput = observer((p: { pipeline: Pipeline }) => {
 class RpConnectPipelinesList extends PageComponent<{}> {
   @observable placeholder = 5;
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }

@@ -41,7 +41,13 @@ type BadRequest = {
 };
 
 function isBadRequest(obj: unknown): obj is { type: string; debug: BadRequest } {
-  return obj && typeof obj === 'object' && 'type' in obj && obj.type === 'google.rpc.BadRequest';
+  return (
+    obj !== null &&
+    obj !== undefined &&
+    typeof obj === 'object' &&
+    'type' in obj &&
+    obj.type === 'google.rpc.BadRequest'
+  );
 }
 
 type RegisterFormData = {

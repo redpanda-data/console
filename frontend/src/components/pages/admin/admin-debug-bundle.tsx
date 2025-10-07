@@ -127,7 +127,7 @@ export class AdminDebugBundle extends PageComponent {
     });
   }
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }

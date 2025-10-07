@@ -9,7 +9,7 @@ import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backend-ap
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import PageContent from '../../../misc/page-content';
-import { PageComponent, type PageInitHelper } from '../../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../../page';
 import { formatPipelineError } from '../errors';
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -21,7 +21,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   @observable secret = '';
   @observable isUpdating = false;
 
-  constructor(p: { secretId: string }) {
+  constructor(p: Readonly<PageProps<{ secretId: string }>>) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

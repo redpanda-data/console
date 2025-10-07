@@ -211,7 +211,7 @@ export class ConnectClusterStore {
           }
         }
       } catch (error) {
-        throw new SecretCreationError(error);
+        throw new SecretCreationError(String(error));
       }
     }
     try {
@@ -228,7 +228,7 @@ export class ConnectClusterStore {
         }
       }
 
-      yield api.createConnector(this.clusterName, finalProperties.name, pluginClass, finalProperties);
+      yield api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties);
       this.removePluginState(pluginClass);
     } catch (error) {
       // In case we want to delete secrets on failure
@@ -239,7 +239,7 @@ export class ConnectClusterStore {
       //         )
       //     );
       // }
-      throw new ConnectorCreationError(error);
+      throw new ConnectorCreationError(String(error));
     }
   });
 
@@ -311,7 +311,11 @@ export class ConnectClusterStore {
 
   getConnectorStore(connectorName: string) {
     const connector = this.getRemoteConnector(connectorName);
-    const connectorProperties = this.getConnector(connector?.class ?? '', connectorName, connector?.config);
+    const connectorProperties = this.getConnector(
+      connector?.class ?? '',
+      connectorName,
+      connector?.config as Record<string, unknown> | undefined
+    );
     return connectorProperties;
   }
 
@@ -573,7 +577,7 @@ export class ConnectorPropertiesStore {
     for (const [key, value] of Object.entries(properties)) {
       const property = this.propsByName.get(key);
       if (property) {
-        property.value = value;
+        property.value = value as null | string | number | boolean | string[];
       }
     }
   }
@@ -679,10 +683,11 @@ export class ConnectorPropertiesStore {
     } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error in initConfig', err);
-      this.error =
-        typeof err === 'object'
-          ? (err.message ?? JSON.stringify(err, undefined, 4))
-          : JSON.stringify(err, undefined, 4);
+      if (err instanceof Error) {
+        this.error = err.message;
+      } else {
+        this.error = JSON.stringify(err, undefined, 4);
+      }
     }
 
     this.initPending = false;
@@ -841,7 +846,7 @@ export class ConnectorPropertiesStore {
         const property = observable({
           name,
           entry: p,
-          value,
+          value: value as null | string | number | boolean | string[],
           isHidden: hiddenProperties.includes(name),
           errors: p.value.errors ?? [],
           lastErrors: [],
@@ -851,19 +856,24 @@ export class ConnectorPropertiesStore {
           propertyGroup: undefined as PropertyGroup | undefined,
           crud: this.crud,
           isDisabled: undefined,
-        });
+        }) as Property;
 
         if (this.appliedConfig?.[name]) {
-          property.value = sanitizeValue(this.appliedConfig[name], definitionType);
+          property.value = sanitizeValue(this.appliedConfig[name], definitionType) as
+            | null
+            | string
+            | number
+            | boolean
+            | string[];
         }
         if (p.definition.type === DataType.Password && !!this.secrets) {
           const secret = this.secrets.getSecret(property.name);
-          secret.extractSecretId(property.value);
+          secret.extractSecretId(String(property.value));
 
           // Catch assignments to the "value" of this property,
           // in order to copy the new value into the secret as well
           intercept(property, 'value', (change) => {
-            secret.value = change.newValue;
+            secret.value = String(change.newValue);
             return change;
           });
         }

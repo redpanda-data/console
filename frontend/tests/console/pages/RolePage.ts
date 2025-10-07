@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import { expect } from '@playwright/test';
 
 import { ACLPage } from './ACLPage';
@@ -97,11 +98,7 @@ export class RolePage extends ACLPage {
     const countElement = this.page.locator(`text=/Matching users \\/ principals \\(${expectedCount}\\)/`);
     await countElement.waitFor({ state: 'visible', timeout: 5000 });
   }
-  `
-  $;
-  {
-}
-`
+
   /**
    * Delete membership from the role
    * @param usernames Array of usernames to remove from the role
@@ -109,12 +106,7 @@ export class RolePage extends ACLPage {
   async deleteMembership(usernames: string[]) {
     for (const username of usernames) {
       // Find the member element and its delete button
-      const deleteButton = this.page.getByTestId(`;
-remove - user - $;
-{
-  username;
-}
--button`);
+      const deleteButton = this.page.getByTestId(`remove-user-${username}-button`);
 
       // Click the delete button
       await deleteButton.click();

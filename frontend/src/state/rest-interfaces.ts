@@ -28,7 +28,15 @@ export type ApiError = {
 };
 
 export function isApiError(obj: unknown): obj is ApiError {
-  if (obj && typeof obj === 'object' && typeof obj.statusCode === 'number' && typeof obj.message === 'string') {
+  if (
+    obj !== null &&
+    obj !== undefined &&
+    typeof obj === 'object' &&
+    'statusCode' in obj &&
+    typeof (obj as { statusCode: unknown }).statusCode === 'number' &&
+    'message' in obj &&
+    typeof (obj as { message: unknown }).message === 'string'
+  ) {
     return true;
   }
 

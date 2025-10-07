@@ -26,7 +26,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 
 @observer
 class QuotasList extends PageComponent {
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }

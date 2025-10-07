@@ -896,7 +896,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     function onCopyValue(original: TopicMessage) {
       navigator.clipboard
-        .writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes))
+        .writeText(
+          getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object)
+        )
         .then(() => {
           toast({
             status: 'success',
@@ -908,7 +910,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     function onCopyKey(original: TopicMessage) {
       navigator.clipboard
-        .writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes))
+        .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
         .then(() => {
           toast({
             status: 'success',
@@ -1360,7 +1362,7 @@ class SaveMessagesDialog extends Component<{
       document.body.appendChild(link); // required in firefox
       link.click();
     } else if (this.format === 'csv') {
-      const csvContent = this.convertToCSV(cleanMessages);
+      const csvContent = this.convertToCSV(cleanMessages as TopicMessage[]);
       const link = document.createElement('a');
       const file = new Blob([csvContent], { type: 'text/csv' });
       link.href = URL.createObjectURL(file);
@@ -1427,7 +1429,8 @@ class SaveMessagesDialog extends Component<{
           values.push(message.value?.size || '');
         } else {
           // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
-          values.push(message[header] !== undefined ? message[header] : '');
+          const messageValue = (message as Record<string, unknown>)[header];
+          values.push(messageValue !== undefined ? messageValue : '');
         }
       }
 
@@ -1453,6 +1456,9 @@ class SaveMessagesDialog extends Component<{
         payload: p.payload,
         rawPayload: includeRaw && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
         encoding: p.encoding,
+        isPayloadNull: p.isPayloadNull,
+        schemaId: 0,
+        size: p.size,
       } as Payload;
 
       if (p.schemaId && p.schemaId !== 0) {
@@ -1473,7 +1479,7 @@ class SaveMessagesDialog extends Component<{
 
       msg.headers = src.headers.map((h) => ({
         key: h.key,
-        value: cleanPayload(h.value),
+        value: cleanPayload(h.value) as Payload,
       }));
 
       msg.key = cleanPayload(src.key);
@@ -1507,24 +1513,24 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
       if (key.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (key.payload == null || key.payload.length === 0) {
+      if (key.payload == null || (typeof key.payload === 'string' && key.payload.length === 0)) {
         return <EmptyBadge mode="empty" />;
       }
 
       let text: ReactNode = <></>;
 
       if (key.encoding === 'binary') {
-        text = cullText(msg.keyBinHexPreview, 44);
+        text = cullText(msg.keyBinHexPreview as string, 44);
       } else if (key.encoding === 'utf8WithControlChars') {
-        text = highlightControlChars(key.payload);
+        text = highlightControlChars(key.payload as string);
       } else if (isPrimitive) {
-        text = cullText(key.payload, 44);
+        text = cullText(key.payload as string, 44);
       } else {
         // Only thing left is 'object'
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
         const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
-          const tags = getPreviewTags(key.payload, previewTags);
+          const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags);
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
               <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
@@ -1620,21 +1626,25 @@ export class MessagePreview extends Component<{
       if (value.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0) {
+      if (
+        value.encoding === 'null' ||
+        value.payload == null ||
+        (typeof value.payload === 'string' && value.payload.length === 0)
+      ) {
         return <EmptyBadge mode="empty" />;
       }
       if (msg.value.encoding === 'binary') {
         // If the original data was binary, display as hex dump
-        text = msg.valueBinHexPreview;
+        text = msg.valueBinHexPreview as React.ReactNode;
       } else if (isPrimitive) {
         // If we can show the value as a primitive, do so.
-        text = value.payload;
+        text = value.payload as React.ReactNode;
       } else {
         // Only thing left is 'object'
         // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
         const previewTags = this.props.previewFields().filter((t) => t.searchInMessageValue);
         if (previewTags.length > 0) {
-          const tags = getPreviewTags(value.payload, previewTags);
+          const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags);
           text = (
             <span className="cellDiv fade" style={{ fontSize: '95%' }}>
               <div className={`previewTags previewTags-${uiState.topicSettings.previewDisplayMode}`}>
@@ -1806,14 +1816,16 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
     if (payload.encoding === 'binary') {
       const mode = 'hex' as 'ascii' | 'raw' | 'hex';
       if (mode === 'raw') {
-        return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
+        return (
+          <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val as React.ReactNode}</code>
+        );
       }
       if (mode === 'hex') {
         const rawBytes = payload.rawBytes ?? payload.normalizedPayload;
 
-        if (rawBytes) {
+        if (rawBytes && (typeof rawBytes === 'string' || Array.isArray(rawBytes) || rawBytes instanceof Uint8Array)) {
           let result = '';
-          for (const rawByte of rawBytes) {
+          for (const rawByte of rawBytes as Uint8Array) {
             result += `${rawByte.toString(16).padStart(2, '0')} `;
           }
           return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
@@ -1834,7 +1846,7 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
     // Decode payload from base64 and render control characters as code highlighted text, such as
     // `NUL`, `ACK` etc.
     if (payload.encoding === 'utf8WithControlChars') {
-      const elements = highlightControlChars(val);
+      const elements = highlightControlChars(val as string);
 
       return (
         <div className="codeBox" data-testid="payload-content">

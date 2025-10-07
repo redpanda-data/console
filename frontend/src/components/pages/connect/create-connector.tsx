@@ -396,9 +396,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
               // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
               // we need to copy the values from the json into the secrets
-              const valueFromJson = parsedUpdatedConfig[p.name];
+              const valueFromJson = parsedUpdatedConfig?.[p.name];
               if (!secret.value && Boolean(valueFromJson)) {
-                secret.value = valueFromJson;
+                secret.value = String(valueFromJson);
               }
             }
           }
@@ -422,13 +422,13 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             return { conditionMet: false };
           }
         } catch (e) {
-          throw new ConnectorValidationError(e);
+          throw new ConnectorValidationError(String(e));
         }
 
         try {
           openCreatingModal();
 
-          await connectClusterStore.createConnector(selectedPlugin?.class ?? '', parsedUpdatedConfig);
+          await connectClusterStore.createConnector(selectedPlugin?.class ?? '', parsedUpdatedConfig ?? undefined);
 
           // Wait a bit for the connector to appear, then navigate to it
           const maxScanTime = 10_000;

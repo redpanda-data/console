@@ -198,7 +198,7 @@ export function assignDeep(target: Record<string, unknown>, source: Record<strin
       if (!existing || typeof existing !== 'object') {
         target[key] = value;
       } else {
-        assignDeep(target[key], value);
+        assignDeep(target[key] as Record<string, unknown>, value as Record<string, unknown>);
       }
 
       continue;
@@ -247,7 +247,7 @@ export function collectElements(
     results: [],
     returnFirstResult: returnFirstMatch,
   };
-  collectElementsRecursive(ctx, obj);
+  collectElementsRecursive(ctx, obj as Record<string, unknown>);
   return ctx.results;
 }
 
@@ -269,9 +269,9 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<stri
       }
 
       // descend into object
-      if (typeof value === 'object') {
+      if (typeof value === 'object' && value !== null) {
         ctx.currentPath.push(key);
-        const childResult = collectElementsRecursive(ctx, value);
+        const childResult = collectElementsRecursive(ctx, value as Record<string, unknown>);
         ctx.currentPath.pop();
 
         if (childResult === 'abort') {
@@ -333,9 +333,9 @@ export function collectElements2(
 
         case '*':
           // Explore all properties
-          for (const key in currentObj) {
-            if (Object.hasOwn(currentObj, key)) {
-              const value = currentObj[key];
+          for (const key in currentObj as Record<string, unknown>) {
+            if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
+              const value = (currentObj as Record<string, unknown>)[key];
               if (value == null || typeof value === 'function') {
                 continue;
               }
@@ -350,9 +350,9 @@ export function collectElements2(
 
         default:
           // Some user defined string
-          for (const key in currentObj) {
-            if (Object.hasOwn(currentObj, key)) {
-              const value = currentObj[key];
+          for (const key in currentObj as Record<string, unknown>) {
+            if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
+              const value = (currentObj as Record<string, unknown>)[key];
               if (value == null || typeof value === 'function') {
                 continue;
               }
@@ -389,7 +389,7 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
   // slice is needed because messages array is observable
   for (const m of messages.slice()) {
     const payload = m.value.payload;
-    getAllKeysRecursive(ctx, payload);
+    getAllKeysRecursive(ctx, payload as Record<string, unknown>);
 
     ctx.currentPath = [];
     ctx.currentFullPath = '';
@@ -447,7 +447,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown
 
       // descend into object
       if (typeof value === 'object' && value != null) {
-        const childResult = getAllKeysRecursive(ctx, value);
+        const childResult = getAllKeysRecursive(ctx, value as Record<string, unknown>);
 
         if (childResult === 'abort') {
           result = 'abort';
@@ -856,7 +856,7 @@ export function retrier<T>(
       .catch((reason: unknown) => {
         if (attempts > 0) {
           return delay(delayTime)
-            .then(retrier.bind(null, operation, { attempts: attempts - 1, delayTime }))
+            .then(() => retrier(operation, { attempts: attempts - 1, delayTime }))
             .then(resolve)
             .catch(reject);
         }
@@ -942,6 +942,9 @@ export function decodeURIComponentPercents(encodedStr: string): string {
 export function getOidcSubject(error: {
   details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];
 }): string | null {
+  if (!error.details) {
+    return null;
+  }
   for (const detail of error.details) {
     if (detail.debug?.metadata?.login_type === 'OIDC' && detail.debug.metadata.subject) {
       return detail.debug.metadata.subject;

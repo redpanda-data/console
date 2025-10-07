@@ -60,7 +60,7 @@ class Overview extends PageComponent {
     return api.brokers?.sum((b) => (b.rack ? 1 : 0));
   }
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this);
   }

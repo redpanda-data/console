@@ -29,7 +29,7 @@ import { AclRequestDefault } from '../../../state/rest-interfaces';
 import { Features } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 @observer
 class UserDetailsPage extends PageComponent<{ userName: string }> {
@@ -48,7 +48,7 @@ class UserDetailsPage extends PageComponent<{ userName: string }> {
   @observable isChangePasswordModalOpen = false;
   @observable isChangeRolesModalOpen = false;
 
-  constructor(p: { userName: string }) {
+  constructor(p: Readonly<PageProps<{ userName: string }>>) {
     super(p);
     makeObservable(this);
   }

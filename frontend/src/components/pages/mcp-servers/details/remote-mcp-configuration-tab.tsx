@@ -134,9 +134,10 @@ export const RemoteMCPConfigurationTab = () => {
 
     const updatedTools = currentData.tools.map((tool) => {
       if (tool.id === toolId) {
+        const yamlLabel = template.yaml.label as string | undefined;
         return {
           ...tool,
-          name: template.yaml.label || tool.name,
+          name: yamlLabel || tool.name,
           componentType: template.componentType,
           config: stringify(template.yaml),
           selectedTemplate: template.name,

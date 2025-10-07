@@ -90,7 +90,8 @@ import { type AppFeature, AppFeatures } from '../utils/env';
 //
 //	Route Types
 //
-export type IRouteEntry = PageDefinition<Record<string, never>>;
+// biome-ignore lint/suspicious/noExplicitAny: route definitions have varying type parameters
+export type IRouteEntry = PageDefinition<any>;
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
   path: string;
@@ -213,14 +214,14 @@ export interface MenuItemState {
 }
 
 // Separate component to handle the route rendering logic
-const RouteRenderer: FunctionComponent<{ route: PageDefinition<Record<string, never>> }> = ({ route }) => {
+function RouteRenderer<TRouteParams>({ route }: { route: PageDefinition<TRouteParams> }): JSX.Element {
   const matchedPath = useMatch(route.path) ?? '';
   const params = useParams();
 
-  const pageProps: PageProps = {
+  const pageProps = {
     matchedPath,
     ...params,
-  } as PageProps;
+  } as PageProps<TRouteParams>;
 
   useEffect(() => {
     // Only update if we haven't already and the path has changed
@@ -238,7 +239,7 @@ const RouteRenderer: FunctionComponent<{ route: PageDefinition<Record<string, ne
   }, [route.path, route.title, route.pageType, route.icon, route.visibilityCheck]);
 
   return <route.pageType key={route.path} {...pageProps} />;
-};
+}
 
 /**
  * @description A higher-order-component using feature flags to check if it's possible to navigate to a given route.

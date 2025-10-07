@@ -346,7 +346,7 @@ function cachedApiRequest<T>(url: string, force = false): Promise<T> {
 
   if (entry.isPending) {
     // return already running request
-    return entry.lastPromise;
+    return entry.lastPromise as Promise<T>;
   }
 
   if (entry.resultAge > REST_CACHE_DURATION_SEC || force) {
@@ -356,7 +356,7 @@ function cachedApiRequest<T>(url: string, force = false): Promise<T> {
   }
 
   // Return last result (can be still pending, or completed but not yet expired)
-  return entry.lastPromise;
+  return entry.lastPromise as Promise<T>;
 }
 
 export async function handleExpiredLicenseError(r: Response) {
@@ -1029,12 +1029,18 @@ const apiStore = {
 
     this.clusterOverview = {
       ...this.clusterOverview,
-      kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse,
-      console: consoleInfoResponse,
-      kafka: kafkaResponse,
-      redpanda: redpandaResponse,
-      schemaRegistry: schemaRegistryResponse,
-      kafkaConnect: kafkaConnectResponse,
+      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+      kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse as any,
+      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+      console: consoleInfoResponse as any,
+      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+      kafka: kafkaResponse as any,
+      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+      redpanda: redpandaResponse as any,
+      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+      schemaRegistry: schemaRegistryResponse as any,
+      // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
+      kafkaConnect: kafkaConnectResponse as any,
     };
   },
 
@@ -2003,7 +2009,7 @@ const apiStore = {
         }),
       }
     );
-    return parseOrUnwrap<void>(response, null);
+    return parseOrUnwrap<CreateSecretResponse>(response, null);
   },
 
   async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
@@ -2459,7 +2465,10 @@ export const knowledgebaseApi = observable({
         });
 
       // Handle response structure (some APIs return res.response, others return res directly)
-      const response = (res as { response?: unknown })?.response || res;
+      const response = ((res as { response?: unknown })?.response || res) as {
+        knowledgeBases: KnowledgeBase[];
+        nextPageToken?: string;
+      };
       if (!response) {
         break;
       }
@@ -3166,7 +3175,7 @@ function normalizeAcls(acls: AclResource[]) {
 export function aclRequestToQuery(request: GetAclsRequest): string {
   const filters = ObjToKv(request)
     .filter((kv) => !!kv.value)
-    .map((x) => [x.key, x.value]);
+    .map((x) => [x.key, String(x.value)]);
 
   const searchParams = new URLSearchParams(filters);
   return searchParams.toString();

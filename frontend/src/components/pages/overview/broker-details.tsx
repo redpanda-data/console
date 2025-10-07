@@ -24,13 +24,13 @@ import { ConfigList } from '../../misc/config-list';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { Statistic } from '../../misc/statistic';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 @observer
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
   @observable id = 0;
 
-  constructor(p: { brokerId: string }) {
+  constructor(p: Readonly<PageProps<{ brokerId: string }>>) {
     super(p);
     makeObservable(this);
 

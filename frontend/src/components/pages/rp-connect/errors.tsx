@@ -69,7 +69,7 @@ export function extractLintHintsFromError(err: unknown): Record<string, LintHint
     lintHints[`hint_${hintIndex++}`] = create(LintHintSchema, {
       line: 0,
       column: 0,
-      hint: err.message || String(err),
+      hint: err instanceof Error ? err.message : String(err),
       lintType: 'error',
     });
   }

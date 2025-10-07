@@ -77,7 +77,6 @@ export class ActiveReassignments extends Component<{
   @observable showThrottleDialog = false;
 
   constructor(p: {
-    currentReassignments: PartitionReassignments;
     throttledTopics: string[];
     onRemoveThrottleFromTopics: () => void;
   }) {

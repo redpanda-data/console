@@ -50,7 +50,7 @@ import { Button, DefaultSkeleton, IconButton, numberToThousandsString } from '..
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
 import { Statistic } from '../../misc/statistic';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 import AclList from '../topics/Tab.Acl/acl-list';
 
 const DEFAULT_MATCH_ALL_REGEX = /.*/s;
@@ -84,7 +84,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
   @observable quickSearch = queryToObj(window.location.search).q;
   @observable showWithLagOnly = Boolean(queryToObj(window.location.search).withLag);
 
-  constructor(p: { groupId: string }) {
+  constructor(p: Readonly<PageProps<{ groupId: string }>>) {
     super(p);
     makeObservable(this);
   }

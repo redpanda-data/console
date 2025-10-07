@@ -45,7 +45,7 @@ import { KowlDiffEditor } from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
-import { PageComponent } from '../page';
+import { PageComponent, type PageProps } from '../page';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -62,7 +62,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     appGlobal.onRefresh = () => this.refreshData(true);
   }
 
-  constructor(p: { subjectName: string }) {
+  constructor(p: Readonly<PageProps<{ subjectName: string }>>) {
     super(p);
     this.subjectNameRaw = decodeURIComponentPercents(this.props.subjectName);
     this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);

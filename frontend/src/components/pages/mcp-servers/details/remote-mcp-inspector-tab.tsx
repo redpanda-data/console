@@ -230,9 +230,10 @@ export const RemoteMCPInspectorTab = () => {
         if (updatedParams.messages && Array.isArray(updatedParams.messages) && updatedParams.messages.length > 0) {
           updatedParams = {
             ...updatedParams,
-            messages: updatedParams.messages.map((msg) =>
-              (msg as { topic_name?: string })?.topic_name ? msg : { ...msg, topic_name: availableTopic }
-            ),
+            messages: updatedParams.messages.map((msg) => {
+              const msgTyped = msg as { topic_name?: string };
+              return msgTyped?.topic_name ? msg : { ...(msg as object), topic_name: availableTopic };
+            }),
           };
         } else {
           // Fallback to top-level topic_name

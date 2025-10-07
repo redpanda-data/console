@@ -251,7 +251,7 @@ export const Label = (p: {
           {p.text} {p.textSuffix}
         </label>
       </div>
-      <div>{newChild}</div>
+      <div>{newChild as React.ReactElement}</div>
     </div>
   );
 };
@@ -358,7 +358,7 @@ export class OptionGroup<T extends string> extends Component<{
             p.onChange(val);
           }}
           options={ObjToKv(p.options).map((kv) => ({
-            value: kv.value,
+            value: String(kv.value),
             label: kv.key,
           }))}
           value={p.value}
@@ -445,7 +445,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
   // we could just store the value in a local as well, but that might be opimized out.
   mobxSink: unknown | undefined;
 
-  constructor(p: Record<string, never>) {
+  constructor(p: StatusIndicatorProps) {
     super(p);
 
     // Periodically check if we got any new messages. If not, show a different text after some time

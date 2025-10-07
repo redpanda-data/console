@@ -27,7 +27,7 @@ import { openModal } from '../../../utils/modal-container';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
-import { PageComponent, type PageInitHelper } from '../page';
+import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 import { ExplicitConfirmModal } from '../rp-connect/modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
@@ -46,9 +46,9 @@ class KnowledgeBaseDetails extends PageComponent<KnowledgeBaseDetailsProps> {
   @observable consumerGroupLoading = false;
   @observable consumerGroupLoadFailed = false;
 
-  private editTabsRef: React.RefObject<{ handleSave: () => Promise<void> }> = React.createRef();
+  private editTabsRef = React.createRef<KnowledgeBaseEditTabs>();
 
-  constructor(p: { knowledgebaseId: string }) {
+  constructor(p: Readonly<PageProps<{ knowledgebaseId: string }>>) {
     super(p);
     makeObservable(this);
   }

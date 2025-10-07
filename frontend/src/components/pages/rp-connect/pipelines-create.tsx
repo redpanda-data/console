@@ -46,6 +46,7 @@ import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import type { ConnectComponentType } from './types/schema';
 import type { AddUserFormData, WizardFormData } from './types/wizard';
 import { getConnectTemplate } from './utils/yaml';
+import type { LintHint } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -66,11 +67,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   @observable editorContent = exampleContent;
   @observable isCreating = false;
   @observable secrets: string[] = [];
-  @observable lintResults: Record<string, unknown> = {};
+  @observable lintResults: Record<string, LintHint> = {};
   // TODO: Actually show this within the pipeline create page
   @observable tags = {} as Record<string, string>;
 
-  constructor(p: Record<string, never>) {
+  constructor(p: Readonly<{ matchedPath: string }>) {
     super(p);
     makeObservable(this, undefined, { autoBind: true });
   }

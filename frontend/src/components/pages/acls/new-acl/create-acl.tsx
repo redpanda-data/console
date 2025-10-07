@@ -34,12 +34,14 @@ import {
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
+  type ModeType,
   type OperationType,
   OperationTypeAllow,
   OperationTypeDeny,
   OperationTypeNotSet,
   type PrincipalType,
   parsePrincipal,
+  type ResourcePatternType,
   ResourcePatternTypeAny,
   ResourcePatternTypeLiteral,
   ResourcePatternTypePrefix,
@@ -372,7 +374,7 @@ const AclRules = ({
                     <Select
                       onValueChange={(value) =>
                         updateRule(rule.id, {
-                          selectorType: value,
+                          selectorType: value as ResourcePatternType,
                           selectorValue: value === ResourcePatternTypeAny ? '' : rule.selectorValue,
                         })
                       }
@@ -912,7 +914,7 @@ export default function CreateACL({
 
     const updatedOperations = Object.fromEntries(
       Object.entries(rule.operations).map(([op, operationValue]) => {
-        let newValue: string;
+        let newValue: OperationType;
         if (mode === ModeAllowAll) {
           newValue = OperationTypeAllow;
         } else if (mode === ModeDenyAll) {
@@ -922,9 +924,9 @@ export default function CreateACL({
         }
         return [op, newValue];
       })
-    );
+    ) as Record<string, OperationType>;
 
-    updateRule(ruleId, { mode, operations: updatedOperations });
+    updateRule(ruleId, { mode: mode as ModeType, operations: updatedOperations });
   };
 
   const handleOperationChange = (ruleId: number, operation: string, value: string) => {
