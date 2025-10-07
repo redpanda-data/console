@@ -548,7 +548,7 @@
         // Enforce that getters and setters for the same property are adjacent in class and object definitions.
         "useGroupedAccessorPairs": "error",
         // Promotes the use of import type for types.
-        "useImportType": "off",
+        "useImportType": "error",
         // Require all enum members to be literal values.
         "useLiteralEnumMembers": "off",
         // Reports usage of “magic numbers” — numbers used directly instead of being assigned to named constants.
