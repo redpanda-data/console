@@ -493,7 +493,7 @@
         // Disallow the use of constants which its value is the upper-case version of its name.
         "noShoutyConstants": "error",
         // Enforce the use of String.slice() over String.substr() and String.substring().
-        "noSubstr": "off",
+        "noSubstr": "error",
         // Disallow template literals if interpolation and special-character handling are not needed
         "noUnusedTemplateLiteral": "error",
         // Disallow else block when the if block breaks early.
