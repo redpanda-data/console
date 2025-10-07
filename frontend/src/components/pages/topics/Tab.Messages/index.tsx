@@ -23,9 +23,9 @@ import {
 import { observer } from 'mobx-react';
 import React, { Component, type FC, type ReactNode, useState } from 'react';
 
-import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backendApi';
-import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
-import { Feature, isSupported } from '../../../../state/supportedFeatures';
+import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
+import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/rest-interfaces';
+import { Feature, isSupported } from '../../../../state/supported-features';
 import {
   type ColumnList,
   type DataColumnKey,
@@ -36,8 +36,8 @@ import {
   type PreviewTagV2,
   type TimestampDisplayFormat,
 } from '../../../../state/ui';
-import { uiState } from '../../../../state/uiState';
-import '../../../../utils/arrayExtensions';
+import { uiState } from '../../../../state/ui-state';
+import '../../../../utils/array-extensions';
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons';
 import {
   Alert,
@@ -97,18 +97,18 @@ import {
 } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
 
-import JavascriptFilterModal from './JavascriptFilterModal';
-import { getPreviewTags, PreviewSettings } from './PreviewSettings';
+import JavascriptFilterModal from './javascript-filter-modal';
+import { getPreviewTags, PreviewSettings } from './preview-settings';
 import { isServerless } from '../../../../config';
-import usePaginationParams from '../../../../hooks/usePaginationParams';
+import usePaginationParams from '../../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { appGlobal } from '../../../../state/appGlobal';
+import { appGlobal } from '../../../../state/app-global';
 import { IsDev } from '../../../../utils/env';
-import { FilterableDataSource } from '../../../../utils/filterableDataSource';
-import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
-import { toJson } from '../../../../utils/jsonUtils';
+import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
+import { FilterableDataSource } from '../../../../utils/filterable-data-source';
+import { toJson } from '../../../../utils/json-utils';
 import { onPaginationChange } from '../../../../utils/pagination';
-import { editQuery } from '../../../../utils/queryHelper';
+import { editQuery } from '../../../../utils/query-helper';
 import {
   Ellipsis,
   Label,
@@ -117,7 +117,7 @@ import {
   StatusIndicator,
   TimestampDisplay,
   toSafeString,
-} from '../../../../utils/tsxUtils';
+} from '../../../../utils/tsx-utils';
 import {
   base64FromUInt8Array,
   cullText,
@@ -127,9 +127,9 @@ import {
   titleCase,
 } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
-import { KowlJsonView } from '../../../misc/KowlJsonView';
-import RemovableFilter from '../../../misc/RemovableFilter';
-import { SingleSelect } from '../../../misc/Select';
+import { KowlJsonView } from '../../../misc/kowl-json-view';
+import RemovableFilter from '../../../misc/removable-filter';
+import { SingleSelect } from '../../../misc/select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },

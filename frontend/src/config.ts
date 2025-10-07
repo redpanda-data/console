@@ -37,9 +37,9 @@ import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/k
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { APP_ROUTES } from './components/routes';
-import { appGlobal } from './state/appGlobal';
-import { api } from './state/backendApi';
-import { uiState } from './state/uiState';
+import { appGlobal } from './state/app-global';
+import { api } from './state/backend-api';
+import { uiState } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 
 declare const __webpack_public_path__: string;

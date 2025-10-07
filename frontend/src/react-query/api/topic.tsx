@@ -16,10 +16,10 @@ import {
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import type { GetTopicsResponse, TopicDescription } from 'state/restInterfaces';
+import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { api } from '../../state/backendApi';
+import { api } from '../../state/backend-api';
 
 type ListTopicsExtraOptions = {
   hideInternalTopics?: boolean;

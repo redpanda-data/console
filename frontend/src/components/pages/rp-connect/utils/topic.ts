@@ -1,5 +1,5 @@
 import type { UseFormReturn } from 'react-hook-form';
-import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactors } from 'utils/topicUtils';
+import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactors } from 'utils/topic-utils';
 
 import type { AddTopicFormData } from '../types/wizard';
 

@@ -13,13 +13,13 @@ import { Spinner } from '@redpanda-data/ui';
 import { Component } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { appGlobal } from '../../state/appGlobal';
-import { api } from '../../state/backendApi';
-import type { ApiError, UserData } from '../../state/restInterfaces';
-import { uiState } from '../../state/uiState';
+import { appGlobal } from '../../state/app-global';
+import { api } from '../../state/backend-api';
+import type { ApiError, UserData } from '../../state/rest-interfaces';
+import { uiState } from '../../state/ui-state';
 import { getBasePath } from '../../utils/env';
-import fetchWithTimeout from '../../utils/fetchWithTimeout';
-import { queryToObj } from '../../utils/queryHelper';
+import fetchWithTimeout from '../../utils/fetch-with-timeout';
+import { queryToObj } from '../../utils/query-helper';
 
 class LoginCompletePage extends Component<{ provider: string }> {
   componentDidMount() {

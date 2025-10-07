@@ -14,7 +14,7 @@ import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
 
-import type { TopicMessage } from '../state/restInterfaces';
+import type { TopicMessage } from '../state/rest-interfaces';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;

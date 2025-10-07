@@ -14,10 +14,10 @@ import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Modal
 import { observer } from 'mobx-react';
 import React, { type PropsWithChildren, useState } from 'react';
 
-import type { TopicLogDirSummary } from '../../state/restInterfaces';
-import { uiState } from '../../state/uiState';
+import type { TopicLogDirSummary } from '../../state/rest-interfaces';
+import { uiState } from '../../state/ui-state';
 import env, { IsDev } from '../../utils/env';
-import { ZeroSizeWrapper } from '../../utils/tsxUtils';
+import { ZeroSizeWrapper } from '../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../utils/utils';
 
 export const Section = (p: PropsWithChildren<{ title: string }>) => (

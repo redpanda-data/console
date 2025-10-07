@@ -1,5 +1,5 @@
 import { enumFromKeys } from 'utils/form';
-import { sizeFactors, timeFactors } from 'utils/topicUtils';
+import { sizeFactors, timeFactors } from 'utils/topic-utils';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,

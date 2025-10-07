@@ -23,7 +23,7 @@ import {
 
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
-import { api } from '../backendApi';
+import { api } from '../backend-api';
 import {
   type ClusterAdditionalInfo,
   type ClusterConnectors,
@@ -35,7 +35,7 @@ import {
   DataType,
   PropertyImportance,
   PropertyWidth,
-} from '../restInterfaces';
+} from '../rest-interfaces';
 
 // Regex for validating secret strings
 const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/;

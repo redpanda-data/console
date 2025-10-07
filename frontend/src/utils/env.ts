@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { toJson } from './jsonUtils';
+import { toJson } from './json-utils';
 import './extensions';
 
 const envNames = [

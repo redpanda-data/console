@@ -58,7 +58,7 @@ import {
 } from 'react-query/api/remote-mcp';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { uiState } from 'state/uiState';
+import { uiState } from 'state/ui-state';
 
 const statusOptions = [
   { value: String(MCPServer_State.RUNNING), label: 'Running', icon: Check },

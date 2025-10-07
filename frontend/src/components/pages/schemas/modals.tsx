@@ -19,7 +19,7 @@ import {
 import { observer } from 'mobx-react';
 import { type ReactNode, useState } from 'react';
 
-import { openModal } from '../../../utils/ModalContainer';
+import { openModal } from '../../../utils/modal-container';
 
 const GenericModal = observer(
   (p: {

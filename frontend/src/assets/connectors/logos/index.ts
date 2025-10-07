@@ -1,5 +1,4 @@
 // biome-ignore lint/performance/noBarrelFile: Centralized logo exports for connector icons
-
 export { AmazonWebServicesLogo } from './amazon-web-services-logo';
 export { AmazondynamodbLogo } from './amazondynamodb-logo';
 export { Amazons3Logo } from './amazons3-logo';

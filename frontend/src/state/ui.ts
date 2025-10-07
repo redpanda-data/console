@@ -12,12 +12,12 @@
 import type { SortingState } from '@redpanda-data/ui';
 import { autorun, makeObservable, observable, transaction } from 'mobx';
 
-import { AclRequestDefault, type GetAclsRequest } from './restInterfaces';
+import { AclRequestDefault, type GetAclsRequest } from './rest-interfaces';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
-import type { ConnectTabKeys } from '../components/pages/connect/Overview';
-import type { TopicTabId } from '../components/pages/topics/Topic.Details';
+import type { ConnectTabKeys } from '../components/pages/connect/overview';
+import type { TopicTabId } from '../components/pages/topics/topic-details';
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { clone } from '../utils/jsonUtils';
+import { clone } from '../utils/json-utils';
 import { assignDeep, randomId } from '../utils/utils';
 
 const settingsName = 'uiSettings-v3';
