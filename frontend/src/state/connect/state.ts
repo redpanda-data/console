@@ -447,14 +447,23 @@ export class ConnectorPropertiesStore {
 
   connectorStepDefinitions: ConnectorStep[] = [];
 
+  public clusterName: string;
+  public pluginClassName: string;
+  public connectorType: 'sink' | 'source';
+  private appliedConfig: Record<string, any> | undefined;
+
   // biome-ignore lint/nursery/useMaxParams: Legacy MobX class with multiple constructor parameters
   constructor(
-    public clusterName: string,
-    public pluginClassName: string,
-    public connectorType: 'sink' | 'source',
-    private appliedConfig: Record<string, any> | undefined,
+    clusterName: string,
+    pluginClassName: string,
+    connectorType: 'sink' | 'source',
+    appliedConfig: Record<string, any> | undefined,
     features?: ConnectorClusterFeatures
   ) {
+    this.clusterName = clusterName;
+    this.pluginClassName = pluginClassName;
+    this.connectorType = connectorType;
+    this.appliedConfig = appliedConfig;
     makeAutoObservable(this, {
       fallbackGroupName: false,
       reactionDisposers: false,

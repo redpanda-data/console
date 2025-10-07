@@ -45,15 +45,29 @@ export type TopicTabId = (typeof TopicTabIds)[number];
 
 // A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
 class TopicTab {
+  public readonly topicGetter: () => Topic | undefined | null;
+  public id: TopicTabId;
+  private requiredPermission: TopicAction;
+  public titleText: React.ReactNode;
+  private contentFunc: (topic: Topic) => React.ReactNode;
+  private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+
   // biome-ignore lint/nursery/useMaxParams: Legacy class with many constructor parameters
   constructor(
-    public readonly topicGetter: () => Topic | undefined | null,
-    public id: TopicTabId,
-    private requiredPermission: TopicAction,
-    public titleText: React.ReactNode,
-    private contentFunc: (topic: Topic) => React.ReactNode,
-    private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
-  ) {}
+    topicGetter: () => Topic | undefined | null,
+    id: TopicTabId,
+    requiredPermission: TopicAction,
+    titleText: React.ReactNode,
+    contentFunc: (topic: Topic) => React.ReactNode,
+    disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
+  ) {
+    this.topicGetter = topicGetter;
+    this.id = id;
+    this.requiredPermission = requiredPermission;
+    this.titleText = titleText;
+    this.contentFunc = contentFunc;
+    this.disableHooks = disableHooks;
+  }
 
   @computed get isEnabled(): boolean {
     const topic = this.topicGetter();
