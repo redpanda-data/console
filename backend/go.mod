@@ -74,6 +74,8 @@ require (
 )
 
 require (
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.18.1-20250903131725-492a4ada6956.1 // indirect
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.9-20250903131725-492a4ada6956.1 // indirect
 	cel.dev/expr v0.24.0 // indirect
 	cuelang.org/go v0.14.1 // indirect
 	dario.cat/mergo v1.0.2 // indirect
