@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen } from 'test-utils';
 import { BrowserRouter } from 'react-router-dom';
+import { render, screen } from 'test-utils';
 import { UserRolesCard } from './UserRolesCard';
 
 // Mock useNavigate

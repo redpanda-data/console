@@ -160,9 +160,7 @@ describe('HostSelector', () => {
     test('should render with single host', () => {
       const singleHostProps = {
         ...defaultProps,
-        hosts: [
-          { sharedConfig: { principal: 'test-user', host: '192.168.1.1' }, rules: [] },
-        ],
+        hosts: [{ sharedConfig: { principal: 'test-user', host: '192.168.1.1' }, rules: [] }],
       };
 
       renderWithRouter(<HostSelector {...singleHostProps} />);
