@@ -32,6 +32,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { runInAction } from 'mobx';
 import React, { useEffect, useState } from 'react';
 import { Link as ReactRouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { SchemaRegistryCapability } from '../../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { useGetIdentityQuery } from '../../../react-query/api/authentication';
 import {
   useCreateSchemaMutation,
@@ -110,9 +111,9 @@ const SchemaDetailsView: React.FC<{ subjectName?: string }> = ({ subjectName: su
 
   const isSoftDeleted = schemaSubjects?.find((x) => x.name === subjectNameRaw)?.isSoftDeleted;
 
-  const canManageSchemaRegistry = userData?.permissions?.schemaRegistry?.includes('WRITE' as never);
-  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes('WRITE' as never);
-  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes('DELETE' as never);
+  const canManageSchemaRegistry = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
+  const canCreateSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.WRITE);
+  const canDeleteSchemas = userData?.permissions?.schemaRegistry?.includes(SchemaRegistryCapability.DELETE);
 
   const handleDeleteSubject = (permanent: boolean) => {
     const modalCallback = () => {
