@@ -9,11 +9,10 @@ package consolev1alpha1
 import (
 	context "context"
 
+	v2 "buf.build/gen/go/redpandadata/core/protocolbuffers/go/redpanda/core/admin/v2"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-
-	v2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/core/admin/v2"
 )
 
 // This is a compile-time assertion to ensure that this generated file

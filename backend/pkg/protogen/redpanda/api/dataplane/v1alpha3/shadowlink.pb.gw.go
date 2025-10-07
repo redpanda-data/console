@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 
+	adminv2 "buf.build/gen/go/redpandadata/core/protocolbuffers/go/redpanda/core/admin/v2"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
 	"google.golang.org/grpc"
@@ -21,8 +22,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-
-	adminv2 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/core/admin/v2"
 )
 
 // Suppress "imported and not used" errors

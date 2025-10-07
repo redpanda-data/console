@@ -47,9 +47,11 @@ tasks:
     cmds:
       # Delete previously generated files
       - rm -rf {{.BACKEND_ROOT}}/pkg/protogen
+      - rm -rf {{.BACKEND_ROOT}}/pkg/protogen-remote
       - rm -rf {{.BACKEND_ROOT}}/pkg/console/testdata/proto/gen
       - rm -rf {{.BACKEND_ROOT}}/pkg/console/testdata/proto_update/gen
       - rm -rf {{.FRONTEND_ROOT}}/src/protogen
+      - rm -rf {{.FRONTEND_ROOT}}/src/protogen-remote
       - task: lint
       - task: format
       - |
@@ -57,7 +59,6 @@ tasks:
       - for: { var: BUF_INPUTS }
         cmd: "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml {{ .ITEM }}"
       - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml buf.build/redpandadata/common"
-      - "{{ .PATH_PREFIX }} buf generate --template=buf.gen.yaml buf.build/redpandadata/core"
       - task: :backend:fmt
       - task: generate-openapi3
       - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
