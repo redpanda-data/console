@@ -13,6 +13,7 @@ import { Flex } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { ConfigEntry } from '../../../state/restInterfaces';
@@ -65,7 +66,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
     }
 
     // Handle error while getting config
-    if (typeof brokerConfigs === 'string')
+    if (typeof brokerConfigs === 'string') {
       return (
         <div className="error">
           <h3>Error</h3>
@@ -74,6 +75,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
           </div>
         </div>
       );
+    }
 
     return (
       <PageContent>
@@ -107,7 +109,9 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
         case 'alphabetical':
           return a.name.localeCompare(b.name);
         case 'changedFirst': {
-          if (uiSettings.brokerList.propsOrder !== 'changedFirst') return 0;
+          if (uiSettings.brokerList.propsOrder !== 'changedFirst') {
+            return 0;
+          }
           const v1 = a.isExplicitlySet ? 1 : 0;
           const v2 = b.isExplicitlySet ? 1 : 0;
           return v2 - v1;
@@ -121,8 +125,8 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
       <div className="brokerConfigView">
         <DetailsDisplaySettings />
         <ConfigList
-          key={uiSettings.brokerList.propsOrder}
           configEntries={entries}
+          key={uiSettings.brokerList.propsOrder}
           valueDisplay={uiSettings.brokerList.valueDisplay}
         />
       </div>
@@ -131,26 +135,26 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
 }
 
 const DetailsDisplaySettings = observer(() => (
-  <div style={{ marginLeft: '1px', marginBottom: '1em' }} className="brokerConfigViewSettings">
+  <div className="brokerConfigViewSettings" style={{ marginLeft: '1px', marginBottom: '1em' }}>
     <Flex gap="2rem">
       <OptionGroup
         label="Formatting"
+        onChange={(s) => (uiSettings.brokerList.valueDisplay = s)}
         options={{
           Friendly: 'friendly',
           Raw: 'raw',
         }}
         value={uiSettings.brokerList.valueDisplay}
-        onChange={(s) => (uiSettings.brokerList.valueDisplay = s)}
       />
       <OptionGroup
         label="Sort"
+        onChange={(s) => (uiSettings.brokerList.propsOrder = s)}
         options={{
           'Changed First': 'changedFirst',
           Alphabetical: 'alphabetical',
           None: 'default',
         }}
         value={uiSettings.brokerList.propsOrder}
-        onChange={(s) => (uiSettings.brokerList.propsOrder = s)}
       />
     </Flex>
   </div>

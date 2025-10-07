@@ -13,6 +13,8 @@ import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
+
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 import { isEmbedded } from '../../../config';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -23,7 +25,6 @@ import PageContent from '../../misc/PageContent';
 import SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 
 @observer
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
@@ -57,13 +58,16 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
       const quickSearchRegExp = new RegExp(uiSettings.connectorsList.quickSearch, 'i');
       return Boolean(item.name.match(quickSearchRegExp)) || Boolean(item.class.match(quickSearchRegExp));
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
   }
 
   render() {
-    if (!api.connectConnectors) return DefaultSkeleton;
+    if (!api.connectConnectors) {
+      return DefaultSkeleton;
+    }
 
     const clusterName = decodeURIComponent(this.props.clusterName);
     if (api.connectConnectors?.isConfigured === false) {
@@ -85,7 +89,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
           <div>
             <div style={{ display: 'flex', marginBottom: '.5em' }}>
               <Link to={`/connect-clusters/${clusterName}/create-connector`}>
-                <Button variant="solid" colorScheme="brand">
+                <Button colorScheme="brand" variant="solid">
                   Create connector
                 </Button>
               </Link>
@@ -93,22 +97,18 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
             <Box my={5}>
               <SearchBar<ClusterConnectorInfo>
-                placeholderText="Enter search term/regex"
                 dataSource={() => connectors ?? []}
-                isFilterMatch={this.isFilterMatch}
                 filterText={uiSettings.connectorsList.quickSearch}
-                onQueryChanged={(filterText) => (uiSettings.connectorsList.quickSearch = filterText)}
+                isFilterMatch={this.isFilterMatch}
                 onFilteredDataChanged={(data) => {
                   this.filteredResults = data;
                 }}
+                onQueryChanged={(filterText) => (uiSettings.connectorsList.quickSearch = filterText)}
+                placeholderText="Enter search term/regex"
               />
             </Box>
 
             <DataTable<ClusterConnectorInfo>
-              data={this.filteredResults}
-              pagination
-              defaultPageSize={10}
-              sorting
               columns={[
                 {
                   header: 'Connector',
@@ -117,7 +117,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                     <Link
                       to={`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(original.name)}`}
                     >
-                      <Text wordBreak="break-word" whiteSpace="break-spaces">
+                      <Text whiteSpace="break-spaces" wordBreak="break-word">
                         {original.name}
                       </Text>
                     </Link>
@@ -146,6 +146,10 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                   cell: ({ row: { original } }) => <TasksColumn observable={original} />,
                 },
               ]}
+              data={this.filteredResults}
+              defaultPageSize={10}
+              pagination
+              sorting
             />
           </div>
 
@@ -154,9 +158,6 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
             <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
-              data={additionalInfo?.plugins ?? []}
-              pagination
-              sorting
               columns={[
                 {
                   header: 'Class',
@@ -174,6 +175,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                   accessorKey: 'type',
                 },
               ]}
+              data={additionalInfo?.plugins ?? []}
+              pagination
+              sorting
             />
           </div>
         </Section>

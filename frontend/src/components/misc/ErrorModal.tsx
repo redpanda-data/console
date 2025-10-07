@@ -67,7 +67,7 @@ class ErrorModal extends Component<ErrorModalProps> {
 
               {/* Content */}
               {this.content && (
-                <Box alignSelf="stretch" overflowY="auto" maxHeight="300px">
+                <Box alignSelf="stretch" maxHeight="300px" overflowY="auto">
                   {this.content}
                 </Box>
               )}
@@ -82,7 +82,7 @@ class ErrorModal extends Component<ErrorModalProps> {
   }
 }
 
-interface ErrorModalProps {
+type ErrorModalProps = {
   key: number;
 
   title: () => string;
@@ -94,7 +94,7 @@ interface ErrorModalProps {
   afterClose: () => void;
 
   animate: boolean;
-}
+};
 
 const errorModals: ErrorModalProps[] = observable([]);
 
@@ -157,7 +157,9 @@ const afterClose = action((key: number) => {
 });
 
 export function renderErrorModals() {
-  if (errorModals.length === 0) return null;
+  if (errorModals.length === 0) {
+    return null;
+  }
   const e = errorModals[0];
   return <ErrorModal {...e} />;
 }

@@ -21,17 +21,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
-import AuggieLogo from '../../../../assets/auggie.svg';
-import ClaudeCodeLogo from '../../../../assets/claude-code.svg';
-import ClaudeDesktopLogo from '../../../../assets/claude-desktop.svg';
-import ClineLogo from '../../../../assets/cline.svg';
-import CodexLogo from '../../../../assets/codex.svg';
-import CursorLogo from '../../../../assets/cursor.svg';
-import GeminiLogo from '../../../../assets/gemini.svg';
-import ManusLogo from '../../../../assets/manus.svg';
-import VSCodeLogo from '../../../../assets/vscode.svg';
-import WarpLogo from '../../../../assets/warp.svg';
-import WindsurfLogo from '../../../../assets/windsurf.svg';
+
 import { ClientAuggie } from './clients/auggie';
 import { ClientClaudeCode } from './clients/claude-code';
 import { ClientClaudeDesktop } from './clients/claude-desktop';
@@ -44,6 +34,17 @@ import { ClientVscode } from './clients/vscode';
 import { ClientWarp } from './clients/warp';
 import { ClientWindsurf } from './clients/windsurf';
 import { AVAILABLE_CLIENTS, ClientType, type MCPServer } from './utils';
+import AuggieLogo from '../../../../assets/auggie.svg';
+import ClaudeCodeLogo from '../../../../assets/claude-code.svg';
+import ClaudeDesktopLogo from '../../../../assets/claude-desktop.svg';
+import ClineLogo from '../../../../assets/cline.svg';
+import CodexLogo from '../../../../assets/codex.svg';
+import CursorLogo from '../../../../assets/cursor.svg';
+import GeminiLogo from '../../../../assets/gemini.svg';
+import ManusLogo from '../../../../assets/manus.svg';
+import VSCodeLogo from '../../../../assets/vscode.svg';
+import WarpLogo from '../../../../assets/warp.svg';
+import WindsurfLogo from '../../../../assets/windsurf.svg';
 
 const CLIENT_INFO: Record<ClientType, { name: string; logo: string; alt: string }> = {
   [ClientType.CLAUDE_CODE]: { name: 'Claude Code', logo: ClaudeCodeLogo, alt: 'Claude Code CLI' },
@@ -102,9 +103,9 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">Connect to your client</Label>
+      <Label className="font-medium text-sm">Connect to your client</Label>
       <div>
-        <Select value={client} onValueChange={(value) => setClient(value as ClientType)}>
+        <Select onValueChange={(value) => setClient(value as ClientType)} value={client}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a client" />
           </SelectTrigger>
@@ -116,7 +117,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
                 return (
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
-                      <img src={client.logo} alt={client.alt} className="w-4 h-4" />
+                      <img alt={client.alt} className="h-4 w-4" src={client.logo} />
                       <Text>{client.name}</Text>
                     </div>
                   </SelectItem>

@@ -10,7 +10,9 @@
  */
 
 export function wrapFilterFragment(filterFragment: string) {
-  if (!filterFragment.includes('return ')) filterFragment = `return ${filterFragment}`;
+  if (!filterFragment.includes('return ')) {
+    filterFragment = `return ${filterFragment}`;
+  }
   return filterFragment;
 }
 

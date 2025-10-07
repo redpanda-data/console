@@ -42,17 +42,25 @@ const DEFAULT_SORTING: SortingState = [
 ];
 
 const isFilterMatch = (filter: string, message: TopicMessage): boolean => {
-  if (!filter) return true;
+  if (!filter) {
+    return true;
+  }
 
   const str = filter.toLowerCase();
-  if (message.offset.toString().toLowerCase().includes(str)) return true;
-  if (message.keyJson?.toLowerCase().includes(str)) return true;
-  if (message.valueJson?.toLowerCase().includes(str)) return true;
+  if (message.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (message.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (message.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
 
   return false;
 };
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, remoteMcpId: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, remoteMcpId: string) {
   const filterCode = `return key == "${remoteMcpId}";`;
 
   const lastXHours = 5;
@@ -74,16 +82,18 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, re
   };
 
   // Start the search with the configured parameters
-  return runInAction(async () => {
+  return runInAction(() => {
     try {
-      await search.startSearch(request).catch((err) => {
+      return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in remoteMcpLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: unknown) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in remoteMcpLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return Promise.resolve([]);
     }
   });
 }
@@ -134,27 +144,29 @@ export const RemoteMCPLogsTab = observer(() => {
         row: {
           original: { timestamp },
         },
-      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
       size: 200,
     },
     {
       header: 'Value',
       accessorKey: 'value',
       cell: ({ row: { original } }) => (
-        <MessagePreview msg={original} previewFields={() => []} isCompactTopic={false} />
+        <MessagePreview isCompactTopic={false} msg={original} previewFields={() => []} />
       ),
       size: Number.MAX_SAFE_INTEGER,
     },
   ];
 
   const filteredMessages = state.messages.filter((x) => {
-    if (!uiState.remoteMcpDetails.logsQuickSearch) return true;
+    if (!uiState.remoteMcpDetails.logsQuickSearch) {
+      return true;
+    }
     return isFilterMatch(uiState.remoteMcpDetails.logsQuickSearch, x);
   });
 
   return (
-    <Card size="full" className="px-0 py-0">
-      <CardHeader className="p-4 border-b dark:border-border [.border-b]:pb-4">
+    <Card className="px-0 py-0" size="full">
+      <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Logs className="h-4 w-4" />
           <Text className="font-semibold">Server Logs</Text>
@@ -164,18 +176,18 @@ export const RemoteMCPLogsTab = observer(() => {
         <div className="flex flex-col gap-2">
           <Text variant="muted">Real-time logs from the MCP server.</Text>
 
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <Input
               className="w-60"
-              placeholder="Filter logs..."
-              value={uiState.remoteMcpDetails.logsQuickSearch}
               onChange={(e) => {
                 runInAction(() => {
                   uiState.remoteMcpDetails.logsQuickSearch = e.target.value;
                 });
               }}
+              placeholder="Filter logs..."
+              value={uiState.remoteMcpDetails.logsQuickSearch}
             />
-            <Button variant="outline" className="ml-auto" onClick={() => setState(createLogsTabState())}>
+            <Button className="ml-auto" onClick={() => setState(createLogsTabState())} variant="outline">
               <div className="flex items-center gap-2">
                 <RefreshCcw className="h-4 w-4" />
                 Refresh logs
@@ -185,41 +197,47 @@ export const RemoteMCPLogsTab = observer(() => {
         </div>
 
         <div>
-          {state.error ? (
-            <Text className="text-destructive">Error loading logs: {state.error}</Text>
-          ) : !state.isComplete && state.messages.length === 0 ? (
-            <div className="flex flex-col space-y-3">
-              <Skeleton className="h-[125px] w-full rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            </div>
-          ) : (
-            <DataTable<TopicMessage>
-              data={filteredMessages}
-              emptyText="No messages"
-              columns={messageTableColumns}
-              sorting={uiState.remoteMcpDetails.sorting ?? []}
-              isLoading={!state.isComplete}
-              loadingText="Loading... This can take several seconds."
-              onSortingChange={(sorting) => {
-                runInAction(() => {
-                  uiState.remoteMcpDetails.sorting =
-                    typeof sorting === 'function' ? sorting(uiState.remoteMcpDetails.sorting) : sorting;
-                });
-              }}
-              subComponent={({ row: { original } }) => (
-                <ExpandedMessage
-                  msg={original}
-                  loadLargeMessage={
-                    () => Promise.resolve() // No need to load large messages for this view
-                  }
-                />
-              )}
-            />
-          )}
+          {(() => {
+            if (state.error) {
+              return <Text className="text-destructive">Error loading logs: {state.error}</Text>;
+            }
+            if (!state.isComplete && state.messages.length === 0) {
+              return (
+                <div className="flex flex-col space-y-3">
+                  <Skeleton className="h-[125px] w-full rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <DataTable<TopicMessage>
+                columns={messageTableColumns}
+                data={filteredMessages}
+                emptyText="No messages"
+                isLoading={!state.isComplete}
+                loadingText="Loading... This can take several seconds."
+                onSortingChange={(sorting) => {
+                  runInAction(() => {
+                    uiState.remoteMcpDetails.sorting =
+                      typeof sorting === 'function' ? sorting(uiState.remoteMcpDetails.sorting) : sorting;
+                  });
+                }}
+                sorting={uiState.remoteMcpDetails.sorting ?? []}
+                subComponent={({ row: { original } }) => (
+                  <ExpandedMessage
+                    loadLargeMessage={
+                      () => Promise.resolve() // No need to load large messages for this view
+                    }
+                    msg={original}
+                  />
+                )}
+              />
+            );
+          })()}
         </div>
       </CardContent>
     </Card>

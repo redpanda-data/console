@@ -10,8 +10,9 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import type { Topic } from '../../../../state/restInterfaces';
+
 import DeleteRecordsModal from './DeleteRecordsModal';
+import type { Topic } from '../../../../state/restInterfaces';
 
 const testTopic: Topic = {
   allowedActions: ['all'],
@@ -31,13 +32,7 @@ const testTopic: Topic = {
 describe('DeleteRecordsModal', () => {
   test('renders all expected elements in step 1', () => {
     render(
-      <DeleteRecordsModal
-        topic={testTopic}
-        visible={true}
-        onCancel={vi.fn()}
-        onFinish={vi.fn()}
-        afterClose={vi.fn()}
-      />,
+      <DeleteRecordsModal afterClose={vi.fn()} onCancel={vi.fn()} onFinish={vi.fn()} topic={testTopic} visible={true} />
     );
 
     expect(screen.getByText('Delete records in topic')).toBeInTheDocument();

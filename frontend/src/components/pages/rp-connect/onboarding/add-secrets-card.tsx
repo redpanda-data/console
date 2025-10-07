@@ -41,10 +41,14 @@ export const AddSecretsCard = ({
   // Memoize the click handler to prevent recreating on every render
   const handleSecretClick = useCallback(
     (secretName: string) => {
-      if (!editorInstance) return;
+      if (!editorInstance) {
+        return;
+      }
 
       const position = editorInstance.getPosition();
-      if (!position) return;
+      if (!position) {
+        return;
+      }
 
       editorInstance.executeEdits('insert-secret', [
         {
@@ -60,7 +64,7 @@ export const AddSecretsCard = ({
 
       editorInstance.focus();
     },
-    [editorInstance],
+    [editorInstance]
   );
   return (
     <Card>
@@ -73,21 +77,21 @@ export const AddSecretsCard = ({
           {/* Existing secrets - always show if any exist */}
           {existingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text className="text-sm font-medium">Existing Secrets:</Text>
+              <Text className="font-medium text-sm">Existing Secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {/* Used secrets - green with check icon */}
                 {categorizedSecrets.used.map((secret) => (
-                  <Badge key={secret} variant="green" className="font-mono" icon={<Check />}>
+                  <Badge className="font-mono" icon={<Check />} key={secret} variant="green">
                     {`\${secrets.${secret}}`}
                   </Badge>
                 ))}
                 {/* Unused secrets - clickable, secondary variant */}
                 {categorizedSecrets.unused.map((secret) => (
                   <Badge
+                    className="cursor-pointer font-mono hover:opacity-80"
                     key={secret}
-                    variant="secondary"
-                    className="font-mono cursor-pointer hover:opacity-80"
                     onClick={() => handleSecretClick(secret)}
+                    variant="secondary"
                   >
                     {`\${secrets.${secret}}`}
                   </Badge>
@@ -99,10 +103,10 @@ export const AddSecretsCard = ({
           {/* Missing secrets - show as buttons */}
           {missingSecrets.length > 0 && (
             <div className="flex flex-col gap-2">
-              <Text className="text-sm font-medium text-destructive">Missing Secrets:</Text>
+              <Text className="font-medium text-destructive text-sm">Missing Secrets:</Text>
               <div className="flex flex-wrap gap-2">
                 {missingSecrets.map((secret) => (
-                  <Button key={secret} variant="destructive" size="sm" onClick={onOpenDialog}>
+                  <Button key={secret} onClick={onOpenDialog} size="sm" variant="destructive">
                     <AlertCircle className="h-3 w-3" />
                     Create {secret}
                   </Button>
@@ -113,14 +117,14 @@ export const AddSecretsCard = ({
 
           {/* No secrets hint - show only when no existing secrets */}
           {existingSecrets.length === 0 && detectedSecrets.length === 0 && (
-            <Text className="text-sm text-muted-foreground">
+            <Text className="text-muted-foreground text-sm">
               Your pipeline doesn't reference any secrets yet. Use <code>$&#123;secrets.NAME&#125;</code> syntax to
               reference secrets.
             </Text>
           )}
 
           {/* Add button - always show */}
-          <Button variant="outline" size={existingSecrets.length > 0 ? 'sm' : 'default'} onClick={onOpenDialog}>
+          <Button onClick={onOpenDialog} size={existingSecrets.length > 0 ? 'sm' : 'default'} variant="outline">
             <PlusIcon className="h-4 w-4" />
             {existingSecrets.length > 0 ? 'Add More Secrets' : 'Add Secret'}
           </Button>

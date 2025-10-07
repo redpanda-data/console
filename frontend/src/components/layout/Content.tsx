@@ -12,6 +12,7 @@
 import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { observer } from 'mobx-react';
+
 import { ModalContainer } from '../../utils/ModalContainer';
 import AppFooter from '../layout/Footer';
 import AppPageHeader from '../layout/Header';

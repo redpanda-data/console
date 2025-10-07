@@ -1,10 +1,10 @@
 import { FormErrorMessage, ListItem, Text, UnorderedList } from '@redpanda-data/ui';
 import type { AnyFieldApi } from '@tanstack/react-form';
 
-interface ErrorInfoFieldProps {
+type ErrorInfoFieldProps = {
   field: AnyFieldApi;
   index?: string;
-}
+};
 
 /**
  * This component needs to be used inside a FormControl component.

@@ -13,12 +13,12 @@ import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badg
 import { Cpu, Database, FolderInput, FolderOutput, HelpCircle } from 'lucide-react';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 
-interface RedpandaConnectComponentTypeBadgeProps {
+type RedpandaConnectComponentTypeBadgeProps = {
   componentType: MCPServer_Tool_ComponentType;
-}
+};
 
 const getComponentTypeConfig = (
-  componentType: MCPServer_Tool_ComponentType,
+  componentType: MCPServer_Tool_ComponentType
 ): { icon: React.ReactNode; text: string; variant: BadgeVariant } => {
   switch (componentType) {
     case MCPServer_Tool_ComponentType.PROCESSOR:
@@ -58,7 +58,7 @@ export const RedpandaConnectComponentTypeBadge = ({ componentType }: RedpandaCon
   const config = getComponentTypeConfig(componentType);
 
   return (
-    <Badge variant={config.variant} icon={config.icon}>
+    <Badge icon={config.icon} variant={config.variant}>
       {config.text}
     </Badge>
   );

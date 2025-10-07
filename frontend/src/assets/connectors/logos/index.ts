@@ -1,19 +1,20 @@
-export { AmazonWebServicesLogo } from './AmazonWebServicesLogo';
+// biome-ignore lint/performance/noBarrelFile: Centralized logo exports for connector icons
 export { AmazondynamodbLogo } from './AmazondynamodbLogo';
-export { AwslambdaLogo } from './AwslambdaLogo';
 export { Amazons3Logo } from './Amazons3Logo';
 export { AmazonsqsLogo } from './AmazonsqsLogo';
-export { MicrosoftazureLogo } from './MicrosoftazureLogo';
-export { AzurecosmosdbLogo } from './AzurecosmosdbLogo';
+export { AmazonWebServicesLogo } from './AmazonWebServicesLogo';
 export { ApacheactivemqLogo } from './ApacheactivemqLogo';
 export { ApacheavroLogo } from './ApacheavroLogo';
 export { AuthzedLogo } from './AuthzedLogo';
+export { AwslambdaLogo } from './AwslambdaLogo';
+export { AzurecosmosdbLogo } from './AzurecosmosdbLogo';
 export { BeanstalkdLogo } from './BeanstalkdLogo';
 export { CohereLogo } from './CohereLogo';
 export { ConfluentincLogo } from './ConfluentincLogo';
 export { GoogleProtocolBuffersLogo } from './GoogleProtocolBuffersLogo';
 export { JqLogo } from './JqLogo';
 export { MemcachedLogo } from './MemcachedLogo';
+export { MicrosoftazureLogo } from './MicrosoftazureLogo';
 export { MicrosoftsqlserverLogo } from './MicrosoftsqlserverLogo';
 export { MsgpackLogo } from './MsgpackLogo';
 export { NanomsgLogo } from './NanomsgLogo';

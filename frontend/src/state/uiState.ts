@@ -12,21 +12,22 @@
 import type { SortingState } from '@tanstack/react-table';
 import { computed, makeObservable, observable } from 'mobx';
 import React from 'react';
-import type { PageDefinition } from '../components/routes';
+
 import { api } from './backendApi';
 import { TopicDetailsSettings as TopicSettings, uiSettings } from './ui';
+import type { PageDefinition } from '../components/routes';
 
-export interface BreadcrumbOptions {
+export type BreadcrumbOptions = {
   canBeTruncated?: boolean;
   canBeCopied?: boolean;
-}
+};
 
-export interface BreadcrumbEntry {
+export type BreadcrumbEntry = {
   title: string;
   heading?: string;
   linkTo: string;
   options?: BreadcrumbOptions;
-}
+};
 
 class UIState {
   constructor() {
@@ -49,7 +50,9 @@ class UIState {
   @observable pageBreadcrumbs: BreadcrumbEntry[] = [];
 
   @computed get selectedClusterName(): string | null {
-    if (uiSettings.selectedClusterIndex in api.clusters) return api.clusters[uiSettings.selectedClusterIndex];
+    if (uiSettings.selectedClusterIndex in api.clusters) {
+      return api.clusters[uiSettings.selectedClusterIndex];
+    }
     return null;
   }
 
@@ -61,25 +64,25 @@ class UIState {
     let path = this.pathName;
 
     const i = path.indexOf('/', 1);
-    if (i > -1) path = path.slice(0, i);
+    if (i > -1) {
+      path = path.slice(0, i);
+    }
 
     return [path];
   }
 
   @observable
   private _currentTopicName: string | undefined;
-  public get currentTopicName(): string | undefined {
+  get currentTopicName(): string | undefined {
     return this._currentTopicName;
   }
-  public set currentTopicName(topicName: string | undefined) {
+  set currentTopicName(topicName: string | undefined) {
     this._currentTopicName = topicName;
-    if (topicName) {
-      if (!uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
-        // console.log('creating details for topic: ' + topicName);
-        const topicSettings = new TopicSettings();
-        topicSettings.topicName = topicName;
-        uiSettings.perTopicSettings.push(topicSettings);
-      }
+    if (topicName && !uiSettings.perTopicSettings.any((s) => s.topicName === topicName)) {
+      // console.log('creating details for topic: ' + topicName);
+      const topicSettings = new TopicSettings();
+      topicSettings.topicName = topicName;
+      uiSettings.perTopicSettings.push(topicSettings);
     }
   }
 
@@ -90,7 +93,9 @@ class UIState {
     }
 
     const topicSettings = uiSettings.perTopicSettings.find((t) => t.topicName === n);
-    if (topicSettings) return topicSettings;
+    if (topicSettings) {
+      return topicSettings;
+    }
 
     throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
   }
@@ -101,7 +106,7 @@ class UIState {
   // Every response from the backend contains, amongst others, the 'app-sha' header (was previously named 'app-version' which was confusing).
   // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').
   // If the user declines, updatePromtHiddenUntil is set to prevent the promt from showing up for some time.
-  @observable serverBuildTimestamp: number | undefined = undefined;
+  @observable serverBuildTimestamp: number | undefined;
 
   @observable remoteMcpDetails = {
     logsQuickSearch: '',
@@ -109,13 +114,13 @@ class UIState {
   };
 }
 
-export interface ServerVersionInfo {
+export type ServerVersionInfo = {
   ts?: string; // build timestamp, unix seconds
   sha?: string;
   branch?: string;
   shaBusiness?: string;
   branchBusiness?: string;
-}
+};
 
 const uiState = new UIState();
 export { uiState };

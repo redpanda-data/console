@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-interface NewsItem {
+type NewsItem = {
   id: string;
   fieldData: {
     'expiry-date': string;
@@ -15,7 +15,7 @@ interface NewsItem {
     'cta-button-text': string;
     'cta-button-variant': 'primary' | 'ghost';
   };
-}
+};
 
 const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> => {
   const url = new URL('https://redpanda-news-feed.netlify.app/news');

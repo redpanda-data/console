@@ -25,7 +25,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
  */
 export const useLegacyListUsersQuery = (
   _input?: MessageInit<ListUsersRequest>,
-  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>,
+  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>
 ) => {
   const listUsersRequest = create(ListUsersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
@@ -61,7 +61,7 @@ export const useLegacyListUsersQuery = (
       create(ListUsersResponse_UserSchema, {
         name: user,
         mechanism: undefined, // Not reported by legacy API
-      }),
+      })
     ) ?? [];
 
   return {
@@ -77,7 +77,7 @@ export const useLegacyListUsersQuery = (
  */
 export const useListUsersQuery = (
   input?: MessageInit<ListUsersRequest>,
-  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>,
+  options?: QueryOptions<GenMessage<ListUsersRequest>, ListUsersResponse>
 ) => {
   const listUsersRequest = create(ListUsersRequestSchema, {
     pageSize: MAX_PAGE_SIZE,
@@ -107,6 +107,8 @@ export const getSASLMechanism = (saslMechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512
       return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
     case 'SCRAM-SHA-512':
       return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512;
+    default:
+      return SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256;
   }
 };
 
@@ -123,13 +125,12 @@ export const useCreateUserMutation = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'create',
         entity: 'user',
-      });
-    },
+      }),
   });
 };
 
@@ -146,12 +147,11 @@ export const useUpdateUserMutationWithToast = () => {
         exact: false,
       });
     },
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'update',
         entity: 'user',
-      });
-    },
+      }),
   });
 };

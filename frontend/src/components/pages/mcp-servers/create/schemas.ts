@@ -11,6 +11,7 @@
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { parse } from 'yaml';
 import { z } from 'zod';
+
 import { RESOURCE_TIERS } from '../remote-mcp-constants';
 
 // Zod schema for tags
@@ -72,7 +73,7 @@ export const FormSchema = z
         const keys = arr.map((t) => t.key.trim()).filter((k) => k.length > 0);
         return keys.length === new Set(keys).size;
       },
-      { message: 'Tags must have unique keys' },
+      { message: 'Tags must have unique keys' }
     ),
     resourcesTier: z.string().min(1, { message: 'Resource tier selection is required' }),
     tools: z
@@ -83,7 +84,7 @@ export const FormSchema = z
           const names = arr.map((t) => t.name.trim()).filter((n) => n.length > 0);
           return names.length === new Set(names).size;
         },
-        { message: 'Tool names must be unique' },
+        { message: 'Tool names must be unique' }
       ),
   })
   .strict();

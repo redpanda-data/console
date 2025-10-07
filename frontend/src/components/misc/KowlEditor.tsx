@@ -9,13 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { DiffEditor, type DiffEditorProps, type EditorProps, type Monaco } from '@monaco-editor/react';
+import Editor, { DiffEditor, type DiffEditorProps, type EditorProps } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
-export type { IStandaloneCodeEditor, IStandaloneDiffEditor, Monaco };
+export type { IStandaloneCodeEditor, IStandaloneDiffEditor };
+export type { EditorProps, Monaco } from '@monaco-editor/react';
 
 export type KowlEditorProps = EditorProps & {
   'data-testid'?: string;
@@ -49,14 +50,14 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 
 export default function KowlEditor(props: KowlEditorProps) {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
     <Editor
-      loading={<LoadingPlaceholder />}
-      wrapperProps={{ className: 'kowlEditor' }}
       defaultValue={''}
+      loading={<LoadingPlaceholder />}
       options={options}
+      wrapperProps={{ className: 'kowlEditor' }}
       {...rest}
     />
   );
@@ -64,13 +65,13 @@ export default function KowlEditor(props: KowlEditorProps) {
 
 export function KowlDiffEditor(props: KowlDiffEditorProps) {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
     <DiffEditor
       loading={<LoadingPlaceholder />}
-      wrapperProps={{ className: 'kowlEditor' }}
       options={options}
+      wrapperProps={{ className: 'kowlEditor' }}
       {...rest}
     />
   );

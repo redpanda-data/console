@@ -39,7 +39,7 @@ export const AddSecretsDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog onOpenChange={onClose} open={isOpen}>
       <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>Add Secrets</DialogTitle>
@@ -47,7 +47,7 @@ export const AddSecretsDialog = ({
         </DialogHeader>
         <DialogBody>
           {errorMessages.length > 0 && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert className="mb-4" variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <div className="space-y-1">
@@ -59,13 +59,13 @@ export const AddSecretsDialog = ({
             </Alert>
           )}
           <QuickAddSecrets
-            requiredSecrets={missingSecrets}
-            existingSecrets={existingSecrets}
-            scopes={[Scope.REDPANDA_CONNECT]}
             defaultValues={defaultValues}
-            onSecretsCreated={handleSecretsCreated}
             enableNewSecrets
+            existingSecrets={existingSecrets}
             onError={handleError}
+            onSecretsCreated={handleSecretsCreated}
+            requiredSecrets={missingSecrets}
+            scopes={[Scope.REDPANDA_CONNECT]}
           />
         </DialogBody>
       </DialogContent>

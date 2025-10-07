@@ -2,6 +2,7 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, List, ListItem, Spinner, Stack, Text } from '@redpanda-data/ui';
 import React, { type FC, useEffect } from 'react';
 import { MdCheckCircle, MdError } from 'react-icons/md';
+
 import colors from '../../../colors';
 import {
   DebugBundleStatus_Status,
@@ -23,7 +24,9 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (api.isDebugBundleInProgress) {
-        void api.refreshDebugBundleStatuses();
+        api.refreshDebugBundleStatuses().catch(() => {
+          // Error handling managed by API layer
+        });
       }
     }, 5000);
 
@@ -36,13 +39,13 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
       <List>
         {statuses.map((status, idx) => (
           <ListItem key={idx}>
-            <Flex gap={3} alignItems="center" mb={3}>
+            <Flex alignItems="center" gap={3} mb={3}>
               {status.value.case === 'bundleStatus' && (
                 <>
                   {StatusIcons[status.value.value.status]}
                   <Stack spacing={0.5}>
                     <Box>
-                      <Text fontWeight="bold" display="inline">
+                      <Text display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
                       <Text display="inline">
@@ -62,7 +65,7 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
                   {StatusIcons[DebugBundleStatus_Status.ERROR]}
                   <Stack spacing={0.5}>
                     <Box>
-                      <Text fontWeight="bold" display="inline">
+                      <Text display="inline" fontWeight="bold">
                         Broker {status.brokerId}
                       </Text>
                     </Box>

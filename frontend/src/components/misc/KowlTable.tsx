@@ -45,7 +45,9 @@ export class SearchTitle extends Component<{
   render() {
     const props = this.props;
 
-    if (!props.observableFilterOpen.filterOpen) return this.props.title;
+    if (!props.observableFilterOpen.filterOpen) {
+      return this.props.title;
+    }
 
     // Render the actual search bar
 
@@ -68,7 +70,6 @@ export class SearchTitle extends Component<{
           }}
         >
           <Input
-            ref={this.inputRef}
             onBlur={(e) => {
               const inputWrapper = e.target.parentElement;
               const focusInside = inputWrapper?.contains(e.relatedTarget as HTMLElement);
@@ -81,13 +82,14 @@ export class SearchTitle extends Component<{
                 setTimeout(this.hideSearchBar);
               }
             }}
-            onKeyDown={this.onKeyDown}
-            placeholder="Enter search term/regex"
-            value={props.observableSettings.quickSearch}
             onChange={(e) => {
               props.observableSettings.quickSearch = e.target.value;
             }}
+            onKeyDown={this.onKeyDown}
+            placeholder="Enter search term/regex"
+            ref={this.inputRef}
             spellCheck={false}
+            value={props.observableSettings.quickSearch}
           />
         </Box>
       </span>
@@ -103,6 +105,8 @@ export class SearchTitle extends Component<{
   }
 
   onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === 'Escape') this.hideSearchBar();
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      this.hideSearchBar();
+    }
   }
 }

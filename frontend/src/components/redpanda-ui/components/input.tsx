@@ -97,7 +97,10 @@ function useNumberInputHandlers(
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, showStepControls, size, variant, testId, children, containerClassName, readOnly, ...props }, ref) => {
+  (
+    { className, type, showStepControls, size, variant, testId, children, containerClassName, readOnly, ...props },
+    ref,
+  ) => {
     const { value, setValue, showPassword, setShowPassword } = useInputState(props);
     const [startWidth, setStartWidth] = useState<number | undefined>();
     const [endWidth, setEndWidth] = useState<number | undefined>();
@@ -152,7 +155,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       >
         <div
           className={cn(
-            inputContainerVariants({ layout: shouldShowControls ? 'number' : isPasswordInput ? 'password' : variant }),
+            inputContainerVariants({
+              layout: shouldShowControls ? 'number' : isPasswordInput ? 'password' : variant,
+            }),
             containerClassName,
           )}
         >
@@ -172,10 +177,22 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           {shouldShowControls && (
             <div className="flex flex-row gap-1">
-              <Button type="button" onClick={increment} disabled={props.disabled || readOnly} size={size} variant="outline">
+              <Button
+                type="button"
+                onClick={increment}
+                disabled={props.disabled || readOnly}
+                size={size}
+                variant="outline"
+              >
                 <Plus className="h-4 w-4" />
               </Button>
-              <Button type="button" onClick={decrement} disabled={props.disabled || readOnly} size={size} variant="outline">
+              <Button
+                type="button"
+                onClick={decrement}
+                disabled={props.disabled || readOnly}
+                size={size}
+                variant="outline"
+              >
                 <Minus className="h-4 w-4" />
               </Button>
             </div>

@@ -55,8 +55,12 @@ export type DataType =
  * @returns The specific data type including "array" and "null" as distinct types
  */
 export function getDataType(value: JSONValue): DataType {
-  if (Array.isArray(value)) return 'array';
-  if (value === null) return 'null';
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  if (value === null) {
+    return 'null';
+  }
   return typeof value;
 }
 
@@ -70,7 +74,7 @@ export function tryParseJSON(str: string): {
   data: JSONValue;
 } {
   const trimmed = str.trim();
-  if (!(trimmed.startsWith('{') && trimmed.endsWith('}')) && !(trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+  if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     return { success: false, data: str };
   }
   try {
@@ -88,10 +92,12 @@ export function tryParseJSON(str: string): {
  * @returns A new JSON value with the updated path
  */
 export function updateValueAtPath(obj: JSONValue, path: string[], value: JSONValue): JSONValue {
-  if (path.length === 0) return value;
+  if (path.length === 0) {
+    return value;
+  }
 
   if (obj === null || obj === undefined) {
-    obj = !Number.isNaN(Number(path[0])) ? [] : {};
+    obj = Number.isNaN(Number(path[0])) ? {} : [];
   }
 
   if (Array.isArray(obj)) {
@@ -100,6 +106,7 @@ export function updateValueAtPath(obj: JSONValue, path: string[], value: JSONVal
   if (typeof obj === 'object' && obj !== null) {
     return updateObject(obj as JSONObject, path, value);
   }
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.error(`Cannot update path ${path.join('.')} in non-object/array value:`, obj);
   return obj;
 }
@@ -112,11 +119,13 @@ function updateArray(array: JSONValue[], path: string[], value: JSONValue): JSON
   const arrayIndex = Number(index);
 
   if (Number.isNaN(arrayIndex)) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Invalid array index: ${index}`);
     return array;
   }
 
   if (arrayIndex < 0) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Array index out of bounds: ${arrayIndex} < 0`);
     return array;
   }
@@ -151,6 +160,7 @@ function updateObject(obj: JSONObject, path: string[], value: JSONValue): JSONOb
 
   // Validate object key
   if (typeof key !== 'string') {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Invalid object key: ${key}`);
     return obj;
   }
@@ -177,7 +187,9 @@ function updateObject(obj: JSONObject, path: string[], value: JSONValue): JSONOb
  * @returns The value at the path, or defaultValue if not found
  */
 export function getValueAtPath(obj: JSONValue, path: string[], defaultValue: JSONValue = null): JSONValue {
-  if (path.length === 0) return obj;
+  if (path.length === 0) {
+    return obj;
+  }
 
   const [first, ...rest] = path;
 

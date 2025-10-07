@@ -1,5 +1,7 @@
 import { parseDocument, stringify as yamlStringify } from 'yaml';
-import benthosSchema from '../../../../assets/rp-connect-schema.json';
+
+import { getCategoryDisplayName, inferComponentCategory } from './categories';
+import benthosSchema from '../../../../assets/rp-connect-schema.json' with { type: 'json' };
 import { CONNECT_WIZARD_TOPIC_KEY, CONNECT_WIZARD_USER_KEY } from '../../../../state/connect/state';
 import { generateDefaultFromJsonSchema } from '../../../../utils/json-schema';
 import {
@@ -11,7 +13,9 @@ import {
   type ExtendedConnectComponentSpec,
 } from '../types/schema';
 import type { AddTopicFormData, AddUserFormData } from '../types/wizard';
-import { getCategoryDisplayName, inferComponentCategory } from './categories';
+
+// Regex for matching YAML key-value pairs
+const YAML_KEY_VALUE_REGEX = /^(\s*)([^:#\n]+):\s*(.*)$/;
 
 /**
  * Extracts lightweight metadata from JSON Schema component variants
@@ -20,19 +24,21 @@ import { getCategoryDisplayName, inferComponentCategory } from './categories';
 const extractComponentMetadata = (componentType: string, definition: any): ConnectComponentSpec[] => {
   const components: ConnectComponentSpec[] = [];
 
-  if (!definition.allOf || !Array.isArray(definition.allOf)) {
+  if (!(definition.allOf && Array.isArray(definition.allOf))) {
     return components;
   }
 
   // The first element of allOf contains anyOf with component variants
   const variantsSection = definition.allOf[0];
-  if (!variantsSection.anyOf || !Array.isArray(variantsSection.anyOf)) {
+  if (!(variantsSection.anyOf && Array.isArray(variantsSection.anyOf))) {
     return components;
   }
 
   // Extract metadata from each variant
   for (const variant of variantsSection.anyOf) {
-    if (!variant.properties) continue;
+    if (!variant.properties) {
+      continue;
+    }
 
     // Each variant has a single property key which is the component name
     const componentNames = Object.keys(variant.properties);
@@ -75,6 +81,7 @@ const parseSchema = () => {
 
   // Check if schema has the new JSON Schema format with definitions
   if (!schemaData.definitions) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('Schema does not have definitions structure. Expected JSON Schema format.');
     return allComponents;
   }
@@ -82,7 +89,9 @@ const parseSchema = () => {
   // Parse each component type from definitions
   for (const componentType of CONNECT_COMPONENT_TYPE) {
     const definition = schemaData.definitions[componentType];
-    if (!definition) continue;
+    if (!definition) {
+      continue;
+    }
 
     // Extract lightweight metadata from the JSON Schema definition
     const components = extractComponentMetadata(componentType, definition);
@@ -105,7 +114,7 @@ export const builtInComponents = parseSchema();
  */
 export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptionalFields?: boolean) => {
   if (!componentSpec?.config) {
-    return undefined;
+    return;
   }
 
   // Generate the configuration object from the component's FieldSpec
@@ -196,7 +205,8 @@ export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showOptiona
 export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: ReturnType<typeof schemaToConfig>,
-  componentSpec: ConnectComponentSpec,
+  componentSpec: ConnectComponentSpec
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 51, refactor later
 ) => {
   // If no existing YAML, return new config object
   if (!existingYaml.trim()) {
@@ -208,6 +218,7 @@ export const mergeConnectConfigs = (
   try {
     doc = parseDocument(existingYaml);
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to parse existing YAML, starting with empty config:', error);
     return newConfigObject;
   }
@@ -225,6 +236,7 @@ export const mergeConnectConfigs = (
     // Add schema comments
     newYamlWithComments = addSchemaComments(newYamlWithComments, componentSpec);
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to generate YAML with comments, using plain object:', error);
     // Fallback to plain object if YAML generation fails
     newYamlWithComments = '';
@@ -236,6 +248,7 @@ export const mergeConnectConfigs = (
     try {
       newDoc = parseDocument(newYamlWithComments);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Failed to parse new YAML with comments:', error);
     }
   }
@@ -253,11 +266,11 @@ export const mergeConnectConfigs = (
       const newProcessor = newProcessorNode || newConfigObject.pipeline?.processors?.[0];
 
       if (newProcessor) {
-        if (!Array.isArray(processors)) {
-          doc.setIn(['pipeline', 'processors'], [newProcessor]);
-        } else {
+        if (Array.isArray(processors)) {
           // Spread existing processors and append new one
           doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
+        } else {
+          doc.setIn(['pipeline', 'processors'], [newProcessor]);
         }
       }
       break;
@@ -404,6 +417,7 @@ export const configToYaml = (configObject: any, componentSpec: ConnectComponentS
 
     return yamlString;
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error('Error converting config to YAML:', error);
     return JSON.stringify(configObject, null, 2);
   }
@@ -426,6 +440,7 @@ const getPersistedWizardData = () => {
       topicData = JSON.parse(topicJson);
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to parse topic data from session storage:', error);
   }
 
@@ -435,6 +450,7 @@ const getPersistedWizardData = () => {
       userData = JSON.parse(userJson);
     }
   } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to parse user data from session storage:', error);
   }
 
@@ -487,19 +503,27 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
   // Check object properties
   if (schema?.type === 'object' && schema.properties) {
     for (const [propName, propSchema] of Object.entries(schema.properties) as [string, any][]) {
-      if (isTopicField(propName) && topicData?.topicName) return true;
-      if (isUserField(propName) && userData?.username) return true;
-      if (isPasswordField(propName) && userData?.password) return true;
+      if (isTopicField(propName) && topicData?.topicName) {
+        return true;
+      }
+      if (isUserField(propName) && userData?.username) {
+        return true;
+      }
+      if (isPasswordField(propName) && userData?.password) {
+        return true;
+      }
 
       if (propSchema.type === 'object' && hasRelevantNestedFields(propSchema, topicData, userData)) {
         return true;
       }
 
       // Check array items
-      if (propSchema.type === 'array' && propSchema.items) {
-        if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
-          return true;
-        }
+      if (
+        propSchema.type === 'array' &&
+        propSchema.items &&
+        hasRelevantNestedFields(propSchema.items, topicData, userData)
+      ) {
+        return true;
       }
     }
   }
@@ -511,6 +535,7 @@ const hasRelevantNestedFields = (schema: any, topicData: any, userData: any): bo
  * Recursively populates persisted topic/user data in the generated defaults object
  * Also creates optional nested objects when they contain relevant fields
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 65, refactor later
 const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: string): any => {
   const { topicData, userData } = getPersistedWizardData();
 
@@ -549,23 +574,27 @@ const populatePersistedData = (defaults: any, jsonSchema: any, rootFieldName?: s
             result[propName] = topicData.topicName;
           }
         } else if (isUserField(propName) && userData?.username) {
-          result[propName] = '$' + '{secrets.REDPANDA_USERNAME}';
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
+          result[propName] = '${secrets.REDPANDA_USERNAME}';
         } else if (isPasswordField(propName) && userData?.password) {
-          result[propName] = '$' + '{secrets.REDPANDA_PASSWORD}';
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
+          result[propName] = '${secrets.REDPANDA_PASSWORD}';
         } else if (propSchema.type === 'object') {
           const nestedDefaults = existsInResult ? result[propName] : {};
           const populated = populatePersistedData(nestedDefaults, propSchema, propName);
           if (Object.keys(populated).length > 0) {
             result[propName] = populated;
           }
-        } else if (propSchema.type === 'array' && propSchema.items) {
+        } else if (
+          propSchema.type === 'array' &&
+          propSchema.items &&
+          hasRelevantNestedFields(propSchema.items, topicData, userData)
+        ) {
           // Handle arrays that contain objects with relevant fields (e.g., sasl array)
-          if (hasRelevantNestedFields(propSchema.items, topicData, userData)) {
-            const itemDefaults = {};
-            const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
-            if (Object.keys(populated).length > 0) {
-              result[propName] = [populated];
-            }
+          const itemDefaults = {};
+          const populated = populatePersistedData(itemDefaults, propSchema.items, propName);
+          if (Object.keys(populated).length > 0) {
+            result[propName] = [populated];
           }
         }
       }
@@ -624,25 +653,25 @@ export const getAllCategories = (additionalComponents?: ExtendedConnectComponent
 const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSpec): string => {
   // Get the JSON Schema for this component
   const jsonSchema = componentSpec.config._jsonSchema;
-  if (!jsonSchema || !jsonSchema.properties) {
+  if (!jsonSchema?.properties) {
     return yamlString;
   }
 
   const lines = yamlString.split('\n');
   const processedLines: string[] = [];
 
-  lines.forEach((line) => {
+  for (const line of lines) {
     // Skip empty lines and existing comments
     if (!line.trim() || line.trim().startsWith('#') || line.includes('#')) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     // Match YAML key-value pairs
-    const keyValueMatch = line.match(/^(\s*)([^:#\n]+):\s*(.*)$/);
+    const keyValueMatch = YAML_KEY_VALUE_REGEX.exec(line);
     if (!keyValueMatch) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     const [, indent, key, value] = keyValueMatch;
@@ -652,7 +681,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     const fieldSchema = jsonSchema.properties[cleanKey];
     if (!fieldSchema) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     // Generate comment based on JSON Schema
@@ -675,7 +704,7 @@ const addSchemaComments = (yamlString: string, componentSpec: ConnectComponentSp
     }
 
     processedLines.push(`${indent}${cleanKey}: ${value}${comment}`);
-  });
+  }
 
   return processedLines.join('\n');
 };
@@ -685,22 +714,23 @@ const addRootSpacing = (yamlString: string): string => {
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
 
-  lines.forEach((line) => {
+  for (const line of lines) {
     if (!line.trim()) {
       processedLines.push(line);
-      return;
+      continue;
     }
 
     // Check if this is a root-level key
     const currentIndent = line.length - line.trimStart().length;
     if (currentIndent === 0 && line.includes(':')) {
-      const keyMatch = line.match(/^([^:#\n]+):/);
+      const keyMatch = YAML_KEY_VALUE_REGEX.exec(line);
       if (keyMatch) {
-        const cleanKey = keyMatch[1].trim();
+        const cleanKey = keyMatch[2].trim();
 
         // Add spacing before root components (except first)
         if (previousRootKey !== null && cleanKey !== previousRootKey) {
-          if (processedLines.length > 0 && processedLines[processedLines.length - 1].trim() !== '') {
+          const lastLine = processedLines.at(-1);
+          if (processedLines.length > 0 && lastLine && lastLine.trim() !== '') {
             processedLines.push('');
           }
         }
@@ -709,7 +739,7 @@ const addRootSpacing = (yamlString: string): string => {
     }
 
     processedLines.push(line);
-  });
+  }
 
   return processedLines.join('\n');
 };
@@ -759,7 +789,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
   // Fallback to legacy behavior for backward compatibility (external components without _jsonSchema)
   const isOptionalField = spec.default !== undefined || spec.is_optional === true;
   if (isOptionalField && !showOptionalFields) {
-    return undefined;
+    return;
   }
 
   if (spec.default !== undefined) {
@@ -798,7 +828,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
     case 'map':
       return {};
     default:
-      return undefined;
+      return;
   }
 }
 
@@ -807,6 +837,7 @@ export function generateDefaultValue(spec: ConnectFieldSpec, showOptionalFields?
  * Used when showOptionalFields is true
  * Also populates topic/user defaults from session storage when applicable
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 35, refactor later
 function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): unknown {
   if (jsonSchema.default !== undefined) {
     return jsonSchema.default;
@@ -825,18 +856,28 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     }
 
     if (isUserField(fieldName) && userData?.username) {
-      return '$' + '{secrets.REDPANDA_USERNAME}';
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
+      return '${secrets.REDPANDA_USERNAME}';
     }
 
     if (isPasswordField(fieldName) && userData?.password) {
-      return '$' + '{secrets.REDPANDA_PASSWORD}';
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional Go template placeholder
+      return '${secrets.REDPANDA_PASSWORD}';
     }
   }
 
-  if (jsonSchema.type === 'string') return '';
-  if (jsonSchema.type === 'number' || jsonSchema.type === 'integer') return 0;
-  if (jsonSchema.type === 'boolean') return false;
-  if (jsonSchema.type === 'array') return [];
+  if (jsonSchema.type === 'string') {
+    return '';
+  }
+  if (jsonSchema.type === 'number' || jsonSchema.type === 'integer') {
+    return 0;
+  }
+  if (jsonSchema.type === 'boolean') {
+    return false;
+  }
+  if (jsonSchema.type === 'array') {
+    return [];
+  }
 
   if (jsonSchema.type === 'object') {
     const obj: Record<string, unknown> = {};
@@ -861,13 +902,14 @@ function generateAllFieldsFromJsonSchema(jsonSchema: any, fieldName?: string): u
     return {};
   }
 
-  return undefined;
+  return;
 }
 
 /**
  * Get all components (built-in + external)
  * Used by connect-tiles.tsx for filtering and yaml.ts for template generation
  */
-export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => {
-  return [...builtInComponents, ...(additionalComponents || [])];
-};
+export const getAllComponents = (additionalComponents?: ExtendedConnectComponentSpec[]): ConnectComponentSpec[] => [
+  ...builtInComponents,
+  ...(additionalComponents || []),
+];

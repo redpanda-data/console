@@ -32,12 +32,19 @@ export class FilterableDataSource<T> {
     return this.resultData;
   }
 
+  private dataSource: () => T[] | undefined;
+  private filter: (filterText: string, item: T) => boolean;
+
   constructor(
-    private dataSource: () => T[] | undefined,
-    private filter: (filterText: string, item: T) => boolean,
-    debounceMilliseconds?: number,
+    dataSource: () => T[] | undefined,
+    filter: (filterText: string, item: T) => boolean,
+    debounceMilliseconds?: number
   ) {
-    if (!debounceMilliseconds) debounceMilliseconds = 100;
+    this.dataSource = dataSource;
+    this.filter = filter;
+    if (!debounceMilliseconds) {
+      debounceMilliseconds = 100;
+    }
     this.reactionDisposer = autorun(this.update.bind(this), {
       delay: debounceMilliseconds,
       name: 'FilterableDataSource',

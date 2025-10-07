@@ -12,15 +12,16 @@
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
+
 import WarpLogo from '../../../../../assets/warp.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientWarpProps {
+type ClientWarpProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
   const clusterId = config?.clusterId;
@@ -37,17 +38,17 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={WarpLogo} alt="Warp" className="h-4 w-4" /> Warp
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <img alt="Warp" className="h-4 w-4" src={WarpLogo} /> Warp
               </Text>
               <span>and go to</span>
-              <Text as="span" className="font-bold whitespace-nowrap">
+              <Text as="span" className="whitespace-nowrap font-bold">
                 Settings → AI → Manage MCP servers
               </Text>
             </div>
@@ -63,17 +64,17 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
             <div className="flex flex-wrap items-center gap-1">
               <span>Copy and paste the following configuration:</span>
             </div>
-            <DynamicCodeBlock lang="json" code={warpConfigJson} />
+            <DynamicCodeBlock code={warpConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Verify the MCP server is available with:
-            <DynamicCodeBlock lang="bash" code="/view-mcp" />
+            <DynamicCodeBlock code="/view-mcp" lang="bash" />
           </ListItem>
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://docs.warp.dev/knowledge-and-collaboration/mcp"
         clientName="Warp"
+        documentationUrl="https://docs.warp.dev/knowledge-and-collaboration/mcp"
       />
     </div>
   );

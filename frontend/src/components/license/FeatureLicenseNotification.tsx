@@ -1,12 +1,7 @@
 import { Alert, AlertDescription, AlertIcon, Box, Flex, Link, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
-import {
-  type License,
-  License_Type,
-  type ListEnterpriseFeaturesResponse_Feature,
-} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
-import { api } from '../../state/backendApi';
+
 import {
   coreHasEnterpriseFeatures,
   ENTERPRISE_FEATURES_DOCS_LINK,
@@ -22,14 +17,24 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './licenseUtils';
-import { RegisterModal } from './RegisterModal';
 
+const WARNING_THRESHOLD_DAYS = 5;
+
+import { RegisterModal } from './RegisterModal';
+import {
+  type License,
+  License_Type,
+  type ListEnterpriseFeaturesResponse_Feature,
+} from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { api } from '../../state/backendApi';
+
+// biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
 const getLicenseAlertContentForFeature = (
   _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
-  onRegisterModalOpen: () => void,
+  onRegisterModalOpen: () => void
 ): { message: ReactElement; status: 'warning' | 'info' } | null => {
   if (license === undefined) {
     return null;
@@ -48,7 +53,7 @@ const getLicenseAlertContentForFeature = (
             </Flex>
           </Box>
         ),
-        status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
+        status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'warning',
       };
     }
     return {
@@ -57,7 +62,7 @@ const getLicenseAlertContentForFeature = (
           <Text>This is an enterprise feature.</Text>
         </Box>
       ),
-      status: msToExpiration > 5 * MS_IN_DAY ? 'info' : 'warning',
+      status: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'warning',
     };
   }
 
@@ -87,11 +92,11 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>{' '}
               will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
                 contact us
               </Link>
               .
@@ -127,7 +132,7 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               This is a Redpanda Enterprise feature. Try it with our{' '}
-              <Link href={getEnterpriseCTALink('tryEnterprise')} target="_blank">
+              <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
                 Redpanda Enterprise Trial
               </Link>
               .
@@ -143,11 +148,11 @@ const getLicenseAlertContentForFeature = (
           <Box>
             <Text>
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} target="_blank">
+              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>{' '}
               will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} target="_blank">
+              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
                 contact us
               </Link>
               .
@@ -171,8 +176,12 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
     const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
     useEffect(() => {
-      void api.refreshClusterOverview();
-      void api.listLicenses();
+      api.refreshClusterOverview().catch(() => {
+        // Error handling managed by API layer
+      });
+      api.listLicenses().catch(() => {
+        // Error handling managed by API layer
+      });
     }, []);
 
     const licenses = api.licenses
@@ -195,7 +204,7 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
       bakedInTrial,
       () => {
         setIsRegisterModalOpen(true);
-      },
+      }
     );
 
     // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
@@ -223,5 +232,5 @@ export const FeatureLicenseNotification: FC<{ featureName: 'reassignPartitions' 
         <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
       </Box>
     );
-  },
+  }
 );

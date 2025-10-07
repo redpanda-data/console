@@ -47,7 +47,9 @@ export const sizeFactors = {
  * @returns Milliseconds (-1 for infinite/default)
  */
 export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit | string): number {
-  if (unit === 'infinite' || unit === 'default') return -1;
+  if (unit === 'infinite' || unit === 'default') {
+    return -1;
+  }
 
   const multipliers: Record<string, number> = {
     ms: 1,
@@ -69,7 +71,9 @@ export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit 
  * @returns Bytes (-1 for infinite/default)
  */
 export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUnit | string): number {
-  if (unit === 'infinite' || unit === 'default') return -1;
+  if (unit === 'infinite' || unit === 'default') {
+    return -1;
+  }
 
   const multipliers: Record<string, number> = {
     Bit: 1,

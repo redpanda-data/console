@@ -1,13 +1,14 @@
 import { useDisclosure } from '@redpanda-data/ui';
 import type { editor } from 'monaco-editor';
 import { memo, useMemo, useState } from 'react';
-import type { ConnectComponentType } from '../types/schema';
+
 import { AddConnectorDialog } from './add-connector-dialog';
 import { AddConnectorsCard } from './add-connectors-card';
 import { AddSecretsCard } from './add-secrets-card';
 import { AddSecretsDialog } from './add-secrets-dialog';
+import type { ConnectComponentType } from '../types/schema';
 
-interface CreatePipelineSidebarProps {
+type CreatePipelineSidebarProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   detectedSecrets: string[];
@@ -15,7 +16,7 @@ interface CreatePipelineSidebarProps {
   secretDefaultValues: Record<string, string>;
   onSecretsCreated: () => void;
   editorContent: string;
-}
+};
 
 export const CreatePipelineSidebar = memo(
   ({
@@ -58,33 +59,33 @@ export const CreatePipelineSidebar = memo(
     };
 
     return (
-      <div className="flex gap-3 flex-col">
+      <div className="flex flex-col gap-3">
         <AddSecretsCard
           detectedSecrets={detectedSecrets}
-          missingSecrets={missingSecrets}
-          existingSecrets={existingSecrets}
           editorInstance={editorInstance}
+          existingSecrets={existingSecrets}
+          missingSecrets={missingSecrets}
           onOpenDialog={() => setIsSecretsDialogOpen(true)}
         />
 
         <AddSecretsDialog
-          isOpen={isSecretsDialogOpen}
-          onClose={() => setIsSecretsDialogOpen(false)}
-          missingSecrets={missingSecrets}
-          existingSecrets={existingSecrets}
           defaultValues={secretDefaultValues}
+          existingSecrets={existingSecrets}
+          isOpen={isSecretsDialogOpen}
+          missingSecrets={missingSecrets}
+          onClose={() => setIsSecretsDialogOpen(false)}
           onSecretsCreated={handleSecretsCreated}
         />
 
-        <AddConnectorsCard onAddConnector={handleConnectorTypeChange} hasInput={hasInput} hasOutput={hasOutput} />
+        <AddConnectorsCard hasInput={hasInput} hasOutput={hasOutput} onAddConnector={handleConnectorTypeChange} />
 
         <AddConnectorDialog
-          isOpen={isAddConnectorOpen}
-          onCloseAddConnector={closeAddConnector}
-          onAddConnector={handleAddConnector}
           connectorType={selectedConnector}
+          isOpen={isAddConnectorOpen}
+          onAddConnector={handleAddConnector}
+          onCloseAddConnector={closeAddConnector}
         />
       </div>
     );
-  },
+  }
 );

@@ -12,14 +12,14 @@ import {
 } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 
-export interface SecretInputProps {
+export type SecretInputProps = {
   value: string;
   onChange: (v: string) => void;
   updating: boolean;
-}
+};
 
 const EditButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
-  <Tooltip label="Edit secret value" placement="top" hasArrow={true}>
+  <Tooltip hasArrow={true} label="Edit secret value" placement="top">
     <Button onClick={onClick} variant="link">
       Edit
     </Button>
@@ -37,7 +37,7 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
   const localState = useLocalObservable(() => ({
     canEdit: !updating,
     initialValue: value,
-    value: value,
+    value,
     clear() {
       this.value = '';
     },
@@ -70,18 +70,20 @@ export const SecretInput = observer(({ value, onChange, updating = false }: Secr
     <Flex flexDirection="row" gap={2}>
       <InputGroup>
         <Input
-          value={localState.value}
           onChange={(e) => {
             localState.value = e.target.value;
-            if (onChange) onChange(e.target.value);
+            if (onChange) {
+              onChange(e.target.value);
+            }
           }}
-          type={visible ? 'text' : 'password'}
           readOnly={!localState.canEdit}
+          type={visible ? 'text' : 'password'}
+          value={localState.value}
         />
         {localState.canEdit && (
           <InputRightElement>
-            <Button variant="ghost" onClick={() => setVisible.toggle()}>
-              <Icon color="gray.500" as={visible ? EyeIcon : EyeOffIcon} />
+            <Button onClick={() => setVisible.toggle()} variant="ghost">
+              <Icon as={visible ? EyeIcon : EyeOffIcon} color="gray.500" />
             </Button>
           </InputRightElement>
         )}

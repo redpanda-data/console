@@ -12,14 +12,14 @@
 import type { Table } from 'dexie';
 import Dexie from 'dexie';
 
-export interface ChatMessage {
+export type ChatMessage = {
   id: string;
   agentId: string;
   content: string;
   sender: 'user' | 'system';
   timestamp: Date;
   failure: boolean;
-}
+};
 
 class ChatDatabase extends Dexie {
   messages!: Table<ChatMessage, string>;
@@ -31,11 +31,11 @@ class ChatDatabase extends Dexie {
     });
   }
 
-  async getAllMessages(agentId: string): Promise<ChatMessage[]> {
+  getAllMessages(agentId: string): Promise<ChatMessage[]> {
     return this.messages.where('agentId').equals(agentId).sortBy('timestamp');
   }
 
-  async addMessage(message: ChatMessage): Promise<string> {
+  addMessage(message: ChatMessage): Promise<string> {
     return this.messages.add(message);
   }
 

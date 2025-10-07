@@ -12,15 +12,16 @@
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
+
 import CodexLogo from '../../../../../assets/codex.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientCodexProps {
+type ClientCodexProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
   const mcpServerName = getMCPServerName(mcpServer?.displayName ?? '');
@@ -44,19 +45,19 @@ export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={CodexLogo} alt="Codex" className="h-4 w-4" />
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <img alt="Codex" className="h-4 w-4" src={CodexLogo} />
                 Codex
               </Text>
               <span>, add the MCP server using the following command:</span>
             </div>
-            <DynamicCodeBlock lang="bash" code={codexMcpAddCommand} />
+            <DynamicCodeBlock code={codexMcpAddCommand} lang="bash" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -64,7 +65,7 @@ export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
               <InlineCode className="whitespace-nowrap">~/.codex/config.toml</InlineCode>
               <span>with:</span>
             </div>
-            <DynamicCodeBlock lang="toml" code={codexConfigToml} />
+            <DynamicCodeBlock code={codexConfigToml} lang="toml" />
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
@@ -76,8 +77,8 @@ export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
         </List>
       </div>
       <RemoteMCPConnectDocsAlert
-        documentationUrl="https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers"
         clientName="Codex"
+        documentationUrl="https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers"
       />
     </div>
   );

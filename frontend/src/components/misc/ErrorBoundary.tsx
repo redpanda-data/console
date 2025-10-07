@@ -15,11 +15,12 @@ import { observer } from 'mobx-react';
 import React, { type CSSProperties, type FC } from 'react';
 import { MdClose, MdOutlineCopyAll } from 'react-icons/md';
 import StackTrace from 'stacktrace-js';
+
+import { NoClipboardPopover } from './NoClipboardPopover';
 import { envVarDebugAr } from '../../utils/env';
 import { isClipboardAvailable } from '../../utils/featureDetection';
 import { toJson } from '../../utils/jsonUtils';
 import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsxUtils';
-import { NoClipboardPopover } from './NoClipboardPopover';
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)
@@ -39,10 +40,10 @@ const valueStyle: CSSProperties = {
   padding: '1rem',
 };
 
-interface InfoItem {
+type InfoItem = {
   name: string;
   value: string | (() => any);
-}
+};
 
 @observer
 export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }> {
@@ -66,12 +67,16 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     this.infoItems = [];
 
     // Type
-    if (this.error?.name && this.error.name.toLowerCase() !== 'error')
+    if (this.error?.name && this.error.name.toLowerCase() !== 'error') {
       this.infoItems.push({ name: 'Type', value: this.error.name });
+    }
 
     // Message
-    if (this.error?.message) this.infoItems.push({ name: 'Message', value: this.error.message });
-    else this.infoItems.push({ name: 'Message', value: '(no message)' });
+    if (this.error?.message) {
+      this.infoItems.push({ name: 'Message', value: this.error.message });
+    } else {
+      this.infoItems.push({ name: 'Message', value: '(no message)' });
+    }
 
     // Call Stack
     if (this.error?.stack) {
@@ -82,8 +87,9 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       this.infoItems.push({
         name: 'Stack (Decoded)',
         value: () => {
-          if (dataHolder.value == null)
+          if (dataHolder.value == null) {
             return <div style={{ fontSize: '2rem' }}>Decoding stack trace, please wait...</div>;
+          }
           return dataHolder.value;
         },
       });
@@ -105,20 +111,23 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
       // remove "Error: " prefix
       s = s.removePrefix('error:').trim();
       // remove the error message as well, leaving only the stack trace
-      if (this.error.message && s.startsWith(this.error.message)) s = s.slice(this.error.message.length).trimStart();
+      if (this.error.message && s.startsWith(this.error.message)) {
+        s = s.slice(this.error.message.length).trimStart();
+      }
       this.infoItems.push({ name: 'Stack (Raw)', value: s });
     }
 
     // Component Stack
-    if (this.errorInfo && (this.errorInfo as any).componentStack)
+    if (this.errorInfo && (this.errorInfo as any).componentStack) {
       this.infoItems.push({ name: 'Components', value: (this.errorInfo as any).componentStack });
-    else
+    } else {
       this.infoItems.push({
         name: 'Components',
         value: this.errorInfo
           ? `(componentStack not set) errorInfo as Json: \n${toJson(this.errorInfo)}`
           : '(errorInfo was not set)',
       });
+    }
 
     // EnvVars
     try {
@@ -173,7 +182,9 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
   }
 
   render() {
-    if (!this.hasError) return this.props.children;
+    if (!this.hasError) {
+      return this.props.children;
+    }
 
     return (
       <Box style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
@@ -182,20 +193,20 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
           <p>
             Please report this at{' '}
             <a
-              style={{ textDecoration: 'underline', fontWeight: 'bold' }}
               href="https://github.com/redpanda-data/console/issues"
+              style={{ textDecoration: 'underline', fontWeight: 'bold' }}
             >
               our GitHub Repo
             </a>
           </p>
-          <Box mt={0} mb={2}>
-            <Button variant="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
+          <Box mb={2} mt={0}>
+            <Button onClick={() => this.dismiss()} size="large" style={{ width: '16rem' }} variant="primary">
               <Icon as={MdClose} />
               Dismiss
             </Button>
             <NoClipboardPopover>
               <CopyToClipboardButton
-                disabled={!isClipboardAvailable || !this.decodingDone}
+                disabled={!(isClipboardAvailable && this.decodingDone)}
                 isLoading={!this.decodingDone}
                 message={this.getError()}
               />
@@ -204,7 +215,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
         </div>
         <Flex flexDirection="column" width="100%">
           {this.infoItems.map((e) => (
-            <InfoItemDisplay key={e.name} data={e} />
+            <InfoItemDisplay data={e} key={e.name} />
           ))}
         </Flex>
       </Box>
@@ -213,9 +224,13 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
 }
 
 function getStringFromInfo(info: InfoItem) {
-  if (!info) return '';
+  if (!info) {
+    return '';
+  }
 
-  if (typeof info.value === 'string') return info.value;
+  if (typeof info.value === 'string') {
+    return info.value;
+  }
   try {
     const r = info.value();
     return String(r);
@@ -233,8 +248,6 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
 
   return (
     <Button
-      variant="ghost"
-      size="large"
       disabled={disabled}
       isLoading={isLoading}
       onClick={() => {
@@ -248,6 +261,8 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
           })
           .catch(navigatorClipboardErrorHandler);
       }}
+      size="large"
+      variant="ghost"
     >
       <Icon as={MdOutlineCopyAll} />
       Copy Info

@@ -12,6 +12,7 @@
 import { observer } from 'mobx-react';
 import type { RefObject } from 'react';
 import React from 'react';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -47,13 +48,14 @@ import {
 } from '@redpanda-data/ui';
 import { action, makeObservable, observable } from 'mobx';
 import { Link } from 'react-router-dom';
+
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import type { SchemaRegistrySubject } from '../../../state/restInterfaces';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import type SearchBar from '../../misc/SearchBar';
 import Section from '../../misc/Section';
 import { SmallStat } from '../../misc/SmallStat';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -90,7 +92,7 @@ function renderNotConfigured() {
           </Text>
 
           {/* todo: fix link once we have a better guide */}
-          <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
             <Button variant="solid">Redpanda Console Config Documentation</Button>
           </a>
         </VStack>
@@ -100,7 +102,7 @@ function renderNotConfigured() {
 }
 
 @observer
-class SchemaList extends PageComponent<{}> {
+class SchemaList extends PageComponent {
   @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
   @observable filteredSchemaSubjects: { name: string }[];
   @observable isLoadingSchemaVersionMatches = false;
@@ -133,12 +135,16 @@ class SchemaList extends PageComponent<{}> {
     // Find by schema ID
     const filterAsNumber = Number(filterString.trim());
     if (!Number.isNaN(filterAsNumber)) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('finding by num', { num: filterAsNumber });
       // Filter is a number, lets see if we can find a matching schema(-version)
       const schemas = api.schemaUsagesById.get(filterAsNumber);
       const matches = schemas?.filter((s) => s.subject === subject.name);
       if (matches && matches.length > 0) {
-        for (const m of matches) console.log(`found match: ${m.subject} v${m.version}`);
+        for (const m of matches) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log(`found match: ${m.subject} v${m.version}`);
+        }
         return true;
       }
     }
@@ -146,7 +152,9 @@ class SchemaList extends PageComponent<{}> {
     // Find by regex
     try {
       const quickSearchRegExp = new RegExp(filterString, 'i');
-      if (subject.name.match(quickSearchRegExp)) return true;
+      if (subject.name.match(quickSearchRegExp)) {
+        return true;
+      }
     } catch {}
 
     // Find by normal string matching
@@ -169,37 +177,41 @@ class SchemaList extends PageComponent<{}> {
   }
 
   render() {
-    if (api.schemaOverviewIsConfigured === false) return renderNotConfigured();
-    if (api.schemaSubjects === undefined) return DefaultSkeleton; // request in progress
+    if (api.schemaOverviewIsConfigured === false) {
+      return renderNotConfigured();
+    }
+    if (api.schemaSubjects === undefined) {
+      return DefaultSkeleton; // request in progress
+    }
 
     let filteredSubjects = api.schemaSubjects;
     if (uiSettings.schemaList.quickSearch) {
       filteredSubjects = filteredSubjects.filter((s) => this.isFilterMatch(uiSettings.schemaList.quickSearch, s));
     }
     filteredSubjects = filteredSubjects.filter(
-      (x) => uiSettings.schemaList.showSoftDeleted || (!uiSettings.schemaList.showSoftDeleted && !x.isSoftDeleted),
+      (x) => uiSettings.schemaList.showSoftDeleted || !(uiSettings.schemaList.showSoftDeleted || x.isSoftDeleted)
     );
 
     return (
       <PageContent key="b">
         <ToastContainer />
         {/* Statistics Bar */}
-        <Flex gap="1rem" alignItems="center">
+        <Flex alignItems="center" gap="1rem">
           <SmallStat title="Mode">{api.schemaMode ?? <InlineSkeleton width="100px" />}</SmallStat>
           <Divider height="2ch" orientation="vertical" />
           <SmallStat title="Compatibility">{api.schemaCompatibility ?? <InlineSkeleton width="100px" />}</SmallStat>
         </Flex>
 
         <Button
-          variant="outline"
-          mb="4"
-          width="fit-content"
-          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
           disabledReason={
             api.userData?.canManageSchemaRegistry === false
               ? "You don't have the 'canManageSchemaRegistry' permission"
               : undefined
           }
+          mb="4"
+          onClick={() => appGlobal.historyPush('/schema-registry/edit-compatibility')}
+          variant="outline"
+          width="fit-content"
         >
           Edit compatibility
         </Button>
@@ -208,35 +220,35 @@ class SchemaList extends PageComponent<{}> {
 
         <Flex alignItems="center" gap="4">
           <SearchField
-            width="350px"
+            placeholderText="Filter by subject name or schema ID..."
             searchText={uiSettings.schemaList.quickSearch}
             setSearchText={action((filterText) => {
               uiSettings.schemaList.quickSearch = filterText;
               this.triggerSearchBySchemaId();
             })}
-            placeholderText="Filter by subject name or schema ID..."
+            width="350px"
           />
-          <Spinner size="md" display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} />
+          <Spinner display={this.isLoadingSchemaVersionMatches ? undefined : 'none'} size="md" />
         </Flex>
 
         <Button
-          textDecoration="underline"
-          mr="auto"
           cursor="pointer"
-          mb=".5rem"
-          onClick={() => (this.isHelpSidebarOpen = true)}
           data-testid="schema-search-help"
-          variant="link"
-          paddingInline={0}
           fontWeight={400}
+          mb=".5rem"
+          mr="auto"
+          onClick={() => (this.isHelpSidebarOpen = true)}
+          paddingInline={0}
+          textDecoration="underline"
+          variant="link"
         >
           Help with schema search
         </Button>
         <Drawer
           isOpen={this.isHelpSidebarOpen}
+          onClose={() => (this.isHelpSidebarOpen = false)}
           placement="right"
           size="md"
-          onClose={() => (this.isHelpSidebarOpen = false)}
         >
           <DrawerOverlay />
           <DrawerContent>
@@ -244,15 +256,15 @@ class SchemaList extends PageComponent<{}> {
             <DrawerHeader data-testid="schema-search-header">Schema Search Help</DrawerHeader>
 
             <DrawerBody>
-              <Heading size="md" mt={4}>
+              <Heading mt={4} size="md">
                 Filtering schemas
               </Heading>
               There are two ways to filter schemas, and they work a little differently.
-              <Heading size="md" mt={4}>
+              <Heading mt={4} size="md">
                 Schema ID
               </Heading>
               If a number matches a schema ID, the results include all subjects referencing that schema.
-              <Heading size="md" mt={4}>
+              <Heading mt={4} size="md">
                 Subject name
               </Heading>
               To search subject names, enter that specific name or a regex.
@@ -264,12 +276,12 @@ class SchemaList extends PageComponent<{}> {
           <Flex justifyContent={'space-between'} pb={3}>
             <Button
               colorScheme="brand"
-              onClick={() => appGlobal.historyPush('/schema-registry/create')}
               disabledReason={
                 api.userData?.canCreateSchemas === false
                   ? "You don't have the 'canCreateSchemas' permission"
                   : undefined
               }
+              onClick={() => appGlobal.historyPush('/schema-registry/create')}
             >
               Create new schema
             </Button>
@@ -282,10 +294,6 @@ class SchemaList extends PageComponent<{}> {
           </Flex>
 
           <DataTable<SchemaRegistrySubject>
-            data={filteredSubjects}
-            pagination
-            sorting
-            rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
             columns={[
               {
                 header: 'Name',
@@ -296,7 +304,7 @@ class SchemaList extends PageComponent<{}> {
                     original: { name, isSoftDeleted },
                   },
                 }) => (
-                  <Box wordBreak="break-word" whiteSpace="break-spaces">
+                  <Box whiteSpace="break-spaces" wordBreak="break-word">
                     <Flex alignItems="center" gap={2}>
                       <Link
                         data-testid="schema-registry-table-name"
@@ -306,11 +314,11 @@ class SchemaList extends PageComponent<{}> {
                       </Link>
                       {isSoftDeleted && (
                         <Tooltip
-                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
                           hasArrow
+                          label="This subject has been soft-deleted. It can be restored or permanently deleted."
                         >
                           <Box>
-                            <ArchiveIcon width={16} height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} />
+                            <ArchiveIcon height={16} style={{ color: 'var(--chakra-colors-gray-400)' }} width={16} />
                           </Box>
                         </Tooltip>
                       )}
@@ -318,7 +326,11 @@ class SchemaList extends PageComponent<{}> {
                   </Box>
                 ),
               },
-              { header: 'Type', cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />, size: 100 },
+              {
+                header: 'Type',
+                cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />,
+                size: 100,
+              },
               {
                 header: 'Compatibility',
                 cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
@@ -334,14 +346,13 @@ class SchemaList extends PageComponent<{}> {
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
                   <Button
-                    variant="icon"
-                    height="16px"
                     color="gray.500"
                     disabledReason={
                       api.userData?.canDeleteSchemas === false
                         ? "You don't have the 'canDeleteSchemas' permission"
                         : undefined
                     }
+                    height="16px"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -350,7 +361,7 @@ class SchemaList extends PageComponent<{}> {
                         openPermanentDeleteModal(r.name, () => {
                           api
                             .deleteSchemaSubject(r.name, true)
-                            .then(async () => {
+                            .then(() => {
                               toast({
                                 status: 'success',
                                 duration: 4000,
@@ -374,7 +385,7 @@ class SchemaList extends PageComponent<{}> {
                         openDeleteModal(r.name, () => {
                           api
                             .deleteSchemaSubject(r.name, false)
-                            .then(async () => {
+                            .then(() => {
                               toast({
                                 status: 'success',
                                 duration: 4000,
@@ -395,6 +406,7 @@ class SchemaList extends PageComponent<{}> {
                         });
                       }
                     }}
+                    variant="icon"
                   >
                     <TrashIcon />
                   </Button>
@@ -402,6 +414,10 @@ class SchemaList extends PageComponent<{}> {
                 size: 1,
               },
             ]}
+            data={filteredSubjects}
+            pagination
+            rowClassName={(row) => (row.original.isSoftDeleted ? 'soft-deleted-row' : '')}
+            sorting
           />
         </Section>
       </PageContent>

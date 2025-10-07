@@ -11,30 +11,25 @@
 
 import { observer } from 'mobx-react';
 import { Component, type ReactNode } from 'react';
+
 import { api } from '../../../state/backendApi';
 import type { Permission, Role, RoleBinding } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Box, DataTable } from '@redpanda-data/ui';
-import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
+
 import { RoleBindingComponent } from './Admin.RoleBindings';
+import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 
 @observer
-export class AdminRoles extends Component<{}> {
+export class AdminRoles extends Component<Record<string, never>> {
   render() {
-    if (!api.adminInfo) return DefaultSkeleton;
+    if (!api.adminInfo) {
+      return DefaultSkeleton;
+    }
     const roles = api.adminInfo.roles;
 
     return (
       <DataTable<Role>
-        sorting
-        pagination
-        data={roles}
-        expandRowByClick
-        subComponent={({ row: { original: role } }) => (
-          <Box py={6} px={10}>
-            <RoleComponent role={role} />
-          </Box>
-        )}
         columns={[
           {
             accessorKey: 'name',
@@ -42,6 +37,15 @@ export class AdminRoles extends Component<{}> {
             size: Number.POSITIVE_INFINITY,
           },
         ]}
+        data={roles}
+        expandRowByClick
+        pagination
+        sorting
+        subComponent={({ row: { original: role } }) => (
+          <Box px={10} py={6}>
+            <RoleComponent role={role} />
+          </Box>
+        )}
       />
     );
   }
@@ -69,7 +73,7 @@ export class RoleComponent extends Component<{ role: Role; grantedBy?: RoleBindi
               <div className="roleTitle">Granted By</div>
               <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>
                 {this.props.grantedBy?.map((x) => (
-                  <RoleBindingComponent key={x.ephemeralId} binding={x} />
+                  <RoleBindingComponent binding={x} key={x.ephemeralId} />
                 ))}
               </div>
             </div>
@@ -89,29 +93,37 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
       [
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabel">Resource</span>,
-        <span key={p.resourceName} className="codeBox resourceName">
+        <span className="codeBox resourceName" key={p.resourceName}>
           {p.resourceName}
         </span>,
       ],
     ];
-    if (p.allowedActions.length > 0)
+    if (p.allowedActions.length > 0) {
       rows.push([
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Actions</span>,
         stringsToBoxes(p.allowedActions, null, 'permissionsList'),
       ]);
-    if (p.includes.length > 0 && !(p.includes[0] === '*') && !(p.includes[0] === '^*$') && !(p.includes[0] === '^.*$'))
+    }
+    if (
+      p.includes.length > 0 &&
+      !(p.includes[0] === '*') &&
+      !(p.includes[0] === '^*$') &&
+      !(p.includes[0] === '^.*$')
+    ) {
       rows.push([
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Includes</span>,
         stringsToBoxes(p.includes, joinerOr, 'permissionRegex'),
       ]);
-    if (p.excludes.length > 0)
+    }
+    if (p.excludes.length > 0) {
       rows.push([
         // biome-ignore lint/correctness/useJsxKeyInIterable: not relevant here
         <span className="resourceLabelSub">Excludes</span>,
         stringsToBoxes(p.excludes, joinerOr, 'permissionRegex'),
       ]);
+    }
 
     const t = QuickTable(rows, {
       tableClassName: 'permissionTable',
@@ -127,11 +139,13 @@ export class PermissionComponent extends Component<{ permission: Permission }> {
 
 function stringsToBoxes(ar: string[], joiner?: ReactNode, wrapperClass?: string): ReactNode {
   let r = ar.map<ReactNode>((str, index) => (
-    <span key={index} className="codeBox">
+    <span className="codeBox" key={index}>
       {str}
     </span>
   ));
-  if (joiner) r = r.genericJoin(() => joiner);
+  if (joiner) {
+    r = r.genericJoin(() => joiner);
+  }
 
   return <div className={wrapperClass}>{r}</div>;
 }

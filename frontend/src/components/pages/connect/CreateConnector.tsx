@@ -34,6 +34,10 @@ import {
 import { comparer } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { useEffect, useState } from 'react';
+
+import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfigPage } from './dynamic-ui/components';
+import { findConnectorMetadata } from './helper';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
@@ -46,13 +50,10 @@ import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { Wizard, type WizardStep } from '../../misc/Wizard';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
-import { ConfigPage } from './dynamic-ui/components';
-import { findConnectorMetadata } from './helper';
 
 const ConnectorType = observer(
   (p: {
-    connectClusters: Array<ClusterConnectors>;
+    connectClusters: ClusterConnectors[];
     activeCluster: string | null;
     onActiveClusterChange: (clusterName: string | null) => void;
     selectedPlugin: ConnectorPlugin | null;
@@ -74,24 +75,39 @@ const ConnectorType = observer(
       const allPlugins = api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins;
 
       filteredPlugins =
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 33, refactor later
         allPlugins?.filter((p) => {
-          if (state.tabFilter === 'export' && p.type === 'source') return false; // not an "export" type
+          if (state.tabFilter === 'export' && p.type === 'source') {
+            return false; // not an "export" type
+          }
 
-          if (state.tabFilter === 'import' && p.type === 'sink') return false; // not an "import" type
+          if (state.tabFilter === 'import' && p.type === 'sink') {
+            return false; // not an "import" type
+          }
 
           const meta = findConnectorMetadata(p.class);
-          if (!meta) return true; // no metadata, show it always
+          if (!meta) {
+            return true; // no metadata, show it always
+          }
 
           if (state.textFilter) {
             let matchesFilter = false;
 
-            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter)) matchesFilter = true;
+            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter)) {
+              matchesFilter = true;
+            }
 
-            if (p.class && containsIgnoreCase(p.class, state.textFilter)) matchesFilter = true;
+            if (p.class && containsIgnoreCase(p.class, state.textFilter)) {
+              matchesFilter = true;
+            }
 
-            if (meta.description && containsIgnoreCase(meta.description, state.textFilter)) matchesFilter = true;
+            if (meta.description && containsIgnoreCase(meta.description, state.textFilter)) {
+              matchesFilter = true;
+            }
 
-            if (!matchesFilter) return false; // doesn't match the text filter
+            if (!matchesFilter) {
+              return false; // doesn't match the text filter
+            }
           }
 
           // no filters active that would remove the entry from the list
@@ -101,8 +117,8 @@ const ConnectorType = observer(
 
     const noResultsBox =
       filteredPlugins?.length > 0 ? null : (
-        <Flex p="10" alignItems="center" justifyContent="center" background="blackAlpha.100" borderRadius="8px">
-          <Text fontSize="large" color="gray">
+        <Flex alignItems="center" background="blackAlpha.100" borderRadius="8px" justifyContent="center" p="10">
+          <Text color="gray" fontSize="large">
             No connectors that match the search filters
           </Text>
         </Flex>
@@ -115,12 +131,12 @@ const ConnectorType = observer(
             <h2>Installation Target</h2>
             <Box maxWidth={400}>
               <SingleSelect<string | undefined>
+                onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
                 options={p.connectClusters.map(({ clusterName }) => ({
                   value: clusterName,
                   label: clusterName,
                 }))}
                 value={p.activeCluster ?? undefined}
-                onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
               />
             </Box>
           </>
@@ -140,10 +156,10 @@ const ConnectorType = observer(
 
                 <Box marginBlock="4" marginTop="8">
                   <SearchField
+                    icon="filter"
                     placeholderText="Search"
                     searchText={state.textFilter}
                     setSearchText={(x) => (state.textFilter = x)}
-                    icon="filter"
                   />
                 </Box>
               </Box>
@@ -176,11 +192,11 @@ const ConnectorType = observer(
             <HiddenRadioList<ConnectorPlugin>
               name={'connector-type'}
               onChange={p.onPluginSelectionChange}
-              value={p.selectedPlugin ?? undefined}
               options={filteredPlugins.map((plugin) => ({
                 value: plugin,
                 render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
               }))}
+              value={p.selectedPlugin ?? undefined}
             />
 
             {noResultsBox}
@@ -188,7 +204,7 @@ const ConnectorType = observer(
         )}
       </>
     );
-  },
+  }
 );
 
 @observer
@@ -205,17 +221,21 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
   }
 
   refreshData() {
-    void api.refreshConnectClusters();
+    api.refreshConnectClusters().catch(() => {
+      // Error handling managed by API layer
+    });
   }
 
   render() {
     const clusters = api.connectConnectors?.clusters;
-    if (clusters == null) return null;
+    if (clusters == null) {
+      return null;
+    }
     const clusterName = decodeURIComponent(this.props.clusterName);
 
     return (
       <PageContent>
-        <ConnectorWizard connectClusters={clusters} activeCluster={clusterName} />
+        <ConnectorWizard activeCluster={clusterName} connectClusters={clusters} />
         {/*
                 <Section>
                     <div className={styles.wizardView}>
@@ -227,10 +247,10 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
   }
 }
 
-interface ConnectorWizardProps {
-  connectClusters: Array<ClusterConnectors>;
+type ConnectorWizardProps = {
+  connectClusters: ClusterConnectors[];
   activeCluster: string;
-}
+};
 
 const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorWizardProps) => {
   const toast = useToast();
@@ -251,7 +271,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     const init = async () => {
       await connectClusterStore.setup();
     };
-    init();
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    init().catch(console.error);
   }, [connectClusterStore]);
 
   useEffect(() => {
@@ -275,14 +296,14 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     setGenericFailure(null);
   };
 
-  const steps: Array<WizardStep> = [
+  const steps: WizardStep[] = [
     {
       title: 'Connector Type',
       description: 'Choose type of connector.',
       content: (
         <ConnectorType
-          connectClusters={connectClusters}
           activeCluster={activeCluster}
+          connectClusters={connectClusters}
           onActiveClusterChange={(clusterName) => {
             uiState.pageBreadcrumbs = [
               { title: 'Connectors', linkTo: '/connect-clusters' },
@@ -297,11 +318,11 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             // biome-ignore lint/style/noNonNullAssertion: we know clusterName is defined
             appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
           }}
-          selectedPlugin={selectedPlugin}
           onPluginSelectionChange={(e) => {
             setSelectedPlugin(e);
             setCurrentStep(1);
           }}
+          selectedPlugin={selectedPlugin}
         />
       ),
       postConditionMet: () => activeCluster != null && selectedPlugin != null,
@@ -316,21 +337,24 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
           {selectedPlugin ? (
             <Box maxWidth="800px">
-              {/* biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex */}
-              <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)!} context="CREATE" />
+              <ConfigPage
+                // biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex
+                connectorStore={connectClusterStore.getConnector(selectedPlugin.class, null, undefined)!}
+                context="CREATE"
+              />
             </Box>
           ) : (
             <div>no cluster or plugin selected</div>
           )}
         </>
       ),
-      transitionConditionMet: async () => {
+      transitionConditionMet: () => {
         if (selectedPlugin) {
-          connectClusterStore.getConnector(selectedPlugin.class)?.getConfigObject();
-          setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class)?.jsonText ?? '');
-          return { conditionMet: true };
+          connectClusterStore.getConnector(selectedPlugin.class, null, undefined)?.getConfigObject();
+          setStringifiedConfig(connectClusterStore.getConnector(selectedPlugin.class, null, undefined)?.jsonText ?? '');
+          return Promise.resolve({ conditionMet: true });
         }
-        return { conditionMet: false };
+        return Promise.resolve({ conditionMet: false });
       },
       postConditionMet: () => true,
     },
@@ -340,22 +364,23 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       content: selectedPlugin && (
         <Review
           connectorPlugin={selectedPlugin}
-          properties={stringifiedConfig}
+          creationFailure={creationFailure}
+          genericFailure={genericFailure}
+          invalidValidationResult={invalidValidationResult}
+          isCreating={loading}
           onChange={(editorContent) => {
             setStringifiedConfig(editorContent ?? '');
           }}
-          invalidValidationResult={invalidValidationResult}
+          properties={stringifiedConfig}
           validationFailure={validationFailure}
-          creationFailure={creationFailure}
-          genericFailure={genericFailure}
-          isCreating={loading}
         />
       ),
       postConditionMet: () => postCondition && !loading,
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
       async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
         clearErrors();
         setLoading(true);
-        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '');
+        const connectorRef = connectClusterStore.getConnector(selectedPlugin?.class ?? '', null, undefined);
 
         if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef?.getConfigObject())) {
           connectorRef?.updateProperties(parsedUpdatedConfig);
@@ -384,7 +409,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           const validationResult = await api.validateConnectorConfig(
             activeCluster,
             selectedPlugin?.class ?? '',
-            propertiesObject ?? {},
+            propertiesObject ?? {}
           );
 
           const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
@@ -404,7 +429,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           await connectClusterStore.createConnector(selectedPlugin?.class ?? '', parsedUpdatedConfig);
 
           // Wait a bit for the connector to appear, then navigate to it
-          const maxScanTime = 10000;
+          const maxScanTime = 10_000;
           const intervalSec = 100;
           const timer = new TimeSince();
 
@@ -412,6 +437,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
           while (true) {
             const elapsedTime = timer.value;
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
             console.log('scanning for new connector...', { connectorName, elapsedTime });
             if (elapsedTime > maxScanTime) {
               // Abort, tried to wait for too long
@@ -425,7 +451,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             if (connector) {
               // Success
               appGlobal.historyPush(
-                `/connect-clusters/${encodeURIComponent(activeCluster)}/${encodeURIComponent(connectorName)}`,
+                `/connect-clusters/${encodeURIComponent(activeCluster)}/${encodeURIComponent(connectorName)}`
               );
               break;
             }
@@ -462,7 +488,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
   const isLast = () => currentStep === steps.length - 1;
 
   if (!connectClusterStore.isInitialized) {
-    return <Skeleton mt={5} noOfLines={20} height={4} />;
+    return <Skeleton height={4} mt={5} noOfLines={20} />;
   }
 
   return (
@@ -474,7 +500,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             const transitionConditionMet = steps[currentStep].transitionConditionMet;
             if (transitionConditionMet) {
               const { conditionMet } = await transitionConditionMet();
-              if (!conditionMet) return;
+              if (!conditionMet) {
+                return;
+              }
             }
 
             setTimeout(() => {
@@ -503,7 +531,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
       />
 
       <Modal isCentered isOpen={isCreatingModalOpen} onClose={() => {}}>
-        <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(5px)" />
+        <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
         <ModalContent>
           <ModalHeader>Creating connector...</ModalHeader>
           <ModalBody py="8">
@@ -518,13 +546,15 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 });
 
 function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
-  if (!p.plugin) return <Heading>Creating Connector</Heading>;
+  if (!p.plugin) {
+    return <Heading>Creating Connector</Heading>;
+  }
 
   // const { logo } = findConnectorMetadata(p.plugin.class) ?? {};
   const displayName = getConnectorFriendlyName(p.plugin.class);
 
   return (
-    <Heading as="h1" fontSize="2xl" display="flex" alignItems="center" gap=".5ch" mb="8">
+    <Heading alignItems="center" as="h1" display="flex" fontSize="2xl" gap=".5ch" mb="8">
       Create Connector:
       {p.plugin.type === 'source' ? 'import data from ' : 'export data to '}
       {displayName}
@@ -533,7 +563,7 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   );
 }
 
-interface ReviewProps {
+type ReviewProps = {
   connectorPlugin: ConnectorPlugin | null;
   onChange: (editorContent: string | undefined) => void;
   properties?: string;
@@ -542,7 +572,7 @@ interface ReviewProps {
   creationFailure: unknown;
   genericFailure: Error | null;
   isCreating: boolean;
-}
+};
 
 function Review({
   connectorPlugin,
@@ -560,22 +590,22 @@ function Review({
         <>
           <h2>Connector Plugin</h2>
           <ConnectorBoxCard
-            connectorPlugin={connectorPlugin}
             borderStyle="dashed"
             borderWidth="medium"
+            connectorPlugin={connectorPlugin}
             hoverable={false}
           />
         </>
       ) : null}
 
       {isCreating ? (
-        <Skeleton mt={5} noOfLines={6} height={4} />
+        <Skeleton height={4} mt={5} noOfLines={6} />
       ) : (
         <>
           {invalidValidationResult != null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
 
           {validationFailure ? (
-            <Alert status="error" variant="left-accent" my={4}>
+            <Alert my={4} status="error" variant="left-accent">
               <AlertIcon />
               <AlertDescription>
                 <Box>
@@ -587,7 +617,7 @@ function Review({
           ) : null}
 
           {creationFailure ? (
-            <Alert status="error" variant="left-accent" my={4}>
+            <Alert my={4} status="error" variant="left-accent">
               <AlertIcon />
               <AlertDescription>
                 <Box>
@@ -599,7 +629,7 @@ function Review({
           ) : null}
 
           {genericFailure ? (
-            <Alert status="error" variant="left-accent" my={4}>
+            <Alert my={4} status="error" variant="left-accent">
               <AlertIcon />
               <AlertDescription>
                 <Box>
@@ -610,16 +640,16 @@ function Review({
             </Alert>
           ) : null}
 
-          <Heading as="h2" mt="4" fontSize="1.4em" fontWeight="500">
+          <Heading as="h2" fontSize="1.4em" fontWeight="500" mt="4">
             Connector Properties
           </Heading>
           <div style={{ margin: '0 auto 1.5rem' }}>
             <KowlEditor
-              language="json"
-              value={properties}
               height="600px"
+              language="json"
               onChange={onChange}
               options={{ readOnly: isCreating }}
+              value={properties}
             />
           </div>
         </>
@@ -636,7 +666,7 @@ function getDataSource(validationResult: ConnectorValidationResult) {
 
 function ValidationDisplay({ validationResult }: { validationResult: ConnectorValidationResult }) {
   return (
-    <Alert status="warning" variant="left-accent" my={4} overflow="auto">
+    <Alert my={4} overflow="auto" status="warning" variant="left-accent">
       <AlertDescription>
         <Box>
           <Text as="h3" mb={4}>
@@ -649,7 +679,6 @@ function ValidationDisplay({ validationResult }: { validationResult: ConnectorVa
             errors: string[];
             visible: boolean;
           }>
-            data={getDataSource(validationResult)}
             columns={[
               {
                 header: 'Property Name',
@@ -664,6 +693,7 @@ function ValidationDisplay({ validationResult }: { validationResult: ConnectorVa
                 accessorKey: 'errors',
               },
             ]}
+            data={getDataSource(validationResult)}
           />
         </Box>
       </AlertDescription>

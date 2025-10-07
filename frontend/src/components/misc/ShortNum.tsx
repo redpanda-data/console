@@ -10,14 +10,19 @@
  */
 
 import type { CSSProperties } from 'react';
+
 import { numberToThousandsString } from '../../utils/tsxUtils';
 
 export function ShortNum(p: { value: number; tooltip?: boolean; className?: string; style?: CSSProperties }) {
   let { value, tooltip, className } = p;
   const style = p.style;
-  if (value == null) return '';
+  if (value == null) {
+    return '';
+  }
 
-  if (tooltip == null) tooltip = false;
+  if (tooltip == null) {
+    tooltip = false;
+  }
   const originalValue = value;
 
   const million = 1000 * 1000;
@@ -48,8 +53,11 @@ export function ShortNum(p: { value: number; tooltip?: boolean; className?: stri
   const str = unit ? valString + unit : valString;
 
   if (tooltip) {
-    if (!className) className = 'tooltip';
-    else className += ' tooltip';
+    if (className) {
+      className += ' tooltip';
+    } else {
+      className = 'tooltip';
+    }
 
     return (
       <div className={className} style={style}>

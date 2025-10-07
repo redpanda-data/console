@@ -22,6 +22,7 @@ import {
 } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, type FC, type ReactNode, useState } from 'react';
+
 import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../../state/backendApi';
 import type { Payload, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
@@ -31,6 +32,7 @@ import {
   DEFAULT_SEARCH_PARAMS,
   FilterEntry,
   PartitionOffsetOrigin,
+  type PartitionOffsetOriginType,
   type PreviewTagV2,
   type TimestampDisplayFormat,
 } from '../../../../state/ui';
@@ -94,6 +96,9 @@ import {
   MdOutlineTimer,
 } from 'react-icons/md';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import JavascriptFilterModal from './JavascriptFilterModal';
+import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import { isServerless } from '../../../../config';
 import usePaginationParams from '../../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -124,9 +129,7 @@ import {
 import { range } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
 import RemovableFilter from '../../../misc/RemovableFilter';
-import { SingleSelect, type SingleSelectProps } from '../../../misc/Select';
-import JavascriptFilterModal from './JavascriptFilterModal';
-import { getPreviewTags, PreviewSettings } from './PreviewSettings';
+import { SingleSelect } from '../../../misc/Select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -152,13 +155,13 @@ const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
     acc[pair.value] = pair.label;
     return acc;
   },
-  {} as Record<PayloadEncoding, string>,
+  {} as Record<PayloadEncoding, string>
 );
 
-interface TopicMessageViewProps {
+type TopicMessageViewProps = {
   topic: Topic;
   refreshTopicData: (force: boolean) => void;
-}
+};
 
 // Add these type definitions and helper functions at the top of the file
 type TopicMessageParams = {
@@ -182,6 +185,9 @@ const PARAM_MAPPING = {
 
 // Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
+
+// Regex for checking printable ASCII characters
+const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
 
 function parseUrlParams(): TopicMessageParams {
   const query = new URLSearchParams(window.location.search);
@@ -225,10 +231,18 @@ function updateUrlParams(params: Partial<TopicMessageParams>) {
   });
 
   // Update local storage with the new params
-  if (params.partitionID !== undefined) uiState.topicSettings.searchParams.partitionID = params.partitionID;
-  if (params.maxResults !== undefined) uiState.topicSettings.searchParams.maxResults = params.maxResults;
-  if (params.startOffset !== undefined) uiState.topicSettings.searchParams.startOffset = params.startOffset;
-  if (params.quickSearch !== undefined) uiState.topicSettings.quickSearch = params.quickSearch;
+  if (params.partitionID !== undefined) {
+    uiState.topicSettings.searchParams.partitionID = params.partitionID;
+  }
+  if (params.maxResults !== undefined) {
+    uiState.topicSettings.searchParams.maxResults = params.maxResults;
+  }
+  if (params.startOffset !== undefined) {
+    uiState.topicSettings.searchParams.startOffset = params.startOffset;
+  }
+  if (params.quickSearch !== undefined) {
+    uiState.topicSettings.quickSearch = params.quickSearch;
+  }
 }
 
 /*
@@ -238,64 +252,76 @@ function updateUrlParams(params: Partial<TopicMessageParams>) {
 */
 
 function getMessageAsString(value: string | TopicMessage): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
 
-  const obj = Object.assign({}, value) as Partial<TopicMessage>;
+  const obj = { ...value } as Partial<TopicMessage>;
   obj.keyBinHexPreview = undefined;
   obj.valueBinHexPreview = undefined;
   obj.keyJson = undefined;
   obj.valueJson = undefined;
   if (obj.key) {
     obj.key.normalizedPayload = undefined;
-    if (obj.key.rawBytes) obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+    if (obj.key.rawBytes) {
+      obj.key.rawBytes = Array.from(obj.key.rawBytes) as any;
+    }
   }
   if (obj.value) {
     obj.value.normalizedPayload = undefined;
-    if (obj.value.rawBytes) obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+    if (obj.value.rawBytes) {
+      obj.value.rawBytes = Array.from(obj.value.rawBytes) as any;
+    }
   }
 
   return JSON.stringify(obj, null, 4);
 }
 
 function getPayloadAsString(value: string | Uint8Array | object): string {
-  if (value == null) return '';
+  if (value == null) {
+    return '';
+  }
 
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {
+    return value;
+  }
 
-  if (value instanceof Uint8Array) return JSON.stringify(Array.from(value), null, 4);
+  if (value instanceof Uint8Array) {
+    return JSON.stringify(Array.from(value), null, 4);
+  }
 
   return JSON.stringify(value, null, 4);
 }
 
-const defaultSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
-  control: (provided) => ({
+const defaultSelectChakraStyles = {
+  control: (provided: any) => ({
     ...provided,
     minWidth: 'max-content',
   }),
-  option: (provided) => ({
+  option: (provided: any) => ({
     ...provided,
     wordBreak: 'keep-all',
     whiteSpace: 'nowrap',
   }),
-  menuList: (provided) => ({
+  menuList: (provided: any) => ({
     ...provided,
     minWidth: 'min-content',
   }),
-};
+} as const;
 
-const inlineSelectChakraStyles: SingleSelectProps<PayloadEncoding | number>['chakraStyles'] = {
+const inlineSelectChakraStyles = {
   ...defaultSelectChakraStyles,
-  control: (provided) => ({
+  control: (provided: any) => ({
     ...provided,
     _hover: {
       borderColor: 'transparent',
     },
   }),
-  container: (provided) => ({
+  container: (provided: any) => ({
     ...provided,
     borderColor: 'transparent',
   }),
-};
+} as const;
 
 @observer
 export class TopicMessageView extends Component<TopicMessageViewProps> {
@@ -312,7 +338,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   messageSource = new FilterableDataSource<TopicMessage>(
     () => this.messageSearch.messages,
     (filterText, m) => this.isFilterMatch(filterText, m),
-    100, // Increased debounce time to match default
+    100 // Increased debounce time to match default
   );
 
   autoSearchReaction: IReactionDisposer | null = null;
@@ -348,7 +374,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           this.currentParams = urlParams;
         });
       },
-      { name: 'sync url parameters' },
+      { name: 'sync url parameters' }
     );
 
     // Auto search when parameters change
@@ -364,7 +390,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         // Also update the local storage value to keep it in sync
         uiState.topicSettings.quickSearch = this.currentParams.quickSearch;
       },
-      { name: 'update query string' },
+      { name: 'update query string' }
     );
 
     appGlobal.searchMessagesFunc = this.searchFunc;
@@ -372,9 +398,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
   componentWillUnmount() {
     this.messageSource.dispose();
-    if (this.autoSearchReaction) this.autoSearchReaction();
-    if (this.quickSearchReaction) this.quickSearchReaction();
-    if (this.urlParamsReaction) this.urlParamsReaction();
+    if (this.autoSearchReaction) {
+      this.autoSearchReaction();
+    }
+    if (this.quickSearchReaction) {
+      this.quickSearchReaction();
+    }
+    if (this.urlParamsReaction) {
+      this.urlParamsReaction();
+    }
 
     this.messageSearch.stopSearch();
 
@@ -421,7 +453,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         value: PartitionOffsetOrigin.End,
         label: (
-          <Flex gap={2} alignItems="center">
+          <Flex alignItems="center" gap={2}>
             <MdOutlinePlayCircle />
             <span data-testid="start-offset-latest-live">Latest / Live</span>
           </Flex>
@@ -430,7 +462,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         value: PartitionOffsetOrigin.EndMinusResults,
         label: (
-          <Flex gap={2} alignItems="center">
+          <Flex alignItems="center" gap={2}>
             <MdOutlineQuickreply />
             <span data-testid="start-offset-newest">{`Newest - ${String(this.currentParams.maxResults)}`}</span>
           </Flex>
@@ -439,7 +471,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         value: PartitionOffsetOrigin.Start,
         label: (
-          <Flex gap={2} alignItems="center">
+          <Flex alignItems="center" gap={2}>
             <MdOutlineSkipPrevious />
             <span data-testid="start-offset-beginning">Beginning</span>
           </Flex>
@@ -448,7 +480,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         value: PartitionOffsetOrigin.Custom,
         label: (
-          <Flex gap={2} alignItems="center">
+          <Flex alignItems="center" gap={2}>
             <MdKeyboardTab />
             <span data-testid="start-offset-custom">Offset</span>
           </Flex>
@@ -457,7 +489,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         value: PartitionOffsetOrigin.Timestamp,
         label: (
-          <Flex gap={2} alignItems="center">
+          <Flex alignItems="center" gap={2}>
             <MdCalendarToday />
             <span data-testid="start-offset-timestamp">Timestamp</span>
           </Flex>
@@ -466,36 +498,37 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     ];
 
     // Determine the current offset origin based on startOffset
-    const currentOffsetOrigin =
-      this.currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : this.currentParams.startOffset;
+    const currentOffsetOrigin = (
+      this.currentParams.startOffset >= 0 ? PartitionOffsetOrigin.Custom : this.currentParams.startOffset
+    ) as PartitionOffsetOriginType;
 
     return (
-      <React.Fragment>
-        <Grid my={4} gap={3} gridTemplateColumns="auto 1fr" width="full">
+      <>
+        <Grid gap={3} gridTemplateColumns="auto 1fr" my={4} width="full">
           <GridItem display="flex" gap={3} gridColumn={{ base: '1/-1', md: '1' }}>
             <Label text="Start Offset">
               <Flex gap={3}>
-                <SingleSelect<PartitionOffsetOrigin>
-                  value={currentOffsetOrigin}
+                <SingleSelect<PartitionOffsetOriginType>
+                  chakraStyles={defaultSelectChakraStyles}
                   data-testid="start-offset-dropdown"
                   onChange={(e) => {
                     if (e === PartitionOffsetOrigin.Custom) {
-                      if (this.currentParams.startOffset < 0) this.currentParams.startOffset = 0;
+                      if (this.currentParams.startOffset < 0) {
+                        this.currentParams.startOffset = 0;
+                      }
                     } else {
                       this.currentParams.startOffset = e;
                     }
                     updateUrlParams({ startOffset: this.currentParams.startOffset });
                   }}
                   options={startOffsetOptions}
-                  chakraStyles={defaultSelectChakraStyles}
+                  value={currentOffsetOrigin}
                 />
                 {currentOffsetOrigin === PartitionOffsetOrigin.Custom && (
-                  <Tooltip hasArrow placement="right" label="Offset must be a number" isOpen={!customStartOffsetValid}>
+                  <Tooltip hasArrow isOpen={!customStartOffsetValid} label="Offset must be a number" placement="right">
                     <Input
-                      style={{ width: '7.5em' }}
-                      maxLength={20}
                       isDisabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
-                      value={customStartOffsetValue}
+                      maxLength={20}
                       onChange={(e) => {
                         setCustomStartOffsetValue(e.target.value);
                         if (!Number.isNaN(Number(e.target.value))) {
@@ -503,6 +536,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                           updateUrlParams({ startOffset: this.currentParams.startOffset });
                         }
                       }}
+                      style={{ width: '7.5em' }}
+                      value={customStartOffsetValue}
                     />
                   </Tooltip>
                 )}
@@ -512,12 +547,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
             <Label text="Max Results">
               <SingleSelect<number>
-                value={this.currentParams.maxResults}
                 onChange={(c) => {
                   this.currentParams.maxResults = c;
                   updateUrlParams({ maxResults: c });
                 }}
                 options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map((i) => ({ value: i }))}
+                value={this.currentParams.maxResults}
               />
             </Label>
 
@@ -534,7 +569,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         }}
                       >
                         <SingleSelect<number>
-                          value={this.currentParams.partitionID}
                           chakraStyles={inlineSelectChakraStyles}
                           onChange={(c) => {
                             this.currentParams.partitionID = c;
@@ -549,18 +583,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             range(0, topic.partitionCount).map((i) => ({
                               value: i,
                               label: String(i),
-                            })),
+                            }))
                           )}
+                          value={this.currentParams.partitionID}
                         />
                       </RemovableFilter>
                     </Label>
                   ),
-                })[filter],
+                })[filter]
             )}
 
             <Flex alignItems="flex-end">
               <Menu>
-                <MenuButton as={Button} variant="outline" data-testid="add-topic-filter">
+                <MenuButton as={Button} data-testid="add-topic-filter" variant="outline">
                   Add filter
                 </MenuButton>
                 <MenuList>
@@ -575,10 +610,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                   <MenuDivider />
                   <MenuItem
                     data-testid="add-topic-filter-javascript"
-                    isDisabled={!canUseFilters}
+                    icon={<MdJavascript size="1.5rem" />}
                     // TODO: "You don't have permissions to use search filters in this topic",
                     // we need support for disabledReason in @redpanda-data/ui
-                    icon={<MdJavascript size="1.5rem" />}
+                    isDisabled={!canUseFilters}
                     onClick={() => {
                       const filter = new FilterEntry();
                       filter.isNew = true;
@@ -594,13 +629,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             {/* Search Progress Indicator: "Consuming Messages 30/30" */}
             {Boolean(this.messageSearch.searchPhase && this.messageSearch.searchPhase.length > 0) && (
               <StatusIndicator
-                identityKey="messageSearch"
+                bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
                 fillFactor={(this.messageSearch.messages?.length ?? 0) / this.currentParams.maxResults}
+                identityKey="messageSearch"
+                messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
+                progressText={`${this.messageSearch.messages?.length ?? 0} / ${this.currentParams.maxResults}`}
                 // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
                 statusText={this.messageSearch.searchPhase!}
-                progressText={`${this.messageSearch.messages?.length ?? 0} / ${this.currentParams.maxResults}`}
-                bytesConsumed={prettyBytes(this.messageSearch.bytesConsumed)}
-                messagesConsumed={String(this.messageSearch.totalMessagesConsumed)}
               />
             )}
           </GridItem>
@@ -617,7 +652,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     />
                     */}
 
-          <GridItem display="flex" justifyContent="flex-end" alignItems="flex-end" gap={3}>
+          <GridItem alignItems="flex-end" display="flex" gap={3} justifyContent="flex-end">
             <Menu>
               <MenuButton as={IconButton} icon={<MdOutlineSettings size="1.5rem" />} variant="outline" />
               <MenuList>
@@ -647,23 +682,23 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <Flex alignItems="flex-end">
               {/* Refresh Button */}
               {this.messageSearch.searchPhase == null && (
-                <Tooltip label="Repeat current search" placement="top" hasArrow>
+                <Tooltip hasArrow label="Repeat current search" placement="top">
                   <IconButton
-                    icon={<SyncIcon />}
                     aria-label="Repeat current search"
-                    variant="outline"
+                    icon={<SyncIcon />}
                     onClick={() => this.searchFunc('manual')}
+                    variant="outline"
                   />
                 </Tooltip>
               )}
               {this.messageSearch.searchPhase != null && (
-                <Tooltip label="Stop searching" placement="top" hasArrow>
+                <Tooltip hasArrow label="Stop searching" placement="top">
                   <IconButton
-                    icon={<XCircleIcon />}
                     aria-label="Stop searching"
-                    variant="solid"
                     colorScheme="red"
+                    icon={<XCircleIcon />}
                     onClick={() => this.messageSearch.stopSearch()}
+                    variant="solid"
                   />
                 </Tooltip>
               )}
@@ -677,18 +712,18 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }}
           />
 
-          <GridItem gridColumn="1/-1" mt={4} display="flex" gap={4}>
+          <GridItem display="flex" gap={4} gridColumn="1/-1" mt={4}>
             {/* Quick Search */}
             <Input
-              px={4}
-              placeholder="Filter table content ..."
-              value={this.currentParams.quickSearch}
               onChange={(x) => {
                 this.currentParams.quickSearch = x.target.value;
                 updateUrlParams({ quickSearch: x.target.value });
               }}
+              placeholder="Filter table content ..."
+              px={4}
+              value={this.currentParams.quickSearch}
             />
-            <Flex gap={2} fontSize="sm" whiteSpace="nowrap" alignItems="center">
+            <Flex alignItems="center" fontSize="sm" gap={2} whiteSpace="nowrap">
               {this.messageSearch.searchPhase === null || this.messageSearch.searchPhase === 'Done' ? (
                 <>
                   <Flex alignItems="center" gap={2}>
@@ -727,7 +762,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             }}
           />
         )}
-      </React.Fragment>
+      </>
     );
   });
 
@@ -739,6 +774,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       const phase = this.messageSearch.searchPhase;
 
       if (searchParams === this.currentSearchRun && source === 'auto') {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.log('ignoring serach, search params are up to date, and source is auto', {
           newParams: searchParams,
           oldParams: this.currentSearchRun,
@@ -753,6 +789,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         this.messageSearch.stopSearch();
       }
 
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('starting a new message search', {
         newParams: searchParams,
         oldParams: this.currentSearchRun,
@@ -763,12 +800,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       // Start new search
       this.currentSearchRun = searchParams;
       try {
-        this.executeMessageSearch().finally(() => {
-          untracked(() => {
-            this.currentSearchRun = null;
+        this.executeMessageSearch()
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          .catch(console.error)
+          .finally(() => {
+            untracked(() => {
+              this.currentSearchRun = null;
+            });
           });
-        });
       } catch (err) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('error in message search', { error: err });
       }
     });
@@ -779,11 +820,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
   isFilterMatch(_str: string, m: TopicMessage) {
     const searchStr = this.currentParams.quickSearch.toLowerCase();
     // If search string is empty, show all messages
-    if (!searchStr) return true;
+    if (!searchStr) {
+      return true;
+    }
 
-    if (m.offset.toString().toLowerCase().includes(searchStr)) return true;
-    if (m.keyJson?.toLowerCase().includes(searchStr)) return true;
-    if (m.valueJson?.toLowerCase().includes(searchStr)) return true;
+    if (m.offset.toString().toLowerCase().includes(searchStr)) {
+      return true;
+    }
+    if (m.keyJson?.toLowerCase().includes(searchStr)) {
+      return true;
+    }
+    if (m.valueJson?.toLowerCase().includes(searchStr)) {
+      return true;
+    }
     return false;
   }
 
@@ -796,7 +845,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName: topicName,
+      topicName,
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: uiState.topicSettings.searchParams.keyDeserializer,
@@ -808,20 +857,22 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       // We must update the old message (that still says "payload too large")
       // So we just find its index and replace it in the array we are currently displaying
       const indexOfOldMessage = this.messageSearch.messages.findIndex(
-        (x) => x.partitionID === partitionID && x.offset === offset,
+        (x) => x.partitionID === partitionID && x.offset === offset
       );
       if (indexOfOldMessage > -1) {
         this.messageSearch.messages[indexOfOldMessage] = messages[0];
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('LoadLargeMessage: cannot find old message to replace', {
           searchReq,
           messages,
         });
         throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('LoadLargeMessage: messages response is empty', { messages });
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
@@ -837,7 +888,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const breakpoint = useBreakpoint({ ssr: false });
     const paginationParams = usePaginationParams(
       this.messageSource.data.length,
-      uiState.topicSettings.searchParams.pageSize,
+      uiState.topicSettings.searchParams.pageSize
     );
 
     const tsFormat = uiState.topicSettings.previewTimestamps;
@@ -897,19 +948,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
           row: {
             original: { timestamp },
           },
-        }) => <TimestampDisplay unixEpochMillisecond={timestamp} format={tsFormat} />,
+        }) => <TimestampDisplay format={tsFormat} unixEpochMillisecond={timestamp} />,
       },
       key: {
         header: () =>
           isKeyDeserializerActive ? (
-            <Flex display="inline-flex" gap={2} alignItems="center">
+            <Flex alignItems="center" display="inline-flex" gap={2}>
               Key{' '}
               <button
-                type="button"
                 onClick={(e) => {
                   this.showDeserializersModal = true;
                   e.stopPropagation(); // don't sort
                 }}
+                type="button"
               >
                 <Badge>
                   Deserializer: {PAYLOAD_ENCODING_LABELS[uiState.topicSettings.searchParams.keyDeserializer]}
@@ -928,14 +979,14 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       value: {
         header: () =>
           isValueDeserializerActive ? (
-            <Flex display="inline-flex" gap={2} alignItems="center">
+            <Flex alignItems="center" display="inline-flex" gap={2}>
               Value{' '}
               <button
-                type="button"
                 onClick={(e) => {
                   this.showDeserializersModal = true;
                   e.stopPropagation(); // don't sort
                 }}
+                type="button"
               >
                 <Badge>
                   Deserializer: {PAYLOAD_ENCODING_LABELS[uiState.topicSettings.searchParams.valueDeserializer]}
@@ -948,9 +999,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         accessorKey: 'value',
         cell: ({ row: { original } }) => (
           <MessagePreview
+            isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')}
             msg={original}
             previewFields={() => this.activePreviewTags}
-            isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')}
           />
         ),
       },
@@ -996,7 +1047,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     }
 
     if (newColumns.length > 0) {
-      newColumns[newColumns.length - 1].size = Number.POSITIVE_INFINITY;
+      const lastColumn = newColumns.at(-1);
+      if (lastColumn) {
+        lastColumn.size = Number.POSITIVE_INFINITY;
+      }
     }
 
     const columns: ColumnDef<TopicMessage>[] = [
@@ -1004,79 +1058,68 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       {
         id: 'action',
         size: 0,
-        cell: ({ row: { original } }) => {
-          return (
-            <Menu computePositionOnMount>
-              <MenuButton as={Button} variant="link" className="iconButton">
-                <KebabHorizontalIcon />
-              </MenuButton>
-              <MenuList>
-                <MenuItem
-                  onClick={() => {
-                    navigator.clipboard
-                      .writeText(getMessageAsString(original))
-                      .then(() => {
-                        toast({
-                          status: 'success',
-                          description: 'Message copied to clipboard',
-                        });
-                      })
-                      .catch(navigatorClipboardErrorHandler);
-                  }}
-                >
-                  Copy Message
-                </MenuItem>
-                <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
-                  Copy Key
-                </MenuItem>
-                <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
-                  Copy Value
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    navigator.clipboard
-                      .writeText(original.timestamp.toString())
-                      .then(() => {
-                        toast({
-                          status: 'success',
-                          description: 'Epoch Timestamp copied to clipboard',
-                        });
-                      })
-                      .catch(navigatorClipboardErrorHandler);
-                  }}
-                >
-                  Copy Epoch Timestamp
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    this.downloadMessages = [original];
-                  }}
-                >
-                  Save to File
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          );
-        },
+        cell: ({ row: { original } }) => (
+          <Menu computePositionOnMount>
+            <MenuButton as={Button} className="iconButton" variant="link">
+              <KebabHorizontalIcon />
+            </MenuButton>
+            <MenuList>
+              <MenuItem
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(getMessageAsString(original))
+                    .then(() => {
+                      toast({
+                        status: 'success',
+                        description: 'Message copied to clipboard',
+                      });
+                    })
+                    .catch(navigatorClipboardErrorHandler);
+                }}
+              >
+                Copy Message
+              </MenuItem>
+              <MenuItem isDisabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
+                Copy Key
+              </MenuItem>
+              <MenuItem isDisabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
+                Copy Value
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(original.timestamp.toString())
+                    .then(() => {
+                      toast({
+                        status: 'success',
+                        description: 'Epoch Timestamp copied to clipboard',
+                      });
+                    })
+                    .catch(navigatorClipboardErrorHandler);
+                }}
+              >
+                Copy Epoch Timestamp
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  this.downloadMessages = [original];
+                }}
+              >
+                Save to File
+              </MenuItem>
+            </MenuList>
+          </Menu>
+        ),
       },
     ];
 
     return (
       <>
         <DataTable<TopicMessage>
-          size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
-          data={this.messageSource.data}
-          isLoading={this.messageSearch.searchPhase !== null}
-          emptyText="No messages"
           columns={columns}
-          // we need (?? []) to be compatible with searchParams of clients already stored in local storage
-          // otherwise we would get undefined for some of the existing ones
-          sorting={uiState.topicSettings.searchParams.sorting ?? []}
-          onSortingChange={(sorting) => {
-            uiState.topicSettings.searchParams.sorting =
-              typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
-          }}
-          pagination={paginationParams}
+          data={this.messageSource.data}
+          emptyText="No messages"
+          isLoading={this.messageSearch.searchPhase !== null}
           onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
             uiState.topicSettings.searchParams.pageSize = pageSize;
             editQuery((query) => {
@@ -1084,27 +1127,36 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
               query.pageSize = String(pageSize);
             });
           })}
+          // we need (?? []) to be compatible with searchParams of clients already stored in local storage
+          // otherwise we would get undefined for some of the existing ones
+          onSortingChange={(sorting) => {
+            uiState.topicSettings.searchParams.sorting =
+              typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
+          }}
+          pagination={paginationParams}
+          size={['lg', 'md', 'sm'].includes(breakpoint) ? 'sm' : 'md'}
+          sorting={uiState.topicSettings.searchParams.sorting ?? []}
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
-              msg={original}
               loadLargeMessage={() =>
                 this.loadLargeMessage(this.props.topic.topicName, original.partitionID, original.offset)
               }
+              msg={original}
+              onCopyKey={onCopyKey}
+              onCopyValue={onCopyValue}
               onDownloadRecord={() => {
                 this.downloadMessages = [original];
               }}
-              onCopyKey={onCopyKey}
-              onCopyValue={onCopyValue}
             />
           )}
         />
         <Button
+          isDisabled={!this.messageSearch.messages || this.messageSearch.messages.length === 0}
           mt={4}
-          variant="outline"
           onClick={() => {
             this.downloadMessages = this.messageSearch.messages;
           }}
-          isDisabled={!this.messageSearch.messages || this.messageSearch.messages.length === 0}
+          variant="outline"
         >
           <span style={{ paddingRight: '4px' }}>
             <DownloadIcon />
@@ -1125,8 +1177,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         <PreviewFieldsModal
           getShowDialog={() => this.showPreviewFieldsModal}
-          setShowDialog={(s) => (this.showPreviewFieldsModal = s)}
           messageSearch={this.messageSearch}
+          setShowDialog={(s) => (this.showPreviewFieldsModal = s)}
         />
 
         <DeserializersModal
@@ -1141,12 +1193,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     const key = `${r.offset} ${r.partitionID}${r.timestamp}`;
     // try collapsing it, removeAll returns the number of matches
     const removed = this.expandedKeys.removeAll((x) => x === key);
-    if (removed === 0)
+    if (removed === 0) {
       // wasn't expanded, so expand it now
       this.expandedKeys.push(key);
+    }
   }
 
-  async executeMessageSearch(): Promise<TopicMessage[]> {
+  executeMessageSearch(): Promise<TopicMessage[]> {
     const canUseFilters =
       (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -1156,7 +1209,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       const functions: string[] = [];
 
       const filteredSearchParams = uiState.topicSettings.searchParams.filters.filter(
-        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode,
+        (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
       );
 
       for (const searchParam of filteredSearchParams) {
@@ -1169,7 +1222,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
       if (functions.length > 0) {
         filterCode = `${functions.join('\n\n')}\n\nreturn ${functionNames.map((f) => `${f}()`).join(' && ')}`;
-        if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+        if (IsDev) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log(`constructed filter code (${functions.length} functions)`, `\n\n${filterCode}`);
+        }
       }
     }
 
@@ -1185,19 +1241,21 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
       valueDeserializer: uiState.topicSettings.searchParams.valueDeserializer,
     } as MessageSearchRequest;
 
-    return transaction(async () => {
+    return transaction(() => {
       try {
         this.fetchError = null;
         return this.messageSearch.startSearch(request).catch((err) => {
           const msg = (err as Error).message ?? String(err);
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.error(`error in searchTopicMessages: ${msg}`);
           this.fetchError = err;
           return [];
         });
       } catch (error: any) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
         this.fetchError = error;
-        return [];
+        return Promise.resolve([]);
       }
     });
   }
@@ -1226,8 +1284,12 @@ class SaveMessagesDialog extends Component<{
     const title = count > 1 ? 'Save Messages' : 'Save Message';
 
     // Keep dialog open after closing it, so it can play its closing animation
-    if (count > 0 && !this.isOpen) setTimeout(() => (this.isOpen = true));
-    if (this.isOpen && count === 0) setTimeout(() => (this.isOpen = false));
+    if (count > 0 && !this.isOpen) {
+      setTimeout(() => (this.isOpen = true));
+    }
+    if (this.isOpen && count === 0) {
+      setTimeout(() => (this.isOpen = false));
+    }
 
     return (
       <Modal isOpen={count > 0} onClose={onClose}>
@@ -1239,7 +1301,6 @@ class SaveMessagesDialog extends Component<{
             <Box py={2}>
               <RadioGroup
                 name="format"
-                value={this.format}
                 onChange={(value) => (this.format = value)}
                 options={[
                   {
@@ -1251,6 +1312,7 @@ class SaveMessagesDialog extends Component<{
                     label: 'CSV',
                   },
                 ]}
+                value={this.format}
               />
             </Box>
             <Checkbox isChecked={this.includeRawContent} onChange={(e) => (this.includeRawContent = e.target.checked)}>
@@ -1258,13 +1320,13 @@ class SaveMessagesDialog extends Component<{
             </Checkbox>
           </ModalBody>
           <ModalFooter gap={2}>
-            <Button variant="outline" colorScheme="red" onClick={onClose}>
+            <Button colorScheme="red" onClick={onClose} variant="outline">
               Cancel
             </Button>
             <Button
-              variant="solid"
-              onClick={() => this.saveMessages()}
               isDisabled={!this.props.messages || this.props.messages.length === 0}
+              onClick={() => this.saveMessages()}
+              variant="solid"
             >
               Save Messages
             </Button>
@@ -1274,12 +1336,15 @@ class SaveMessagesDialog extends Component<{
     );
   }
 
-  async saveMessages() {
+  saveMessages() {
     const messages = this.props.messages;
-    if (!messages) return;
+    if (!messages) {
+      return;
+    }
 
     const cleanMessages = this.cleanMessages(messages);
 
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`saving cleaned messages; messages: ${messages.length}`);
 
     if (this.format === 'json') {
@@ -1303,15 +1368,21 @@ class SaveMessagesDialog extends Component<{
     this.props.onClose();
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
   convertToCSV(messages: any[]): string {
-    if (messages.length === 0) return '';
+    if (messages.length === 0) {
+      return '';
+    }
 
     const headers: string[] = [...COLUMN_ORDER];
 
     // Add other common fields that might not be in COLUMN_ORDER
-    if (messages[0].compression && !headers.includes('compression')) headers.push('compression');
-    if (messages[0].isTransactional !== undefined && !headers.includes('isTransactional'))
+    if (messages[0].compression && !headers.includes('compression')) {
+      headers.push('compression');
+    }
+    if (messages[0].isTransactional !== undefined && !headers.includes('isTransactional')) {
       headers.push('isTransactional');
+    }
 
     const csvRows = [];
 
@@ -1330,7 +1401,7 @@ class SaveMessagesDialog extends Component<{
             values.push(
               typeof keyValue === 'object'
                 ? JSON.stringify(keyValue).replace(/,/g, ';')
-                : String(keyValue).replace(/,/g, ';'),
+                : String(keyValue).replace(/,/g, ';')
             );
           } else {
             values.push('');
@@ -1341,7 +1412,7 @@ class SaveMessagesDialog extends Component<{
             values.push(
               typeof valuePayload === 'object'
                 ? JSON.stringify(valuePayload).replace(/,/g, ';')
-                : String(valuePayload).replace(/,/g, ';'),
+                : String(valuePayload).replace(/,/g, ';')
             );
           } else {
             values.push('');
@@ -1370,7 +1441,9 @@ class SaveMessagesDialog extends Component<{
     const includeRaw = this.includeRawContent;
 
     const cleanPayload = (p: Payload): Payload => {
-      if (!p) return undefined as any;
+      if (!p) {
+        return undefined as any;
+      }
 
       const cleanedPayload = {
         payload: p.payload,
@@ -1378,7 +1451,9 @@ class SaveMessagesDialog extends Component<{
         encoding: p.encoding,
       } as any as Payload;
 
-      if (p.schemaId && p.schemaId !== 0) cleanedPayload.schemaId = p.schemaId;
+      if (p.schemaId && p.schemaId !== 0) {
+        cleanedPayload.schemaId = p.schemaId;
+      }
 
       return cleanedPayload;
     };
@@ -1415,7 +1490,7 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage; previewFields: ()
 
     if (key.troubleshootReport && key.troubleshootReport.length > 0) {
       return (
-        <Flex color="red.600" alignItems="center" gap="2">
+        <Flex alignItems="center" color="red.600" gap="2">
           <WarningIcon fontSize="1.25em" />
           There were issues deserializing the key
         </Flex>
@@ -1482,12 +1557,10 @@ class StartOffsetDateTimePicker extends Component {
   constructor(p: any) {
     super(p);
     const searchParams = uiState.topicSettings.searchParams;
-    // console.log('time picker 1', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
     if (!searchParams.startTimestampWasSetByUser) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
       searchParams.startTimestamp = Date.now();
     }
-    // console.log('time picker 2', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
   }
 
   render() {
@@ -1496,11 +1569,11 @@ class StartOffsetDateTimePicker extends Component {
 
     return (
       <DateTimeInput
-        value={searchParams.startTimestamp}
         onChange={(value) => {
           searchParams.startTimestamp = value;
           searchParams.startTimestampWasSetByUser = true;
         }}
+        value={searchParams.startTimestamp}
       />
     );
   }
@@ -1518,7 +1591,7 @@ export class MessagePreview extends Component<{
 
     if (value.troubleshootReport && value.troubleshootReport.length > 0) {
       return (
-        <Flex color="red.600" alignItems="center" gap="2">
+        <Flex alignItems="center" color="red.600" gap="2">
           <WarningIcon fontSize="1.25em" />
           There were issues deserializing the value
         </Flex>
@@ -1527,7 +1600,7 @@ export class MessagePreview extends Component<{
 
     if (value.isPayloadTooLarge) {
       return (
-        <Flex color="blue.500" alignItems="center" gap="2">
+        <Flex alignItems="center" color="blue.500" gap="2">
           <InfoIcon fontSize="1.25em" />
           Message size exceeds the display limit.
         </Flex>
@@ -1543,8 +1616,9 @@ export class MessagePreview extends Component<{
       if (value.isPayloadNull) {
         return <EmptyBadge mode="null" />;
       }
-      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0)
+      if (value.encoding === 'null' || value.payload == null || value.payload.length === 0) {
         return <EmptyBadge mode="empty" />;
+      }
       if (msg.value.encoding === 'binary') {
         // If the original data was binary, display as hex dump
         text = msg.valueBinHexPreview;
@@ -1594,10 +1668,10 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
   children,
   onDownloadRecord,
 }) => (
-  <Flex my={4} gap={2} justifyContent="flex-end">
+  <Flex gap={2} justifyContent="flex-end" my={4}>
     {children}
     {onDownloadRecord && (
-      <Button variant="outline" onClick={onDownloadRecord}>
+      <Button onClick={onDownloadRecord} variant="outline">
         Download Record
       </Button>
     )}
@@ -1614,12 +1688,11 @@ export const ExpandedMessage: FC<{
   const bg = useColorModeValue('gray.50', 'gray.600');
 
   return (
-    <Box bg={bg} py={6} px={10}>
+    <Box bg={bg} px={10} py={6}>
       <MessageMetaData msg={msg} />
       <RpTabs
-        variant="fitted"
-        isFitted
         defaultIndex={1}
+        isFitted
         items={[
           {
             key: 'key',
@@ -1632,10 +1705,10 @@ export const ExpandedMessage: FC<{
             component: (
               <Box>
                 <TroubleshootReportViewer payload={msg.key} />
-                <PayloadComponent payload={msg.key} loadLargeMessage={loadLargeMessage} />
+                <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.key} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
                   {onCopyKey && (
-                    <Button variant="outline" onClick={() => onCopyKey(msg)} isDisabled={msg.key.isPayloadNull}>
+                    <Button isDisabled={msg.key.isPayloadNull} onClick={() => onCopyKey(msg)} variant="outline">
                       Copy Key
                     </Button>
                   )}
@@ -1653,10 +1726,10 @@ export const ExpandedMessage: FC<{
             component: (
               <Box>
                 <TroubleshootReportViewer payload={msg.value} />
-                <PayloadComponent payload={msg.value} loadLargeMessage={loadLargeMessage} />
+                <PayloadComponent loadLargeMessage={loadLargeMessage} payload={msg.value} />
                 <ExpandedMessageFooter onDownloadRecord={onDownloadRecord}>
                   {onCopyValue && (
-                    <Button variant="outline" onClick={() => onCopyValue(msg)} isDisabled={msg.value.isPayloadNull}>
+                    <Button isDisabled={msg.value.isPayloadNull} onClick={() => onCopyValue(msg)} variant="outline">
                       Copy Value
                     </Button>
                   )}
@@ -1676,6 +1749,7 @@ export const ExpandedMessage: FC<{
             ),
           },
         ]}
+        variant="fitted"
       />
     </Box>
   );
@@ -1693,9 +1767,6 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
           Because this message size exceeds the display limit, loading it could cause performance degradation.
         </Flex>
         <Button
-          variant="outline"
-          width="10rem"
-          size="small"
           data-testid="load-anyway-button"
           isLoading={isLoadingLargeMessage}
           loadingText="Loading..."
@@ -1706,10 +1777,13 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
                 toast({
                   status: 'error',
                   description: err instanceof Error ? err.message : String(err),
-                }),
+                })
               )
               .finally(() => setLoadingLargeMessage(false));
           }}
+          size="small"
+          variant="outline"
+          width="10rem"
         >
           Load anyway
         </Button>
@@ -1718,8 +1792,9 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
   }
 
   try {
-    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
+    if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
       return <code>null</code>;
+    }
 
     const val = payload.payload;
     const isPrimitive = typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
@@ -1743,10 +1818,9 @@ const PayloadComponent = observer((p: { payload: Payload; loadLargeMessage: () =
       }
       const str = String(val);
       let result = '';
-      const isPrintable = /[\x20-\x7E]/;
       for (let i = 0; i < str.length; i++) {
         let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
-        ch = isPrintable.test(ch) ? ch : '. ';
+        ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
         result += `${ch} `;
       }
 
@@ -1794,20 +1868,25 @@ function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
         sequentialChars = '';
       }
       elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
-      if (code === 10)
+      if (code === 10) {
         // LineFeed (\n) should be rendered properly
         elements.push(<br />);
+      }
     } else {
       sequentialChars += char;
     }
 
     if (maxLength !== undefined) {
       numChars++;
-      if (numChars >= maxLength) break;
+      if (numChars >= maxLength) {
+        break;
+      }
     }
   }
 
-  if (sequentialChars.length > 0) elements.push(sequentialChars);
+  if (sequentialChars.length > 0) {
+    elements.push(sequentialChars);
+  }
 
   return elements;
 }
@@ -1887,48 +1966,52 @@ const TroubleshootReportViewer = observer((props: { payload: Payload }) => {
   const report = props.payload.troubleshootReport;
   const [show, setShow] = useState(true);
 
-  if (!report) return null;
-  if (report.length === 0) return null;
+  if (!report) {
+    return null;
+  }
+  if (report.length === 0) {
+    return null;
+  }
 
   return (
     <Box mb="4" mt="4">
       <Heading as="h4">Deserialization Troubleshoot Report</Heading>
-      <Alert status="error" variant="subtle" my={4} flexDirection="column" background="red.50">
+      <Alert background="red.50" flexDirection="column" my={4} status="error" variant="subtle">
         <AlertTitle
+          alignItems="center"
+          alignSelf="flex-start"
           display="flex"
           flexDirection="row"
-          alignSelf="flex-start"
-          alignItems="center"
-          pb="4"
           fontWeight="normal"
+          pb="4"
         >
           <AlertIcon /> Errors were encountered when deserializing this message
-          <Link pl="2" onClick={() => setShow(!show)}>
+          <Link onClick={() => setShow(!show)} pl="2">
             {show ? 'Hide' : 'Show'}
           </Link>
         </AlertTitle>
-        <AlertDescription whiteSpace="pre-wrap" display={show ? undefined : 'none'}>
-          <Grid templateColumns="auto 1fr" rowGap="1" columnGap="4">
+        <AlertDescription display={show ? undefined : 'none'} whiteSpace="pre-wrap">
+          <Grid columnGap="4" rowGap="1" templateColumns="auto 1fr">
             {report.map((e) => (
               <>
                 <GridItem
-                  key={`${e.serdeName}-name`}
-                  w="100%"
                   fontWeight="bold"
-                  textTransform="capitalize"
-                  py="2"
-                  px="5"
+                  key={`${e.serdeName}-name`}
                   pl="8"
+                  px="5"
+                  py="2"
+                  textTransform="capitalize"
+                  w="100%"
                 >
                   {e.serdeName}
                 </GridItem>
                 <GridItem
-                  key={`${e.serdeName}-message`}
-                  w="100%"
-                  fontFamily="monospace"
                   background="red.100"
-                  py="2"
+                  fontFamily="monospace"
+                  key={`${e.serdeName}-message`}
                   px="5"
+                  py="2"
+                  w="100%"
                 >
                   {e.message}
                 </GridItem>
@@ -1963,8 +2046,8 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
   return (
     <Flex gap={10} my={6}>
       {Object.entries(data).map(([k, v]) => (
-        <Flex key={k} direction="column" rowGap=".4em">
-          <Text fontWeight="600" fontSize="md">
+        <Flex direction="column" key={k} rowGap=".4em">
+          <Text fontSize="md" fontWeight="600">
             {k}
           </Text>
           <Text color="" fontSize="sm">
@@ -1996,9 +2079,6 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
     <div className="messageHeaders">
       <div>
         <DataTable<{ key: string; value: Payload }>
-          pagination
-          sorting
-          data={props.msg.headers}
           columns={[
             {
               size: 200,
@@ -2023,12 +2103,19 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                   original: { value: headerValue },
                 },
               }) => {
-                if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
-                if (headerValue.payload === null) return renderEmptyIcon('"null"');
-                if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>;
+                if (typeof headerValue.payload === 'undefined') {
+                  return renderEmptyIcon('"undefined"');
+                }
+                if (headerValue.payload === null) {
+                  return renderEmptyIcon('"null"');
+                }
+                if (typeof headerValue.payload === 'number') {
+                  return <span>{String(headerValue.payload)}</span>;
+                }
 
-                if (typeof headerValue.payload === 'string')
+                if (typeof headerValue.payload === 'string') {
                   return <span className="cellDiv">{headerValue.payload}</span>;
+                }
 
                 // object
                 return <span className="cellDiv">{toSafeString(headerValue.payload)}</span>;
@@ -2045,19 +2132,20 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
               }) => <span className="nowrap">{payload.encoding}</span>,
             },
           ]}
-          subComponent={({ row: { original: header } }) => {
-            return (
-              <Box py={6} px={10}>
-                {typeof header.value?.payload !== 'object' ? (
-                  <div className="codeBox" style={{ margin: '0', width: '100%' }}>
-                    {toSafeString(header.value.payload)}
-                  </div>
-                ) : (
-                  <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
-                )}
-              </Box>
-            );
-          }}
+          data={props.msg.headers}
+          pagination
+          sorting
+          subComponent={({ row: { original: header } }) => (
+            <Box px={10} py={6}>
+              {typeof header.value?.payload !== 'object' ? (
+                <div className="codeBox" style={{ margin: '0', width: '100%' }}>
+                  {toSafeString(header.value.payload)}
+                </div>
+              ) : (
+                <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
+              )}
+            </Box>
+          )}
         />
       </div>
     </div>
@@ -2093,12 +2181,11 @@ const ColumnSettings: FC<{
           <Text>Choose which columns will be shown in the messages table, as well as the format of the timestamp.</Text>
           <Box my={6}>
             <Label text="Columns shown">
-              <Stack spacing={5} direction="row">
+              <Stack direction="row" spacing={5}>
                 {columnSettings.map(({ title, dataIndex }) => (
                   <Checkbox
-                    key={dataIndex}
-                    size="lg"
                     isChecked={!!uiState.topicSettings.previewColumnFields.find((x) => x.dataIndex === dataIndex)}
+                    key={dataIndex}
                     onChange={({ target: { checked } }) => {
                       if (checked) {
                         uiState.topicSettings.previewColumnFields.pushDistinct({
@@ -2107,11 +2194,12 @@ const ColumnSettings: FC<{
                         });
                       } else {
                         const idxToRemove = uiState.topicSettings.previewColumnFields.findIndex(
-                          (x) => x.dataIndex === dataIndex,
+                          (x) => x.dataIndex === dataIndex
                         );
                         uiState.topicSettings.previewColumnFields.splice(idxToRemove, 1);
                       }
                     }}
+                    size="lg"
                   >
                     {title}
                   </Checkbox>
@@ -2120,21 +2208,20 @@ const ColumnSettings: FC<{
             </Label>
             <Button
               mt={2}
-              variant="link"
-              // we need to pass this using sx to increase specificity, using p={0} won't work
-              sx={{ padding: 0 }}
               onClick={() => {
                 uiState.topicSettings.previewColumnFields = [];
               }}
+              // we need to pass this using sx to increase specificity, using p={0} won't work
+              sx={{ padding: 0 }}
+              variant="link"
             >
               Clear
             </Button>
           </Box>
-          <Grid my={6} templateColumns="1fr 2fr" gap={4}>
+          <Grid gap={4} my={6} templateColumns="1fr 2fr">
             <GridItem>
               <Label text="Timestamp format">
                 <SingleSelect<TimestampDisplayFormat>
-                  value={uiState.topicSettings.previewTimestamps}
                   onChange={(e) => (uiState.topicSettings.previewTimestamps = e)}
                   options={[
                     { label: 'Local DateTime', value: 'default' },
@@ -2144,22 +2231,23 @@ const ColumnSettings: FC<{
                     { label: 'Local Time', value: 'onlyTime' },
                     { label: 'Unix Millis', value: 'unixMillis' },
                   ]}
+                  value={uiState.topicSettings.previewTimestamps}
                 />
               </Label>
             </GridItem>
             <GridItem>
               <Label text="Preview">
-                <TimestampDisplay unixEpochMillisecond={Date.now()} format={uiState.topicSettings.previewTimestamps} />
+                <TimestampDisplay format={uiState.topicSettings.previewTimestamps} unixEpochMillisecond={Date.now()} />
               </Label>
             </GridItem>
           </Grid>
         </ModalBody>
         <ModalFooter gap={2}>
           <Button
+            colorScheme="red"
             onClick={() => {
               setShowDialog(false);
             }}
-            colorScheme="red"
           >
             Close
           </Button>
@@ -2173,35 +2261,33 @@ const PreviewFieldsModal: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
   messageSearch: MessageSearch;
-}> = observer(({ getShowDialog, setShowDialog, messageSearch }) => {
-  return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
-      }}
-    >
-      <ModalOverlay />
-      <ModalContent minW="4xl">
-        <ModalHeader>Preview fields</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <PreviewSettings messageSearch={messageSearch} />
-        </ModalBody>
-        <ModalFooter gap={2}>
-          <Button
-            onClick={() => {
-              setShowDialog(false);
-            }}
-            colorScheme="red"
-          >
-            Close
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-});
+}> = observer(({ getShowDialog, setShowDialog, messageSearch }) => (
+  <Modal
+    isOpen={getShowDialog()}
+    onClose={() => {
+      setShowDialog(false);
+    }}
+  >
+    <ModalOverlay />
+    <ModalContent minW="4xl">
+      <ModalHeader>Preview fields</ModalHeader>
+      <ModalCloseButton />
+      <ModalBody>
+        <PreviewSettings messageSearch={messageSearch} />
+      </ModalBody>
+      <ModalFooter gap={2}>
+        <Button
+          colorScheme="red"
+          onClick={() => {
+            setShowDialog(false);
+          }}
+        >
+          Close
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+));
 
 const DeserializersModal: FC<{
   getShowDialog: () => boolean;
@@ -2227,26 +2313,26 @@ const DeserializersModal: FC<{
           <Box>
             <Label text="Key Deserializer">
               <SingleSelect<PayloadEncoding>
+                onChange={(e) => (searchParams.keyDeserializer = e)}
                 options={payloadEncodingPairs}
                 value={searchParams.keyDeserializer}
-                onChange={(e) => (searchParams.keyDeserializer = e)}
               />
             </Label>
           </Box>
           <Label text="Value Deserializer">
             <SingleSelect<PayloadEncoding>
+              onChange={(e) => (searchParams.valueDeserializer = e)}
               options={payloadEncodingPairs}
               value={searchParams.valueDeserializer}
-              onChange={(e) => (searchParams.valueDeserializer = e)}
             />
           </Label>
         </ModalBody>
         <ModalFooter gap={2}>
           <Button
+            colorScheme="red"
             onClick={() => {
               setShowDialog(false);
             }}
-            colorScheme="red"
           >
             Close
           </Button>
@@ -2260,35 +2346,35 @@ const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = ob
   const settings = uiState.topicSettings.searchParams;
 
   return (
-    <GridItem gridColumn="-1/1" display="flex" justifyContent="space-between">
-      <Box width="calc(100% - 200px)" display="inline-flex" rowGap="2px" columnGap="8px" flexWrap="wrap">
+    <GridItem display="flex" gridColumn="-1/1" justifyContent="space-between">
+      <Box columnGap="8px" display="inline-flex" flexWrap="wrap" rowGap="2px" width="calc(100% - 200px)">
         {/* Existing Tags List  */}
         {settings.filters?.map((e) => (
           <Tag
-            style={{ userSelect: 'none' }}
             className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
             key={e.id}
+            style={{ userSelect: 'none' }}
           >
             <MdOutlineSettings
-              size={14}
               onClick={() => {
                 onEdit(e);
               }}
+              size={14}
             />
             <TagLabel
-              onClick={() => (e.isActive = !e.isActive)}
-              mx="2"
-              height="100%"
-              display="inline-flex"
               alignItems="center"
               border="0px solid hsl(0 0% 85% / 1)"
               borderWidth="0px 1px"
+              display="inline-flex"
+              height="100%"
+              mx="2"
+              onClick={() => (e.isActive = !e.isActive)}
               px="6px"
               textDecoration={e.isActive ? '' : 'line-through'}
             >
-              {e.name ? e.name : e.code ? e.code : 'New Filter'}
+              {e.name || e.code || 'New Filter'}
             </TagLabel>
-            <TagCloseButton onClick={() => settings.filters.remove(e)} m="0" px="1" opacity={1} />
+            <TagCloseButton m="0" onClick={() => settings.filters.remove(e)} opacity={1} px="1" />
           </Tag>
         ))}
       </Box>
@@ -2298,7 +2384,7 @@ const MessageSearchFilterBar: FC<{ onEdit: (filter: FilterEntry) => void }> = ob
 
 const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
   <Badge variant="inverted">
-    <Flex verticalAlign="center" gap={2}>
+    <Flex gap={2} verticalAlign="center">
       <MdDoNotDisturb size={16} />
       <Text>
         {
@@ -2313,9 +2399,11 @@ const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
 );
 
 function renderEmptyIcon(tooltipText?: string) {
-  if (!tooltipText) tooltipText = 'Empty';
+  if (!tooltipText) {
+    tooltipText = 'Empty';
+  }
   return (
-    <Tooltip label={tooltipText} openDelay={1} placement="top" hasArrow>
+    <Tooltip hasArrow label={tooltipText} openDelay={1} placement="top">
       <span style={{ opacity: 0.66, marginLeft: '2px' }}>
         <SkipIcon />
       </span>
@@ -2323,31 +2411,35 @@ function renderEmptyIcon(tooltipText?: string) {
   );
 }
 
-function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction> | undefined) {
+function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined) {
   // undefined has the same meaning as 'all'
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
 export function DeleteRecordsMenuItem(
   isCompacted: boolean,
-  allowedActions: Array<TopicAction> | undefined,
-  onClick: () => void,
+  allowedActions: TopicAction[] | undefined,
+  onClick: () => void
 ) {
   const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 
   let errorText: string | undefined;
-  if (isCompacted) errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
-  else if (!hasDeleteRecordsPrivilege(allowedActions))
+  if (isCompacted) {
+    errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
+  } else if (!hasDeleteRecordsPrivilege(allowedActions)) {
     errorText = "You're not permitted to delete records on this topic.";
-  else if (!isSupported(Feature.DeleteRecords)) errorText = "The cluster doesn't support deleting records.";
+  } else if (!isSupported(Feature.DeleteRecords)) {
+    errorText = "The cluster doesn't support deleting records.";
+  }
 
   let content: JSX.Element | string = 'Delete Records';
-  if (errorText)
+  if (errorText) {
     content = (
-      <Tooltip label={errorText} placement="top" hasArrow>
+      <Tooltip hasArrow label={errorText} placement="top">
         {content}
       </Tooltip>
     );
+  }
 
   return (
     <Button isDisabled={!isEnabled} onClick={onClick} variant="outline">

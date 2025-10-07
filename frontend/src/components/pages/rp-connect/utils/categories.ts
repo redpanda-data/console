@@ -38,9 +38,8 @@ const displayNames: Record<string, string> = {
   unstructured: 'Unstructured',
 };
 
-export const getCategoryDisplayName = (category: string): string => {
-  return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
-};
+export const getCategoryDisplayName = (category: string): string =>
+  displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
 
 const databaseComponents = [
   'sql',
@@ -87,9 +86,15 @@ export const inferComponentCategory = (componentName: string): string[] => {
   // Cloud/Service providers
   if (cloudComponents.some((cloud) => name.includes(cloud))) {
     categories.push(COMPONENT_CATEGORIES.CLOUD);
-    if (name.includes('aws')) categories.push(COMPONENT_CATEGORIES.AWS);
-    if (name.includes('gcp') || name.includes('google')) categories.push(COMPONENT_CATEGORIES.GCP);
-    if (name.includes('azure')) categories.push(COMPONENT_CATEGORIES.AZURE);
+    if (name.includes('aws')) {
+      categories.push(COMPONENT_CATEGORIES.AWS);
+    }
+    if (name.includes('gcp') || name.includes('google')) {
+      categories.push(COMPONENT_CATEGORIES.GCP);
+    }
+    if (name.includes('azure')) {
+      categories.push(COMPONENT_CATEGORIES.AZURE);
+    }
   }
 
   // Messaging/Streaming

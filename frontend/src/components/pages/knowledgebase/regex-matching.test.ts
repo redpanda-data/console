@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 // Test function for regex matching logic
 function getMatchingTopics(pattern: string, allTopics: string[]): string[] {
-  if (!pattern) return [];
+  if (!pattern) {
+    return [];
+  }
 
   try {
     const regex = new RegExp(pattern);

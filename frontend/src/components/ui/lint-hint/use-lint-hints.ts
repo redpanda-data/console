@@ -13,6 +13,9 @@ import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
+// Regex for parsing tool config field names
+const TOOLS_CONFIG_REGEX = /^tools\.(\d+)\.config$/;
+
 export function useLintHints(form: UseFormReturn<FormValues>) {
   const [lintHints, setLintHints] = useState<Record<number, Record<string, LintHint>>>({});
 
@@ -21,7 +24,7 @@ export function useLintHints(form: UseFormReturn<FormValues>) {
     const subscription = form.watch((_, info) => {
       const name = info.name ?? '';
       if (name.startsWith('tools') && name.endsWith('config')) {
-        const match = name.match(/^tools\.(\d+)\.config$/);
+        const match = TOOLS_CONFIG_REGEX.exec(name);
         if (match) {
           const index = Number(match[1]);
           setLintHints((prev) => ({
@@ -35,9 +38,10 @@ export function useLintHints(form: UseFormReturn<FormValues>) {
   }, [form]);
 
   // Check if there are any linting issues
-  const hasLintingIssues = useMemo(() => {
-    return Object.values(lintHints).some((toolLints) => Object.keys(toolLints).length > 0);
-  }, [lintHints]);
+  const hasLintingIssues = useMemo(
+    () => Object.values(lintHints).some((toolLints) => Object.keys(toolLints).length > 0),
+    [lintHints]
+  );
 
   return { lintHints, setLintHints, hasLintingIssues };
 }

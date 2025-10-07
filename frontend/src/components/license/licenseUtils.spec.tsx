@@ -1,3 +1,4 @@
+// biome-ignore-all assist/source/organizeImports: organized by hand, required for the test to mock modules in the right order
 import {
   License_Source,
   License_Type,
@@ -22,6 +23,9 @@ import { api } from '../../state/backendApi';
 import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './LicenseNotification';
 
+const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
+const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 27 days/;
+
 /**
  * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
  * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
@@ -29,9 +33,7 @@ import { LicenseNotification } from './LicenseNotification';
  * @param daysOffset - The number of days to offset (default is 0).
  * @returns Unix timestamp in seconds.
  */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => {
-  return Math.floor(Date.now() / 1000) + daysOffset * 86400;
-};
+const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86_400;
 
 vi.mock('../../state/backendApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../state/backendApi')>();
@@ -105,7 +107,7 @@ describe('licenseUtils', () => {
 
   const mockLicenseCommunity = create(LicenseSchema, {
     type: License_Type.COMMUNITY,
-    expiresAt: BigInt(20413210650),
+    expiresAt: BigInt(20_413_210_650),
     source: License_Source.REDPANDA_CONSOLE,
   });
 
@@ -193,8 +195,8 @@ describe('licenseUtils', () => {
   });
 
   describe('prettyExpirationDate', () => {
-    test.skip('should return a formatted expiration date for an expiring license', () => {
-      expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(/\d{2}\/\d{2}\/\d{4}/); // MM/DD/YYYY format
+    test('should return a formatted expiration date for an expiring license', () => {
+      expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX); // MM/DD/YYYY format
     });
 
     test('should return an empty string for a community license', () => {
@@ -217,30 +219,30 @@ describe('licenseUtils', () => {
       const licenses = [
         create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(2041321065),
+          expiresAt: BigInt(2_041_321_065),
           source: License_Source.REDPANDA_CONSOLE,
         }),
         create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(4813575088),
+          expiresAt: BigInt(4_813_575_088),
           source: License_Source.REDPANDA_CORE,
         }),
       ];
 
       const result = licensesToSimplifiedPreview(licenses);
-      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '9/8/2034', isExpired: false }]); // Based on the earlier expiration timestamp
+      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '09/08/2034', isExpired: false }]); // Based on the earlier expiration timestamp
     });
 
     test('should handle licenses with different types separately', () => {
       const licenses = [
         create(LicenseSchema, {
           type: License_Type.COMMUNITY,
-          expiresAt: BigInt(2041321065),
+          expiresAt: BigInt(2_041_321_065),
           source: License_Source.REDPANDA_CONSOLE,
         }),
         create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(4813575088),
+          expiresAt: BigInt(4_813_575_088),
           source: License_Source.REDPANDA_CORE,
         }),
       ];
@@ -248,7 +250,7 @@ describe('licenseUtils', () => {
       const result = licensesToSimplifiedPreview(licenses);
       expect(result).toEqual([
         { name: 'Console Community', expiresAt: '', isExpired: false },
-        { name: 'Redpanda Enterprise', expiresAt: '7/15/2122', isExpired: false }, // Based on the expiration timestamp
+        { name: 'Redpanda Enterprise', expiresAt: '07/15/2122', isExpired: false }, // Based on the expiration timestamp
       ]);
     });
   });
@@ -286,7 +288,7 @@ describe('licenseUtils', () => {
   });
 
   describe('LicenseNotification Banner', () => {
-    test('render null on routes related to licensing', async () => {
+    test('render null on routes related to licensing', () => {
       const uploadLicenseScreen = renderWithRouter(<LicenseNotification />, {
         route: '/admin/upload-license',
       });
@@ -313,7 +315,10 @@ describe('licenseUtils', () => {
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'core_balancing_continuous', enabled: false }),
+        create(ListEnterpriseFeaturesResponse_FeatureSchema, {
+          name: 'core_balancing_continuous',
+          enabled: false,
+        }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'schema_id_validation', enabled: false }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'cloud_storage', enabled: false }),
         create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'gssapi', enabled: false }),
@@ -342,17 +347,17 @@ describe('licenseUtils', () => {
       });
 
       // Check that user is informed about a license that will expire.
-      expect(screen.getByText(/Your Redpanda Enterprise license will expire in 27 days/)).toBeInTheDocument();
+      expect(screen.getByText(LICENSE_EXPIRE_MESSAGE_REGEX)).toBeInTheDocument();
       // Check for the color of the notification banner
       expect(screen.queryByTestId('license-alert')).toHaveAttribute('data-status', 'info');
       // Check for CTAs
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Request a license')).toHaveAttribute(
         'href',
-        'https://support.redpanda.com/',
+        'https://support.redpanda.com/'
       );
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Upload license')).toHaveAttribute(
         'href',
-        '/upload-license',
+        '/upload-license'
       );
     });
   });

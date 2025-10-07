@@ -11,11 +11,13 @@
 
 import { observer } from 'mobx-react';
 import type { FC } from 'react';
+
 import { api } from '../../../state/backendApi';
 import type { Partition, Topic } from '../../../state/restInterfaces';
 import '../../../utils/arrayExtensions';
 import { Alert, AlertIcon, Badge, Box, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { uiState } from '../../../state/uiState';
 import { onPaginationChange } from '../../../utils/pagination';
@@ -31,43 +33,34 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
   const partitions = api.topicPartitions.get(topic.topicName);
   const paginationParams = usePaginationParams(partitions?.length ?? 0, uiState.topicSettings.partitionPageSize);
 
-  if (partitions === undefined) return DefaultSkeleton;
+  if (partitions === undefined) {
+    return DefaultSkeleton;
+  }
   if (partitions === null) {
     return <div />; // todo: show the error (if one was reported);
   }
 
   const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName,
+    ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
   const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName,
+    ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
 
   let warning: JSX.Element = <></>;
-  if (topic.cleanupPolicy.toLowerCase() === 'compact')
+  if (topic.cleanupPolicy.toLowerCase() === 'compact') {
     warning = (
-      <Alert status="warning" marginBottom="1em">
+      <Alert marginBottom="1em" status="warning">
         <AlertIcon />
         Topic cleanupPolicy is 'compact'. Message Count is an estimate!
       </Alert>
     );
+  }
 
   return (
     <>
       {warning}
       <DataTable<Partition>
-        pagination={paginationParams}
-        onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
-          uiState.topicSettings.partitionPageSize = pageSize;
-          editQuery((query) => {
-            query.page = String(pageIndex);
-            query.pageSize = String(pageSize);
-          });
-        })}
-        sorting
-        // @ts-ignore - we need to get rid of this enum in DataTable
-        defaultPageSize={uiState.topicSettings.partitionPageSize}
-        data={partitions}
         columns={[
           {
             header: 'Partition ID',
@@ -125,28 +118,40 @@ export const TopicPartitions: FC<TopicPartitionsProps> = observer(({ topic }) =>
             cell: ({ row: { original: partition } }) => <BrokerList partition={partition} />,
           },
         ]}
+        data={partitions}
+        // @ts-expect-error - we need to get rid of this enum in DataTable
+        defaultPageSize={uiState.topicSettings.partitionPageSize}
+        onPaginationChange={onPaginationChange(paginationParams, ({ pageSize, pageIndex }) => {
+          uiState.topicSettings.partitionPageSize = pageSize;
+          editQuery((query) => {
+            query.page = String(pageIndex);
+            query.pageSize = String(pageSize);
+          });
+        })}
+        pagination={paginationParams}
+        sorting
       />
     </>
   );
 });
 
 const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
-  if (!partition.partitionError && !partition.waterMarksError) {
+  if (!(partition.partitionError || partition.waterMarksError)) {
     return null;
   }
 
   return (
     <Popover
-      title="Partition Error"
-      placement="right-start"
-      size="auto"
-      hideCloseButton
       content={
-        <Flex maxWidth={500} whiteSpace="pre-wrap" flexDirection="column" gap={2}>
+        <Flex flexDirection="column" gap={2} maxWidth={500} whiteSpace="pre-wrap">
           {partition.partitionError && <Text>{partition.partitionError}</Text>}
           {partition.waterMarksError && <Text>{partition.waterMarksError}</Text>}
         </Flex>
       }
+      hideCloseButton
+      placement="right-start"
+      size="auto"
+      title="Partition Error"
     >
       <Box>
         <MdOutlineWarningAmber color="orange" size={20} />

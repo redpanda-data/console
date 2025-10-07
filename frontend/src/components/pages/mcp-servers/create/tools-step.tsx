@@ -17,10 +17,11 @@ import type { LintHint } from 'protogen/redpanda/api/common/v1/linthint_pb';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
+
 import type { FormValues } from './schemas';
 import { ToolCard } from './tool-card';
 
-interface ToolsStepProps {
+type ToolsStepProps = {
   form: UseFormReturn<FormValues>;
   toolFields: UseFieldArrayReturn<FormValues, 'tools', 'id'>['fields'];
   appendTool: UseFieldArrayReturn<FormValues, 'tools', 'id'>['append'];
@@ -33,7 +34,7 @@ interface ToolsStepProps {
   onSubmit: (values: FormValues) => Promise<void>;
   onLintTool: (toolIndex: number) => Promise<void>;
   onExpandTool: (toolIndex: number) => void;
-}
+};
 
 export const ToolsStep: React.FC<ToolsStepProps> = ({
   form,
@@ -62,26 +63,24 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
       <div className={`grid grid-cols-1 gap-6 ${hasSecretWarnings ? 'xl:grid-cols-3' : ''}`}>
         {/* Main tools configuration - takes 2 columns on xl screens when secrets panel is shown, full width otherwise */}
         <div className={hasSecretWarnings ? 'xl:col-span-2' : ''}>
-          <FormContainer onSubmit={form.handleSubmit(onSubmit)} layout="default" width="full">
+          <FormContainer layout="default" onSubmit={form.handleSubmit(onSubmit)} width="full">
             <div className="space-y-4">
               {toolFields.map((t, idx) => (
                 <ToolCard
-                  key={t.id}
-                  form={form}
-                  toolIndex={idx}
                   canRemove={toolFields.length > 1}
-                  lintHints={lintHints[idx] || {}}
+                  form={form}
                   isLintConfigPending={isLintConfigPending}
-                  onRemove={() => removeTool(idx)}
+                  key={t.id}
+                  lintHints={lintHints[idx] || {}}
                   onExpand={() => onExpandTool(idx)}
                   onLint={() => onLintTool(idx)}
+                  onRemove={() => removeTool(idx)}
+                  toolIndex={idx}
                 />
               ))}
 
               {/* Add Tool Button */}
               <Button
-                type="button"
-                variant="dashed"
                 className="w-full"
                 onClick={() =>
                   appendTool({
@@ -90,6 +89,8 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
                     config: '',
                   })
                 }
+                type="button"
+                variant="dashed"
               >
                 <Plus className="h-4 w-4" /> Add Tool
               </Button>
@@ -113,8 +114,8 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
           <div className="xl:col-span-1">
             <div className="sticky top-4">
               <QuickAddSecrets
-                requiredSecrets={detectedSecrets}
                 existingSecrets={existingSecrets}
+                requiredSecrets={detectedSecrets}
                 scopes={[Scope.MCP_SERVER]}
               />
             </div>

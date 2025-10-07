@@ -13,15 +13,16 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Server, Settings } from 'lucide-react';
+
 import ClineLogo from '../../../../../assets/cline.svg';
 import { RemoteMCPConnectDocsAlert } from '../../remote-mcp-connect-docs-alert';
 import { InstallRpkListItem } from '../install-rpk-list-item';
 import { LoginToRpkListItem } from '../login-to-rpk-list-item';
 import { ClientType, getClientConfig, getMCPServerName, type MCPServer } from '../utils';
 
-interface ClientClineProps {
+type ClientClineProps = {
   mcpServer: MCPServer;
-}
+};
 
 export const ClientCline = ({ mcpServer }: ClientClineProps) => {
   const clusterId = config?.clusterId;
@@ -38,14 +39,14 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <List ordered className="my-0">
+        <List className="my-0" ordered>
           <InstallRpkListItem />
           <LoginToRpkListItem />
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={ClineLogo} alt="Cline" className="h-4 w-4" />
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <img alt="Cline" className="h-4 w-4" src={ClineLogo} />
                 Cline extension
               </Text>
             </div>
@@ -53,7 +54,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <Text>Click on</Text>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Server className="h-4 w-4" />
                 MCP Servers
               </Text>
@@ -63,7 +64,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click</span>
-              <Text as="span" className="font-bold inline-flex items-center gap-1 whitespace-nowrap">
+              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
                 <Settings className="h-4 w-4" />
                 Configure MCP Servers
               </Text>
@@ -74,7 +75,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
               <span>Add the following configuration to your</span>
               <InlineCode className="whitespace-nowrap">cline_mcp_settings.json</InlineCode>
             </div>
-            <DynamicCodeBlock lang="json" code={clineConfigJson} />
+            <DynamicCodeBlock code={clineConfigJson} lang="json" />
           </ListItem>
           <ListItem>
             Press{' '}
@@ -89,7 +90,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
           </ListItem>
         </List>
       </div>
-      <RemoteMCPConnectDocsAlert documentationUrl="https://docs.cline.bot/mcp/mcp-overview" clientName="Cline" />
+      <RemoteMCPConnectDocsAlert clientName="Cline" documentationUrl="https://docs.cline.bot/mcp/mcp-overview" />
     </div>
   );
 };

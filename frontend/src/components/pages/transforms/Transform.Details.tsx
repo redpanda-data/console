@@ -14,6 +14,9 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { makeObservable, observable, runInAction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Fragment, useState } from 'react';
+
+import { openDeleteModal } from './modals';
+import { PartitionStatus } from './Transforms.List';
 import usePaginationParams from '../../../hooks/usePaginationParams';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -40,8 +43,6 @@ import Section from '../../misc/Section';
 import Tabs from '../../misc/tabs/Tabs';
 import { PageComponent, type PageInitHelper } from '../Page';
 import { ExpandedMessage, MessagePreview } from '../topics/Tab.Messages';
-import { openDeleteModal } from './modals';
-import { PartitionStatus } from './Transforms.List';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -72,7 +73,9 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 
   render() {
-    if (!transformsApi.transforms) return DefaultSkeleton;
+    if (!transformsApi.transforms) {
+      return DefaultSkeleton;
+    }
     if (transformsApi.transforms.length === 0) {
       appGlobal.historyReplace('/transforms-setup');
       return null;
@@ -80,7 +83,9 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 
     const transformName = decodeURIComponentPercents(this.props.transformName);
     const transform = transformsApi.transformDetails.get(transformName);
-    if (!transform) return DefaultSkeleton;
+    if (!transform) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent>
@@ -88,13 +93,12 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
         <Box>
           {/* <Heading as="h2">{transformName}</Heading> */}
           <Button
-            variant="outline-delete"
             mt="2"
             onClick={() =>
               openDeleteModal(transformName, () => {
                 transformsApi
                   .deleteTransform(transformName)
-                  .then(async () => {
+                  .then(() => {
                     toast({
                       status: 'success',
                       duration: 4000,
@@ -114,6 +118,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
                   });
               })
             }
+            variant="outline-delete"
           >
             Delete
           </Button>
@@ -133,12 +138,12 @@ export default TransformDetails;
 
 const OverviewTab = observer((p: { transform: TransformMetadata }) => {
   let overallStatus = <></>;
-  if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
+  if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
     overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
-  else {
+  } else {
     // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
     const partitionTransformStatus = p.transform.statuses.first(
-      (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+      (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
     )!;
     overallStatus = <PartitionStatus status={partitionTransformStatus.status} />;
   }
@@ -169,23 +174,21 @@ const OverviewTab = observer((p: { transform: TransformMetadata }) => {
             keyAlign: 'left',
             gapHeight: '.5rem',
             gapWidth: '4rem',
-          },
+          }
         )}
       </Box>
       <Box maxWidth="35rem">
         <DataTable<PartitionTransformStatus>
-          data={p.transform.statuses}
           columns={[
             { header: 'Partition', accessorKey: 'partitionId' },
             { header: 'Node', accessorKey: 'brokerId' },
             {
               header: 'Status',
-              cell: ({ row: { original: r } }) => {
-                return <PartitionStatus status={r.status} />;
-              },
+              cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
             },
             { header: 'Lag', accessorKey: 'lag' },
           ]}
+          data={p.transform.statuses}
         />
       </Box>
     </>
@@ -222,7 +225,7 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName: topicName,
+      topicName,
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: PayloadEncoding.UNSPECIFIED,
@@ -237,15 +240,17 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       if (indexOfOldMessage > -1) {
         state.messages[indexOfOldMessage] = messages[0];
       } else {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error('LoadLargeMessage: cannot find old message to replace', {
           searchReq,
           messages,
         });
         throw new Error(
-          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)',
+          'LoadLargeMessage: Cannot find old message to replace (message results must have changed since the load was started)'
         );
       }
     } else {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('LoadLargeMessage: messages response is empty', { messages });
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
@@ -260,7 +265,7 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
         row: {
           original: { timestamp },
         },
-      }) => <TimestampDisplay unixEpochMillisecond={timestamp} format="default" />,
+      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
       size: 30,
     },
     {
@@ -268,9 +273,9 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       accessorKey: 'value',
       cell: ({ row: { original } }) => (
         <MessagePreview
+          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
           msg={original}
           previewFields={() => []}
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
         />
       ),
       size: Number.MAX_SAFE_INTEGER,
@@ -278,7 +283,9 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
   ];
 
   const filteredMessages = state.messages.filter((x) => {
-    if (!uiSettings.connectorsDetails.logsQuickSearch) return true;
+    if (!uiSettings.connectorsDetails.logsQuickSearch) {
+      return true;
+    }
     return isFilterMatch(uiSettings.connectorsDetails.logsQuickSearch, x);
   });
 
@@ -289,33 +296,33 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
       <Section minWidth="800px">
         <Flex mb="6">
           <SearchField
-            width="230px"
             searchText={uiSettings.connectorsDetails.logsQuickSearch}
             setSearchText={(x) => (uiSettings.connectorsDetails.logsQuickSearch = x)}
+            width="230px"
           />
-          <Button variant="outline" ml="auto" onClick={() => setState(createLogsTabState())}>
+          <Button ml="auto" onClick={() => setState(createLogsTabState())} variant="outline">
             Refresh logs
           </Button>
         </Flex>
 
         <DataTable<TopicMessage>
+          columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
-          columns={messageTableColumns}
-          sorting={uiSettings.connectorsDetails.sorting ?? []}
           onSortingChange={(sorting) => {
             uiSettings.connectorsDetails.sorting =
               typeof sorting === 'function' ? sorting(uiState.topicSettings.searchParams.sorting) : sorting;
           }}
           pagination={paginationParams}
+          sorting={uiSettings.connectorsDetails.sorting ?? []}
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
-              msg={original}
               loadLargeMessage={() =>
                 loadLargeMessage(state.search.searchRequest?.topicName ?? '', original.partitionID, original.offset)
               }
+              msg={original}
             />
           )}
         />
@@ -326,13 +333,19 @@ const LogsTab = observer((p: { transform: TransformMetadata }) => {
 
 function isFilterMatch(str: string, m: TopicMessage) {
   str = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(str)) return true;
-  if (m.keyJson?.toLowerCase().includes(str)) return true;
-  if (m.valueJson?.toLowerCase().includes(str)) return true;
+  if (m.offset.toString().toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.keyJson?.toLowerCase().includes(str)) {
+    return true;
+  }
+  if (m.valueJson?.toLowerCase().includes(str)) {
+    return true;
+  }
   return false;
 }
 
-async function executeMessageSearch(search: MessageSearch, topicName: string, transformName: string) {
+function executeMessageSearch(search: MessageSearch, topicName: string, transformName: string) {
   const filterCode: string = `return key == "${transformName}";`;
 
   const lastXHours = 5;
@@ -340,7 +353,7 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, tr
   startTime.setHours(startTime.getHours() - lastXHours);
 
   const request = {
-    topicName: topicName,
+    topicName,
     partitionId: -1,
 
     startOffset: PartitionOffsetOrigin.Timestamp,
@@ -355,16 +368,18 @@ async function executeMessageSearch(search: MessageSearch, topicName: string, tr
 
   // All of this should be part of "backendApi.ts", starting a message search should return an observable object,
   // so any changes in phase, messages, error, etc can be used immediately in the ui
-  return runInAction(async () => {
+  return runInAction(() => {
     try {
-      search.startSearch(request).catch((err) => {
+      return search.startSearch(request).catch((err) => {
         const msg = (err as Error).message ?? String(err);
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in transformLogsMessageSearch: ${msg}`);
         return [];
       });
     } catch (error: any) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in transformLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-      return [];
+      return Promise.resolve([]);
     }
   });
 }

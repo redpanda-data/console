@@ -14,16 +14,16 @@ import { observer } from 'mobx-react';
 import './headersEditor.scss';
 import { Button, Input } from '@redpanda-data/ui';
 
-interface Header {
+type Header = {
   key: string;
   value: string;
-}
+};
 
-export interface Props {
+export type Props = {
   items: Header[];
-}
-const HeadersEditor = observer((p: Props): JSX.Element => {
-  return (
+};
+const HeadersEditor = observer(
+  (p: Props): JSX.Element => (
     <div className="headersEditor">
       <table>
         <thead>
@@ -36,16 +36,16 @@ const HeadersEditor = observer((p: Props): JSX.Element => {
         </thead>
         <tbody>
           {p.items.map((h, i) => (
-            <HeaderComp key={String(i)} list={p.items} header={h} index={i} />
+            <HeaderComp header={h} index={i} key={String(i)} list={p.items} />
           ))}
         </tbody>
       </table>
       <Button
-        variant="outline"
-        width="100%"
         onClick={() => {
           p.items.push({ key: '', value: '' });
         }}
+        variant="outline"
+        width="100%"
       >
         <span style={{ opacity: 0.66 }}>
           <PlusIcon size="small" />
@@ -53,8 +53,8 @@ const HeadersEditor = observer((p: Props): JSX.Element => {
         Add Row
       </Button>
     </div>
-  );
-});
+  )
+);
 export default HeadersEditor;
 
 const HeaderComp = observer((p: { list: Header[]; header: Header; index: number }) => {
@@ -64,29 +64,29 @@ const HeaderComp = observer((p: { list: Header[]; header: Header; index: number 
       <td className="index">{p.index + 1}</td>
       <td className="name">
         <Input
-          placeholder="Key"
           borderRightRadius="0"
+          onChange={(e) => (p.header.key = e.target.value)}
+          placeholder="Key"
           spellCheck={false}
           value={key}
-          onChange={(e) => (p.header.key = e.target.value)}
         />
       </td>
       <td className="value">
         <Input
+          onChange={(e) => (p.header.value = e.target.value)}
           placeholder="Value"
           spellCheck={false}
           value={value}
-          onChange={(e) => (p.header.value = e.target.value)}
         />
       </td>
       <td className="actions">
         <Button
-          variant="ghost"
           className="iconButton"
           onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             event.stopPropagation();
             p.list.remove(p.header);
           }}
+          variant="ghost"
         >
           <TrashIcon size={20} />
         </Button>

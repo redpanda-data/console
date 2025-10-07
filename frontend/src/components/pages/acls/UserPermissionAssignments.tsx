@@ -13,6 +13,7 @@ import { useQuery } from '@connectrpc/connect-query';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
 import { observer } from 'mobx-react';
 import { useNavigate } from 'react-router-dom';
+
 import type { ListACLsRequest } from '../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from '../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { rolesApi } from '../../../state/backendApi';
@@ -43,15 +44,13 @@ export const UserRoleTags = observer(
       } as ListACLsRequest,
       {
         enabled: !!userName,
-        select: (response) => {
-          return response.resources.length > 0;
-        },
-      },
+        select: (response) => response.resources.length > 0,
+      }
     );
 
     if (hasAcls) {
       elements.push(
-        <TagsValue onClick={() => navigate(`/security/acls/${userName}/details`)}>{`User:${userName}`}</TagsValue>,
+        <TagsValue onClick={() => navigate(`/security/acls/${userName}/details`)}>{`User:${userName}`}</TagsValue>
       );
     }
 
@@ -76,14 +75,18 @@ export const UserRoleTags = observer(
               key={r}
               onClick={() => navigate(`/security/roles/${r}/details`)}
             >{`RedpandaRole:${r}`}</TagsValue>
-          </div>,
+          </div>
         );
       }
 
-      if (elements.length === 0) elements.push(<p>No roles</p>);
-      if (numberOfHiddenElements > 0) elements.push(<p>{`+${numberOfHiddenElements} more`}</p>);
+      if (elements.length === 0) {
+        elements.push(<p>No roles</p>);
+      }
+      if (numberOfHiddenElements > 0) {
+        elements.push(<p>{`+${numberOfHiddenElements} more`}</p>);
+      }
     }
 
-    return <div className={!verticalView ? '' : 'flex'}>{elements}</div>;
-  },
+    return <div className={verticalView ? 'flex' : ''}>{elements}</div>;
+  }
 );

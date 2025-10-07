@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Text } from '@redpanda-data/ui';
+
 import { type LintHint, LintHintSchema } from '../../../protogen/redpanda/api/common/v1/linthint_pb';
 
 /**
@@ -103,7 +104,7 @@ export function formatPipelineError(err: any): any {
         <Text as="span">{genDesc}</Text>
         <ul>
           {details.map((d, idx) => (
-            <li style={{ listStylePosition: 'inside' }} key={idx}>
+            <li key={idx} style={{ listStylePosition: 'inside' }}>
               {d}
             </li>
           ))}

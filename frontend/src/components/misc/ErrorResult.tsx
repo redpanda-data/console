@@ -3,13 +3,14 @@ import { Code } from '@connectrpc/connect';
 import { Avatars, Box, CodeBlock, Heading, HStack, Image, Stack, Text } from '@redpanda-data/ui';
 import React from 'react';
 import { capitalizeFirst } from 'utils/utils';
+
 import type { WrappedApiError } from '../../state/restInterfaces';
 
-interface ErrorResultProps {
+type ErrorResultProps = {
   error?: ConnectError | WrappedApiError | null;
   title?: string;
   message?: string;
-}
+};
 
 const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   if (!error) {
@@ -17,38 +18,44 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   }
 
   // Type guard for ConnectError
-  const isConnectError = (err: any): err is ConnectError => {
-    return err && typeof err.code === 'number' && 'details' in err;
-  };
+  const isConnectError = (err: any): err is ConnectError => err && typeof err.code === 'number' && 'details' in err;
 
   // Type guard for WrappedApiError
-  const isWrappedApiError = (err: any): err is WrappedApiError => {
-    return err && typeof err.statusCode === 'number';
-  };
+  const isWrappedApiError = (err: any): err is WrappedApiError => err && typeof err.statusCode === 'number';
+
+  // HTTP status codes
+  const HTTP_UNAUTHORIZED = 401;
+  const HTTP_FORBIDDEN = 403;
+  const HTTP_NOT_FOUND = 404;
+  const HTTP_TIMEOUT = 408;
+  const HTTP_CONFLICT = 409;
+  const HTTP_BAD_REQUEST = 400;
+  const HTTP_INTERNAL_ERROR = 500;
+  const HTTP_SERVICE_UNAVAILABLE = 503;
 
   // Map gRPC error codes to HTTP status codes
   const getStatusCode = (code: Code): number => {
     switch (code) {
       case Code.Unauthenticated:
-        return 401;
+        return HTTP_UNAUTHORIZED;
       case Code.PermissionDenied:
-        return 403;
+        return HTTP_FORBIDDEN;
       case Code.NotFound:
-        return 404;
+        return HTTP_NOT_FOUND;
       case Code.AlreadyExists:
-        return 409;
+        return HTTP_CONFLICT;
       case Code.FailedPrecondition:
-        return 400;
+        return HTTP_BAD_REQUEST;
       case Code.InvalidArgument:
-        return 400;
+        return HTTP_BAD_REQUEST;
       case Code.DeadlineExceeded:
-        return 408;
+        return HTTP_TIMEOUT;
       case Code.Unavailable:
-        return 503;
+        return HTTP_SERVICE_UNAVAILABLE;
       case Code.Internal:
-        return 500;
+        return HTTP_INTERNAL_ERROR;
       default:
-        return 500;
+        return HTTP_INTERNAL_ERROR;
     }
   };
 
@@ -69,7 +76,7 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
     statusCode = error.statusCode;
   } else {
     // Fallback for unknown error type
-    statusCode = 500;
+    statusCode = HTTP_INTERNAL_ERROR;
   }
 
   const errorTitle = title || `Error ${statusCode}`;
@@ -77,33 +84,33 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
 
   return (
     <HStack
-      p={4}
-      spacing={8}
       alignItems="center"
-      justifyContent="center"
-      w="full"
       flexWrap={{ base: 'wrap', md: 'nowrap' }}
       gap={8}
+      justifyContent="center"
+      p={4}
+      spacing={8}
+      w="full"
     >
-      <Stack spacing={4} maxW="700px" p={5}>
+      <Stack maxW="700px" p={5} spacing={4}>
         <Heading fontSize="2xl" lineHeight="short">
           {errorTitle}
         </Heading>
         <Text fontSize="lg">{capitalizeFirst(errorMessage)}</Text>
         {errorDetails && (
-          <CodeBlock codeString={errorDetails} language="json" theme="light" showCopyButton maxW="50vw" />
+          <CodeBlock codeString={errorDetails} language="json" maxW="50vw" showCopyButton theme="light" />
         )}
       </Stack>
-      <Box display="flex" alignItems="center" justifyContent="center" minW="300px">
+      <Box alignItems="center" display="flex" justifyContent="center" minW="300px">
         <Image
-          w="full"
-          maxW="300px"
-          h="auto"
-          display="block"
-          src={Avatars.errorBananaSlipSvg}
           alt="Dev Redpanda"
+          display="block"
           fallback={<Text color="gray.500">Error image not available</Text>}
+          h="auto"
+          maxW="300px"
           objectFit="contain"
+          src={Avatars.errorBananaSlipSvg}
+          w="full"
         />
       </Box>
     </HStack>

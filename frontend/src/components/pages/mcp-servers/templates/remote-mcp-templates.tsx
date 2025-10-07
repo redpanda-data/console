@@ -10,6 +10,7 @@
  */
 
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+
 import memoryCacheTemplate from './cache/memory.yaml';
 import redpandaCacheTemplate from './cache/redpanda.yaml';
 import generateInputTemplate from './input/generate.yaml';
@@ -17,12 +18,12 @@ import redpandaOutputTemplate from './output/redpanda.yaml';
 import bigqueryProcessorTemplate from './processor/gcp_bigquery_select.yaml';
 import httpProcessorTemplate from './processor/http.yaml';
 
-export interface Template {
+export type Template = {
   name: string;
   componentType: MCPServer_Tool_ComponentType;
   yaml: Record<string, any>;
   description: string;
-}
+};
 
 export const templates: Template[] = [
   {
@@ -63,11 +64,10 @@ export const templates: Template[] = [
   },
 ];
 
-export {
-  httpProcessorTemplate,
-  bigqueryProcessorTemplate,
-  memoryCacheTemplate,
-  redpandaCacheTemplate,
-  generateInputTemplate,
-  redpandaOutputTemplate,
-};
+// biome-ignore lint/performance/noBarrelFile: Templates are used internally in the templates array above
+export { default as memoryCacheTemplate } from './cache/memory.yaml';
+export { default as redpandaCacheTemplate } from './cache/redpanda.yaml';
+export { default as generateInputTemplate } from './input/generate.yaml';
+export { default as redpandaOutputTemplate } from './output/redpanda.yaml';
+export { default as bigqueryProcessorTemplate } from './processor/gcp_bigquery_select.yaml';
+export { default as httpProcessorTemplate } from './processor/http.yaml';

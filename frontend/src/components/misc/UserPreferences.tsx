@@ -30,6 +30,7 @@ import { transaction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import { Component, type FC, useState } from 'react';
 import { FaWrench } from 'react-icons/fa';
+
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label, navigatorClipboardErrorHandler } from '../../utils/tsxUtils';
 
@@ -50,10 +51,10 @@ export const UserPreferencesButton: FC = () => {
     <>
       <UserPreferencesDialog isOpen={isOpen} onClose={() => setOpen(false)} />
       <IconButton
-        variant="ghost"
         aria-label="user preferences"
         icon={<FaWrench size={17} />}
         onClick={() => setOpen(true)}
+        variant="ghost"
       />
     </>
   );
@@ -62,7 +63,7 @@ export const UserPreferencesButton: FC = () => {
 export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
   <Modal isCentered isOpen={isOpen} onClose={onClose}>
     <ModalOverlay />
-    <ModalContent minW="5xl" minH="50vh">
+    <ModalContent minH="50vh" minW="5xl">
       <ModalHeader>User Preferences</ModalHeader>
       <ModalBody>
         <Tabs
@@ -73,8 +74,8 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
           }))}
         />
       </ModalBody>
-      <ModalFooter alignItems="center" justifyContent="flex-end" gap={2}>
-        <Text fontSize="xs" color="gray.500">
+      <ModalFooter alignItems="center" gap={2} justifyContent="flex-end">
+        <Text color="gray.500" fontSize="xs">
           Changes are saved automatically
         </Text>
         <Button onClick={onClose}>Close</Button>
@@ -139,31 +140,31 @@ class JsonViewerTab extends Component {
           }}
         >
           <Label text="Font Size">
-            <Input value={settings.fontSize} onChange={(e) => (settings.fontSize = e.target.value)} maxWidth={150} />
+            <Input maxWidth={150} onChange={(e) => (settings.fontSize = e.target.value)} value={settings.fontSize} />
           </Label>
           <Label text="Line Height">
             <Input
-              value={settings.lineHeight}
-              onChange={(e) => (settings.lineHeight = e.target.value)}
               maxWidth={150}
+              onChange={(e) => (settings.lineHeight = e.target.value)}
+              value={settings.lineHeight}
             />
           </Label>
           <Label text="Maximum string length before collapsing">
             <NumberInput
-              value={settings.maxStringLength}
-              onChange={(e) => (settings.maxStringLength = Number(e ?? 200))}
-              min={0}
-              max={10000}
+              max={10_000}
               maxWidth={150}
+              min={0}
+              onChange={(e) => (settings.maxStringLength = Number(e ?? 200))}
+              value={settings.maxStringLength}
             />
           </Label>
           <Label text="Maximum depth before collapsing nested objects">
             <NumberInput
-              value={settings.collapsed}
-              onChange={(e) => (settings.collapsed = Number(e ?? 2))}
-              min={1}
               max={50}
               maxWidth={150}
+              min={1}
+              onChange={(e) => (settings.collapsed = Number(e ?? 2))}
+              value={settings.collapsed}
             />
           </Label>
         </div>
@@ -187,10 +188,10 @@ const ImportExportTab: FC = observer(() => {
         <Flex gap={2}>
           <Input
             maxWidth={360}
-            spellCheck={false}
-            placeholder="Paste a previously exported settings string..."
-            value={$state.importCode}
             onChange={(e) => ($state.importCode = e.target.value)}
+            placeholder="Paste a previously exported settings string..."
+            spellCheck={false}
+            value={$state.importCode}
           />
           <Button
             onClick={() => {
@@ -199,26 +200,31 @@ const ImportExportTab: FC = observer(() => {
                 const skipped: string[] = [];
                 transaction(() => {
                   for (const k in data) {
-                    if (!Reflect.has(uiSettings, k)) skipped.push(k);
-                    else (uiSettings as any)[k] = data[k];
+                    if (Reflect.has(uiSettings, k)) {
+                      (uiSettings as any)[k] = data[k];
+                    } else {
+                      skipped.push(k);
+                    }
                   }
                 });
-                if (skipped.length > 0)
+                if (skipped.length > 0) {
                   toast({
                     status: 'warning',
                     description: `Some properties were skipped during import:\n${skipped.join(', ')}`,
                   });
-                else
+                } else {
                   toast({
                     status: 'success',
                     description: 'Settings imported successfully',
                   });
+                }
                 $state.importCode = '';
               } catch (e) {
                 toast({
                   status: 'error',
                   description: 'Unable to import settings. See console for more information.',
                 });
+                // biome-ignore lint/suspicious/noConsole: error logging for debugging settings import failures
                 console.error('unable to import settings', { error: e });
               }
             }}
@@ -247,15 +253,17 @@ const ImportExportTab: FC = observer(() => {
       </Label>
 
       <Label text="Reset">
-        <Flex gap={2} alignItems="center">
+        <Flex alignItems="center" gap={2}>
           <Input
             maxWidth={360}
-            spellCheck={false}
-            placeholder='type "reset" here to confirm and enable the button'
-            value={$state.resetConfirm}
             onChange={(str) => ($state.resetConfirm = str.target.value)}
+            placeholder='type "reset" here to confirm and enable the button'
+            spellCheck={false}
+            value={$state.resetConfirm}
           />
           <Button
+            colorScheme="red"
+            isDisabled={$state.resetConfirm !== 'reset'}
             onClick={() => {
               clearSettings();
               toast({
@@ -264,8 +272,6 @@ const ImportExportTab: FC = observer(() => {
               });
               $state.resetConfirm = '';
             }}
-            colorScheme="red"
-            isDisabled={$state.resetConfirm !== 'reset'}
           >
             Reset
           </Button>
@@ -293,15 +299,15 @@ class AutoRefreshTab extends Component {
         >
           <Label text="Interval in seconds">
             <NumberInput
-              value={uiSettings.autoRefreshIntervalSecs}
+              max={300}
+              maxWidth={150}
+              min={5}
               onChange={(e) => {
                 if (e) {
                   uiSettings.autoRefreshIntervalSecs = Number(e);
                 }
               }}
-              min={5}
-              max={300}
-              maxWidth={150}
+              value={uiSettings.autoRefreshIntervalSecs}
             />
           </Label>
         </div>

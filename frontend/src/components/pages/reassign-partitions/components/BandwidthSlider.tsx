@@ -10,6 +10,7 @@
  */
 
 import { Component } from 'react';
+
 import type { uiSettings } from '../../../../state/ui';
 import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/numberExtensions';
@@ -47,19 +48,26 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
     const sliderValue = Math.log10(value);
 
     const tipText = (f: number | null) => {
-      if (f == null) return null;
-      if (f < 3) return 'No change';
-      if (f > 12) return 'Unlimited';
+      if (f == null) {
+        return null;
+      }
+      if (f < 3) {
+        return 'No change';
+      }
+      if (f > 12) {
+        return 'Unlimited';
+      }
       const v = Math.round(10 ** f.clamp(3, 12));
       return `${prettyNumber(v).toUpperCase()}B/s`;
     };
 
     return (
       <Slider
-        min={2}
         max={12.1}
-        step={0.1}
-        value={sliderValue}
+        mb="4"
+        min={2}
+        mt="6"
+        mx="4"
         onChange={(n: number) => {
           switch (true) {
             case n < 2.5:
@@ -72,11 +80,10 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
               return;
           }
         }}
-        mt="6"
-        mx="4"
-        mb="4"
         onMouseEnter={() => (this.isDragging = true)}
         onMouseLeave={() => (this.isDragging = false)}
+        step={0.1}
+        value={sliderValue}
       >
         <SliderMark value={2} {...labelStyles}>
           -
@@ -99,12 +106,12 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
         </SliderTrack>
 
         <Tooltip
-          hasArrow
           bg="hsl(0 0% 30%)"
           color="white"
-          placement="top"
+          hasArrow
           isOpen={this.isDragging}
           label={tipText(sliderValue)}
+          placement="top"
         >
           <SliderThumb />
         </Tooltip>
@@ -113,12 +120,17 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
   }
 
   get value(): number | null {
-    if ('value' in this.props) return this.props.value;
+    if ('value' in this.props) {
+      return this.props.value;
+    }
     return this.props.settings.maxReplicationTraffic;
   }
 
   set value(x: number | null) {
-    if ('value' in this.props) this.props.onChange(x);
-    else this.props.settings.maxReplicationTraffic = x;
+    if ('value' in this.props) {
+      this.props.onChange(x);
+    } else {
+      this.props.settings.maxReplicationTraffic = x;
+    }
   }
 }

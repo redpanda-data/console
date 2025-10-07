@@ -40,22 +40,20 @@ export const handleStepResult = (result: StepSubmissionResult | undefined, onSuc
  * @param value - The value to check
  * @returns true if the value is null, undefined, or empty string
  */
-export const isEmpty = (value: string | null | undefined): boolean => {
-  return value == null || value === '';
-};
+export const isEmpty = (value: string | null | undefined): boolean => value == null || value === '';
 
 /**
  * Checks if a value has content (not null, undefined, or empty string)
  * @param value - The value to check
  * @returns true if the value has content
  */
-export const hasValue = (value: string | null | undefined): boolean => {
-  return !isEmpty(value);
-};
+export const hasValue = (value: string | null | undefined): boolean => !isEmpty(value);
 
-export enum WizardStep {
-  ADD_INPUT = 'add-input-step',
-  ADD_OUTPUT = 'add-output-step',
-  ADD_TOPIC = 'add-topic-step',
-  ADD_USER = 'add-user-step',
-}
+export const WizardStep = {
+  ADD_INPUT: 'add-input-step',
+  ADD_OUTPUT: 'add-output-step',
+  ADD_TOPIC: 'add-topic-step',
+  ADD_USER: 'add-user-step',
+} as const;
+
+export type WizardStep = (typeof WizardStep)[keyof typeof WizardStep];

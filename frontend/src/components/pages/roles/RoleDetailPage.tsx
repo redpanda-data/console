@@ -12,6 +12,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { uiState } from 'state/uiState';
+
 import { useGetAclsByPrincipal } from '../../../react-query/api/acl';
 import PageContent from '../../misc/PageContent';
 import { ACLDetails } from '../acls/new-acl/ACLDetails';
@@ -35,7 +36,7 @@ const RoleDetailPage = () => {
   if (!aclData) {
     return (
       <PageContent>
-        <div className="flex items-center justify-center h-96">
+        <div className="flex h-96 items-center justify-center">
           <div className="text-gray-500">Loading role details...</div>
         </div>
       </PageContent>
@@ -46,9 +47,9 @@ const RoleDetailPage = () => {
     <PageContent>
       {aclData && (
         <ACLDetails
-          sharedConfig={aclData.sharedConfig}
-          rules={aclData.rules}
           onUpdateACL={() => navigate(`/security/roles/${roleName}/update`)}
+          rules={aclData.rules}
+          sharedConfig={aclData.sharedConfig}
           showMatchingUsers={true}
         />
       )}

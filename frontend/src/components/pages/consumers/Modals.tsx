@@ -39,6 +39,7 @@ import { action, autorun, type IReactionDisposer, makeObservable, observable, tr
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type {
@@ -133,9 +134,13 @@ export class EditOffsetsModal extends Component<{
 
     const visible = Boolean(offsets);
     this.updateVisible(visible);
-    if (offsets) this.lastOffsets = offsets;
+    if (offsets) {
+      this.lastOffsets = offsets;
+    }
     offsets = offsets ?? this.lastOffsets;
-    if (!offsets) return null;
+    if (!offsets) {
+      return null;
+    }
 
     this.offsetsByTopic = offsets.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
 
@@ -172,11 +177,10 @@ export class EditOffsetsModal extends Component<{
 
     return (
       <Flex flexDirection="column" gap={4}>
-        <Flex maxW={300} gap={2} flexDirection="column">
+        <Flex flexDirection="column" gap={2} maxW={300}>
           <Box>
             <FormLabel>Topic</FormLabel>
             <SingleSelect<string | null>
-              value={this.selectedTopic}
               onChange={action((v) => {
                 this.selectedTopic = v;
               })}
@@ -190,12 +194,16 @@ export class EditOffsetsModal extends Component<{
                   label: x,
                 })),
               ]}
+              value={this.selectedTopic}
             />
           </Box>
           {this.selectedTopic !== null && (
             <Box>
               <FormLabel>Partition</FormLabel>
               <SingleSelect
+                onChange={action((v: number | null) => {
+                  this.selectedPartition = v;
+                })}
                 options={[
                   {
                     value: null,
@@ -210,9 +218,6 @@ export class EditOffsetsModal extends Component<{
                     })) ?? []),
                 ]}
                 value={this.selectedPartition}
-                onChange={action((v: number | null) => {
-                  this.selectedPartition = v;
-                })}
               />
             </Box>
           )}
@@ -220,7 +225,6 @@ export class EditOffsetsModal extends Component<{
             <FormLabel>Strategy</FormLabel>
             <SingleSelect
               isDisabled={this.isLoadingTimestamps}
-              value={this.selectedOption}
               onChange={(v) => (this.selectedOption = v as EditOptions)}
               options={[
                 {
@@ -244,6 +248,7 @@ export class EditOffsetsModal extends Component<{
                   label: 'Other Consumer Group',
                 },
               ]}
+              value={this.selectedOption}
             />
           </Box>
         </Flex>
@@ -266,9 +271,9 @@ export class EditOffsetsModal extends Component<{
           <Box mt={2}>
             <FormLabel>Timestamp</FormLabel>
             <KowlTimePicker
-              valueUtcMs={this.timestampUtcMs}
-              onChange={(t) => (this.timestampUtcMs = t)}
               disabled={this.isLoadingTimestamps}
+              onChange={(t) => (this.timestampUtcMs = t)}
+              valueUtcMs={this.timestampUtcMs}
             />
           </Box>
         )}
@@ -277,7 +282,12 @@ export class EditOffsetsModal extends Component<{
           <Box mt={2}>
             <FormLabel>Shift by</FormLabel>
             <NumberInput
-              value={this.offsetShiftByValueAsString}
+              onBlur={() => {
+                if (Number.isNaN(this.offsetShiftByValue)) {
+                  this.offsetShiftByValueAsString = '0';
+                  this.offsetShiftByValue = 0;
+                }
+              }}
               onChange={(valueAsString, valueAsNumber) => {
                 // entering '-' or '.' without any digits will set the value to -Number.MAX_SAFE_INTEGER
                 // we want to prevent this and set the value to 0 instead in onBlur
@@ -286,12 +296,7 @@ export class EditOffsetsModal extends Component<{
                   this.offsetShiftByValue = valueAsNumber;
                 }
               }}
-              onBlur={() => {
-                if (Number.isNaN(this.offsetShiftByValue)) {
-                  this.offsetShiftByValueAsString = '0';
-                  this.offsetShiftByValue = 0;
-                }
-              }}
+              value={this.offsetShiftByValueAsString}
             />
           </Box>
         )}
@@ -308,37 +313,37 @@ export class EditOffsetsModal extends Component<{
               }}
             >
               <SingleSelect
+                isDisabled={this.isLoadingTimestamps}
+                onChange={(x) => (this.selectedGroup = x)}
                 options={this.otherConsumerGroups.map((g) => ({ value: g.groupId, label: g.groupId }))}
                 value={this.selectedGroup}
-                onChange={(x) => (this.selectedGroup = x)}
-                isDisabled={this.isLoadingTimestamps}
               />
 
               <Radio
-                value="onlyExisting"
                 isChecked={this.otherGroupCopyMode === 'onlyExisting'}
                 onClick={() => {
                   this.otherGroupCopyMode = 'onlyExisting';
                 }}
+                value="onlyExisting"
               >
                 <InfoText
-                  tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored."
                   maxWidth="450px"
+                  tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored."
                 >
                   Copy matching offsets
                 </InfoText>
               </Radio>
 
               <Radio
-                value="all"
                 isChecked={this.otherGroupCopyMode === 'all'}
                 onClick={() => {
                   this.otherGroupCopyMode = 'all';
                 }}
+                value="all"
               >
                 <InfoText
-                  tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway."
                   maxWidth="450px"
+                  tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway."
                 >
                   Full Copy
                 </InfoText>
@@ -359,9 +364,9 @@ export class EditOffsetsModal extends Component<{
             .filter(({ topicName }) => this.selectedTopic === null || topicName === this.selectedTopic)
             .map(({ topicName, items }) => ({
               heading: (
-                <Flex alignItems="center" gap={1} fontWeight={600} whiteSpace="nowrap">
+                <Flex alignItems="center" fontWeight={600} gap={1} whiteSpace="nowrap">
                   {/* Title */}
-                  <Text textOverflow="ellipsis" overflow="hidden" pr={8}>
+                  <Text overflow="hidden" pr={8} textOverflow="ellipsis">
                     {topicName}
                   </Text>
                   <Text display="inline-block" ml="auto" padding="0 1rem">
@@ -371,11 +376,6 @@ export class EditOffsetsModal extends Component<{
               ),
               description: (
                 <DataTable<GroupOffset>
-                  size="sm"
-                  pagination
-                  defaultPageSize={100}
-                  sorting
-                  data={items}
                   columns={[
                     {
                       size: 130,
@@ -393,10 +393,10 @@ export class EditOffsetsModal extends Component<{
                       }) =>
                         offset == null ? (
                           <Tooltip
+                            hasArrow
                             label="The group does not have an offset for this partition yet"
                             openDelay={1}
                             placement="top"
-                            hasArrow
                           >
                             <span style={{ opacity: 0.66, marginLeft: '2px' }}>
                               <SkipIcon />
@@ -411,10 +411,15 @@ export class EditOffsetsModal extends Component<{
                       id: 'offsetAfter',
                       size: Number.POSITIVE_INFINITY,
                       cell: ({ row: { original } }) => (
-                        <ColAfter selectedTime={this.timestampUtcMs} record={original} />
+                        <ColAfter record={original} selectedTime={this.timestampUtcMs} />
                       ),
                     },
                   ]}
+                  data={items}
+                  defaultPageSize={100}
+                  pagination
+                  size="sm"
+                  sorting
                 />
               ),
             }))}
@@ -424,10 +429,13 @@ export class EditOffsetsModal extends Component<{
   }
 
   @action
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 54, refactor later
   setPage(page: 0 | 1) {
     if (page === 1) {
       // compute and set newOffset
-      if (this.props.offsets == null) return;
+      if (this.props.offsets == null) {
+        return;
+      }
       const op = this.selectedOption;
 
       // reset all newOffset
@@ -437,7 +445,7 @@ export class EditOffsetsModal extends Component<{
 
       // filter selected offsets to be edited
       const selectedOffsets = this.props.offsets.filter(
-        (x) => this.selectedPartition === null || x.partitionId === this.selectedPartition,
+        (x) => this.selectedPartition === null || x.partitionId === this.selectedPartition
       );
 
       if (op === 'startOffset') {
@@ -490,7 +498,7 @@ export class EditOffsetsModal extends Component<{
                 Could not lookup offsets for given timestamp{' '}
                 <span className="codeBox">{new Date(this.timestampUtcMs).toUTCString()}</span>.
               </span>,
-              toJson({ errors: err, request: requiredTopics }, 4),
+              toJson({ errors: err, request: requiredTopics }, 4)
             );
             toast.update(toastRef, {
               status: 'error',
@@ -524,7 +532,9 @@ export class EditOffsetsModal extends Component<{
 
           //
           // Copy offsets that exist in the current group from the other group
-          for (const x of selectedOffsets) x.newOffset = getOffset(x.topicName, x.partitionId);
+          for (const x of selectedOffsets) {
+            x.newOffset = getOffset(x.topicName, x.partitionId);
+          }
 
           //
           // Extend our offsets with any offsets that our group currently doesn't have
@@ -534,17 +544,19 @@ export class EditOffsetsModal extends Component<{
                 topicName: x.topic,
                 partitionId: p.partitionId,
                 offset: p.groupOffset,
-              })),
+              }))
             );
 
-            for (const o of otherFlat)
-              if (!alreadyExists(o.topicName, o.partitionId))
+            for (const o of otherFlat) {
+              if (!alreadyExists(o.topicName, o.partitionId)) {
                 currentOffsets.push({
                   topicName: o.topicName,
                   partitionId: o.partitionId,
                   offset: undefined,
                   newOffset: o.offset,
                 });
+              }
+            }
           }
         } else {
           showErrorModal(
@@ -553,7 +565,7 @@ export class EditOffsetsModal extends Component<{
             <span>
               Could not find a consumer group named <span className="codeBox">{this.selectedGroup}</span> to compute new
               offsets.
-            </span>,
+            </span>
           );
         }
       }
@@ -566,7 +578,7 @@ export class EditOffsetsModal extends Component<{
     const disableContinue = this.selectedOption === 'otherGroup' && !this.selectedGroup;
     const disableNav = this.isApplyingEdit || this.isLoadingTimestamps;
 
-    if (this.page === 0)
+    if (this.page === 0) {
       return (
         <Flex gap={2}>
           <Button key="cancel" onClick={this.props.onClose}>
@@ -574,11 +586,11 @@ export class EditOffsetsModal extends Component<{
           </Button>
 
           <Button
-            key="next"
-            variant="solid"
-            onClick={() => this.setPage(1)}
             isDisabled={disableContinue || disableNav}
             isLoading={this.isLoadingTimestamps}
+            key="next"
+            onClick={() => this.setPage(1)}
+            variant="solid"
           >
             <span>Review</span>
             <span>
@@ -587,21 +599,22 @@ export class EditOffsetsModal extends Component<{
           </Button>
         </Flex>
       );
+    }
 
     return (
       <Flex gap={2}>
-        <Button key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }} isDisabled={disableNav}>
+        <Button isDisabled={disableNav} key="back" onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}>
           <span>
             <ChevronLeftIcon />
           </span>
           <span>Back</span>
         </Button>
 
-        <Button key="cancel" style={{ marginLeft: 'auto' }} onClick={this.props.onClose}>
+        <Button key="cancel" onClick={this.props.onClose} style={{ marginLeft: 'auto' }}>
           Cancel
         </Button>
 
-        <Button key="next" variant="solid" isDisabled={disableNav} onClick={() => this.onApplyEdit()}>
+        <Button isDisabled={disableNav} key="next" onClick={() => this.onApplyEdit()} variant="solid">
           <span>Apply</span>
         </Button>
       </Flex>
@@ -609,7 +622,9 @@ export class EditOffsetsModal extends Component<{
   }
 
   updateVisible(visible: boolean) {
-    if (visible === this.lastVisible) return;
+    if (visible === this.lastVisible) {
+      return;
+    }
 
     if (visible) {
       setTimeout(() => {
@@ -625,7 +640,7 @@ export class EditOffsetsModal extends Component<{
 
         this.autorunDisposer = autorun(() => {
           this.otherConsumerGroups = [...api.consumerGroups.values()].filter(
-            (g) => g.groupId !== this.props.group.groupId,
+            (g) => g.groupId !== this.props.group.groupId
           );
         });
 
@@ -635,11 +650,9 @@ export class EditOffsetsModal extends Component<{
           this.selectedOption = 'startOffset';
         });
       });
-    } else {
-      if (this.autorunDisposer) {
-        this.autorunDisposer();
-        this.autorunDisposer = null;
-      }
+    } else if (this.autorunDisposer) {
+      this.autorunDisposer();
+      this.autorunDisposer = null;
     }
 
     this.lastVisible = visible;
@@ -652,7 +665,7 @@ export class EditOffsetsModal extends Component<{
     const offsets = this.props.offsets!.filter(
       ({ topicName, partitionId }) =>
         (this.selectedTopic === null || topicName === this.selectedTopic) &&
-        (this.selectedPartition === null || partitionId === this.selectedPartition),
+        (this.selectedPartition === null || partitionId === this.selectedPartition)
     );
 
     this.isApplyingEdit = true;
@@ -672,8 +685,9 @@ export class EditOffsetsModal extends Component<{
         }))
         .filter((t) => t.partitions.length > 0);
       if (errors.length > 0) {
-        console.error('apply offsets, backend errors', { errors: errors, request: topics });
-        throw { errors: errors, request: topics };
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        console.error('apply offsets, backend errors', { errors, request: topics });
+        throw new Error(`Apply offsets failed with ${errors.length} errors`);
       }
 
       toast.update(toastRef, {
@@ -682,6 +696,7 @@ export class EditOffsetsModal extends Component<{
         description: `${toastMsg} - done`,
       });
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('failed to apply offset edit', err);
       toast.update(toastRef, {
         status: 'error',
@@ -693,7 +708,7 @@ export class EditOffsetsModal extends Component<{
         <span>
           Could not apply offsets for consumer group <span className="codeBox">{group.groupId}</span>.
         </span>,
-        toJson(err, 4),
+        toJson(err, 4)
       );
     } finally {
       this.isApplyingEdit = false;
@@ -715,7 +730,7 @@ class ColAfter extends Component<{
     // No change
     if (val == null) {
       return (
-        <Tooltip label="Offset will not be changed" openDelay={1} placement="top" hasArrow>
+        <Tooltip hasArrow label="Offset will not be changed" openDelay={1} placement="top">
           <span style={{ opacity: 0.66, marginLeft: '2px' }}>
             <SkipIcon />
           </span>
@@ -726,23 +741,35 @@ class ColAfter extends Component<{
     // Set by timestamp
     if (typeof val === 'object') {
       // placeholder while loading
-      if (val instanceof Date) return val.toLocaleString();
+      if (val instanceof Date) {
+        return val.toLocaleString();
+      }
 
       // actual offset
       if ('offset' in val) {
         // error
-        if (val.error) return <span style={{ color: 'orangered' }}>{val.error}</span>;
+        if (val.error) {
+          return <span style={{ color: 'orangered' }}>{val.error}</span>;
+        }
 
         // successful fetch
-        if (val.timestamp > 0)
+        if (val.timestamp > 0) {
           return (
             <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
               <span>{numberToThousandsString(val.offset)}</span>
-              <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>
+              <span
+                style={{
+                  fontSize: 'smaller',
+                  color: 'hsl(0deg 0% 67%)',
+                  userSelect: 'none',
+                  cursor: 'default',
+                }}
+              >
                 ({new Date(val.timestamp).toLocaleString()})
               </span>
             </div>
           );
+        }
 
         // not found - no message after given timestamp
         // use 'latest'
@@ -750,6 +777,10 @@ class ColAfter extends Component<{
         return (
           <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
             <InfoText
+              icon={<MdOutlineWarningAmber size={14} />}
+              iconColor="orangered"
+              iconSize="18px"
+              maxWidth="350px"
               tooltip={
                 <div>
                   There is no offset for this partition at or after the given timestamp (
@@ -757,10 +788,6 @@ class ColAfter extends Component<{
                   offset in that partition will be used.
                 </div>
               }
-              icon={<MdOutlineWarningAmber size={14} />}
-              iconSize="18px"
-              iconColor="orangered"
-              maxWidth="350px"
             >
               <span>{numberToThousandsString(partition?.waterMarkHigh ?? -1)}</span>
             </InfoText>
@@ -772,7 +799,9 @@ class ColAfter extends Component<{
     // Earliest / Latest / OtherGroup
     if (typeof val === 'number') {
       // copied from other group
-      if (val >= 0) return numberToThousandsString(val);
+      if (val >= 0) {
+        return numberToThousandsString(val);
+      }
 
       // Get offset from current partition values
       const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
@@ -785,7 +814,14 @@ class ColAfter extends Component<{
       return (
         <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
           <span>{typeof content.offset === 'number' ? numberToThousandsString(content.offset) : content.offset}</span>
-          <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>
+          <span
+            style={{
+              fontSize: 'smaller',
+              color: 'hsl(0deg 0% 67%)',
+              userSelect: 'none',
+              cursor: 'default',
+            }}
+          >
             ({content.name})
           </span>
         </div>
@@ -826,7 +862,9 @@ export class DeleteOffsetsModal extends Component<{
     let offsets = this.props.offsets;
 
     const visible = Boolean(offsets);
-    if (offsets) this.lastOffsets = offsets;
+    if (offsets) {
+      this.lastOffsets = offsets;
+    }
     offsets = offsets ?? this.lastOffsets;
 
     const offsetsByTopic = offsets?.groupInto((x) => x.topicName).map((g) => ({ topicName: g.key, items: g.items }));
@@ -949,11 +987,12 @@ export class DeleteOffsetsModal extends Component<{
                       }))
                       .filter((t) => t.partitions.length > 0);
                     if (errors.length > 0) {
+                      // biome-ignore lint/suspicious/noConsole: intentional console usage
                       console.error('backend returned errors for deleteOffsets', {
                         request: deleteRequest,
-                        errors: errors,
+                        errors,
                       });
-                      throw { request: deleteRequest, errors: errors };
+                      throw new Error(`Delete offsets failed with ${errors.length} errors`);
                     }
                   }
 
@@ -974,6 +1013,7 @@ export class DeleteOffsetsModal extends Component<{
                   }
                 } catch (err) {
                   toast.close(toastRef);
+                  // biome-ignore lint/suspicious/noConsole: intentional console usage
                   console.error(err);
                   onError(`Could not delete selected offsets in consumer group ${group.groupId} - ${toJson(err, 4)}`);
                 } finally {
@@ -994,16 +1034,22 @@ export class DeleteOffsetsModal extends Component<{
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
     // no offset set
-    if (x == null) return undefined;
+    if (x == null) {
+      return;
+    }
 
     // from other group
-    if (typeof x === 'number') return x;
+    if (typeof x === 'number') {
+      return x;
+    }
 
     // from timestamp
-    if ('offset' in x) return x.offset;
+    if ('offset' in x) {
+      return x.offset;
+    }
 
     // otherwise 'x' might be 'Date', which means timestamps are resolved yet
-    return undefined;
+    return;
   };
 
   const topicOffsets = offsets
@@ -1017,7 +1063,9 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }));
 
   // filter undefined partitions
-  for (const t of topicOffsets) t.partitions.removeAll((p) => p.offset == null);
+  for (const t of topicOffsets) {
+    t.partitions.removeAll((p) => p.offset == null);
+  }
 
   // assert type:
   // we know that there can't be any undefined offsets anymore

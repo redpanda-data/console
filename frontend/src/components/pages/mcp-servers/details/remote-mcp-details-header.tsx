@@ -12,14 +12,17 @@ import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { McpServerStateBadge } from 'components/ui/mcp-server-state-badge';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 import { useParams } from 'react-router-dom';
-import { RemoteMCPBackButton } from '../remote-mcp-back-button';
+
 import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
+import { RemoteMCPBackButton } from '../remote-mcp-back-button';
 
 export const RemoteMCPDetailsHeader = () => {
   const { id } = useParams<{ id: string }>();
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
 
-  if (!mcpServerData?.mcpServer) return null;
+  if (!mcpServerData?.mcpServer) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col gap-4">

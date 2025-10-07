@@ -16,6 +16,9 @@ import { observer } from 'mobx-react';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
 import { MdOutlineWarningAmber } from 'react-icons/md';
+
+import { SelectionInfoBar } from './components/StatisticsBar';
+import type { PartitionSelection } from './ReassignPartitions';
 import { api } from '../../../state/backendApi';
 import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -24,8 +27,6 @@ import { prettyBytesOrNA } from '../../../utils/utils';
 import { BrokerList } from '../../misc/BrokerList';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
 import { SearchTitle } from '../../misc/KowlTable';
-import { SelectionInfoBar } from './components/StatisticsBar';
-import type { PartitionSelection } from './ReassignPartitions';
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];
@@ -61,7 +62,9 @@ export class StepSelectPartitions extends Component<{
   }
 
   render() {
-    if (!api.topics) return DefaultSkeleton;
+    if (!api.topics) {
+      return DefaultSkeleton;
+    }
 
     const query = uiSettings.reassignment.quickSearch ?? '';
     const filterActive = query.length > 1;
@@ -69,30 +72,9 @@ export class StepSelectPartitions extends Component<{
     return (
       <div style={{ margin: '1em 1em 2em 1em' }}>
         {/* Current Selection */}
-        <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em 1em 0.3em" />
+        <SelectionInfoBar margin="2em 0em 1em 0.3em" partitionSelection={this.props.partitionSelection} />
 
         <DataTable<TopicWithPartitions>
-          pagination={true}
-          sorting={true}
-          data={this.topicPartitions}
-          rowSelection={{
-            _internal_connectors_configs: true,
-          }}
-          onRowSelectionChange={(data) => {
-            // data({})
-            console.log(data);
-          }}
-          subComponent={({ row: { original: topic } }) => {
-            return (
-              <SelectPartitionTable
-                topic={topic}
-                topicPartitions={topic.partitions}
-                isSelected={this.isSelected}
-                setSelection={this.setSelection}
-                getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
-              />
-            );
-          }}
           columns={[
             {
               id: 'check',
@@ -111,7 +93,7 @@ export class StepSelectPartitions extends Component<{
             {
               id: 'topicName',
               header: () => (
-                <SearchTitle title="Topic" observableFilterOpen={this} observableSettings={uiSettings.reassignment} />
+                <SearchTitle observableFilterOpen={this} observableSettings={uiSettings.reassignment} title="Topic" />
               ),
               accessorKey: 'topicName',
               cell: ({ row: { original: record } }) => {
@@ -123,7 +105,7 @@ export class StepSelectPartitions extends Component<{
 
                 if (this.props.throttledTopics.includes(record.topicName)) {
                   return (
-                    <Box wordBreak="break-word" whiteSpace="break-spaces">
+                    <Box whiteSpace="break-spaces" wordBreak="break-word">
                       <span>{content}</span>
                       <WarningToolip content="Topic replication is throttled" position="top" />
                     </Box>
@@ -131,7 +113,7 @@ export class StepSelectPartitions extends Component<{
                 }
 
                 return (
-                  <Box wordBreak="break-word" whiteSpace="break-spaces">
+                  <Box whiteSpace="break-spaces" wordBreak="break-word">
                     {content}
                   </Box>
                 );
@@ -142,10 +124,12 @@ export class StepSelectPartitions extends Component<{
               header: 'Partitions',
               cell: ({ row: { original: topic } }) => {
                 const errors = topic.partitions.count((p) => p.hasErrors);
-                if (errors === 0) return topic.partitionCount;
+                if (errors === 0) {
+                  return topic.partitionCount;
+                }
 
                 return (
-                  <Flex gap={2} flexDirection="row" alignItems="center">
+                  <Flex alignItems="center" flexDirection="row" gap={2}>
                     {renderPartitionErrorsForTopic(errors)}
                     <Text>
                       {topic.partitionCount - errors} / {topic.partitionCount}
@@ -158,11 +142,13 @@ export class StepSelectPartitions extends Component<{
             {
               header: 'Replication Factor',
               cell: ({ row: { original: r } }) => {
-                if (r.activeReassignments.length === 0) return r.replicationFactor;
+                if (r.activeReassignments.length === 0) {
+                  return r.replicationFactor;
+                }
                 return (
                   <InfoText
-                    tooltip="While reassignment is active, replication factor is temporarily doubled."
                     maxWidth="180px"
+                    tooltip="While reassignment is active, replication factor is temporarily doubled."
                   >
                     {r.replicationFactor}
                   </InfoText>
@@ -182,6 +168,22 @@ export class StepSelectPartitions extends Component<{
               accessorKey: 'totalSizeBytes',
             },
           ]}
+          data={this.topicPartitions}
+          onRowSelectionChange={(_data) => {}}
+          pagination={true}
+          rowSelection={{
+            _internal_connectors_configs: true,
+          }}
+          sorting={true}
+          subComponent={({ row: { original: topic } }) => (
+            <SelectPartitionTable
+              getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
+              isSelected={this.isSelected}
+              setSelection={this.setSelection}
+              topic={topic}
+              topicPartitions={topic.partitions}
+            />
+          )}
         />
       </div>
     );
@@ -209,39 +211,56 @@ export class StepSelectPartitions extends Component<{
       partitions.remove(partition);
     }
 
-    if (partitions.length === 0) delete this.props.partitionSelection[topic];
-    else this.props.partitionSelection[topic] = partitions;
+    if (partitions.length === 0) {
+      delete this.props.partitionSelection[topic];
+    } else {
+      this.props.partitionSelection[topic] = partitions;
+    }
   }
 
   getSelectedPartitions(topic: string) {
     const partitions = this.props.partitionSelection[topic];
-    if (!partitions) return [];
+    if (!partitions) {
+      return [];
+    }
     return partitions;
   }
 
   isSelected(topic: string, partition: number) {
     const partitions = this.props.partitionSelection[topic];
-    if (!partitions) return false;
+    if (!partitions) {
+      return false;
+    }
     return partitions.includes(partition);
   }
 
   getTopicCheckState(topicName: string): { checked: boolean; indeterminate: boolean } {
     const tp = this.topicPartitions.first((t) => t.topicName === topicName);
-    if (!tp) return { checked: false, indeterminate: false };
+    if (!tp) {
+      return { checked: false, indeterminate: false };
+    }
 
     const selected = this.props.partitionSelection[topicName];
-    if (!selected) return { checked: false, indeterminate: false };
+    if (!selected) {
+      return { checked: false, indeterminate: false };
+    }
 
-    if (selected.length === 0) return { checked: false, indeterminate: false };
+    if (selected.length === 0) {
+      return { checked: false, indeterminate: false };
+    }
 
     const validPartitions = tp.partitions.count((x) => !x.hasErrors);
-    if (validPartitions > 0 && selected.length === validPartitions) return { checked: true, indeterminate: false };
+    if (validPartitions > 0 && selected.length === validPartitions) {
+      return { checked: true, indeterminate: false };
+    }
 
     return { checked: false, indeterminate: true };
   }
 
   @computed get topicPartitions(): TopicWithPartitions[] {
-    if (api.topics == null) return [];
+    if (api.topics == null) {
+      return [];
+    }
     return api.topics
       .map((topic) => {
         return {
@@ -258,7 +277,7 @@ export class StepSelectPartitions extends Component<{
     const current = api.partitionReassignments ?? [];
     return current.toMap(
       (x) => x.topicName,
-      (x) => x.partitions,
+      (x) => x.partitions
     );
   }
 }
@@ -274,9 +293,6 @@ export class SelectPartitionTable extends Component<{
   render() {
     return (
       <DataTable<Partition>
-        pagination
-        sorting
-        data={this.props.topicPartitions}
         columns={[
           {
             header: 'Check',
@@ -304,7 +320,7 @@ export class SelectPartitionTable extends Component<{
                 <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
               ) : (
                 renderPartitionError(partition)
-              ),
+              )
             ),
           },
           {
@@ -313,6 +329,9 @@ export class SelectPartitionTable extends Component<{
             size: Number.POSITIVE_INFINITY,
           },
         ]}
+        data={this.props.topicPartitions}
+        pagination
+        sorting
       />
     );
   }
@@ -327,14 +346,14 @@ function renderPartitionError(partition: Partition) {
 
   return (
     <Popover
-      title="Partition Error"
+      content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>{txt}</div>}
+      hideCloseButton
       placement="right-start"
       size="auto"
-      hideCloseButton
-      content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>{txt}</div>}
+      title="Partition Error"
     >
       <span>
-        <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
+        <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
           <MdOutlineWarningAmber color="orange" size={19} />
         </ZeroSizeWrapper>
       </span>
@@ -345,10 +364,6 @@ function renderPartitionError(partition: Partition) {
 function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
   return (
     <Popover
-      title="Partition Error"
-      placement="right-start"
-      size="auto"
-      hideCloseButton
       content={
         <div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
           Some partitions could not be retreived.
@@ -356,9 +371,13 @@ function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
           Expand the topic to see which partitions are affected.
         </div>
       }
+      hideCloseButton
+      placement="right-start"
+      size="auto"
+      title="Partition Error"
     >
       <span>
-        <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
+        <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
           <MdOutlineWarningAmber color="orange" size={20} />
         </ZeroSizeWrapper>
       </span>

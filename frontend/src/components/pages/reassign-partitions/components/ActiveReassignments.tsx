@@ -45,6 +45,8 @@ import {
 import { computed, makeObservable, observable } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react';
 import React, { Component, type FC, useRef } from 'react';
+
+import { BandwidthSlider } from './BandwidthSlider';
 import { api } from '../../../../state/backendApi';
 import type { ConfigEntry } from '../../../../state/restInterfaces';
 import { QuickTable } from '../../../../utils/tsxUtils';
@@ -52,7 +54,6 @@ import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { BrokerList } from '../../../misc/BrokerList';
 import type { ReassignmentState } from '../logic/reassignmentTracker';
 import { reassignmentTracker } from '../ReassignPartitions';
-import { BandwidthSlider } from './BandwidthSlider';
 
 // TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
 const { ToastContainer, toast } = createStandaloneToast({
@@ -99,10 +100,10 @@ export class ActiveReassignments extends Component<{
             // RedPand cluster throttles as needed, the api does not support setting the throttle manually
             !api.isRedpanda && (
               <Button
-                variant="link"
+                onClick={() => (this.showThrottleDialog = true)}
                 size="sm"
                 style={{ fontSize: 'smaller', padding: '0px 8px' }}
-                onClick={() => (this.showThrottleDialog = true)}
+                variant="link"
               >
                 {throttleText}
               </Button>
@@ -112,13 +113,6 @@ export class ActiveReassignments extends Component<{
 
         {/* Table */}
         <DataTable<ReassignmentState>
-          data={currentReassignments}
-          pagination
-          defaultPageSize={10}
-          sorting={false}
-          onRow={(row) => {
-            this.reassignmentDetails = row.original;
-          }}
           columns={[
             {
               header: 'Topic',
@@ -141,22 +135,29 @@ export class ActiveReassignments extends Component<{
               cell: ({ row: { original } }) => <BrokersCol state={original} />,
             },
           ]}
+          data={currentReassignments}
+          defaultPageSize={10}
           emptyText="No reassignments currently in progress"
+          onRow={(row) => {
+            this.reassignmentDetails = row.original;
+          }}
+          pagination
+          sorting={false}
         />
 
-        <ReassignmentDetailsDialog state={this.reassignmentDetails} onClose={() => (this.reassignmentDetails = null)} />
+        <ReassignmentDetailsDialog onClose={() => (this.reassignmentDetails = null)} state={this.reassignmentDetails} />
         <ThrottleDialog
-          visible={this.showThrottleDialog}
           lastKnownMinThrottle={minThrottle}
           onClose={() => (this.showThrottleDialog = false)}
+          visible={this.showThrottleDialog}
         />
 
         {this.props.throttledTopics.length > 0 && (
           <Button
-            variant="link"
+            onClick={this.props.onRemoveThrottleFromTopics}
             size="sm"
             style={{ fontSize: 'smaller', padding: '0px 8px' }}
-            onClick={this.props.onRemoveThrottleFromTopics}
+            variant="link"
           >
             <span>
               There are <b>{this.props.throttledTopics.length}</b> throttled topics - click here to fix
@@ -189,8 +190,9 @@ export class ActiveReassignments extends Component<{
 
   @computed get minThrottle(): number | undefined {
     const t = this.throttleSettings;
-    if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined)
+    if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined) {
       return Math.min(t.followerThrottle ?? Number.POSITIVE_INFINITY, t.leaderThrottle ?? Number.POSITIVE_INFINITY);
+    }
 
     return undefined;
   }
@@ -242,6 +244,7 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
           description: 'Setting throttle rate... done',
         });
       } catch (err) {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(`error in applyBandwidthThrottle: ${err}`);
         toast.update(toastRef.current, {
           status: 'error',
@@ -270,31 +273,35 @@ export const ThrottleDialog: FC<{ visible: boolean; lastKnownMinThrottle: number
                   </ListItem>
                 </UnorderedList>
               </Box>
-              <BandwidthSlider value={throttleValue} onChange={(x) => ($state.newThrottleValue = x)} />
+              <BandwidthSlider onChange={(x) => ($state.newThrottleValue = x)} value={throttleValue} />
             </Flex>
           </ModalBody>
           <ModalFooter justifyContent="space-between">
             <Button
-              variant="outline"
               colorScheme="red"
               onClick={() => {
                 $state.newThrottleValue = null;
-                void applyBandwidthThrottle();
+                applyBandwidthThrottle().catch(() => {
+                  // Error handling managed by API layer
+                });
               }}
+              variant="outline"
             >
               Remove throttle
             </Button>
 
             <Flex gap={2}>
-              <Button style={{ marginLeft: 'auto' }} onClick={onClose}>
+              <Button onClick={onClose} style={{ marginLeft: 'auto' }}>
                 Close
               </Button>
               <Button
                 disabled={noChange}
-                variant="solid"
                 onClick={() => {
-                  void applyBandwidthThrottle();
+                  applyBandwidthThrottle().catch(() => {
+                    // Error handling managed by API layer
+                  });
                 }}
+                variant="solid"
               >
                 Apply
               </Button>
@@ -309,9 +316,9 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
   const { isOpen, onToggle, onClose } = useDisclosure();
 
   return (
-    <Popover returnFocusOnClose={false} isOpen={isOpen} onClose={onClose} closeOnBlur={false}>
+    <Popover closeOnBlur={false} isOpen={isOpen} onClose={onClose} returnFocusOnClose={false}>
       <PopoverTrigger>
-        <Button onClick={onToggle} variant="outline" colorScheme="red">
+        <Button colorScheme="red" onClick={onToggle} variant="outline">
           Cancel Reassignment
         </Button>
       </PopoverTrigger>
@@ -345,10 +352,14 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   }
 
   render() {
-    if (this.props.state == null) return null;
+    if (this.props.state == null) {
+      return null;
+    }
 
     const state = this.props.state;
-    if (this.lastState !== state) this.lastState = state;
+    if (this.lastState !== state) {
+      this.lastState = state;
+    }
 
     const visible = this.props.state != null;
     if (this.wasVisible !== visible) {
@@ -363,10 +374,11 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     this.wasVisible = visible;
 
     const topicConfig = api.topicConfig.get(state.topicName);
-    if (!topicConfig)
+    if (!topicConfig) {
       setTimeout(() => {
         api.refreshTopicConfig(state.topicName);
       });
+    }
 
     const replicas = state.partitions.flatMap((p) => p.replicas).distinct();
     const addingReplicas = state.partitions.flatMap((p) => p.addingReplicas).distinct();
@@ -402,7 +414,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
       </Flex>
     ) : (
-      <Skeleton mt={5} noOfLines={5} height={4} />
+      <Skeleton height={4} mt={5} noOfLines={5} />
     );
 
     return (
@@ -412,16 +424,16 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           <ModalHeader>Reassignment: {state.topicName}</ModalHeader>
           <ModalBody>{modalContent}</ModalBody>
           <ModalFooter gap={2}>
-            <Button variant="outline" onClick={this.props.onClose}>
+            <Button onClick={this.props.onClose} variant="outline">
               Close
             </Button>
             <Button
-              variant="solid"
               isDisabled={!topicConfig}
               onClick={() => {
                 this.applyBandwidthThrottle();
                 this.props.onClose();
               }}
+              variant="solid"
             >
               Apply &amp; Close
             </Button>
@@ -447,7 +459,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       ?.split(',')
       .map((e) => {
         const ar = e.split(':');
-        if (ar.length !== 2) return null;
+        if (ar.length !== 2) {
+          return null;
+        }
         return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
       })
       .filterNull();
@@ -459,22 +473,26 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // ...and check if this broker-partition combo is being throttled
         const hasThrottle = leaderThrottleEntries.any(
-          (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId),
+          (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId)
         );
 
-        if (hasThrottle) return true;
+        if (hasThrottle) {
+          return true;
+        }
       }
     }
 
     // partitionId:brokerId, ...
     const followerThrottleValue = config.configEntries.first(
-      (e) => e.name === 'follower.replication.throttled.replicas',
+      (e) => e.name === 'follower.replication.throttled.replicas'
     );
     const followerThrottleEntries = followerThrottleValue?.value
       ?.split(',')
       .map((e) => {
         const ar = e.split(':');
-        if (ar.length !== 2) return null;
+        if (ar.length !== 2) {
+          return null;
+        }
         return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
       })
       .filterNull();
@@ -486,10 +504,12 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // ...and check if this broker-partition combo is being throttled
         const hasThrottle = followerThrottleEntries.any(
-          (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId),
+          (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId)
         );
 
-        if (hasThrottle) return true;
+        if (hasThrottle) {
+          return true;
+        }
       }
     }
 
@@ -499,6 +519,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   applyBandwidthThrottle() {
     const state = this.props.state;
     if (state == null) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('apply bandwidth throttle: this.props.state is null');
       return;
     }
@@ -512,28 +533,31 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         const brokersNew = p.addingReplicas;
 
         if (brokersOld == null || brokersNew == null) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.warn(
             "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
-            { state: state },
+            { state }
           );
           continue;
         }
 
         // leader throttling is applied to all sources (all brokers that have a replica of this partition)
-        for (const sourceBroker of brokersOld)
-          leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
+        for (const sourceBroker of brokersOld) {
+          leaderReplicas.push({ partitionId, brokerId: sourceBroker });
+        }
 
         // follower throttling is applied only to target brokers that do not yet have a copy
         const newBrokers = brokersNew.except(brokersOld);
-        for (const targetBroker of newBrokers)
-          followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
+        for (const targetBroker of newBrokers) {
+          followerReplicas.push({ partitionId, brokerId: targetBroker });
+        }
       }
 
       api.setThrottledReplicas([
         {
           topicName: state.topicName,
-          leaderReplicas: leaderReplicas,
-          followerReplicas: followerReplicas,
+          leaderReplicas,
+          followerReplicas,
         },
       ]);
     } else {
@@ -544,6 +568,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   async cancelReassignment() {
     const state = this.props.state;
     if (state == null) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('cancel reassignment: this.props.state is null');
       return;
     }
@@ -569,7 +594,8 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       };
       const response = await api.startPartitionReassignment(cancelRequest);
 
-      console.log('cancel reassignment result', { request: cancelRequest, response: response });
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.log('cancel reassignment result', { request: cancelRequest, response });
 
       toast.update(toastRef, {
         status: 'success',
@@ -578,6 +604,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       });
       this.props.onClose();
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`cancel reassignment: ${String(err)}`);
       toast.update(toastRef, {
         status: 'error',
@@ -602,7 +629,9 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
 
-    if (state.remaining == null) return '...';
+    if (state.remaining == null) {
+      return '...';
+    }
     const transferred = state.totalTransferSize - state.remaining.value;
 
     let progressBar: JSX.Element;
@@ -610,15 +639,14 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
     if (state.progressPercent === null) {
       // Starting
       progressBar = (
-        <ProgressBar percent={0} state="active" left="Starting..." right={prettyBytesOrNA(state.totalTransferSize)} />
+        <ProgressBar left="Starting..." percent={0} right={prettyBytesOrNA(state.totalTransferSize)} state="active" />
       );
     } else if (state.progressPercent < 100) {
       // Progressing
       progressBar = (
         <ProgressBar
-          percent={state.progressPercent}
-          state="active"
           left={<span>{`${state.progressPercent.toFixed(1)}%`}</span>}
+          percent={state.progressPercent}
           right={
             <>
               {state.estimateSpeed != null && (
@@ -629,12 +657,13 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
               </span>
             </>
           }
+          state="active"
         />
       );
     } else {
       // Completed
       progressBar = (
-        <ProgressBar percent={100} state="success" left="Complete" right={prettyBytesOrNA(state.totalTransferSize)} />
+        <ProgressBar left="Complete" percent={100} right={prettyBytesOrNA(state.totalTransferSize)} state="success" />
       );
     }
 
@@ -647,7 +676,9 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
 
-    if (state.estimateSpeed == null || state.estimateCompletionTime == null) return '...';
+    if (state.estimateSpeed == null || state.estimateCompletionTime == null) {
+      return '...';
+    }
 
     const remainingMs = (state.estimateCompletionTime.getTime() - Date.now()).clamp(0, undefined);
 
@@ -679,13 +710,13 @@ const ProgressBar = (p: {
   return (
     <>
       <Progress
-        value={percent}
         colorScheme={
           {
             success: 'success',
             active: 'brand',
           }[state]
         }
+        value={percent}
       />
       <div
         style={{

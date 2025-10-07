@@ -13,6 +13,8 @@ import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui
 import { autorun, type IReactionDisposer } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
+
+import { GroupState } from './Group.Details';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { GroupDescription } from '../../../state/restInterfaces';
@@ -25,7 +27,6 @@ import Section from '../../misc/Section';
 import { ShortNum } from '../../misc/ShortNum';
 import { Statistic } from '../../misc/Statistic';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { GroupState } from './Group.Details';
 
 @observer
 class GroupList extends PageComponent {
@@ -42,19 +43,25 @@ class GroupList extends PageComponent {
   componentDidMount() {
     // 1. use 'q' parameter for quick search (if it exists)
     editQuery((query) => {
-      if (query.q) uiSettings.consumerGroupList.quickSearch = String(query.q);
+      if (query.q) {
+        uiSettings.consumerGroupList.quickSearch = String(query.q);
+      }
     });
 
     // 2. whenever the quick search box changes, update the url
     this.quickSearchReaction = autorun(() => {
       editQuery((query) => {
         const q = String(uiSettings.consumerGroupList.quickSearch);
-        if (q) query.q = q;
+        if (q) {
+          query.q = q;
+        }
       });
     });
   }
   componentWillUnmount() {
-    if (this.quickSearchReaction) this.quickSearchReaction();
+    if (this.quickSearchReaction) {
+      this.quickSearchReaction();
+    }
   }
 
   refreshData(force: boolean) {
@@ -62,7 +69,9 @@ class GroupList extends PageComponent {
   }
 
   render() {
-    if (!api.consumerGroups) return DefaultSkeleton;
+    if (!api.consumerGroups) {
+      return DefaultSkeleton;
+    }
 
     let groups = Array.from(api.consumerGroups.values());
 
@@ -70,9 +79,10 @@ class GroupList extends PageComponent {
       const quickSearchRegExp = new RegExp(uiSettings.consumerGroupList.quickSearch, 'i');
       groups = groups.filter(
         (groupDescription) =>
-          groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp),
+          groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp)
       );
     } catch (_e) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
     }
 
@@ -92,7 +102,7 @@ class GroupList extends PageComponent {
               }}
             />
             {stateGroups.map((g) => (
-              <Statistic key={g.key} title={g.key} value={g.items.length} marginRight={'1.5rem'} />
+              <Statistic key={g.key} marginRight={'1.5rem'} title={g.key} value={g.items.length} />
             ))}
           </Flex>
         </Section>
@@ -121,9 +131,6 @@ class GroupList extends PageComponent {
           </div>
           {/* Content */}
           <DataTable<GroupDescription>
-            data={groups}
-            pagination
-            sorting
             columns={[
               {
                 header: 'State',
@@ -164,28 +171,29 @@ class GroupList extends PageComponent {
                 cell: ({ row: { original } }) => ShortNum({ value: original.lagSum }),
               },
             ]}
+            data={groups}
+            pagination
+            sorting
           />
         </Section>
       </PageContent>
     );
   }
 
-  SearchBar = observer(() => {
-    return (
-      <SearchField
-        width="350px"
-        placeholderText="Enter search term/regex"
-        searchText={uiSettings.consumerGroupList.quickSearch}
-        setSearchText={(x) => (uiSettings.consumerGroupList.quickSearch = x)}
-      />
-    );
-  });
+  SearchBar = observer(() => (
+    <SearchField
+      placeholderText="Enter search term/regex"
+      searchText={uiSettings.consumerGroupList.quickSearch}
+      setSearchText={(x) => (uiSettings.consumerGroupList.quickSearch = x)}
+      width="350px"
+    />
+  ));
 
   GroupId = (p: { group: GroupDescription }) => {
     const protocol = p.group.protocolType;
 
     const groupIdEl = (
-      <Text wordBreak="break-word" whiteSpace="break-spaces">
+      <Text whiteSpace="break-spaces" wordBreak="break-word">
         {p.group.groupId}
       </Text>
     );
@@ -195,7 +203,7 @@ class GroupList extends PageComponent {
     }
 
     return (
-      <Grid templateColumns="auto 1fr" alignItems="center" gap={2}>
+      <Grid alignItems="center" gap={2} templateColumns="auto 1fr">
         <Tag>Protocol: {protocol}</Tag>
         {groupIdEl}
       </Grid>

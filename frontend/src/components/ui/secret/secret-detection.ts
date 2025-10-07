@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-export interface SecretReference {
+export type SecretReference = {
   secretName: string;
   nestedKey?: string;
   fullReference: string;
-}
+};
 
 /**
  * Extract secret references from YAML content.
@@ -61,6 +61,8 @@ export function extractSecretReferences(yamlContent: string): SecretReference[] 
  */
 export function getUniqueSecretNames(references: SecretReference[]): string[] {
   const uniqueNames = new Set<string>();
-  references.forEach((ref) => uniqueNames.add(ref.secretName));
+  for (const ref of references) {
+    uniqueNames.add(ref.secretName);
+  }
   return Array.from(uniqueNames).sort();
 }

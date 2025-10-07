@@ -26,6 +26,8 @@ import {
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Link, Link as ReactRouterLink } from 'react-router-dom';
+
+import { openDeleteModal } from './modals';
 import {
   PartitionTransformStatus_PartitionStatus,
   type TransformMetadata,
@@ -38,7 +40,6 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/PageContent';
 import Section from '../../misc/Section';
 import { PageComponent, type PageInitHelper } from '../Page';
-import { openDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -74,7 +75,7 @@ export const PartitionStatus = observer((p: { status: PartitionTransformStatus_P
 });
 
 @observer
-class TransformsList extends PageComponent<{}> {
+class TransformsList extends PageComponent {
   @observable placeholder = 5;
 
   constructor(p: any) {
@@ -94,7 +95,9 @@ class TransformsList extends PageComponent<{}> {
   }
 
   render() {
-    if (!transformsApi.transforms) return DefaultSkeleton;
+    if (!transformsApi.transforms) {
+      return DefaultSkeleton;
+    }
     if (transformsApi.transforms.length === 0) {
       appGlobal.historyReplace('/transforms-setup');
       return null;
@@ -102,7 +105,9 @@ class TransformsList extends PageComponent<{}> {
 
     const filteredTransforms = (transformsApi.transforms ?? []).filter((u) => {
       const filter = uiSettings.transformsList.quickSearch;
-      if (!filter) return true;
+      if (!filter) {
+        return true;
+      }
       try {
         const quickSearchRegExp = new RegExp(filter, 'i');
         return u.name.match(quickSearchRegExp);
@@ -118,8 +123,8 @@ class TransformsList extends PageComponent<{}> {
           Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
           Redpanda.{' '}
           <ChakraLink
-            isExternal
             href="https://docs.redpanda.com/current/develop/data-transforms/how-transforms-work/"
+            isExternal
             style={{ textDecoration: 'underline solid 1px' }}
           >
             Learn more
@@ -131,7 +136,7 @@ class TransformsList extends PageComponent<{}> {
             <Button variant="outline">Create transform</Button>
           </ReactRouterLink>
 
-          <Button variant="outline" isDisabled>
+          <Button isDisabled variant="outline">
             Export metrics
           </Button>
         </Stack>
@@ -139,42 +144,38 @@ class TransformsList extends PageComponent<{}> {
         <Section>
           <Box mb="5">
             <SearchField
-              width="350px"
+              placeholderText="Enter search term / regex..."
               searchText={uiSettings.transformsList.quickSearch}
               setSearchText={(x) => (uiSettings.transformsList.quickSearch = x)}
-              placeholderText="Enter search term / regex..."
+              width="350px"
             />
           </Box>
 
           <DataTable<TransformMetadata>
-            data={filteredTransforms}
-            pagination
-            sorting
             columns={[
               {
                 header: 'Name',
                 accessorKey: 'name',
                 size: 300,
-                cell: ({ row: { original: r } }) => {
-                  return (
-                    <Box wordBreak="break-word" whiteSpace="break-spaces">
-                      <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
-                    </Box>
-                  );
-                },
+                cell: ({ row: { original: r } }) => (
+                  <Box whiteSpace="break-spaces" wordBreak="break-word">
+                    <Link to={`/transforms/${encodeURIComponentPercents(r.name)}`}>{r.name}</Link>
+                  </Box>
+                ),
               },
               {
                 header: 'Status',
                 cell: ({ row: { original: r } }) => {
-                  if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING))
+                  if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
                     return (
                       <Flex alignItems="center">
                         <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />
                       </Flex>
                     );
+                  }
                   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
                   const partitionTransformStatus = r.statuses.first(
-                    (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING,
+                    (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
                   )!;
 
                   return (
@@ -190,25 +191,21 @@ class TransformsList extends PageComponent<{}> {
               },
               {
                 header: 'Output topics',
-                cell: ({ row: { original: r } }) => {
-                  return (
-                    <Stack>
-                      {r.outputTopicNames.map((n) => (
-                        <Box key={n}>{n}</Box>
-                      ))}
-                    </Stack>
-                  );
-                },
+                cell: ({ row: { original: r } }) => (
+                  <Stack>
+                    {r.outputTopicNames.map((n) => (
+                      <Box key={n}>{n}</Box>
+                    ))}
+                  </Stack>
+                ),
               },
               {
                 header: '',
                 id: 'actions',
                 cell: ({ row: { original: r } }) => (
                   <Button
-                    variant="icon"
-                    height="16px"
                     color="gray.500"
-                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    height="16px"
                     onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -216,7 +213,7 @@ class TransformsList extends PageComponent<{}> {
                       openDeleteModal(r.name, () => {
                         transformsApi
                           .deleteTransform(r.name)
-                          .then(async () => {
+                          .then(() => {
                             toast({
                               status: 'success',
                               duration: 4000,
@@ -236,6 +233,8 @@ class TransformsList extends PageComponent<{}> {
                           });
                       });
                     }}
+                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
+                    variant="icon"
                   >
                     <TrashIcon />
                   </Button>
@@ -243,6 +242,9 @@ class TransformsList extends PageComponent<{}> {
                 size: 1,
               },
             ]}
+            data={filteredTransforms}
+            pagination
+            sorting
           />
         </Section>
       </PageContent>

@@ -44,7 +44,7 @@ export const useGetKafkaInfoQuery = (options?: QueryOptions<GenMessage<GetKafkaI
 };
 
 export const useGetKafkaAuthorizerInfoQuery = (
-  options?: QueryOptions<GenMessage<GetKafkaAuthorizerInfoRequest>, GetKafkaAuthorizerInfoResponse>,
+  options?: QueryOptions<GenMessage<GetKafkaAuthorizerInfoRequest>, GetKafkaAuthorizerInfoResponse>
 ) => {
   const kafkaAuthorizerInfoRequest = create(GetKafkaAuthorizerInfoRequestSchema);
 
@@ -54,7 +54,7 @@ export const useGetKafkaAuthorizerInfoQuery = (
 };
 
 export const useGetRedpandaInfoQuery = (
-  options?: QueryOptions<GenMessage<GetRedpandaInfoRequest>, GetRedpandaInfoResponse>,
+  options?: QueryOptions<GenMessage<GetRedpandaInfoRequest>, GetRedpandaInfoResponse>
 ) => {
   const redpandaInfoRequest = create(GetRedpandaInfoRequestSchema);
 
@@ -67,7 +67,7 @@ export const useGetRedpandaPartitionBalancerStatusQuery = (
   options?: QueryOptions<
     GenMessage<GetRedpandaPartitionBalancerStatusRequest>,
     GetRedpandaPartitionBalancerStatusResponse
-  >,
+  >
 ) => {
   const redpandaPartitionBalancerStatusRequest = create(GetRedpandaPartitionBalancerStatusRequestSchema);
 
@@ -77,7 +77,7 @@ export const useGetRedpandaPartitionBalancerStatusQuery = (
 };
 
 export const useGetConsoleInfoQuery = (
-  options?: QueryOptions<GenMessage<GetConsoleInfoRequest>, GetConsoleInfoResponse>,
+  options?: QueryOptions<GenMessage<GetConsoleInfoRequest>, GetConsoleInfoResponse>
 ) => {
   const consoleInfoRequest = create(GetConsoleInfoRequestSchema);
 
@@ -87,7 +87,7 @@ export const useGetConsoleInfoQuery = (
 };
 
 export const useGetKafkaConnectInfoQuery = (
-  options?: QueryOptions<GenMessage<GetKafkaConnectInfoRequest>, GetKafkaConnectInfoResponse>,
+  options?: QueryOptions<GenMessage<GetKafkaConnectInfoRequest>, GetKafkaConnectInfoResponse>
 ) => {
   const kafkaConnectInfoRequest = create(GetKafkaConnectInfoRequestSchema);
 
@@ -97,7 +97,7 @@ export const useGetKafkaConnectInfoQuery = (
 };
 
 export const useGetSchemaRegistryInfoQuery = (
-  options?: QueryOptions<GenMessage<GetSchemaRegistryInfoRequest>, GetSchemaRegistryInfoResponse>,
+  options?: QueryOptions<GenMessage<GetSchemaRegistryInfoRequest>, GetSchemaRegistryInfoResponse>
 ) => {
   const schemaRegistryInfoRequest = create(GetSchemaRegistryInfoRequestSchema);
 

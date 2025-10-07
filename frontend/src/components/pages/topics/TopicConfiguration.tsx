@@ -26,15 +26,17 @@ import { observer, useLocalObservable } from 'mobx-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
+
+import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import type { ConfigEntryExtended } from '../../../state/restInterfaces';
 import {
   entryHasInfiniteValue,
   formatConfigValue,
   getInfiniteValueForEntry,
 } from '../../../utils/formatters/ConfigValueFormatter';
-import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
 import { MdInfoOutline } from 'react-icons/md';
+
 import { isServerless } from '../../../config';
 import { api } from '../../../state/backendApi';
 import { SingleSelect } from '../../misc/Select';
@@ -120,6 +122,7 @@ const ConfigEditorForm: FC<{
       onSuccess();
       onClose();
     } catch (err) {
+      // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error while applying config change', { err, configEntry: editedEntry });
       setGlobalError(err instanceof Error ? err.message : String(err));
     }
@@ -137,9 +140,7 @@ const ConfigEditorForm: FC<{
 
   const defaultConfigSynonym = editedEntry.synonyms
     ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
-    .sort((a, b) => {
-      return SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source);
-    })[0];
+    .sort((a, b) => SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source))[0];
 
   return (
     <Modal isOpen onClose={onClose}>
@@ -150,13 +151,13 @@ const ConfigEditorForm: FC<{
           <ModalBody>
             <Text mb={6}>{editedEntry.documentation}</Text>
 
-            <Flex gap={4} flexDirection="column">
+            <Flex flexDirection="column" gap={4}>
               <FormField label={editedEntry.name}>
                 <Controller
                   control={control}
                   name="valueType"
                   render={({ field: { onChange, value } }) => (
-                    <RadioGroup name="valueType" options={valueTypeOptions} value={value} onChange={onChange} />
+                    <RadioGroup name="valueType" onChange={onChange} options={valueTypeOptions} value={value} />
                   )}
                 />
               </FormField>
@@ -178,7 +179,7 @@ const ConfigEditorForm: FC<{
               {valueType === 'default' && defaultConfigSynonym && (
                 <Box>
                   The default value is{' '}
-                  <Text fontWeight="bold" display="inline">
+                  <Text display="inline" fontWeight="bold">
                     {/*{JSON.stringify(editedEntry)}*/}
                     {formatConfigValue(editedEntry.name, defaultConfigSynonym.value, 'friendly')}
                   </Text>
@@ -187,7 +188,7 @@ const ConfigEditorForm: FC<{
               )}
             </Flex>
             {globalError && (
-              <Alert status="error" my={2}>
+              <Alert my={2} status="error">
                 <AlertIcon />
                 {globalError}
               </Alert>
@@ -195,14 +196,14 @@ const ConfigEditorForm: FC<{
           </ModalBody>
           <ModalFooter display="flex" gap={2}>
             <Button
-              variant="ghost"
               onClick={() => {
                 onClose();
               }}
+              variant="ghost"
             >
               Cancel
             </Button>
-            <Button variant="solid" type="submit" isDisabled={isSubmitting}>
+            <Button isDisabled={isSubmitting} type="submit" variant="solid">
               Save changes
             </Button>
           </ModalFooter>
@@ -230,7 +231,9 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
 
   let entries = props.entries;
   const filter = $state.filter;
-  if (filter) entries = entries.filter((x) => x.name.includes(filter) || (x.value ?? '').includes(filter));
+  if (filter) {
+    entries = entries.filter((x) => x.name.includes(filter) || (x.value ?? '').includes(filter));
+  }
 
   const entryOrder = {
     retention: -3,
@@ -239,14 +242,22 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
 
   entries = entries.slice().sort((a, b) => {
     for (const [e, order] of Object.entries(entryOrder)) {
-      if (a.name.includes(e) && !b.name.includes(e)) return order;
-      if (b.name.includes(e) && !a.name.includes(e)) return -order;
+      if (a.name.includes(e) && !b.name.includes(e)) {
+        return order;
+      }
+      if (b.name.includes(e) && !a.name.includes(e)) {
+        return -order;
+      }
     }
     return 0;
   });
 
   const categories = entries.groupInto((x) => x.category);
-  for (const e of categories) if (!e.key) e.key = 'Other';
+  for (const e of categories) {
+    if (!e.key) {
+      e.key = 'Other';
+    }
+  }
 
   const displayOrder = [
     'Retention',
@@ -268,28 +279,28 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = observer((props) => {
     <Box pt={4}>
       {$state.editedEntry !== null && (
         <ConfigEditorForm
-          targetTopic={props.targetTopic}
           editedEntry={$state.editedEntry}
           onClose={() => ($state.editedEntry = null)}
           onSuccess={() => {
             props.onForceRefresh();
           }}
+          targetTopic={props.targetTopic}
         />
       )}
       <div className="configGroupTable" data-testid="config-group-table">
         <SearchField
-          searchText={$state.filter || ''}
-          placeholderText="Filter"
-          setSearchText={(value) => ($state.filter = value)}
           icon="filter"
+          placeholderText="Filter"
+          searchText={$state.filter || ''}
+          setSearchText={(value) => ($state.filter = value)}
         />
         {categories.map((x) => (
           <ConfigGroup
-            key={x.key}
-            groupName={x.key}
             entries={x.items}
-            onEditEntry={editConfig}
+            groupName={x.key}
             hasEditPermissions={hasEditPermissions}
+            key={x.key}
+            onEditEntry={editConfig}
           />
         ))}
       </div>
@@ -305,22 +316,20 @@ const ConfigGroup = observer(
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
     entries: ConfigEntryExtended[];
     hasEditPermissions: boolean;
-  }) => {
-    return (
-      <>
-        <div className="configGroupSpacer" />
-        {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
-        {p.entries.map((e) => (
-          <ConfigEntryComponent
-            key={e.name}
-            entry={e}
-            onEditEntry={p.onEditEntry}
-            hasEditPermissions={p.hasEditPermissions}
-          />
-        ))}
-      </>
-    );
-  },
+  }) => (
+    <>
+      <div className="configGroupSpacer" />
+      {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
+      {p.entries.map((e) => (
+        <ConfigEntryComponent
+          entry={e}
+          hasEditPermissions={p.hasEditPermissions}
+          key={e.name}
+          onEditEntry={p.onEditEntry}
+        />
+      ))}
+    </>
+  )
 );
 
 const ConfigEntryComponent = observer(
@@ -345,21 +354,21 @@ const ConfigEntryComponent = observer(
         <span className="isEditted">{entry.isExplicitlySet && 'Custom'}</span>
 
         <span className="configButtons">
-          <Tooltip label={nonEdittableReason} placement="left" isDisabled={canEdit} hasArrow>
-            {/** biome-ignore lint/a11y/noStaticElementInteractions: part of ConfigEntryComponent implementation */}
-            <span
-              className={`btnEdit${canEdit ? '' : ' disabled'}`}
+          <Tooltip hasArrow isDisabled={canEdit} label={nonEdittableReason} placement="left">
+            <button
+              className={`btnEdit${canEdit ? '' : 'disabled'}`}
               onClick={() => {
-                if (canEdit) p.onEditEntry(p.entry);
+                if (canEdit) {
+                  p.onEditEntry(p.entry);
+                }
               }}
+              type="button"
             >
               <Icon as={PencilIcon} />
-            </span>
+            </button>
           </Tooltip>
           {entry.documentation && (
             <Popover
-              hideCloseButton
-              size="lg"
               content={
                 <Flex flexDirection="column" gap={2}>
                   <Text fontSize="lg" fontWeight="bold">
@@ -369,6 +378,8 @@ const ConfigEntryComponent = observer(
                   <Text fontSize="sm">{getConfigDescription(entry.source)}</Text>
                 </Flex>
               }
+              hideCloseButton
+              size="lg"
             >
               <Box>
                 <Icon as={MdInfoOutline} />
@@ -378,15 +389,16 @@ const ConfigEntryComponent = observer(
         </span>
       </>
     );
-  },
+  }
 );
 
 function isTopicConfigEdittable(
   entry: ConfigEntryExtended,
-  hasEditPermissions: boolean,
+  hasEditPermissions: boolean
 ): { canEdit: boolean; reason?: string } {
-  if (!hasEditPermissions)
+  if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
+  }
 
   if (isServerless()) {
     const edittableEntries = [
@@ -420,27 +432,27 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
     case 'BOOLEAN':
       return (
         <SingleSelect<T>
+          onChange={onChange}
           options={[
             { value: 'false' as T, label: 'False' },
             { value: 'true' as T, label: 'True' },
           ]}
           value={value}
-          onChange={onChange}
         />
       );
 
     case 'SELECT':
       return (
         <SingleSelect
-          value={value}
-          onChange={onChange}
           className={p.className}
+          onChange={onChange}
           options={
             entry.enumValues?.map((value) => ({
               value: value as T,
               label: value,
             })) ?? []
           }
+          value={value}
         />
       );
 
@@ -448,32 +460,32 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
       return (
         <DataSizeSelect
           allowInfinite={false}
-          valueBytes={Number(value ?? 0)}
           onChange={(e) => onChange(Math.round(e) as T)}
+          valueBytes={Number(value ?? 0)}
         />
       );
     case 'DURATION':
       return (
         <DurationSelect
           allowInfinite={false}
-          valueMilliseconds={Number(value ?? 0)}
           onChange={(e) => onChange(Math.round(e) as T)}
+          valueMilliseconds={Number(value ?? 0)}
         />
       );
 
     case 'PASSWORD':
-      return <PasswordInput value={value ?? ''} onChange={(x) => onChange(x.target.value as T)} />;
+      return <PasswordInput onChange={(x) => onChange(x.target.value as T)} value={value ?? ''} />;
 
     case 'RATIO':
-      return <RatioInput value={Number(value || entry.value)} onChange={(x) => onChange(x as T)} />;
+      return <RatioInput onChange={(x) => onChange(x as T)} value={Number(value || entry.value)} />;
 
     case 'INTEGER':
-      return <NumInput value={Number(value)} onChange={(e) => onChange(Math.round(e ?? 0) as T)} />;
+      return <NumInput onChange={(e) => onChange(Math.round(e ?? 0) as T)} value={Number(value)} />;
 
     case 'DECIMAL':
-      return <NumInput value={Number(value)} onChange={(e) => onChange(e as T)} />;
+      return <NumInput onChange={(e) => onChange(e as T)} value={Number(value)} />;
     default:
-      return <Input value={String(value)} onChange={(e) => onChange(e.target.value as T)} />;
+      return <Input onChange={(e) => onChange(e.target.value as T)} value={String(value)} />;
   }
 };
 

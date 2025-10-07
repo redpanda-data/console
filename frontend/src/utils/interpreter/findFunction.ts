@@ -29,8 +29,10 @@ function find(this: any | undefined, arg1: any, arg2: any): any {
 
   const results = findGeneric(self, arg1, arg2, true);
 
-  if (results.length > 0) return results[0];
-  return undefined;
+  if (results.length > 0) {
+    return results[0];
+  }
+  return;
 }
 
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];
@@ -85,13 +87,13 @@ function findByName(obj: any, propertyName: string, caseSensitive: boolean, retu
 function findByCallback(
   obj: any,
   isMatch: (object: any, key: string | number) => boolean,
-  returnFirstResult: boolean,
+  returnFirstResult: boolean
 ): any[] {
   const ctx: PropertySearchContext = {
-    isMatch: isMatch,
+    isMatch,
     currentPath: [],
     results: [],
-    returnFirstResult: returnFirstResult,
+    returnFirstResult,
   };
 
   findElement(ctx, obj);
@@ -100,11 +102,13 @@ function findByCallback(
 
 function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
   const log = IsDev
-    ? console.debug
+    ? // biome-ignore lint/suspicious/noConsole: intentional console usage
+      console.debug
     : (..._args) => {
         /* do nothing */
       };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 38, refactor later
   const isPatternMatch = (obj: object, pattern: object): boolean => {
     if (typeof obj !== typeof pattern) {
       log(`  type mismatch obj<>pattern: '${typeof obj}' != '${typeof pattern}'`);
@@ -112,44 +116,48 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
     }
 
     for (const k in pattern) {
-      const patternValue = (pattern as any)[k];
+      if (Object.hasOwn(pattern, k)) {
+        const patternValue = (pattern as any)[k];
 
-      // don't require objects to have the same functions
-      // todo: later we might want to have special functions that can compare against the actual value!
-      //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
-      if (typeof patternValue === 'function') continue;
+        // don't require objects to have the same functions
+        // todo: later we might want to have special functions that can compare against the actual value!
+        //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
+        if (typeof patternValue === 'function') {
+          continue;
+        }
 
-      const objValue = (obj as any)[k];
-      log(`  [${k}]`);
+        const objValue = (obj as any)[k];
+        log(`  [${k}]`);
 
-      if (typeof objValue !== typeof patternValue) {
-        log(`  property type mismatch: '${typeof objValue}' != '${typeof patternValue}'`);
-        return false;
-      }
+        if (typeof objValue !== typeof patternValue) {
+          log(`  property type mismatch: '${typeof objValue}' != '${typeof patternValue}'`);
+          return false;
+        }
 
-      if (typeof objValue === 'string') {
-        // Compare string
-        if (caseSensitive) {
-          if (objValue !== patternValue) {
-            log(`  strings don't match (case sensitive): "${objValue}" != "${patternValue}"`);
-            return false;
-          }
-        } else {
-          if (String(objValue).toUpperCase() !== String(patternValue).toUpperCase()) {
+        if (typeof objValue === 'string') {
+          // Compare string
+          if (caseSensitive) {
+            if (objValue !== patternValue) {
+              log(`  strings don't match (case sensitive): "${objValue}" != "${patternValue}"`);
+              return false;
+            }
+          } else if (String(objValue).toUpperCase() !== String(patternValue).toUpperCase()) {
             log(`  strings don't match (ignore case): "${objValue}" != "${patternValue}"`);
             return false;
           }
+        } else if (typeof objValue === 'boolean' || typeof objValue === 'number' || typeof objValue === 'undefined') {
+          // Compare primitive
+          if (objValue !== patternValue) {
+            log(`  primitives not equal: ${objValue} != ${patternValue}`);
+            return false;
+          }
+        } else {
+          // Compare object
+          log(`  -> descending into [${k}]`);
+          if (!isPatternMatch(objValue, patternValue)) {
+            return false;
+          }
         }
-      } else if (typeof objValue === 'boolean' || typeof objValue === 'number' || typeof objValue === 'undefined') {
-        // Compare primitive
-        if (objValue !== patternValue) {
-          log(`  primitives not equal: ${objValue} != ${patternValue}`);
-          return false;
-        }
-      } else {
-        // Compare object
-        log(`  -> descending into [${k}]`);
-        if (!isPatternMatch(objValue, patternValue)) return false;
       }
     }
     return true;
@@ -159,7 +167,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
     isMatch: isPatternMatch,
     pattern: patternObj,
     results: [],
-    returnFirstResult: returnFirstResult,
+    returnFirstResult,
   };
 
   findObject(ctx, obj);
@@ -186,29 +194,37 @@ type ObjectSearchContext = {
 // false -> continue
 function findElement(ctx: PropertySearchContext, obj: any): boolean {
   for (const key in obj) {
-    const value = obj[key];
-    if (typeof value === 'function') continue;
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
+      if (typeof value === 'function') {
+        continue;
+      }
 
-    // Check if property is a match
-    let isMatch = false;
-    try {
-      isMatch = ctx.isMatch(obj, key);
-    } catch {}
+      // Check if property is a match
+      let isMatch = false;
+      try {
+        isMatch = ctx.isMatch(obj, key);
+      } catch {}
 
-    if (isMatch) {
-      const clonedPath = Object.assign([], ctx.currentPath);
-      ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+      if (isMatch) {
+        const clonedPath = Object.assign([], ctx.currentPath);
+        ctx.results.push({ propertyName: key, path: clonedPath, value });
 
-      if (ctx.returnFirstResult) return true;
-    }
+        if (ctx.returnFirstResult) {
+          return true;
+        }
+      }
 
-    // Descend into object
-    if (typeof value === 'object') {
-      ctx.currentPath.push(key);
-      const stop = findElement(ctx, value);
-      ctx.currentPath.pop();
+      // Descend into object
+      if (typeof value === 'object') {
+        ctx.currentPath.push(key);
+        const stop = findElement(ctx, value);
+        ctx.currentPath.pop();
 
-      if (stop && ctx.returnFirstResult) return true;
+        if (stop && ctx.returnFirstResult) {
+          return true;
+        }
+      }
     }
   }
 
@@ -218,15 +234,23 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
 function findObject(ctx: ObjectSearchContext, obj: any): boolean {
   if (ctx.isMatch(obj, ctx.pattern)) {
     ctx.results.push(obj);
-    if (ctx.returnFirstResult) return true;
+    if (ctx.returnFirstResult) {
+      return true;
+    }
   }
 
   for (const key in obj) {
-    const value = obj[key];
-    if (typeof value !== 'object') continue;
+    if (Object.hasOwn(obj, key)) {
+      const value = obj[key];
+      if (typeof value !== 'object') {
+        continue;
+      }
 
-    const stop = findObject(ctx, value);
-    if (stop) return true;
+      const stop = findObject(ctx, value);
+      if (stop) {
+        return true;
+      }
+    }
   }
 
   return false;

@@ -17,6 +17,7 @@ import {
   useDisclosure,
 } from '@redpanda-data/ui';
 import { useState } from 'react';
+
 import {
   CreateSecretRequestSchema,
   Scope,
@@ -27,6 +28,9 @@ import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';
 
 const { toast } = createStandaloneToast();
+
+// Regex for validating secret ID format
+const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 type SecretsQuickAddProps = {
   isOpen: boolean;
@@ -54,11 +58,10 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
       const result = await rpcnSecretManagerApi
         .create(
           create(CreateSecretRequestSchema, {
-            id: id,
-            // @ts-ignore js-base64 does not play nice with TypeScript 5: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'Uint8Array<ArrayBuffer>'.
+            id,
             secretData: base64ToUInt8Array(encodeBase64(secret)),
             scopes: [Scope.REDPANDA_CONNECT],
-          }),
+          })
         )
         .then(async () => {
           toast({
@@ -85,10 +88,11 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
         return;
       }
       setIsCreating(false);
-      onAdd(`\$\{secrets.${id}}`);
+      onAdd(`secrets.${id}`);
       closeModal();
       return;
     }
+    // biome-ignore lint/suspicious/noUselessEscapeInString: we need to keep it as-is
     onAdd(`\$\{secrets.${id}}`);
   };
 
@@ -105,7 +109,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     if (id === '') {
       return '';
     }
-    if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(id)) {
+    if (!SECRET_NAME_REGEX.test(id)) {
       return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain alphanumeric and underscores (_).';
     }
     if (id.length > 255) {
@@ -115,7 +119,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={closeModal} isCentered={true} size={'md'}>
+    <Modal isCentered={true} isOpen={isOpen} onClose={closeModal} size={'md'}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Select or add secret</ModalHeader>
@@ -123,51 +127,49 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           <Flex flexDirection="column" gap={5} w={300}>
             <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
             <FormField
-              label="Secret name"
-              errorText={isNameValid(id)}
-              isInvalid={!!isNameValid(id)}
               description={
                 isNewSecret
                   ? 'Creating new secret (stored in upper case)'
                   : 'Select existing or type new name to create'
               }
+              errorText={isNameValid(id)}
+              isInvalid={!!isNameValid(id)}
+              label="Secret name"
             >
               <Select<Secret>
-                placeholder="Select or create secret"
-                inputValue={searchValue}
-                onInputChange={setSearchValue}
-                isMulti={false}
-                options={availableSecrets}
                 creatable={true}
+                inputValue={searchValue}
+                isMulti={false}
                 onChange={(val, meta) => {
                   if (val && isSingleValue(val) && val.value) {
                     if (meta.action === 'create-option') {
-                      console.log({ value: val, meta });
                       enableNewSecret();
-                      // @ts-ignore when creating a new secret, the value is a string
+                      // @ts-expect-error when creating a new secret, the value is a string
                       setId(meta.option.value);
                       return;
                     }
                     disableNewSecret();
                     setSecret('');
-                    console.log({ value: val, meta });
                     setSearchValue('');
                     setId(val.value.id);
                   }
                 }}
+                onInputChange={setSearchValue}
+                options={availableSecrets}
+                placeholder="Select or create secret"
               />
             </FormField>
             {isNewSecret && (
               <FormField label="Secret value">
                 <Flex alignItems="center">
                   <PasswordInput
-                    placeholder="Enter a secret value..."
                     data-testid="secretValue"
-                    isRequired
-                    value={secret}
-                    onChange={(x) => setSecret(x.target.value)}
-                    type="password"
                     isDisabled={false}
+                    isRequired
+                    onChange={(x) => setSecret(x.target.value)}
+                    placeholder="Enter a secret value..."
+                    type="password"
+                    value={secret}
                   />
                 </Flex>
               </FormField>
@@ -175,13 +177,15 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           </Flex>
         </ModalBody>
         <ModalFooter gap={2}>
-          <Button variant={'outline'} isDisabled={isCreating} onClick={() => closeModal()}>
+          <Button isDisabled={isCreating} onClick={() => closeModal()} variant={'outline'}>
             Cancel
           </Button>
           <Button
             isLoading={isCreating}
             onClick={() => {
-              void addSecret(id);
+              addSecret(id).catch(() => {
+                // Error handling managed by API layer
+              });
             }}
           >
             Select

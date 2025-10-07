@@ -10,21 +10,20 @@ import {
 import type { MessageInit } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-export const usePublishMessageMutation = () => {
-  return useMutation(publishMessage, {
-    onError: (error) => {
-      return formatToastErrorMessageGRPC({
+export const usePublishMessageMutation = () =>
+  useMutation(publishMessage, {
+    onError: (error) =>
+      formatToastErrorMessageGRPC({
         error,
         action: 'publish',
         entity: 'message',
-      });
-    },
+      }),
   });
-};
 
 /**
  * Helper function to create a PublishMessageRequest with payload options
  */
+// biome-ignore lint/nursery/useMaxParams: Message publishing helper with many configuration options
 export const createPublishMessageRequest = (
   topic: string,
   partitionId = -1,
@@ -32,7 +31,7 @@ export const createPublishMessageRequest = (
   value?: MessageInit<PublishMessagePayloadOptions>,
   headers: { key: string; value: Uint8Array }[] = [],
   useTransactions = false,
-  compression = 0,
+  compression = 0
 ): MessageInit<PublishMessageRequest> => {
   const request = create(PublishMessageRequestSchema, {
     topic,

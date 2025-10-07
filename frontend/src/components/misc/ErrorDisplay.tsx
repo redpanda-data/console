@@ -13,9 +13,10 @@ import { WarningIcon } from '@chakra-ui/icons';
 import { Box, Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import type { FC, ReactElement } from 'react';
+
+import ErrorResult from './ErrorResult';
 import { api } from '../../state/backendApi';
 import type { WrappedApiError } from '../../state/restInterfaces';
-import ErrorResult from './ErrorResult';
 
 function isWrappedApiError(error: any): error is WrappedApiError {
   return error && typeof error === 'object' && 'statusCode' in error;
@@ -36,22 +37,22 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = observer(({ children
         </Box>
       ) : (
         <Result
-          status={500}
-          title="Backend API Error"
-          userMessage="Something went wrong while pulling data from the backend server"
           extra={
             <Button alignSelf="center" onClick={clearErrors}>
               Retry
             </Button>
           }
+          status={500}
+          title="Backend API Error"
+          userMessage="Something went wrong while pulling data from the backend server"
         />
       )}
 
       <Section>
         <List spacing={3}>
           {api.errors.map((e, i) => (
-            <ListItem key={i} display="flex">
-              <ListIcon as={WarningIcon} color="red.500" alignSelf="center" />
+            <ListItem display="flex" key={i}>
+              <ListIcon alignSelf="center" as={WarningIcon} color="red.500" />
               {formatError(e)}
             </ListItem>
           ))}

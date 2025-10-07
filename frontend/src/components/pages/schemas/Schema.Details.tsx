@@ -32,6 +32,8 @@ import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
+
+import { openDeleteModal, openPermanentDeleteModal } from './modals';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/restInterfaces';
@@ -44,7 +46,6 @@ import PageContent from '../../misc/PageContent';
 import { SingleSelect } from '../../misc/Select';
 import { SmallStat } from '../../misc/SmallStat';
 import { PageComponent } from '../Page';
-import { openDeleteModal, openPermanentDeleteModal } from './modals';
 
 const { ToastContainer, toast } = createStandaloneToast();
 
@@ -70,7 +71,9 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
   }
 
   componentDidUpdate(prevProps: { subjectName: string }) {
-    if (!prevProps) return;
+    if (!prevProps) {
+      return;
+    }
 
     const prevName = decodeURIComponentPercents(prevProps.subjectName);
     const currentName = decodeURIComponentPercents(this.props.subjectName);
@@ -116,10 +119,14 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     const subjectName = decodeURIComponentPercents(this.props.subjectName);
     api.refreshSchemaDetails(subjectName, force).then(() => {
       const details = api.schemaDetails.get(subjectName);
-      if (!details) return;
+      if (!details) {
+        return;
+      }
 
       for (const v of details.versions) {
-        if (v.isSoftDeleted) continue;
+        if (v.isSoftDeleted) {
+          continue;
+        }
 
         api.refreshSchemaReferencedBy(subjectName, v.version, force);
       }
@@ -129,14 +136,16 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
   render() {
     const isSoftDeleted = api.schemaSubjects?.find((x) => x.name === this.subjectNameRaw)?.isSoftDeleted;
     const subject = api.schemaDetails.get(this.subjectNameRaw);
-    if (!subject) return DefaultSkeleton;
+    if (!subject) {
+      return DefaultSkeleton;
+    }
 
     return (
       <PageContent key="b">
         <ToastContainer />
 
         {/* Statistics Bar */}
-        <Flex gap="1rem" alignItems="center">
+        <Flex alignItems="center" gap="1rem">
           <SmallStat title="Format">{subject.type}</SmallStat>
           <Divider height="2ch" orientation="vertical" />
 
@@ -149,29 +158,28 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
         {/* Buttons */}
         <Flex gap="2">
           <Button
-            variant="outline"
-            onClick={() =>
-              appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)
-            }
             disabledReason={
               api.userData?.canManageSchemaRegistry === false
                 ? "You don't have the 'canManageSchemaRegistry' permission"
                 : undefined
             }
+            onClick={() =>
+              appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/edit-compatibility`)
+            }
+            variant="outline"
           >
             Edit compatibility
           </Button>
           <Button
-            variant="outline"
-            onClick={() => appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
             disabledReason={
               api.userData?.canCreateSchemas === false ? "You don't have the 'canCreateSchemas' permission" : undefined
             }
+            onClick={() => appGlobal.historyPush(`/schema-registry/subjects/${this.subjectNameEncoded}/add-version`)}
+            variant="outline"
           >
             Add new version
           </Button>
           <Button
-            variant="outline"
             disabledReason={
               api.userData?.canDeleteSchemas === false ? "You don't have the 'canDeleteSchemas' permission" : undefined
             }
@@ -180,7 +188,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 openPermanentDeleteModal(this.subjectNameRaw, () => {
                   api
                     .deleteSchemaSubject(this.subjectNameRaw, true)
-                    .then(async () => {
+                    .then(() => {
                       toast({
                         status: 'success',
                         duration: 4000,
@@ -204,7 +212,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 openDeleteModal(this.subjectNameRaw, () => {
                   api
                     .deleteSchemaSubject(this.subjectNameRaw, false)
-                    .then(async () => {
+                    .then(() => {
                       toast({
                         status: 'success',
                         duration: 4000,
@@ -225,6 +233,7 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                 });
               }
             }}
+            variant="outline"
           >
             Delete subject
           </Button>
@@ -260,12 +269,15 @@ function getVersionFromQuery(): 'latest' | number | undefined {
       return Number(versionStr);
     }
 
-    if (versionStr === 'latest') return 'latest';
+    if (versionStr === 'latest') {
+      return 'latest';
+    }
 
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log(`unknown version string in query: "${versionStr}" will be ignored, proceeding with "latest"`);
   }
 
-  return undefined;
+  return;
 }
 
 export function schemaTypeToCodeBlockLanguage(type: string) {
@@ -281,7 +293,9 @@ export function schemaTypeToCodeBlockLanguage(type: string) {
 
 export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   const lower = schema.type.toLowerCase();
-  if (lower === 'avro' || lower === 'json') return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+  if (lower === 'avro' || lower === 'json') {
+    return JSON.stringify(JSON.parse(schema.schema), undefined, 4);
+  }
   return schema.schema;
 }
 
@@ -303,12 +317,15 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
       : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
-  const defaultVersion =
-    queryVersion !== undefined
-      ? queryVersion === 'latest' || !requestedVersionExists
-        ? fallbackVersion
-        : queryVersion
-      : fallbackVersion;
+  const defaultVersion = (() => {
+    if (queryVersion === undefined) {
+      return fallbackVersion;
+    }
+    if (queryVersion === 'latest' || !requestedVersionExists) {
+      return fallbackVersion;
+    }
+    return queryVersion;
+  })();
   const [selectedVersion, setSelectedVersion] = useState(defaultVersion);
 
   // Show notification and update URL if requested version doesn't exist
@@ -337,13 +354,13 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
   return (
     <Flex gap="10">
       {/* Left Side */}
-      <Flex direction="column" gap="4" flexGrow="1" minWidth="0">
+      <Flex direction="column" flexGrow="1" gap="4" minWidth="0">
         {/* Version Select / Delete / Recover */}
-        <Flex gap="2" alignItems="flex-end">
+        <Flex alignItems="flex-end" gap="2">
           <Label text="Version">
             <Box width="200px">
               <SingleSelect
-                value={selectedVersion}
+                isDisabled={subject.versions.length === 0}
                 onChange={(value) => {
                   editQuery((x) => (x.version = String(value)));
                   setSelectedVersion(value);
@@ -353,26 +370,25 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                   label:
                     String(v.version) +
                     (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                    (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
+                    (subject.versions.at(-1) === v ? ' (latest)' : ''),
                 }))}
-                isDisabled={subject.versions.length === 0}
+                value={selectedVersion}
               />
             </Box>
           </Label>
-          <Flex height="36px" alignItems="center" ml="4">
+          <Flex alignItems="center" height="36px" ml="4">
             Schema ID: {schema.id}
           </Flex>
 
           {schema.isSoftDeleted ? (
             <>
               <Button
-                variant="outline"
-                ml="auto"
                 disabledReason={
                   api.userData?.canDeleteSchemas === false
                     ? "You don't have the 'canDeleteSchemas' permission"
                     : undefined
                 }
+                ml="auto"
                 onClick={() =>
                   openPermanentDeleteModal(`${subject.name} version ${schema.version}`, () => {
                     api
@@ -389,10 +405,10 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                         await api.refreshSchemaDetails(subject.name, true);
 
                         const newDetails = api.schemaDetails.get(subject.name);
-                        if (!newDetails || !newDetails.latestActiveVersion) {
-                          appGlobal.historyPush('/schema-registry/');
-                        } else {
+                        if (newDetails?.latestActiveVersion) {
                           setSelectedVersion(newDetails.latestActiveVersion);
+                        } else {
+                          appGlobal.historyPush('/schema-registry/');
                         }
                       })
                       .catch((err) => {
@@ -406,12 +422,12 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       });
                   })
                 }
+                variant="outline"
               >
                 Permanent delete
               </Button>
 
               <Button
-                variant="outline"
                 disabledReason={
                   api.userData?.canCreateSchemas === false
                     ? "You don't have the 'canCreateSchemas' permission"
@@ -436,10 +452,11 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       await api.refreshSchemaDetails(subject.name, true);
 
                       const updatedDetails = api.schemaDetails.get(subject.name);
-                      if (updatedDetails)
+                      if (updatedDetails) {
                         appGlobal.historyPush(
-                          `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`,
+                          `/schema-registry/subjects/${encodeURIComponent(subject.name)}?version=${updatedDetails.latestActiveVersion}`
                         );
+                      }
                     })
                     .catch((err) => {
                       toast({
@@ -451,19 +468,19 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                       });
                     });
                 }}
+                variant="outline"
               >
                 Recover
               </Button>
             </>
           ) : (
             <Button
-              variant="outline"
-              ml="auto"
               disabledReason={
                 api.userData?.canDeleteSchemas === false
                   ? "You don't have the 'canDeleteSchemas' permission"
                   : undefined
               }
+              ml="auto"
               onClick={() =>
                 openDeleteModal(`${subject.name} version ${schema.version}`, () => {
                   api
@@ -491,6 +508,7 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
                     });
                 })
               }
+              variant="outline"
             >
               Delete
             </Button>
@@ -514,15 +532,15 @@ const SubjectDefinition = observer((p: { subject: SchemaRegistrySubjectDetails }
         <CodeBlock
           codeString={getFormattedSchemaText(schema)}
           language={schemaTypeToCodeBlockLanguage(schema.type)}
-          theme="light"
-          showLineNumbers
           showCopyButton={false}
+          showLineNumbers
+          theme="light"
         />
       </Flex>
 
       {/* References Box */}
       <Box>
-        <SchemaReferences subject={subject} schema={schema} />
+        <SchemaReferences schema={schema} subject={subject} />
       </Box>
     </Flex>
   );
@@ -552,14 +570,14 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
   return (
     <Flex direction="column" gap="10">
       {/* Two version selectors */}
-      <Grid templateColumns="repeat(2, 1fr)" gap="4" minWidth="0" width="100%">
+      <Grid gap="4" minWidth="0" templateColumns="repeat(2, 1fr)" width="100%">
         <GridItem w="100%">
           {/* Version Select / Delete / Recover */}
-          <Flex gap="2" alignItems="flex-end">
+          <Flex alignItems="flex-end" gap="2">
             <Label text="Version">
               <Box width="200px">
                 <SingleSelect
-                  value={selectedVersionLeft}
+                  isDisabled={subject.versions.length === 0}
                   onChange={(value) => {
                     setSelectedVersionLeft(value);
                   }}
@@ -568,13 +586,13 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                     label:
                       String(v.version) +
                       (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                      (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
+                      (subject.versions.at(-1) === v ? ' (latest)' : ''),
                   }))}
-                  isDisabled={subject.versions.length === 0}
+                  value={selectedVersionLeft}
                 />
               </Box>
             </Label>
-            <Flex height="36px" alignItems="center" ml="4">
+            <Flex alignItems="center" height="36px" ml="4">
               Schema ID: {schemaLeft.id}
             </Flex>
           </Flex>
@@ -582,11 +600,11 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
 
         <GridItem w="100%">
           {/* Version Select / Delete / Recover */}
-          <Flex gap="2" alignItems="flex-end">
+          <Flex alignItems="flex-end" gap="2">
             <Label text="Version">
               <Box width="200px">
                 <SingleSelect
-                  value={selectedVersionRight}
+                  isDisabled={subject.versions.length === 0}
                   onChange={(value) => {
                     setSelectedVersionRight(value);
                   }}
@@ -595,13 +613,13 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
                     label:
                       String(v.version) +
                       (v.isSoftDeleted ? ' (soft-deleted)' : '') +
-                      (subject.versions[subject.versions.length - 1] === v ? ' (latest)' : ''),
+                      (subject.versions.at(-1) === v ? ' (latest)' : ''),
                   }))}
-                  isDisabled={subject.versions.length === 0}
+                  value={selectedVersionRight}
                 />
               </Box>
             </Label>
-            <Flex height="36px" alignItems="center" ml="4">
+            <Flex alignItems="center" height="36px" ml="4">
               Schema ID: {schemaRight.id}
             </Flex>
           </Flex>
@@ -612,11 +630,11 @@ const VersionDiff = observer((p: { subject: SchemaRegistrySubjectDetails }) => {
       <KowlDiffEditor
         height="800px"
         language={schemaTypeToCodeBlockLanguage(schemaLeft.type)}
-        original={getFormattedSchemaText(schemaLeft)}
         modified={getFormattedSchemaText(schemaRight)}
         options={{
           readOnly: true,
         }}
+        original={getFormattedSchemaText(schemaLeft)}
       />
     </Flex>
   );
@@ -632,7 +650,7 @@ const SchemaReferences = observer(
 
     return (
       <>
-        <Text mt="20" fontSize="lg" fontWeight="bold">
+        <Text fontSize="lg" fontWeight="bold" mt="20">
           References
         </Text>
         <Text mb="6">
@@ -670,7 +688,7 @@ const SchemaReferences = observer(
           <Text>This schema has no references.</Text>
         )}
 
-        <Text mt="20" fontSize="lg" fontWeight="bold">
+        <Text fontSize="lg" fontWeight="bold" mt="20">
           Referenced By
         </Text>
         <Text mb="6">
@@ -704,7 +722,7 @@ const SchemaReferences = observer(
         )}
       </>
     );
-  },
+  }
 );
 
 export default SchemaDetailsView;

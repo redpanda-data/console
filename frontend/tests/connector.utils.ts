@@ -1,8 +1,7 @@
-import { Page, test, expect } from '@playwright/test';
+import { type Page, test, expect } from '@playwright/test';
 import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from './console/connector.spec';
 
-export const createConnector = async(page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string}) => {
-    return await test.step('Create connector', async () => {
+export const createConnector = async(page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string}) => await test.step('Create connector', async () => {
         await page.goto(`/connect-clusters/${clusterName}`)
         await page.waitForURL(`/connect-clusters/${clusterName}`, {
             timeout: 5000
@@ -41,11 +40,9 @@ export const createConnector = async(page: Page, { clusterName, connectorName }:
         await page.waitForURL(`/connect-clusters/${clusterName}/${connectorName}`, {
             timeout: 15000
         })
-    });
-}
+    })
 
-export const deleteConnector = async (page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string }) => {
-    return await test.step('Delete connector', async () => {
+export const deleteConnector = async (page: Page, { clusterName, connectorName }: { clusterName: string, connectorName: string }) => await test.step('Delete connector', async () => {
         await page.goto(`/connect-clusters/${clusterName}/${connectorName}`)
 
         await page.getByRole('button', { name: 'Delete' }).click();
@@ -57,4 +54,3 @@ export const deleteConnector = async (page: Page, { clusterName, connectorName }
 
         await expect(page.getByText('Deleted connector')).toBeVisible();
     });
-};

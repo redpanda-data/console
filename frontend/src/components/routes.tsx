@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+// biome-ignore-all lint/complexity/noBannedTypes: empty object represents pages with no route params
+
 import {
   BeakerIcon,
   BookOpenIcon,
@@ -26,13 +28,7 @@ import React, { Fragment, type FunctionComponent, useEffect } from 'react';
 import { MdKey, MdOutlineSmartToy } from 'react-icons/md';
 import { Navigate, Route, Routes, useLocation, useMatch, useParams } from 'react-router-dom';
 import { appGlobal } from 'state/appGlobal';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
-import { api } from '../state/backendApi';
-import type { UserPermissions } from '../state/restInterfaces';
-import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
-import { uiState } from '../state/uiState';
-import { AnimatePresence } from '../utils/animationProps';
-import { type AppFeature, AppFeatures } from '../utils/env';
+
 import { Section } from './misc/common';
 import AclList, { type AclListTab } from './pages/acls/Acl.List';
 import AclCreatePage from './pages/acls/new-acl/AclCreatePage';
@@ -83,12 +79,18 @@ import TransformsList from './pages/transforms/Transforms.List';
 import { TransformsSetup } from './pages/transforms/Transforms.Setup';
 import { MCPIcon } from './redpanda-ui/components/icons';
 import { getSidebarItemTitleWithBetaBadge } from './sidebar-utils';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
+import { api } from '../state/backendApi';
+import type { UserPermissions } from '../state/restInterfaces';
+import { Feature, type FeatureEntry, isSupported, shouldHideIfNotSupported } from '../state/supportedFeatures';
+import { uiState } from '../state/uiState';
+import { AnimatePresence } from '../utils/animationProps';
+import { type AppFeature, AppFeatures } from '../utils/env';
 
 //
 //	Route Types
 //
 export type IRouteEntry = PageDefinition<any>;
-
 export interface PageDefinition<TRouteParams = {}> {
   title: string;
   path: string;
@@ -104,17 +106,25 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
   return entries
     .map((entry) => {
       // Menu entry for Page
-      if (entry.path.includes(':')) return null; // only root-routes (no param) can be in menu
-      if (!entry?.icon) return null; // items without icon do not appear in the sidebar
+      if (entry.path.includes(':')) {
+        return null; // only root-routes (no param) can be in menu
+      }
+      if (!entry?.icon) {
+        return null; // items without icon do not appear in the sidebar
+      }
 
       let isEnabled = true;
       let disabledText: JSX.Element = <Fragment key={entry.title} />;
       if (entry.visibilityCheck) {
         const visibility = entry.visibilityCheck();
-        if (!visibility.visible) return null;
+        if (!visibility.visible) {
+          return null;
+        }
 
         isEnabled = visibility.disabledReasons?.length === 0;
-        if (!isEnabled) disabledText = disabledReasonText[visibility.disabledReasons?.[0]];
+        if (!isEnabled) {
+          disabledText = disabledReasonText[visibility.disabledReasons?.[0]];
+        }
       }
       const isDisabled = !isEnabled;
 
@@ -159,22 +169,24 @@ export const RouteView = () => (
   <AnimatePresence mode="wait">
     <Routes>
       {/* Index */}
-      <Route path="/" element={<Navigate to="/overview" replace />} />
+      <Route element={<Navigate replace to="/overview" />} path="/" />
 
       {/* Emit all <Route/> elements */}
       {EmitRouteViews(APP_ROUTES)}
 
-      <Route path="*" element={<NotFound />} />
+      <Route element={<NotFound />} path="*" />
     </Routes>
   </AnimatePresence>
 );
 
-enum DisabledReasons {
-  notSupported = 0, // kafka cluster version too low
-  noPermission = 1, // user doesn't have permissions to use the feature,
-  enterpriseFeature = 2,
-  notSupportedServerless = 3, // This feature is not supported in serverless mode
-}
+const DisabledReasons = {
+  notSupported: 0, // kafka cluster version too low
+  noPermission: 1, // user doesn't have permissions to use the feature,
+  enterpriseFeature: 2,
+  notSupportedServerless: 3, // This feature is not supported in serverless mode
+} as const;
+
+type DisabledReasons = (typeof DisabledReasons)[keyof typeof DisabledReasons];
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
   [DisabledReasons.noPermission]: (
@@ -250,13 +262,14 @@ const ProtectedRoute: FunctionComponent<{ children: React.ReactNode; path: strin
   return children;
 };
 
+// biome-ignore lint/nursery/useMaxParams: legacy routing function, refactoring would require extensive changes
 function MakeRoute<TRouteParams>(
   path: string,
   page: PageComponentType<TRouteParams> | FunctionComponent<TRouteParams>,
   title: string,
   icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
   exact = true,
-  showCallback?: () => MenuItemState,
+  showCallback?: () => MenuItemState
 ): PageDefinition<TRouteParams> {
   const route: PageDefinition<TRouteParams> = {
     title,
@@ -270,8 +283,6 @@ function MakeRoute<TRouteParams>(
   // Create the route element after routeData is defined
   const routeElement = (
     <Route
-      path={`${path}${exact ? '' : '/*'}`}
-      key={path}
       element={
         <ProtectedRoute path={path}>
           <NuqsAdapter>
@@ -279,6 +290,8 @@ function MakeRoute<TRouteParams>(
           </NuqsAdapter>
         </ProtectedRoute>
       }
+      key={path}
+      path={`${path}${exact ? '' : '/*'}`}
     />
   );
   route.routeJsx = routeElement;
@@ -290,13 +303,13 @@ function routeVisibility(
   visible: boolean | (() => boolean),
   requiredFeatures?: FeatureEntry[],
   requiredPermissions?: UserPermissions[],
-  requiredAppFeatures?: AppFeature[],
+  requiredAppFeatures?: AppFeature[]
 ): () => MenuItemState {
   return () => {
     let v = typeof visible === 'boolean' ? visible : visible();
 
     const disabledReasons: DisabledReasons[] = [];
-    if (requiredFeatures)
+    if (requiredFeatures) {
       for (const f of requiredFeatures) {
         if (!isSupported(f)) {
           if (shouldHideIfNotSupported(f)) {
@@ -307,8 +320,9 @@ function routeVisibility(
           break;
         }
       }
+    }
 
-    if (requiredPermissions && api.userData)
+    if (requiredPermissions && api.userData) {
       for (const p of requiredPermissions) {
         const hasPermission = api.userData[p];
         if (!hasPermission) {
@@ -316,18 +330,20 @@ function routeVisibility(
           break;
         }
       }
+    }
 
     if (requiredAppFeatures) {
-      for (const f of requiredAppFeatures)
+      for (const f of requiredAppFeatures) {
         if (AppFeatures[f] === false) {
           disabledReasons.push(DisabledReasons.enterpriseFeature);
           break;
         }
+      }
     }
 
     return {
       visible: v,
-      disabledReasons: disabledReasons,
+      disabledReasons,
     };
   };
 }
@@ -349,18 +365,18 @@ export const APP_ROUTES: IRouteEntry[] = [
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/add-version',
     SchemaAddVersionPage,
-    'Add version',
+    'Add version'
   ),
   MakeRoute<{ subjectName: string }>('/schema-registry/subjects/:subjectName', SchemaDetailsView, 'Schema Registry'),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/edit-compatibility',
     EditSchemaCompatibilityPage,
-    'Edit Schema Compatibility',
+    'Edit Schema Compatibility'
   ),
   MakeRoute<{ subjectName: string }>(
     '/schema-registry/subjects/:subjectName/edit-compatibility',
     EditSchemaCompatibilityPage,
-    'Edit Schema Compatibility',
+    'Edit Schema Compatibility'
   ),
 
   MakeRoute<{}>(
@@ -369,7 +385,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Consumer Groups',
     FilterIcon,
     undefined,
-    routeVisibility(true, [Feature.ConsumerGroups]),
+    routeVisibility(true, [Feature.ConsumerGroups])
   ),
   MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
@@ -379,7 +395,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Secrets Store',
     MdKey,
     true,
-    routeVisibility(() => isEmbedded(), [Feature.PipelineService]), // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
+    routeVisibility(() => isEmbedded(), [Feature.PipelineService]) // If pipeline service is configured, then we assume secret service is also configured, and we are not self-hosted, so we can show the new route
   ),
 
   MakeRoute<{}>(
@@ -393,18 +409,18 @@ export const APP_ROUTES: IRouteEntry[] = [
       () => isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi') && !isServerless(), // Needed to pass flags to current routing solution
       [Feature.PipelineService],
       [],
-      [],
-    ),
+      []
+    )
   ),
   MakeRoute<{}>('/knowledgebases/create', KnowledgeBaseCreate, 'Create Knowledge Base'),
   MakeRoute<{ knowledgebaseId: string }>(
     '/knowledgebases/:knowledgebaseId',
     KnowledgeBaseDetails,
-    'Knowledge Base Details',
+    'Knowledge Base Details'
   ),
 
   MakeRoute<{}>('/security', AclList, 'Security', ShieldCheckIcon, true),
-  MakeRoute<{ tab: AclListTab }>('/security/:tab?', AclList, 'Security'),
+  MakeRoute<{ tab?: AclListTab }>('/security/:tab?', AclList, 'Security'),
 
   MakeRoute<{}>('/security/acls/create', AclCreatePage, 'Create ACL'),
   MakeRoute<{}>('/security/acls/:aclName/update', AclUpdatePage, 'Update ACL'),
@@ -423,25 +439,18 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Quotas',
     ScaleIcon,
     true,
-    routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
+    routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
   ),
 
   MakeRoute<{ matchedPath: string }>('/connect-clusters', KafkaConnectOverview, 'Connect', LinkIcon, true, () => {
     if (isServerless()) {
-      console.log('Connect clusters inside serverless checks.');
       // We are in serverless, there is no kafka connect, so we can ignore it.
       // Here, we only care about the pipeline service and use that to decide whether to show the entry
       if (isSupported(Feature.PipelineService)) {
-        console.debug('Pipeline Service enabled. Showing sidebar link.');
         return { visible: true, disabledReasons: [] };
       }
-      // Pipeline service is not active? Hide entry
-      console.debug('Pipeline Service NOT enabled. NOT showing sidebar link.');
       return { visible: false, disabledReasons: [DisabledReasons.notSupported] };
     }
-    // We are in cloud (dedicated or BYOC), or self-hosted
-    // We always show the entry, if kafka connect is not enabled, the page will show a link to the documentation
-    console.debug('Pipeline Service state does not matter. Showing sidebar link.');
     return { visible: true, disabledReasons: [] };
   }),
   MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
@@ -451,12 +460,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Create Connector',
     undefined,
     undefined,
-    routeVisibility(false),
+    routeVisibility(false)
   ),
   MakeRoute<{ clusterName: string; connector: string }>(
     '/connect-clusters/:clusterName/:connector',
     KafkaConnectorDetails,
-    'Connector Details',
+    'Connector Details'
   ),
 
   MakeRoute<{}>(
@@ -465,7 +474,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Transforms',
     undefined,
     true,
-    routeVisibility(true, [Feature.TransformsService]),
+    routeVisibility(true, [Feature.TransformsService])
   ),
   MakeRoute<{}>(
     '/transforms',
@@ -473,7 +482,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Transforms',
     MdOutlineSmartToy,
     true,
-    routeVisibility(true, [Feature.TransformsService]),
+    routeVisibility(true, [Feature.TransformsService])
   ),
   MakeRoute<{ transformName: string }>('/transforms/:transformName', TransformDetails, 'Transforms'),
 
@@ -486,7 +495,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Connectors',
     undefined,
     undefined,
-    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles')),
+    routeVisibility(() => isFeatureFlagEnabled('enableRpcnTiles'))
   ),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId', RpConnectPipelinesDetails, 'Connectors'),
   MakeRoute<{ pipelineId: string }>('/rp-connect/:pipelineId/edit', RpConnectPipelinesEdit, 'Connectors'),
@@ -502,8 +511,8 @@ export const APP_ROUTES: IRouteEntry[] = [
       true,
       [Feature.GetReassignments, Feature.PatchReassignments],
       ['canPatchConfigs', 'canReassignPartitions'],
-      ['REASSIGN_PARTITIONS'],
-    ),
+      ['REASSIGN_PARTITIONS']
+    )
   ),
 
   MakeRoute<{}>(
@@ -512,7 +521,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Debug Bundle',
     undefined,
     true,
-    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle'])
   ),
   MakeRoute<{}>(
     '/debug-bundle/progress/:jobId',
@@ -520,7 +529,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Debug Bundle Progress',
     undefined,
     true,
-    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle']),
+    routeVisibility(false, [Feature.DebugBundleService], ['canViewDebugBundle'])
   ),
 
   MakeRoute<{}>(
@@ -529,18 +538,18 @@ export const APP_ROUTES: IRouteEntry[] = [
     'Upload License',
     undefined,
     false,
-    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ['canManageLicense']),
+    routeVisibility(() => api.isRedpanda && api.isAdminApiConfigured, [], ['canManageLicense'])
   ),
 
   MakeRoute<{}>('/trial-expired', LicenseExpiredPage, 'Your enterprise trial has expired'),
 
-  MakeRoute<Record<string, never>>(
+  MakeRoute<{}>(
     '/mcp-servers',
     RemoteMCPListPage,
     'Remote MCP',
     MCPIcon,
     true,
-    routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')), // show only in embedded mode with feature flag
+    routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')) // show only in embedded mode with feature flag
   ),
   MakeRoute<{}>('/mcp-servers/create', RemoteMCPCreatePage, 'Create Remote MCP Server'),
   MakeRoute<{ id: string }>('/mcp-servers/:id', RemoteMCPDetailsPage, 'Remote MCP Details'),

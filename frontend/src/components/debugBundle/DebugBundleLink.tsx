@@ -1,6 +1,7 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { Box, Flex, IconButton, Link, Text, Tooltip } from '@redpanda-data/ui';
 import { MdDeleteOutline } from 'react-icons/md';
+
 import { config } from '../../config';
 import type {
   DebugBundleStatus,
@@ -18,7 +19,7 @@ const DebugBundleLink = ({
   showDatetime?: boolean;
 }) => {
   const statusWithFilename = statuses.find(
-    (status) => status.value.case === 'bundleStatus' && status.value.value.filename,
+    (status) => status.value.case === 'bundleStatus' && status.value.value.filename
   )?.value.value as DebugBundleStatus | undefined;
   const downloadFilename = 'debug-bundle.zip';
 
@@ -34,7 +35,6 @@ const DebugBundleLink = ({
     <Box>
       <Flex alignItems="center" gap={1}>
         <Link
-          role="button"
           onClick={() => {
             config.fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`).then(async (response) => {
               const url = window.URL.createObjectURL(await response.blob());
@@ -60,18 +60,21 @@ const DebugBundleLink = ({
             });
           }}
           px={0}
+          role="button"
         >
           {downloadFilename}
         </Link>
         {showDeleteButton && (
-          <Tooltip placement="top" label="Delete bundle" hasArrow>
+          <Tooltip hasArrow label="Delete bundle" placement="top">
             <IconButton
-              variant="ghost"
-              icon={<MdDeleteOutline />}
               aria-label="Delete file"
+              icon={<MdDeleteOutline />}
               onClick={() => {
-                void api.deleteDebugBundleFile();
+                api.deleteDebugBundleFile().catch(() => {
+                  // Error handling should be managed by the API layer
+                });
               }}
+              variant="ghost"
             />
           </Tooltip>
         )}

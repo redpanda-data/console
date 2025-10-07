@@ -3,6 +3,7 @@ import { chatDb } from 'database/chat-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useEffect, useRef, useState } from 'react';
+
 import { ChatBlankState } from './chat-blank-state';
 import { ChatClearButton } from './chat-clear-button';
 import { ChatInput } from './chat-input';
@@ -10,9 +11,9 @@ import { ChatLoadingIndicator } from './chat-loading-indicator';
 import { ChatMessageContainer } from './chat-message-container';
 import { ChatNotification } from './chat-notification';
 
-interface ChatTabProps {
+type ChatTabProps = {
   pipeline?: Pipeline;
-}
+};
 
 /**
  * This component is using Dexie to listen for message changes in the database.
@@ -46,7 +47,9 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
   // Use live query to listen for message changes in the database
   const messages =
     useLiveQuery(async () => {
-      if (!id) return [];
+      if (!id) {
+        return [];
+      }
       setIsLoadingMessages(true);
       const storedMessages = await chatDb.getAllMessages(id);
       setShouldScroll(true);
@@ -56,19 +59,22 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
 
   const handleClearChat = async () => {
     try {
-      if (!id) return;
+      if (!id) {
+        return;
+      }
       await chatDb.clearAllMessages(id);
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: error logging for debugging clear failures
       console.error('Error clearing messages:', error);
     }
   };
 
-  if (!id || !pipeline?.url || pipeline?.state === Pipeline_State.STARTING) {
+  if (!(id && pipeline?.url) || pipeline?.state === Pipeline_State.STARTING) {
     return (
       <ChatNotification
         notification={
           <>
-            <Spinner size="sm" mr={2} />
+            <Spinner mr={2} size="sm" />
             <span>Chat is not available right now.</span>
           </>
         }
@@ -81,20 +87,20 @@ export const ChatTab = ({ pipeline }: ChatTabProps) => {
   }
 
   return (
-    <div className="flex flex-col w-full px-4 max-w-screen-xl mx-auto">
-      <div className="flex flex-col min-h-0">
+    <div className="mx-auto flex w-full max-w-screen-xl flex-col px-4">
+      <div className="flex min-h-0 flex-col">
         {messages?.length > 0 && <ChatClearButton onClear={handleClearChat} />}
         {!isLoadingMessages && (
-          <ChatMessageContainer messages={messages} isTyping={isTyping} messagesEndRef={messagesEndRef} />
+          <ChatMessageContainer isTyping={isTyping} messages={messages} messagesEndRef={messagesEndRef} />
         )}
       </div>
       <ChatInput
-        setIsTyping={setIsTyping}
-        agentUrl={pipeline?.url}
         agentId={id}
+        agentUrl={pipeline?.url}
         initialValue={selectedQuestion ?? undefined}
-        onInputChange={() => setSelectedQuestion(null)}
         messagesEndRef={messagesEndRef}
+        onInputChange={() => setSelectedQuestion(null)}
+        setIsTyping={setIsTyping}
       />
       {messages?.length === 0 && <ChatBlankState onSelectQuestion={handleSelectQuestion} />}
     </div>
