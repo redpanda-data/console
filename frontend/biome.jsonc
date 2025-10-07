@@ -530,7 +530,7 @@
         // Disallow the use of Math.pow in favor of the ** operator.
         "useExponentiationOperator": "error",
         // Promotes the use of export type for types.
-        "useExportType": "off",
+        "useExportType": "error",
         // Enforce naming conventions for JavaScript and TypeScript filenames.
         // Supports TanStack Router convention: allows - prefixed files (e.g., -hooks.ts, $slug)
         "useFilenamingConvention": {
