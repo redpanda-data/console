@@ -574,7 +574,7 @@
         // Require a description parameter for the Symbol().
         "useSymbolDescription": "off",
         // Prefer template literals over string concatenation.
-        "useTemplate": "off",
+        "useTemplate": "error",
         // Require new when throwing an off.
         "useThrowNewError": "error",
         // Disallow throwing non-Error values.
