@@ -188,7 +188,7 @@ export interface ConnectFieldSpec<T = unknown> {
   // For string fields that accept a predefined set of values (enum-like), this provides
   // a list of those options, each with a corresponding summary/description.
   // Example: `[["option_a", "Enables feature A"], ["option_b", "Enables feature B"]]`.
-  annotated_options?: Array<[string, string]>;
+  annotated_options?: [string, string][];
 
   // For string fields that accept a predefined set of values (enum-like), this provides
   // a list of those possible string values when detailed summaries are not needed.

@@ -12,6 +12,8 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { useForm } from 'react-hook-form';
 import { CONNECT_WIZARD_TOPIC_KEY } from 'state/connect/state';
 import type { Topic } from 'state/restInterfaces';
+
+import { AdvancedTopicSettings } from './advanced-topic-settings';
 import {
   CreateTopicRequest_Topic_ConfigSchema,
   CreateTopicRequest_TopicSchema,
@@ -31,7 +33,6 @@ import {
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 import { hasValue } from '../utils/wizard';
-import { AdvancedTopicSettings } from './advanced-topic-settings';
 
 interface AddTopicStepProps {
   topicList: Topic[] | undefined;
@@ -46,7 +47,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         value: topic.topicName,
         label: topic.topicName,
       })) ?? [],
-    [topicList],
+    [topicList]
   );
 
   const [topicOptions, setTopicOptions] = useState<ComboboxOption[]>(initialTopicOptions);
@@ -75,7 +76,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
       retentionSize: persistedTopicData?.retentionSize || TOPIC_FORM_DEFAULTS.retentionSize,
       retentionSizeUnit: persistedTopicData?.retentionSizeUnit || TOPIC_FORM_DEFAULTS.retentionSizeUnit,
     }),
-    [persistedTopicData],
+    [persistedTopicData]
   );
 
   const form = useForm<AddTopicFormData>({
@@ -87,17 +88,18 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
   const watchedTopicName = form.watch('topicName');
   const matchingTopicNameForFormValue = useMemo(
     () => topicList?.find((topic) => topic.topicName === watchedTopicName)?.topicName,
-    [topicList, watchedTopicName],
+    [topicList, watchedTopicName]
   );
 
   // prioritize form value topic, then persisted topic
-  const existingTopicBeingEdited = useMemo(() => {
-    return topicList?.find((topic) => topic.topicName === matchingTopicNameForFormValue);
-  }, [matchingTopicNameForFormValue, topicList]);
+  const existingTopicBeingEdited = useMemo(
+    () => topicList?.find((topic) => topic.topicName === matchingTopicNameForFormValue),
+    [matchingTopicNameForFormValue, topicList]
+  );
 
   const { data: topicConfig } = useTopicConfigQuery(
     existingTopicBeingEdited?.topicName || '',
-    hasValue(existingTopicBeingEdited?.topicName),
+    hasValue(existingTopicBeingEdited?.topicName)
   );
 
   useEffect(() => {
@@ -182,7 +184,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
             create(CreateTopicRequest_Topic_ConfigSchema, {
               name: 'retention.bytes',
               value: retentionBytes.toString(),
-            }),
+            })
           );
         }
 
@@ -210,7 +212,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
         };
       }
     },
-    [existingTopicBeingEdited, setTopicFormData, updateTopicConfigMutation, createTopicMutation],
+    [existingTopicBeingEdited, setTopicFormData, updateTopicConfigMutation, createTopicMutation]
   );
 
   const handleCreateTopicOption = useCallback((value: string) => {
@@ -248,7 +250,7 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <div className="space-y-6 max-w-2xl">
+          <div className="max-w-2xl space-y-6">
             <FormField
               control={form.control}
               name="topicName"
@@ -258,12 +260,12 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
                   <FormControl>
                     <Combobox
                       {...field}
-                      options={topicOptions}
-                      creatable
-                      onCreateOption={handleCreateTopicOption}
-                      placeholder="Select or create a topic..."
                       className="max-w-[300px]"
+                      creatable
                       disabled={isLoading}
+                      onCreateOption={handleCreateTopicOption}
+                      options={topicOptions}
+                      placeholder="Select or create a topic..."
                     />
                   </FormControl>
                   <FormMessage />
@@ -271,18 +273,18 @@ export const AddTopicStep = forwardRef<BaseStepRef, AddTopicStepProps>(({ topicL
               )}
             />
 
-            <Collapsible open={showAdvancedSettings} onOpenChange={setShowAdvancedSettings}>
+            <Collapsible onOpenChange={setShowAdvancedSettings} open={showAdvancedSettings}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-fit p-0" disabled={isLoading}>
+                <Button className="w-fit p-0" disabled={isLoading} size="sm" variant="ghost">
                   <ChevronDown className="h-4 w-4" />
                   Show Advanced Settings
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-6 mt-4">
+              <CollapsibleContent className="mt-4 space-y-6">
                 <AdvancedTopicSettings
+                  disabled={isLoading}
                   form={form}
                   isExistingTopic={Boolean(existingTopicBeingEdited)}
-                  disabled={isLoading}
                 />
               </CollapsibleContent>
             </Collapsible>

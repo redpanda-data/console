@@ -138,7 +138,7 @@ describe('getRpkCommand', () => {
           const command = getRpkCommand({ ...baseParams, clientType });
           expect(command).toMatchSnapshot();
         });
-      },
+      }
     );
 
     test('generates command without client type (uses placeholder)', () => {
@@ -159,7 +159,7 @@ describe('getRpkCommand', () => {
           const command = getRpkCommand({ ...baseParams, clientType });
           expect(command).toMatchSnapshot();
         });
-      },
+      }
     );
   });
 

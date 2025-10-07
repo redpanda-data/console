@@ -27,6 +27,7 @@ import {
   Users,
   Wrench,
 } from 'lucide-react';
+
 import type { ComponentCategory, ConnectComponentType } from '../types/schema';
 import { getCategoryDisplayName } from '../utils/categories';
 
@@ -113,7 +114,7 @@ export const getConnectorTypeBadgeProps = (type: ConnectComponentType): ConnectB
 };
 
 export const getCategoryBadgeProps = (
-  category: ComponentCategory | ConnectComponentType | string,
+  category: ComponentCategory | ConnectComponentType | string
 ): ConnectBadgeProps => {
   // Handle null/undefined categories
   if (!category) {
@@ -357,7 +358,6 @@ export const getCategoryBadgeProps = (
     default:
       // Log unknown categories for debugging
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-        console.warn(`Unknown category: "${category}"`);
       }
       return {
         icon: <HelpCircle className="h-3 w-3" />,
