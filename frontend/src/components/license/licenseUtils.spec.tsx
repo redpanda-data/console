@@ -33,7 +33,7 @@ const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expi
  * @param daysOffset - The number of days to offset (default is 0).
  * @returns Unix timestamp in seconds.
  */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86400;
+const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86_400;
 
 vi.mock('../../state/backendApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../state/backendApi')>();
@@ -107,7 +107,7 @@ describe('licenseUtils', () => {
 
   const mockLicenseCommunity = create(LicenseSchema, {
     type: License_Type.COMMUNITY,
-    expiresAt: BigInt(20413210650),
+    expiresAt: BigInt(20_413_210_650),
     source: License_Source.REDPANDA_CONSOLE,
   });
 
@@ -219,12 +219,12 @@ describe('licenseUtils', () => {
       const licenses = [
         create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(2041321065),
+          expiresAt: BigInt(2_041_321_065),
           source: License_Source.REDPANDA_CONSOLE,
         }),
         create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(4813575088),
+          expiresAt: BigInt(4_813_575_088),
           source: License_Source.REDPANDA_CORE,
         }),
       ];
@@ -237,12 +237,12 @@ describe('licenseUtils', () => {
       const licenses = [
         create(LicenseSchema, {
           type: License_Type.COMMUNITY,
-          expiresAt: BigInt(2041321065),
+          expiresAt: BigInt(2_041_321_065),
           source: License_Source.REDPANDA_CONSOLE,
         }),
         create(LicenseSchema, {
           type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(4813575088),
+          expiresAt: BigInt(4_813_575_088),
           source: License_Source.REDPANDA_CORE,
         }),
       ];

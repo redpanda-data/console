@@ -13,7 +13,7 @@ import type { ConfigEntry, ConfigEntryExtended } from '../../state/restInterface
 import { prettyBytesOrNA, prettyMilliseconds } from '../utils';
 
 export const CONFIG_INFINITE_VALUES: Record<string, number> = {
-  'flush.ms': 9223372036854,
+  'flush.ms': 9_223_372_036_854,
 };
 
 export const entryHasInfiniteValue = (entry: ConfigEntry) =>
@@ -112,7 +112,7 @@ export function formatConfigValue(
     name.endsWith('.reassignment.throttled.rate')
   ) {
     const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
-    const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up
+    const uint64Exp = 1.844_674_407_370_955e19; // barely below the point where the number would be rounded up
     if (value === uint64Max || num >= uint64Exp || num === -1) {
       return `Infinite${suffix}`;
     }

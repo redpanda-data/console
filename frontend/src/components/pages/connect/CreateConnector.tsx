@@ -429,7 +429,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
           await connectClusterStore.createConnector(selectedPlugin?.class ?? '', parsedUpdatedConfig);
 
           // Wait a bit for the connector to appear, then navigate to it
-          const maxScanTime = 10000;
+          const maxScanTime = 10_000;
           const intervalSec = 100;
           const timer = new TimeSince();
 

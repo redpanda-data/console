@@ -221,6 +221,7 @@ export const Label = (p: {
 
   const child: React.ReactNode = p.children ?? <React.Fragment />;
 
+  // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
   const newChild = Object.assign({}, child) as any;
   newChild.props = {};
   Object.assign(newChild.props, (child as any).props, { id });
@@ -560,7 +561,7 @@ export class ZeroSizeWrapper extends Component<{
     const p = this.props;
     let style = ZeroSizeWrapper.style;
     if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
-      style = Object.assign({}, style, p, p.wrapperStyle);
+      style = { ...style, ...p, ...p.wrapperStyle };
     }
 
     return (

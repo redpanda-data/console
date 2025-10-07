@@ -256,7 +256,7 @@ function getMessageAsString(value: string | TopicMessage): string {
     return value;
   }
 
-  const obj = Object.assign({}, value) as Partial<TopicMessage>;
+  const obj = { ...value } as Partial<TopicMessage>;
   obj.keyBinHexPreview = undefined;
   obj.valueBinHexPreview = undefined;
   obj.keyJson = undefined;

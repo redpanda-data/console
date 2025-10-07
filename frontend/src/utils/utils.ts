@@ -618,13 +618,13 @@ export const prettyMilliseconds = (
 };
 
 const between = (min: number, max: number) => (num: number) => num >= min && num < max;
-const isK = between(1000, 1000000);
-const isM = between(1000000, 1000000000);
+const isK = between(1000, 1_000_000);
+const isM = between(1_000_000, 1_000_000_000);
 
 const isInfinite = (num: number) => !Number.isFinite(num);
 const toK = (num: number) => `${(num / 1000).toFixed(1)}k`;
-const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
-const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
+const toM = (num: number) => `${(num / 1_000_000).toFixed(1)}m`;
+const toG = (num: number) => `${(num / 1_000_000_000).toFixed(1)}g`;
 
 export function prettyNumber(num: number) {
   if (Number.isNaN(num) || isInfinite(num) || num < 1000) {

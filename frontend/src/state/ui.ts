@@ -129,7 +129,7 @@ export class TopicDetailsSettings {
 
   topicName: string;
 
-  @observable searchParams = Object.assign({}, DEFAULT_SEARCH_PARAMS);
+  @observable searchParams = { ...DEFAULT_SEARCH_PARAMS };
 
   @observable dynamicFilters: 'partition'[] = [];
 

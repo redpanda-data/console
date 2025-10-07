@@ -70,7 +70,7 @@ const monacoYamlOptions: MonacoYamlOptions = {
 
 export const YamlEditor = (props: YamlEditorProps) => {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
 
   useEffect(

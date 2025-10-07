@@ -50,7 +50,7 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 
 export default function KowlEditor(props: KowlEditorProps) {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
     <Editor
@@ -65,7 +65,7 @@ export default function KowlEditor(props: KowlEditorProps) {
 
 export function KowlDiffEditor(props: KowlDiffEditorProps) {
   const { options: givenOptions, ...rest } = props;
-  const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
     <DiffEditor

@@ -550,29 +550,29 @@
         // Promotes the use of import type for types.
         "useImportType": "error",
         // Require all enum members to be literal values.
-        "useLiteralEnumMembers": "off",
+        "useLiteralEnumMembers": "error",
         // Reports usage of “magic numbers” — numbers used directly instead of being assigned to named constants.
         "noMagicNumbers": "off",
         // Promotes the usage of node:assert/strict over node:assert.
-        "useNodeAssertStrict": "off",
+        "useNodeAssertStrict": "error",
         // Enforces using the node: protocol for Node.js builtin modules.
-        "useNodejsImportProtocol": "off",
+        "useNodejsImportProtocol": "error",
         // Use the Number properties instead of global ones.
         "useNumberNamespace": "error",
         // Enforce the use of numeric separators in numeric literals.
-        "useNumericSeparators": "off",
+        "useNumericSeparators": "error",
         // Prefer object spread over Object.assign() when constructing new objects.
-        "useObjectSpread": "off",
+        "useObjectSpread": "error",
         // Enforce marking members as readonly if they are never modified outside the constructor.
         "useReadonlyClassProperties": "off",
         // Prevent extra closing tags for components without children.
         "useSelfClosingElements": "error",
         // Require assignment operator shorthand where possible.
-        "useShorthandAssign": "off",
+        "useShorthandAssign": "error",
         // Enforce using function types instead of object type with call signatures.
-        "useShorthandFunctionType": "off",
+        "useShorthandFunctionType": "error",
         // Require a description parameter for the Symbol().
-        "useSymbolDescription": "off",
+        "useSymbolDescription": "error",
         // Prefer template literals over string concatenation.
         "useTemplate": "error",
         // Require new when throwing an off.

@@ -85,7 +85,8 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
   // Called by user to create a new modal instance
   const show = action((arg: TShowArg) => {
     userState = options.onCreate(arg);
-    state.modalProps = Object.assign({}, options.modalProps, {
+    state.modalProps = {
+      ...options.modalProps,
       onCancel: () => {
         state.visible = false;
         state.result = null;
@@ -121,7 +122,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         state.visible = false;
         state.loading = false;
       },
-    });
+    };
     state.visible = true;
   });
 
